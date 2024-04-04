@@ -11,96 +11,6 @@ name = "dojo::base::base"
 
 [[contracts]]
 kind = "DojoContract"
-address = "0x5ae7021b09ad389d76923737db197762b240c2c2177a54f093276e5a4b8dfab"
-class_hash = "0x404c1cb5ea153bd3051d3fbc7da5a5687c06c31e7e4e96cf844a02583f69085"
-abi = "abis/deployments/KATANA/contracts/leveling_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::leveling::contracts::leveling_systems"
-
-[[contracts]]
-kind = "DojoContract"
-address = "0x98df066ba3e28456eeabbcdf18b94a981cb838f06061aa8a5e4901ab9a39dc"
-class_hash = "0x2435eaad9b52f9cec0a87bd8b173e54a6f42cef7baddc2985756441dc02a28b"
-abi = "abis/deployments/KATANA/contracts/test_resource_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::test::contracts::resource::test_resource_systems"
-
-[[contracts]]
-kind = "DojoContract"
-address = "0x73bf8e3338313640aefd32e58f0d8a62c277ec9b4fe82e352f82568c13effa0"
-class_hash = "0x73cc9238488d651eb395329ef31247188c8c63ec2430d9563d83e728b94beb2"
-abi = "abis/deployments/KATANA/contracts/trade_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::trade::contracts::trade_systems::trade_systems"
-
-[[contracts]]
-kind = "DojoContract"
-address = "0x533d6fe8f9cf750cbbca5007ef90defb0e0b43b774f721f247915547a564a24"
-class_hash = "0x5b1aa5a7534aee9b99730e491e8100fba01494264aed1e2b8f9e0019e273f2"
-abi = "abis/deployments/KATANA/contracts/road_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::transport::contracts::road_systems::road_systems"
-
-[[contracts]]
-kind = "DojoContract"
-address = "0x194130c32e41daf8d15b665cc6a2c622b840b9d3c458b862b6ae40a09c2df1c"
-class_hash = "0x2b58a8de68df822d696fce344ef1efeb0ab6f1d9ef6fa4f49a15f9d75bb5c8b"
-abi = "abis/deployments/KATANA/contracts/map_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::map::contracts::map_systems"
-
-[[contracts]]
-kind = "DojoContract"
-address = "0x62b8197cc473467f77a49020571595351943993b86ac73684115bdcf810a05b"
-class_hash = "0x1bf3185cf3c04c927ad2fd47126527d0b29b1b5d2c592d9690879f202f00052"
-abi = "abis/deployments/KATANA/contracts/combat_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::combat::contracts::combat_systems"
-
-[[contracts]]
-kind = "DojoContract"
-address = "0x719712aac7df6bd04419f991de3c0df036049d3ebc7ac935cc2880ce96eee34"
-class_hash = "0x1734fd268fca6a343e7751adf138e30d36865d8a5e4a3c67d9692b7c02cda6a"
-abi = "abis/deployments/KATANA/contracts/config_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::config::contracts::config_systems"
-
-[[contracts]]
-kind = "DojoContract"
-address = "0x4e73d1905a643c05021307875d29626581a1e6016fedbbd74abb4aeb37b694e"
-class_hash = "0x785767ab18408824aeba77b7cdaa3db387a3f7ccfb9d92606314d1c0c0cc886"
-abi = "abis/deployments/KATANA/contracts/transport_unit_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::transport::contracts::transport_unit_systems::transport_unit_systems"
-
-[[contracts]]
-kind = "DojoContract"
-address = "0x2ca3212e937354d2673caafa3f216088e2c5e432ce896122a258b6cd9facea2"
-class_hash = "0x5e96d58056c87d0d20abc610dfb5c2278f656516cb149e48e59b62c5bdeeeb3"
-abi = "abis/deployments/KATANA/contracts/travel_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::transport::contracts::travel_systems::travel_systems"
-
-[[contracts]]
-kind = "DojoContract"
 address = "0x33d7bdde068731793957f7739be2cd43cb2ecc15427b556af21915187508d43"
 class_hash = "0x524c743435e6daebf5ba878ac986e1807db730ea2f446a64aa0f72f334e0e4c"
 abi = "abis/deployments/KATANA/contracts/realm_systems.json"
@@ -108,36 +18,6 @@ reads = []
 writes = []
 computed = []
 name = "eternum::systems::realm::contracts::realm_systems"
-
-[[contracts]]
-kind = "DojoContract"
-address = "0x5bafa2cb63b4f65bad9cae3e909e5e3931e28f20ee302ff6c1de4ea6305ee00"
-class_hash = "0x700f0deec8ad23e3dd6dd66045489930d1dc7febc7aebb583a6f54d1ec2161b"
-abi = "abis/deployments/KATANA/contracts/caravan_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::transport::contracts::caravan_systems::caravan_systems"
-
-[[contracts]]
-kind = "DojoContract"
-address = "0x3ff1a2426d5892dcd37cabd9c55502fbfad54655e22c5be40b6b70209af115"
-class_hash = "0x200c668b25c849bb5ecb4c0e6e3f04e9f5036b696b0aae7efb9aaba91b50a4c"
-abi = "abis/deployments/KATANA/contracts/hyperstructure_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::hyperstructure::contracts::hyperstructure_systems"
-
-[[contracts]]
-kind = "DojoContract"
-address = "0x7dec3f07f332cd64900e78dd76bec5c447a9a805054e25e590f1ed412cb4439"
-class_hash = "0x5075b39c0dca2bc2c3f855ea5ccd58bc728597cbbc4f2d87c43e1302c7df711"
-abi = "abis/deployments/KATANA/contracts/name_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::name::contracts::name_systems"
 
 [[contracts]]
 kind = "DojoContract"
@@ -151,13 +31,63 @@ name = "eternum::systems::resources::contracts::resource_systems"
 
 [[contracts]]
 kind = "DojoContract"
-address = "0x223ce3e36fd6ddb5acd4e9d5f6683b6e1f15fb7bc1f58e5cea2d0e86441c30b"
-class_hash = "0x75d008d8780b27a9c93ccebb4d76ccb8f99cb4dc74aaa542c8c399dd0ac93c6"
-abi = "abis/deployments/KATANA/contracts/labor_systems.json"
+address = "0x533d6fe8f9cf750cbbca5007ef90defb0e0b43b774f721f247915547a564a24"
+class_hash = "0x5b1aa5a7534aee9b99730e491e8100fba01494264aed1e2b8f9e0019e273f2"
+abi = "abis/deployments/KATANA/contracts/road_systems.json"
 reads = []
 writes = []
 computed = []
-name = "eternum::systems::labor::contracts::labor_systems"
+name = "eternum::systems::transport::contracts::road_systems::road_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x4335f7a62ef1aa88bff0bca25c158a2c8060ef4e21c7312515e3988ee4f448a"
+class_hash = "0x2b00ccd8064896a8cfa6c5c9caed3ed6ed29b64e862282bf62971a674991323"
+abi = "abis/deployments/KATANA/contracts/bank_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::bank::contracts::bank_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x7dec3f07f332cd64900e78dd76bec5c447a9a805054e25e590f1ed412cb4439"
+class_hash = "0x5075b39c0dca2bc2c3f855ea5ccd58bc728597cbbc4f2d87c43e1302c7df711"
+abi = "abis/deployments/KATANA/contracts/name_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::name::contracts::name_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x2ca3212e937354d2673caafa3f216088e2c5e432ce896122a258b6cd9facea2"
+class_hash = "0x5e96d58056c87d0d20abc610dfb5c2278f656516cb149e48e59b62c5bdeeeb3"
+abi = "abis/deployments/KATANA/contracts/travel_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::transport::contracts::travel_systems::travel_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x98df066ba3e28456eeabbcdf18b94a981cb838f06061aa8a5e4901ab9a39dc"
+class_hash = "0x2435eaad9b52f9cec0a87bd8b173e54a6f42cef7baddc2985756441dc02a28b"
+abi = "abis/deployments/KATANA/contracts/test_resource_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::test::contracts::resource::test_resource_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x719712aac7df6bd04419f991de3c0df036049d3ebc7ac935cc2880ce96eee34"
+class_hash = "0x1734fd268fca6a343e7751adf138e30d36865d8a5e4a3c67d9692b7c02cda6a"
+abi = "abis/deployments/KATANA/contracts/config_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::config::contracts::config_systems"
 
 [[contracts]]
 kind = "DojoContract"
@@ -171,36 +101,566 @@ name = "eternum::systems::buildings::contracts::buildings_systems"
 
 [[contracts]]
 kind = "DojoContract"
-address = "0x4335f7a62ef1aa88bff0bca25c158a2c8060ef4e21c7312515e3988ee4f448a"
-class_hash = "0x2b00ccd8064896a8cfa6c5c9caed3ed6ed29b64e862282bf62971a674991323"
-abi = "abis/deployments/KATANA/contracts/bank_systems.json"
+address = "0x223ce3e36fd6ddb5acd4e9d5f6683b6e1f15fb7bc1f58e5cea2d0e86441c30b"
+class_hash = "0x75d008d8780b27a9c93ccebb4d76ccb8f99cb4dc74aaa542c8c399dd0ac93c6"
+abi = "abis/deployments/KATANA/contracts/labor_systems.json"
 reads = []
 writes = []
 computed = []
-name = "eternum::systems::bank::contracts::bank_systems"
+name = "eternum::systems::labor::contracts::labor_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x5bafa2cb63b4f65bad9cae3e909e5e3931e28f20ee302ff6c1de4ea6305ee00"
+class_hash = "0x700f0deec8ad23e3dd6dd66045489930d1dc7febc7aebb583a6f54d1ec2161b"
+abi = "abis/deployments/KATANA/contracts/caravan_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::transport::contracts::caravan_systems::caravan_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x73bf8e3338313640aefd32e58f0d8a62c277ec9b4fe82e352f82568c13effa0"
+class_hash = "0x73cc9238488d651eb395329ef31247188c8c63ec2430d9563d83e728b94beb2"
+abi = "abis/deployments/KATANA/contracts/trade_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::trade::contracts::trade_systems::trade_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x5ae7021b09ad389d76923737db197762b240c2c2177a54f093276e5a4b8dfab"
+class_hash = "0x404c1cb5ea153bd3051d3fbc7da5a5687c06c31e7e4e96cf844a02583f69085"
+abi = "abis/deployments/KATANA/contracts/leveling_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::leveling::contracts::leveling_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x4e73d1905a643c05021307875d29626581a1e6016fedbbd74abb4aeb37b694e"
+class_hash = "0x785767ab18408824aeba77b7cdaa3db387a3f7ccfb9d92606314d1c0c0cc886"
+abi = "abis/deployments/KATANA/contracts/transport_unit_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::transport::contracts::transport_unit_systems::transport_unit_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x62b8197cc473467f77a49020571595351943993b86ac73684115bdcf810a05b"
+class_hash = "0x1bf3185cf3c04c927ad2fd47126527d0b29b1b5d2c592d9690879f202f00052"
+abi = "abis/deployments/KATANA/contracts/combat_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::combat::contracts::combat_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x194130c32e41daf8d15b665cc6a2c622b840b9d3c458b862b6ae40a09c2df1c"
+class_hash = "0x2b58a8de68df822d696fce344ef1efeb0ab6f1d9ef6fa4f49a15f9d75bb5c8b"
+abi = "abis/deployments/KATANA/contracts/map_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::map::contracts::map_systems"
+
+[[contracts]]
+kind = "DojoContract"
+address = "0x3ff1a2426d5892dcd37cabd9c55502fbfad54655e22c5be40b6b70209af115"
+class_hash = "0x200c668b25c849bb5ecb4c0e6e3f04e9f5036b696b0aae7efb9aaba91b50a4c"
+abi = "abis/deployments/KATANA/contracts/hyperstructure_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::hyperstructure::contracts::hyperstructure_systems"
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x6844de55347bcd24f16c8dfbf4b9a63dd5a6b40fd707242b8902599cb23392f"
-name = "eternum::models::buildings::labor_building"
+class_hash = "0x4e3c69259a75935e43ad3ca32758d60707eb4793f1472ffb68504a86f960d7f"
+name = "eternum::models::resources::detached_resource"
 
 [[models.members]]
-name = "realm_entity_id"
+name = "entity_id"
 type = "u128"
 key = true
 
 [[models.members]]
-name = "building_type"
+name = "index"
+type = "u32"
+key = true
+
+[[models.members]]
+name = "resource_type"
 type = "u8"
 key = false
 
 [[models.members]]
-name = "labor_count"
+name = "resource_amount"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x4464adc86ad55e047806e945adb6a2541182885f3c4d6b53cccba6ada72c3c4"
+name = "eternum::models::bank::bank_auction"
+
+[[models.members]]
+name = "bank_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "bank_gives_resource_type"
+type = "u8"
+key = true
+
+[[models.members]]
+name = "bank_swap_resource_cost_index"
+type = "u32"
+key = true
+
+[[models.members]]
+name = "decay_constant_mag"
 type = "u128"
 key = false
 
 [[models.members]]
-name = "level"
+name = "decay_constant_sign"
+type = "bool"
+key = false
+
+[[models.members]]
+name = "per_time_unit"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "start_time"
+type = "u64"
+key = false
+
+[[models.members]]
+name = "sold"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "price_update_interval"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x6dbdb27adaf95920ee6e3c9e3698e693eb9dd622dffb2fa43181f3696234598"
+name = "eternum::models::bank::bank"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "exists"
+type = "bool"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x722a04091940e82cbf5f12cca4d6a68dc9bf8fdc4b5a9aa29e468a96051623f"
+name = "eternum::models::config::speed_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "speed_config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "entity_type"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "sec_per_km"
+type = "u16"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x640675a8eedfe08ac77f3a56f08903e597414ce21fe23aeeccdc6eb71b5d253"
+name = "eternum::models::realm::realm"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "realm_id"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resource_types_packed"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resource_types_count"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "cities"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "harbors"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "rivers"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "regions"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "wonder"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "order"
+type = "u8"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x39b25dc2f30bfd8ed6d49231cd91a0dc9cda511f843aa1716cbaa519b96acd9"
+name = "eternum::models::hyperstructure::hyper_structure"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "hyperstructure_type"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "controlling_order"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "completed"
+type = "bool"
+key = false
+
+[[models.members]]
+name = "completion_cost_id"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "completion_resource_count"
+type = "u32"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x5153f1a9efa8d4d037ad64ff536d9ac4c0669c053acd8b5945ad36bd31423f0"
+name = "eternum::models::capacity::capacity"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "weight_gram"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x2ebe158013d9a2ff7ad72acb74dba39659073ed3c22c2f6b3ef72c3220a02b8"
+name = "eternum::models::config::defence_config"
+
+[[models.members]]
+name = "entity_type"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "max_value"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x7ed6c4aafd9f505c4d6fcd79415b5c9ce0e151d875507f05e2f05b802a953d2"
+name = "eternum::models::config::weight_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "weight_config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "entity_type"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "weight_gram"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x14a11ca730a812923608188550dea7f44600908aba3be63adbaa59e493582a7"
+name = "eternum::models::config::labor_building_cost"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "labor_category"
+type = "u8"
+key = true
+
+[[models.members]]
+name = "resource_cost_id"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resource_cost_count"
+type = "u32"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x37722e202b1bef890703a03ef462e8bfb8590305911ef5c1c1a5987742f44"
+name = "eternum::models::resources::resource_cost"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "index"
+type = "u32"
+key = true
+
+[[models.members]]
+name = "resource_type"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "amount"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x55712b7c24eca365cb08512ba84414f058431df050164f3abcb07d72c3c6e3f"
+name = "eternum::models::config::labor_cost_amount"
+
+[[models.members]]
+name = "resource_type_labor"
+type = "felt252"
+key = true
+
+[[models.members]]
+name = "resource_type_cost"
+type = "felt252"
+key = true
+
+[[models.members]]
+name = "value"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x13b197fc3230e589b68eb5e582b0ed1f9b790b744c15e95ef9741951c20767e"
+name = "eternum::models::config::labor_buildings_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "level_multiplier"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "level_discount_mag"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resources_category_1"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resources_category_1_count"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "resources_category_2"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resources_category_2_count"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "resources_category_3"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resources_category_3_count"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "resources_category_4"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resources_category_4_count"
+type = "u8"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x19b4ffea3cd1e74320cbf417592bc1ca5af16d9f0fc83d2dfc072372573bbc6"
+name = "eternum::models::caravan::caravan_members"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "key"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "count"
+type = "u32"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x4f05ea809f737a377d363cec4e16ba2b93a00347143852587c9be200fa467ab"
+name = "eternum::models::road::road"
+
+[[models.members]]
+name = "start_coord_x"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "start_coord_y"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "end_coord_x"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "end_coord_y"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "usage_count"
+type = "u32"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x6da9b882c5e1f8e9dffdf57c116c4dc71c4cee891a37df47be03e3993577bd"
+name = "eternum::models::config::world_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "admin_address"
+type = "ContractAddress"
+key = false
+
+[[models.members]]
+name = "realm_l2_contract"
+type = "ContractAddress"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x3f9898c7d85e29fac6c225bfc0ced008c5831e03d89a3f17e20bb72978f6320"
+name = "eternum::models::config::labor_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "base_labor_units"
+type = "u64"
+key = false
+
+[[models.members]]
+name = "base_resources_per_cycle"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "base_food_per_cycle"
 type = "u128"
 key = false
 
@@ -281,426 +741,6 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x13b197fc3230e589b68eb5e582b0ed1f9b790b744c15e95ef9741951c20767e"
-name = "eternum::models::config::labor_buildings_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "level_multiplier"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "level_discount_mag"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resources_category_1"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resources_category_1_count"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "resources_category_2"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resources_category_2_count"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "resources_category_3"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resources_category_3_count"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "resources_category_4"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resources_category_4_count"
-type = "u8"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x786a217d897efd6eaf0cc6737ba53552a1e94738a49e2edaf7192aa7a6be942"
-name = "eternum::models::config::combat_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "stealing_trial_count"
-type = "u32"
-key = false
-
-[[models.members]]
-name = "wheat_burn_per_soldier"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "fish_burn_per_soldier"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x3a82772dac032f668d5ce0003f83b668315a2a72c5f02c877038a0510d33ca3"
-name = "eternum::models::metadata::foreign_key"
-
-[[models.members]]
-name = "foreign_key"
-type = "felt252"
-key = true
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x301c84e199f7fb597c82891830cc266a1cec2b7ffa7ee0150061cad353d84bd"
-name = "eternum::models::combat::defence"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "value"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x3bfa1f99d09a74682e0f626d58d2b74e79ce652cf0ade038a179b581772f8fe"
-name = "eternum::models::quantity::quantity"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "value"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x722a04091940e82cbf5f12cca4d6a68dc9bf8fdc4b5a9aa29e468a96051623f"
-name = "eternum::models::config::speed_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "speed_config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "entity_type"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "sec_per_km"
-type = "u16"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x7471acaca862042a38e73fb4a4eef2fea795ce79155d77e574013bcec07b34c"
-name = "eternum::models::combat::attack"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "value"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x4f05ea809f737a377d363cec4e16ba2b93a00347143852587c9be200fa467ab"
-name = "eternum::models::road::road"
-
-[[models.members]]
-name = "start_coord_x"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "start_coord_y"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "end_coord_x"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "end_coord_y"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "usage_count"
-type = "u32"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0xa49f8bc4b3c48055ab5b3100be48a9e6bc35982646ddd92d141a94bc109f26"
-name = "eternum::models::resources::resource"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "resource_type"
-type = "u8"
-key = true
-
-[[models.members]]
-name = "balance"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x4f3e029d9b2d4d416abf8a19a0e46d6cdb8803c7e042ca4f32efd0914994960"
-name = "eternum::models::resources::owned_resources_tracker"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "resource_types"
-type = "u32"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x4e3c69259a75935e43ad3ca32758d60707eb4793f1472ffb68504a86f960d7f"
-name = "eternum::models::resources::detached_resource"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "index"
-type = "u32"
-key = true
-
-[[models.members]]
-name = "resource_type"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "resource_amount"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x3f9898c7d85e29fac6c225bfc0ced008c5831e03d89a3f17e20bb72978f6320"
-name = "eternum::models::config::labor_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "base_labor_units"
-type = "u64"
-key = false
-
-[[models.members]]
-name = "base_resources_per_cycle"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "base_food_per_cycle"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x750179a6e753a69d4be20c9365866bc647ceac150e1eb4f3b4542d3f7d305a5"
-name = "eternum::models::map::tile"
-
-[[models.members]]
-name = "_col"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "_row"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "col"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "row"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "explored_by_id"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "explored_at"
-type = "u64"
-key = false
-
-[[models.members]]
-name = "biome"
-type = "Biome"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x79e44f1821dc86997f7b97c8194bdba0e38c9ed225795363b13663b5d474c78"
-name = "eternum::models::inventory::inventory"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "items_key"
-type = "felt252"
-key = false
-
-[[models.members]]
-name = "items_count"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x131b15492d7e276078ade476e8a6d14ee6811c88934c71e0e8173dfca6613d0"
-name = "eternum::models::age::age"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "born_at"
-type = "u64"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x6da9b882c5e1f8e9dffdf57c116c4dc71c4cee891a37df47be03e3993577bd"
-name = "eternum::models::config::world_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "admin_address"
-type = "ContractAddress"
-key = false
-
-[[models.members]]
-name = "realm_l2_contract"
-type = "ContractAddress"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x55712b7c24eca365cb08512ba84414f058431df050164f3abcb07d72c3c6e3f"
-name = "eternum::models::config::labor_cost_amount"
-
-[[models.members]]
-name = "resource_type_labor"
-type = "felt252"
-key = true
-
-[[models.members]]
-name = "resource_type_cost"
-type = "felt252"
-key = true
-
-[[models.members]]
-name = "value"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x2513b34490c19cb97e031120b184f5809e451814da58774f45e495c4b943d5e"
-name = "eternum::models::resources::resource_chest"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "locked_until"
-type = "u64"
-key = false
-
-[[models.members]]
-name = "resources_count"
-type = "u32"
-key = false
-
-[[models]]
-kind = "DojoModel"
 class_hash = "0xdd46877224aaed8920380d266c32492561b9546c8c10c4ea279469d09e644c"
 name = "eternum::models::labor_auction::labor_auction"
 
@@ -741,501 +781,11 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x1fed2439b5d152a55f1785e39f0bb329b5368e6661ec73de806635417243418"
-name = "eternum::models::config::travel_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "free_transport_per_city"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x4926b74eeecab95bed7f19b29f700ddf4ba06b4b77276255c30ce38dd9b741f"
-name = "eternum::models::trade::status"
-
-[[models.members]]
-name = "trade_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "value"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x19b4ffea3cd1e74320cbf417592bc1ca5af16d9f0fc83d2dfc072372573bbc6"
-name = "eternum::models::caravan::caravan_members"
+class_hash = "0x9da89003971eabeb8ca303dd30251046d119aed72457c14a62e18970898745"
+name = "eternum::models::labor::labor"
 
 [[models.members]]
 name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "key"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "count"
-type = "u32"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x3f162ddc0aad74ffbfb6ea300618c676858ab06f6c9df620a26fc58a4be8bb0"
-name = "eternum::models::movable::movable"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "sec_per_km"
-type = "u16"
-key = false
-
-[[models.members]]
-name = "blocked"
-type = "bool"
-key = false
-
-[[models.members]]
-name = "round_trip"
-type = "bool"
-key = false
-
-[[models.members]]
-name = "start_coord_x"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "start_coord_y"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "intermediate_coord_x"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "intermediate_coord_y"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x4464adc86ad55e047806e945adb6a2541182885f3c4d6b53cccba6ada72c3c4"
-name = "eternum::models::bank::bank_auction"
-
-[[models.members]]
-name = "bank_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "bank_gives_resource_type"
-type = "u8"
-key = true
-
-[[models.members]]
-name = "bank_swap_resource_cost_index"
-type = "u32"
-key = true
-
-[[models.members]]
-name = "decay_constant_mag"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "decay_constant_sign"
-type = "bool"
-key = false
-
-[[models.members]]
-name = "per_time_unit"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "start_time"
-type = "u64"
-key = false
-
-[[models.members]]
-name = "sold"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "price_update_interval"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x2de5afde576c64423b4200c6f7e651cfdfa4a9279c843651fc5cccb193fcef4"
-name = "eternum::models::metadata::entity_metadata"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "entity_type"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x25123f2c3875b4692de7e44e0be0d197bcd08b5e5b11d9bc5e1cd313fd2a750"
-name = "eternum::models::config::soldier_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "resource_cost_id"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resource_cost_count"
-type = "u32"
-key = false
-
-[[models.members]]
-name = "wheat_burn_per_soldier"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "fish_burn_per_soldier"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x1278bd7f4b0762ecc27fdb16f591aad71e94df0b399a7eb41454571cffa2c0"
-name = "eternum::models::bank::bank_swap_resource_cost"
-
-[[models.members]]
-name = "bank_gives_resource_type"
-type = "u8"
-key = true
-
-[[models.members]]
-name = "index"
-type = "u32"
-key = true
-
-[[models.members]]
-name = "resource_cost_id"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resource_cost_count"
-type = "u32"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x7d26b34fe238e9bc274a79ed60d7619d2e9d67c0c2dff2208c5738280f64dc2"
-name = "eternum::models::combat::town_watch"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "town_watch_id"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x6de04b3aec5ee36031fd6630ddced30f43eb9353c3572601a55a30e6301e5de"
-name = "eternum::models::tick::tick_move"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "tick"
-type = "u64"
-key = false
-
-[[models.members]]
-name = "count"
-type = "u8"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x41e36fe1bb5bc9aa0c2e6ccb1e6aead3b0801e5d043d016f60edfa7d5bcbf7c"
-name = "eternum::models::name::address_name"
-
-[[models.members]]
-name = "address"
-type = "felt252"
-key = true
-
-[[models.members]]
-name = "name"
-type = "felt252"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x46369b421bd9090505595fc31da2187ba6c12890972c487e22d47212fc785eb"
-name = "eternum::models::config::realm_free_mint_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "detached_resource_id"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "detached_resource_count"
-type = "u32"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x44524012d1ee3570c3df0701973a88b7cd4f2c757e9cf59af53b132137a4e5f"
-name = "eternum::models::config::capacity_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "carry_capacity_config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "entity_type"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "weight_gram"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x39b25dc2f30bfd8ed6d49231cd91a0dc9cda511f843aa1716cbaa519b96acd9"
-name = "eternum::models::hyperstructure::hyper_structure"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "hyperstructure_type"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "controlling_order"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "completed"
-type = "bool"
-key = false
-
-[[models.members]]
-name = "completion_cost_id"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "completion_resource_count"
-type = "u32"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x3ac70871f7eda114b8038aeaf25a7f2d6f8b5dd4921a8c5c02af8527d9a7a3d"
-name = "eternum::models::weight::weight"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "value"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x76601e82bc597e5485558932d765102aa4ee8d67aebca1dc8a5d65eace131c1"
-name = "eternum::models::level::level"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "level"
-type = "u64"
-key = false
-
-[[models.members]]
-name = "valid_until"
-type = "u64"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x3aa31c525b237c26d905c321c1069f3f4c8348fc526cba97d829ef5624dbc8"
-name = "eternum::models::config::attack_config"
-
-[[models.members]]
-name = "entity_type"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "max_value"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x5182a364642a812f44f663150f9cbd5f55a21f9cda255b9c7d9bf09a1643fe9"
-name = "eternum::models::config::tick_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "max_moves_per_tick"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "tick_interval_in_seconds"
-type = "u64"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x640675a8eedfe08ac77f3a56f08903e597414ce21fe23aeeccdc6eb71b5d253"
-name = "eternum::models::realm::realm"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "realm_id"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resource_types_packed"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resource_types_count"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "cities"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "harbors"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "rivers"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "regions"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "wonder"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "order"
-type = "u8"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x5407e40ae02a1a2b528f43b36f276088ef49e4b7a11a78513ac01041818bce8"
-name = "eternum::models::owner::entity_owner"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "entity_owner_id"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x7307fda8af1f64af3f4fae7b0f0e66143c4fb9a91c0862890019e53f245f103"
-name = "eternum::models::resources::resource_allowance"
-
-[[models.members]]
-name = "owner_entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "approved_entity_id"
 type = "u128"
 key = true
 
@@ -1245,14 +795,24 @@ type = "u8"
 key = true
 
 [[models.members]]
-name = "amount"
-type = "u128"
+name = "balance"
+type = "u64"
+key = false
+
+[[models.members]]
+name = "last_harvest"
+type = "u64"
+key = false
+
+[[models.members]]
+name = "multiplier"
+type = "u64"
 key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x6dbdb27adaf95920ee6e3c9e3698e693eb9dd622dffb2fa43181f3696234598"
-name = "eternum::models::bank::bank"
+class_hash = "0x4f3e029d9b2d4d416abf8a19a0e46d6cdb8803c7e042ca4f32efd0914994960"
+name = "eternum::models::resources::owned_resources_tracker"
 
 [[models.members]]
 name = "entity_id"
@@ -1260,72 +820,7 @@ type = "u128"
 key = true
 
 [[models.members]]
-name = "exists"
-type = "bool"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x2ebe158013d9a2ff7ad72acb74dba39659073ed3c22c2f6b3ef72c3220a02b8"
-name = "eternum::models::config::defence_config"
-
-[[models.members]]
-name = "entity_type"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "max_value"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x7621b4c09bb68492df8125ae6c697ea2d71247860a80769360b539c12a6c4a6"
-name = "eternum::models::config::map_explore_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "wheat_burn_amount"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "fish_burn_amount"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "reward_resource_amount"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x14a11ca730a812923608188550dea7f44600908aba3be63adbaa59e493582a7"
-name = "eternum::models::config::labor_building_cost"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "labor_category"
-type = "u8"
-key = true
-
-[[models.members]]
-name = "resource_cost_id"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resource_cost_count"
+name = "resource_types"
 type = "u32"
 key = false
 
@@ -1342,106 +837,6 @@ key = true
 [[models.members]]
 name = "arrives_at"
 type = "u64"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x7b7c34925f04f8e57f39a6752552428376eb59b8ac8f5d52d42c864a40677d6"
-name = "eternum::models::combat::health"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "value"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x797005d746988c99fb9ba19fef354f41ecef3a58b864594dd1c3570fe0e284d"
-name = "eternum::models::owner::owner"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "address"
-type = "ContractAddress"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x235f9c1b430ddbdfd6eb2c2d4794b7a6818ff06b15c85c4725021cddd0636a3"
-name = "eternum::models::order::orders"
-
-[[models.members]]
-name = "order_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "hyperstructure_count"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x2313353b682b835ca49ffa3d744c14829ddedd364649ebe12e7ff885bae3543"
-name = "eternum::models::config::health_config"
-
-[[models.members]]
-name = "entity_type"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "resource_cost_id"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resource_cost_count"
-type = "u32"
-key = false
-
-[[models.members]]
-name = "max_value"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x4a36334ec33f3c0973e78b56540c36f6d706a3ac8a310675f56e0d95584b144"
-name = "eternum::models::quantity::quantity_tracker"
-
-[[models.members]]
-name = "entity_id"
-type = "felt252"
-key = true
-
-[[models.members]]
-name = "count"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x5153f1a9efa8d4d037ad64ff536d9ac4c0669c053acd8b5945ad36bd31423f0"
-name = "eternum::models::capacity::capacity"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "weight_gram"
-type = "u128"
 key = false
 
 [[models]]
@@ -1491,8 +886,133 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x7ed6c4aafd9f505c4d6fcd79415b5c9ce0e151d875507f05e2f05b802a953d2"
-name = "eternum::models::config::weight_config"
+class_hash = "0x235f9c1b430ddbdfd6eb2c2d4794b7a6818ff06b15c85c4725021cddd0636a3"
+name = "eternum::models::order::orders"
+
+[[models.members]]
+name = "order_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "hyperstructure_count"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x7471acaca862042a38e73fb4a4eef2fea795ce79155d77e574013bcec07b34c"
+name = "eternum::models::combat::attack"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "value"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x3a82772dac032f668d5ce0003f83b668315a2a72c5f02c877038a0510d33ca3"
+name = "eternum::models::metadata::foreign_key"
+
+[[models.members]]
+name = "foreign_key"
+type = "felt252"
+key = true
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x750179a6e753a69d4be20c9365866bc647ceac150e1eb4f3b4542d3f7d305a5"
+name = "eternum::models::map::tile"
+
+[[models.members]]
+name = "_col"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "_row"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "col"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "row"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "explored_by_id"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "explored_at"
+type = "u64"
+key = false
+
+[[models.members]]
+name = "biome"
+type = "Biome"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x5407e40ae02a1a2b528f43b36f276088ef49e4b7a11a78513ac01041818bce8"
+name = "eternum::models::owner::entity_owner"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "entity_owner_id"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x7307fda8af1f64af3f4fae7b0f0e66143c4fb9a91c0862890019e53f245f103"
+name = "eternum::models::resources::resource_allowance"
+
+[[models.members]]
+name = "owner_entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "approved_entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[models.members]]
+name = "amount"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x5182a364642a812f44f663150f9cbd5f55a21f9cda255b9c7d9bf09a1643fe9"
+name = "eternum::models::config::tick_config"
 
 [[models.members]]
 name = "config_id"
@@ -1500,7 +1020,502 @@ type = "u128"
 key = true
 
 [[models.members]]
-name = "weight_config_id"
+name = "max_moves_per_tick"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "tick_interval_in_seconds"
+type = "u64"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x2de5afde576c64423b4200c6f7e651cfdfa4a9279c843651fc5cccb193fcef4"
+name = "eternum::models::metadata::entity_metadata"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "entity_type"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x7b7c34925f04f8e57f39a6752552428376eb59b8ac8f5d52d42c864a40677d6"
+name = "eternum::models::combat::health"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "value"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x1fed2439b5d152a55f1785e39f0bb329b5368e6661ec73de806635417243418"
+name = "eternum::models::config::travel_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "free_transport_per_city"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x7621b4c09bb68492df8125ae6c697ea2d71247860a80769360b539c12a6c4a6"
+name = "eternum::models::config::map_explore_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "wheat_burn_amount"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "fish_burn_amount"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "reward_resource_amount"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x41e36fe1bb5bc9aa0c2e6ccb1e6aead3b0801e5d043d016f60edfa7d5bcbf7c"
+name = "eternum::models::name::address_name"
+
+[[models.members]]
+name = "address"
+type = "felt252"
+key = true
+
+[[models.members]]
+name = "name"
+type = "felt252"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x6de04b3aec5ee36031fd6630ddced30f43eb9353c3572601a55a30e6301e5de"
+name = "eternum::models::tick::tick_move"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "tick"
+type = "u64"
+key = false
+
+[[models.members]]
+name = "count"
+type = "u8"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x25123f2c3875b4692de7e44e0be0d197bcd08b5e5b11d9bc5e1cd313fd2a750"
+name = "eternum::models::config::soldier_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "resource_cost_id"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resource_cost_count"
+type = "u32"
+key = false
+
+[[models.members]]
+name = "wheat_burn_per_soldier"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "fish_burn_per_soldier"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x4926b74eeecab95bed7f19b29f700ddf4ba06b4b77276255c30ce38dd9b741f"
+name = "eternum::models::trade::status"
+
+[[models.members]]
+name = "trade_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "value"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x3f162ddc0aad74ffbfb6ea300618c676858ab06f6c9df620a26fc58a4be8bb0"
+name = "eternum::models::movable::movable"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "sec_per_km"
+type = "u16"
+key = false
+
+[[models.members]]
+name = "blocked"
+type = "bool"
+key = false
+
+[[models.members]]
+name = "round_trip"
+type = "bool"
+key = false
+
+[[models.members]]
+name = "start_coord_x"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "start_coord_y"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "intermediate_coord_x"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "intermediate_coord_y"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x3aa31c525b237c26d905c321c1069f3f4c8348fc526cba97d829ef5624dbc8"
+name = "eternum::models::config::attack_config"
+
+[[models.members]]
+name = "entity_type"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "max_value"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x2513b34490c19cb97e031120b184f5809e451814da58774f45e495c4b943d5e"
+name = "eternum::models::resources::resource_chest"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "locked_until"
+type = "u64"
+key = false
+
+[[models.members]]
+name = "resources_count"
+type = "u32"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x76601e82bc597e5485558932d765102aa4ee8d67aebca1dc8a5d65eace131c1"
+name = "eternum::models::level::level"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "level"
+type = "u64"
+key = false
+
+[[models.members]]
+name = "valid_until"
+type = "u64"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x797005d746988c99fb9ba19fef354f41ecef3a58b864594dd1c3570fe0e284d"
+name = "eternum::models::owner::owner"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "address"
+type = "ContractAddress"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x4a36334ec33f3c0973e78b56540c36f6d706a3ac8a310675f56e0d95584b144"
+name = "eternum::models::quantity::quantity_tracker"
+
+[[models.members]]
+name = "entity_id"
+type = "felt252"
+key = true
+
+[[models.members]]
+name = "count"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x2313353b682b835ca49ffa3d744c14829ddedd364649ebe12e7ff885bae3543"
+name = "eternum::models::config::health_config"
+
+[[models.members]]
+name = "entity_type"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "resource_cost_id"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resource_cost_count"
+type = "u32"
+key = false
+
+[[models.members]]
+name = "max_value"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x6844de55347bcd24f16c8dfbf4b9a63dd5a6b40fd707242b8902599cb23392f"
+name = "eternum::models::buildings::labor_building"
+
+[[models.members]]
+name = "realm_entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "building_type"
+type = "u8"
+key = false
+
+[[models.members]]
+name = "labor_count"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "level"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x3ac70871f7eda114b8038aeaf25a7f2d6f8b5dd4921a8c5c02af8527d9a7a3d"
+name = "eternum::models::weight::weight"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "value"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x301c84e199f7fb597c82891830cc266a1cec2b7ffa7ee0150061cad353d84bd"
+name = "eternum::models::combat::defence"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "value"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x79e44f1821dc86997f7b97c8194bdba0e38c9ed225795363b13663b5d474c78"
+name = "eternum::models::inventory::inventory"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "items_key"
+type = "felt252"
+key = false
+
+[[models.members]]
+name = "items_count"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x46369b421bd9090505595fc31da2187ba6c12890972c487e22d47212fc785eb"
+name = "eternum::models::config::realm_free_mint_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "detached_resource_id"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "detached_resource_count"
+type = "u32"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x1278bd7f4b0762ecc27fdb16f591aad71e94df0b399a7eb41454571cffa2c0"
+name = "eternum::models::bank::bank_swap_resource_cost"
+
+[[models.members]]
+name = "bank_gives_resource_type"
+type = "u8"
+key = true
+
+[[models.members]]
+name = "index"
+type = "u32"
+key = true
+
+[[models.members]]
+name = "resource_cost_id"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resource_cost_count"
+type = "u32"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x860f3920f0001866cd70f82bb9e6717ff89db8929074b407f6f8177c87bffb"
+name = "eternum::models::config::labor_cost_resources"
+
+[[models.members]]
+name = "resource_type_labor"
+type = "felt252"
+key = true
+
+[[models.members]]
+name = "resource_types_packed"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "resource_types_count"
+type = "u8"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x3bfa1f99d09a74682e0f626d58d2b74e79ce652cf0ade038a179b581772f8fe"
+name = "eternum::models::quantity::quantity"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "value"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x131b15492d7e276078ade476e8a6d14ee6811c88934c71e0e8173dfca6613d0"
+name = "eternum::models::age::age"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "born_at"
+type = "u64"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x44524012d1ee3570c3df0701973a88b7cd4f2c757e9cf59af53b132137a4e5f"
+name = "eternum::models::config::capacity_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "carry_capacity_config_id"
 type = "u128"
 key = true
 
@@ -1511,6 +1526,31 @@ key = false
 
 [[models.members]]
 name = "weight_gram"
+type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x786a217d897efd6eaf0cc6737ba53552a1e94738a49e2edaf7192aa7a6be942"
+name = "eternum::models::config::combat_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "stealing_trial_count"
+type = "u32"
+key = false
+
+[[models.members]]
+name = "wheat_burn_per_soldier"
+type = "u128"
+key = false
+
+[[models.members]]
+name = "fish_burn_per_soldier"
 type = "u128"
 key = false
 
@@ -1541,8 +1581,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x37722e202b1bef890703a03ef462e8bfb8590305911ef5c1c1a5987742f44"
-name = "eternum::models::resources::resource_cost"
+class_hash = "0x7d26b34fe238e9bc274a79ed60d7619d2e9d67c0c2dff2208c5738280f64dc2"
+name = "eternum::models::combat::town_watch"
 
 [[models.members]]
 name = "entity_id"
@@ -1550,24 +1590,14 @@ type = "u128"
 key = true
 
 [[models.members]]
-name = "index"
-type = "u32"
-key = true
-
-[[models.members]]
-name = "resource_type"
-type = "u8"
-key = false
-
-[[models.members]]
-name = "amount"
+name = "town_watch_id"
 type = "u128"
 key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x9da89003971eabeb8ca303dd30251046d119aed72457c14a62e18970898745"
-name = "eternum::models::labor::labor"
+class_hash = "0xa49f8bc4b3c48055ab5b3100be48a9e6bc35982646ddd92d141a94bc109f26"
+name = "eternum::models::resources::resource"
 
 [[models.members]]
 name = "entity_id"
@@ -1581,17 +1611,7 @@ key = true
 
 [[models.members]]
 name = "balance"
-type = "u64"
-key = false
-
-[[models.members]]
-name = "last_harvest"
-type = "u64"
-key = false
-
-[[models.members]]
-name = "multiplier"
-type = "u64"
+type = "u128"
 key = false
 
 [[models]]
@@ -1612,24 +1632,4 @@ key = false
 [[models.members]]
 name = "y"
 type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x860f3920f0001866cd70f82bb9e6717ff89db8929074b407f6f8177c87bffb"
-name = "eternum::models::config::labor_cost_resources"
-
-[[models.members]]
-name = "resource_type_labor"
-type = "felt252"
-key = true
-
-[[models.members]]
-name = "resource_types_packed"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "resource_types_count"
-type = "u8"
 key = false

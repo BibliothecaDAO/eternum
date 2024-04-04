@@ -40,7 +40,7 @@ export const DirectionalLightAndHelper = ({ locationType }: { locationType: stri
 
   const { lightPosition, bias } = useControls({
     lightPosition: {
-      value: { x: 0, y: 100, z: 200 }, // Adjust y value to position the light above
+      value: { x: 0, y: 15, z: 50 }, // Adjust y value to position the light above
       step: 0.01,
     },
     bias: {
@@ -66,7 +66,7 @@ export const DirectionalLightAndHelper = ({ locationType }: { locationType: stri
       shadow-camera-top={3000}
       shadow-camera-bottom={-3000}
       shadow-bias={bias}
-      position={[lightPosition.x, yPos, lightPosition.z]}
+      position={[lightPosition.x, lightPosition.y, lightPosition.z]}
       intensity={2}
     ></directionalLight>
   );

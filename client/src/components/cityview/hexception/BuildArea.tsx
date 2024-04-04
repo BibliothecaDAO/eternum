@@ -1,9 +1,9 @@
 import { useGLTF } from "@react-three/drei";
 import useUIStore from "../../../hooks/store/useUIStore";
-import HexBuildGrid, { hasBuilding } from "./HexBuildGrid";
+import HexBuildGrid, { isHexOccupied } from "./HexBuildGrid";
 import * as THREE from "three";
 import { getUIPositionFromColRow } from "../../../utils/utils";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 const BuildArea = () => {
   const hoveredBuildHex = useUIStore((state) => state.hoveredBuildHex);
@@ -18,7 +18,10 @@ const BuildArea = () => {
     <group>
       {buildMode && (
         <group position={[castleCoords.x, 2.32, -castleCoords.y]}>
-          <Castle transparent color={hasBuilding(hoveredBuildHex.col, hoveredBuildHex.row) ? "red" : "green"} />
+          <Castle
+            transparent
+            color={isHexOccupied(hoveredBuildHex.col, hoveredBuildHex.row, builtCastles) ? "red" : "green"}
+          />
         </group>
       )}
       {builtCastles.map((castle) => {

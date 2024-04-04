@@ -7,7 +7,7 @@ export interface BuildModeStore {
   setBuiltCastles: (builtCastles: { col: number; row: number }[]) => void;
 }
 export const createBuildModeStoreSlice = (set: any) => ({
-  buildMode: false,
+  buildMode: true,
   setBuildMode: (buildMode: boolean) => set({ buildMode, hoveredBuildHex: { col: 4, row: 4 } }),
   hoveredBuildHex: { col: 0, row: 0 },
   setHoveredBuildHex: (hoveredBuildHex: { col: number; row: number }) => set({ hoveredBuildHex }),

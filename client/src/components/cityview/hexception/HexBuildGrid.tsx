@@ -4,16 +4,9 @@ import { createHexagonShape } from "../../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../../worldmap/hexagon/WorldHexagon";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import { Html } from "@react-three/drei";
+import { useCallback } from "react";
 
-export const hasBuilding = (col: number, row: number) => {
-  const { builtCastles } = useUIStore((state) => ({
-    buildMode: state.buildMode,
-    hoveredBuildHex: state.hoveredBuildHex,
-    setHoveredBuildHex: state.setHoveredBuildHex,
-    builtCastles: state.builtCastles,
-    setBuiltCastles: state.setBuiltCastles,
-  }));
-
+export const isHexOccupied = (col: number, row: number, builtCastles: any[]) => {
   return builtCastles.some((castle) => castle.col === col && castle.row === row);
 };
 
@@ -29,7 +22,17 @@ const HexBuildGrid = () => {
     setBuiltCastles: state.setBuiltCastles,
   }));
 
-  // Check if a building exists at the given position
+  const getColorForHexagon = (hexPosition: any, buildMode: any, hoveredBuildHex: any) => {
+    if (buildMode) {
+      if (hoveredBuildHex.col === hexPosition.col && hoveredBuildHex.row === hexPosition.row) {
+        if (isHexOccupied(hexPosition.col, hexPosition.row, builtCastles)) {
+          return "red";
+        }
+        return "limegreen";
+      }
+    }
+    return "gray";
+  };
 
   return (
     <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
@@ -42,7 +45,7 @@ const HexBuildGrid = () => {
           onPointerMove={() => buildMode && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
           onClick={() =>
             buildMode &&
-            !hasBuilding(hexPosition.col, hexPosition.row) &&
+            !isHexOccupied(hexPosition.col, hexPosition.row, builtCastles) &&
             setBuiltCastles([...builtCastles, { col: hexPosition.col, row: hexPosition.row }])
           }
         />
@@ -73,18 +76,6 @@ const Hexagon = ({
     <meshMatcapMaterial color={color} />
   </mesh>
 );
-
-const getColorForHexagon = (hexPosition: any, buildMode: any, hoveredBuildHex: any) => {
-  if (buildMode) {
-    if (hoveredBuildHex.col === hexPosition.col && hoveredBuildHex.row === hexPosition.row) {
-      if (hasBuilding(hexPosition.col, hexPosition.row)) {
-        return "red";
-      }
-      return "limegreen";
-    }
-  }
-  return "gray";
-};
 
 const generateHexPositions = () => {
   const _color = new THREE.Color("gray");
