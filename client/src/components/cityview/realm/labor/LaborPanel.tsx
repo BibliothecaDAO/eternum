@@ -80,14 +80,5 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
   const { getEntityLevel } = useLevel();
   const realm_level = getEntityLevel(realmEntityId)?.level;
 
-  const isBuildMode = useUIStore((state) => state.buildMode);
-  const setBuildMode = useUIStore((state) => state.setBuildMode);
-
-  return (
-    <div className="flex flex-col">
-      <Button onClick={() => setBuildMode(!isBuildMode)} variant="success">
-        {isBuildMode ? "Cancel" : "Build Castle"}
-      </Button>
-    </div>
-  );
+  return <div className="flex flex-col"></div>;
 };

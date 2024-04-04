@@ -21,8 +21,6 @@ export const AttacksComponent = ({}: AttacksComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const { realmEntityId, realmId } = useRealmStore();
 
-  const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
-  const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const { useEnemyRaidersOnPosition } = useCombat();

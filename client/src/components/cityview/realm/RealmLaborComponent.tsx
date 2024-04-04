@@ -11,8 +11,6 @@ export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const { realmEntityId } = useRealmStore();
 
-  // const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
-  const moveCameraToFoodView = useUIStore((state) => state.moveCameraToFoodView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   // @ts-ignore
