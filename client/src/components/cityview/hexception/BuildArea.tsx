@@ -1,6 +1,6 @@
 import { Merged, useGLTF } from "@react-three/drei";
 import useUIStore from "../../../hooks/store/useUIStore";
-import HexBuildGrid, { isHexOccupied } from "./HexBuildGrid";
+import GroundGrid, { isHexOccupied } from "./GroundGrid";
 import * as THREE from "three";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
@@ -11,8 +11,8 @@ const BuildArea = () => {
   return (
     <group>
       <BuildingPreview />
-      <HexBuildGrid />
       <ExistingBuildings />
+      <GroundGrid />
     </group>
   );
 };

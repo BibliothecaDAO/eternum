@@ -11,7 +11,7 @@ export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row);
 };
 
-const HexBuildGrid = () => {
+const GroundGrid = () => {
   const { playBuildingSound } = useBuildingSound();
   const hexPositions = generateHexPositions();
   const { previewBuilding, hoveredBuildHex, setHoveredBuildHex, existingBuildings, setExistingBuildings } = useUIStore(
@@ -97,4 +97,4 @@ const generateHexPositions = () => {
   return positions;
 };
 
-export default HexBuildGrid;
+export default GroundGrid;
