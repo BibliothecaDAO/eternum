@@ -9,14 +9,14 @@ export const FixedHexagonInformation = () => {
   return (
     <div>
       <div className="relative">
-        <div className="flex space-x-2 z-10 top-1 left-1 absolute">
-          <div className="rounded border px-2 bg-black">x: {colRow.col}</div>
-          <div className="rounded border px-2 bg-black">y: {colRow.row}</div>
+        <div className="flex space-x-2 z-10 top-1 left-1 absolute text-xs">
+          <div className="rounded  px-2 bg-brown">x: {colRow.col}</div>
+          <div className="rounded  px-2 bg-brown">y: {colRow.row}</div>
         </div>
-        {biome && <img src={`/images/biomes/${biome?.toLowerCase()}.png`} className="w-full rounded-xl" />}
-      </div>
+        {biome && <img src={`/images/biomes/${biome?.toLowerCase()}.png`} className="w-full rounded" />}
 
-      <div className="text-3xl">{biome}</div>
+        <div className="text-xl px-2 uppercase absolute bottom-2 left-2 bg-brown rounded">{biome}</div>
+      </div>
     </div>
   );
 };
