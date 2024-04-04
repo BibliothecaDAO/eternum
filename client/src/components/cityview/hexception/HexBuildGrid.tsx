@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { createHexagonShape } from "../../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../../worldmap/hexagon/WorldHexagon";
 import { getUIPositionFromColRow } from "../../../utils/utils";
-import { Html } from "@react-three/drei";
+import { Html, Merged, useGLTF } from "@react-three/drei";
 import { useCallback } from "react";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
@@ -45,15 +45,17 @@ const HexBuildGrid = () => {
 
 const Hexagon = ({ position, onPointerMove, onClick }: { position: any; onPointerMove: any; onClick: any }) => {
   const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
+  const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
+  const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
   return (
-    <mesh
-      position={[position.x, position.y, position.z]}
-      onPointerMove={onPointerMove}
-      onClick={onClick}
-      geometry={hexagonGeometry}
-    >
-      <meshMatcapMaterial color={"gray"} />
-    </mesh>
+    <group position={[position.x, position.y, position.z]} onPointerMove={onPointerMove} onClick={onClick}>
+      <mesh geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]}>
+        <meshMatcapMaterial color={secondaryColor} />
+      </mesh>
+      <mesh geometry={hexagonGeometry}>
+        <meshMatcapMaterial color={mainColor} />
+      </mesh>
+    </group>
   );
 };
 
@@ -80,7 +82,7 @@ const generateHexPositions = () => {
     ) {
       positions.push({
         ...getUIPositionFromColRow(_col + shifted.col, _row + shifted.row, true),
-        z: 0.32,
+        z: 0.315,
         color: _color,
         col: _col + shifted.col,
         row: _row + shifted.row,
