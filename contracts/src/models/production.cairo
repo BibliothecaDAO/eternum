@@ -46,21 +46,31 @@ struct Production {
     production_rate: u128,
     bonus_percent: u128,
     consumed_rate: u128,
-    start_at: u64, 
-    stop_at: u64, 
-    updated_at: u64, 
+    start_at: u64,
+    stop_at: u64,
+    updated_at: u64,
+    active: bool,
 }
 
-const PRODUCTION_BONUS_BASIS : u128 = 10_000;
+const PRODUCTION_BONUS_BASIS: u128 = 10_000;
 
 // We could make this a nice JS Class with a constructor and everything
 // Then maintaining logic in client will be easy
 #[generate_trait]
 impl ProductionRateImpl of ProductionRateTrait {
-
     fn is_active(self: Production) -> bool {
-        if self.building_count > 0 {return true;}
+        if (self.building_count > 0 && self.active) {
+            return true;
+        }
         return false;
+    }
+
+    fn activate(ref self: Production) {
+        self.active = true;
+    }
+
+    fn deactivate(ref self: Production) {
+        self.active = false;
     }
 
     fn set_rate(ref self: Production, production_rate: u128) {
@@ -75,8 +85,7 @@ impl ProductionRateImpl of ProductionRateTrait {
     }
 
     fn actual_production_rate(self: Production) -> u128 {
-        (self.production_rate * self.building_count * self.bonus_percent)
-             / PRODUCTION_BONUS_BASIS
+        (self.production_rate * self.building_count * self.bonus_percent) / PRODUCTION_BONUS_BASIS
     }
 
 
@@ -97,7 +106,7 @@ impl ProductionRateImpl of ProductionRateTrait {
         self.consumed_rate += amount;
         self.estimate_stop_time(ref resource);
     }
-    
+
     fn decrease_consumed_rate(ref self: Production, ref resource: Resource, amount: u128) {
         self.harvest(ref resource);
         self.consumed_rate -= amount;
@@ -117,13 +126,15 @@ impl ProductionRateImpl of ProductionRateTrait {
             // calculated correctly
             resource.balance -= total;
         }
-        
+
         let now = get_block_timestamp();
         self.start_at = now;
     }
 
     fn net_rate(self: Production) -> (bool, u128) {
-        if !self.is_active() {return (false, 0);}
+        if !self.is_active() {
+            return (false, 0);
+        }
         let production_rate = self.actual_production_rate();
         if production_rate > self.consumed_rate {
             (true, production_rate - self.consumed_rate)
@@ -132,30 +143,32 @@ impl ProductionRateImpl of ProductionRateTrait {
         }
     }
 
-    fn estimate_stop_time(ref self: Production, ref resource: Resource){
+    fn estimate_stop_time(ref self: Production, ref resource: Resource) {
         if self.is_active() {
             let (sign, value) = self.net_rate();
 
             // todo check for division by 0 errors
             if sign == false {
                 //assuming 1 second per tick
-                self.stop_at 
-                    = get_block_timestamp() 
-                        + (resource.balance / value).try_into().unwrap(); 
+                self.stop_at = get_block_timestamp()
+                    + (resource.balance / value).try_into().unwrap();
             } else {
                 self.stop_at = BoundedInt::max();
             }
         }
-
     }
 
     fn generated(self: Production) -> u128 {
-        if !self.is_active() {return 0;}
-        self.actual_production_rate() *  self.duration().into()
+        if !self.is_active() {
+            return 0;
+        }
+        self.actual_production_rate() * self.duration().into()
     }
 
     fn consumed(self: Production) -> u128 {
-        if !self.is_active() {return 0;}
+        if !self.is_active() {
+            return 0;
+        }
         self.consumed_rate * self.duration().into()
     }
 

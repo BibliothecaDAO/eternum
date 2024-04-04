@@ -47,29 +47,30 @@ impl ProductionDependentsImpl of ProductionDependentsTrait {
     // e.g resource is stone..dependents are wood andruby because they each depend on 
     // stone to be produced
     fn reestimate_dependents_production_period(ref resource: Resource, world: IWorldDispatcher) {
-        let mut resource_production: Production 
-                = get!(world, self.query_key(), Production);
+        let mut resource_production: Production = get!(world, self.query_key(), Production);
         let (net_rate_sign, _) = resource_production.net_rate();
         if net_rate_sign == false { // net negative production so it eats into balance
-            let dependency : ProductionDependencyConfig
-                = get!(world, resource.resource_type, ProductionDependencyConfig);
+            let dependency: ProductionDependencyConfig = get!(
+                world, resource.resource_type, ProductionDependencyConfig
+            );
             if dependency.produced_resource_type_1 != 0 {
-                let mut production 
-                    = get!(world, (resource.entity_id, dependency.produced_resource_type_1), Production);
+                let mut production = get!(
+                    world, (resource.entity_id, dependency.produced_resource_type_1), Production
+                );
                 production.harvest(ref resource);
                 production.estimate_stop_time(ref resource);
                 set!(world, (production));
             }
 
             if dependency.produced_resource_type_2 != 0 {
-                let mut production 
-                    = get!(world, (resource.entity_id, dependency.produced_resource_type_2), Production);
+                let mut production = get!(
+                    world, (resource.entity_id, dependency.produced_resource_type_2), Production
+                );
                 production.harvest(ref resource);
                 production.estimate_stop_time(ref resource);
                 set!(world, (production));
             }
-        }  
-
+        }
     }
 }
 
@@ -91,9 +92,8 @@ impl ResourceImpl of ResourceTrait {
         if amount > self.balance {
             // claim produced amount before deduction where necessary
 
-            let mut production: Production 
-                = get!(world, self.query_key(), Production);
-            production.harvest(ref self);        
+            let mut production: Production = get!(world, self.query_key(), Production);
+            production.harvest(ref self);
             production.estimate_stop_time(ref self);
             set!(world, (production));
         }
