@@ -5,12 +5,14 @@ import { HEX_RADIUS } from "../../worldmap/hexagon/WorldHexagon";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import { Html, Merged, useGLTF } from "@react-three/drei";
 import { useCallback } from "react";
+import { useBuildingSound } from "../../../hooks/useUISound";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row);
 };
 
 const HexBuildGrid = () => {
+  const { playBuildingSound } = useBuildingSound();
   const hexPositions = generateHexPositions();
   const { previewBuilding, hoveredBuildHex, setHoveredBuildHex, existingBuildings, setExistingBuildings } = useUIStore(
     (state) => ({
@@ -29,14 +31,15 @@ const HexBuildGrid = () => {
           key={index}
           position={hexPosition}
           onPointerMove={() => previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
-          onClick={() =>
-            previewBuilding &&
-            !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) &&
-            setExistingBuildings([
-              ...existingBuildings,
-              { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
-            ])
-          }
+          onClick={() => {
+            if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
+              setExistingBuildings([
+                ...existingBuildings,
+                { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
+              ]);
+              playBuildingSound(previewBuilding);
+            }
+          }}
         />
       ))}
     </group>

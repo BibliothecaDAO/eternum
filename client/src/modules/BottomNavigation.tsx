@@ -3,6 +3,7 @@ import CircleButton from "../elements/CircleButton";
 import { useState } from "react";
 
 import { RealmListBoxes } from "../components/cityview/RealmListBoxes";
+import { SelectPreviewBuilding } from "../components/cityview/hexception/SelectPreviewBuilding";
 
 export const BottomNavigation = () => {
   const [activeBar, setActiveBar] = useState<null | "R" | "B" | "A">(null);
@@ -43,7 +44,7 @@ export const BottomNavigation = () => {
   ];
 
   return (
-    <div className="flex bg-brown rounded-t-3xl border-x-2 border-t border-gold py-3 w-96 justify-center flex-wrap">
+    <div className="flex bg-brown rounded-t-3xl border-x-2 border-t border-gold py-3 w-[600px] justify-center flex-wrap">
       {/* Conditionally render bars based on the activeBar state */}
       <div
         className={`w-full transition-all duration-300 overflow-auto pb-2 ${
@@ -57,7 +58,7 @@ export const BottomNavigation = () => {
           activeBar === "B" ? "h-auto" : "h-0 hidden"
         }`}
       >
-        buildings
+        <SelectPreviewBuilding />
       </div>
       <div
         className={`w-full transition-all duration-300 overflow-auto pb-2 ${
