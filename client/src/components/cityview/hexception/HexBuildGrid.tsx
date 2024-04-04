@@ -52,9 +52,9 @@ const Hexagon = ({ position, onPointerMove, onClick }: { position: any; onPointe
   const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
   return (
     <group position={[position.x, position.y, position.z]} onPointerMove={onPointerMove} onClick={onClick}>
-      <mesh geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]}>
+      {/* <mesh geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]}>
         <meshMatcapMaterial color={secondaryColor} />
-      </mesh>
+      </mesh> */}
       <mesh geometry={hexagonGeometry}>
         <meshMatcapMaterial color={mainColor} />
       </mesh>
