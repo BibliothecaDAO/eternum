@@ -1,17 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Resident } from "./Resident";
 import { SortPanel } from "../../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../../elements/SortButton";
-import { useNpcContext } from "../../NpcContext";
 import Button from "../../../../../../elements/Button";
 import useRealmStore from "../../../../../../hooks/store/useRealmStore";
-import { NpcSpawnResponse, WsMsgType, WsResponse } from "../../types";
-import { NPC_CONFIG_ID, getResidentNpcs, keysSnakeToCamel, packCharacteristics } from "../../utils";
+import { NPC_CONFIG_ID, useResidentsNpcs, keysSnakeToCamel, packCharacteristics } from "../../utils";
 import { useDojo } from "../../../../../../DojoContext";
 import { BigNumberish, shortString } from "starknet";
 import useBlockchainStore from "../../../../../../hooks/store/useBlockchainStore";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Entity, getComponentValue } from "@dojoengine/recs";
+import useNpcStore from "../../../../../../hooks/store/useNpcStore";
 
 export const ResidentsPanel = () => {
   const {
@@ -26,9 +25,9 @@ export const ResidentsPanel = () => {
 
   const { realmEntityId } = useRealmStore();
 
-  const { sendWsMsg, lastWsMsg } = useNpcContext();
+  const residents = useResidentsNpcs(realmEntityId, NpcComponent, EntityOwner);
 
-  const residents = getResidentNpcs(realmEntityId, NpcComponent, EntityOwner);
+  const { loreMachineJsonRpcCall } = useNpcStore();
 
   const sortingParams = useMemo(() => {
     return [
@@ -41,28 +40,6 @@ export const ResidentsPanel = () => {
     sortKey: "number",
     sort: "none",
   });
-
-  useEffect(() => {
-    if (lastWsMsg === null || lastWsMsg === undefined || Object.is(lastWsMsg, {})) {
-      return;
-    }
-    const response = keysSnakeToCamel(lastWsMsg) as WsResponse;
-    const msg_type = response.msgType;
-    if (msg_type === WsMsgType.SPAWN_NPC) {
-      treatSpawnNpcResponse(response.data as NpcSpawnResponse);
-    }
-  }, [lastWsMsg]);
-
-  const treatSpawnNpcResponse = async (response: NpcSpawnResponse) => {
-    await spawn_npc({
-      signer: account,
-      realm_entity_id: realmEntityId,
-      characteristics: packCharacteristics(response.npc.characteristics),
-      character_trait: shortString.encodeShortString(response.npc.characterTrait),
-      full_name: shortString.encodeShortString(response.npc.fullName),
-      signature: response.signature as BigNumberish[],
-    });
-  };
 
   const spawnNpc = async () => {
     const npcConfig = getComponentValue(
@@ -85,12 +62,22 @@ export const ResidentsPanel = () => {
       console.log("Can't spawn: too many NPCs");
       return;
     }
-    sendWsMsg({
-      msg_type: WsMsgType.SPAWN_NPC,
-      data: {
+    try {
+      let response = await loreMachineJsonRpcCall("spawn_npc", {
         realm_entity_id: Number(realmEntityId),
-      },
-    });
+      });
+      response = keysSnakeToCamel(response);
+      await spawn_npc({
+        signer: account,
+        realm_entity_id: realmEntityId,
+        characteristics: packCharacteristics(response.npc.characteristics),
+        character_trait: shortString.encodeShortString(response.npc.characterTrait),
+        full_name: shortString.encodeShortString(response.npc.fullName),
+        signature: response.signature as BigNumberish[],
+      });
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   return (
@@ -113,14 +100,14 @@ export const ResidentsPanel = () => {
         ))}
       </SortPanel>
 
-      {residents.natives.map((npc) => (
+      {residents.natives.map((npc, index) => (
         <div className="flex flex-col p-2" key={npc.entityId}>
-          <Resident npc={npc} native={true} />
+          <Resident key={index} npc={npc} native={true} />
         </div>
       ))}
-      {residents.foreigners.map((npc) => (
+      {residents.foreigners.map((npc, index) => (
         <div className="flex flex-col p-2" key={npc.entityId}>
-          <Resident npc={npc} native={false} />
+          <Resident key={index} npc={npc} native={false} />
         </div>
       ))}
       <div className="flex justify-center">

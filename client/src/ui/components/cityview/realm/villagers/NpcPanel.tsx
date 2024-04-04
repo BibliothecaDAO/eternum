@@ -4,12 +4,12 @@ import NpcChat from "./NpcChat";
 import useRealmStore from "../../../../../../hooks/store/useRealmStore";
 import { ReactComponent as ArrowPrev } from "../../../../../../assets/icons/common/arrow-left.svg";
 import { ReactComponent as ArrowNext } from "../../../../../../assets/icons/common/arrow-right.svg";
-import { useNpcContext } from "../../NpcContext";
-import { StorageTownhalls, WsMsgType, TownhallResponse, StorageTownhall, WsResponse } from "../../types";
+import { StorageTownhalls, TownhallResponse, StorageTownhall } from "../../types";
 import { getRealm } from "../../../../../../utils/realms";
 import { keysSnakeToCamel } from "../../utils";
 import TextInput from "../../../../../../elements/TextInput";
 import { MAX_TOWNHALL_INPUT_LENGTH } from "../../constants";
+import useNpcStore from "../../../../../../hooks/store/useNpcStore";
 
 type TownhallPanelProps = {
   type?: "all" | "farmers" | "miners";
@@ -17,23 +17,22 @@ type TownhallPanelProps = {
 
 export const TownhallPanel = ({ type = "all" }: TownhallPanelProps) => {
   const { realmId, realmEntityId } = useRealmStore();
-  const [townhallInput, setTownhallInput] = useState('');
+  const [townhallInput, setTownhallInput] = useState("");
 
+  const LOCAL_STORAGE_ID: string = `npc_chat_${realmId}`;
 
   const realm = useMemo(() => {
     return realmEntityId ? getRealm(realmId!) : undefined;
   }, [realmEntityId]);
 
   const {
-    sendWsMsg,
+    loreMachineJsonRpcCall,
+    isTownHallLoading,
+    setIsTownHallLoading,
     selectedTownhall,
     setSelectedTownhall,
     setLastMessageDisplayedIndex,
-    loadingTownhall,
-    setLoadingTownhall,
-    LOCAL_STORAGE_ID,
-    lastWsMsg,
-  } = useNpcContext();
+  } = useNpcStore();
 
   const setSelectedTownhallFromDirection = (direction: number) => {
     const newKey = getNewTownhallKeyFromDirection(selectedTownhall, direction, LOCAL_STORAGE_ID);
@@ -46,35 +45,28 @@ export const TownhallPanel = ({ type = "all" }: TownhallPanelProps) => {
     setSelectedTownhall(newKey);
   };
 
-  useEffect(() => {
-    if (lastWsMsg === null || lastWsMsg === undefined || Object.is(lastWsMsg, {})) {
-      return;
-    }
-    const response = keysSnakeToCamel(lastWsMsg) as WsResponse;
-    const msg_type = response.msgType;
-    if (msg_type === WsMsgType.TOWNHALL) {
-      treatTownhallResponse(response.data as TownhallResponse);
-    }
-  }, [lastWsMsg]);
-
   const treatTownhallResponse = (response: TownhallResponse) => {
     setLastMessageDisplayedIndex(0);
     const townhallKey = addTownHallToStorage(response, LOCAL_STORAGE_ID);
     setSelectedTownhall(townhallKey);
-    setLoadingTownhall(false);
+    setIsTownHallLoading(false);
   };
 
-  const gatherVillagers = () => {
-    sendWsMsg({
-      msg_type: WsMsgType.TOWNHALL,
-      data: {
-        realm_id: realmId!.toString(),
-        realm_entity_id: realmEntityId!.toString(),
+  const gatherVillagers = async () => {
+    setIsTownHallLoading(true);
+    try {
+      let response = await loreMachineJsonRpcCall("generate_town_hall", {
+        realm_id: Number(realmId!),
+        realm_entity_id: Number(realmEntityId!),
         order_id: realm!.order,
-        townhall_input: townhallInput,
-      },
-    });
-    setLoadingTownhall(true);
+        user_input: townhallInput,
+      });
+      response = keysSnakeToCamel(response);
+      treatTownhallResponse(response as TownhallResponse);
+    } catch (e) {
+      console.log(e);
+    }
+    setIsTownHallLoading(false);
   };
 
   useEffect(() => {
@@ -110,11 +102,11 @@ export const TownhallPanel = ({ type = "all" }: TownhallPanelProps) => {
       <div className="flex my-2">
         <TextInput placeholder="Write something..." value={townhallInput} onChange={handleUserMessageChange} />
         <Button
-            className="mx-2 w-32 bottom-2 !rounded-full"
-            onClick={gatherVillagers}
-            variant={loadingTownhall ? "default" : "primary"}
-          >
-            Ring the town bell
+          className="mx-2 w-32 bottom-2 !rounded-full"
+          onClick={gatherVillagers}
+          variant={isTownHallLoading ? "default" : "primary"}
+        >
+          Ring the town bell
         </Button>
       </div>
     </div>

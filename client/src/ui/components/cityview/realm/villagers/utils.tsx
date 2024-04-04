@@ -98,7 +98,7 @@ const getNpcsOnlyIfArrivedAtGates = (
   return npcs;
 };
 
-export const getResidentNpcs = (realmEntityId: bigint, NpcComponent: any, EntityOwnerComponent: any): Residents => {
+export const useResidentsNpcs = (realmEntityId: bigint, NpcComponent: any, EntityOwnerComponent: any): Residents => {
   let residents: Residents = { foreigners: [], natives: [] };
   residents.natives = getNpcsFromQuery(
     [

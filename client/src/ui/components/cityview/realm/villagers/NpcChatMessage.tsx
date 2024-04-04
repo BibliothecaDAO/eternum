@@ -1,9 +1,9 @@
 import { useState, useEffect, RefObject } from "react";
-import { useNpcContext } from "../../NpcContext";
 import { scrollToElement } from "../../utils";
 import Avatar from "../../../../../../elements/Avatar";
 import { NpcPopup } from "../../NpcPopup";
 import { Npc } from "../../types";
+import useNpcStore from "../../../../../../hooks/store/useNpcStore";
 
 const INTERKEY_STROKEN_DURATION_MS = 35;
 const CHARACTER_NUMBER_PER_LINE = 64;
@@ -53,7 +53,7 @@ export function useTypingEffect(
 
 export const NpcChatMessage = (props: NpcChatMessageProps) => {
   const { msgIndex, npc, dialogueSegment, bottomRef, wasAlreadyViewed } = props;
-  const { setLastMessageDisplayedIndex } = useNpcContext();
+  const { setLastMessageDisplayedIndex } = useNpcStore();
   const [typingCompleted, setTypingComplete] = useState(false);
   const [showNpcStats, setShowNpcStats] = useState(false);
 

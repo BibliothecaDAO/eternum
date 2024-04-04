@@ -1,30 +1,27 @@
 import { useEffect, useRef } from "react";
 import { NpcChatMessage } from "./NpcChatMessage";
 import { StorageTownhalls, StorageTownhall, Npc, NpcTownhallMessage } from "../../types";
-import { getResidentNpcs, scrollToElement } from "../../utils";
-import { useNpcContext } from "../../NpcContext";
+import { useResidentsNpcs, scrollToElement } from "../../utils";
 import BlurryLoadingImage from "../../../../../../elements/BlurryLoadingImage";
 import useRealmStore from "../../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../../DojoContext";
 import { defaultNpc } from "../../defaults";
+import useNpcStore from "../../../../../../hooks/store/useNpcStore";
 
 const NpcChat = ({}) => {
-  const {
-    setLastMessageDisplayedIndex,
-    selectedTownhall,
-    lastMessageDisplayedIndex,
-    loadingTownhall,
-    LOCAL_STORAGE_ID,
-  } = useNpcContext();
-
   const {
     setup: {
       components: { Npc, EntityOwner },
     },
   } = useDojo();
-  const { realmEntityId } = useRealmStore();
 
-  const residents = getResidentNpcs(realmEntityId, Npc, EntityOwner);
+  const { realmEntityId, realmId } = useRealmStore();
+  const LOCAL_STORAGE_ID: string = `npc_chat_${realmId}`;
+
+  const { setLastMessageDisplayedIndex, selectedTownhall, lastMessageDisplayedIndex, isTownHallLoading } =
+    useNpcStore();
+
+  const residents = useResidentsNpcs(realmEntityId, Npc, EntityOwner);
   const npcs = residents.foreigners.concat(residents.natives);
 
   const topRef = useRef<HTMLDivElement>(null);
@@ -73,7 +70,7 @@ const NpcChat = ({}) => {
         ) : (
           <>
             <span className="" ref={topRef}></span>
-            {loadingTownhall ? (
+            {isTownHallLoading ? (
               <div className="absolute h-full w-[100%] overflow-hidden text-white text-center flex justify-center">
                 <div className="self-center">
                   <img src="/images/eternum-logo_animated.png" className="invert scale-50" />
