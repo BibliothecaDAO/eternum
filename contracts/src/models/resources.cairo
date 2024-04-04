@@ -265,6 +265,12 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
             position = 32 - 2;
         } else if position == 253 {
             position = 32 - 3;
+        } else if position == 252 {
+            position = 32 - 4;
+        } else if position == 251 {
+            position = 32 - 5;
+        } else if position == 250 {
+            position = 32 - 6;
         } else {
             position -= 1;
         }
