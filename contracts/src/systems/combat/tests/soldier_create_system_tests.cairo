@@ -51,8 +51,12 @@ fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
     };
     combat_config_dispatcher
         .set_soldier_config(
-            array![// pay for each soldier with the following
-            (ResourceTypes::WOOD, 40), (ResourceTypes::WHEAT, 40),].span(), 100, 200
+            array![ // pay for each soldier with the following
+                (ResourceTypes::WOOD, 40), (ResourceTypes::WHEAT, 40),
+            ]
+                .span(),
+            100,
+            200
         );
 
     // set soldiers starting attack, defence and health

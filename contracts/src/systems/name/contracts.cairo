@@ -2,8 +2,8 @@
 mod name_systems {
     use eternum::models::name::{AddressName};
     use eternum::systems::name::interface::{INameSystems};
-    
-    use traits::Into; 
+
+    use traits::Into;
 
     #[abi(embed_v0)]
     impl NameSystemsImpl of INameSystems<ContractState> {

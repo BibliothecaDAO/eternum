@@ -36,8 +36,6 @@ fn setup(labor_cost_resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystems
         contract_address: config_systems_address
     };
 
-    
-
     // set labor building config
     let buildingConfig = LaborBuildingsConfig {
         config_id: BUILDING_CONFIG_ID,
@@ -58,8 +56,7 @@ fn setup(labor_cost_resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystems
     let decay_constant: u128 = _0_1;
     let per_time_unit: u128 = 50;
     let price_update_interval: u128 = 20;
-    labor_config_dispatcher
-        .set_labor_auction(decay_constant, per_time_unit, price_update_interval);
+    labor_config_dispatcher.set_labor_auction(decay_constant, per_time_unit, price_update_interval);
 
     // set realm entity
     let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
@@ -106,7 +103,9 @@ fn setup(labor_cost_resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystems
 
     // set cost for gold in stone
     labor_config_dispatcher
-        .set_labor_cost_amount(labor_cost_resource_type.into(), ResourceTypes::STONE.into(), 1_000,);
+        .set_labor_cost_amount(
+            labor_cost_resource_type.into(), ResourceTypes::STONE.into(), 1_000,
+        );
 
     // mint 100_000 coal for the realm;
     set!(

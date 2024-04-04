@@ -13,14 +13,24 @@ fn pow(base: felt252, exp: felt252) -> felt252 {
 }
 
 
-fn min<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>
-        (a: T, b: T ) -> T {
-    return if (a < b){return a;} else {return b;};
+fn min<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
+    a: T, b: T
+) -> T {
+    return if (a < b) {
+        return a;
+    } else {
+        return b;
+    };
 }
 
-fn max<T, impl TPartialOrd: PartialOrd<T>,impl TCopy: Copy<T>, impl TDrop: Drop<T>>
-        (a: T, b: T ) -> T {
-    return if (a > b){return a;} else {return b;};
+fn max<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
+    a: T, b: T
+) -> T {
+    return if (a > b) {
+        return a;
+    } else {
+        return b;
+    };
 }
 
 
@@ -37,11 +47,15 @@ fn is_u32_bit_set(number: u32, position: u8) -> bool {
 }
 
 /// Set a bit to a value in a u32 number
-fn set_u32_bit(number: u32, position: u8, value: bool) -> u32{
+fn set_u32_bit(number: u32, position: u8, value: bool) -> u32 {
     assert!(position <= 31, "position must be within the values of 0 and 31 (inclusive)");
 
-    let value = if (value == true) {1} else {0}; 
+    let value = if (value == true) {
+        1
+    } else {
+        0
+    };
     let mask = U32BitShift::shl(1, position.into());
     return (number & ~mask) | ((U32BitShift::shl(value, position.into())) & mask);
 }
-  
+

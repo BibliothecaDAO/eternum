@@ -83,9 +83,7 @@ mod config_systems {
 
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 };
             };
 
@@ -561,9 +559,7 @@ mod config_systems {
 
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 };
             };
 
@@ -633,9 +629,7 @@ mod config_systems {
 
                                     jndex += 1;
                                 },
-                                Option::None => {
-                                    break;
-                                }
+                                Option::None => { break; }
                             };
                         };
 
@@ -651,9 +645,7 @@ mod config_systems {
 
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -785,9 +777,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -824,9 +814,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -863,9 +851,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -902,9 +888,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
         }

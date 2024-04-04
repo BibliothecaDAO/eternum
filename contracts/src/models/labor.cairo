@@ -29,7 +29,9 @@ impl LaborImpl of LaborTrait {
         self.last_harvest = ts;
     }
 
-    fn compute_new_labor(self: Labor, additional_labor: u64, ts: u64, new_multiplier: u64) -> Labor {
+    fn compute_new_labor(
+        self: Labor, additional_labor: u64, ts: u64, new_multiplier: u64
+    ) -> Labor {
         let mut new_balance: u64 = self.balance;
         let mut new_last_harvest: u64 = self.last_harvest;
         if self.balance <= ts {
@@ -55,7 +57,9 @@ mod tests {
 
     #[test]
     fn test_get_labor_generated_is_complete() {
-        let labor = Labor { entity_id: 0, resource_type: 0, balance: 100, last_harvest: 0, multiplier: 1,  };
+        let labor = Labor {
+            entity_id: 0, resource_type: 0, balance: 100, last_harvest: 0, multiplier: 1,
+        };
         let (labor_generated, is_complete, new_balance) = labor.get_labor_generated(50);
         assert(labor_generated == 50, 'labor_generated is not 50');
         assert(is_complete == false, 'is_complete is not false');
@@ -64,7 +68,9 @@ mod tests {
 
     #[test]
     fn test_get_labor_generated_is_not_complete() {
-        let labor = Labor { entity_id: 0, resource_type: 0, balance: 100, last_harvest: 0, multiplier: 1,  };
+        let labor = Labor {
+            entity_id: 0, resource_type: 0, balance: 100, last_harvest: 0, multiplier: 1,
+        };
         let (labor_generated, is_complete, new_balance) = labor.get_labor_generated(150);
         assert(labor_generated == 100, 'labor_generated is not 100');
         assert(is_complete == true, 'is_complete is not true');
@@ -74,7 +80,9 @@ mod tests {
 
     #[test]
     fn test_get_labor_generated_is_not_complete_with_last_harvest() {
-        let labor = Labor { entity_id: 0, resource_type: 0, balance: 100, last_harvest: 30, multiplier: 1,  };
+        let labor = Labor {
+            entity_id: 0, resource_type: 0, balance: 100, last_harvest: 30, multiplier: 1,
+        };
         let (labor_generated, is_complete, new_balance) = labor.get_labor_generated(150);
         assert(labor_generated == 70, 'labor_generated is not 210');
         assert(is_complete == true, 'is_complete is not true');
@@ -83,7 +91,9 @@ mod tests {
 
     #[test]
     fn test_compute_new_labor_is_complete() {
-        let mut labor = Labor { entity_id: 0, resource_type: 0, balance: 100, last_harvest: 0, multiplier: 1,  };
+        let mut labor = Labor {
+            entity_id: 0, resource_type: 0, balance: 100, last_harvest: 0, multiplier: 1,
+        };
         let new_labor = labor.compute_new_labor(60, 150, 1);
 
         assert(new_labor.last_harvest == 50, 'last_harvest is not 50');
@@ -93,7 +103,9 @@ mod tests {
 
     #[test]
     fn test_compute_new_labor_not_complete() {
-        let mut labor = Labor { entity_id: 0, resource_type: 0, balance: 200, last_harvest: 0, multiplier: 1,  };
+        let mut labor = Labor {
+            entity_id: 0, resource_type: 0, balance: 200, last_harvest: 0, multiplier: 1,
+        };
         let new_labor = labor.compute_new_labor(60, 150, 1);
 
         assert(new_labor.last_harvest == 0, 'last_harvest is not 0');

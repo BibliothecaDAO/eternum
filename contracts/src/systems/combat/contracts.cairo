@@ -487,11 +487,7 @@ mod combat_systems {
         /// - attacker_ids: entity ids of armies 
         /// - target_entity_id: realm's town watch id or another entity army
 
-        fn attack(
-            world: IWorldDispatcher,
-            attacker_ids: Span<u128>,
-            target_entity_id: u128
-        ) {
+        fn attack(world: IWorldDispatcher, attacker_ids: Span<u128>, target_entity_id: u128) {
             let caller = starknet::get_caller_address();
 
             let mut target_health = get!(world, target_entity_id, Health);
@@ -676,9 +672,7 @@ mod combat_systems {
         /// # Arguments
         /// - attacker_id: entity id of attacking army
         /// - target_entity_id: realm's town watch id or another entity army
-        fn steal(
-            world: IWorldDispatcher, attacker_id: u128, target_entity_id: u128
-        ) {
+        fn steal(world: IWorldDispatcher, attacker_id: u128, target_entity_id: u128) {
             let caller = starknet::get_caller_address();
             let ts = starknet::get_block_timestamp();
 

@@ -31,10 +31,7 @@ trait ITradeSystems {
         expires_at: u64
     ) -> ID;
 
-    fn accept_order(
-        taker_id: u128, taker_transport_id: u128, trade_id: u128
-    );
+    fn accept_order(taker_id: u128, taker_transport_id: u128, trade_id: u128);
 
     fn cancel_order(trade_id: u128);
-
 }

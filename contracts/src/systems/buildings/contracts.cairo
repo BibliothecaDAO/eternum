@@ -12,16 +12,13 @@ mod buildings_systems {
 
     #[abi(embed_v0)]
     impl BuildingsSystemsImpl of IBuildingsSystems<ContractState> {
-        fn create(
-            world: IWorldDispatcher, realm_entity_id: u128, building_type: u8
-        ) {
+        fn create(world: IWorldDispatcher, realm_entity_id: u128, building_type: u8) {
             // assert owner of the realm
             let owner = get!(world, realm_entity_id, Owner);
             assert(owner.address == starknet::get_caller_address(), 'caller must be owner');
 
             // assert building type is between 1 and 4 (inclusive)
             assert(building_type >= 1 && building_type <= 4, 'invalid building type');
-
 
             // remove the cost from the realm balance
             let buildings_cost: LaborBuildingCost = get!(

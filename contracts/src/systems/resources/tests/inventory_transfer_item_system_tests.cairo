@@ -87,7 +87,9 @@ mod inventory_transfer_system_tests {
         );
 
         let chest = InternalResourceChestSystemsImpl::create_and_fill(
-            world, donor_id, array![(ResourceTypes::STONE, 1000), (ResourceTypes::GOLD, 1000),].span()
+            world,
+            donor_id,
+            array![(ResourceTypes::STONE, 1000), (ResourceTypes::GOLD, 1000),].span()
         );
 
         InternalInventorySystemsImpl::add(world, donor_transport_id, chest.entity_id);

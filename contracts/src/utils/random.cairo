@@ -15,17 +15,15 @@ use core::poseidon::poseidon_hash_span;
 ///
 fn random(salt: u128, upper_bound: u128) -> u128 {
     let seed = make_seed_from_transaction_hash(salt);
-    seed.low % upper_bound 
+    seed.low % upper_bound
 }
 
 
 fn make_seed_from_transaction_hash(salt: u128) -> u256 {
     return poseidon_hash_span(
-        array![
-            starknet::get_tx_info().unbox().transaction_hash.into(),
-            salt.into() 
-        ].span()
-    ).into();
+        array![starknet::get_tx_info().unbox().transaction_hash.into(), salt.into()].span()
+    )
+        .into();
 }
 
 /// Return a k sized list of population elements chosen with replacement.   
@@ -53,11 +51,11 @@ fn make_seed_from_transaction_hash(salt: u128) -> u256 {
 ///
 /// See Also: https://docs.python.org/3/library/random.html#random.choices
 ///
-fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>
-    (population: Span<T>, weights: Span<u128>, mut cum_weights: Span<u128>, k: u128, r: bool) -> Span<T> {
-
+fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
+    population: Span<T>, weights: Span<u128>, mut cum_weights: Span<u128>, k: u128, r: bool
+) -> Span<T> {
     let mut n = population.len();
-    let mut salt: u128 = starknet::get_block_timestamp().into();  
+    let mut salt: u128 = starknet::get_block_timestamp().into();
 
     if cum_weights.len() == 0 {
         if weights.len() == 0 {
@@ -67,9 +65,10 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>
                 if index == k {
                     break;
                 }
-                result.append(
-                    *population.at(random(salt + index.into(), n.into()).try_into().unwrap())
-                );
+                result
+                    .append(
+                        *population.at(random(salt + index.into(), n.into()).try_into().unwrap())
+                    );
                 index += 1;
             };
             return result.span();
@@ -77,7 +76,6 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>
 
         // get cumulative sum of weights
         cum_weights = cum_sum(weights.clone());
-        
     } else {
         if weights.len() != 0 {
             assert(false, 'cant specify both weight types');
@@ -97,7 +95,7 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>
     let mut index = 0;
     let mut result = array![];
 
-    let mut chosen_index_map : Felt252Dict<u8> = Default::default();
+    let mut chosen_index_map: Felt252Dict<u8> = Default::default();
 
     loop {
         if index == k {
@@ -108,24 +106,20 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>
         // just to make it different
         salt += 18;
 
-        let chosen_index
-            = bisect_right(
-                cum_weights.clone(), 
-                random(salt, total), 
-                0, Option::Some(hi)
-            );
+        let chosen_index = bisect_right(
+            cum_weights.clone(), random(salt, total), 0, Option::Some(hi)
+        );
 
         if r == false {
             if chosen_index_map.get(chosen_index.into()) == 0 {
                 chosen_index_map.insert(chosen_index.into(), 1);
                 result.append(*population.at(chosen_index));
                 index += 1;
-            } 
+            }
         } else {
             result.append(*population.at(chosen_index));
             index += 1;
         }
-
     };
     return result.span();
 }
@@ -162,8 +156,6 @@ fn cum_sum(a: Span<u128>) -> Span<u128> {
 }
 
 
-
-
 /// Return the index where to insert item x in list a, assuming a is sorted.
 ///
 /// The return value i is such that all e in a[:i] have e <= x, and all e in
@@ -193,11 +185,10 @@ fn cum_sum(a: Span<u128>) -> Span<u128> {
 /// See Also: https://docs.python.org/3/library/bisect.html#bisect.bisect_right
 ///
 fn bisect_right(a: Span<u128>, x: u128, lo: u32, hi: Option<u32>) -> u32 {
-    let mut hi 
-        = match hi {
-            Option::Some(hi) => hi,
-            Option::None => a.len().into()
-        };
+    let mut hi = match hi {
+        Option::Some(hi) => hi,
+        Option::None => a.len().into()
+    };
 
     let mut lo = lo;
     loop {

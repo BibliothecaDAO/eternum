@@ -37,5 +37,5 @@ impl InventoryImpl of InventoryTrait {
     fn next_item_fk(self: Inventory, world: IWorldDispatcher) -> ForeignKey {
         let next_fk = self.item_fk(world, self.items_count);
         next_fk
-    }       
+    }
 }
