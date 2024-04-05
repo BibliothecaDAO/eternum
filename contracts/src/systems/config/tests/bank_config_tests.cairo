@@ -24,7 +24,7 @@ fn test_create_bank() {
     let owner_fee_scaled: u128 = _0_1;
 
     let bank_entity_id = bank_config_dispatcher
-        .create_bank(world, Coord { x: 30, y: 800 }, owner_fee_scaled);
+        .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
 
     let bank_position = get!(world, bank_entity_id, Position);
     assert(bank_position.x == 30, 'wrong x position');
@@ -45,7 +45,7 @@ fn test_set_bank_config() {
     let lords_cost: u128 = 1000;
     let lp_fee_scaled: u128 = _0_1;
 
-    bank_config_dispatcher.set_bank_config(world, lords_cost, lp_fee_scaled);
+    bank_config_dispatcher.set_bank_config(lords_cost, lp_fee_scaled);
 
     let bank_config = get!(world, (WORLD_CONFIG_ID), BankConfig);
     assert(bank_config.lords_cost == lords_cost, 'lords_cost');

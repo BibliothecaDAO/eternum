@@ -28,11 +28,9 @@ trait ICapacityConfig {
 }
 
 
-#[starknet::interface]
-trait ITickConfig<TContractState> {
+#[dojo::interface]
+trait ITickConfig {
     fn set_tick_config(
-        self: @TContractState,
-        world: IWorldDispatcher,
         max_moves_per_tick: u8,
         tick_interval_in_seconds: u64
     );
@@ -111,15 +109,15 @@ trait ILevelingConfig {
     );
 }
 
-#[starknet::interface]
-trait IBankConfig<TContractState> {
+#[dojo::interface]
+trait IBankConfig {
     fn create_bank(
-        self: @TContractState, world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128
+        coord: Coord, owner_fee_scaled: u128
     ) -> ID;
 
 
     fn set_bank_config(
-        self: @TContractState, world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128
+        lords_cost: u128, lp_fee_scaled: u128
     );
 }
 

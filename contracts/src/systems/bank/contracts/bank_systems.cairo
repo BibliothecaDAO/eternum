@@ -10,7 +10,7 @@ mod bank_systems {
 
     #[abi(embed_v0)]
     impl BankSystemsImpl of IBankSystems<ContractState> {
-        fn open_account(self: @ContractState, world: IWorldDispatcher, bank_entity_id: u128) -> ID {
+        fn open_account(world: IWorldDispatcher, bank_entity_id: u128) -> ID {
             let player = starknet::get_caller_address();
 
             // todo:
@@ -47,7 +47,6 @@ mod bank_systems {
         }
 
         fn change_owner_fee(
-            self: @ContractState,
             world: IWorldDispatcher,
             bank_entity_id: u128,
             new_swap_fee_unscaled: u128

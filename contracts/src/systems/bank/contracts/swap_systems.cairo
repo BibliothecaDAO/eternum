@@ -17,7 +17,6 @@ mod swap_systems {
     #[abi(embed_v0)]
     impl SwapSystemsImpl of ISwapSystems<ContractState> {
         fn buy(
-            self: @ContractState,
             world: IWorldDispatcher,
             bank_entity_id: u128,
             resource_type: u8,
@@ -68,7 +67,6 @@ mod swap_systems {
 
 
         fn sell(
-            self: @ContractState,
             world: IWorldDispatcher,
             bank_entity_id: u128,
             resource_type: u8,

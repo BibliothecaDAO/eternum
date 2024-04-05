@@ -43,12 +43,12 @@ fn setup() -> (
     let owner_fee_scaled: u128 = _0_1;
 
     let bank_entity_id = bank_config_dispatcher
-        .create_bank(world, Coord { x: 30, y: 800 }, owner_fee_scaled);
+        .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
 
     let bank_systems_address = deploy_system(bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 
-    let bank_account_entity_id = bank_systems_dispatcher.open_account(world, bank_entity_id);
+    let bank_account_entity_id = bank_systems_dispatcher.open_account(bank_entity_id);
 
     let liquidity_systems_address = deploy_system(liquidity_systems::TEST_CLASS_HASH);
     let liquidity_systems_dispatcher = ILiquiditySystemsDispatcher {
@@ -91,7 +91,7 @@ fn test_liquidity_add() {
     ) =
         setup();
 
-    liquidity_systems_dispatcher.add(world, bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
+    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
 
     let player = starknet::get_caller_address();
 
@@ -123,10 +123,10 @@ fn test_liquidity_remove() {
 
     let player = starknet::get_caller_address();
 
-    liquidity_systems_dispatcher.add(world, bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
+    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
     liquidity_systems_dispatcher
-        .remove(world, bank_entity_id, ResourceTypes::WOOD, liquidity.shares);
+        .remove(bank_entity_id, ResourceTypes::WOOD, liquidity.shares);
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);

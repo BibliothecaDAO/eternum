@@ -14,7 +14,6 @@ mod liquidity_systems {
     #[abi(embed_v0)]
     impl LiquiditySystemsImpl of ILiquiditySystems<ContractState> {
         fn add(
-            self: @ContractState,
             world: IWorldDispatcher,
             bank_entity_id: u128,
             resource_type: u8,
@@ -72,7 +71,6 @@ mod liquidity_systems {
 
 
         fn remove(
-            self: @ContractState,
             world: IWorldDispatcher,
             bank_entity_id: u128,
             resource_type: u8,
