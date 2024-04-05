@@ -7,7 +7,9 @@ export const OSWindow = ({ onClick, show, title, children, width = "400px" }: OS
       {show && (
         <SecondaryPopup name={title}>
           <SecondaryPopup.Head onClose={() => onClick()}>{title}</SecondaryPopup.Head>
-          <SecondaryPopup.Body width={width}>{children}</SecondaryPopup.Body>
+          <SecondaryPopup.Body height={"h-auto max-h-500"} width={width}>
+            {children}
+          </SecondaryPopup.Body>
         </SecondaryPopup>
       )}
     </>

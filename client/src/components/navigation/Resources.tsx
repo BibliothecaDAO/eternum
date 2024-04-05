@@ -1,6 +1,7 @@
 import useUIStore from "../../hooks/store/useUIStore";
 import { OSWindow } from "./OSWindow";
 import { leaderboard, resources } from "./Config";
+import { EntityResourceTable } from "../resources/EntityResourceTable";
 
 export const Resources = () => {
   const { togglePopup } = useUIStore();
@@ -10,7 +11,7 @@ export const Resources = () => {
   return (
     <OSWindow onClick={() => togglePopup(resources)} show={isOpen} title={resources}>
       {/* COMPONENTS GO HERE */}
-      Entity Resources
+      <EntityResourceTable />
     </OSWindow>
   );
 };
