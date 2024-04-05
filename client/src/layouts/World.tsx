@@ -84,7 +84,7 @@ export const World = () => {
       <TopContainer>
         {/* <NetworkModule /> */}
         <div className="flex w-72">
-          <NavigationModule />
+          {/* <NavigationModule /> */}
           <NotificationsComponent className="" />
         </div>
         {/* <RealmResourcesComponent /> */}
@@ -101,9 +101,9 @@ export const World = () => {
       <LeftMiddleContainer>
         <LeftNavigationModule />
       </LeftMiddleContainer>
-      <RightMiddleContainer>
+      {/* <RightMiddleContainer>
         <RightNavigationModule />
-      </RightMiddleContainer>
+      </RightMiddleContainer> */}
       <BottomMiddleContainer>
         <BottomNavigation />
       </BottomMiddleContainer>

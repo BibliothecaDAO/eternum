@@ -5,6 +5,7 @@ export interface PopupsStore {
   closeAllPopups: () => void;
   isPopupOpen: (name: string) => boolean;
   togglePopup: (name: string) => void;
+  openAllPopups: (names: string[]) => void;
 }
 export const createPopupsSlice = (set: any, get: any) => ({
   openedPopups: [],
@@ -20,5 +21,8 @@ export const createPopupsSlice = (set: any, get: any) => ({
     } else {
       set((state: any) => ({ openedPopups: [...state.openedPopups, name] }));
     }
+  },
+  openAllPopups: (names: string[]) => {
+    set({ openedPopups: [...get().openedPopups, ...names] });
   },
 });
