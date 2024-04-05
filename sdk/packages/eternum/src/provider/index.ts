@@ -38,7 +38,7 @@ import {
   CreateLaborBuildingProps,
   DestroyLaborBuildingProps,
 } from "../types/provider";
-import { Call, TransactionExecutionStatus } from "starknet";
+import { Call } from "starknet";
 
 const UUID_OFFSET_CREATE_CARAVAN = 2;
 
@@ -69,7 +69,7 @@ export class EternumProvider extends DojoProvider {
     });
 
     // Check if the transaction was reverted and throw an error if it was
-    if (receipt.execution_status === TransactionExecutionStatus.REVERTED) {
+    if (receipt.isReverted()) {
       throw new Error(`Transaction failed with reason: ${receipt.revert_reason}`);
     }
 
