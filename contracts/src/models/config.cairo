@@ -255,15 +255,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
         );
         loop {
             match resource_types_1.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 1;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 1;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -273,15 +269,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_2.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 2;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 2;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -291,15 +283,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_3.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 3;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 3;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -309,15 +297,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_4.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 4;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 4;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 

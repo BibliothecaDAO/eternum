@@ -1,7 +1,0 @@
-kind = "DojoContract"
-class_hash = "0x5e96d58056c87d0d20abc610dfb5c2278f656516cb149e48e59b62c5bdeeeb3"
-abi = "abis/base/contracts/travel_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::transport::contracts::travel_systems::travel_systems"

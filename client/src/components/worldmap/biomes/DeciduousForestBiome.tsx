@@ -18,7 +18,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-export function DeciduousForestBiome({ hexes }: { hexes: Hexagon[] }) {
+export function DeciduousForestBiome({ hexes, zOffsets }: { hexes: Hexagon[]; zOffsets?: boolean }) {
   const { nodes, materials } = useGLTF("/models/biomes/deciduousForest.glb") as GLTFResult;
 
   const defaultTransform = new THREE.Matrix4()
@@ -42,10 +42,10 @@ export function DeciduousForestBiome({ hexes }: { hexes: Hexagon[] }) {
     let idx = 0;
     let matrix = new THREE.Matrix4();
     hexes.forEach((hex: Hexagon) => {
-      const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
+      const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
       const seededRandom = pseudoRandom(hex.col, hex.row);
       matrix.makeRotationZ((Math.PI / 3) * Math.floor(seededRandom * 6));
-      matrix.setPosition(x, y, 0.33);
+      matrix.setPosition(x, y, zOffsets ? 0.32 + z : 0.32);
       instancedMesh1.setMatrixAt(idx, matrix);
       instancedMesh2.setMatrixAt(idx, matrix);
       instancedMesh3.setMatrixAt(idx, matrix);

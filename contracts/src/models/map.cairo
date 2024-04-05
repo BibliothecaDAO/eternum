@@ -14,8 +14,8 @@ struct Tile {
     biome: Biome,
 }
 
-impl TileIntoCoord of Into<Tile, Coord>{
+impl TileIntoCoord of Into<Tile, Coord> {
     fn into(self: Tile) -> Coord {
-        Coord {x: self.col, y: self.row}
+        Coord { x: self.col, y: self.row }
     }
 }

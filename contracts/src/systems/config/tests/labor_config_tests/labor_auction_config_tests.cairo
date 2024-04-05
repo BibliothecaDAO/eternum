@@ -1,11 +1,7 @@
-
 use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
 
 use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{
-    ILaborConfigDispatcher, 
-    ILaborConfigDispatcherTrait
-};
+use eternum::systems::config::interface::{ILaborConfigDispatcher, ILaborConfigDispatcherTrait};
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
@@ -18,26 +14,18 @@ const _0_1: u128 = 1844674407370955161; // 0.1
 fn test_set_labor_auction() {
     let world = spawn_eternum();
 
-    let config_systems_address 
-        = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
 
     let labor_config_dispatcher = ILaborConfigDispatcher {
         contract_address: config_systems_address
     };
-
-    
 
     let zone: u8 = 5;
     let decay_constant: u128 = _0_1;
     let per_time_unit: u128 = 50;
     let price_update_interval: u128 = 10;
 
-    labor_config_dispatcher.set_labor_auction(
-        world,
-        decay_constant,
-        per_time_unit,
-        price_update_interval
-    );
+    labor_config_dispatcher.set_labor_auction(decay_constant, per_time_unit, price_update_interval);
 
     let labor_auction = get!(world, (zone), LaborAuction);
 

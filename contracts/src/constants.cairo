@@ -61,14 +61,12 @@ mod ResourceTypes {
     const LORDS: u8 = 253;
     const WHEAT: u8 = 254;
     const FISH: u8 = 255;
-
-    // note: update _resource_type_to_position 
-    //  function is any new resources are added
+// note: update _resource_type_to_position 
+//  function is any new resources are added
 }
 
 /// Get resource occurence probabilities
 fn get_resource_probabilities() -> Span<(u8, u128)> {
-
     return array![
         (ResourceTypes::WOOD, 2018108),
         (ResourceTypes::STONE, 1585915),
@@ -92,7 +90,8 @@ fn get_resource_probabilities() -> Span<(u8, u128)> {
         (ResourceTypes::ADAMANTINE, 22133),
         (ResourceTypes::MITHRAL, 14889),
         (ResourceTypes::DRAGONHIDE, 9256),
-    ].span();   
+    ]
+        .span();
 }
 
 
@@ -102,18 +101,18 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
     let mut resource_probabilities = array![];
     loop {
         match zipped.pop_front() {
-            Option::Some((resource_type, probability)) => {
+            Option::Some((
+                resource_type, probability
+            )) => {
                 resource_types.append(*resource_type);
                 resource_probabilities.append(*probability);
             },
-            Option::None => {break;},
+            Option::None => { break; },
         }
     };
 
     return (resource_types.span(), resource_probabilities.span());
 }
-
-
 
 
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage

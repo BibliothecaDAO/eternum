@@ -4,9 +4,10 @@ import gsap from "gsap";
 import { useEffect, useRef, useMemo } from "react";
 import { Vector3 } from "three";
 import { useControls, button } from "leva";
-import { useRoute } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { soundSelector, useUiSounds } from "../hooks/useUISound";
 import * as THREE from "three";
+import useUIStore from "../hooks/store/useUIStore";
 interface Props {
   position: {
     x: number;
@@ -29,29 +30,23 @@ const CameraControls = ({ position, target }: Props) => {
   const ref = useRef<any>(null);
 
   const [isMapView] = useRoute("/map");
+  const [location]: any = useLocation();
+  const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
 
-  const maxDistance = useMemo(() => {
-    return isMapView ? 1000 : 1800;
-  }, [isMapView]);
+  const maxDistance = 1000;
 
-  const minDistance = useMemo(() => {
-    return isMapView ? 100 : 1000;
-  }, [isMapView]);
+  const minDistance = 100;
 
-  const maxPolarAngle = useMemo(() => {
-    return isMapView ? Math.PI / 3 : Math.PI / 4;
-  }, [isMapView]);
+  const maxPolarAngle = Math.PI / 3;
 
-  const minPolarAngle = useMemo(() => {
-    return isMapView ? Math.PI / 3 : Math.PI / 4;
-  }, [isMapView]);
+  const minPolarAngle = 0;
 
   useControls({
     saveCameraPosition: button(() => {
       console.log(
         camera,
         { x: camera.position.x, y: camera.position.y, z: camera.position.z },
-        { ...ref.current.target },
+        { x: ref?.current.target.x, y: ref?.current.target.y, z: ref?.current.target.z },
       );
     }),
   });
@@ -94,6 +89,13 @@ const CameraControls = ({ position, target }: Props) => {
     cameraAnimate();
     playFly();
   }, [target, position]);
+
+  useEffect(() => {
+    console.log(location);
+    if (location.includes("/realm")) {
+      moveCameraToRealmView();
+    }
+  }, [location]);
 
   var minPan = isMapView ? new THREE.Vector3(0, -Infinity, -1400) : new THREE.Vector3(-175, -Infinity, -150);
   var maxPan = isMapView ? new THREE.Vector3(2700, Infinity, 0) : new THREE.Vector3(300, Infinity, 100);

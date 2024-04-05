@@ -106,7 +106,7 @@ interface ResourceComponentProps {
   className?: string;
 }
 
-const ResourceComponent: React.FC<ResourceComponentProps> = ({
+export const ResourceComponent: React.FC<ResourceComponentProps> = ({
   isLabor = false,
   resourceId,
   className,

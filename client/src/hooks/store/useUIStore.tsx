@@ -5,6 +5,7 @@ import { createDataStoreSlice, DataStore } from "./_dataStore";
 import { createMapStoreSlice, MapStore } from "./_mapStore";
 import React from "react";
 import { getRealmUIPosition } from "../../utils/utils";
+import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -45,10 +46,6 @@ interface UIStore {
   setShowRealmsFlags: (show: boolean) => void;
   moveCameraToWorldMapView: () => void;
   moveCameraToRealmView: () => void;
-  moveCameraToMarketView: () => void;
-  moveCameraToCaravansView: () => void;
-  moveCameraToLaborView: () => void;
-  moveCameraToFoodView: () => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
   highlightPositions: [number, number, number][];
@@ -57,7 +54,7 @@ interface UIStore {
   setHighlightColor: (color: number) => void;
 }
 
-const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) => ({
+const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore & BuildModeStore>((set, get) => ({
   theme: "light",
   setTheme: (theme) => set({ theme }),
   showBlurOverlay: false,
@@ -145,15 +142,15 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
   },
   moveCameraToRealmView: () => {
     const pos = {
-      x: 520.4138155171775,
-      y: 1084.1390819999998,
-      z: 1357.0299115304658,
+      x: 123.59840429039346,
+      y: 124.37374221630272,
+      z: 42.49511734095067,
       transitionDuration: 0.01,
     };
     const target = {
-      x: 40.3221210638067,
-      y: 0.1390819999999989,
-      z: -33.35675413789002,
+      x: 21.103373637682033,
+      y: -0.06254476354386523,
+      z: -19.36047544496302,
       transitionDuration: 0.01,
     };
     set({ cameraPosition: pos, cameraTarget: target });
@@ -214,11 +211,12 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
   highlightPositions: [],
   setHighlightPositions: (positions) => set({ highlightPositions: positions }),
-  highlightColor: 0xffffff,
+  highlightColor: 0xffff00,
   setHighlightColor: (color) => set({ highlightColor: color }),
-  ...createPopupsSlice(set),
+  ...createPopupsSlice(set, get),
   ...createDataStoreSlice(set),
   ...createMapStoreSlice(set),
+  ...createBuildModeStoreSlice(set),
 }));
 
 export default useUIStore;

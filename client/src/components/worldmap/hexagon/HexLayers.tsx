@@ -45,11 +45,30 @@ type HexagonGridProps = {
   explored: Map<number, Set<number>>;
 };
 
-type BiomeComponentType = React.ComponentType<{ hexes: Hexagon[] }>;
+type BiomeComponentType = React.ComponentType<{ hexes: Hexagon[]; zOffsets?: boolean }>;
 
 interface BiomeComponentsMap {
   [key: string]: BiomeComponentType;
 }
+
+export const biomeComponents: BiomeComponentsMap = {
+  snow: SnowBiome,
+  bare: DesertBiome,
+  grassland: GrasslandBiome,
+  taiga: TaigaBiome,
+  ocean: OceanBiome,
+  deep_ocean: DeepOceanBiome,
+  temperate_desert: TemperateDesertBiome,
+  beach: BeachBiome,
+  scorched: ScorchedBiome,
+  shrubland: ShrublandBiome,
+  subtropical_desert: SubtropicalDesertBiome,
+  temperate_deciduous_forest: DeciduousForestBiome,
+  tropical_rain_forest: TropicalRainforestBiome,
+  tropical_seasonal_forest: TropicalSeasonalForestBiome,
+  tundra: TundraBiome,
+  temperate_rain_forest: TemperateRainforestBiome,
+};
 
 const color = new Color();
 
@@ -68,28 +87,6 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
       colors: [],
     };
   }, [startRow, endRow, startCol, endCol, hexData]);
-
-  const biomeComponents: BiomeComponentsMap = useMemo(
-    () => ({
-      snow: SnowBiome,
-      bare: DesertBiome,
-      grassland: GrasslandBiome,
-      taiga: TaigaBiome,
-      ocean: OceanBiome,
-      deep_ocean: DeepOceanBiome,
-      temperate_desert: TemperateDesertBiome,
-      beach: BeachBiome,
-      scorched: ScorchedBiome,
-      shrubland: ShrublandBiome,
-      subtropical_desert: SubtropicalDesertBiome,
-      temperate_deciduous_forest: DeciduousForestBiome,
-      tropical_rain_forest: TropicalRainforestBiome,
-      tropical_seasonal_forest: TropicalSeasonalForestBiome,
-      tundra: TundraBiome,
-      temperate_rain_forest: TemperateRainforestBiome,
-    }),
-    [],
-  );
 
   const biomeHexes = useMemo(() => {
     const biomesAccumulator = Object.keys(biomeComponents).reduce((acc: any, biome) => {

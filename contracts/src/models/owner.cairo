@@ -3,7 +3,7 @@ use starknet::ContractAddress;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::models::realm::Realm;
- 
+
 // contract address owning an entity
 #[derive(Model, Copy, Drop, Serde)]
 struct Owner {
@@ -41,7 +41,9 @@ mod tests {
     fn test_entity_owner_get_realm_id() {
         let world = spawn_eternum();
 
-        set!(world, Realm {
+        set!(
+            world,
+            Realm {
                 entity_id: 1,
                 realm_id: 3,
                 resource_types_packed: 0,
@@ -52,17 +54,14 @@ mod tests {
                 regions: 0,
                 wonder: 0,
                 order: 0,
-        });
+            }
+        );
 
-        set!(world, EntityOwner {
-            entity_id: 2,
-            entity_owner_id: 1
-        });
+        set!(world, EntityOwner { entity_id: 2, entity_owner_id: 1 });
 
         let entity_owner = get!(world, (2), EntityOwner);
         let realm_id = entity_owner.get_realm_id(world);
 
         assert(realm_id == 3, 'wrong realm id');
     }
-
 }

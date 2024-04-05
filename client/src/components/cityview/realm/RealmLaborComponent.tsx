@@ -11,8 +11,6 @@ export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const { realmEntityId } = useRealmStore();
 
-  // const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
-  const moveCameraToFoodView = useUIStore((state) => state.moveCameraToFoodView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   // @ts-ignore
@@ -20,20 +18,20 @@ export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
   // @ts-ignore
   const [match, params]: any = useRoute("/realm/:id/:tab");
 
-  useEffect(() => {
-    let _tab: string = "";
-    if (["food", "farm", "fish"].includes(params?.tab as string)) {
-      _tab = "food";
-      moveCameraToFoodView();
-    } else {
-      _tab = params?.tab as any;
-      // moveCameraToLaborView();
-    }
-    const tabIndex = tabs.findIndex((tab) => tab.key === _tab);
-    if (tabIndex >= 0) {
-      setSelectedTab(tabIndex);
-    }
-  }, [params]);
+  // useEffect(() => {
+  //   let _tab: string = "";
+  //   if (["food", "farm", "fish"].includes(params?.tab as string)) {
+  //     _tab = "food";
+  //     moveCameraToFoodView();
+  //   } else {
+  //     _tab = params?.tab as any;
+  //     // moveCameraToLaborView();
+  //   }
+  //   const tabIndex = tabs.findIndex((tab) => tab.key === _tab);
+  //   if (tabIndex >= 0) {
+  //     setSelectedTab(tabIndex);
+  //   }
+  // }, [params]);
 
   const tabs = useMemo(
     () => [

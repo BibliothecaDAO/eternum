@@ -1,0 +1,15 @@
+kind = "DojoModel"
+class_hash = "0x92d3790a22d0d256ec81b5ee21dbf46e8de81a56445cdf7f420e360c194447"
+original_class_hash = "0x92d3790a22d0d256ec81b5ee21dbf46e8de81a56445cdf7f420e360c194447"
+abi = "manifests/dev/abis/base/models/eternum_models_quantity_quantity_tracker.json"
+name = "eternum::models::quantity::quantity_tracker"
+
+[[members]]
+name = "entity_id"
+type = "felt252"
+key = true
+
+[[members]]
+name = "count"
+type = "u128"
+key = false

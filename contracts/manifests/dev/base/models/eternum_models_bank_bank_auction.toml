@@ -1,0 +1,50 @@
+kind = "DojoModel"
+class_hash = "0x226fb78c04162a320644001e199be8890f246d06c2ada4d9ecde669662e1af8"
+original_class_hash = "0x226fb78c04162a320644001e199be8890f246d06c2ada4d9ecde669662e1af8"
+abi = "manifests/dev/abis/base/models/eternum_models_bank_bank_auction.json"
+name = "eternum::models::bank::bank_auction"
+
+[[members]]
+name = "bank_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "bank_gives_resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "bank_swap_resource_cost_index"
+type = "u32"
+key = true
+
+[[members]]
+name = "decay_constant_mag"
+type = "u128"
+key = false
+
+[[members]]
+name = "decay_constant_sign"
+type = "bool"
+key = false
+
+[[members]]
+name = "per_time_unit"
+type = "u128"
+key = false
+
+[[members]]
+name = "start_time"
+type = "u64"
+key = false
+
+[[members]]
+name = "sold"
+type = "u128"
+key = false
+
+[[members]]
+name = "price_update_interval"
+type = "u128"
+key = false

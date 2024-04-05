@@ -376,15 +376,15 @@ export const getLevelingCost = (newLevel: number): { resourceId: number; amount:
       ? // level 4 (resource tier 3)
         [16, 24421, 17, 20954, 18, 16733, 19, 14020, 20, 8291, 21, 5578, 22, 3467]
       : rem === 1
-        ? // level 1 (food)
-          [254, 11340000, 255, 3780000]
-        : rem === 2
-          ? // level 2 (resource tier 1)
-            [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
-          : rem === 3
-            ? // level 3 (resource tier 2)
-              [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
-            : [];
+      ? // level 1 (food)
+        [254, 11340000, 255, 3780000]
+      : rem === 2
+      ? // level 2 (resource tier 1)
+        [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
+      : rem === 3
+      ? // level 3 (resource tier 2)
+        [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
+      : [];
 
   const costResources = [];
   for (let i = 0; i < baseAmounts.length; i = i + 2) {
@@ -437,4 +437,13 @@ export const WEIGHTS: WeightMap = {
   253: 0.001,
   254: 0.1,
   255: 0.1,
+};
+
+export const RESOURCE_TIERS = {
+  lords: [253],
+  food: [255, 254],
+  basic: [1, 2, 3, 4, 5, 6, 7],
+  rare: [8, 9, 10, 11, 12, 13, 14, 15],
+  elite: [16, 17, 18, 19, 20, 21, 22],
+  // military: [101, 102, 103],
 };

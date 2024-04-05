@@ -25,13 +25,6 @@ export const WorldMap = () => {
   } = useDojo();
 
   const hexData = useUIStore((state) => state.hexData);
-  const setHexData = useUIStore((state) => state.setHexData);
-
-  useEffect(() => {
-    fetch("/jsons/hexData.json")
-      .then((response) => response.json())
-      .then((data) => setHexData(data as Hexagon[]));
-  }, []);
 
   const hexagonGrids = useMemo(() => {
     const hexagonGrids = [];

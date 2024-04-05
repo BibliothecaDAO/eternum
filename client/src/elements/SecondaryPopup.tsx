@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { useEffect, useState, useRef } from "react";
 import Draggable from "react-draggable";
 import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
+import Button from "./Button";
 
 type FilterPopupProps = {
   children: React.ReactNode;
@@ -72,9 +73,10 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
 
   return (
     <>
-      <div className="fixed top-0 left-0 z-10 popup">
+      <div className="fixed top-0 left-0 z-10 popup text-gold ">
         {loaded && (
           <Draggable
+            grid={[50, 50]}
             handle=".handle"
             defaultPosition={position}
             nodeRef={nodeRef}
@@ -84,7 +86,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
             <div
               onClick={handleClick}
               ref={nodeRef}
-              className={clsx("fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px]", className)}
+              className={clsx("fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px] p-2", className)}
             >
               {children}
             </div>
@@ -106,12 +108,16 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      "text-xxs flex items-center relative cursor-move -mb-[1px] z-30 bg-gray px-1 py-0.5 rounded-t-[4px] border-t border-x border-gold text-gold w-min whitespace-nowrap handle",
+      "text-xs items-center relative cursor-move -mb-[1px] z-30 bg-gray p-2 rounded-t-[4px] border-t border-x border-gold text-gold w-full whitespace-nowrap handle flex justify-between border-b uppercase",
       className,
     )}
   >
     {children}
-    {onClose && <CloseIcon className="w-3 h-3 ml-1 cursor-pointer fill-white" onClick={onClose} />}
+    {onClose && (
+      <Button size="xs" onClick={onClose}>
+        <CloseIcon className="w-4 h-4 ml-1 cursor-pointer fill-gold" />
+      </Button>
+    )}
   </div>
 );
 

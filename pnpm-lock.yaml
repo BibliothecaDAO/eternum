@@ -18,26 +18,26 @@ importers:
         specifier: workspace:^
         version: link:../sdk/packages/eternum
       '@dojoengine/core':
-        specifier: 0.6.1-alpha.0
-        version: 0.6.1-alpha.0(starknet@6.6.0)
+        specifier: 0.6.1
+        version: 0.6.1(starknet@6.7.0)
       '@dojoengine/create-burner':
-        specifier: 0.6.1-alpha.0
-        version: 0.6.1-alpha.0(react-dom@18.2.0)(react@18.2.0)(starknet@6.6.0)
+        specifier: 0.6.1
+        version: 0.6.1(react@18.2.0)(starknet@6.7.0)
       '@dojoengine/react':
-        specifier: 0.6.1-alpha.0
-        version: 0.6.1-alpha.0(react@18.2.0)(starknet@6.6.0)(type-fest@2.19.0)(typescript@5.4.2)
+        specifier: 0.6.1
+        version: 0.6.1(react@18.2.0)(starknet@6.7.0)(type-fest@2.19.0)(typescript@5.4.2)
       '@dojoengine/recs':
         specifier: ^0.1.35
         version: 0.1.35(typescript@5.4.2)
       '@dojoengine/state':
-        specifier: 0.6.1-alpha.0
-        version: 0.6.1-alpha.0(starknet@6.6.0)(typescript@5.4.2)
+        specifier: 0.6.1
+        version: 0.6.1(starknet@6.7.0)(typescript@5.4.2)
       '@dojoengine/torii-client':
-        specifier: 0.6.1-alpha.0
-        version: 0.6.1-alpha.0
+        specifier: 0.6.1
+        version: 0.6.1
       '@dojoengine/utils':
-        specifier: 0.6.1-alpha.0
-        version: 0.6.1-alpha.0(starknet@6.6.0)(typescript@5.4.2)
+        specifier: 0.6.1
+        version: 0.6.1(starknet@6.7.0)(typescript@5.4.2)
       '@formkit/auto-animate':
         specifier: ^0.8.1
         version: 0.8.1
@@ -59,6 +59,9 @@ importers:
       '@react-three/postprocessing':
         specifier: 2.15.1
         version: 2.15.1(@react-three/fiber@8.15.19)(@types/three@0.151.0)(react@18.2.0)(three@0.151.3)
+      '@types/react-resizable':
+        specifier: ^3.0.7
+        version: 3.0.7
       '@web3mq/client':
         specifier: ^1.0.25
         version: 1.0.25
@@ -68,6 +71,9 @@ importers:
       events:
         specifier: ^3.3.0
         version: 3.3.0
+      framer-motion:
+        specifier: ^11.0.24
+        version: 11.0.24(react-dom@18.2.0)(react@18.2.0)
       graphql:
         specifier: 16.6.0
         version: 16.6.0
@@ -101,6 +107,9 @@ importers:
       react-draggable:
         specifier: ^4.4.6
         version: 4.4.6(react-dom@18.2.0)(react@18.2.0)
+      react-resizable:
+        specifier: ^3.0.5
+        version: 3.0.5(react-dom@18.2.0)(react@18.2.0)
       react-toastify:
         specifier: ^10.0.5
         version: 10.0.5(react-dom@18.2.0)(react@18.2.0)
@@ -108,8 +117,8 @@ importers:
         specifier: ^7.8.1
         version: 7.8.1
       starknet:
-        specifier: ^6.1.5
-        version: 6.6.0
+        specifier: 6.7.0
+        version: 6.7.0
       three:
         specifier: ^0.151.3
         version: 0.151.3
@@ -209,10 +218,10 @@ importers:
     dependencies:
       '@dojoengine/core':
         specifier: 0.6.0-alpha.0
-        version: 0.6.0-alpha.0(starknet@6.6.0)
+        version: 0.6.0-alpha.0(starknet@6.7.0)
       starknet:
-        specifier: ^6.1.5
-        version: 6.6.0
+        specifier: 6.7.0
+        version: 6.7.0
     devDependencies:
       '@types/elliptic':
         specifier: ^6.4.14
@@ -832,6 +841,13 @@ packages:
     dependencies:
       regenerator-runtime: 0.14.1
 
+  /@babel/runtime@7.24.4:
+    resolution: {integrity: sha512-dkxf7+hn8mFBwKjs9bvBlArzLVxVbS8usaPUDd5p2a9JCL9tB8OaOVN1isD4+Xyk4ns89/xeOmbQvgdK7IIVdA==}
+    engines: {node: '>=6.9.0'}
+    dependencies:
+      regenerator-runtime: 0.14.1
+    dev: false
+
   /@babel/template@7.24.0:
     resolution: {integrity: sha512-Bkf2q8lMB0AFpX0NFEqSbx1OkTHf0f+0j82mkw+ZpzBnkk7e9Ql0891vlfgi+kHwOk8tQjiQHpqh4LaSa0fKEA==}
     engines: {node: '>=6.9.0'}
@@ -868,61 +884,58 @@ packages:
       to-fast-properties: 2.0.0
     dev: true
 
-  /@dojoengine/core@0.6.0-alpha.0(starknet@6.6.0):
+  /@dojoengine/core@0.6.0-alpha.0(starknet@6.7.0):
     resolution: {integrity: sha512-HTBGLzvRsTvCq/nU2oyyzh9B/z6ErlFS02+qSWozS7BiihOLiG8bdMciexrKjvWPLmdwfT2EG0loQVdRjgu6iA==}
     hasBin: true
     peerDependencies:
       starknet: ^6.1.5
     dependencies:
-      starknet: 6.6.0
+      starknet: 6.7.0
     dev: false
 
-  /@dojoengine/core@0.6.1-alpha.0(starknet@6.6.0):
-    resolution: {integrity: sha512-93pALsbdRtAagMlrDXLCTIKCNspQtCMYucMd8S1ZGeaojBYCqJUd06TQ55/cCfkWBAhmqSxtWV2Ys1zqqrTKzA==}
+  /@dojoengine/core@0.6.1(starknet@6.7.0):
+    resolution: {integrity: sha512-Jfx1nsfD7A1YNHDcKn5TqNoVaB6gN0MCkdi8O0AEf2eFmcuK4DFvau1cXegCN54AzCUK5aeo7Wqf81APcFGITQ==}
     hasBin: true
     peerDependencies:
       starknet: ^6.1.5
     dependencies:
-      starknet: 6.6.0
+      starknet: 6.7.0
     dev: false
 
-  /@dojoengine/create-burner@0.6.1-alpha.0(react-dom@18.2.0)(react@18.2.0)(starknet@6.6.0):
-    resolution: {integrity: sha512-gCdDvCkKXYFJipFhDAEIIU65sdIF3kDG+iaWKr39yy5VJMzwyLI3pdPzi6rvtIosjMc/w6kx0Sju7jj14x41nA==}
+  /@dojoengine/create-burner@0.6.1(react@18.2.0)(starknet@6.7.0):
+    resolution: {integrity: sha512-ivVefG0vr/QF7zNZ0n60zLj9vgaSTj5mZA45Hb44IlvFrggDskKIgzb3bhDFzPAj53J+ejEfZgOwUJj7DKbYNQ==}
     peerDependencies:
       react: ^18.2.0
       starknet: ^6.1.5
     dependencies:
-      '@dojoengine/core': 0.6.1-alpha.0(starknet@6.6.0)
-      '@starknet-react/core': 1.0.4(get-starknet-core@3.2.0)(react-dom@18.2.0)(react@18.2.0)(starknet@6.6.0)
+      '@dojoengine/core': 0.6.1(starknet@6.7.0)
+      '@starknet-react/core': 2.3.0(get-starknet-core@3.2.0)(react@18.2.0)(starknet@6.7.0)
       encoding: 0.1.13
-      get-starknet-core: 3.2.0(starknet@6.6.0)
+      get-starknet-core: 3.2.0(starknet@6.7.0)
       js-cookie: 3.0.5
       react: 18.2.0
-      starknet: 6.6.0
-    transitivePeerDependencies:
-      - react-dom
-      - react-native
+      starknet: 6.7.0
     dev: false
 
-  /@dojoengine/react@0.6.1-alpha.0(react@18.2.0)(starknet@6.6.0)(type-fest@2.19.0)(typescript@5.4.2):
-    resolution: {integrity: sha512-VCuoDLad10UYhQ8xKNbu7JfXw6K7vd1+Hx4m5xJUx7gO/eF/UpdtJ51H2b5Y6jv6F4IttWo5pxhDovx24+0YCA==}
+  /@dojoengine/react@0.6.1(react@18.2.0)(starknet@6.7.0)(type-fest@2.19.0)(typescript@5.4.2):
+    resolution: {integrity: sha512-YAuQG6yH5in87nlL02W1nybsdvPIN809IKA++cZE64iovQVvmvNVp0NFzlMbVyy1vdzmduYt8UVxGzrc5OH1DQ==}
     peerDependencies:
       react: ^18.2.0
       starknet: ^6.1.5
       type-fest: ^2.14.0
     dependencies:
       '@dojoengine/recs': 0.1.35(typescript@5.4.2)
-      '@dojoengine/state': 0.6.1-alpha.0(starknet@6.6.0)(typescript@5.4.2)
-      '@dojoengine/torii-client': 0.6.1-alpha.0
-      '@dojoengine/utils': 0.6.1-alpha.0(starknet@6.6.0)(typescript@5.4.2)
+      '@dojoengine/state': 0.6.1(starknet@6.7.0)(typescript@5.4.2)
+      '@dojoengine/torii-client': 0.6.1
+      '@dojoengine/utils': 0.6.1(starknet@6.7.0)(typescript@5.4.2)
       '@latticexyz/utils': 2.0.0-transaction-context-324984c5
       encoding: 0.1.13
       fast-deep-equal: 3.1.3
-      get-starknet-core: 3.2.0(starknet@6.6.0)
+      get-starknet-core: 3.2.0(starknet@6.7.0)
       js-cookie: 3.0.5
       react: 18.2.0
       rxjs: 7.5.5
-      starknet: 6.6.0
+      starknet: 6.7.0
       type-fest: 2.19.0
     transitivePeerDependencies:
       - bufferutil
@@ -936,7 +949,7 @@ packages:
     dependencies:
       '@latticexyz/schema-type': 2.0.0-next.12(typescript@5.4.2)
       '@latticexyz/utils': 2.0.0-next.12
-      mobx: 6.12.0
+      mobx: 6.12.3
       rxjs: 7.5.5
     transitivePeerDependencies:
       - bufferutil
@@ -945,15 +958,15 @@ packages:
       - zod
     dev: false
 
-  /@dojoengine/state@0.6.1-alpha.0(starknet@6.6.0)(typescript@5.4.2):
-    resolution: {integrity: sha512-P1LCTiTHeKpl7T4dRsDT5Uma+SVqoCTxlgRyLfuiiu/VVHFN6UUgrVjSt8lhWP7ls2KbPwHSB/YQY+CGsCpfmw==}
+  /@dojoengine/state@0.6.1(starknet@6.7.0)(typescript@5.4.2):
+    resolution: {integrity: sha512-5CT+Tb9TQyQB3028rqtiKpZQWehHQXUM3TYznxEdJrpFmqhIYGqZRcEUXloL2H6DG3HVPrlH+xTeCEFZxFeycg==}
     peerDependencies:
       starknet: ^6.1.5
     dependencies:
       '@dojoengine/recs': 0.1.35(typescript@5.4.2)
-      '@dojoengine/torii-client': 0.6.1-alpha.0
+      '@dojoengine/torii-client': 0.6.1
       '@latticexyz/utils': 2.0.0-transaction-context-324984c5
-      starknet: 6.6.0
+      starknet: 6.7.0
     transitivePeerDependencies:
       - bufferutil
       - typescript
@@ -961,19 +974,19 @@ packages:
       - zod
     dev: false
 
-  /@dojoengine/torii-client@0.6.1-alpha.0:
-    resolution: {integrity: sha512-DzpTnUtVEXpWpxhq+Ot8VMqq3JKyhkuS+cfsIXrTQWLAmXd8IquS9zg/UJaCysTI8C0yVwBYxl15LIWDKurYsg==}
+  /@dojoengine/torii-client@0.6.1:
+    resolution: {integrity: sha512-wjwr3emIpMln9VKtaVVbQ9WxWqATFzZe4V6EPFxw4IAv8Kq849f5b/0IxomkkOYcM/caTbHiy6yDdjDupKh1+Q==}
     dependencies:
-      '@dojoengine/torii-wasm': 0.6.1-alpha.0
+      '@dojoengine/torii-wasm': 0.6.1
       typescript: 5.4.2
     dev: false
 
-  /@dojoengine/torii-wasm@0.6.1-alpha.0:
-    resolution: {integrity: sha512-MkdZmUnw/9CbCuErs6yrN9FNFE3mlzMOq4utnhXwwx/ZtXwxZjCpLY24va/LNvRi6dfdvuDSoUls9rT9YpvNbQ==}
+  /@dojoengine/torii-wasm@0.6.1:
+    resolution: {integrity: sha512-WXAfY7koEdvP0GJg8grLKYVkd52c4NjxU4JUqJG4dCD1gmqRa44QwekwH0U7RAG15W95agnKTA9YntgG/ghcxQ==}
     dev: false
 
-  /@dojoengine/utils@0.6.1-alpha.0(starknet@6.6.0)(typescript@5.4.2):
-    resolution: {integrity: sha512-Oo57q03ScR06aWy2axdBdbSvXxS6fNfgHLxpcF/z8QHFrDPGsWOh88kCGRJWJkP3lz6FSRGnxjSCvZemoY2tCQ==}
+  /@dojoengine/utils@0.6.1(starknet@6.7.0)(typescript@5.4.2):
+    resolution: {integrity: sha512-rzV0TSacq4cVxNnWpTj/60W8Mj6iE1W0N7cOYw2IgjtKel0tpw/qYIOLKNkIqwxyNm/sEbUEhaLMwZLGuIsVsA==}
     peerDependencies:
       starknet: ^6.1.5
     dependencies:
@@ -981,7 +994,7 @@ packages:
       '@latticexyz/utils': 2.0.0-transaction-context-324984c5
       mathjs: 12.4.1
       micro-starknet: 0.2.3
-      starknet: 6.6.0
+      starknet: 6.7.0
     transitivePeerDependencies:
       - bufferutil
       - typescript
@@ -2194,7 +2207,7 @@ packages:
       graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
     dependencies:
       graphql: 16.6.0
-      tslib: 2.4.1
+      tslib: 2.6.2
     dev: true
 
   /@graphql-tools/optimize@2.0.0(graphql@16.6.0):
@@ -2204,7 +2217,7 @@ packages:
       graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
     dependencies:
       graphql: 16.6.0
-      tslib: 2.5.3
+      tslib: 2.6.2
     dev: true
 
   /@graphql-tools/prisma-loader@8.0.3(graphql@16.6.0):
@@ -2248,7 +2261,7 @@ packages:
       '@ardatan/relay-compiler': 12.0.0(graphql@16.6.0)
       '@graphql-tools/utils': 9.2.1(graphql@16.6.0)
       graphql: 16.6.0
-      tslib: 2.4.1
+      tslib: 2.6.2
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -2263,7 +2276,7 @@ packages:
       '@ardatan/relay-compiler': 12.0.0(graphql@16.6.0)
       '@graphql-tools/utils': 10.1.2(graphql@16.6.0)
       graphql: 16.6.0
-      tslib: 2.5.3
+      tslib: 2.6.2
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -2328,7 +2341,7 @@ packages:
       graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
     dependencies:
       graphql: 16.6.0
-      tslib: 2.4.1
+      tslib: 2.6.2
     dev: true
 
   /@graphql-tools/utils@9.2.1(graphql@16.6.0):
@@ -2338,7 +2351,7 @@ packages:
     dependencies:
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.6.0)
       graphql: 16.6.0
-      tslib: 2.4.1
+      tslib: 2.6.2
     dev: true
 
   /@graphql-tools/wrap@10.0.5(graphql@16.6.0):
@@ -2451,7 +2464,7 @@ packages:
     resolution: {integrity: sha512-xJMFZs2thDsCB4pXB1b5xcSk5ur6e/GVpFYZuR4yeEFFvw7tRkXdduSEiI7vB60CN8ATyeKLnVXLZYo1Q2pT2A==}
     dependencies:
       ethers: 5.7.2
-      mobx: 6.12.0
+      mobx: 6.12.3
       proxy-deep: 3.1.1
       rxjs: 7.5.5
     transitivePeerDependencies:
@@ -2488,6 +2501,12 @@ packages:
       '@noble/hashes': 1.3.3
     dev: false
 
+  /@noble/curves@1.4.0:
+    resolution: {integrity: sha512-p+4cb332SFCrReJkCYe8Xzm0OWi4Jji5jVdIZRL/PmacmDkFNw6MrrV+gGpiPxLHbV+zKFRywUWbaseT+tZRXg==}
+    dependencies:
+      '@noble/hashes': 1.4.0
+    dev: false
+
   /@noble/ed25519@1.7.3:
     resolution: {integrity: sha512-iR8GBkDt0Q3GyaVcIu7mSsVIqnFbkbRzGLWlvhwunacoLwt4J3swfKhfaM6rN6WY+TBGoYT1GtT1mIh2/jGbRQ==}
     dev: false
@@ -2503,6 +2522,11 @@ packages:
 
   /@noble/hashes@1.3.3:
     resolution: {integrity: sha512-V7/fPHgl+jsVPXqqeOzT8egNj2iBIVt+ECeMMG8TdcnTikP3oaBtUVqpT/gYCR68aEBJSF+XbYUxStjbFMqIIA==}
+    engines: {node: '>= 16'}
+    dev: false
+
+  /@noble/hashes@1.4.0:
+    resolution: {integrity: sha512-V1JJ1WTRUqHHrOSh597hURcMqVKVGL/ea3kv0gSnEdsEZ0/+VyPghM1lMNGc00z7CIQorSvbKpuJkxvuHbvdbg==}
     engines: {node: '>= 16'}
     dev: false
 
@@ -3445,8 +3469,8 @@ packages:
     dev: false
     optional: true
 
-  /@scure/base@1.1.5:
-    resolution: {integrity: sha512-Brj9FiG2W1MRQSTB212YVPRrcbjkv48FoZi/u4l/zds/ieRrqsh7aUf6CLwkAq61oKXr/ZlTzlY66gLIj3TFTQ==}
+  /@scure/base@1.1.6:
+    resolution: {integrity: sha512-ok9AWwhcgYuGG3Zfhyqg+zwl+Wn5uE+dwC0NV/2qQkx4dABbb/bx96vWu8NSj+BNjjSjno+JRYRjle1jV08k3g==}
     dev: false
 
   /@scure/bip32@1.3.2:
@@ -3454,14 +3478,14 @@ packages:
     dependencies:
       '@noble/curves': 1.2.0
       '@noble/hashes': 1.3.2
-      '@scure/base': 1.1.5
+      '@scure/base': 1.1.6
     dev: false
 
   /@scure/bip39@1.2.1:
     resolution: {integrity: sha512-Z3/Fsz1yr904dduJD0NpiyRHhRYHdcnyh73FZWiV+/qhWi83wNJ3NWolYqCEN+ZWsUz2TWwajJggcRE9r1zUYg==}
     dependencies:
       '@noble/hashes': 1.3.2
-      '@scure/base': 1.1.5
+      '@scure/base': 1.1.6
     dev: false
 
   /@scure/starknet@0.3.0:
@@ -3478,22 +3502,25 @@ packages:
       '@noble/hashes': 1.3.3
     dev: false
 
-  /@starknet-react/core@1.0.4(get-starknet-core@3.2.0)(react-dom@18.2.0)(react@18.2.0)(starknet@6.6.0):
-    resolution: {integrity: sha512-TQiRnb0moqim6+HqioGGzd3FgjPVJFMdMH8Q5AQlJ7oEUNprKkFyHlVGJJlcwvdRaCPD5BQuD2WUL2rQfgMRuw==}
+  /@starknet-react/chains@0.1.7:
+    resolution: {integrity: sha512-UNh97I1SvuJKaAhKOmpEk8JcWuZWMlPG/ba2HcvFYL9x/47BKndJ+Da9V+iJFtkHUjreVnajT1snsaz1XMG+UQ==}
+    dev: false
+
+  /@starknet-react/core@2.3.0(get-starknet-core@3.2.0)(react@18.2.0)(starknet@6.7.0):
+    resolution: {integrity: sha512-8g9d0Gs811gJnQJHVMxQoXYhv+y5/qug7NQ0lnJ51uytdBhr/Zz5wgeTHW4ZQ5Igljyvf+ks+yhp4P1iSvnSqA==}
     peerDependencies:
-      get-starknet-core: ^3.0.1
-      react: ^17.0 || ^18.0
-      starknet: ^5.0.0
+      get-starknet-core: ^3.2.0
+      react: ^18.0
+      starknet: ^5.25.0
     dependencies:
-      '@tanstack/react-query': 4.36.1(react-dom@18.2.0)(react@18.2.0)
-      get-starknet-core: 3.2.0(starknet@6.6.0)
+      '@starknet-react/chains': 0.1.7
+      '@tanstack/react-query': 5.28.14(react@18.2.0)
+      eventemitter3: 5.0.1
+      get-starknet-core: 3.2.0(starknet@6.7.0)
       immutable: 4.3.5
       react: 18.2.0
-      starknet: 6.6.0
+      starknet: 6.7.0
       zod: 3.22.4
-    transitivePeerDependencies:
-      - react-dom
-      - react-native
     dev: false
 
   /@stitches/react@1.2.8(react@18.2.0):
@@ -3755,26 +3782,17 @@ packages:
       '@swc/counter': 0.1.3
     dev: false
 
-  /@tanstack/query-core@4.36.1:
-    resolution: {integrity: sha512-DJSilV5+ytBP1FbFcEJovv4rnnm/CokuVvrBEtW/Va9DvuJ3HksbXUJEpI0aV1KtuL4ZoO9AVE6PyNLzF7tLeA==}
+  /@tanstack/query-core@5.28.13:
+    resolution: {integrity: sha512-C3+CCOcza+mrZ7LglQbjeYEOTEC3LV0VN0eYaIN6GvqAZ8Foegdgch7n6QYPtT4FuLae5ALy+m+ZMEKpD6tMCQ==}
     dev: false
 
-  /@tanstack/react-query@4.36.1(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-y7ySVHFyyQblPl3J3eQBWpXZkliroki3ARnBKsdJchlgt7yJLRDUcf4B8soufgiYt3pEQIkBWBx1N9/ZPIeUWw==}
+  /@tanstack/react-query@5.28.14(react@18.2.0):
+    resolution: {integrity: sha512-cZqt03Igb3I9tM72qNX5TAAmeYl75Z+k4Mv92VkXIXc2hCrv0fIywd7GN3JV1BBJl4mr7Cc+OOKKOPy8sNVOkA==}
     peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0
-      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
-      react-native: '*'
-    peerDependenciesMeta:
-      react-dom:
-        optional: true
-      react-native:
-        optional: true
+      react: ^18.0.0
     dependencies:
-      '@tanstack/query-core': 4.36.1
+      '@tanstack/query-core': 5.28.13
       react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      use-sync-external-store: 1.2.0(react@18.2.0)
     dev: false
 
   /@tanstack/react-virtual@3.2.0(react-dom@18.2.0)(react@18.2.0):
@@ -3856,6 +3874,12 @@ packages:
     resolution: {integrity: sha512-SN9c4kxXZonFhbX4hJrZy37yw9e7EIxcpHCxQv5JUS18wDE5ovkQKlqQEkufdJCCMfuI9BnjUJvhYeJ9x5Ra7g==}
     dependencies:
       '@types/react': 18.2.67
+
+  /@types/react-resizable@3.0.7:
+    resolution: {integrity: sha512-V4N7/xDUME+cxKya/A73MmFrHofTupVdE45boRxeA8HL4Q5pJh3AuG0FWCEy2GB84unIMSRISyEAS/GHWum9EQ==}
+    dependencies:
+      '@types/react': 18.2.67
+    dev: false
 
   /@types/react@18.2.67:
     resolution: {integrity: sha512-vkIE2vTIMHQ/xL0rgmuoECBCkZFZeHr49HeWSc24AptMbNRo7pwSBvj73rlJJs9fGKj0koS+V7kQB1jHS0uCgw==}
@@ -4137,8 +4161,8 @@ packages:
       yargs: 17.7.2
     dev: false
 
-  /abi-wan-kanabi@2.2.1:
-    resolution: {integrity: sha512-W3RNuu2tG10W4AY63uq89JX/MsZSOxvpmsitQ3pbdVn3e8RxXR2oegN0QmGpgfyT0KlPdreydHsqq/u+2Pt2PQ==}
+  /abi-wan-kanabi@2.2.2:
+    resolution: {integrity: sha512-sTCv2HyNIj1x2WFUoc9oL8ZT9liosrL+GoqEGZJK1kDND096CfA7lwx06vLxLWMocQ41FQXO3oliwoh/UZHYdQ==}
     hasBin: true
     dependencies:
       ansicolors: 0.3.2
@@ -5734,6 +5758,10 @@ packages:
     resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
     dev: true
 
+  /eventemitter3@5.0.1:
+    resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
+    dev: false
+
   /events@3.3.0:
     resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
     engines: {node: '>=0.8.x'}
@@ -5982,6 +6010,25 @@ packages:
     resolution: {integrity: sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==}
     dev: true
 
+  /framer-motion@11.0.24(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-l2iM8NR53qtcujgAqYvGPJJGModPNWEVUaATRDLfnaLvUoFpImovBm0AHalSSsY8tW6knP8mfJTW4WYGbnAe4w==}
+    peerDependencies:
+      '@emotion/is-prop-valid': '*'
+      react: ^18.0.0
+      react-dom: ^18.0.0
+    peerDependenciesMeta:
+      '@emotion/is-prop-valid':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+    dependencies:
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      tslib: 2.6.2
+    dev: false
+
   /fs-extra@10.1.0:
     resolution: {integrity: sha512-oRXApq54ETRj4eMiFzGnHWGy+zo5raudjuxN0b8H7s/RU2oW0Wvsx9O0ACRN/kRq9E8Vu/ReskGB5o3ji+FzHQ==}
     engines: {node: '>=12'}
@@ -6048,12 +6095,12 @@ packages:
       starknet: 5.19.5
     dev: false
 
-  /get-starknet-core@3.2.0(starknet@6.6.0):
+  /get-starknet-core@3.2.0(starknet@6.7.0):
     resolution: {integrity: sha512-SZhxtLlKoPKLZ2H3l9WIU7CiNmkL3qLWGksALmvZdAXa/9PykYfLtvIB5B8A2UZMpf2ojTZlWLfuo1KhgmVobA==}
     peerDependencies:
       starknet: ^5.18.0
     dependencies:
-      starknet: 6.6.0
+      starknet: 6.7.0
     dev: false
 
   /get-starknet@3.0.1(starknet@5.19.5):
@@ -7077,7 +7124,7 @@ packages:
     engines: {node: '>= 18'}
     hasBin: true
     dependencies:
-      '@babel/runtime': 7.24.1
+      '@babel/runtime': 7.24.4
       complex.js: 2.1.1
       decimal.js: 10.4.3
       escape-latex: 1.2.0
@@ -7197,6 +7244,10 @@ packages:
 
   /mobx@6.12.0:
     resolution: {integrity: sha512-Mn6CN6meXEnMa0a5u6a5+RKrqRedHBhZGd15AWLk9O6uFY4KYHzImdt8JI8WODo1bjTSRnwXhJox+FCUZhCKCQ==}
+    dev: false
+
+  /mobx@6.12.3:
+    resolution: {integrity: sha512-c8NKkO4R2lShkSXZ2Ongj1ycjugjzFFo/UswHBnS62y07DMcTc9Rvo03/3nRyszIvwPNljlkd4S828zIBv/piw==}
     dev: false
 
   /ms@2.1.2:
@@ -7818,6 +7869,18 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
+  /react-resizable@3.0.5(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-vKpeHhI5OZvYn82kXOs1bC8aOXktGU5AmKAgaZS4F5JPburCtbmDPqE7Pzp+1kN4+Wb81LlF33VpGwWwtXem+w==}
+    peerDependencies:
+      react: '>= 16.3'
+    dependencies:
+      prop-types: 15.8.1
+      react: 18.2.0
+      react-draggable: 4.4.6(react-dom@18.2.0)(react@18.2.0)
+    transitivePeerDependencies:
+      - react-dom
+    dev: false
+
   /react-toastify@10.0.5(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-mNKt2jBXJg4O7pSdbNUfDdTsK9FIdikfsIE/yUCxbAEXl4HMyJaivrVFcn3Elvt5xvCQYhUZm+hqTIu1UXM3Pw==}
     peerDependencies:
@@ -8254,6 +8317,10 @@ packages:
       tslib: 2.6.2
     dev: true
 
+  /starknet-types@0.0.4:
+    resolution: {integrity: sha512-PklqFeSp9gMqbzW5IbO8l1s3xsNZYkNG/x/gsytgYCIl6H/cqiwCZolVTneyTibvrdHOQ8kP3PXwfdsypudYqw==}
+    dev: false
+
   /starknet@5.19.5:
     resolution: {integrity: sha512-S7V4ifyYd+ApsIwYTd7YA5U2Px+NZkCsQPnmgY/wkc5LLFKhYMNpzHQ5nIA15p70AwtSXCcsEBnHNRBOuci13Q==}
     dependencies:
@@ -8268,17 +8335,18 @@ packages:
       - encoding
     dev: false
 
-  /starknet@6.6.0:
-    resolution: {integrity: sha512-/iX09ay4oD8oElmKAZrdp+CSfZvt2EK9AUxlt+DPtX2O3y7A+v93IVZ3GrtTa7tOFAnExVcE0YnPEYqU1krZTw==}
+  /starknet@6.7.0:
+    resolution: {integrity: sha512-8NMedKBfkg/oZUgTYNw9lKeNoNYakL/Roah2HwKzrVyvDxBs0arrNrR8No8+tTq0wQg0HGu1w+JIObynjHAK3w==}
     dependencies:
-      '@noble/curves': 1.3.0
-      '@scure/base': 1.1.5
+      '@noble/curves': 1.4.0
+      '@scure/base': 1.1.6
       '@scure/starknet': 1.0.0
-      abi-wan-kanabi: 2.2.1
+      abi-wan-kanabi: 2.2.2
       fetch-cookie: 3.0.1
       isomorphic-fetch: 3.0.0
       lossless-json: 4.0.1
       pako: 2.1.0
+      starknet-types: 0.0.4
       ts-mixer: 6.0.4
       url-join: 4.0.1
     transitivePeerDependencies:
