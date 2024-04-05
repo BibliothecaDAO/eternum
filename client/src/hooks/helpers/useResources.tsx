@@ -8,6 +8,7 @@ import { Resource } from "@bibliothecadao/eternum";
 import { EventType, useNotificationsStore } from "../store/useNotificationsStore";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
 import { useEffect, useState } from "react";
+import useBlockchainStore from "../store/useBlockchainStore";
 
 export function useResources() {
   const {
@@ -129,35 +130,6 @@ export function useResources() {
     return resourceCosts;
   };
 
-  const getFoodResources = (entityId: bigint): Resource[] => {
-    const wheatBalance = new ProductionManager(Production, Resource, entityId, 254n).balance();
-    const fishBalance = new ProductionManager(Production, Resource, entityId, 255n).balance();
-
-    return [
-      { resourceId: 254, amount: wheatBalance },
-      { resourceId: 255, amount: fishBalance },
-    ];
-  };
-
-  const getBalance = (entityId: bigint, resourceId: number) => {
-    const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
-    return { balance: productionManager.balance(), resourceId };
-  };
-
-  const useBalance = (entityId: bigint, resourceId: number) => {
-    const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
-
-    const resource = useComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
-    const production = useComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
-
-    useEffect(() => {
-      const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
-      setResourceBalance({ amount: productionManager.balance(), resourceId });
-    }, [resource, production]);
-
-    return resourceBalance;
-  };
-
   const getRealmsWithSpecificResource = (
     resourceId: number,
     minAmount: number,
@@ -244,11 +216,53 @@ export function useResources() {
     getResourcesFromInventory,
     getResourcesFromResourceChestIds,
     offloadChests,
-    getFoodResources,
     getResourceChestIdFromInventoryIndex,
-    getBalance,
-    useBalance,
     getCaravansWithResourcesChest,
     getResourceCosts,
+  };
+}
+
+export function useResourceBalance() {
+  const {
+    setup: {
+      components: { Resource, Production },
+    },
+  } = useDojo();
+
+  const currentTick = useBlockchainStore((state) => state.currentTick);
+
+  const getFoodResources = (entityId: bigint): Resource[] => {
+    const wheatBalance = new ProductionManager(Production, Resource, entityId, 254n).balance(currentTick);
+    const fishBalance = new ProductionManager(Production, Resource, entityId, 255n).balance(currentTick);
+
+    return [
+      { resourceId: 254, amount: wheatBalance },
+      { resourceId: 255, amount: fishBalance },
+    ];
+  };
+
+  const getBalance = (entityId: bigint, resourceId: number) => {
+    const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+    return { balance: productionManager.balance(currentTick), resourceId };
+  };
+
+  const useBalance = (entityId: bigint, resourceId: number) => {
+    const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
+
+    const resource = useComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
+    const production = useComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
+
+    useEffect(() => {
+      const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+      setResourceBalance({ amount: productionManager.balance(currentTick), resourceId });
+    }, [resource, production]);
+
+    return resourceBalance;
+  };
+
+  return {
+    getFoodResources,
+    getBalance,
+    useBalance,
   };
 }

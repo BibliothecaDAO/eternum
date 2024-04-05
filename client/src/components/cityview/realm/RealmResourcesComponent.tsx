@@ -14,7 +14,7 @@ import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
-import { useResources } from "../../../hooks/helpers/useResources";
+import { useResourceBalance, useResources } from "../../../hooks/helpers/useResources";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -127,7 +127,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
   const [productivity, setProductivity] = useState<number>(0);
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
-  const { useBalance } = useResources();
+  const { useBalance } = useResourceBalance();
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 

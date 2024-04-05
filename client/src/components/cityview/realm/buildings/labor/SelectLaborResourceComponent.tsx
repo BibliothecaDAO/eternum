@@ -1,5 +1,5 @@
 import { Guilds, resourcesByGuild } from "@bibliothecadao/eternum";
-import { useResources } from "../../../../../hooks/helpers/useResources";
+import { useResourceBalance } from "../../../../../hooks/helpers/useResources";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { SelectableLaborResource } from "./SelectableLaborResource";
 
@@ -15,7 +15,7 @@ export const SelectLaborResourceComponent = ({
   setSelectedLaborResource,
 }: SelectLaborResourceComponentProps) => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const { getBalance } = useResources();
+  const { getBalance } = useResourceBalance();
 
   const resources = Guilds[guild - 1] ? resourcesByGuild[Guilds[guild - 1]] : undefined;
 

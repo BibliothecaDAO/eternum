@@ -43,6 +43,7 @@ export const ChooseArmyActionPopup = ({}: ChooseArmyActionPopupProps) => {
   const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getEntityWatchTowerId } = useCombat();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const currentTick = useBlockchainStore((state) => state.currentTick);
 
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
@@ -122,7 +123,6 @@ export const ChooseArmyActionPopup = ({}: ChooseArmyActionPopupProps) => {
   const tickMove = selectedEntity ? getComponentValue(TickMove, getEntityIdFromKeys([selectedEntity.id])) : undefined;
   const isPassiveTravel = arrivalTime && nextBlockTimestamp ? arrivalTime.arrives_at > nextBlockTimestamp : false;
 
-  const currentTick = nextBlockTimestamp ? Math.floor(nextBlockTimestamp / TIME_PER_TICK) : 0;
   const isActiveTravel = tickMove !== undefined && tickMove.tick >= currentTick;
 
   const isTraveling = isPassiveTravel || isActiveTravel;

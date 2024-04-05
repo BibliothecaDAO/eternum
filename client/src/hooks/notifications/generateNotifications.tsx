@@ -13,7 +13,7 @@ import { LevelIndex } from "../helpers/useLevel";
 import { getLordsAmountFromBankAuction } from "../../components/worldmap/banks/utils";
 import { BANK_AUCTION_DECAY, targetPrices } from "../helpers/useBanks";
 import { realmsPosition } from "./utils";
-import { TIME_PER_TICK } from "../../components/network/EpochCountdown";
+import { TIME_PER_TICK } from "../store/useBlockchainStore";
 
 export type UpdatedEntity = {
   entityKeys: string[];

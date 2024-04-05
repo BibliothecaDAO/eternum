@@ -20,7 +20,7 @@ import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils"
 import { useGetRealm, useRealm } from "../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
-import { useResources } from "../../../../hooks/helpers/useResources";
+import { useResourceBalance, useResources } from "../../../../hooks/helpers/useResources";
 import { getTotalResourceWeight } from "./utils";
 import { TradeRealmSelector } from "./TradeRealmSelector";
 
@@ -226,7 +226,7 @@ const SelectResourcesPanel = ({
   selectedResourceIdsGet: number[];
   setSelectedResourceIdsGet: (selectedResourceIds: number[]) => void;
 }) => {
-  const { getBalance } = useResources();
+  const { getBalance } = useResourceBalance();
 
   const { realmEntityId } = useRealmStore();
 
@@ -312,7 +312,7 @@ const SelectResourcesAmountPanel = ({
 }) => {
   const { realmEntityId } = useRealmStore();
 
-  const { getBalance } = useResources();
+  const { getBalance } = useResourceBalance();
 
   useEffect(() => {
     // set resource weight in kg

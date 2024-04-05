@@ -10,7 +10,7 @@ import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
 import { useComponentValue } from "@dojoengine/react";
 import { SelectRaiders } from "./SelectRaiders";
-import { useResources } from "../../../../../hooks/helpers/useResources";
+import { useResourceBalance, useResources } from "../../../../../hooks/helpers/useResources";
 import clsx from "clsx";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { CombatInfo, Resource, findResourceById, resources } from "@bibliothecadao/eternum";
@@ -38,7 +38,7 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
   const [targetRealmEntityId, setTargetRealmEntityId] = useState<bigint | null>(null);
 
   const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getDefenceOnPosition } = useCombat();
-  const { getFoodResources } = useResources();
+  const { getFoodResources } = useResourceBalance();
 
   const attackingEntities = attackPosition ? getOwnerRaidersOnPosition(attackPosition) : [];
   const attackingRaiders = useMemo(() => {
@@ -290,7 +290,8 @@ const StealResultPanel = ({
     },
   } = useDojo();
 
-  const { getResourcesFromInventory, getFoodResources } = useResources();
+  const { getResourcesFromInventory } = useResources();
+  const { getFoodResources } = useResourceBalance();
   const [step, setStep] = useState(1);
   const attackerHealth = selectedRaiders[0].entityId
     ? useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]))
@@ -496,7 +497,8 @@ const SelectRaidersPanel = ({
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
   const { getConqueredHyperstructures } = useHyperstructure();
-  const { getBalance, getResourcesFromInventory } = useResources();
+  const { getResourcesFromInventory } = useResources();
+  const { getBalance } = useResourceBalance();
 
   const [attackerTotalAttack, attackerTotalHealth] = useMemo(() => {
     // sum attack of the list

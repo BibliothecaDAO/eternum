@@ -1,18 +1,25 @@
 import { create } from "zustand";
 import { useEffect } from "react";
 
+export const TIME_PER_TICK = 60;
+
 interface BlockchainState {
   nextBlockTimestamp: number | undefined;
   setNextBlockTimestamp: (nextBlockTimestamp: number) => void;
+  currentTick: number;
+  setCurrentTick: (currentTick: number) => void;
 }
 
 const useBlockchainStore = create<BlockchainState>((set) => ({
   nextBlockTimestamp: undefined,
   setNextBlockTimestamp: (nextBlockTimestamp: number) => set({ nextBlockTimestamp }),
+  currentTick: 0,
+  setCurrentTick: (currentTick: number) => set({ currentTick }),
 }));
 
 export const useFetchBlockchainData = () => {
   const setNextBlockTimestamp = useBlockchainStore((state) => state.setNextBlockTimestamp);
+  const setCurrentTick = useBlockchainStore((state) => state.setCurrentTick);
   const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp); // Get the current nextBlockTimestamp from the store
 
   useEffect(() => {
@@ -24,6 +31,7 @@ export const useFetchBlockchainData = () => {
       if (timestamp && timestamp !== currentTimestamp) {
         // Check if fetched timestamp is different from current state
         setNextBlockTimestamp(timestamp);
+        setCurrentTick(Math.floor(timestamp / TIME_PER_TICK));
       }
     };
 
@@ -39,36 +47,6 @@ export const useFetchBlockchainData = () => {
 
 const fetchBlockTimestamp = async (): Promise<number | undefined> => {
   return Math.floor(Date.now() / 1000);
-  // try {
-  //   // NOTE: if we are using Katana in dev, we should use next block timestmamp because of
-  //   // the advance_time functionality
-  //   // TODO: make sure this is still the case
-  //   if (import.meta.env.VITE_DEV === "true") {
-  //     const response = await fetch(import.meta.env.VITE_PUBLIC_NODE_URL!, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         jsonrpc: "2.0",
-  //         method: "starknet_getBlockWithTxs",
-  //         params: { block_id: "latest" },
-  //         id: 1,
-  //       }),
-  //     });
-  //     const data = await response.json();
-  //     return data.result.timestamp;
-  //   } else {
-  //     // NOTE: if we are using Katana in dev, we should use next block timestmamp because
-  //     // it allows us to advance time. But current issue with next_block_timestamp is that
-  //     // it does not get updated in katana until someone mints a new block. Since in prod we should
-  //     // not be able to use advance time, we should use current block timestamp
-  //     return Math.floor(Date.now() / 1000);
-  //   }
-  // } catch (error) {
-  //   console.error("Error fetching block timestamp:", error);
-  //   return undefined;
-  // }
 };
 
 export default useBlockchainStore;

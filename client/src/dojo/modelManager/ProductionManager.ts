@@ -21,47 +21,102 @@ export class ProductionManager {
   }
 
   // Retrieves the production data for the current entity
-  private getProduction() {
+  public getProduction() {
     return getComponentValue(this.productionModel, getEntityIdFromKeys([this.entityId, this.resourceId]));
   }
 
-  // Calculates the time elapsed since the last update
-  private sinceLastUpdate() {
+  public getResource() {
+    return getComponentValue(this.resourceModel, getEntityIdFromKeys([this.entityId, this.resourceId]));
+  }
+
+  public isActive() {
     const production = this.getProduction();
-    return production ? Date.now() - production.last_updated : 0;
+    return production && production.building_count > 0 && production.active;
   }
 
-  // Computes the total generated resources since the last update
-  private generated() {
+  public bonus() {
     const production = this.getProduction();
-    return production && production.active
-      ? (production.production_rate + production.production_boost_rate) * this.sinceLastUpdate()
-      : 0;
+    if (!production) return BigInt(0);
+    return (production.production_rate * BigInt(production.building_count) * production.bonus_percent) / BigInt(10_000);
   }
 
-  // Computes the total consumed resources since the last update
-  private consumed() {
+  public actualProductionRate() {
     const production = this.getProduction();
-    return production && production.active ? production.consumed_rate * this.sinceLastUpdate() : 0;
+    if (!production) return BigInt(0);
+    return production.production_rate * BigInt(production.building_count) + this.bonus();
   }
 
-  // Public method to get the net production rate
-  netRate() {
+  public netRate(): [boolean, bigint] {
     const production = this.getProduction();
-    return production && production.active
-      ? production.production_rate + production.production_boost_rate - production.consumed_rate
-      : 0;
+    if (!production || !production?.active) return [false, BigInt(0)];
+    let productionRate = this.actualProductionRate();
+    if (productionRate > production.consumption_rate) {
+      return [true, productionRate - production.consumption_rate];
+    } else {
+      return [false, production.consumption_rate - productionRate];
+    }
   }
 
-  // Public method to calculate the remaining balance of resources
-  balance() {
-    const resource = getComponentValue(this.resourceModel, getEntityIdFromKeys([this.entityId, this.resourceId]));
-    return (Number(resource?.balance) || 0) + this.generated() - this.consumed();
+  public balanceExhaustionTick(currentTick: number): number {
+    const production = this.getProduction();
+    const resource = this.getResource();
+
+    if (!production || !resource) return currentTick; // Handling undefined values
+
+    const [sign, value] = this.netRate();
+    if (value > BigInt(0)) {
+      if (!sign) {
+        const lossPerTick = value;
+        const numTicksLeft = resource.balance / lossPerTick;
+        return currentTick + Number(numTicksLeft); // Assuming conversion is safe
+      } else {
+        return Number.MAX_SAFE_INTEGER;
+      }
+    } else {
+      return Number.MAX_SAFE_INTEGER;
+    }
   }
 
-  // Public method to estimate the time until resources are depleted
-  untilDepleted() {
-    const netRate = this.netRate();
-    return netRate !== 0 ? this.balance() / netRate : Infinity;
+  public productionDuration(currentTick: number): number {
+    const production = this.getProduction();
+    if (!production) return 0;
+
+    if (production.last_updated_tick >= production.materials_exhaustion_tick) {
+      return 0;
+    }
+
+    if (production.materials_exhaustion_tick > currentTick) {
+      return currentTick - production.last_updated_tick;
+    } else {
+      return production.materials_exhaustion_tick - production.last_updated_tick;
+    }
+  }
+
+  public depletionDuration(currentTick: number): number {
+    const production = this.getProduction();
+    if (!production) return 0;
+
+    if (production.materials_exhaustion_tick >= production.last_updated_tick) {
+      return 0;
+    }
+
+    const exhaustionTick =
+      production.materials_exhaustion_tick + (production.last_updated_tick - production.materials_exhaustion_tick);
+    return currentTick - exhaustionTick;
+  }
+
+  public balance(currentTick: number): number {
+    const resource = this.getResource();
+
+    const [sign, value] = this.netRate();
+    if (value > BigInt(0)) {
+      if (sign) {
+        return Number(resource?.balance || 0n) + this.productionDuration(currentTick) * Number(value);
+      } else {
+        return Math.max(Number(resource?.balance || 0n) - this.depletionDuration(currentTick) * Number(value), 0);
+      }
+    } else {
+      return Number(resource?.balance || 0n);
+    }
   }
 }

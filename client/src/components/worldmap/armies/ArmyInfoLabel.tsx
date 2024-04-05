@@ -17,7 +17,6 @@ import ProgressBar from "../../../elements/ProgressBar";
 import { useRealm } from "../../../hooks/helpers/useRealm";
 import { useResources } from "../../../hooks/helpers/useResources";
 import { ResourceCost } from "../../../elements/ResourceCost";
-import { TIME_PER_TICK } from "../../network/EpochCountdown";
 
 type ArmyInfoLabelProps = {
   position: UIPosition;
@@ -36,6 +35,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   const { getResourcesFromInventory } = useResources();
   const { getRealmAddressName } = useRealm();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const currentTick = useBlockchainStore((state) => state.currentTick);
 
   const raider = useMemo(() => {
     return getEntitiesCombatInfo([armyId])[0];
@@ -44,7 +44,6 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   const tickMove = raider.entityId ? getComponentValue(TickMove, getEntityIdFromKeys([raider.entityId])) : undefined;
   const isPassiveTravel = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
 
-  const currentTick = nextBlockTimestamp ? Math.floor(nextBlockTimestamp / TIME_PER_TICK) : 0;
   const isActiveTravel = tickMove !== undefined ? tickMove.tick >= currentTick : false;
 
   return (

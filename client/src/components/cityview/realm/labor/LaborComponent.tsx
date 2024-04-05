@@ -16,7 +16,7 @@ import { EventType, useNotificationsStore } from "../../../../hooks/store/useNot
 import { FoodType, useLabor } from "../../../../hooks/helpers/useLabor";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { ReactComponent as People } from "../../../../assets/icons/common/people.svg";
-import { useResources } from "../../../../hooks/helpers/useResources";
+import { useResourceBalance, useResources } from "../../../../hooks/helpers/useResources";
 
 type LaborComponentProps = {
   hasGuild: boolean;
@@ -47,7 +47,7 @@ export const LaborComponent = ({
     account: { account },
   } = useDojo();
 
-  const { useBalance } = useResources();
+  const { useBalance } = useResourceBalance();
 
   const { playResourceSound } = usePlayResourceSound();
   const { play: playBuildFarm } = useUiSounds(soundSelector.buildFarm);

@@ -10,16 +10,18 @@ export function defineContractComponents(world: World) {
         {
           entity_id: RecsType.BigInt,
           resource_type: RecsType.Number,
-          production_rate: RecsType.Number,
-          production_boost_rate: RecsType.Number,
-          consumed_rate: RecsType.Number,
-          last_updated: RecsType.Number,
+          building_count: RecsType.BigInt,
+          production_rate: RecsType.BigInt,
+          bonus_percent: RecsType.BigInt,
+          consumption_rate: RecsType.BigInt,
+          last_updated_tick: RecsType.Number,
+          materials_exhaustion_tick: RecsType.Number,
           active: RecsType.Boolean,
         },
         {
           metadata: {
             name: "Production",
-            types: ["u128", "u8", "u64", "u64", "u64", "u64", "bool"],
+            types: ["u128", "u8", "u128", "u128", "u128", "u128", "u64", "u64", "bool"],
             customTypes: [],
           },
         },
@@ -194,12 +196,15 @@ export function defineContractComponents(world: World) {
           id: RecsType.BigInt,
           // todo: check if works with enum
           category: RecsType.Number,
+          produced_resource_type: RecsType.Number,
+          entity_id: RecsType.BigInt,
+          outer_entity_id: RecsType.BigInt,
         },
         {
           metadata: {
             name: "Building",
             // todo: check if need cutom types for building category
-            types: ["u128", "u128", "u128", "u128", "u128", "u8"],
+            types: ["u128", "u128", "u128", "u128", "u128", "u8", "u8", "u128", "u128"],
             customTypes: [],
           },
         },

@@ -10,7 +10,6 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useCombat } from "../../../hooks/helpers/useCombat";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
-import { TIME_PER_TICK } from "../../network/EpochCountdown";
 import { Html } from "@react-three/drei";
 
 type ArmyMenuProps = {
@@ -52,6 +51,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getEntityWatchTowerId } = useCombat();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const currentTick = useBlockchainStore((state) => state.currentTick);
 
   useEffect(() => {
     if (!selectedEntity) return;
@@ -111,7 +111,6 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const tickMove = selectedEntity ? getComponentValue(TickMove, getEntityIdFromKeys([selectedEntity.id])) : undefined;
   const isPassiveTravel = arrivalTime && nextBlockTimestamp ? arrivalTime.arrives_at > nextBlockTimestamp : false;
 
-  const currentTick = nextBlockTimestamp ? Math.floor(nextBlockTimestamp / TIME_PER_TICK) : 0;
   const isActiveTravel = tickMove !== undefined && tickMove.tick >= currentTick;
 
   const isTraveling = isPassiveTravel || isActiveTravel;

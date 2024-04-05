@@ -16,7 +16,7 @@ import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils"
 import { useGetRealm, useRealm } from "../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
-import { useResources } from "../../../../hooks/helpers/useResources";
+import { useResourceBalance, useResources } from "../../../../hooks/helpers/useResources";
 import ListSelect from "../../../../elements/ListSelect";
 import { getTotalResourceWeight } from "./utils";
 import { TradeRealmSelector } from "./TradeRealmSelector";
@@ -221,7 +221,7 @@ const SelectResourcesAmountPanel = ({
 }) => {
   const { realmEntityId } = useRealmStore();
 
-  const { getBalance } = useResources();
+  const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
 
   const swapResources = () => {
