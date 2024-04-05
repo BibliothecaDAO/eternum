@@ -5,7 +5,8 @@ use eternum::models::config::{TickConfig, TickImpl, TickTrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-use eternum::models::production::{Production, ProductionRateTrait, ProductionMaterialConfig};
+use eternum::models::production::{Production, ProductionRateTrait};
+use eternum::models::config::{ProductionMaterialConfig};
 
 
 #[derive(Model, Copy, Drop, Serde)]

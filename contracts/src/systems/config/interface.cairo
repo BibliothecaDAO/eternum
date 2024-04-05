@@ -148,3 +148,21 @@ trait IMapConfig {
     );
 }
 
+
+#[dojo::interface]
+trait IProductionConfig {
+    fn set_production_config(
+        resource_type: u8,
+        amount_per_tick: u128,
+        cost_resource_type_1: u8,
+        cost_resource_type_1_amount: u128,
+        cost_resource_type_2: u8,
+        cost_resource_type_2_amount: u128,
+    );
+    
+    fn set_production_material_config(
+        material_resource_type: u8,
+        produced_resource_type_1: u8,
+        produced_resource_type_2: u8
+    );
+}

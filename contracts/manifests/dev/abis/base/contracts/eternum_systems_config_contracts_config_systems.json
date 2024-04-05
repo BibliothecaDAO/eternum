@@ -488,6 +488,69 @@
   },
   {
     "type": "impl",
+    "name": "ProductionConfigImpl",
+    "interface_name": "eternum::systems::config::interface::IProductionConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::IProductionConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_production_config",
+        "inputs": [
+          {
+            "name": "resource_type",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "amount_per_tick",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "cost_resource_type_1",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "cost_resource_type_1_amount",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "cost_resource_type_2",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "cost_resource_type_2_amount",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_production_material_config",
+        "inputs": [
+          {
+            "name": "material_resource_type",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "produced_resource_type_1",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "produced_resource_type_2",
+            "type": "core::integer::u8"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
     "name": "TransportConfigImpl",
     "interface_name": "eternum::systems::config::interface::ITransportConfig"
   },

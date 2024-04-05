@@ -9,13 +9,13 @@ mod config_systems {
         LaborCostResources, LaborCostAmount, LaborConfig, CapacityConfig, RoadConfig, SpeedConfig,
         TravelConfig, WeightConfig, WorldConfig, SoldierConfig, HealthConfig, AttackConfig,
         DefenceConfig, CombatConfig, LevelingConfig, RealmFreeMintConfig, LaborBuildingsConfig,
-        LaborBuildingCost, MapExploreConfig, TickConfig
+        LaborBuildingCost, MapExploreConfig, TickConfig, ProductionConfig, ProductionMaterialConfig
     };
 
     use eternum::systems::config::interface::{
         IWorldConfig, IWeightConfig, ICapacityConfig, ILaborConfig, ITransportConfig,
         IHyperstructureConfig, ICombatConfig, ILevelingConfig, IBankConfig, IRealmFreeMintConfig,
-        IBuildingsConfig, IMapConfig, ITickConfig
+        IBuildingsConfig, IMapConfig, ITickConfig, IProductionConfig
     };
 
     use eternum::constants::{
@@ -460,6 +460,50 @@ mod config_systems {
 
                 zone += 1;
             };
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl ProductionConfigImpl of IProductionConfig<ContractState> {
+        fn set_production_config(
+            world: IWorldDispatcher, 
+            resource_type: u8,
+            amount_per_tick: u128,
+            cost_resource_type_1: u8,
+            cost_resource_type_1_amount: u128,
+            cost_resource_type_2: u8,
+            cost_resource_type_2_amount: u128,
+        ) {
+            assert_caller_is_admin(world);
+
+            set!(world, (
+                ProductionConfig {
+                    resource_type,
+                    amount_per_tick,
+                    cost_resource_type_1,
+                    cost_resource_type_1_amount,
+                    cost_resource_type_2,
+                    cost_resource_type_2_amount
+                }
+            ));
+        }
+
+        fn set_production_material_config(
+            world: IWorldDispatcher, 
+            material_resource_type: u8,
+            produced_resource_type_1: u8,
+            produced_resource_type_2: u8
+        ) {
+
+            assert_caller_is_admin(world);
+
+            set!(world, (
+                ProductionMaterialConfig {
+                    material_resource_type,
+                    produced_resource_type_1,
+                    produced_resource_type_2,
+                }
+            ));
         }
     }
 
