@@ -37,6 +37,8 @@ import {
   DisassembleCaravanAndReturnFreeUnitsProps,
   CreateLaborBuildingProps,
   DestroyLaborBuildingProps,
+  CreateBuildingProps,
+  DestroyBuildingProps,
 } from "../types/provider";
 import { Call } from "starknet";
 
@@ -812,6 +814,32 @@ export class EternumProvider extends DojoProvider {
       contractAddress: getContractByName(this.manifest, "map_systems"),
       entrypoint: "explore",
       calldata: [this.getWorldAddress(), unit_id, direction],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async create_building(props: CreateBuildingProps) {
+    const { entity_id, building_coord, building_category, produce_resource_type, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "building_systems"),
+      entrypoint: "create",
+      calldata: [this.getWorldAddress(), entity_id, building_coord, building_category, produce_resource_type],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async destroy_building(props: DestroyBuildingProps) {
+    const { entity_id, building_coord, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "building_systems"),
+      entrypoint: "destroy",
+      calldata: [this.getWorldAddress(), entity_id, building_coord],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

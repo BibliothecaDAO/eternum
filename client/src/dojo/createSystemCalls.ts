@@ -39,6 +39,8 @@ import {
   DestroyLaborBuildingProps,
   ExploreProps,
   TravelHexProps,
+  CreateBuildingProps,
+  DestroyBuildingProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -198,6 +200,14 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.explore(props);
   };
 
+  const create_building = async (props: CreateBuildingProps) => {
+    await provider.create_building(props);
+  };
+
+  const destroy_building = async (props: DestroyBuildingProps) => {
+    await provider.destroy_building(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -246,6 +256,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     travel_hex,
     merge_soldiers,
     heal_soldiers,
+    destroy_building,
+    create_building,
     uuid,
   };
 }
