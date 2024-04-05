@@ -1,0 +1,15 @@
+kind = "DojoModel"
+class_hash = "0x3d06e06c1bbbfd950da25cb6cb9447b83eceecfdfbabaa49a04b649f3bc4a4"
+original_class_hash = "0x3d06e06c1bbbfd950da25cb6cb9447b83eceecfdfbabaa49a04b649f3bc4a4"
+abi = "manifests/dev/abis/base/models/eternum_models_bank_bank.json"
+name = "eternum::models::bank::bank"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "exists"
+type = "bool"
+key = false

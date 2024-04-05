@@ -2,7 +2,7 @@
 
 echo "Migrating World and Indexing"
 cd contracts
-sozo migrate --name eternum
+sozo migrate apply --name eternum
 
 
 echo "Auth and World Contracts: Set 0.1s"

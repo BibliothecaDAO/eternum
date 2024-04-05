@@ -41,8 +41,8 @@ source = "git+https://github.com/ponderingdemocritus/cubit#82be92f4c296143bbb572
 
 [[package]]
 name = "dojo"
-version = "0.5.1"
-source = "git+https://github.com/dojoengine/dojo?tag=v0.6.0-alpha.13#5bdcfdff82c7a01443bf603047f4bfe00d210ed6"
+version = "0.6.0"
+source = "git+https://github.com/dojoengine/dojo?tag=v0.6.0#fc5ad790c1993713e59f3fc65739160f132f29f0"
 dependencies = [
  "dojo_plugin",
 ]
@@ -54,7 +54,7 @@ source = "git+https://github.com/dojoengine/dojo?tag=v0.3.11#1e651b5d4d3b79b14a7
 
 [[package]]
 name = "eternum"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "alexandria_math",
  "cubit",

@@ -1,0 +1,25 @@
+kind = "DojoModel"
+class_hash = "0x4b5601b84471530a377d4943a1cc910acfdadb13048d1295e1b5d396eab386b"
+original_class_hash = "0x4b5601b84471530a377d4943a1cc910acfdadb13048d1295e1b5d396eab386b"
+abi = "manifests/dev/abis/base/models/eternum_models_config_labor_config.json"
+name = "eternum::models::config::labor_config"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "base_labor_units"
+type = "u64"
+key = false
+
+[[members]]
+name = "base_resources_per_cycle"
+type = "u128"
+key = false
+
+[[members]]
+name = "base_food_per_cycle"
+type = "u128"
+key = false

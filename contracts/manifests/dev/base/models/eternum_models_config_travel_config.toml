@@ -1,0 +1,15 @@
+kind = "DojoModel"
+class_hash = "0xd65ea9ba4aff460b97d7e94b23ebd09617121ce5a65947196c16539d177754"
+original_class_hash = "0xd65ea9ba4aff460b97d7e94b23ebd09617121ce5a65947196c16539d177754"
+abi = "manifests/dev/abis/base/models/eternum_models_config_travel_config.json"
+name = "eternum::models::config::travel_config"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "free_transport_per_city"
+type = "u128"
+key = false
