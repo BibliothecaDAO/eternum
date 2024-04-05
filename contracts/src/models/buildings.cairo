@@ -8,9 +8,10 @@ use eternum::models::resources::{Resource, ResourceCost};
 use eternum::models::owner::Owner;
 use eternum::models::owner::EntityOwner;
 use eternum::constants::ResourceTypes;
-use eternum::models::position::{Occupied, Coord, Position, Direction};
+use eternum::models::position::{Coord, Position, Direction};
 use core::poseidon::poseidon_hash_span as hash;
-use dojo::world::IWorldDispatcherTrait;
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::models::config::{TickConfig, TickImpl, TickTrait};
 
 //todo we need to define border of innner hexes
 
@@ -29,7 +30,7 @@ struct Building {
     outer_entity_id: u128,
 }
 
-#[derive(PartialEq, Copy, Drop, Serde, PrintTrait)]
+#[derive(PartialEq, Copy, Drop, Serde, PrintTrait, Introspect)]
 enum BuildingCategory {
     None,
     Castle,
@@ -123,8 +124,10 @@ impl BuildingImpl of BuildingTrait {
 
         set!(world, (building));
 
-        // set production details relating to building
-        building.set_production(world);
+        // start production related to building
+        building.start_production(world);
+
+        return building;
     }
 
 
@@ -147,13 +150,13 @@ impl BuildingImpl of BuildingTrait {
         // ensure that inner coordinate is occupied
         let mut building: Building = get!(
             world,
-            (outer_entity_position.x.outer_entity_position.y, inner_coord.x, inner_coord.y),
+            (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y),
             Building
         );
         assert!(building.entity_id != 0, "building does not exist");
 
-        // unset production details relating to building
-        building.unset_production(world);
+        // stop production related to building
+        building.stop_production(world);
 
         // remove building 
         building.entity_id = 0;
@@ -167,9 +170,10 @@ impl BuildingImpl of BuildingTrait {
 
 
 
-    fn set_production(ref self: Building, world: IWorldDispatcher ) {
+    fn start_production(ref self: Building, world: IWorldDispatcher ) {
 
         if self.category.is_resource_producer() {
+            let tick = TickImpl::get(world);
             let produced_resource_type = self.category.produced_resource();
             let mut produced_resource: Resource 
                 = get!(world, (self.outer_entity_id, produced_resource_type), Resource);
@@ -179,25 +183,42 @@ impl BuildingImpl of BuildingTrait {
             let mut resource_production: Production = get!(
                 world, (self.outer_entity_id, produced_resource_type), Production);
             resource_production.set_rate(production_config.amount_per_tick);
-            resource_production.increase_building_count(ref produced_resource);
+            resource_production.increase_building_count(ref produced_resource, @tick);
 
 
-            // payment for production
+            // make payment for production
+
+            // increase consumption rate of first material
             let mut material_one_production: Production = get!(
                 world, (self.outer_entity_id, production_config.cost_resource_type_1), Production
             );
+            let mut material_one_resource: Resource = get!(
+                world, (self.outer_entity_id, production_config.cost_resource_type_1), Resource
+            );
             material_one_production
                 .increase_consumption_rate(
-                    ref produced_resource, production_config.cost_resource_type_1_amount
-                );
+                    ref material_one_resource, @tick, production_config.cost_resource_type_1_amount);
 
+            // increase consumption rate of second material
             let mut material_two_production: Production = get!(
                 world, (self.outer_entity_id, production_config.cost_resource_type_2), Production
             );
+            let mut material_two_resource: Resource = get!(
+                world, (self.outer_entity_id, production_config.cost_resource_type_2), Resource
+            );
             material_two_production
                 .increase_consumption_rate(
-                    ref produced_resource, production_config.cost_resource_type_2_amount
-                );
+                    ref material_two_resource, @tick, production_config.cost_resource_type_2_amount);
+
+
+            // set the time that time that production stops because materials run out
+            resource_production
+                .set_materials_exhaustion_tick(
+                    ref material_one_production, ref material_one_resource, @tick);
+
+            resource_production
+                .set_materials_exhaustion_tick(
+                    ref material_two_production, ref material_two_resource, @tick);
 
             set!(world, (produced_resource));
             set!(world, (resource_production));
@@ -215,9 +236,10 @@ impl BuildingImpl of BuildingTrait {
     }
 
 
-    fn unset_production(ref self: Building, world: IWorldDispatcher ) {
+    fn stop_production(ref self: Building, world: IWorldDispatcher ) {
 
         if self.category.is_resource_producer() {
+            let tick = TickImpl::get(world);
             let produced_resource_type = self.category.produced_resource();
             let mut produced_resource: Resource 
                 = get!(world, (self.outer_entity_id, produced_resource_type), Resource);
@@ -226,25 +248,40 @@ impl BuildingImpl of BuildingTrait {
             let production_config: ProductionConfig = get!(world, produced_resource_type, ProductionConfig);
             let mut resource_production: Production = get!(
                 world, (self.outer_entity_id, produced_resource_type), Production);
-            resource_production.decrease_building_count(ref produced_resource);
-
+            resource_production.decrease_building_count(ref produced_resource, @tick);
 
             // stop payment for production 
+
+            // decrease consumption rate of first material
             let mut material_one_production: Production = get!(
                 world, (self.outer_entity_id, production_config.cost_resource_type_1), Production
             );
+            let mut material_one_resource: Resource = get!(
+                world, (self.outer_entity_id, production_config.cost_resource_type_1), Resource
+            );
             material_one_production
                 .decrease_consumption_rate(
-                    ref produced_resource, production_config.cost_resource_type_1_amount
-                );
+                    ref material_one_resource, @tick, production_config.cost_resource_type_1_amount);
 
+            // decrease consumption rate of second material
             let mut material_two_production: Production = get!(
                 world, (self.outer_entity_id, production_config.cost_resource_type_2), Production
             );
+            let mut material_two_resource: Resource = get!(
+                world, (self.outer_entity_id, production_config.cost_resource_type_2), Resource
+            );
             material_two_production
                 .decrease_consumption_rate(
-                    ref produced_resource, production_config.cost_resource_type_2_amount
-                );
+                    ref material_two_resource, @tick, production_config.cost_resource_type_2_amount);
+
+            
+            // reset the time that time that production stops because materials run out
+            resource_production
+                .set_materials_exhaustion_tick(
+                    ref material_one_production, ref material_one_resource, @tick); 
+            resource_production
+                .set_materials_exhaustion_tick(
+                    ref material_two_production, ref material_two_resource, @tick);
 
             set!(world, (produced_resource));
             set!(world, (resource_production));
@@ -267,36 +304,32 @@ impl BuildingImpl of BuildingTrait {
 
     fn update_bonuses_received(self: @Building, world: IWorldDispatcher, sign: bool) {
         // get bonuses from all buildings surronding this building if the offer boosts
-        // note: naming is bad. will be updated
         let building_coord: Coord = Coord { x: *self.inner_col, y: *self.inner_row };
-        let mut building_production: Production = get!(
-            world, (self.outer_entity_id, resource_type), Production
-        );
 
-        self
-            ._update_bonus_received_from(
-                ref building_production, building_coord.neighbor(Direction::East), world, sign
+        if self.category.is_resource_producer() {
+            let produced_resource_type = self.category.produced_resource();
+            let mut building_production: Production = get!(
+                world, (self.outer_entity_id, produced_resource_type), Production
             );
-        self
-            ._update_bonus_received_from(
-                ref building_production, building_coord.neighbor(Direction::NorthEast), world, sign
-            );
-        self
-            ._update_bonus_received_from(
-                ref building_production, building_coord.neighbor(Direction::NorthWest), world, sign
-            );
-        self
-            ._update_bonus_received_from(
-                ref building_production, building_coord.neighbor(Direction::West), world, sign
-            );
-        self
-            ._update_bonus_received_from(
-                ref building_production, building_coord.neighbor(Direction::SouthWest), world, sign
-            );
-        self
-            ._update_bonus_received_from(
-                ref building_production, building_coord.neighbor(Direction::SouthEast), world, sign
-            );
+
+            self._update_bonus_received_from(
+                    ref building_production, building_coord.neighbor(Direction::East), world, sign);
+            self
+                ._update_bonus_received_from(
+                    ref building_production, building_coord.neighbor(Direction::NorthEast), world, sign);
+            self
+                ._update_bonus_received_from(
+                    ref building_production, building_coord.neighbor(Direction::NorthWest), world, sign);
+            self
+                ._update_bonus_received_from(
+                    ref building_production, building_coord.neighbor(Direction::West), world, sign);
+            self
+                ._update_bonus_received_from(
+                    ref building_production, building_coord.neighbor(Direction::SouthWest), world, sign);
+            self
+                ._update_bonus_received_from(
+                    ref building_production, building_coord.neighbor(Direction::SouthEast), world, sign);
+        }       
     }
 
 
@@ -335,7 +368,7 @@ impl BuildingImpl of BuildingTrait {
         sign: bool
     ) {
         let building_at_coord: Building = get!(
-            world, (self.outer_col, self.outer_row, inner_coord.x, inner_coord.y), Building
+            world, ((*self).outer_col, (*self).outer_row, inner_coord.x, inner_coord.y), Building
         );
         if sign {
             production
