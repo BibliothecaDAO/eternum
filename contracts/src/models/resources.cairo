@@ -1,6 +1,7 @@
 use eternum::utils::math::{is_u32_bit_set, set_u32_bit};
 use eternum::constants::get_resource_probabilities;
 use eternum::constants::ResourceTypes;
+use eternum::models::config::TickImpl;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::models::production::{Production, ProductionRateTrait, ProductionDependencyConfig};
@@ -53,24 +54,32 @@ impl ProductionDependentsImpl of ProductionDependentsTrait {
             let dependency: ProductionDependencyConfig = get!(
                 world, resource.resource_type, ProductionDependencyConfig
             );
+            let tick = TickImpl::get(world);
             if dependency.produced_resource_type_1 != 0 {
-                let mut production = get!(
+                let mut material_one_production = get!(
                     world, (resource.entity_id, dependency.produced_resource_type_1), Production
                 );
-                production.harvest(ref resource);
-                production.estimate_stop_time(ref resource);
-                set!(world, (production));
+                let mut material_one_resource = get!(
+                    world, (resource.entity_id, dependency.produced_resource_type_1), Resource
+                );
+                resource_production
+                    .set_materials_exhaustion_tick(
+                        ref material_one_production, ref material_one_resource, @tick);
             }
 
             if dependency.produced_resource_type_2 != 0 {
-                let mut production = get!(
+                let mut material_two_production = get!(
                     world, (resource.entity_id, dependency.produced_resource_type_2), Production
                 );
-                production.harvest(ref resource);
-                production.estimate_stop_time(ref resource);
-                set!(world, (production));
+                let mut material_two_resource = get!(
+                    world, (resource.entity_id, dependency.produced_resource_type_2), Resource
+                );
+                resource_production
+                    .set_materials_exhaustion_tick(
+                        ref material_two_production, ref material_two_resource, @tick);
             }
-        }
+            
+            set!(world, (resource_production));
     }
 }
 
@@ -93,8 +102,9 @@ impl ResourceImpl of ResourceTrait {
             // claim produced amount before deduction where necessary
 
             let mut production: Production = get!(world, self.query_key(), Production);
-            production.harvest(ref self);
-            production.estimate_stop_time(ref self);
+
+            let tick = TickImpl::get(world);
+            production.harvest(ref self, @tick);
             set!(world, (production));
         }
 

@@ -170,11 +170,24 @@ struct TickConfig {
 
 
 #[generate_trait]
-impl TickConfigImpl of TickConfigTrait {
+impl TickImpl of TickTrait {
+
+    fn get(world: IWorldDispatcher) -> TickConfig {
+        let tick_config: TickConfig = get!(world, WORLD_CONFIG_ID, TickConfig);
+        return tick_config;   
+    }
 
     fn current(self: TickConfig) -> u64 {
         let now = starknet::get_block_timestamp();
         now / self.tick_interval_in_seconds
+    }
+
+    fn at(self: TickConfig, time: u64) -> u64 {
+        time / self.tick_interval_in_seconds
+    }
+    
+    fn after(self: TickConfig, time_spent: u64) -> u64 {
+        (starknet::get_block_timestamp() + time_spent) / self.tick_interval_in_seconds
     }
 }
 

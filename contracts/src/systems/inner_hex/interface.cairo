@@ -1,10 +1,10 @@
 use dojo::world::IWorldDispatcher;
 
-use eternum::models::realm_layout::BuildingCategory;
+use eternum::models::buildings::BuildingCategory;
 use eternum::models::position::{Coord, Position, Direction};
 
 #[starknet::interface]
-trait IInnerHex<TContractState> {
+trait IRealmMap<TContractState> {
     fn build_building(
         self: @TContractState,
         world: IWorldDispatcher,

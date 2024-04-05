@@ -25,5 +25,4 @@ mod buildings;
 mod map;
 mod tick;
 mod production;
-mod realm_layout;
 mod combatV2;

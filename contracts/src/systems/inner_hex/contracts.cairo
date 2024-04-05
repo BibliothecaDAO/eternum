@@ -1,26 +1,27 @@
 #[dojo::contract]
-mod inner_hex {
+mod realm_map {
     use eternum::alias::ID;
     use eternum::models::{
         resources::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
         realm::Realm, order::Orders, position::{Coord, Position, PositionTrait, Direction},
-        realm_layout::{BuildingCategory, Building, BuildingCategoryTrait, BuildingProductionTrait},
+        buildings::{BuildingCategory, Building, BuildingCategoryTrait, BuildingProductionTrait},
         production::{Production, ProductionRateTrait}
     };
-    use eternum::systems::inner_hex::interface::IInnerHex;
+    use eternum::systems::inner_hex::interface::IRealmMap;
     use eternum::constants::WORLD_CONFIG_ID;
 
     #[abi(embed_v0)]
-    impl HyperstructureSystemsImpl of IInnerHex<ContractState> {
-        fn build_building(
+    impl RealmMapImpl of IRealmMap<ContractState> {
+        fn create_building(
             self: @TContractState,
             world: IWorldDispatcher,
-            entity_id: u128,
-            inner_coord: Coord,
-            building: BuildingCategory,
+            realm_id: u128,
+            building_coord: Coord,
+            building_category: BuildingCategory,
         ) {
             BuildingProductionTrait::create(world, entity_id, building, inner_coord);
         }
+        
         fn destroy_building(
             self: @TContractState, world: IWorldDispatcher, entity_id: u128, inner_coord: Coord,
         ) {

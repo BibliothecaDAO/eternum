@@ -1,13 +1,24 @@
-use eternum::alias::ID;
-use starknet::ContractAddress;
-use eternum::models::position::Position;
 use dojo::world::IWorldDispatcher;
 
+use eternum::models::buildings::BuildingCategory;
+use eternum::models::position::{Coord, Position, Direction};
 
 #[starknet::interface]
-trait IBuildingsSystems<TContractState> {
-    fn create(
-        self: @TContractState, world: IWorldDispatcher, realm_entity_id: u128, building_type: u8
+trait IBuildingContract<TContractState> {
+    fn build_building(
+        self: @TContractState,
+        world: IWorldDispatcher,
+        entity_id: u128,
+        inner_coord: Coord,
+        building: BuildingCategory,
     );
-    fn destroy(self: @TContractState, world: IWorldDispatcher, realm_entity_id: u128);
+    fn destroy_building(
+        self: @TContractState, world: IWorldDispatcher, entity_id: u128, inner_coord: Coord,
+    );
+    fn start_production(
+        self: @TContractState, world: IWorldDispatcher, entity_id: u128, resource_type: u8,
+    );
+    fn stop_production(
+        self: @TContractState, world: IWorldDispatcher, entity_id: u128, resource_type: u8,
+    );
 }
