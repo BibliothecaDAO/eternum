@@ -11,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       events: "events",
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   build: {
