@@ -1,5 +1,5 @@
 kind = "DojoContract"
-class_hash = "0x700f0deec8ad23e3dd6dd66045489930d1dc7febc7aebb583a6f54d1ec2161b"
+class_hash = "0x1d31405a4dc7aa597897e8337d2f6ccec72f6c1de569878663fd373b80b1970"
 abi = "abis/base/contracts/caravan_systems.json"
 reads = []
 writes = []

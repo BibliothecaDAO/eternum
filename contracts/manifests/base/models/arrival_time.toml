@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x68ba8243431195bf65c2b7631beb61a656e7cc07e4adf0dae5deeb15d34ed60"
+class_hash = "0x17f82236abdf86e3a144f0c624e852a227dff3f008451c1fd58e961bb8ea1"
+abi = "abis/base/models/arrival_time.json"
 name = "eternum::models::movable::arrival_time"
 
 [[members]]

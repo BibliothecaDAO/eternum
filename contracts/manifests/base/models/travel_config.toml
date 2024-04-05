@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x1fed2439b5d152a55f1785e39f0bb329b5368e6661ec73de806635417243418"
+class_hash = "0xd65ea9ba4aff460b97d7e94b23ebd09617121ce5a65947196c16539d177754"
+abi = "abis/base/models/travel_config.json"
 name = "eternum::models::config::travel_config"
 
 [[members]]

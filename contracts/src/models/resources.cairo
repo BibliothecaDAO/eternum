@@ -87,7 +87,6 @@ impl ProductionMaterialImpl of ProductionMaterialTrait {
 }
 
 
-
 #[generate_trait]
 impl ResourceImpl of ResourceTrait {
     fn query_key(self: Resource) -> (u128, u8) {

@@ -1,0 +1,25 @@
+kind = "DojoModel"
+class_hash = "0x3ca2bcc39c190ab471287ecad1e52b9dcba456cbe6cd5292f9da9d47da40922"
+original_class_hash = "0x3ca2bcc39c190ab471287ecad1e52b9dcba456cbe6cd5292f9da9d47da40922"
+abi = "manifests/dev/abis/base/models/eternum_models_resources_resource_cost.json"
+name = "eternum::models::resources::resource_cost"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "index"
+type = "u32"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = false
+
+[[members]]
+name = "amount"
+type = "u128"
+key = false

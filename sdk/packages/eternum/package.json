@@ -20,7 +20,7 @@
     "@dojoengine/core": "0.6.0-alpha.0"
   },
   "peerDependencies": {
-    "starknet": "^6.1.5"
+    "starknet": "6.7.0"
   },
   "devDependencies": {
     "@types/elliptic": "^6.4.14",

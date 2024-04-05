@@ -1,5 +1,5 @@
 kind = "DojoContract"
-class_hash = "0x200c668b25c849bb5ecb4c0e6e3f04e9f5036b696b0aae7efb9aaba91b50a4c"
+class_hash = "0x982c0fb4134d998141d35ce32c2be80d744a56761648a8a01af90d09a683a2"
 abi = "abis/base/contracts/hyperstructure_systems.json"
 reads = []
 writes = []

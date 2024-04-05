@@ -67,10 +67,6 @@
         "name": "create",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "realm_entity_id",
             "type": "core::integer::u128"
           },
@@ -86,10 +82,6 @@
         "type": "function",
         "name": "destroy",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "realm_entity_id",
             "type": "core::integer::u128"

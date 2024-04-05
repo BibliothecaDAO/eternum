@@ -6,7 +6,7 @@ import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
 import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake, Bvh } from "@react-three/drei";
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
 // @ts-ignore
 import { Sobel } from "../../utils/effects.jsx";
@@ -15,6 +15,7 @@ import { CameraControls } from "../../utils/Camera";
 import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
 import FPSLimiter from "../../utils/FPSLimiter";
+import { Hexagon } from "../../types";
 
 export const Camera = () => {
   // const [isMapView] = useRoute("/map");
@@ -39,7 +40,7 @@ export const DirectionalLightAndHelper = ({ locationType }: { locationType: stri
 
   const { lightPosition, bias } = useControls({
     lightPosition: {
-      value: { x: 0, y: 100, z: 200 }, // Adjust y value to position the light above
+      value: { x: 0, y: 15, z: 50 }, // Adjust y value to position the light above
       step: 0.01,
     },
     bias: {
@@ -65,7 +66,7 @@ export const DirectionalLightAndHelper = ({ locationType }: { locationType: stri
       shadow-camera-top={3000}
       shadow-camera-bottom={-3000}
       shadow-bias={bias}
-      position={[lightPosition.x, yPos, lightPosition.z]}
+      position={[lightPosition.x, lightPosition.y, lightPosition.z]}
       intensity={2}
     ></directionalLight>
   );
@@ -168,6 +169,14 @@ export const MainScene = () => {
     sunPosition: { value: { x: 0, y: 0, z: 0 } },
   });
 
+  const setHexData = useUIStore((state) => state.setHexData);
+
+  useEffect(() => {
+    fetch("/jsons/hexData.json")
+      .then((response) => response.json())
+      .then((data) => setHexData(data as Hexagon[]));
+  }, []);
+
   return (
     <Canvas
       frameloop="demand" // for fps limiter
@@ -195,7 +204,7 @@ export const MainScene = () => {
         outputEncoding: data.encoding,
       }}
     >
-      {import.meta.env.DEV && <Perf position="bottom-left" />}
+      {/* {import.meta.env.DEV && <Perf position="bottom-left" />} */}
       <FPSLimiter>
         {/* <Sky azimuth={azimuth} inclination={inclination} distance={distance} /> */}
         <ambientLight color={ambientColor} intensity={ambientIntensity} />

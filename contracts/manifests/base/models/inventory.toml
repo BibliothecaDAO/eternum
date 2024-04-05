@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x79e44f1821dc86997f7b97c8194bdba0e38c9ed225795363b13663b5d474c78"
+class_hash = "0x4549eb4e0df599e8ac1f8d76f7b84b28e25ed66f9a1b72dd7e05f590712b71f"
+abi = "abis/base/models/inventory.json"
 name = "eternum::models::inventory::inventory"
 
 [[members]]

@@ -39,7 +39,6 @@ mod config_systems {
     #[abi(embed_v0)]
     impl WorldConfigImpl of IWorldConfig<ContractState> {
         fn set_world_config(
-            self: @ContractState,
             world: IWorldDispatcher,
             admin_address: starknet::ContractAddress,
             realm_l2_contract: starknet::ContractAddress
@@ -55,9 +54,7 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl RealmFreeMintConfigImpl of IRealmFreeMintConfig<ContractState> {
-        fn set_mint_config(
-            self: @ContractState, world: IWorldDispatcher, resources: Span<(u8, u128)>
-        ) {
+        fn set_mint_config(world: IWorldDispatcher, resources: Span<(u8, u128)>) {
             assert_caller_is_admin(world);
 
             let detached_resource_id = world.uuid().into();
@@ -86,9 +83,7 @@ mod config_systems {
 
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 };
             };
 
@@ -107,8 +102,10 @@ mod config_systems {
     #[abi(embed_v0)]
     impl MapConfigImpl of IMapConfig<ContractState> {
         fn set_exploration_config(
-            self: @ContractState, world: IWorldDispatcher, 
-            wheat_burn_amount: u128, fish_burn_amount: u128, reward_resource_amount: u128
+            world: IWorldDispatcher,
+            wheat_burn_amount: u128,
+            fish_burn_amount: u128,
+            reward_resource_amount: u128
         ) {
             assert_caller_is_admin(world);
 
@@ -127,9 +124,7 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl CapacityConfigImpl of ICapacityConfig<ContractState> {
-        fn set_capacity_config(
-            self: @ContractState, world: IWorldDispatcher, entity_type: u128, weight_gram: u128
-        ) {
+        fn set_capacity_config(world: IWorldDispatcher, entity_type: u128, weight_gram: u128) {
             assert_caller_is_admin(world);
 
             set!(
@@ -146,9 +141,7 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl WeightConfigImpl of IWeightConfig<ContractState> {
-        fn set_weight_config(
-            self: @ContractState, world: IWorldDispatcher, entity_type: u128, weight_gram: u128
-        ) {
+        fn set_weight_config(world: IWorldDispatcher, entity_type: u128, weight_gram: u128) {
             assert_caller_is_admin(world);
 
             set!(
@@ -166,20 +159,15 @@ mod config_systems {
     #[abi(embed_v0)]
     impl TickConfigImpl of ITickConfig<ContractState> {
         fn set_tick_config(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            max_moves_per_tick: u8,
-            tick_interval_in_seconds: u64
+            world: IWorldDispatcher, max_moves_per_tick: u8, tick_interval_in_seconds: u64
         ) {
             assert_caller_is_admin(world);
 
-            set!( world,(
-                TickConfig { 
-                    config_id: WORLD_CONFIG_ID, 
-                    max_moves_per_tick, 
-                    tick_interval_in_seconds
-                }
-            )
+            set!(
+                world,
+                (TickConfig {
+                    config_id: WORLD_CONFIG_ID, max_moves_per_tick, tick_interval_in_seconds
+                })
             );
         }
     }
@@ -188,7 +176,6 @@ mod config_systems {
     #[abi(embed_v0)]
     impl CombatConfigImpl of ICombatConfig<ContractState> {
         fn set_combat_config(
-            self: @ContractState,
             world: IWorldDispatcher,
             config_id: u128,
             stealing_trial_count: u32,
@@ -207,7 +194,6 @@ mod config_systems {
 
 
         fn set_soldier_config(
-            self: @ContractState,
             world: IWorldDispatcher,
             resource_costs: Span<(u8, u128)>,
             wheat_burn_per_soldier: u128,
@@ -244,7 +230,6 @@ mod config_systems {
         }
 
         fn set_health_config(
-            self: @ContractState,
             world: IWorldDispatcher,
             entity_type: u128,
             resource_costs: Span<(u8, u128)>,
@@ -278,18 +263,14 @@ mod config_systems {
             );
         }
 
-        fn set_attack_config(
-            self: @ContractState, world: IWorldDispatcher, entity_type: u128, max_value: u128
-        ) {
+        fn set_attack_config(world: IWorldDispatcher, entity_type: u128, max_value: u128) {
             assert_caller_is_admin(world);
 
             set!(world, (AttackConfig { entity_type, max_value }));
         }
 
 
-        fn set_defence_config(
-            self: @ContractState, world: IWorldDispatcher, entity_type: u128, max_value: u128
-        ) {
+        fn set_defence_config(world: IWorldDispatcher, entity_type: u128, max_value: u128) {
             assert_caller_is_admin(world);
 
             set!(world, (DefenceConfig { entity_type, max_value }));
@@ -299,7 +280,6 @@ mod config_systems {
     #[abi(embed_v0)]
     impl LevelingConfigImpl of ILevelingConfig<ContractState> {
         fn set_leveling_config(
-            self: @ContractState,
             world: IWorldDispatcher,
             config_id: u128,
             decay_interval: u64,
@@ -392,7 +372,6 @@ mod config_systems {
     #[abi(embed_v0)]
     impl LaborConfigImpl of ILaborConfig<ContractState> {
         fn set_labor_cost_resources(
-            self: @ContractState,
             world: IWorldDispatcher,
             resource_type_labor: felt252,
             resource_types_packed: u128,
@@ -412,7 +391,6 @@ mod config_systems {
 
 
         fn set_labor_cost_amount(
-            self: @ContractState,
             world: IWorldDispatcher,
             resource_type_labor: felt252,
             resource_type_cost: felt252,
@@ -430,7 +408,6 @@ mod config_systems {
 
 
         fn set_labor_config(
-            self: @ContractState,
             world: IWorldDispatcher,
             base_labor_units: u64,
             base_resources_per_cycle: u128,
@@ -452,7 +429,6 @@ mod config_systems {
 
 
         fn set_labor_auction(
-            self: @ContractState,
             world: IWorldDispatcher,
             decay_constant: u128,
             per_time_unit: u128,
@@ -491,10 +467,7 @@ mod config_systems {
     #[abi(embed_v0)]
     impl TransportConfigImpl of ITransportConfig<ContractState> {
         fn set_road_config(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            resource_costs: Span<(u8, u128)>,
-            speed_up_by: u64
+            world: IWorldDispatcher, resource_costs: Span<(u8, u128)>, speed_up_by: u64
         ) {
             assert_caller_is_admin(world);
 
@@ -527,9 +500,7 @@ mod config_systems {
         }
 
 
-        fn set_speed_config(
-            self: @ContractState, world: IWorldDispatcher, entity_type: u128, sec_per_km: u16
-        ) {
+        fn set_speed_config(world: IWorldDispatcher, entity_type: u128, sec_per_km: u16) {
             assert_caller_is_admin(world);
 
             set!(
@@ -544,9 +515,7 @@ mod config_systems {
         }
 
 
-        fn set_travel_config(
-            self: @ContractState, world: IWorldDispatcher, free_transport_per_city: u128
-        ) {
+        fn set_travel_config(world: IWorldDispatcher, free_transport_per_city: u128) {
             assert_caller_is_admin(world);
 
             set!(world, (TravelConfig { config_id: TRANSPORT_CONFIG_ID, free_transport_per_city }));
@@ -557,7 +526,6 @@ mod config_systems {
     #[abi(embed_v0)]
     impl HyperstructureConfigImpl of IHyperstructureConfig<ContractState> {
         fn create_hyperstructure(
-            self: @ContractState,
             world: IWorldDispatcher,
             hyperstructure_type: u8,
             coord: Coord,
@@ -591,9 +559,7 @@ mod config_systems {
 
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 };
             };
 
@@ -624,7 +590,6 @@ mod config_systems {
     #[abi(embed_v0)]
     impl BankConfigImpl of IBankConfig<ContractState> {
         fn create_bank(
-            self: @ContractState,
             world: IWorldDispatcher,
             coord: Coord,
             swap_cost_resources: Span<(u8, Span<(u8, u128)>)>,
@@ -664,9 +629,7 @@ mod config_systems {
 
                                     jndex += 1;
                                 },
-                                Option::None => {
-                                    break;
-                                }
+                                Option::None => { break; }
                             };
                         };
 
@@ -682,9 +645,7 @@ mod config_systems {
 
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -700,7 +661,6 @@ mod config_systems {
 
 
         fn set_bank_auction(
-            self: @ContractState,
             world: IWorldDispatcher,
             bank_id: u128,
             bank_swap_resource_cost_keys: Span<(u8, u32)>,
@@ -746,7 +706,6 @@ mod config_systems {
     #[abi(embed_v0)]
     impl BuildingsConfigImpl of IBuildingsConfig<ContractState> {
         fn set_labor_buildings_config(
-            self: @ContractState,
             world: IWorldDispatcher,
             level_multiplier: u128,
             level_discount_mag: u128,
@@ -818,9 +777,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -857,9 +814,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -896,9 +851,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -935,9 +888,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
         }

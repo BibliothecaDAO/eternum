@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x4464adc86ad55e047806e945adb6a2541182885f3c4d6b53cccba6ada72c3c4"
+class_hash = "0x226fb78c04162a320644001e199be8890f246d06c2ada4d9ecde669662e1af8"
+abi = "abis/base/models/bank_auction.json"
 name = "eternum::models::bank::bank_auction"
 
 [[members]]

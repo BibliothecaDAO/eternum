@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x3ac70871f7eda114b8038aeaf25a7f2d6f8b5dd4921a8c5c02af8527d9a7a3d"
+class_hash = "0x7328ec3e3b0bcd61577122e9c6ec6276c7142195414c884638ae50f9fa4819d"
+abi = "abis/base/models/weight.json"
 name = "eternum::models::weight::weight"
 
 [[members]]

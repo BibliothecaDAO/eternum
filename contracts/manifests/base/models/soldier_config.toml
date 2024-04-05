@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x25123f2c3875b4692de7e44e0be0d197bcd08b5e5b11d9bc5e1cd313fd2a750"
+class_hash = "0x3d673bdc05302fab34d01d3973f6f40c50c45b7a6a42fcabef7624c08c88858"
+abi = "abis/base/models/soldier_config.json"
 name = "eternum::models::config::soldier_config"
 
 [[members]]

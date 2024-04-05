@@ -1,7 +1,7 @@
 import ProgressBar from "../../elements/ProgressBar";
 import useBlockchainStore from "../../hooks/store/useBlockchainStore";
 
-export const TIME_PER_TICK = 60;
+export const TIME_PER_TICK = 900;
 
 const EpochCountdown = () => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);

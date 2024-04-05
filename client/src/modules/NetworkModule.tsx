@@ -1,7 +1,5 @@
-import { SettingsNavigation } from "../components/navigation/SettingsNavigation";
-
 const NetworkModule = () => {
-  return <SettingsNavigation />;
+  return <></>;
 };
 
 export default NetworkModule;

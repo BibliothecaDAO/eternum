@@ -121,7 +121,12 @@ export const findShortestPathBFS = (
       for (const neighbor of neighbors) {
         const neighborKey = posKey(neighbor);
         const isExplored = exploredHexes.get(neighbor.x - 2147483647)?.has(neighbor.y - 2147483647);
-        if (!visited.has(neighborKey) && !queue.some((e) => posKey(e.position) === neighborKey) && isExplored) {
+        if (
+          !visited.has(neighborKey) &&
+          !queue.some((e) => posKey(e.position) === neighborKey) &&
+          isExplored &&
+          distance + 1 <= maxHex
+        ) {
           path.set(neighborKey, current); // Map each neighbor back to the current position
           queue.push({ position: neighbor, distance: distance + 1 });
         }

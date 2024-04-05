@@ -1,0 +1,15 @@
+kind = "DojoModel"
+class_hash = "0x58fddb9c02a4d4303b1145a52618d501a45dd50686b4bc512881fda6c10553c"
+original_class_hash = "0x58fddb9c02a4d4303b1145a52618d501a45dd50686b4bc512881fda6c10553c"
+abi = "manifests/dev/abis/base/models/eternum_models_quantity_quantity.json"
+name = "eternum::models::quantity::quantity"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "value"
+type = "u128"
+key = false
