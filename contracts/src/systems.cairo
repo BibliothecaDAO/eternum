@@ -11,6 +11,6 @@ mod bank;
 mod hyperstructure;
 mod buildings;
 mod map;
-
+mod inner_hex;
 mod test;
 

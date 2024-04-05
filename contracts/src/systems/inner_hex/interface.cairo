@@ -4,7 +4,7 @@ use eternum::models::buildings::BuildingCategory;
 use eternum::models::position::{Coord, Position, Direction};
 
 #[starknet::interface]
-trait IBuildingContract<TContractState> {
+trait IRealmMap<TContractState> {
     fn build_building(
         self: @TContractState,
         world: IWorldDispatcher,
