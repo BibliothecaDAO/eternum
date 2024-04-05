@@ -5,20 +5,13 @@ use eternum::models::position::{Coord, Position, Direction};
 
 #[starknet::interface]
 trait IBuildingContract<TContractState> {
-    fn build_building(
-        self: @TContractState,
-        world: IWorldDispatcher,
-        entity_id: u128,
-        inner_coord: Coord,
-        building: BuildingCategory,
+    fn create(
+        self: @TContractState, world: IWorldDispatcher, entity_id: u128,
+        building_coord: Coord, building_category: BuildingCategory, produce_resource_type: Option<u8>,
     );
-    fn destroy_building(
-        self: @TContractState, world: IWorldDispatcher, entity_id: u128, inner_coord: Coord,
+    fn destroy(
+        self: @TContractState, world: IWorldDispatcher, entity_id: u128,
+        building_coord: Coord    
     );
-    fn start_production(
-        self: @TContractState, world: IWorldDispatcher, entity_id: u128, resource_type: u8,
-    );
-    fn stop_production(
-        self: @TContractState, world: IWorldDispatcher, entity_id: u128, resource_type: u8,
-    );
+
 }

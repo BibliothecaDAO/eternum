@@ -1,10 +1,11 @@
 use eternum::utils::math::{is_u32_bit_set, set_u32_bit};
 use eternum::constants::get_resource_probabilities;
 use eternum::constants::ResourceTypes;
-use eternum::models::config::TickImpl;
+use eternum::models::config::{TickConfig, TickImpl, TickTrait};
+
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-use eternum::models::production::{Production, ProductionRateTrait, ProductionDependencyConfig};
+use eternum::models::production::{Production, ProductionRateTrait, ProductionMaterialConfig};
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -33,55 +34,59 @@ impl ResourceFoodImpl of ResourceFoodTrait {
     ) {
         let mut wheat: Resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
         let mut fish: Resource = get!(world, (entity_id, ResourceTypes::FISH), Resource);
-        wheat.deduct(world, wheat_amount, check_balance);
+        let tick = TickImpl::get(world);
+
+        wheat.deduct(world, @tick, wheat_amount, check_balance);
         wheat.save(world);
 
-        fish.deduct(world, fish_amount, check_balance);
+        fish.deduct(world, @tick, fish_amount, check_balance);
         fish.save(world);
     }
 }
 
 #[generate_trait]
-impl ProductionDependentsImpl of ProductionDependentsTrait {
-    // must be called immediately after balance changes
+impl ProductionMaterialImpl of ProductionMaterialTrait {
+    // what this aims to achieve is that if stone and coal are used to produce wood.
+    // (i.e stone and coal are the materials for wood), whenever stone or coal
+    // balance changes, the time that wood production will end should be updated 
+    // because if stone has a net negative production rate for example, by decreasing stone balance, 
+    // stone should run out faster. Similarly, by increasing stone balance, it should run out slower.
+    // anyway, this only happens when stone has a net negative production rate. if it is positive
+    // it can always pay for wood production and may still have   
 
-    // e.g resource is stone..dependents are wood andruby because they each depend on 
+    // e.g resource is stone..dependents are wood and ruby because they each depend on 
     // stone to be produced
-    fn reestimate_dependents_production_period(ref resource: Resource, world: IWorldDispatcher) {
-        let mut resource_production: Production = get!(world, self.query_key(), Production);
-        let (net_rate_sign, _) = resource_production.net_rate();
-        if net_rate_sign == false { // net negative production so it eats into balance
-            let dependency: ProductionDependencyConfig = get!(
-                world, resource.resource_type, ProductionDependencyConfig
+    fn reset_produced_exhaustion_tick(ref material_resource: Resource, world: IWorldDispatcher) {
+        let mut material_production: Production 
+            = get!(world, material_resource.query_key(), Production);
+        let material_config: ProductionMaterialConfig 
+            = get!(world, material_resource.resource_type, ProductionMaterialConfig);
+        let tick = TickImpl::get(world);
+        if material_config.produced_resource_type_1 != 0 {
+            let mut dependent_production_one:  Production = get!(
+                world, (material_resource.entity_id, material_config.produced_resource_type_1), Production
             );
-            let tick = TickImpl::get(world);
-            if dependency.produced_resource_type_1 != 0 {
-                let mut material_one_production = get!(
-                    world, (resource.entity_id, dependency.produced_resource_type_1), Production
-                );
-                let mut material_one_resource = get!(
-                    world, (resource.entity_id, dependency.produced_resource_type_1), Resource
-                );
-                resource_production
-                    .set_materials_exhaustion_tick(
-                        ref material_one_production, ref material_one_resource, @tick);
-            }
+            dependent_production_one
+                .set_materials_exhaustion_tick(
+                    ref material_production, ref material_resource, @tick);
 
-            if dependency.produced_resource_type_2 != 0 {
-                let mut material_two_production = get!(
-                    world, (resource.entity_id, dependency.produced_resource_type_2), Production
-                );
-                let mut material_two_resource = get!(
-                    world, (resource.entity_id, dependency.produced_resource_type_2), Resource
-                );
-                resource_production
-                    .set_materials_exhaustion_tick(
-                        ref material_two_production, ref material_two_resource, @tick);
-            }
-            
-            set!(world, (resource_production));
+            set!(world, (dependent_production_one));
+        }
+
+        if material_config.produced_resource_type_2 != 0 {
+            let mut dependent_production_two: Production = get!(
+                world, (material_resource.entity_id, material_config.produced_resource_type_2), Production
+            );
+            dependent_production_two
+                .set_materials_exhaustion_tick(
+                    ref material_production, ref material_resource, @tick);
+
+            set!(world, (dependent_production_two));       
+        }
     }
 }
+
+
 
 #[generate_trait]
 impl ResourceImpl of ResourceTrait {
@@ -89,23 +94,21 @@ impl ResourceImpl of ResourceTrait {
         (self.entity_id, self.resource_type)
     }
 
-    fn deduct(ref self: Resource, world: IWorldDispatcher, mut amount: u128, check_balance: bool) {
+    // todo@credence make sure all deductions are done through here
+    fn deduct(ref self: Resource, world: IWorldDispatcher, tick: @TickConfig, mut amount: u128, check_balance: bool) {
+
+        // harvest profit or loss
+        let mut production: Production = get!(world, self.query_key(), Production);
+        production.harvest(ref self, tick);
+        set!(world, (production));
+        
+        // do deduction
         if check_balance {
             assert(self.balance >= amount, 'insufficient balance');
         } else {
             if amount > self.balance {
                 amount = self.balance
             }
-        }
-
-        if amount > self.balance {
-            // claim produced amount before deduction where necessary
-
-            let mut production: Production = get!(world, self.query_key(), Production);
-
-            let tick = TickImpl::get(world);
-            production.harvest(ref self, @tick);
-            set!(world, (production));
         }
 
         self.balance -= amount;
@@ -118,8 +121,9 @@ impl ResourceImpl of ResourceTrait {
 
     fn save(ref self: Resource, world: IWorldDispatcher) {
         // Save the resource
-        ProductionDependentsImpl::reestimate_dependents_production_period(ref self, world);
         set!(world, (self));
+        ProductionMaterialImpl::reset_produced_exhaustion_tick(ref self, world);
+
 
         // Update the entity's owned resources
 

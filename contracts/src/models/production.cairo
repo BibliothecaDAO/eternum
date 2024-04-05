@@ -27,11 +27,13 @@ struct ProductionConfig {
     cost_resource_type_2_amount: u128,
 }
 
-
+// a map from material to resources it produces
+// e.g if stone can be used to produce wood and ruby, 
+// material is stone, produced resources are wood and ruby
 #[derive(Model, Copy, Drop, Serde)]
-struct ProductionDependencyConfig {
+struct ProductionMaterialConfig {
     #[key]
-    dependent_resource_type: u8,
+    material_resource_type: u8,
     produced_resource_type_1: u8,
     produced_resource_type_2: u8,
 }
@@ -77,36 +79,6 @@ impl ProductionRateImpl of ProductionRateTrait {
             return true;
         }
         return false;
-    }
-
-    fn reactivate(
-        ref self: Production, 
-        ref resource: Resource,
-        ref material_one: (Resource, Production), 
-        ref material_two: (Resource, Production), 
-        tick: @TickConfig
-    ) {
-
-        self.harvest(ref resource, tick);
-
-        self.active = true;
-
-        let (mut material_one_resource, mut material_one_production) 
-            = material_one;
-        self
-            .set_materials_exhaustion_tick(
-                ref material_one_production, ref material_one_resource, tick);
-
-        let (mut material_two_resource, mut material_two_production) 
-            = material_one;
-        self
-            .set_materials_exhaustion_tick(
-                ref material_two_production, ref material_two_resource, tick);
-    }
-
-    fn deactivate(ref self: Production, ref resource: Resource, tick: @TickConfig) {
-        self.harvest(ref resource, tick);
-        self.active = false;
     }
 
     fn set_rate(ref self: Production, production_rate: u128) {
@@ -204,12 +176,6 @@ impl ProductionRateImpl of ProductionRateTrait {
         }
     }
 
-    // fn set_balance_exhaustion_tick(
-    //     ref self: Production, ref resource: Resource, tick: @TickConfig) {
-        
-    //     self.balance_exhaustion_tick 
-    //         = self.balance_exhaustion_tick(ref resource, tick);
-    // }
 
     fn balance_exhaustion_tick(self: Production, ref resource: Resource, tick: @TickConfig) -> u64 {
         let current_tick = (*tick).current();
