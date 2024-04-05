@@ -1,4 +1,11 @@
-export type OSWindows = "Event Log" | "Banks" | "Leaderboard" | "Hyperstructures" | "Settings" | "Resources";
+export type OSWindows =
+  | "Event Log"
+  | "Banks"
+  | "Leaderboard"
+  | "Hyperstructures"
+  | "Settings"
+  | "Resources"
+  | "Military";
 
 export interface OSInterface {
   onClick: () => void;
@@ -14,3 +21,4 @@ export const leaderboard: OSWindows = "Leaderboard";
 export const hyperstructures: OSWindows = "Hyperstructures";
 export const settings: OSWindows = "Settings";
 export const resources: OSWindows = "Resources";
+export const military: OSWindows = "Military";

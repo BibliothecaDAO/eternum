@@ -1,6 +1,21 @@
 import { ReactComponent as Settings } from "../assets/icons/common/settings.svg";
 import { ReactComponent as WorldIcon } from "../assets/icons/common/world.svg";
-import { banks, eventLog, hyperstructures, leaderboard, resources, settings } from "../components/navigation/Config";
+import { ReactComponent as Coin } from "../assets/icons/common/coin.svg";
+import { ReactComponent as Farm } from "../assets/icons/common/farm.svg";
+import { ReactComponent as CrossSwords } from "../assets/icons/common/cross-swords.svg";
+import { ReactComponent as PickAxe } from "../assets/icons/common/pick-axe.svg";
+import { ReactComponent as LeaderBoard } from "../assets/icons/common/leaderboard.svg";
+import { ReactComponent as Pen } from "../assets/icons/common/pen.svg";
+import { ReactComponent as City } from "../assets/icons/common/city.svg";
+import {
+  banks,
+  eventLog,
+  hyperstructures,
+  leaderboard,
+  military,
+  resources,
+  settings,
+} from "../components/navigation/Config";
 import useUIStore from "../hooks/store/useUIStore";
 import { useLocation } from "wouter";
 import CircleButton from "../elements/CircleButton";
@@ -12,6 +27,7 @@ import { Banks } from "../components/navigation/Banks";
 import { Leaderboard } from "../components/navigation/LeaderBoard";
 import { HyperStructures } from "../components/navigation/Hyperstructures";
 import { Resources } from "../components/navigation/Resources";
+import { Military } from "../components/navigation/Military";
 
 export const LeftNavigationModule = () => {
   const { togglePopup, closeAllPopups, openAllPopups } = useUIStore();
@@ -47,35 +63,42 @@ export const LeftNavigationModule = () => {
     {
       button: (
         <CircleButton size="lg" onClick={() => togglePopup(eventLog)}>
-          E
+          <Pen className="w-5 fill-current" />
         </CircleButton>
       ),
     },
     {
       button: (
         <CircleButton size="lg" onClick={() => togglePopup(resources)}>
-          RE
+          <PickAxe className="w-5 fill-current" />
         </CircleButton>
       ),
     },
     {
       button: (
         <CircleButton size="lg" onClick={() => togglePopup(banks)}>
-          B
+          <Coin className="w-5 fill-current" />
         </CircleButton>
       ),
     },
     {
       button: (
         <CircleButton size="lg" onClick={() => togglePopup(hyperstructures)}>
-          H
+          <City className="w-5 fill-current" />
         </CircleButton>
       ),
     },
     {
       button: (
         <CircleButton size="lg" onClick={() => togglePopup(leaderboard)}>
-          L
+          <LeaderBoard className="w-5" />
+        </CircleButton>
+      ),
+    },
+    {
+      button: (
+        <CircleButton size="lg" onClick={() => togglePopup(military)}>
+          <CrossSwords className="h-5 fill-current" />
         </CircleButton>
       ),
     },
@@ -83,7 +106,7 @@ export const LeftNavigationModule = () => {
       button: (
         <CircleButton
           size="lg"
-          onClick={() => openAllPopups([leaderboard, settings, hyperstructures, banks, resources, eventLog])}
+          onClick={() => openAllPopups([leaderboard, settings, hyperstructures, banks, resources, eventLog, military])}
         >
           O
         </CircleButton>
@@ -114,6 +137,7 @@ export const LeftNavigationModule = () => {
       <HyperStructures />
       <SettingsWindow />
       <Resources />
+      <Military />
     </div>
   );
 };
