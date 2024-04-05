@@ -220,7 +220,7 @@
   },
   {
     "type": "impl",
-    "name": "TickConfigImpl",
+    "name": "TickImpl",
     "interface_name": "eternum::systems::config::interface::ITickConfig"
   },
   {

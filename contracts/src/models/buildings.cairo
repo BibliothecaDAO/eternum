@@ -26,6 +26,7 @@ struct Building {
     #[key]
     inner_row: u128,
     category: BuildingCategory,
+    produced_resource_type: u8,
     entity_id: u128,
     outer_entity_id: u128,
 }
@@ -34,7 +35,7 @@ struct Building {
 enum BuildingCategory {
     None,
     Castle,
-    Resource: u8,
+    Resource,
     Farm,
     FishingVillage,
     Barracks,
@@ -44,22 +45,22 @@ enum BuildingCategory {
 }
 
 #[generate_trait]
-impl BuildingCategoryImpl of BuildingCategoryTrait {
-    fn is_resource_producer(self: BuildingCategory) -> bool {
+impl BuildingProductionImpl of BuildingProductionTrait {
+    fn is_resource_producer(self: Building) -> bool {
         let produced_resource = self.produced_resource();
         return produced_resource.is_non_zero();
     }
     
-    fn is_production_multiplier(self: BuildingCategory) -> bool {
+    fn is_production_multiplier(self: Building) -> bool {
         let multiplier = self.production_multiplier();
         return multiplier.is_non_zero();
     }
 
-    fn produced_resource(self: BuildingCategory) -> u8 {
-        match self {
+    fn produced_resource(self: Building) -> u8 {
+        match self.category {
             BuildingCategory::None => 0,
             BuildingCategory::Castle => 0,
-            BuildingCategory::Resource(_type) => _type,
+            BuildingCategory::Resource => self.produced_resource_type,
             BuildingCategory::Farm => ResourceTypes::WHEAT,
             BuildingCategory::FishingVillage => ResourceTypes::FISH,
             BuildingCategory::Barracks => ResourceTypes::KNIGHT,
@@ -69,11 +70,11 @@ impl BuildingCategoryImpl of BuildingCategoryTrait {
         }
     }
 
-    fn production_multiplier(self: BuildingCategory) -> u128 {
-        match self {
+    fn production_multiplier(self: Building) -> u128 {
+        match self.category {
             BuildingCategory::None => 0,
             BuildingCategory::Castle => 0,
-            BuildingCategory::Resource(_type) => 0,
+            BuildingCategory::Resource => 0,
             BuildingCategory::Farm => ProductionBonusPercentageImpl::_10(), // 10%
             BuildingCategory::FishingVillage => 0,
             BuildingCategory::Barracks => 0,
@@ -82,99 +83,13 @@ impl BuildingCategoryImpl of BuildingCategoryTrait {
             BuildingCategory::Stable => 0,
         }
     }
-}
-
-#[generate_trait]
-impl BuildingImpl of BuildingTrait {
-
-
-
-    fn create(
-        world: IWorldDispatcher,
-        outer_entity_id: u128,
-        category: BuildingCategory,
-        inner_coord: Coord
-    ) -> Building {
-        let outer_entity_owner: Owner = get!(world, outer_entity_id, Owner);
-        assert!(
-            outer_entity_owner.address == starknet::get_caller_address(),
-            "caller not outer entity owner"
-        );
-
-        // check that the entity has a position
-        let outer_entity_position = get!(world, outer_entity_id, Position);
-        assert!(
-            outer_entity_position.x != 0 || outer_entity_position.y != 0,
-            "outer entity's position is not set"
-        );
-
-        // todo@credence: ensure that the bounds are within the inner realm bounds
-
-        // ensure that building is not occupied
-        let mut building : Building
-            = get!(world, 
-                (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y), Building);
-        
-        assert!(!building.is_occupied(), "building is occupied");
-        
-        // set building 
-        building.entity_id = world.uuid().into();
-        building.category = category;
-        building.outer_entity_id = outer_entity_id;
-
-        set!(world, (building));
-
-        // start production related to building
-        building.start_production(world);
-
-        return building;
-    }
-
-
-    fn destroy(world: IWorldDispatcher, outer_entity_id: u128, inner_coord: Coord) {
-        let outer_entity_owner = get!(world, outer_entity_id, Owner);
-        assert!(
-            outer_entity_owner.address == starknet::get_caller_address(),
-            "caller not outer entity owner"
-        );
-
-        // check that the outer entity has a position
-        let outer_entity_position = get!(world, outer_entity_id, Position);
-        assert!(
-            outer_entity_position.x != 0 || outer_entity_position.y != 0,
-            "outer entity's position is not set"
-        );
-
-        // todo@credence: ensure that the bounds are within the inner realm bounds
-
-        // ensure that inner coordinate is occupied
-        let mut building: Building = get!(
-            world,
-            (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y),
-            Building
-        );
-        assert!(building.entity_id != 0, "building does not exist");
-
-        // stop production related to building
-        building.stop_production(world);
-
-        // remove building 
-        building.entity_id = 0;
-        building.category = BuildingCategory::None;
-        building.outer_entity_id = 0;
-
-        set!(world, (building));
-    }
-
-
-
 
 
     fn start_production(ref self: Building, world: IWorldDispatcher ) {
 
-        if self.category.is_resource_producer() {
+        if self.is_resource_producer() {
             let tick = TickImpl::get(world);
-            let produced_resource_type = self.category.produced_resource();
+            let produced_resource_type = self.produced_resource();
             let mut produced_resource: Resource 
                 = get!(world, (self.outer_entity_id, produced_resource_type), Resource);
 
@@ -230,17 +145,14 @@ impl BuildingImpl of BuildingTrait {
         self.update_bonuses_received(world, true);
         // give out bonuses to surrounding buildings if this building is a bonus supplier
         self.update_bonuses_supplied(world, true);
-
-        set!(world, (building));
-
     }
 
 
     fn stop_production(ref self: Building, world: IWorldDispatcher ) {
 
-        if self.category.is_resource_producer() {
+        if self.is_resource_producer() {
             let tick = TickImpl::get(world);
-            let produced_resource_type = self.category.produced_resource();
+            let produced_resource_type = self.produced_resource();
             let mut produced_resource: Resource 
                 = get!(world, (self.outer_entity_id, produced_resource_type), Resource);
 
@@ -294,20 +206,18 @@ impl BuildingImpl of BuildingTrait {
         // stop giving out bonuses to surrounding buildings 
         // if this building is a bonus supplier
         self.update_bonuses_supplied(world, false);
-
-        set!(world, (building));
-
     }
 
 
     
 
     fn update_bonuses_received(self: @Building, world: IWorldDispatcher, sign: bool) {
+        let self = *self;
         // get bonuses from all buildings surronding this building if the offer boosts
-        let building_coord: Coord = Coord { x: *self.inner_col, y: *self.inner_row };
+        let building_coord: Coord = Coord { x: self.inner_col, y: self.inner_row };
 
-        if self.category.is_resource_producer() {
-            let produced_resource_type = self.category.produced_resource();
+        if self.is_resource_producer() {
+            let produced_resource_type = self.produced_resource();
             let mut building_production: Production = get!(
                 world, (self.outer_entity_id, produced_resource_type), Production
             );
@@ -333,10 +243,12 @@ impl BuildingImpl of BuildingTrait {
     }
 
 
-    fn update_bonuses_supplied(self: Building, world: IWorldDispatcher, sign: bool) {
+    fn update_bonuses_supplied(self: @Building, world: IWorldDispatcher, sign: bool) {
+        let self = *self;
+
         // remove bonus from surrounding buildings if building is a boost multiplier
         // e.g if building is a farm
-        if self.category.is_production_multiplier() {
+        if self.is_production_multiplier() {
             let building_coord: Coord = Coord { x: self.inner_col, y: self.inner_row };
 
             self._update_bonus_supplied_to(
@@ -372,10 +284,10 @@ impl BuildingImpl of BuildingTrait {
         );
         if sign {
             production
-                .increase_boost_percentage(building_at_coord.category.production_multiplier());
+                .increase_boost_percentage(building_at_coord.production_multiplier());
         } else {
             production
-                .decrease_boost_percentage(building_at_coord.category.production_multiplier());
+                .decrease_boost_percentage(building_at_coord.production_multiplier());
         }
     }
 
@@ -385,19 +297,110 @@ impl BuildingImpl of BuildingTrait {
         let building_at_coord: Building = get!(
             world, (self.outer_col, self.outer_row, inner_coord.x, inner_coord.y), Building
         );
-        if building_at_coord.category.is_resource_producer() {
-            let produced_resource_type = self.category.produced_resource();
+        if building_at_coord.is_resource_producer() {
+            let produced_resource_type = self.produced_resource();
             let mut production: Production = get!(
                 world, (self.outer_entity_id, produced_resource_type), Production
             );
             if sign {
-                production.increase_boost_percentage(self.category.production_multiplier());
+                production.increase_boost_percentage(self.production_multiplier());
             } else {
-                production.decrease_boost_percentage(self.category.production_multiplier());
+                production.decrease_boost_percentage(self.production_multiplier());
             }
 
             set!(world, (production));
         }
+    }
+}
+
+#[generate_trait]
+impl BuildingImpl of BuildingTrait {
+
+
+
+    fn create(
+        world: IWorldDispatcher,
+        outer_entity_id: u128,
+        category: BuildingCategory,
+        produce_resource_type: Option<u8>,
+        inner_coord: Coord
+    ) -> Building {
+        let outer_entity_owner: Owner = get!(world, outer_entity_id, Owner);
+        assert!(
+            outer_entity_owner.address == starknet::get_caller_address(),
+            "caller not outer entity owner"
+        );
+
+        // check that the entity has a position
+        let outer_entity_position = get!(world, outer_entity_id, Position);
+        assert!(
+            outer_entity_position.x != 0 || outer_entity_position.y != 0,
+            "outer entity's position is not set"
+        );
+
+        // todo@credence: ensure that the bounds are within the inner realm bounds
+
+        // ensure that building is not occupied
+        let mut building : Building
+            = get!(world, 
+                (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y), Building);
+        
+        assert!(!building.is_occupied(), "building is occupied");
+        
+        // set building 
+        building.entity_id = world.uuid().into();
+        building.category = category;
+        building.outer_entity_id = outer_entity_id;
+        match produce_resource_type {
+            Option::Some(resource_type) => {
+                assert!(building.category == BuildingCategory::Resource, "wrong produced resource type");
+                building.produced_resource_type = resource_type;
+            },
+            Option::None => ()
+        }
+
+        set!(world, (building));
+
+        // start production related to building
+        building.start_production(world);
+
+        return building;
+    }
+
+
+    fn destroy(world: IWorldDispatcher, outer_entity_id: u128, inner_coord: Coord) {
+        let outer_entity_owner = get!(world, outer_entity_id, Owner);
+        assert!(
+            outer_entity_owner.address == starknet::get_caller_address(),
+            "caller not outer entity owner"
+        );
+
+        // check that the outer entity has a position
+        let outer_entity_position = get!(world, outer_entity_id, Position);
+        assert!(
+            outer_entity_position.x != 0 || outer_entity_position.y != 0,
+            "outer entity's position is not set"
+        );
+
+        // todo@credence: ensure that the bounds are within the inner realm bounds
+
+        // ensure that inner coordinate is occupied
+        let mut building: Building = get!(
+            world,
+            (outer_entity_position.x, outer_entity_position.y, inner_coord.x, inner_coord.y),
+            Building
+        );
+        assert!(building.entity_id != 0, "building does not exist");
+
+        // stop production related to building
+        building.stop_production(world);
+
+        // remove building 
+        building.entity_id = 0;
+        building.category = BuildingCategory::None;
+        building.outer_entity_id = 0;
+
+        set!(world, (building));
     }
 
     fn is_occupied(self: Building) -> bool {
