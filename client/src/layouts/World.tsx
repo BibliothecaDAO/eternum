@@ -66,7 +66,7 @@ export const World = () => {
       className="fixed antialiased top-0 left-0 z-0 w-screen h-screen p-2 overflow-hidden"
     >
       <WorldPopups />
-      <BackgroundContainer className="border-2 border-gold rounded-xl relative">
+      <BackgroundContainer className="border border-gold rounded-xl relative">
         <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-12 bg-gradient-to-b from-black/20 to-transparent opacity-90" />
         <div className="h-full w-full main-scene">
           <MainScene />

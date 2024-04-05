@@ -17,7 +17,7 @@ export const SelectPreviewBuilding = () => {
         <div
           key={index}
           className={clsx(
-            "border border-gold text-gold rounded-md overflow-hidden text-ellipsis p-2 cursor-pointer hover:bg-gold hover:text-brown",
+            "border border-gold text-gold rounded-md overflow-hidden text-ellipsis p-2 cursor-pointer hover:bg-gold hover:text-brown h-16 w-16",
             {
               "bg-gold !text-brown": previewBuilding === BuildingType[buildingType as keyof typeof BuildingType],
             },

@@ -2,7 +2,7 @@ import { ReactComponent as Settings } from "../assets/icons/common/settings.svg"
 import { ReactComponent as WorldIcon } from "../assets/icons/common/world.svg";
 import { ReactComponent as Coin } from "../assets/icons/common/coin.svg";
 import { ReactComponent as Relic } from "../assets/icons/common/relic.svg";
-
+import { ReactComponent as Hex } from "../assets/icons/common/hex.svg";
 import { ReactComponent as Close } from "../assets/icons/common/collapse.svg";
 import { ReactComponent as Expand } from "../assets/icons/common/expand.svg";
 import { ReactComponent as CrossSwords } from "../assets/icons/common/cross-swords.svg";
@@ -11,6 +11,7 @@ import { ReactComponent as LeaderBoard } from "../assets/icons/common/leaderboar
 import { ReactComponent as Pen } from "../assets/icons/common/pen.svg";
 import {
   banks,
+  entityDetails,
   eventLog,
   hyperstructures,
   leaderboard,
@@ -30,6 +31,7 @@ import { Leaderboard } from "../components/navigation/LeaderBoard";
 import { HyperStructures } from "../components/navigation/Hyperstructures";
 import { Resources } from "@/components/navigation/Resources";
 import { Military } from "@/components/navigation/Military";
+import { EntityDetails } from "@/components/navigation/EntityDetails";
 
 export const LeftNavigationModule = () => {
   const { togglePopup, closeAllPopups, openAllPopups, isPopupOpen } = useUIStore();
@@ -41,27 +43,13 @@ export const LeftNavigationModule = () => {
   const { realm } = useGetRealm(realmEntityId);
 
   const navigation = [
-    // {
-    //   button: (
-    //     <div
-    //       onClick={() => {
-    //         if (location !== "/map") {
-    //           setIsLoadingScreenEnabled(true);
-    //           setTimeout(() => {
-    //             setLocation("/map");
-    //             moveCameraToRealm(Number(realm?.realmId), 0.01);
-    //           }, 100);
-    //         } else {
-    //           moveCameraToRealm(Number(realm?.realmId));
-    //         }
-    //       }}
-    //     >
-    //       <CircleButton size="lg">
-    //         <WorldIcon className="fill-gold" />
-    //       </CircleButton>
-    //     </div>
-    //   ),
-    // },
+    {
+      button: (
+        <CircleButton active={isPopupOpen(entityDetails)} size="lg" onClick={() => togglePopup(entityDetails)}>
+          <Hex className="h-12 fill-current" />
+        </CircleButton>
+      ),
+    },
     {
       button: (
         <CircleButton active={isPopupOpen(military)} size="lg" onClick={() => togglePopup(military)}>
@@ -154,9 +142,15 @@ export const LeftNavigationModule = () => {
         </CircleButton>
       </div>
       <div className="flex flex-col bg-brown pr-2 rounded-r-3xl border-r-2 border-y-2 space-y-2 border-gold py-2">
-        {navigation.map((a) => a.button)}
+        {navigation.map((a, index) => (
+          <div key={index}>{a.button}</div>
+        ))}
       </div>
-      <div className="flex flex-col rounded-r-3xl space-y-2 py-3 px-2">{secondaryNavigation.map((a) => a.button)}</div>
+      <div className="flex flex-col rounded-r-3xl space-y-2 py-3 px-2">
+        {secondaryNavigation.map((a, index) => (
+          <div key={index}>{a.button}</div>
+        ))}
+      </div>
       <EventLog />
       <Banks />
       <Leaderboard />
@@ -164,6 +158,7 @@ export const LeftNavigationModule = () => {
       <SettingsWindow />
       <Resources />
       <Military />
+      <EntityDetails />
     </>
   );
 };

@@ -115,3 +115,19 @@ h1 {
     transform: translateX(-100%);
   }
 }
+
+.progress-circle {
+  transform: rotate(-90deg); /* Rotate the circle to start from the top */
+}
+
+.progress-circle__background {
+  stroke: black; /* Color for the background circle */
+  stroke-width: 8;
+}
+
+.progress-circle__progress {
+  @apply stroke-gold;
+  stroke-width: 10;
+  transition: stroke-dashoffset 0.35s; /* Smooth transition for the progress */
+  transform-origin: center; /* Ensure the rotation pivot is the center of the circle */
+}

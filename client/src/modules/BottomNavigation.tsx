@@ -1,5 +1,8 @@
-import useUIStore from "../hooks/store/useUIStore";
 import CircleButton from "../elements/CircleButton";
+import { ReactComponent as Skull } from "../assets/icons/common/skull.svg";
+import { ReactComponent as City } from "../assets/icons/common/city.svg";
+import { ReactComponent as Shield } from "../assets/icons/common/shield.svg";
+
 import { useState } from "react";
 
 import { RealmListBoxes } from "../components/cityview/RealmListBoxes";
@@ -20,55 +23,62 @@ export const BottomNavigation = () => {
     {
       name: "bar1",
       button: (
-        <CircleButton size="lg" onClick={() => toggleBar("R")}>
-          R
+        <CircleButton active={activeBar === "R"} size="lg" onClick={() => toggleBar("R")}>
+          <Skull className="w-5 fill-current" />
         </CircleButton>
       ),
     },
     {
       name: "bar2",
       button: (
-        <CircleButton size="lg" onClick={() => toggleBar("B")}>
-          B
+        <CircleButton active={activeBar === "B"} size="lg" onClick={() => toggleBar("B")}>
+          <City className="w-5 fill-current" />
         </CircleButton>
       ),
     },
     {
       name: "bar3",
       button: (
-        <CircleButton size="lg" onClick={() => toggleBar("A")}>
-          A
+        <CircleButton active={activeBar === "A"} size="lg" onClick={() => toggleBar("A")}>
+          <Shield className="w-5 fill-current" />
         </CircleButton>
       ),
     },
   ];
 
   return (
-    <div className="flex bg-brown rounded-t-3xl border-x-2 border-t border-gold py-3 w-[600px] justify-center flex-wrap">
-      {/* Conditionally render bars based on the activeBar state */}
-      <div
-        className={`w-full transition-all duration-300 overflow-auto pb-2 ${
-          activeBar === "R" ? "h-auto" : "h-0 hidden"
-        }`}
-      >
-        <RealmListBoxes />
+    <div className="flex bg-brown rounded-t-3xl border-x-2 border-t-2 border-gold py-3 w-[600px] justify-center flex-wrap h-48 relative">
+      <div className="absolute -left-16 top-8">
+        <img className="w-32 h-32 rounded-full border-4 border-gold" src="/images/avatars/1.png" alt="" />
       </div>
-      <div
-        className={`w-full transition-all duration-300 overflow-auto pb-2 ${
-          activeBar === "B" ? "h-auto" : "h-0 hidden"
-        }`}
-      >
-        <SelectPreviewBuilding />
+
+      <div className="w-full flex space-x-2 justify-start -mt-8 pl-24">
+        {navigation.map((item) => (
+          <div key={item.name}>{item.button}</div>
+        ))}
       </div>
-      <div
-        className={`w-full transition-all duration-300 overflow-auto pb-2 ${
-          activeBar === "A" ? "h-auto" : "h-0 hidden"
-        }`}
-      >
-        armies
-      </div>
-      <div className="w-full flex space-x-2 justify-center border-t border-gold pt-2">
-        {navigation.map((item) => item.button)}
+      <div className=" w-full ml-24 mr-4  h-full mt-4">
+        <div
+          className={`w-full transition-all duration-300 overflow-auto pb-2 ${
+            activeBar === "R" ? "h-auto" : "h-0 hidden"
+          }`}
+        >
+          <RealmListBoxes />
+        </div>
+        <div
+          className={`w-full transition-all duration-300 overflow-auto pb-2 ${
+            activeBar === "B" ? "h-auto" : "h-0 hidden"
+          }`}
+        >
+          <SelectPreviewBuilding />
+        </div>
+        <div
+          className={`w-full transition-all duration-300 overflow-auto pb-2 ${
+            activeBar === "A" ? "h-auto" : "h-0 hidden"
+          }`}
+        >
+          armies
+        </div>
       </div>
     </div>
   );
