@@ -58,12 +58,8 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "4.0.1",
-    "@graphql-codegen/typescript": "4.0.0",
-    "@graphql-codegen/typescript-graphql-request": "5.0.0",
-    "@graphql-codegen/typescript-operations": "4.0.0",
     "@types/lodash": "^4.14.202",
-    "@types/react": "^18.2.64",
+    "@types/react": "^18.2.74",
     "@types/react-dom": "^18.2.21",
     "@types/three": "^0.151.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
@@ -79,8 +75,8 @@
     "postcss": "^8.4.35",
     "r3f-perf": "^7.1.2",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5.4.2",
-    "vite": "^4.5.2",
+    "typescript": "^5.4.4",
+    "vite": "^5.2.8",
     "vite-plugin-svgr": "^3.3.0"
   }
 }

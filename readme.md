@@ -52,6 +52,7 @@ inhabitants.
 
 - [Client](./client) Vite App with threejs interface
 - [Contracts](./contracts) Cairo Based
+- [Eternum Docs](./eternum-docs) Documentation around playing and building on Eternum
 - [Scripts](./scripts) Development
 - [SDK](./sdk) Npm packages
 
