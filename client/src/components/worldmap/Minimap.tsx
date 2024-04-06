@@ -4,6 +4,12 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useRef } from "react";
 import { Mesh, Vector3 } from "three";
 
+// MINIMAP
+
+// TODO: We need to scale the minimap the same way we scale the actual map
+// Clicking the minimap should take you to that location on the map
+// Should the minimap be small hexes? or just a mesh with a texture?
+
 export const MiniMap = () => {
   return (
     <Canvas>
