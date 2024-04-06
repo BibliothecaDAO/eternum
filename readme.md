@@ -50,8 +50,10 @@ inhabitants.
 
 ## Project Structure
 
-- [Client Readme](./client/readme.md)
-- [Contracts Readme](./contracts/readme.md)
+- [Client](./client) Vite App with threejs interface
+- [Contracts](./contracts) Cairo Based
+- [Scripts](./scripts) Development
+- [SDK](./sdk) Npm packages
 
 ---
 
