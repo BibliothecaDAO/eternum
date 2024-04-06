@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Aleo:wght@300;400;700&family=Merriweather:wght@300;400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Kode+Mono:wght@400..700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -7,7 +7,7 @@
 html,
 body {
   overflow: hidden;
-  font-family: "Merriweather", serif;
+  font-family: "Kode Mono", monospace;
   touch-action: none;
   @apply cursor-fancy;
 }

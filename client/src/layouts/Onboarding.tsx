@@ -33,7 +33,7 @@ export const Onboarding = () => {
 
   const step_headings = [
     <span>
-      The Age Of Exploration has <span className="text-white">begun</span>....
+      The Age Of Exploration <br /> has <span className="text-white">begun</span>....
     </span>,
     "Create Your Leader ",
     "Choose Your Allegiance",
@@ -112,7 +112,7 @@ export const Onboarding = () => {
     <div className="relative h-screen w-screen">
       <img className="absolute h-screen w-screen object-cover" src="/images/cover-2.png" alt="" />
       <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center ">
-        <div className="self-center bg-black/80 p-6 rounded-2xl w-1/2  border-gold border text-gold">
+        <div className="self-center bg-black/80 p-6  w-1/2   text-gold sharp-corners">
           <div className="w-full text-center pt-6">
             <div className="mx-auto flex mb-8">
               <img src="/images/eternum-logo.svg" className=" w-48 mx-auto" alt="Eternum Logo" />
@@ -133,10 +133,6 @@ export const Onboarding = () => {
                 variant="outline"
                 onClick={() => {
                   showBlankOverlay(false);
-
-                  // if (location.includes(`/realm`)) {
-                  //   setIsLoadingScreenEnabled(false);
-                  // }
                   setLocation(`/realm/${realms[0].id}/labor`);
                   setRealmEntityId(realms[0].id);
                   setRealmId(realms[0].realmId);
@@ -154,14 +150,11 @@ export const Onboarding = () => {
 
 const StepOne = ({ onNext }: { onNext: () => void }) => {
   return (
-    <div>
-      <p className="leading-loose pt-4"></p>
-      <div className="flex space-x-2 mt-8 justify-center">
-        <Button size="md" className="mx-auto" variant="outline" onClick={onNext}>
-          Choose your Leader
-          <ArrowRight className="w-2 ml-2" />
-        </Button>
-      </div>
+    <div className="flex space-x-2 mt-8 justify-center">
+      <Button size="md" className="mx-auto" variant="outline" onClick={onNext}>
+        Choose your Leader
+        <ArrowRight className="w-2 ml-2" />
+      </Button>
     </div>
   );
 };
@@ -266,7 +259,7 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
         ),
       });
     }
-  }, [copyMessage, importMessage]); // This effect runs whenever copyMessage changes.
+  }, [copyMessage, importMessage]);
 
   return (
     <div>
@@ -384,9 +377,6 @@ const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) => {
         <Button variant="outline" onClick={onPrev}>
           <ArrowLeft className="w-2" />
         </Button>
-        {/* <Button variant="outline" onClick={onNext}>
-          continue
-        </Button> */}
       </div>
     </div>
   );
@@ -394,10 +384,8 @@ const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) => {
 
 const StepThree = () => {
   return (
-    <div>
-      <p className="leading-loose text-2xl">
-        In a world shadowed by the ruins of hyperstructures, the Orders face the grim task of rebuilding from the ashes.
-      </p>
-    </div>
+    <p className="leading-loose text-2xl">
+      In a world shadowed by the ruins of hyperstructures, the Orders face the grim task of rebuilding from the ashes.
+    </p>
   );
 };

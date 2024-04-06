@@ -3,31 +3,22 @@ import { MainScene } from "../modules/scenes/MainScene";
 import useUIStore from "../hooks/store/useUIStore";
 import { Leva } from "leva";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
-import ChatModule from "../modules/ChatModule";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import TopContainer from "../containers/TopContainer";
 import TopMiddleContainer from "../containers/TopMiddleContainer";
-import NavigationModule from "../modules/NavigationModule";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
-import ContentContainer from "../containers/ContentContainer";
-import RightMiddleContainer from "../containers/RightMiddleContainer";
-import RealmManagementModule from "../modules/RealmManagementModule";
 import { LeftNavigationModule } from "../modules/LeftNavigationModule";
-import { RightNavigationModule } from "../modules/RightNavigationModule";
 import { BottomNavigation } from "../modules/BottomNavigation";
 import { TopMiddleNavigation } from "../modules/TopMiddleNavigation";
-import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import clsx from "clsx";
-import { Redirect, Route, Switch, useLocation } from "wouter";
+import { Redirect } from "wouter";
 import { useProgress } from "@react-three/drei";
 import { NotificationsComponent } from "../components/notifications/NotificationsComponent";
-import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 import { Tooltip } from "../elements/Tooltip";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "./Onboarding";
 import { WorldPopups } from "../components/worldmap/WorldPopups";
-import EpochCountdown from "../components/network/EpochCountdown";
 import { HooksComponent } from "../components/HooksComponent";
 import { BottomLeftContainer } from "@/containers/BottomLeftContainer";
 import { Map } from "@/modules/Map";
@@ -46,16 +37,6 @@ export const World = () => {
       setIsLoadingScreenEnabled(true);
     }
   }, [progress]);
-
-  const [location] = useLocation();
-  // location type
-  const locationType = useMemo(() => {
-    if (location === "/map" || location === "/") {
-      return "map";
-    } else {
-      return "realm";
-    }
-  }, [location]);
 
   return (
     <div
@@ -84,19 +65,10 @@ export const World = () => {
         </div>
       </BackgroundContainer>
       <TopContainer>
-        {/* <NetworkModule /> */}
         <div className="flex w-72">
-          {/* <NavigationModule /> */}
           <NotificationsComponent className="" />
         </div>
-        {/* <RealmResourcesComponent /> */}
       </TopContainer>
-      <ContentContainer>
-        <Switch location={locationType}>
-          <Route path="map">{/* <WorldMapMenuModule /> */}</Route>
-          <Route path="realm">{/* <RealmManagementModule /> */}</Route>
-        </Switch>
-      </ContentContainer>
       <TopMiddleContainer>
         <TopMiddleNavigation />
       </TopMiddleContainer>
@@ -106,9 +78,6 @@ export const World = () => {
       <BottomLeftContainer>
         <Map />
       </BottomLeftContainer>
-      {/* <RightMiddleContainer>
-        <RightNavigationModule />
-      </RightMiddleContainer> */}
       <BottomMiddleContainer>
         <BottomNavigation />
       </BottomMiddleContainer>
@@ -116,11 +85,14 @@ export const World = () => {
       <BlankOverlayContainer>
         <Onboarding />
       </BlankOverlayContainer>
-      {/* <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} /> */}
+      <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} />
       <Tooltip />
       <Redirect to="/map" />
-      <div className="absolute bottom-4 right-6 text-white text-xs text-white/60">v0.4.0</div>
-      {/* <EpochCountdown /> */}
+      <div className="absolute bottom-4 right-6 text-white text-xs text-white/60 hover:text-white">
+        <a target="_blank" href="https://github.com/BibliothecaDAO/eternum">
+          v0.5.0
+        </a>
+      </div>
       <HooksComponent />
     </div>
   );

@@ -20,7 +20,7 @@ const CircleButton = ({ children, className, size, disabled, active, ...props }:
   return (
     <button
       className={clsx(
-        "flex transition-all duration-150  border-gold border-2   cursor-pointer items-center justify-center   rounded-xl shadow-lg  shadow-black/50  fill-current text-gold hover:border-white/20",
+        "flex transition-all duration-150  border-gold border   cursor-pointer items-center justify-center   rounded-xl shadow-lg  shadow-black/50  fill-current text-gold hover:border-white/20",
         className,
         sizes[size],
         { "opacity-50 cursor-not-allowed": disabled },

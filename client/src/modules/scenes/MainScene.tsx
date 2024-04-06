@@ -204,7 +204,7 @@ export const MainScene = () => {
         outputEncoding: data.encoding,
       }}
     >
-      {/* {import.meta.env.DEV && <Perf position="bottom-left" />} */}
+      {import.meta.env.DEV && <Perf position="bottom-left" />}
       <FPSLimiter>
         {/* <Sky azimuth={azimuth} inclination={inclination} distance={distance} /> */}
         <ambientLight color={ambientColor} intensity={ambientIntensity} />
@@ -217,7 +217,7 @@ export const MainScene = () => {
                 <WorldMapScene />
               </Route>
               <Route path="realm">
-                <CameraShake {...shakeConfig} />
+                {/* <CameraShake {...shakeConfig} /> */}
                 <RealmCityViewScene />
                 <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
                   <Cloud
