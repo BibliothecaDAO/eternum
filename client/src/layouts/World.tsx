@@ -29,6 +29,8 @@ import { Onboarding } from "./Onboarding";
 import { WorldPopups } from "../components/worldmap/WorldPopups";
 import EpochCountdown from "../components/network/EpochCountdown";
 import { HooksComponent } from "../components/HooksComponent";
+import { BottomLeftContainer } from "@/containers/BottomLeftContainer";
+import { Map } from "@/modules/Map";
 
 export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
@@ -101,6 +103,9 @@ export const World = () => {
       <LeftMiddleContainer>
         <LeftNavigationModule />
       </LeftMiddleContainer>
+      <BottomLeftContainer>
+        <Map />
+      </BottomLeftContainer>
       {/* <RightMiddleContainer>
         <RightNavigationModule />
       </RightMiddleContainer> */}
