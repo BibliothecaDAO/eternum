@@ -1,6 +1,8 @@
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import clsx from "clsx";
 
 type CircleButtonProps = {
+  onClick: () => void;
   children?: React.ReactNode;
   className?: string;
   size: "xs" | "sm" | "md" | "lg" | "xl";
@@ -16,9 +18,20 @@ const sizes = {
   xl: "w-14 h-14",
 };
 
-const CircleButton = ({ children, className, size, disabled, active, ...props }: CircleButtonProps) => {
+const CircleButton = ({ onClick, children, className, size, disabled, active, ...props }: CircleButtonProps) => {
+  const { play: hoverClick, stop } = useUiSounds(soundSelector.hoverClick);
+
+  const { play: playClick } = useUiSounds(soundSelector.click);
   return (
     <button
+      // onMouseOver={() => hoverClick()}
+      // onMouseLeave={() => stop()}
+      onClick={() => {
+        if (!disabled) {
+          onClick();
+          playClick();
+        }
+      }}
       className={clsx(
         "flex transition-all duration-150  border-gold border   cursor-pointer items-center justify-center   rounded-xl shadow-lg  shadow-black/50  fill-current text-gold hover:border-white/20",
         className,

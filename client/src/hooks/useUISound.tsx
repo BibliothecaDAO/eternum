@@ -7,6 +7,7 @@ import { BuildingType } from "./store/_buildModeStore";
 const dir = "/sound/";
 
 export const soundSelector = {
+  hoverClick: "ui/ui-click-1.mp3",
   click: "ui/click.mp3",
   sign: "ui/sign.mp3",
   harvest: "ui/harvest.mp3",

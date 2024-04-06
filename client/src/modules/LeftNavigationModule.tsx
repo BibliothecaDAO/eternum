@@ -123,21 +123,21 @@ export const LeftNavigationModule = () => {
 
   return (
     <>
-      <div
-        className=" p-1"
-        onClick={() => {
-          if (location !== "/map") {
-            setIsLoadingScreenEnabled(true);
-            setTimeout(() => {
-              setLocation("/map");
-              moveCameraToRealm(Number(realm?.realmId), 0.01);
-            }, 100);
-          } else {
-            moveCameraToRealm(Number(realm?.realmId));
-          }
-        }}
-      >
-        <CircleButton size="md">
+      <div className=" p-1">
+        <CircleButton
+          onClick={() => {
+            if (location !== "/map") {
+              setIsLoadingScreenEnabled(true);
+              setTimeout(() => {
+                setLocation("/map");
+                moveCameraToRealm(Number(realm?.realmId), 0.01);
+              }, 100);
+            } else {
+              moveCameraToRealm(Number(realm?.realmId));
+            }
+          }}
+          size="md"
+        >
           <WorldIcon className="fill-gold" />
         </CircleButton>
       </div>
