@@ -19,8 +19,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
-        map: resolve(__dirname, "map/index.html"),
-        realm: resolve(__dirname, "realm/index.html"),
+        map: resolve(__dirname, "index.html"),
+        realm: resolve(__dirname, "index.html"),
       },
       maxParallelFileOps: 2,
       cache: false,
