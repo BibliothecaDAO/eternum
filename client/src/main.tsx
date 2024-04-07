@@ -3,8 +3,8 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { SetupResult, setup } from "./dojo/setup";
-import { DojoProvider } from "./context/DojoContext";
-import { LoadingScreen } from "./modules/LoadingScreen";
+import { DojoProvider } from "./hooks/context/DojoContext";
+import { LoadingScreen } from "./ui/modules/LoadingScreen";
 import { dojoConfig } from "../dojoConfig";
 
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);

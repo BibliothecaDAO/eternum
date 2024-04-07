@@ -1,10 +1,10 @@
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../../context/DojoContext";
-import { getEntityIdFromKeys, getPosition } from "../../utils/utils";
+import { useDojo } from "../context/DojoContext";
+import { getEntityIdFromKeys, getPosition } from "../../ui/utils/utils";
 import { useEffect, useMemo, useState } from "react";
 import { Entity, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import useRealmStore from "../store/useRealmStore";
-import { getRealm, getRealmIdByPosition, getRealmNameById } from "../../utils/realms";
+import { getRealm, getRealmIdByPosition, getRealmNameById } from "../../ui/utils/realms";
 import { RoadInterface } from "@bibliothecadao/eternum";
 
 export function useRoads() {

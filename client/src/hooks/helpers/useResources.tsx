@@ -1,7 +1,7 @@
 import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../../context/DojoContext";
+import { useDojo } from "../context/DojoContext";
 import useRealmStore from "../store/useRealmStore";
-import { getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";
+import { getEntityIdFromKeys, getForeignKeyEntityId } from "../../ui/utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 import { BigNumberish } from "starknet";
 import { Resource } from "@bibliothecadao/eternum";

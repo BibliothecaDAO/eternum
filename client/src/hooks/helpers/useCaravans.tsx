@@ -1,8 +1,8 @@
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../context/DojoContext";
+import { useDojo } from "../context/DojoContext";
 import { CaravanInterface, DESTINATION_TYPE } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { divideByPrecision, getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, getForeignKeyEntityId } from "../../ui/utils/utils";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { useHyperstructure } from "./useHyperstructure";
 import { useBanks } from "./useBanks";

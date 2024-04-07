@@ -1,10 +1,10 @@
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../context/DojoContext";
+import { useDojo } from "../context/DojoContext";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useRef, useState } from "react";
 import { Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import useRealmStore from "../store/useRealmStore";
-import { findDirection } from "../../utils/utils";
+import { findDirection } from "../../ui/utils/utils";
 
 interface ExploreHexProps {
   explorerId: bigint | undefined;
