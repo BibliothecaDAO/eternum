@@ -1,7 +1,7 @@
 import useUIStore from "../../hooks/store/useUIStore";
-import { OSWindow } from "./OSWindow";
-import { leaderboard, resources } from "./Config";
-import { EntityResourceTable } from "../resources/EntityResourceTable";
+import { OSWindow } from "../../components/navigation/OSWindow";
+import { leaderboard, resources } from "../../components/navigation/Config";
+import { EntityResourceTable } from "../../components/resources/EntityResourceTable";
 
 export const Resources = () => {
   const { togglePopup } = useUIStore();

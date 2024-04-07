@@ -1,6 +1,6 @@
 import useUIStore from "@/hooks/store/useUIStore";
-import { OSWindow } from "./OSWindow";
-import { entityDetails } from "./Config";
+import { OSWindow } from "../../components/navigation/OSWindow";
+import { entityDetails } from "../../components/navigation/Config";
 import HexagonInformationPanel from "@/components/worldmap/hexagon/HexagonInformationPanel";
 
 export const EntityDetails = () => {

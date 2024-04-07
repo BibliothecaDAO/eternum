@@ -1,6 +1,6 @@
-import useUIStore from "../../hooks/store/useUIStore";
-import { OSWindow } from "./OSWindow";
-import { military } from "./Config";
+import useUIStore from "@/hooks/store/useUIStore";
+import { OSWindow } from "@/components/navigation/OSWindow";
+import { military } from "@/components/navigation/Config";
 
 export const Military = () => {
   const { togglePopup } = useUIStore();

@@ -1,7 +1,7 @@
 import useUIStore from "../../hooks/store/useUIStore";
-import { OSWindow } from "./OSWindow";
-import { HyperstructuresPanel } from "../worldmap/hyperstructures/HyperstructuresPanel";
-import { hyperstructures } from "./Config";
+import { OSWindow } from "../../components/navigation/OSWindow";
+import { HyperstructuresPanel } from "../../components/worldmap/hyperstructures/HyperstructuresPanel";
+import { hyperstructures } from "../../components/navigation/Config";
 
 export const HyperStructures = () => {
   const { togglePopup } = useUIStore();

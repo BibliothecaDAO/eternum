@@ -22,16 +22,16 @@ import {
 import useUIStore from "../../hooks/store/useUIStore";
 import { useLocation } from "wouter";
 import CircleButton from "../../elements/CircleButton";
-import { SettingsWindow } from "../../components/navigation/Settings";
+import { SettingsWindow } from "../settings/Settings";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../hooks/helpers/useRealm";
-import { EventLog } from "../../components/navigation/Events";
-import { Banks } from "../../components/navigation/Banks";
-import { Leaderboard } from "../../components/navigation/LeaderBoard";
-import { HyperStructures } from "../../components/navigation/Hyperstructures";
-import { Resources } from "@/components/navigation/Resources";
-import { Military } from "@/components/navigation/Military";
-import { EntityDetails } from "@/components/navigation/EntityDetails";
+import { EventLog } from "../events/Events";
+import { Banks } from "../banking/Banks";
+import { Leaderboard } from "../leaderboard/LeaderBoard";
+import { HyperStructures } from "../hyperstructures/Hyperstructures";
+import { Resources } from "@/modules/resources/Resources";
+import { Military } from "@/modules/military/Military";
+import { EntityDetails } from "@/modules/entity-details/EntityDetails";
 
 export const LeftNavigationModule = () => {
   const { togglePopup, closeAllPopups, openAllPopups, isPopupOpen } = useUIStore();

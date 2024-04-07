@@ -1,6 +1,6 @@
 import useUIStore from "../../hooks/store/useUIStore";
-import { OSWindow } from "./OSWindow";
-import { leaderboard } from "./Config";
+import { OSWindow } from "../../components/navigation/OSWindow";
+import { leaderboard } from "../../components/navigation/Config";
 
 export const Leaderboard = () => {
   const { togglePopup } = useUIStore();

@@ -17,10 +17,10 @@ import useScreenOrientation from "../../hooks/useScreenOrientation";
 import { useDojo } from "../../context/DojoContext";
 import { useRealm } from "../../hooks/helpers/useRealm";
 import { useMusicPlayer } from "../../hooks/useMusic";
-import { OSWindow } from "./OSWindow";
+import { OSWindow } from "../../components/navigation/OSWindow";
 import Avatar from "../../elements/Avatar";
 import { addressToNumber } from "../../utils/utils";
-import { settings } from "./Config";
+import { settings } from "../../components/navigation/Config";
 
 export const SettingsWindow = () => {
   const {

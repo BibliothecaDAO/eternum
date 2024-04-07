@@ -1,6 +1,6 @@
 import useUIStore from "../../hooks/store/useUIStore";
-import { OSWindow } from "./OSWindow";
-import { eventLog } from "./Config";
+import { OSWindow } from "../../components/navigation/OSWindow";
+import { eventLog } from "../../components/navigation/Config";
 
 export const EventLog = () => {
   const { togglePopup } = useUIStore();
