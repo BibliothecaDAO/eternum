@@ -1,16 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
-import realmsJson from "../../geodata/realms.json";
-import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
-import flagsHeights from "../../geodata/flags_heights.json";
-import realmsOrders from "../../geodata/realms_raw.json";
+import realmsJson from "@/data/geodata/realms.json";
+import flagsHeights from "@/data/geodata/flags_heights.json";
+import realmsOrders from "@/data/geodata/realms_raw.json";
 import * as THREE from "three";
 import useUIStore from "../../hooks/store/useUIStore";
 import { useGetRealms } from "../../hooks/helpers/useRealm";
-import { useSpring, animated } from "@react-spring/three";
 import gsap from "gsap";
-import { useFrame, useThree } from "@react-three/fiber";
-import { useControls } from "leva";
+import { useFrame } from "@react-three/fiber";
 import { orderNameDict } from "@bibliothecadao/eternum";
 import { getRealmUIPosition, getUIPositionFromColRow } from "../../utils/utils";
 

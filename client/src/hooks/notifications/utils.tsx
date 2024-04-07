@@ -4,7 +4,7 @@ import { CombatResultInterface, Position, ResourcesIds } from "@bibliothecadao/e
 import { unpackResources } from "../../utils/packedData";
 import { getRealm } from "../../utils/realms";
 import { EventType, NotificationType } from "../store/useNotificationsStore";
-import { Event } from "../../services/eventPoller";
+import { Event } from "../eventPoller";
 
 export type realmsResources = { realmEntityId: bigint; resourceIds: number[] }[];
 export type realmsPosition = { realmId: bigint; position: Position; realmEntityId: bigint }[];

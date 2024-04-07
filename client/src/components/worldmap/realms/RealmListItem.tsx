@@ -3,7 +3,7 @@ import Button from "../../../elements/Button";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { findResourceById, orderNameDict } from "@bibliothecadao/eternum";
 import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
-import * as realmsData from "../../../geodata/realms.json";
+import * as realmsData from "../../../data/geodata/realms.json";
 import clsx from "clsx";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { displayAddress } from "../../../utils/utils";

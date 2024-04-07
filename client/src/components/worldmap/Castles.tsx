@@ -1,5 +1,5 @@
 import { useGLTF } from "@react-three/drei";
-import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
+import realmHexPositions from "../../data/geodata/hex/realmHexPositions.json";
 import { useMemo, useState } from "react";
 import { useGetRealms } from "../../hooks/helpers/useRealm";
 import useRealmStore from "../../hooks/store/useRealmStore";

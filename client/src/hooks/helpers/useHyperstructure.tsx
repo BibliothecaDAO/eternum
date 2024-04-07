@@ -3,7 +3,7 @@ import { useDojo } from "../../context/DojoContext";
 import { Position } from "@bibliothecadao/eternum";
 import { calculateDistance, getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
-import hyperstructuresHexPositions from "../../geodata/hex/hyperstructuresHexPositions.json";
+import hyperstructuresHexPositions from "../../data/geodata/hex/hyperstructuresHexPositions.json";
 import { useCombat } from "./useCombat";
 import { resources } from "@bibliothecadao/eternum";
 import useRealmStore from "../store/useRealmStore";

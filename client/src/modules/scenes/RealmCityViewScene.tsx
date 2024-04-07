@@ -6,7 +6,7 @@ import { HexPositions, getUIPositionFromColRow } from "../../utils/utils";
 import BigHexBiome from "../../components/cityview/hexception/BigHexBiome";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../hooks/helpers/useRealm";
-import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
+import realmHexPositions from "../../data/geodata/hex/realmHexPositions.json";
 import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 
 export const RealmCityViewScene = () => {

@@ -10,7 +10,7 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { order_statments } from "../../../data/orders";
-import realmsHexPositions from "../../../geodata/hex/realmHexPositions.json";
+import realmsHexPositions from "../../../data/geodata/hex/realmHexPositions.json";
 
 export const MAX_REALMS = 5;
 

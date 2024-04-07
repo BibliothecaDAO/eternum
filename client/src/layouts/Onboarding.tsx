@@ -14,7 +14,7 @@ import { ReactComponent as ArrowRight } from "../assets/icons/common/arrow-right
 import { ReactComponent as ArrowLeft } from "../assets/icons/common/arrow-left.svg";
 import Avatar from "../elements/Avatar";
 import useRealmStore from "../hooks/store/useRealmStore";
-import realmsNames from "../geodata/realms.json";
+import realmsNames from "../data/geodata/realms.json";
 import { useLocation } from "wouter";
 import { orderNameDict } from "@bibliothecadao/eternum";
 import { getRealm } from "../utils/realms";

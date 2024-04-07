@@ -5,7 +5,7 @@ import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { MarketInterface, RoadInterface, findResourceById, orderNameDict } from "@bibliothecadao/eternum";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
 import { useDojo } from "../../../../../context/DojoContext";
-import * as realmsData from "../../../../../geodata/realms.json";
+import * as realmsData from "../../../../../data/geodata/realms.json";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { currencyFormat } from "../../../../../utils/utils";
 import useUIStore from "../../../../../hooks/store/useUIStore";

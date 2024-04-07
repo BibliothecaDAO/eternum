@@ -1,6 +1,6 @@
 import { OrderIcon } from "../../../elements/OrderIcon";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import realmsNames from "../../../geodata/realms.json";
+import realmsNames from "../../../data/geodata/realms.json";
 import { Resource, getLevelingCost, orderNameDict } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";

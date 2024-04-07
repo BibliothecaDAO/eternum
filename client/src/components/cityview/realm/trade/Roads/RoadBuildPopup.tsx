@@ -9,7 +9,7 @@ import { useDojo } from "../../../../../context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
-import * as realmsData from "../../../../../geodata/realms.json";
+import * as realmsData from "../../../../../data/geodata/realms.json";
 import { ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 
 type RoadBuildPopupProps = {

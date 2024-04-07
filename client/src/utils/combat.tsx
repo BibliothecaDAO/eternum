@@ -1,5 +1,5 @@
 import { CombatResultInterface, Resource, Winner } from "@bibliothecadao/eternum";
-import { Event } from "../services/eventPoller";
+import { Event } from "../hooks/eventPoller";
 import { useResources } from "../hooks/helpers/useResources";
 import { getComponentValue } from "@dojoengine/recs";
 

@@ -10,7 +10,7 @@ import { useGetMyOffers, useTrade } from "../../../../../hooks/helpers/useTrade"
 import { FiltersPanel } from "../../../../../elements/FiltersPanel";
 import { FilterButton } from "../../../../../elements/FilterButton";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
-import * as realmsData from "../../../../../geodata/realms.json";
+import * as realmsData from "../../../../../data/geodata/realms.json";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { AcceptOfferPopup } from "../AcceptOffer";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";

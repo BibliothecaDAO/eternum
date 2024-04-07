@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { numberToHex } from "../../utils/utils";
-import { pollForEvents, Event } from "../../services/eventPoller";
+import { pollForEvents, Event } from "../eventPoller";
 import { parseCombatEvent } from "../../utils/combat";
 import { COMBAT_EVENT } from "@bibliothecadao/eternum";
 import { CombatResultInterface } from "@bibliothecadao/eternum";

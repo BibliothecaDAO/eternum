@@ -1,6 +1,6 @@
-import realmsJson from "../geodata/realms.json";
-import realmsOrdersJson from "../geodata/realms_raw.json";
-import realmsHexPositions from "../geodata/hex/realmHexPositions.json";
+import realmsJson from "../data/geodata/realms.json";
+import realmsOrdersJson from "../data/geodata/realms_raw.json";
+import realmsHexPositions from "../data/geodata/hex/realmHexPositions.json";
 import { findResourceIdByTrait, orders } from "@bibliothecadao/eternum";
 import { packResources } from "../utils/packedData";
 import { RealmInterface } from "@bibliothecadao/eternum";

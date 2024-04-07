@@ -4,9 +4,9 @@ import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
 import { Entity } from "@dojoengine/recs";
 import { Position, UIPosition, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import realmsHexPositions from "../geodata/hex/realmHexPositions.json";
+import realmsHexPositions from "../data/geodata/hex/realmHexPositions.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import realmHexPositions from "../geodata/hex/realmHexPositions.json";
+import realmHexPositions from "../data/geodata/hex/realmHexPositions.json";
 
 export { getEntityIdFromKeys };
 

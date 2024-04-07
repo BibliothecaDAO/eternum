@@ -8,7 +8,7 @@ import useBlockchainStore from "../store/useBlockchainStore";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
 import { AuctionInterface, BankInterface, BankStaticInterface } from "@bibliothecadao/eternum";
-import bankHexPositions from "../../geodata/hex/bankHexPositions.json";
+import bankHexPositions from "../../data/geodata/hex/bankHexPositions.json";
 
 export const targetPrices = {
   254: 10,
