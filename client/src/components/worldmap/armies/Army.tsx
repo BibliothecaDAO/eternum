@@ -3,7 +3,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 import { Position, UIPosition } from "@bibliothecadao/eternum";
-import { WarriorModel } from "./models/WarriorModel";
+import { WarriorModel } from "../../models/armies/WarriorModel";
 import { Vector3 } from "three";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import { ArmyInfoLabel } from "./ArmyInfoLabel";

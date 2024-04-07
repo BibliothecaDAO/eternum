@@ -9,7 +9,7 @@ import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useGLTF, useAnimations } from "@react-three/drei";
 import { GLTF, SkeletonUtils } from "three-stdlib";
 import { Vector3, useGraph } from "@react-three/fiber";
-import { useRunningSound } from "../../../../hooks/useUISound";
+import { useRunningSound } from "../../../hooks/useUISound";
 
 const FRIENDLY_ARMY_MODEL_HOVER_COLOR: string = "yellow";
 const ENEMY_ARMY_MODEL_HOVER_COLOR: string = "orange";

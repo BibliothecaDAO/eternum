@@ -1,14 +1,14 @@
 import { useGLTF } from "@react-three/drei";
-import realmHexPositions from "../../data/geodata/hex/realmHexPositions.json";
+import realmHexPositions from "../../../../data/geodata/hex/realmHexPositions.json";
 import { useMemo, useState } from "react";
-import { useGetRealms } from "../../hooks/helpers/useRealm";
-import useRealmStore from "../../hooks/store/useRealmStore";
-import { HexPositions, getRealmUIPosition, pseudoRandom } from "../../utils/utils";
+import { useGetRealms } from "../../../../hooks/helpers/useRealm";
+import useRealmStore from "../../../../hooks/store/useRealmStore";
+import { HexPositions, getRealmUIPosition, pseudoRandom } from "../../../../utils/utils";
 import { GLTF } from "three-stdlib";
 import { biomes } from "@bibliothecadao/eternum";
-import useUIStore from "../../hooks/store/useUIStore";
-import { ArmyMenu } from "./armies/ArmyMenu";
-import { Hexagon } from "../../types";
+import useUIStore from "../../../../hooks/store/useUIStore";
+import { ArmyMenu } from "../../../worldmap/armies/ArmyMenu";
+import { Hexagon } from "../../../../types";
 
 // @ts-nocheck
 type GLTFResult = GLTF & {

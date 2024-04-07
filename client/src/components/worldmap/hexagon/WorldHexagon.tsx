@@ -4,7 +4,7 @@ import { Flags } from "../Flags.jsx";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useDojo } from "../../../context/DojoContext.js";
 import { Subscription } from "rxjs";
-import { MyCastles, OtherCastles } from "../Castles";
+import { MyCastles, OtherCastles } from "../../models/buildings/worldmap/Castles.js";
 import { Armies } from "../armies/Armies";
 import { Hexagon } from "../../../types";
 import { BiomesGrid, HexagonGrid } from "./HexLayers";
