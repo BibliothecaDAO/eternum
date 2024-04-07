@@ -9,7 +9,7 @@ import { calculateProductivity } from "./labor/laborUtils";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { ReactComponent as MoreIcon } from "../../../assets/icons/common/more.svg";
 import { useComponentValue } from "@dojoengine/react";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";

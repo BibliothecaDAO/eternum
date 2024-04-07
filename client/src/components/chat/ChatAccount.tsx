@@ -1,4 +1,4 @@
-import { useChat } from "../../ChatContext";
+import { useChat } from "../../context/ChatContext";
 import Button from "../../elements/Button";
 
 export const ChatAccount = () => {

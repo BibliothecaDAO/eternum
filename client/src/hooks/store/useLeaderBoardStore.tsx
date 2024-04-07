@@ -2,7 +2,7 @@ import { getOrderName, orders } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { useGetRealms, useRealm } from "../helpers/useRealm";
 import { useEffect } from "react";
 import useRealmStore from "./useRealmStore";

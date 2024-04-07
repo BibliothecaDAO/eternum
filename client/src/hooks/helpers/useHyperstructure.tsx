@@ -1,5 +1,5 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { Position } from "@bibliothecadao/eternum";
 import { calculateDistance, getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
 import { HyperStructureInterface } from "@bibliothecadao/eternum";

@@ -1,4 +1,4 @@
-import "./index.css";
+import "../index.css";
 
 export const LoadingScreen = () => {
   return (

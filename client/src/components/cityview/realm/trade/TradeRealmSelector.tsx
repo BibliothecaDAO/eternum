@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { useDojo } from "../../../../DojoContext";
+import { useDojo } from "../../../../context/DojoContext";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { RealmList } from "../RealmList";
 import { SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";

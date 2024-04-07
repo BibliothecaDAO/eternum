@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 // @ts-ignore
 import { Flags } from "../Flags.jsx";
 import useUIStore from "../../../hooks/store/useUIStore";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext.js";
 import { Subscription } from "rxjs";
 import { MyCastles, OtherCastles } from "../Castles";
 import { Armies } from "../armies/Armies";

@@ -4,7 +4,7 @@ import { RealmsListComponent } from "./RealmsListComponent";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { RaidsPanel } from "../../cityview/realm/combat/raids/RaidsPanel";
 import { useCombat } from "../../../hooks/helpers/useCombat";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 
 type RealmsListPanelProps = {};
 

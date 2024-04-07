@@ -1,5 +1,5 @@
 import { HasValue, getComponentValue, runQuery, Entity } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { MarketInterface, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";

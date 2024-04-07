@@ -1,5 +1,5 @@
-import useBlockchainStore from "../hooks/store/useBlockchainStore";
-import { TIME_PER_TICK } from "../components/network/EpochCountdown";
+import useBlockchainStore from "../../hooks/store/useBlockchainStore";
+import { TIME_PER_TICK } from "../../components/network/EpochCountdown";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getColRowFromUIPosition } from "@/utils/utils";
 import useRealmStore from "@/hooks/store/useRealmStore";

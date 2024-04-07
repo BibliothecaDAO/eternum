@@ -1,14 +1,14 @@
-import { ReactComponent as Settings } from "../assets/icons/common/settings.svg";
-import { ReactComponent as WorldIcon } from "../assets/icons/common/world.svg";
-import { ReactComponent as Coin } from "../assets/icons/common/coin.svg";
-import { ReactComponent as Relic } from "../assets/icons/common/relic.svg";
-import { ReactComponent as Hex } from "../assets/icons/common/hex.svg";
-import { ReactComponent as Close } from "../assets/icons/common/collapse.svg";
-import { ReactComponent as Expand } from "../assets/icons/common/expand.svg";
-import { ReactComponent as CrossSwords } from "../assets/icons/common/cross-swords.svg";
-import { ReactComponent as PickAxe } from "../assets/icons/common/pick-axe.svg";
-import { ReactComponent as LeaderBoard } from "../assets/icons/common/leaderboard.svg";
-import { ReactComponent as Pen } from "../assets/icons/common/pen.svg";
+import { ReactComponent as Settings } from "@/assets/icons/common/settings.svg";
+import { ReactComponent as WorldIcon } from "@/assets/icons/common/world.svg";
+import { ReactComponent as Coin } from "@/assets/icons/common/coin.svg";
+import { ReactComponent as Relic } from "@/assets/icons/common/relic.svg";
+import { ReactComponent as Hex } from "@/assets/icons/common/hex.svg";
+import { ReactComponent as Close } from "@/assets/icons/common/collapse.svg";
+import { ReactComponent as Expand } from "@/assets/icons/common/expand.svg";
+import { ReactComponent as CrossSwords } from "@/assets/icons/common/cross-swords.svg";
+import { ReactComponent as PickAxe } from "@/assets/icons/common/pick-axe.svg";
+import { ReactComponent as LeaderBoard } from "@/assets/icons/common/leaderboard.svg";
+import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import {
   banks,
   entityDetails,
@@ -18,17 +18,17 @@ import {
   military,
   resources,
   settings,
-} from "../components/navigation/Config";
-import useUIStore from "../hooks/store/useUIStore";
+} from "../../components/navigation/Config";
+import useUIStore from "../../hooks/store/useUIStore";
 import { useLocation } from "wouter";
-import CircleButton from "../elements/CircleButton";
-import { SettingsWindow } from "../components/navigation/Settings";
-import useRealmStore from "../hooks/store/useRealmStore";
-import { useGetRealm } from "../hooks/helpers/useRealm";
-import { EventLog } from "../components/navigation/Events";
-import { Banks } from "../components/navigation/Banks";
-import { Leaderboard } from "../components/navigation/LeaderBoard";
-import { HyperStructures } from "../components/navigation/Hyperstructures";
+import CircleButton from "../../elements/CircleButton";
+import { SettingsWindow } from "../../components/navigation/Settings";
+import useRealmStore from "../../hooks/store/useRealmStore";
+import { useGetRealm } from "../../hooks/helpers/useRealm";
+import { EventLog } from "../../components/navigation/Events";
+import { Banks } from "../../components/navigation/Banks";
+import { Leaderboard } from "../../components/navigation/LeaderBoard";
+import { HyperStructures } from "../../components/navigation/Hyperstructures";
 import { Resources } from "@/components/navigation/Resources";
 import { Military } from "@/components/navigation/Military";
 import { EntityDetails } from "@/components/navigation/EntityDetails";

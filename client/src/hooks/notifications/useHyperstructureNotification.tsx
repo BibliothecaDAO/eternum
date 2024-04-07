@@ -4,7 +4,7 @@ import { Badge } from "../../elements/Badge";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import {
   ArrivedAtHyperstructureData,

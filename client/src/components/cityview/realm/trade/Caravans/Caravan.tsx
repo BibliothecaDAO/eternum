@@ -16,7 +16,7 @@ import { getTotalResourceWeight } from "../utils";
 import { divideByPrecision } from "../../../../../utils/utils";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 import Button from "../../../../../elements/Button";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 
 type CaravanProps = {
@@ -110,8 +110,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                 {destinationType === DESTINATION_TYPE.BANK
                   ? "bank"
                   : destinationType === DESTINATION_TYPE.HYPERSTRUCTURE
-                    ? "hyperstructure"
-                    : "home"}
+                  ? "hyperstructure"
+                  : "home"}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
@@ -137,8 +137,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                 {destinationType === DESTINATION_TYPE.BANK
                   ? "bank"
                   : destinationType === DESTINATION_TYPE.HYPERSTRUCTURE
-                    ? "hyperstructure"
-                    : "home"}
+                  ? "hyperstructure"
+                  : "home"}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>

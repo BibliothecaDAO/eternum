@@ -7,9 +7,9 @@ import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import TopContainer from "../containers/TopContainer";
 import TopMiddleContainer from "../containers/TopMiddleContainer";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
-import { LeftNavigationModule } from "../modules/LeftNavigationModule";
-import { BottomNavigation } from "../modules/BottomNavigation";
-import { TopMiddleNavigation } from "../modules/TopMiddleNavigation";
+import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
+import { BottomNavigation } from "../modules/navigation/BottomNavigation";
+import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
 import { useEffect } from "react";
 import clsx from "clsx";
 import { Redirect } from "wouter";
@@ -21,7 +21,7 @@ import { Onboarding } from "./Onboarding";
 import { WorldPopups } from "../components/worldmap/WorldPopups";
 import { HooksComponent } from "../components/HooksComponent";
 import { BottomLeftContainer } from "@/containers/BottomLeftContainer";
-import { Map } from "@/modules/Map";
+import { Map } from "@/modules/map/Map";
 
 export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
@@ -66,7 +66,7 @@ export const World = () => {
       </BackgroundContainer>
       <TopContainer>
         <div className="flex w-72">
-          <NotificationsComponent className="" />
+          <NotificationsComponent />
         </div>
       </TopContainer>
       <TopMiddleContainer>

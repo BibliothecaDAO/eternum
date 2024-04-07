@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
 import Button from "../../../../elements/Button";
 import { SelectCaravanPanel } from "./CreateOffer";
-import { useDojo } from "../../../../DojoContext";
+import { useDojo } from "../../../../context/DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";

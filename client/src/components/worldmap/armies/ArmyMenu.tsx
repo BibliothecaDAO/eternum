@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { CombatInfo, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useCombat } from "../../../hooks/helpers/useCombat";

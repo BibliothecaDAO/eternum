@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useContext } from "react";
-import { useLogin } from "./components/chat/Login";
+import { useLogin } from "../components/chat/Login";
 import { Client } from "@web3mq/client";
 
 type ChatSetup = {

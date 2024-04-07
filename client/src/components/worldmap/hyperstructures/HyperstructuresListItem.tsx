@@ -9,7 +9,7 @@ import { ReactComponent as Shield } from "../../../assets/icons/units/shield.svg
 import { Dot } from "../../../elements/Dot";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { useCombat } from "../../../hooks/helpers/useCombat";
 import { ResourceIcon } from "../../../elements/ResourceIcon";

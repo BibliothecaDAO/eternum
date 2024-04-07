@@ -6,7 +6,7 @@ import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { divideByPrecision } from "../../../../../utils/utils";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type ChooseBuildingProps = {};

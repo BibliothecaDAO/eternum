@@ -1,5 +1,5 @@
 import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";

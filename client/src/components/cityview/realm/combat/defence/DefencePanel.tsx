@@ -4,7 +4,7 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { Defence } from "./Defence";
 import { useComponentValue } from "@dojoengine/react";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import AttacksComponent from "./AttacksComponent";
 import { ManageSoldiersPopupTabs } from "../raids/ManageSoldiersPopupTabs";
 import { HealPopup } from "../HealPopup";

@@ -7,7 +7,7 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../utils/realms";
 import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
 import { OrderIcon } from "../../../elements/OrderIcon";

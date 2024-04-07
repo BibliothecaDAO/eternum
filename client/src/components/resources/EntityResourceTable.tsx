@@ -1,5 +1,5 @@
 import { RESOURCE_TIERS, ResourcesIds, findResourceById, getIconResourceId, resources } from "@bibliothecadao/eternum";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import useUIStore from "../../hooks/store/useUIStore";
 import useBlockchainStore from "../../hooks/store/useBlockchainStore";

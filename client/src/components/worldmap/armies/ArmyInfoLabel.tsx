@@ -1,5 +1,5 @@
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 import { useCombat } from "../../../hooks/helpers/useCombat";
 import { ReactComponent as Pen } from "../../../assets/icons/common/pen.svg";
 import useUIStore from "../../../hooks/store/useUIStore";

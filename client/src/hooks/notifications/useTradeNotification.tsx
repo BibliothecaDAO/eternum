@@ -1,7 +1,7 @@
 import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark.svg";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { ReactComponent as RatioIcon } from "../../assets/icons/common/ratio.svg";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { Badge } from "../../elements/Badge";
 import { divideByPrecision, extractAndCleanKey, getEntityIdFromKeys } from "../../utils/utils";

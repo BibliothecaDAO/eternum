@@ -20,7 +20,7 @@ import { ResourceIcon } from "../../../../elements/ResourceIcon";
 import { BuildingsCount } from "../../../../elements/BuildingsCount";
 import clsx from "clsx";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { useDojo } from "../../../../DojoContext";
+import { useDojo } from "../../../../context/DojoContext";
 import { formatSecondsLeftInDaysHours } from "./laborUtils";
 import { soundSelector, usePlayResourceSound, useUiSounds } from "../../../../hooks/useUISound";
 import { getComponentValue } from "@dojoengine/recs";

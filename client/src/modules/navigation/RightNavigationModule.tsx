@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { BaseContainer } from "../containers/BaseContainer";
-import { HexagonInformationPanel } from "../components/worldmap/hexagon/HexagonInformationPanel";
+import { BaseContainer } from "../../containers/BaseContainer";
+import { HexagonInformationPanel } from "../../components/worldmap/hexagon/HexagonInformationPanel";
 
 import CircleButton from "@/elements/CircleButton";
 

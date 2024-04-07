@@ -1,5 +1,5 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { Position, Resource } from "@bibliothecadao/eternum";
 import { HexPositions, getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
 import banks from "../../data/banks.json";

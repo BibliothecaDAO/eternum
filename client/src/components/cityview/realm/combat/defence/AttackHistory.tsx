@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { useMemo } from "react";

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";
 import { getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";

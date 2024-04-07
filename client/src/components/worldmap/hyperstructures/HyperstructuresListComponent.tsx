@@ -1,7 +1,7 @@
 import { HyperstructuresListItem } from "./HyperstructuresListItem";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useMemo, useState } from "react";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 import { FeedHyperstructurePopup } from "./FeedHyperstructure";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { HyperStructureInterface } from "@bibliothecadao/eternum";

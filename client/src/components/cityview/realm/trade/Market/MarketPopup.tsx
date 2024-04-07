@@ -19,7 +19,7 @@ import clsx from "clsx";
 import { FastCreateOfferPopup } from "../FastCreateOffer";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import useMarketStore from "../../../../../hooks/store/useMarketStore";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 

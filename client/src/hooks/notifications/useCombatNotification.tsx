@@ -12,7 +12,7 @@ import {
 } from "../../utils/utils";
 import { CombatResultInterface, UIPosition, Winner } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { NotificationType, RaidersData } from "../store/useNotificationsStore";
 import { useRealm } from "../helpers/useRealm";

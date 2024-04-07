@@ -2,9 +2,9 @@ import { useState } from "react";
 import TextInput from "../../elements/TextInput";
 import Button from "../../elements/Button";
 import Avatar from "../../elements/Avatar";
-import { useChat } from "../../ChatContext";
+import { useChat } from "../../context/ChatContext";
 import { addressToNumber } from "../../utils/utils";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 
 const ChatForm = () => {
   const [message, setMessage] = useState<string>("");

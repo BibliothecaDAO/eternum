@@ -10,7 +10,7 @@ import { ReactComponent as Map } from "../../../../../assets/icons/common/map.sv
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 import { getTotalResourceWeight } from "../../trade/utils";
 import { divideByPrecision, getUIPositionFromColRow } from "../../../../../utils/utils";

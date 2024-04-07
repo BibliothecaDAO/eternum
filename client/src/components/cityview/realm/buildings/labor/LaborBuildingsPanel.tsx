@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import { LaborBuilding } from "./LaborBuilding";
 import { LaborResourceBuildPopup } from "./LaborResourceBuildPopup";
 import { ChooseBuilding } from "./ChooseBuilding";

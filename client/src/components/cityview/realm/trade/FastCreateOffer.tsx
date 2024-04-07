@@ -8,7 +8,7 @@ import { CaravanInterface, ResourcesIds, ONE_MONTH, WEIGHTS, resources } from "@
 import { ReactComponent as Danger } from "../../../../assets/icons/common/danger.svg";
 import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey-circle.svg";
 import { Caravan } from "./Caravans/Caravan";
-import { useDojo } from "../../../../DojoContext";
+import { useDojo } from "../../../../context/DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useCaravan } from "../../../../hooks/helpers/useCaravans";

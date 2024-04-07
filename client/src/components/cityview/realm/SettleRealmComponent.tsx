@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import Button from "../../../elements/Button";
 
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 import { getOrderName, orders } from "@bibliothecadao/eternum";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 import { getRealm } from "../../../utils/realms";

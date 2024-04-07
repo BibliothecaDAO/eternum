@@ -14,7 +14,7 @@ import { Checkbox } from "../../elements/Checkbox";
 import { RangeInput } from "../../elements/RangeInput";
 import useUIStore from "../../hooks/store/useUIStore";
 import useScreenOrientation from "../../hooks/useScreenOrientation";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { useRealm } from "../../hooks/helpers/useRealm";
 import { useMusicPlayer } from "../../hooks/useMusic";
 import { OSWindow } from "./OSWindow";

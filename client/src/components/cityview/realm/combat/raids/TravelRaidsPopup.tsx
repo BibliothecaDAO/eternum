@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import { Tabs } from "../../../../../elements/tab";
 import Button from "../../../../../elements/Button";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { SelectHyperstructureForCombat, SelectRealmForCombatPanel } from "./SelectRealmForCombatPanel";

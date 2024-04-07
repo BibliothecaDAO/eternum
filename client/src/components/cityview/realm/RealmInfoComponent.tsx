@@ -4,7 +4,7 @@ import realmsNames from "../../../geodata/realms.json";
 import { Resource, getLevelingCost, orderNameDict } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 import { LevelingBonusIcons } from "./leveling/Leveling";
 import { LaborAuction } from "./labor/LaborAuction";
 import { LevelingPopup } from "./leveling/LevelingPopup";

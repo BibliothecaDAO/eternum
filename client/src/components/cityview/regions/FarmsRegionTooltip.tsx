@@ -4,7 +4,7 @@ import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { useComponentValue } from "@dojoengine/react";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 import { getEntityIdFromKeys } from "../../../utils/utils";
 import { ResourcesIds, LABOR_CONFIG } from "@bibliothecadao/eternum";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";

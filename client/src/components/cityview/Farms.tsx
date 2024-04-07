@@ -9,7 +9,7 @@ import React, { useMemo, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import useRealmStore from "../../hooks/store/useRealmStore";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { LABOR_CONFIG, ResourcesIds } from "@bibliothecadao/eternum";

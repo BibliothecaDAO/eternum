@@ -1,8 +1,8 @@
 import { BurnerProvider, useBurner } from "@dojoengine/create-burner";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
-import { SetupResult } from "./dojo/setup";
-import { displayAddress } from "./utils/utils";
+import { SetupResult } from "../dojo/setup";
+import { displayAddress } from "../utils/utils";
 
 interface DojoContextType extends SetupResult {
   masterAccount: Account | AccountInterface;

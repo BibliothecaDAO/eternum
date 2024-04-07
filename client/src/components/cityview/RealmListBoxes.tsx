@@ -10,7 +10,7 @@ import { orderNameDict } from "@bibliothecadao/eternum";
 import realmsNames from "../../geodata/realms.json";
 import useUIStore from "../../hooks/store/useUIStore";
 import { getRealm } from "../../utils/realms";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEntityQuery } from "@dojoengine/react";
 import { soundSelector, useUiSounds } from "../../hooks/useUISound";

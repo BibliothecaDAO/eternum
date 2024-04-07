@@ -4,7 +4,7 @@ import Button from "../../../../../elements/Button";
 import { Guilds } from "@bibliothecadao/eternum";
 import { SelectLaborResourceComponent } from "./SelectLaborResourceComponent";
 import useUIStore from "../../../../../hooks/store/useUIStore";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useBuildings } from "../../../../../hooks/helpers/useBuildings";
 import { useLabor } from "../../../../../hooks/helpers/useLabor";

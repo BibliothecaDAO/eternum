@@ -3,7 +3,7 @@ import Button from "../elements/Button";
 import useUIStore from "../hooks/store/useUIStore";
 import SettleRealmComponent, { MAX_REALMS } from "../components/cityview/realm/SettleRealmComponent";
 import { useAddressStore } from "../hooks/store/useAddressStore";
-import { useDojo } from "../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import TextInput from "../elements/TextInput";
 import ListSelect from "../elements/ListSelect";
 import { addressToNumber, displayAddress } from "../utils/utils";

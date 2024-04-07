@@ -5,7 +5,7 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { getRealm } from "../../../../../utils/realms";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import TextInput from "../../../../../elements/TextInput";
 import { SortPanel } from "../../../../../elements/SortPanel";
 import { OrderIcon } from "../../../../../elements/OrderIcon";

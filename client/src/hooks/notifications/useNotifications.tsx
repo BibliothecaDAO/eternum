@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import useRealmStore from "../store/useRealmStore";
 import { useLevel } from "../helpers/useLevel";

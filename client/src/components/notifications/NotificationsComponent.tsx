@@ -3,7 +3,7 @@ import { Notification } from "../../elements/Notification";
 import clsx from "clsx";
 import Button from "../../elements/Button";
 import { useNotifications } from "../../hooks/notifications/useNotifications";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import {
   EmptyChestData,
   EventType,

@@ -9,7 +9,7 @@ import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake, Bvh } from "@r
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
 // @ts-ignore
-import { Sobel } from "../../utils/effects.jsx";
+
 import { useControls } from "leva";
 import { CameraControls } from "../../utils/Camera";
 import { BlendFunction } from "postprocessing";

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Headline } from "../../../../../elements/Headline";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import Button from "../../../../../elements/Button";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import { NumberInput } from "../../../../../elements/NumberInput";
 import { CombatInfo } from "@bibliothecadao/eternum";
 

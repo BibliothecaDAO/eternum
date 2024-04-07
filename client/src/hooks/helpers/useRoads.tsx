@@ -1,5 +1,5 @@
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { getEntityIdFromKeys, getPosition } from "../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
 import { Entity, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -127,15 +127,12 @@ export function useGetRoads(entityId: bigint) {
 
     // Group roads by destinationRealmName and keep the one with the highest usageLeft for each destination
     const uniqueRoads = Object.values(
-      roads.reduce(
-        (acc, road) => {
-          if (!acc[road.destinationRealmName] || acc[road.destinationRealmName].usageLeft < road.usageLeft) {
-            acc[road.destinationRealmName] = road;
-          }
-          return acc;
-        },
-        {} as { [key: string]: RoadInterface },
-      ),
+      roads.reduce((acc, road) => {
+        if (!acc[road.destinationRealmName] || acc[road.destinationRealmName].usageLeft < road.usageLeft) {
+          acc[road.destinationRealmName] = road;
+        }
+        return acc;
+      }, {} as { [key: string]: RoadInterface }),
     );
 
     setRoads(uniqueRoads);

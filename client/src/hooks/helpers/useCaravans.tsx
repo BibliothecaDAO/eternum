@@ -1,5 +1,5 @@
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { CaravanInterface, DESTINATION_TYPE } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { divideByPrecision, getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";

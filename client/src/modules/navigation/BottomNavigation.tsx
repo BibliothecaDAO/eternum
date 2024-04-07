@@ -1,12 +1,12 @@
-import CircleButton from "../elements/CircleButton";
-import { ReactComponent as Skull } from "../assets/icons/common/skull.svg";
-import { ReactComponent as City } from "../assets/icons/common/city.svg";
-import { ReactComponent as Shield } from "../assets/icons/common/shield.svg";
+import CircleButton from "../../elements/CircleButton";
+import { ReactComponent as Skull } from "@/assets/icons/common/skull.svg";
+import { ReactComponent as City } from "@/assets/icons/common/city.svg";
+import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 
 import { useState } from "react";
 
-import { RealmListBoxes } from "../components/cityview/RealmListBoxes";
-import { SelectPreviewBuilding } from "../components/cityview/hexception/SelectPreviewBuilding";
+import { RealmListBoxes } from "../../components/cityview/RealmListBoxes";
+import { SelectPreviewBuilding } from "../../components/cityview/hexception/SelectPreviewBuilding";
 
 export const BottomNavigation = () => {
   const [activeBar, setActiveBar] = useState<null | "R" | "B" | "A">(null);

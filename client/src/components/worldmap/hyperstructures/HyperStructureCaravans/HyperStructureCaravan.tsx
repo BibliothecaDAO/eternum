@@ -18,7 +18,7 @@ import ProgressBar from "../../../../elements/ProgressBar";
 import { Dot } from "../../../../elements/Dot";
 import { CAPACITY_PER_DONKEY, CaravanInterface, HyperStructureInterface } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../../../DojoContext";
+import { useDojo } from "../../../../context/DojoContext";
 import Button from "../../../../elements/Button";
 import { useResources } from "../../../../hooks/helpers/useResources";
 import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";

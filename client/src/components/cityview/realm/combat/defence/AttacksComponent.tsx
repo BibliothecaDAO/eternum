@@ -7,7 +7,7 @@ import { EnnemyRaidersPanel } from "./EnnemyRaidsPanel";
 import { AttackHistoryPanel } from "./AttackHistoryPanel";
 import { getPosition } from "../../../../../utils/utils";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 
 type AttacksComponentProps = {};
 

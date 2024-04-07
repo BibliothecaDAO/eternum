@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import ChatMessage, { ChatMessageProps } from "../../elements/ChatMessage";
 import Button from "../../elements/Button";
-import { useChat } from "../../ChatContext";
+import { useChat } from "../../context/ChatContext";
 import { addressToNumber } from "../../utils/utils";
 
 interface ChatHistoryProps {

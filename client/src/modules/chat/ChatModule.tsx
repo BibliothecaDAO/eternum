@@ -1,7 +1,7 @@
-import { ChatProvider } from "../ChatContext";
-import ChatForm from "../components/chat/ChatForm";
-import { ChatTabs } from "../components/chat/ChatTabs";
-import { BaseContainer } from "../containers/BaseContainer";
+import { ChatProvider } from "@/context/ChatContext";
+import ChatForm from "@/components/chat/ChatForm";
+import { ChatTabs } from "@/components/chat/ChatTabs";
+import { BaseContainer } from "@/containers/BaseContainer";
 
 const ChatModule = () => {
   return (

@@ -4,7 +4,7 @@ import Button from "../../../../../elements/Button";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../../elements/NumberInput";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";

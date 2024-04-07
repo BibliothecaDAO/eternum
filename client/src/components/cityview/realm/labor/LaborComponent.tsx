@@ -4,7 +4,7 @@ import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../..
 import { ReactComponent as Clock } from "../../../../assets/icons/common/clock.svg";
 import { ReactComponent as Village } from "../../../../assets/icons/common/village.svg";
 import ProgressBar from "../../../../elements/ProgressBar";
-import { useDojo } from "../../../../DojoContext";
+import { useDojo } from "../../../../context/DojoContext";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "./laborUtils";
 import { useMemo } from "react";

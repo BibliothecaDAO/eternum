@@ -1,5 +1,5 @@
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../../context/DojoContext";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useRef, useState } from "react";
 import { Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";

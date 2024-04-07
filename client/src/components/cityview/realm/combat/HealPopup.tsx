@@ -4,7 +4,7 @@ import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { useDojo } from "../../../../DojoContext";
+import { useDojo } from "../../../../context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils";
 import { getHealResourceCost } from "../../../../utils/combat";

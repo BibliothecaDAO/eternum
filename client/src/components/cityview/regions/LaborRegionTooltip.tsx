@@ -3,7 +3,7 @@ import { BaseRegionTooltip } from "../../../elements/BaseRegionTooltip";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useComponentValue } from "@dojoengine/react";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils";
 import { LABOR_CONFIG, findResourceById } from "@bibliothecadao/eternum";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";

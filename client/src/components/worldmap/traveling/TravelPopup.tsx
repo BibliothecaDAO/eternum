@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useDojo } from "../../../DojoContext";
+import { useDojo } from "../../../context/DojoContext";
 import Button from "../../../elements/Button";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { findDirection } from "../../../utils/utils";

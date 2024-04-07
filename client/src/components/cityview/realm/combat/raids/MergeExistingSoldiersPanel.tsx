@@ -4,7 +4,7 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { Headline } from "../../../../../elements/Headline";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import Button from "../../../../../elements/Button";
-import { useDojo } from "../../../../../DojoContext";
+import { useDojo } from "../../../../../context/DojoContext";
 import { SelectMergeRaiders } from "./SelectMergeRaiders";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 import { CombatInfo } from "@bibliothecadao/eternum";
