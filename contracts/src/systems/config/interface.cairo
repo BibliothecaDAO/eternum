@@ -30,7 +30,10 @@ trait ICapacityConfig {
 
 #[dojo::interface]
 trait ITickConfig {
-    fn set_tick_config(max_moves_per_tick: u8, tick_interval_in_seconds: u64);
+    fn set_tick_config(
+        max_moves_per_tick: u8,
+        tick_interval_in_seconds: u64
+    );
 }
 
 
@@ -108,15 +111,13 @@ trait ILevelingConfig {
 
 #[dojo::interface]
 trait IBankConfig {
-    fn create_bank(coord: Coord, swap_cost_resources: Span<(u8, Span<(u8, u128)>)>) -> ID;
+    fn create_bank(
+        coord: Coord, owner_fee_scaled: u128
+    ) -> ID;
 
 
-    fn set_bank_auction(
-        bank_id: u128,
-        bank_swap_resource_cost_keys: Span<(u8, u32)>,
-        decay_constant: u128,
-        per_time_unit: u128,
-        price_update_interval: u128,
+    fn set_bank_config(
+        lords_cost: u128, lp_fee_scaled: u128
     );
 }
 

@@ -32,8 +32,6 @@ mod inventory_transfer_system_tests {
 
     use core::traits::Into;
 
-    use debug::PrintTrait;
-
 
     fn setup() -> (IWorldDispatcher, u128, u128, u128, IInventorySystemsDispatcher) {
         let world = spawn_eternum();
