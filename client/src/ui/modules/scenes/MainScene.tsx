@@ -96,12 +96,12 @@ export const MainScene = () => {
     },
     legacyLights: { value: false },
     // fog: "#fff",
-    encoding: {
-      options: {
-        rgb: THREE.sRGBEncoding,
-        linear: THREE.LinearEncoding,
-      },
-    },
+    // encoding: {
+    //   options: {
+    //     rgb: THREE.sRGBEncoding,
+    //     linear: THREE.LinearEncoding,
+    //   },
+    // },
   });
 
   const shakeConfig = useMemo(
@@ -201,7 +201,7 @@ export const MainScene = () => {
         toneMappingExposure: Math.pow(2, data.exposure),
         toneMapping: data.toneMapping,
         useLegacyLights: data.legacyLights,
-        outputEncoding: data.encoding,
+        // outputEncoding: data.encoding,
       }}
     >
       {import.meta.env.DEV && <Perf position="bottom-left" />}
@@ -219,7 +219,7 @@ export const MainScene = () => {
               <Route path="realm">
                 {/* <CameraShake {...shakeConfig} /> */}
                 <RealmCityViewScene />
-                <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
+                {/* <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
                   <Cloud
                     concentrate="random"
                     seed={7331}
@@ -242,7 +242,7 @@ export const MainScene = () => {
                     volume={cloudsConfig.volume}
                     color="white"
                   />
-                </Clouds>
+                </Clouds> */}
               </Route>
             </Switch>
           </a.group>
