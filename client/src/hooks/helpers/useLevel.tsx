@@ -1,7 +1,7 @@
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../context/DojoContext";
+import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys } from "../../ui/utils/utils";
 
 export enum LevelIndex {
   FOOD = 1,

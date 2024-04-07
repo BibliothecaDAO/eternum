@@ -4,7 +4,7 @@ import { Vector3 } from "three";
 import { createDataStoreSlice, DataStore } from "./_dataStore";
 import { createMapStoreSlice, MapStore } from "./_mapStore";
 import React from "react";
-import { getRealmUIPosition } from "../../utils/utils";
+import { getRealmUIPosition } from "../../ui/utils/utils";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 

@@ -1,4 +1,4 @@
-import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys } from "../../ui/utils/utils";
 import { CombatInfo, LABOR_CONFIG, Position, Resource, ResourcesIds, BankInterface } from "@bibliothecadao/eternum";
 import { Components, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import {
@@ -8,9 +8,9 @@ import {
   extractAndCleanKey,
   getLastLoginTimestamp,
 } from "../store/useNotificationsStore";
-import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
+import { calculateNextHarvest } from "../../ui/components/cityview/realm/labor/laborUtils";
 import { LevelIndex } from "../helpers/useLevel";
-import { getLordsAmountFromBankAuction } from "../../components/worldmap/banks/utils";
+import { getLordsAmountFromBankAuction } from "../../ui/components/worldmap/banks/utils";
 import { BANK_AUCTION_DECAY, targetPrices } from "../helpers/useBanks";
 import { realmsPosition } from "./utils";
 import { TIME_PER_TICK } from "@bibliothecadao/eternum";

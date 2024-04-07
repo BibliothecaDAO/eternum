@@ -1,10 +1,10 @@
-import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark.svg";
-import { OrderIcon } from "../../elements/OrderIcon";
-import { Badge } from "../../elements/Badge";
-import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
-import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
+import { ReactComponent as Checkmark } from "@/assets/icons/common/checkmark.svg";
+import { OrderIcon } from "../../ui/elements/OrderIcon";
+import { Badge } from "../../ui/elements/Badge";
+import { getRealmNameById, getRealmOrderNameById } from "../../ui/utils/realms";
+import { divideByPrecision, getEntityIdFromKeys } from "../../ui/utils/utils";
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../context/DojoContext";
+import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import {
   ArrivedAtHyperstructureData,
@@ -12,8 +12,8 @@ import {
   NotificationType,
   useNotificationsStore,
 } from "../store/useNotificationsStore";
-import { ResourceCost } from "../../elements/ResourceCost";
-import Button from "../../elements/Button";
+import { ResourceCost } from "../../ui/elements/ResourceCost";
+import Button from "../../ui/elements/Button";
 import { useState } from "react";
 import { useRefreshHyperstructure } from "../store/useRefreshHyperstructure";
 

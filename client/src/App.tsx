@@ -1,6 +1,6 @@
 import "./index.css";
 import "react-toastify/dist/ReactToastify.css";
-import { World } from "./layouts/World";
+import { World } from "./ui/layouts/World";
 import { ToastContainer } from "react-toastify";
 
 function App() {

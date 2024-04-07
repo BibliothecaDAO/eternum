@@ -1,17 +1,17 @@
-import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark.svg";
-import { OrderIcon } from "../../elements/OrderIcon";
-import { ReactComponent as RatioIcon } from "../../assets/icons/common/ratio.svg";
-import { useDojo } from "../../context/DojoContext";
+import { ReactComponent as Checkmark } from "@/assets/icons/common/checkmark.svg";
+import { OrderIcon } from "../../ui/elements/OrderIcon";
+import { ReactComponent as RatioIcon } from "@/assets/icons/common/ratio.svg";
+import { useDojo } from "../context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
-import { Badge } from "../../elements/Badge";
-import { divideByPrecision, extractAndCleanKey, getEntityIdFromKeys } from "../../utils/utils";
+import { Badge } from "../../ui/elements/Badge";
+import { divideByPrecision, extractAndCleanKey, getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useTrade } from "../helpers/useTrade";
-import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
-import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
+import { calculateRatio } from "../../ui/components/cityview/realm/trade/Market/MarketOffer";
+import { getRealmNameById, getRealmOrderNameById } from "../../ui/utils/realms";
 import useRealmStore from "../store/useRealmStore";
 import { EventType, NotificationType } from "../store/useNotificationsStore";
-import { ResourceCost } from "../../elements/ResourceCost";
-import Button from "../../elements/Button";
+import { ResourceCost } from "../../ui/elements/ResourceCost";
+import Button from "../../ui/elements/Button";
 import { useLocation } from "wouter";
 import useUIStore from "../store/useUIStore";
 
