@@ -17,7 +17,7 @@ import ProgressBar from "../../../elements/ProgressBar";
 import { useRealm } from "../../../hooks/helpers/useRealm";
 import { useResources } from "../../../hooks/helpers/useResources";
 import { ResourceCost } from "../../../elements/ResourceCost";
-import { TIME_PER_TICK } from "../../network/EpochCountdown";
+import { TIME_PER_TICK } from "@bibliothecadao/eternum";
 
 type ArmyInfoLabelProps = {
   position: UIPosition;

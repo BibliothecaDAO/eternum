@@ -1,9 +1,9 @@
 import useBlockchainStore from "../../hooks/store/useBlockchainStore";
-import { TIME_PER_TICK } from "../../components/network/EpochCountdown";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getColRowFromUIPosition } from "@/utils/utils";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { getRealmNameById } from "@/utils/realms";
+import { TIME_PER_TICK } from "@bibliothecadao/eternum";
 
 export const TopMiddleNavigation = () => {
   const { hexData, highlightPositions } = useUIStore();
