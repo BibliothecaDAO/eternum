@@ -1,10 +1,10 @@
-import HyperstructureFinished from "./models/HyperstructureFinished";
+import HyperstructureFinished from "../../models/buildings/hyperstructures/HyperstructureFinished";
 import { Hexagon } from "../../../types";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import { biomes } from "@bibliothecadao/eternum";
 import { Detailed } from "@react-three/drei";
-import HyperstructureFinishedLowpoly from "./models/HyperstructureFinishedLowpoly";
+import HyperstructureFinishedLowpoly from "../../models/buildings/hyperstructures/HyperstructureFinishedLowpoly";
 
 type Hyperstructures = {
   hexData: Hexagon[];
