@@ -1,3 +1,4 @@
+import useUIStore from "@/hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import clsx from "clsx";
 
@@ -8,6 +9,7 @@ type CircleButtonProps = {
   size: "xs" | "sm" | "md" | "lg" | "xl";
   disabled?: boolean;
   active?: boolean;
+  label?: string;
 } & React.ComponentPropsWithRef<"button">;
 
 const sizes = {
@@ -18,14 +20,22 @@ const sizes = {
   xl: "w-14 h-14",
 };
 
-const CircleButton = ({ onClick, children, className, size, disabled, active, ...props }: CircleButtonProps) => {
+const CircleButton = ({ onClick, children, className, size, disabled, active, label, ...props }: CircleButtonProps) => {
   const { play: hoverClick, stop } = useUiSounds(soundSelector.hoverClick);
+
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const { play: playClick } = useUiSounds(soundSelector.click);
   return (
     <button
-      // onMouseOver={() => hoverClick()}
-      // onMouseLeave={() => stop()}
+      onMouseEnter={() => {
+        label &&
+          setTooltip({
+            position: "bottom",
+            content: <span className="whitespace-nowrap">{label}</span>,
+          });
+      }}
+      onMouseLeave={() => setTooltip(null)}
       onClick={() => {
         if (!disabled) {
           onClick();

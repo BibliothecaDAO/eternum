@@ -45,49 +45,69 @@ export const LeftNavigationModule = () => {
   const navigation = [
     {
       button: (
-        <CircleButton active={isPopupOpen(entityDetails)} size="lg" onClick={() => togglePopup(entityDetails)}>
+        <CircleButton
+          label={entityDetails}
+          active={isPopupOpen(entityDetails)}
+          size="lg"
+          onClick={() => togglePopup(entityDetails)}
+        >
           <Hex className="h-12 fill-current" />
         </CircleButton>
       ),
     },
     {
       button: (
-        <CircleButton active={isPopupOpen(military)} size="lg" onClick={() => togglePopup(military)}>
+        <CircleButton label={military} active={isPopupOpen(military)} size="lg" onClick={() => togglePopup(military)}>
           <CrossSwords className="h-5 fill-current" />
         </CircleButton>
       ),
     },
     {
       button: (
-        <CircleButton active={isPopupOpen(eventLog)} size="lg" onClick={() => togglePopup(eventLog)}>
+        <CircleButton label={eventLog} active={isPopupOpen(eventLog)} size="lg" onClick={() => togglePopup(eventLog)}>
           <Pen className="w-7 fill-current" />
         </CircleButton>
       ),
     },
     {
       button: (
-        <CircleButton active={isPopupOpen(resources)} size="lg" onClick={() => togglePopup(resources)}>
+        <CircleButton
+          label={resources}
+          active={isPopupOpen(resources)}
+          size="lg"
+          onClick={() => togglePopup(resources)}
+        >
           <PickAxe className="w-6 stroke-current" />
         </CircleButton>
       ),
     },
     {
       button: (
-        <CircleButton active={isPopupOpen(banks)} size="lg" onClick={() => togglePopup(banks)}>
+        <CircleButton label={banks} active={isPopupOpen(banks)} size="lg" onClick={() => togglePopup(banks)}>
           <Coin className="w-6 fill-current" />
         </CircleButton>
       ),
     },
     {
       button: (
-        <CircleButton active={isPopupOpen(hyperstructures)} size="lg" onClick={() => togglePopup(hyperstructures)}>
+        <CircleButton
+          label={hyperstructures}
+          active={isPopupOpen(hyperstructures)}
+          size="lg"
+          onClick={() => togglePopup(hyperstructures)}
+        >
           <Relic className="w-5 fill-current" />
         </CircleButton>
       ),
     },
     {
       button: (
-        <CircleButton active={isPopupOpen(leaderboard)} size="lg" onClick={() => togglePopup(leaderboard)}>
+        <CircleButton
+          label={leaderboard}
+          active={isPopupOpen(leaderboard)}
+          size="lg"
+          onClick={() => togglePopup(leaderboard)}
+        >
           <LeaderBoard className="w-6" />
         </CircleButton>
       ),
@@ -98,8 +118,11 @@ export const LeftNavigationModule = () => {
     {
       button: (
         <CircleButton
+          label={"expand all popups"}
           size="sm"
-          onClick={() => openAllPopups([leaderboard, settings, hyperstructures, banks, resources, eventLog, military])}
+          onClick={() =>
+            openAllPopups([entityDetails, leaderboard, settings, hyperstructures, banks, resources, eventLog, military])
+          }
         >
           <Expand />
         </CircleButton>
@@ -107,14 +130,14 @@ export const LeftNavigationModule = () => {
     },
     {
       button: (
-        <CircleButton size="sm" onClick={() => closeAllPopups()}>
+        <CircleButton label={"close all popups"} size="sm" onClick={() => closeAllPopups()}>
           <Close />
         </CircleButton>
       ),
     },
     {
       button: (
-        <CircleButton size="sm" onClick={() => togglePopup(settings)}>
+        <CircleButton active={isPopupOpen(settings)} label={"settings"} size="sm" onClick={() => togglePopup(settings)}>
           <Settings className="w-4" />
         </CircleButton>
       ),
