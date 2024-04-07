@@ -95,13 +95,13 @@ export const MainScene = () => {
       },
     },
     legacyLights: { value: false },
-    // fog: "#fff",
-    // encoding: {
-    //   options: {
-    //     rgb: THREE.sRGBEncoding,
-    //     linear: THREE.LinearEncoding,
-    //   },
-    // },
+    fog: "#fff",
+    encoding: {
+      options: {
+        rgb: THREE.sRGBEncoding,
+        linear: THREE.LinearEncoding,
+      },
+    },
   });
 
   const shakeConfig = useMemo(
@@ -219,7 +219,7 @@ export const MainScene = () => {
               <Route path="realm">
                 {/* <CameraShake {...shakeConfig} /> */}
                 <RealmCityViewScene />
-                {/* <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
+                <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
                   <Cloud
                     concentrate="random"
                     seed={7331}
@@ -242,7 +242,7 @@ export const MainScene = () => {
                     volume={cloudsConfig.volume}
                     color="white"
                   />
-                </Clouds> */}
+                </Clouds>
               </Route>
             </Switch>
           </a.group>
