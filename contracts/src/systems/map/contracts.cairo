@@ -33,6 +33,8 @@ mod map_systems {
     #[derive(Drop, starknet::Event)]
     struct MapExplored {
         #[key]
+        name: felt252,
+        #[key]
         entity_id: u128,
         entity_owner_id: u128,
         #[key]
@@ -131,6 +133,7 @@ mod map_systems {
             emit!(
                 world,
                 MapExplored {
+                    name: 'MapExplored',
                     entity_id: entity_id,
                     entity_owner_id: entity_owned_by.entity_owner_id,
                     col: tile.col,

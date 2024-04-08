@@ -243,6 +243,11 @@
     "kind": "struct",
     "members": [
       {
+        "name": "name",
+        "type": "core::felt252",
+        "kind": "key"
+      },
+      {
         "name": "entity_id",
         "type": "core::integer::u128",
         "kind": "key"
