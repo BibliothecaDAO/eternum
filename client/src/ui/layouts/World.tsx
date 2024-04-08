@@ -75,9 +75,9 @@ export const World = () => {
       <LeftMiddleContainer>
         <LeftNavigationModule />
       </LeftMiddleContainer>
-      <BottomLeftContainer>
+      {/* <BottomLeftContainer>
         <Map />
-      </BottomLeftContainer>
+      </BottomLeftContainer> */}
       <BottomMiddleContainer>
         <BottomNavigation />
       </BottomMiddleContainer>

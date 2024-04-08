@@ -86,7 +86,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
             <div
               onClick={handleClick}
               ref={nodeRef}
-              className={clsx("fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px] p-2", className)}
+              className={clsx("fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px] p-2 ", className)}
             >
               {children}
             </div>
@@ -108,7 +108,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      " items-center relative cursor-move -mb-[1px] z-30 bg-gray p-2 rounded-t-[4px] border-t border-x border-gold text-gold w-full whitespace-nowrap handle flex justify-between border-b uppercase",
+      " items-center relative cursor-move -mb-[1px] z-30 bg-gray p-2 rounded-t-[4px] border-t border-x border-gold text-gold w-full whitespace-nowrap handle flex justify-between border-b uppercase ",
       className,
     )}
   >
@@ -163,12 +163,12 @@ SecondaryPopup.Body = ({
         width ? "" : "min-w-[438px]",
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
-        `relative z-10 bg-gray border flex flex-col border-gold rounded-tr-[4px] rounded-b-[4px] overflow-auto`,
+        `relative z-10 bg-gray border flex flex-col border-gold rounded-tr-[4px] rounded-b-[4px] overflow-auto `,
       )}
       style={{ width: width ? width : "", height: height ? height : "", maxHeight: maxHeight ? `${maxHeight}px` : "" }}
     >
       {withWrapper ? (
-        <div className="relative z-10 border flex flex-col border-gray-gold rounded-md overflow-auto">{children}</div>
+        <div className="relative z-10 border flex flex-col border-gray-gold rounded-md overflow-auto ">{children}</div>
       ) : (
         children
       )}
