@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 use eternum::erc721::erc721::{RealmData, Position};
 use eternum::alias::ID;
 
-#[starknet::interface]
+#[dojo::interface]
 trait IERC721<TContractState> {
     fn balance_of(self: @TContractState, owner: ContractAddress) -> u256;
     fn owner_of(self: @TContractState, token_id: u128) -> ContractAddress;

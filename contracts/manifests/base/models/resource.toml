@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0xa49f8bc4b3c48055ab5b3100be48a9e6bc35982646ddd92d141a94bc109f26"
+class_hash = "0x4834ad895330c12b1f593103ae6d4b181c0fbeda971a35b04e8ecd04e357766"
+abi = "abis/base/models/resource.json"
 name = "eternum::models::resources::resource"
 
 [[members]]

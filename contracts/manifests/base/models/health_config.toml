@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x2313353b682b835ca49ffa3d744c14829ddedd364649ebe12e7ff885bae3543"
+class_hash = "0x19857ac16e78d676e37d2822490d791df97cc68c023947b4c98372e60c515ab"
+abi = "abis/base/models/health_config.json"
 name = "eternum::models::config::health_config"
 
 [[members]]

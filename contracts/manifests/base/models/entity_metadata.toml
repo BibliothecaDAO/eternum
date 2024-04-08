@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x2de5afde576c64423b4200c6f7e651cfdfa4a9279c843651fc5cccb193fcef4"
+class_hash = "0x6e9530bb295ee165c8fc8678f6b85bb5900516a71b89f46e65ed8cf1a738ada"
+abi = "abis/base/models/entity_metadata.json"
 name = "eternum::models::metadata::entity_metadata"
 
 [[members]]

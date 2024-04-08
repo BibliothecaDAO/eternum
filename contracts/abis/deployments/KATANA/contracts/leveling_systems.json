@@ -67,10 +67,6 @@
         "name": "level_up_realm",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "realm_entity_id",
             "type": "core::integer::u128"
           }

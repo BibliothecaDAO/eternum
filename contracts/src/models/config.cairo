@@ -162,19 +162,31 @@ struct MapExploreConfig {
 #[derive(Model, Copy, Drop, Serde)]
 struct TickConfig {
     #[key]
-    config_id: u128, 
+    config_id: u128,
     max_moves_per_tick: u8,
     tick_interval_in_seconds: u64
 }
 
 
-
 #[generate_trait]
-impl TickConfigImpl of TickConfigTrait {
+impl TickImpl of TickTrait {
+
+    fn get(world: IWorldDispatcher) -> TickConfig {
+        let tick_config: TickConfig = get!(world, WORLD_CONFIG_ID, TickConfig);
+        return tick_config;   
+    }
 
     fn current(self: TickConfig) -> u64 {
         let now = starknet::get_block_timestamp();
         now / self.tick_interval_in_seconds
+    }
+
+    fn at(self: TickConfig, time: u64) -> u64 {
+        time / self.tick_interval_in_seconds
+    }
+    
+    fn after(self: TickConfig, time_spent: u64) -> u64 {
+        (starknet::get_block_timestamp() + time_spent) / self.tick_interval_in_seconds
     }
 }
 
@@ -257,15 +269,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
         );
         loop {
             match resource_types_1.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 1;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 1;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -275,15 +283,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_2.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 2;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 2;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -293,15 +297,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_3.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 3;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 3;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -311,15 +311,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_4.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 4;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 4;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -336,6 +332,38 @@ struct LaborBuildingCost {
     labor_category: u8,
     resource_cost_id: u128,
     resource_cost_count: u32,
+}
+
+#[derive(Model, Clone, Drop, Serde)]
+struct ProductionConfig {
+    #[key]
+    resource_type: u8,
+    // production amount per tick
+    amount: u128, 
+    // num materials required to produce this resource
+    input_count: u128,
+    // num different resources that this resource can produce
+    output_count: u128   
+}
+
+
+#[derive(Model, Copy, Drop, Serde)]
+struct ProductionInput {
+    #[key]
+    output_resource_type: u8,
+    #[key]
+    index: u8, 
+    input_resource_type: u8,
+    input_resource_amount: u128
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct ProductionOutput {
+    #[key]
+    input_resource_type: u8,
+    #[key]
+    index: u8, 
+    output_resource_type: u8
 }
 
 

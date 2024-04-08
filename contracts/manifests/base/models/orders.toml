@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x235f9c1b430ddbdfd6eb2c2d4794b7a6818ff06b15c85c4725021cddd0636a3"
+class_hash = "0xdc0e3fddfc4863304a3c4f5e4ef1c1d0ca5f50409c7b02f61a2128deb3d715"
+abi = "abis/base/models/orders.json"
 name = "eternum::models::order::orders"
 
 [[members]]

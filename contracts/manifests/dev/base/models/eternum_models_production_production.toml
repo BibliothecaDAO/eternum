@@ -1,0 +1,45 @@
+kind = "DojoModel"
+class_hash = "0x16e190cbc317cfef21953208c879aea476aa4cbd06215a7f6ba72dd51dce2b5"
+original_class_hash = "0x16e190cbc317cfef21953208c879aea476aa4cbd06215a7f6ba72dd51dce2b5"
+abi = "manifests/dev/abis/base/models/eternum_models_production_production.json"
+name = "eternum::models::production::production"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "building_count"
+type = "u128"
+key = false
+
+[[members]]
+name = "production_rate"
+type = "u128"
+key = false
+
+[[members]]
+name = "bonus_percent"
+type = "u128"
+key = false
+
+[[members]]
+name = "consumption_rate"
+type = "u128"
+key = false
+
+[[members]]
+name = "last_updated_tick"
+type = "u64"
+key = false
+
+[[members]]
+name = "end_tick"
+type = "u64"
+key = false

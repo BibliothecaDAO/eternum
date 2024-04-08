@@ -1,0 +1,20 @@
+kind = "DojoModel"
+class_hash = "0x5ab774c48311193fd925dd19899598e5ec0826ce0c6eebe46fc810ffc8bcde4"
+original_class_hash = "0x5ab774c48311193fd925dd19899598e5ec0826ce0c6eebe46fc810ffc8bcde4"
+abi = "manifests/dev/abis/base/models/eternum_models_production_production_material_config.json"
+name = "eternum::models::production::production_material_config"
+
+[[members]]
+name = "material_resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "produced_resource_type_1"
+type = "u8"
+key = false
+
+[[members]]
+name = "produced_resource_type_2"
+type = "u8"
+key = false

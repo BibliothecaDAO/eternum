@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x640675a8eedfe08ac77f3a56f08903e597414ce21fe23aeeccdc6eb71b5d253"
+class_hash = "0x24870719101dfe40945c6c0eb026feb26db6ba3e46d0312eb945c406b0c0478"
+abi = "abis/base/models/realm.json"
 name = "eternum::models::realm::realm"
 
 [[members]]

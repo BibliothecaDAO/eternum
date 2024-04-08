@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x3a82772dac032f668d5ce0003f83b668315a2a72c5f02c877038a0510d33ca3"
+class_hash = "0x3d8a85f6491537a025d697b9fc7f91d198473fe6f3bcb30180e361564593af6"
+abi = "abis/base/models/foreign_key.json"
 name = "eternum::models::metadata::foreign_key"
 
 [[members]]

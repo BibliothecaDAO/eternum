@@ -2,8 +2,8 @@ use eternum::alias::ID;
 
 use dojo::world::IWorldDispatcher;
 
-#[starknet::interface]
-trait ITradeSystems<TContractState> {
+#[dojo::interface]
+trait ITradeSystems {
     /// Create an offer to sell resources.
     ///
     /// The offer may be open or direct. To make an open offer, set
@@ -23,8 +23,6 @@ trait ITradeSystems<TContractState> {
     ///    trade id
     ///
     fn create_order(
-        self: @TContractState,
-        world: IWorldDispatcher,
         maker_id: u128,
         maker_gives_resources: Span<(u8, u128)>,
         maker_transport_id: ID,
@@ -33,11 +31,7 @@ trait ITradeSystems<TContractState> {
         expires_at: u64
     ) -> ID;
 
-    fn accept_order(
-        self: @TContractState, world: IWorldDispatcher,
-        taker_id: u128, taker_transport_id: u128, trade_id: u128
-    );
+    fn accept_order(taker_id: u128, taker_transport_id: u128, trade_id: u128);
 
-    fn cancel_order(self: @TContractState, world: IWorldDispatcher, trade_id: u128);
-
+    fn cancel_order(trade_id: u128);
 }

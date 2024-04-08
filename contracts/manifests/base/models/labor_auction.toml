@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0xdd46877224aaed8920380d266c32492561b9546c8c10c4ea279469d09e644c"
+class_hash = "0x3aaa3fa0c0ecb800ac7ba14a3f9318917b2cf26e339b5716453c23a75bda750"
+abi = "abis/base/models/labor_auction.json"
 name = "eternum::models::labor_auction::labor_auction"
 
 [[members]]
