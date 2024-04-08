@@ -11,8 +11,8 @@ import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 export const VARIANTS: any = {
   default: {
     tab: {
-      base: "text-xxs px-3 !outline-none border border-transparent transition-color duration-200",
-      active: "border !border-white rounded-md text-white",
+      base: "text-xs px-3 py-1 !outline-none border border-transparent transition-color duration-200 hover:bg-gold rounded-md space-x-1 hover:text-brown font-bold text-gold",
+      active: "    !border-gold",
       inactive: "text-gray-gold",
     },
     tabList: "flex w-full justify-center bg-gradient-to-t from-black to-[#151515]  p-2 border-y border-gold",

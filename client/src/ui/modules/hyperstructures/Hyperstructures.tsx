@@ -1,7 +1,7 @@
 import useUIStore from "../../../hooks/store/useUIStore";
 import { OSWindow } from "../../components/navigation/OSWindow";
-import { HyperstructuresPanel } from "../../components/worldmap/hyperstructures/HyperstructuresPanel";
 import { hyperstructures } from "../../components/navigation/Config";
+import { HyperStructureList } from "@/ui/components/hyperstructures/HyperstructureList";
 
 export const HyperStructures = () => {
   const { togglePopup } = useUIStore();
@@ -9,9 +9,10 @@ export const HyperStructures = () => {
   const isOpen = useUIStore((state) => state.isPopupOpen(hyperstructures));
 
   return (
-    <OSWindow onClick={() => togglePopup(hyperstructures)} show={isOpen} title={hyperstructures}>
+    <OSWindow width="600px" onClick={() => togglePopup(hyperstructures)} show={isOpen} title={hyperstructures}>
       {/* COMPONENTS GO HERE */}
-      <HyperstructuresPanel minimumRealmLevel={5} />
+
+      <HyperStructureList />
     </OSWindow>
   );
 };
