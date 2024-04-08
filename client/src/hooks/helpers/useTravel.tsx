@@ -1,4 +1,4 @@
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 interface TravelToHexProps {
   travelingEntityId: bigint | undefined;
   directions: number[];

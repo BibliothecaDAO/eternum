@@ -1,7 +1,7 @@
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
-import { getEntityIdFromKeys, getPosition, getZone } from "../../utils/utils";
-import { unpackResources } from "../../utils/packedData";
+import { useDojo } from "../context/DojoContext";
+import { getEntityIdFromKeys, getPosition, getZone } from "../../ui/utils/utils";
+import { unpackResources } from "../../ui/utils/packedData";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useState } from "react";

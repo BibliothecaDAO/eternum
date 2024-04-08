@@ -1,12 +1,12 @@
 import { HasValue, getComponentValue, runQuery, Entity } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import { MarketInterface, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
-import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
-import { SortInterface } from "../../elements/SortButton";
+import { calculateRatio } from "../../ui/components/cityview/realm/trade/Market/MarketOffer";
+import { SortInterface } from "../../ui/elements/SortButton";
 import useBlockchainStore from "../store/useBlockchainStore";
 import useMarketStore, { isLordsMarket } from "../store/useMarketStore";
 import { useEntityQuery } from "@dojoengine/react";

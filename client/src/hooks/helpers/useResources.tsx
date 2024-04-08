@@ -1,10 +1,10 @@
-import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { type Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { useDojo } from "../context/DojoContext";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { BigNumberish } from "starknet";
-import { Resource } from "@bibliothecadao/eternum";
+import { type BigNumberish } from "starknet";
+import { type Resource } from "@bibliothecadao/eternum";
 import { EventType, useNotificationsStore } from "../store/useNotificationsStore";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
 import { useEffect, useState } from "react";
@@ -36,9 +36,9 @@ export function useResources() {
 
   // for any entity that has a resourceChest in its inventory,
   const getResourcesFromInventory = (entityId: bigint): { resources: Resource[]; indices: number[] } => {
-    let indices: number[] = [];
-    let resources: Record<number, number> = {};
-    let inventory = getComponentValue(Inventory, getEntityIdFromKeys([entityId]));
+    const indices: number[] = [];
+    const resources: Record<number, number> = {};
+    const inventory = getComponentValue(Inventory, getEntityIdFromKeys([entityId]));
 
     if (!inventory) {
       return { resources: [], indices: [] };
@@ -46,19 +46,19 @@ export function useResources() {
 
     // todo: switch back to items_count when working
     for (let i = 0; i < inventory.items_count; i++) {
-      let foreignKey = inventory
+      const foreignKey = inventory
         ? getComponentValue(ForeignKey, getForeignKeyEntityId(entityId, inventory.items_key, BigInt(i)))
         : undefined;
 
       // if nothing on this index, break
-      let resourcesChest = foreignKey
+      const resourcesChest = foreignKey
         ? getComponentValue(ResourceChest, getEntityIdFromKeys([foreignKey.entity_id]))
         : undefined;
 
       if (resourcesChest && foreignKey) {
-        let { resources_count } = resourcesChest;
+        const { resources_count } = resourcesChest;
         for (let i = 0; i < resources_count; i++) {
-          let entityId = getEntityIdFromKeys([BigInt(foreignKey.entity_id), BigInt(i)]);
+          const entityId = getEntityIdFromKeys([BigInt(foreignKey.entity_id), BigInt(i)]);
           const resource = getComponentValue(DetachedResource, entityId);
           if (resource) {
             resources[resource.resource_type] =
@@ -82,16 +82,16 @@ export function useResources() {
   };
 
   const getResourcesFromResourceChestIds = (entityIds: bigint[]): Resource[] => {
-    let resources: Record<number, number> = {};
+    const resources: Record<number, number> = {};
 
     // todo: switch back to items_count when working
     for (let i = 0; i < entityIds.length; i++) {
-      let resourcesChest = getComponentValue(ResourceChest, getEntityIdFromKeys([entityIds[i]]));
+      const resourcesChest = getComponentValue(ResourceChest, getEntityIdFromKeys([entityIds[i]]));
 
       if (resourcesChest) {
-        let { resources_count } = resourcesChest;
+        const { resources_count } = resourcesChest;
         for (let i = 0; i < resources_count; i++) {
-          let entityId = getEntityIdFromKeys([entityIds[i], BigInt(i)]);
+          const entityId = getEntityIdFromKeys([entityIds[i], BigInt(i)]);
           const resource = getComponentValue(DetachedResource, entityId);
           if (resource) {
             resources[resource.resource_type] =
@@ -111,8 +111,8 @@ export function useResources() {
   };
 
   const getResourceChestIdFromInventoryIndex = (entityId: bigint, index: number): bigint | undefined => {
-    let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
-    let foreignKey = inventory
+    const inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
+    const foreignKey = inventory
       ? getComponentValue(ForeignKey, getForeignKeyEntityId(entityId, inventory.items_key, BigInt(index)))
       : undefined;
 
@@ -120,9 +120,9 @@ export function useResources() {
   };
 
   const getResourceCosts = (costUuid: bigint, count: number) => {
-    let resourceCosts = [];
+    const resourceCosts = [];
     for (let i = 0; i < count; i++) {
-      let resourceCost = getComponentValue(ResourceCost, getEntityIdFromKeys([costUuid, BigInt(i)]));
+      const resourceCost = getComponentValue(ResourceCost, getEntityIdFromKeys([costUuid, BigInt(i)]));
       if (resourceCost) {
         resourceCosts.push({ resourceId: resourceCost.resource_type, amount: Number(resourceCost.amount) });
       }
@@ -133,7 +133,7 @@ export function useResources() {
   const getRealmsWithSpecificResource = (
     resourceId: number,
     minAmount: number,
-  ): { realmEntityId: bigint; realmId: bigint; amount: number }[] => {
+  ): Array<{ realmEntityId: bigint; realmId: bigint; amount: number }> => {
     const allRealms = Array.from(runQuery([Has(Realm)]));
 
     const realmsWithResource = allRealms
@@ -151,7 +151,7 @@ export function useResources() {
           };
         }
       })
-      .filter(Boolean) as { realmEntityId: bigint; realmId: bigint; amount: number }[];
+      .filter(Boolean) as Array<{ realmEntityId: bigint; realmId: bigint; amount: number }>;
 
     return realmsWithResource;
   };
