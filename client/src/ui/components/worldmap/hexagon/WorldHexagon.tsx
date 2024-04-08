@@ -51,6 +51,7 @@ export const WorldMap = () => {
           const col = Number(event.keys[2]) - FELT_CENTER;
           const row = Number(event.keys[3]) - FELT_CENTER;
           setExploredHexes((prev) => {
+            console.log(prev);
             const newMap = new Map(prev);
             const rowSet = newMap.get(col) || new Set();
             rowSet.add(row);

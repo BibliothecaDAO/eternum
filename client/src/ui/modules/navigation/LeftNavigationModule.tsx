@@ -62,13 +62,13 @@ export const LeftNavigationModule = () => {
         </CircleButton>
       ),
     },
-    {
-      button: (
-        <CircleButton label={eventLog} active={isPopupOpen(eventLog)} size="lg" onClick={() => togglePopup(eventLog)}>
-          <Pen className="w-7 fill-current" />
-        </CircleButton>
-      ),
-    },
+    // {
+    //   button: (
+    //     <CircleButton label={eventLog} active={isPopupOpen(eventLog)} size="lg" onClick={() => togglePopup(eventLog)}>
+    //       <Pen className="w-7 fill-current" />
+    //     </CircleButton>
+    //   ),
+    // },
     {
       button: (
         <CircleButton
@@ -124,14 +124,14 @@ export const LeftNavigationModule = () => {
             openAllPopups([entityDetails, leaderboard, settings, hyperstructures, banks, resources, eventLog, military])
           }
         >
-          <Expand />
+          <Expand className="w-4" />
         </CircleButton>
       ),
     },
     {
       button: (
         <CircleButton label={"close all popups"} size="sm" onClick={() => closeAllPopups()}>
-          <Close />
+          <Close className="w-4" />
         </CircleButton>
       ),
     },
@@ -174,7 +174,7 @@ export const LeftNavigationModule = () => {
           <div key={index}>{a.button}</div>
         ))}
       </div>
-      <EventLog />
+      {/* <EventLog /> */}
       <Banks />
       <Leaderboard />
       <HyperStructures />
