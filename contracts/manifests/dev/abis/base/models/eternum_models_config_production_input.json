@@ -169,42 +169,34 @@
   },
   {
     "type": "impl",
-    "name": "production_configImpl",
-    "interface_name": "eternum::models::production::Iproduction_config"
+    "name": "production_inputImpl",
+    "interface_name": "eternum::models::config::Iproduction_input"
   },
   {
     "type": "struct",
-    "name": "eternum::models::production::ProductionConfig",
+    "name": "eternum::models::config::ProductionInput",
     "members": [
       {
-        "name": "resource_type",
+        "name": "output_resource_type",
         "type": "core::integer::u8"
       },
       {
-        "name": "amount",
-        "type": "core::integer::u128"
-      },
-      {
-        "name": "cost_resource_type_1",
+        "name": "index",
         "type": "core::integer::u8"
       },
       {
-        "name": "cost_resource_type_1_amount",
-        "type": "core::integer::u128"
-      },
-      {
-        "name": "cost_resource_type_2",
+        "name": "input_resource_type",
         "type": "core::integer::u8"
       },
       {
-        "name": "cost_resource_type_2_amount",
+        "name": "input_resource_amount",
         "type": "core::integer::u128"
       }
     ]
   },
   {
     "type": "interface",
-    "name": "eternum::models::production::Iproduction_config",
+    "name": "eternum::models::config::Iproduction_input",
     "items": [
       {
         "type": "function",
@@ -212,7 +204,7 @@
         "inputs": [
           {
             "name": "model",
-            "type": "eternum::models::production::ProductionConfig"
+            "type": "eternum::models::config::ProductionInput"
           }
         ],
         "outputs": [],
@@ -222,7 +214,7 @@
   },
   {
     "type": "event",
-    "name": "eternum::models::production::production_config::Event",
+    "name": "eternum::models::config::production_input::Event",
     "kind": "enum",
     "variants": []
   }

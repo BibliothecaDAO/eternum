@@ -173,20 +173,6 @@
     "interface_name": "eternum::models::production::Iproduction"
   },
   {
-    "type": "enum",
-    "name": "core::bool",
-    "variants": [
-      {
-        "name": "False",
-        "type": "()"
-      },
-      {
-        "name": "True",
-        "type": "()"
-      }
-    ]
-  },
-  {
     "type": "struct",
     "name": "eternum::models::production::Production",
     "members": [
@@ -219,12 +205,8 @@
         "type": "core::integer::u64"
       },
       {
-        "name": "materials_exhaustion_tick",
+        "name": "end_tick",
         "type": "core::integer::u64"
-      },
-      {
-        "name": "active",
-        "type": "core::bool"
       }
     ]
   },

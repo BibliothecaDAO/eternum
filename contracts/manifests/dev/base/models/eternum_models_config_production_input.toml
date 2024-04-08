@@ -1,0 +1,25 @@
+kind = "DojoModel"
+class_hash = "0x76fb66cd963eabb3dcc59762c119874f3edc39ae7adc30ede0c52033fcf0f9b"
+original_class_hash = "0x76fb66cd963eabb3dcc59762c119874f3edc39ae7adc30ede0c52033fcf0f9b"
+abi = "manifests/dev/abis/base/models/eternum_models_config_production_input.json"
+name = "eternum::models::config::production_input"
+
+[[members]]
+name = "output_resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "index"
+type = "u8"
+key = true
+
+[[members]]
+name = "input_resource_type"
+type = "u8"
+key = false
+
+[[members]]
+name = "input_resource_amount"
+type = "u128"
+key = false

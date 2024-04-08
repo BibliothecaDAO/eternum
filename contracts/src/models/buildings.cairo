@@ -11,7 +11,7 @@ use eternum::models::position::{Coord, Position, Direction};
 use core::poseidon::poseidon_hash_span as hash;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
-use eternum::models::config::{ProductionConfig, ProductionMaterialConfig};
+use eternum::models::config::{ProductionConfig, ProductionInput};
 
 //todo we need to define border of innner hexes
 
@@ -97,48 +97,38 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             let production_config: ProductionConfig = get!(world, produced_resource_type, ProductionConfig);
             let mut resource_production: Production = get!(
                 world, (self.outer_entity_id, produced_resource_type), Production);
-            resource_production.set_rate(production_config.amount_per_tick);
+            resource_production.set_rate(production_config.amount);
             resource_production.increase_building_count(ref produced_resource, @tick);
-
-
-            // make payment for production
-
-            // increase consumption rate of first material
-            let mut material_one_production: Production = get!(
-                world, (self.outer_entity_id, production_config.cost_resource_type_1), Production
-            );
-            let mut material_one_resource: Resource = get!(
-                world, (self.outer_entity_id, production_config.cost_resource_type_1), Resource
-            );
-            material_one_production
-                .increase_consumption_rate(
-                    ref material_one_resource, @tick, production_config.cost_resource_type_1_amount);
-
-            // increase consumption rate of second material
-            let mut material_two_production: Production = get!(
-                world, (self.outer_entity_id, production_config.cost_resource_type_2), Production
-            );
-            let mut material_two_resource: Resource = get!(
-                world, (self.outer_entity_id, production_config.cost_resource_type_2), Resource
-            );
-            material_two_production
-                .increase_consumption_rate(
-                    ref material_two_resource, @tick, production_config.cost_resource_type_2_amount);
-
-
-            // set the time that time that production stops because materials run out
-            resource_production
-                .set_materials_exhaustion_tick(
-                    ref material_one_production, ref material_one_resource, @tick);
-
-            resource_production
-                .set_materials_exhaustion_tick(
-                    ref material_two_production, ref material_two_resource, @tick);
 
             set!(world, (produced_resource));
             set!(world, (resource_production));
-            set!(world, (material_one_production));
-            set!(world, (material_two_production));
+
+            // make payment for production by increase input resources consumption rates
+            let mut count = 0;
+            loop {
+                if count == production_config.input_count {
+                    break;
+                }
+
+                let production_input: ProductionInput
+                    = get!(world, (produced_resource_type, count), ProductionInput);
+                let (input_resource_type, input_resource_amount ) 
+                    = (production_input.input_resource_type, production_input.input_resource_amount);
+                let mut input_resource: Resource 
+                    = get!(world, (self.outer_entity_id, input_resource_type), Resource);
+                let mut input_production: Production 
+                    = get!(world, (self.outer_entity_id, input_resource_type), Production);
+                
+                input_production
+                    .increase_consumption_rate(
+                        ref input_resource, @tick, input_resource_amount);
+                count += 1;
+
+                set!(world, (input_production, input_resource));
+            };
+
+       
+
         }
 
         // receive bonuses from surrounding buildings that give bonuses
@@ -162,43 +152,41 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 world, (self.outer_entity_id, produced_resource_type), Production);
             resource_production.decrease_building_count(ref produced_resource, @tick);
 
-            // stop payment for production 
+            // stop payment for production and decrease consumption rate
 
-            // decrease consumption rate of first material
-            let mut material_one_production: Production = get!(
-                world, (self.outer_entity_id, production_config.cost_resource_type_1), Production
-            );
-            let mut material_one_resource: Resource = get!(
-                world, (self.outer_entity_id, production_config.cost_resource_type_1), Resource
-            );
-            material_one_production
-                .decrease_consumption_rate(
-                    ref material_one_resource, @tick, production_config.cost_resource_type_1_amount);
+            let mut count = 0;
+            loop {
+                if count == production_config.input_count {
+                    break;
+                }
+                
+                let production_input: ProductionInput
+                    = get!(world, (produced_resource_type, count), ProductionInput);
+                let (input_resource_type, input_resource_amount ) 
+                    = (production_input.input_resource_type, production_input.input_resource_amount);
+                let mut input_resource: Resource 
+                    = get!(world, (self.outer_entity_id, input_resource_type), Resource);
+                let mut input_production: Production 
+                    = get!(world, (self.outer_entity_id, input_resource_type), Production);
+                input_production
+                    .decrease_consumption_rate(
+                        ref input_resource, @tick, input_resource_amount);
 
-            // decrease consumption rate of second material
-            let mut material_two_production: Production = get!(
-                world, (self.outer_entity_id, production_config.cost_resource_type_2), Production
-            );
-            let mut material_two_resource: Resource = get!(
-                world, (self.outer_entity_id, production_config.cost_resource_type_2), Resource
-            );
-            material_two_production
-                .decrease_consumption_rate(
-                    ref material_two_resource, @tick, production_config.cost_resource_type_2_amount);
+                
+                // reset production stop time
+                resource_production
+                    .set_end_tick(
+                        @input_production, @input_resource, @tick);
 
-            
-            // reset the time that time that production stops because materials run out
-            resource_production
-                .set_materials_exhaustion_tick(
-                    ref material_one_production, ref material_one_resource, @tick); 
-            resource_production
-                .set_materials_exhaustion_tick(
-                    ref material_two_production, ref material_two_resource, @tick);
+                count += 1;
 
+
+                set!(world, (input_production, input_resource));
+            };
+
+        
             set!(world, (produced_resource));
             set!(world, (resource_production));
-            set!(world, (material_one_production));
-            set!(world, (material_two_production));
         }
 
         // stop receiving bonus from surrounding buildings

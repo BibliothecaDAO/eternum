@@ -38,7 +38,7 @@ type = "u64"
 key = false
 
 [[members]]
-name = "materials_exhaustion_tick"
+name = "end_tick"
 type = "u64"
 key = false
 
