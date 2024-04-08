@@ -4,7 +4,14 @@ import { banks } from "@/ui/components/navigation/Config";
 import { Tabs } from "@/ui/elements/tab";
 
 import { useMemo, useState } from "react";
-import { BankList } from "@/ui/components/bank/BankList";
+import { BankPanel } from "@/ui/components/bank/BankList";
+import { EntityList } from "@/ui/components/list/EntityList";
+
+const exampleBanks = [
+  { id: 1, name: "Iron Bank" },
+  { id: 2, name: "Bank of Loaf" },
+  { id: 2, name: "Bank of Power" },
+];
 
 export const Banks = () => {
   const { togglePopup } = useUIStore();
@@ -20,7 +27,9 @@ export const Banks = () => {
             <div>All Banks</div>
           </div>
         ),
-        component: <BankList />,
+        component: (
+          <EntityList title="Banks" panel={({ entity }) => <BankPanel entity={entity} />} list={exampleBanks} />
+        ),
       },
       {
         key: "mine",

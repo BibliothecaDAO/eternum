@@ -4,53 +4,7 @@ import { ResourceSwap } from "./Swap";
 import { EntityResourceTable } from "../resources/EntityResourceTable";
 import Button from "@/ui/elements/Button";
 
-const exampleBanks = [
-  { id: 1, name: "Iron Bank" },
-  { id: 2, name: "Bank of Loaf" },
-  { id: 2, name: "Bank of Power" },
-];
-
-export const BankList = () => {
-  const [selectedBank, setSelectedBank] = useState(null);
-
-  const handleBankClick = (bank: any) => {
-    setSelectedBank(bank);
-  };
-
-  const handleBreadcrumbClick = () => {
-    setSelectedBank(null);
-  };
-
-  return (
-    <div className="p-2">
-      {selectedBank ? (
-        <div>
-          <Button className="mb-3" variant="outline" size="xs" onClick={handleBreadcrumbClick}>
-            &lt; Back to Bank List
-          </Button>
-          <BankPanel bank={selectedBank} />
-        </div>
-      ) : (
-        <>
-          <h2>Banks</h2>
-          <ul>
-            {exampleBanks.map((bank) => (
-              <li
-                className="text-xl my-1 border-b flex justify-between"
-                key={bank.id}
-                onClick={() => handleBankClick(bank)}
-              >
-                {bank.name} <span>see</span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </div>
-  );
-};
-
-const BankPanel = ({ bank }: any) => {
+export const BankPanel = ({ entity }: any) => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const tabs = useMemo(
@@ -89,7 +43,7 @@ const BankPanel = ({ bank }: any) => {
   return (
     <div>
       <div className="flex justify-between">
-        <h3>{bank.name}</h3>
+        <h3>{entity.name}</h3>
 
         <div>Banker: 0x..420</div>
       </div>
