@@ -77,10 +77,6 @@
         "name": "create_free_unit",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "entity_id",
             "type": "core::integer::u128"
           },
@@ -100,10 +96,6 @@
         "type": "function",
         "name": "return_free_units",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "unit_ids",
             "type": "core::array::Span::<core::integer::u128>"

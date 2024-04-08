@@ -13,76 +13,60 @@ use core::option::OptionTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::systems::realm::contracts::realm_systems;
-use eternum::systems::realm::interface::{
-    IRealmSystemsDispatcher,
-    IRealmSystemsDispatcherTrait,
-};
+use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
 
 use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{
-    ILaborConfigDispatcher,
-    ILaborConfigDispatcherTrait,
-};
+use eternum::systems::config::interface::{ILaborConfigDispatcher, ILaborConfigDispatcherTrait,};
 
 use eternum::systems::labor::contracts::labor_systems;
-use eternum::systems::labor::interface::{
-    ILaborSystemsDispatcher,
-    ILaborSystemsDispatcherTrait,
-};
+use eternum::systems::labor::interface::{ILaborSystemsDispatcher, ILaborSystemsDispatcherTrait,};
 
 
 fn setup() -> (IWorldDispatcher, ID, ILaborSystemsDispatcher) {
     let world = spawn_eternum();
 
     // set labor configuration entity
-    let config_systems_address 
-        = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
     let labor_config_dispatcher = ILaborConfigDispatcher {
         contract_address: config_systems_address
     };
 
-    labor_config_dispatcher.set_labor_config(
-        world,
-        7200, // base_labor_units
-        250, // base_resources_per_cycle
-        21_000_000_000_000_000_000, // base_food_per_cycle
-    );
-
+    labor_config_dispatcher
+        .set_labor_config(
+            7200, // base_labor_units
+            250, // base_resources_per_cycle
+            21_000_000_000_000_000_000, // base_food_per_cycle
+        );
 
     // set realm entity
-    let realm_systems_address 
-        = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
 
     // create realm
-    let realm_entity_id = realm_systems_dispatcher.create(
-        world,
-        1, // realm id
-        0x20309, // resource_types_packed // 2,3,9 // stone, coal, gold
-        3, // resource_types_count
-        5, // cities
-        5, // harbors
-        5, // rivers
-        5, // regions
-        1, // wonder
-        1, // order
-        Position { x: 500200, y: 1, entity_id: 1_u128 }, // position  
-                // x needs to be > 470200 to get zone
-    );
+    let realm_entity_id = realm_systems_dispatcher
+        .create(
+            1, // realm id
+            0x20309, // resource_types_packed // 2,3,9 // stone, coal, gold
+            3, // resource_types_count
+            5, // cities
+            5, // harbors
+            5, // rivers
+            5, // regions
+            1, // wonder
+            1, // order
+            Position { x: 500200, y: 1, entity_id: 1_u128 }, // position  
+        // x needs to be > 470200 to get zone
+        );
 
-
-    let labor_systems_address 
-        = deploy_system(labor_systems::TEST_CLASS_HASH);
+    let labor_systems_address = deploy_system(labor_systems::TEST_CLASS_HASH);
     let labor_systems_dispatcher = ILaborSystemsDispatcher {
         contract_address: labor_systems_address
     };
-    
+
     (world, realm_entity_id, labor_systems_dispatcher)
 }
-
-
 
 
 #[test]
@@ -102,26 +86,18 @@ fn test_build_labor_non_food() {
     let labor_resource_type = get_labor_resource_type(resource_type);
 
     // switch to executor to set storage directly
-    
+
     set!(
         world,
-        Resource {
-            entity_id: realm_entity_id,
-            resource_type: labor_resource_type,
-            balance: 40
-        }
+        Resource { entity_id: realm_entity_id, resource_type: labor_resource_type, balance: 40 }
     );
     starknet::testing::set_contract_address(player_address);
 
     // build labor for gold
-    labor_systems_dispatcher.build(
-        world,
-        realm_entity_id,
-        resource_type,
-        20, // labor_units
-        1, // multiplier
-    );
-
+    labor_systems_dispatcher
+        .build(realm_entity_id, resource_type, 20, // labor_units
+         1, // multiplier
+        );
 
     // assert labor is right amount
     let gold_labor = get!(world, (realm_entity_id, resource_type), Labor);
@@ -150,25 +126,18 @@ fn test_build_labor_food() {
     let labor_resource_type = get_labor_resource_type(resource_type);
 
     // switch to executor to set storage directly
-    
+
     set!(
         world,
-        Resource {
-            entity_id: realm_entity_id,
-            resource_type: labor_resource_type,
-            balance: 100
-        }
+        Resource { entity_id: realm_entity_id, resource_type: labor_resource_type, balance: 100 }
     );
     starknet::testing::set_contract_address(caller_address);
 
     // build labor for wheat
-    labor_systems_dispatcher.build(
-        world,
-        realm_entity_id,
-        resource_type,
-        20, // labor_units
-        1, // multiplier
-    );
+    labor_systems_dispatcher
+        .build(realm_entity_id, resource_type, 20, // labor_units
+         1, // multiplier
+        );
 
     // assert labor is right amount
     let wheat_labor = get!(world, (realm_entity_id, ResourceTypes::WHEAT), Labor);
@@ -192,13 +161,10 @@ fn test_build_labor_food() {
 
     // build labor again but with different multiplier
     // call build labor system
-    labor_systems_dispatcher.build(
-        world,
-        realm_entity_id,
-        resource_type,
-        20, // labor_units
-        2, // multiplier
-    );
+    labor_systems_dispatcher
+        .build(realm_entity_id, resource_type, 20, // labor_units
+         2, // multiplier
+        );
 
     let labor_resource = get!(world, (realm_entity_id, labor_resource_type), Resource);
     assert(labor_resource.balance == 40, 'wrong labor resource');
@@ -220,8 +186,7 @@ fn test_build_labor_food() {
     // 7200 * 20 is added balance
     // 154000 - 20000 is unharvested balance
     assert(
-        wheat_labor.balance == 154000 + 7200 * 20 - (154000 - 20000),
-        'wrong wheat labor balance'
+        wheat_labor.balance == 154000 + 7200 * 20 - (154000 - 20000), 'wrong wheat labor balance'
     );
     assert(wheat_labor.last_harvest == 20_000, 'wrong wheat labor last harvest');
     assert(wheat_labor.multiplier == 2, 'wrong wheat multiplier');
@@ -245,16 +210,12 @@ fn test_build_labor_after_completed() {
     let labor_resource_type = get_labor_resource_type(resource_type);
 
     // switch to executor to set storage directly
-    
+
     set!(
         world,
-        Resource {
-            entity_id: realm_entity_id,
-            resource_type: labor_resource_type,
-            balance: 40
-        }
+        Resource { entity_id: realm_entity_id, resource_type: labor_resource_type, balance: 40 }
     );
-    
+
     set!(
         world,
         Labor {
@@ -268,14 +229,10 @@ fn test_build_labor_after_completed() {
     starknet::testing::set_contract_address(caller_address);
 
     // build labor for gold
-    labor_systems_dispatcher.build(
-        world,
-        realm_entity_id,
-        resource_type,
-        20, // labor_units
-        1, // multiplier
-    );
-
+    labor_systems_dispatcher
+        .build(realm_entity_id, resource_type, 20, // labor_units
+         1, // multiplier
+        );
 
     // // assert labor is right amount
     let gold_labor = get!(world, (realm_entity_id, resource_type), Labor);

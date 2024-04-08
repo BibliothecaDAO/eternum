@@ -1,5 +1,5 @@
 import { useGLTF } from "@react-three/drei";
-import { getUIPositionFromColRow } from "../../../utils/utils";
+import { getUIPositionFromColRow, pseudoRandom } from "../../../utils/utils";
 import * as THREE from "three";
 import { useMemo } from "react";
 import { Hexagon } from "../../../types";
@@ -18,7 +18,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-export function BeachBiome({ hexes }: { hexes: Hexagon[] }) {
+export function BeachBiome({ hexes, zOffsets }: { hexes: Hexagon[]; zOffsets?: boolean }) {
   const { nodes, materials } = useGLTF("/models/biomes/beach.glb") as GLTFResult;
 
   const defaultTransform = new THREE.Matrix4()
@@ -42,10 +42,11 @@ export function BeachBiome({ hexes }: { hexes: Hexagon[] }) {
     let idx = 0;
     let matrix = new THREE.Matrix4();
     hexes.forEach((hex: Hexagon) => {
-      const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
+      const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
       // rotate hex randomly on 60 * n degrees
-      matrix.makeRotationZ((Math.PI / 3) * Math.floor(Math.random() * 6));
-      matrix.setPosition(x, y, 0.33);
+      const seededRandom = pseudoRandom(hex.col, hex.row);
+      matrix.makeRotationZ((Math.PI / 3) * Math.floor(seededRandom * 6));
+      matrix.setPosition(x, y, zOffsets ? 0.32 + z : 0.32);
       instancedMesh1.setMatrixAt(idx, matrix);
       instancedMesh2.setMatrixAt(idx, matrix);
       instancedMesh3.setMatrixAt(idx, matrix);

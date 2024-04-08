@@ -2,12 +2,12 @@
 mod name_systems {
     use eternum::models::name::{AddressName};
     use eternum::systems::name::interface::{INameSystems};
-    
-    use traits::Into; 
+
+    use traits::Into;
 
     #[abi(embed_v0)]
     impl NameSystemsImpl of INameSystems<ContractState> {
-        fn set_address_name(self: @ContractState, world: IWorldDispatcher, name: felt252) {
+        fn set_address_name(world: IWorldDispatcher, name: felt252) {
             let caller = starknet::get_caller_address();
             let caller_felt252: felt252 = caller.into();
 

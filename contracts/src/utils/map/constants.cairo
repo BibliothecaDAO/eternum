@@ -1,6 +1,5 @@
-
 mod fixed_constants {
-    use cubit::f128::types::fixed::{FixedTrait, Fixed,ONE_u128, HALF_u128};
+    use cubit::f128::types::fixed::{FixedTrait, Fixed, ONE_u128, HALF_u128};
 
     #[inline(always)]
     fn _0() -> Fixed {
@@ -92,7 +91,6 @@ mod fixed_constants {
     fn _0_9() -> Fixed {
         FixedTrait::new(16602069666338596454, false)
     }
-
 
 
     #[inline(always)]

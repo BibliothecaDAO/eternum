@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x5182a364642a812f44f663150f9cbd5f55a21f9cda255b9c7d9bf09a1643fe9"
+class_hash = "0x415bb26d1ecab39598eb891a0b67a230cce78f68b6ae649177e8f06a53a28ff"
+abi = "abis/base/models/tick_config.json"
 name = "eternum::models::config::tick_config"
 
 [[members]]

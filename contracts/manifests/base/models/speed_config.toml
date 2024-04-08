@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x722a04091940e82cbf5f12cca4d6a68dc9bf8fdc4b5a9aa29e468a96051623f"
+class_hash = "0xabf8700dc8b902b41a66b939e0979633e3468543abcb08705d18af6166ca90"
+abi = "abis/base/models/speed_config.json"
 name = "eternum::models::config::speed_config"
 
 [[members]]

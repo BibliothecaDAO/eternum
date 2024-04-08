@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x131b15492d7e276078ade476e8a6d14ee6811c88934c71e0e8173dfca6613d0"
+class_hash = "0x7d2d5d390cf1f968cece61c55ecc2d062fdf4519423a79f26d0410e8190c8b7"
+abi = "abis/base/models/age.json"
 name = "eternum::models::age::age"
 
 [[members]]

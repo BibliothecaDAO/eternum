@@ -1,0 +1,35 @@
+kind = "DojoModel"
+class_hash = "0x1f20ca09ecd604b1d8416bdc73268696b9972f6bb7fed3347225373af136040"
+original_class_hash = "0x1f20ca09ecd604b1d8416bdc73268696b9972f6bb7fed3347225373af136040"
+abi = "manifests/dev/abis/base/models/eternum_models_config_production_config.json"
+name = "eternum::models::config::production_config"
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "amount_per_tick"
+type = "u128"
+key = false
+
+[[members]]
+name = "cost_resource_type_1"
+type = "u8"
+key = false
+
+[[members]]
+name = "cost_resource_type_1_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "cost_resource_type_2"
+type = "u8"
+key = false
+
+[[members]]
+name = "cost_resource_type_2_amount"
+type = "u128"
+key = false

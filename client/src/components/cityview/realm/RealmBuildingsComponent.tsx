@@ -14,8 +14,6 @@ export const RealmBuildingsComponent = ({}: RealmBuildingsComponentProps) => {
   const { realmEntityId } = useRealmStore();
   const { useRealmRaiders } = useCombat();
 
-  const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
-  const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   // @note: useOwnerRaiders would be useful for a all realms management window
@@ -26,13 +24,13 @@ export const RealmBuildingsComponent = ({}: RealmBuildingsComponentProps) => {
   // @ts-ignore
   const [match, params]: any = useRoute("/realm/:id/:tab");
 
-  useEffect(() => {
-    if ([0, 1, 2].includes(selectedTab)) {
-      moveCameraToMarketView();
-    } else if ([3, 4].includes(selectedTab)) {
-      moveCameraToCaravansView();
-    }
-  }, [selectedTab]);
+  // useEffect(() => {
+  //   if ([0, 1, 2].includes(selectedTab)) {
+  //     moveCameraToMarketView();
+  //   } else if ([3, 4].includes(selectedTab)) {
+  //     moveCameraToCaravansView();
+  //   }
+  // }, [selectedTab]);
 
   useEffect(() => {
     const tabIndex = tabs.findIndex((tab) => tab.key === params?.tab);

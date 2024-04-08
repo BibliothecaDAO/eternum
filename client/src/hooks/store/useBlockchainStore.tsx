@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { useEffect } from "react";
 
-export const TIME_PER_TICK = 60;
+export const TIME_PER_TICK = 900;
 
 interface BlockchainState {
   nextBlockTimestamp: number | undefined;

@@ -1,0 +1,869 @@
+[
+  {
+    "type": "impl",
+    "name": "DojoResourceProviderImpl",
+    "interface_name": "dojo::world::IDojoResourceProvider"
+  },
+  {
+    "type": "interface",
+    "name": "dojo::world::IDojoResourceProvider",
+    "items": [
+      {
+        "type": "function",
+        "name": "dojo_resource",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::felt252"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "WorldProviderImpl",
+    "interface_name": "dojo::world::IWorldProvider"
+  },
+  {
+    "type": "struct",
+    "name": "dojo::world::IWorldDispatcher",
+    "members": [
+      {
+        "name": "contract_address",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "dojo::world::IWorldProvider",
+    "items": [
+      {
+        "type": "function",
+        "name": "world",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "dojo::world::IWorldDispatcher"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "WorldConfigImpl",
+    "interface_name": "eternum::systems::config::interface::IWorldConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::IWorldConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_world_config",
+        "inputs": [
+          {
+            "name": "admin_address",
+            "type": "core::starknet::contract_address::ContractAddress"
+          },
+          {
+            "name": "realm_l2_contract",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "RealmFreeMintConfigImpl",
+    "interface_name": "eternum::systems::config::interface::IRealmFreeMintConfig"
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::IRealmFreeMintConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_mint_config",
+        "inputs": [
+          {
+            "name": "resources",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "MapConfigImpl",
+    "interface_name": "eternum::systems::config::interface::IMapConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::IMapConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_exploration_config",
+        "inputs": [
+          {
+            "name": "wheat_burn_amount",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "fish_burn_amount",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "reward_resource_amount",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "CapacityConfigImpl",
+    "interface_name": "eternum::systems::config::interface::ICapacityConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::ICapacityConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_capacity_config",
+        "inputs": [
+          {
+            "name": "entity_type",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "weight_gram",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "WeightConfigImpl",
+    "interface_name": "eternum::systems::config::interface::IWeightConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::IWeightConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_weight_config",
+        "inputs": [
+          {
+            "name": "entity_type",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "weight_gram",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "TickConfigImpl",
+    "interface_name": "eternum::systems::config::interface::ITickConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::ITickConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_tick_config",
+        "inputs": [
+          {
+            "name": "max_moves_per_tick",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "tick_interval_in_seconds",
+            "type": "core::integer::u64"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "CombatConfigImpl",
+    "interface_name": "eternum::systems::config::interface::ICombatConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::ICombatConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_combat_config",
+        "inputs": [
+          {
+            "name": "config_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "stealing_trial_count",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "wheat_burn_per_soldier",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "fish_burn_per_soldier",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_soldier_config",
+        "inputs": [
+          {
+            "name": "resource_costs",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          },
+          {
+            "name": "wheat_burn_per_soldier",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "fish_burn_per_soldier",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_health_config",
+        "inputs": [
+          {
+            "name": "entity_type",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "resource_costs",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          },
+          {
+            "name": "max_value",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_attack_config",
+        "inputs": [
+          {
+            "name": "entity_type",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "max_value",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_defence_config",
+        "inputs": [
+          {
+            "name": "entity_type",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "max_value",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "LevelingConfigImpl",
+    "interface_name": "eternum::systems::config::interface::ILevelingConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::ILevelingConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_leveling_config",
+        "inputs": [
+          {
+            "name": "config_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "decay_interval",
+            "type": "core::integer::u64"
+          },
+          {
+            "name": "max_level",
+            "type": "core::integer::u64"
+          },
+          {
+            "name": "decay_scaled",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "cost_percentage_scaled",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "base_multiplier",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "wheat_base_amount",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "fish_base_amount",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "resource_1_costs",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          },
+          {
+            "name": "resource_2_costs",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          },
+          {
+            "name": "resource_3_costs",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "LaborConfigImpl",
+    "interface_name": "eternum::systems::config::interface::ILaborConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::ILaborConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_labor_cost_resources",
+        "inputs": [
+          {
+            "name": "resource_type_labor",
+            "type": "core::felt252"
+          },
+          {
+            "name": "resource_types_packed",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "resource_types_count",
+            "type": "core::integer::u8"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_labor_cost_amount",
+        "inputs": [
+          {
+            "name": "resource_type_labor",
+            "type": "core::felt252"
+          },
+          {
+            "name": "resource_type_cost",
+            "type": "core::felt252"
+          },
+          {
+            "name": "resource_type_value",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_labor_config",
+        "inputs": [
+          {
+            "name": "base_labor_units",
+            "type": "core::integer::u64"
+          },
+          {
+            "name": "base_resources_per_cycle",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "base_food_per_cycle",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_labor_auction",
+        "inputs": [
+          {
+            "name": "decay_constant",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "per_time_unit",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "price_update_interval",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "ProductionConfigImpl",
+    "interface_name": "eternum::systems::config::interface::IProductionConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::IProductionConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_production_config",
+        "inputs": [
+          {
+            "name": "resource_type",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "amount_per_tick",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "cost_resource_type_1",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "cost_resource_type_1_amount",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "cost_resource_type_2",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "cost_resource_type_2_amount",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_production_material_config",
+        "inputs": [
+          {
+            "name": "material_resource_type",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "produced_resource_type_1",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "produced_resource_type_2",
+            "type": "core::integer::u8"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "TransportConfigImpl",
+    "interface_name": "eternum::systems::config::interface::ITransportConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::ITransportConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_road_config",
+        "inputs": [
+          {
+            "name": "resource_costs",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          },
+          {
+            "name": "speed_up_by",
+            "type": "core::integer::u64"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_speed_config",
+        "inputs": [
+          {
+            "name": "entity_type",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "sec_per_km",
+            "type": "core::integer::u16"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_travel_config",
+        "inputs": [
+          {
+            "name": "free_transport_per_city",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "HyperstructureConfigImpl",
+    "interface_name": "eternum::systems::config::interface::IHyperstructureConfig"
+  },
+  {
+    "type": "struct",
+    "name": "eternum::models::position::Coord",
+    "members": [
+      {
+        "name": "x",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "y",
+        "type": "core::integer::u128"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::IHyperstructureConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "create_hyperstructure",
+        "inputs": [
+          {
+            "name": "hyperstructure_type",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "coord",
+            "type": "eternum::models::position::Coord"
+          },
+          {
+            "name": "completion_cost",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u128"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "BankConfigImpl",
+    "interface_name": "eternum::systems::config::interface::IBankConfig"
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<(core::integer::u8, core::array::Span::<(core::integer::u8, core::integer::u128)>)>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<(core::integer::u8, core::array::Span::<(core::integer::u8, core::integer::u128)>)>"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<(core::integer::u8, core::integer::u32)>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<(core::integer::u8, core::integer::u32)>"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::IBankConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "create_bank",
+        "inputs": [
+          {
+            "name": "coord",
+            "type": "eternum::models::position::Coord"
+          },
+          {
+            "name": "swap_cost_resources",
+            "type": "core::array::Span::<(core::integer::u8, core::array::Span::<(core::integer::u8, core::integer::u128)>)>"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u128"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_bank_auction",
+        "inputs": [
+          {
+            "name": "bank_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "bank_swap_resource_cost_keys",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u32)>"
+          },
+          {
+            "name": "decay_constant",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "per_time_unit",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "price_update_interval",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "BuildingsConfigImpl",
+    "interface_name": "eternum::systems::config::interface::IBuildingsConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::IBuildingsConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "set_labor_buildings_config",
+        "inputs": [
+          {
+            "name": "level_multiplier",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "level_discount_mag",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "resources_category_1",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "resources_category_1_count",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "resources_category_2",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "resources_category_2_count",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "resources_category_3",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "resources_category_3_count",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "resources_category_4",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "resources_category_4_count",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "building_category_1_resource_costs",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          },
+          {
+            "name": "building_category_2_resource_costs",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          },
+          {
+            "name": "building_category_3_resource_costs",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          },
+          {
+            "name": "building_category_4_resource_costs",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "UpgradableImpl",
+    "interface_name": "dojo::components::upgradeable::IUpgradeable"
+  },
+  {
+    "type": "interface",
+    "name": "dojo::components::upgradeable::IUpgradeable",
+    "items": [
+      {
+        "type": "function",
+        "name": "upgrade",
+        "inputs": [
+          {
+            "name": "new_class_hash",
+            "type": "core::starknet::class_hash::ClassHash"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "dojo::components::upgradeable::upgradeable::Upgraded",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "class_hash",
+        "type": "core::starknet::class_hash::ClassHash",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "dojo::components::upgradeable::upgradeable::Event",
+    "kind": "enum",
+    "variants": [
+      {
+        "name": "Upgraded",
+        "type": "dojo::components::upgradeable::upgradeable::Upgraded",
+        "kind": "nested"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "eternum::systems::config::contracts::config_systems::Event",
+    "kind": "enum",
+    "variants": [
+      {
+        "name": "UpgradeableEvent",
+        "type": "dojo::components::upgradeable::upgradeable::Event",
+        "kind": "nested"
+      }
+    ]
+  }
+]

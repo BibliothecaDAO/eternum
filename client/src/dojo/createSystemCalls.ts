@@ -1,7 +1,5 @@
-import { Components, Schema, setComponent } from "@dojoengine/recs";
 import { SetupNetworkResult } from "./setupNetwork";
-
-import { getEntityIdFromKeys } from "../utils/utils";
+import { toast } from "react-toastify";
 import {
   DisassembleCaravanAndReturnFreeUnitsProps,
   SwapBankAndTravelBackProps,
@@ -44,6 +42,18 @@ import {
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
+type SystemCallFunction = (...args: any[]) => any;
+type WrappedSystemCalls = Record<string, SystemCallFunction>;
+
+const withErrorHandling =
+  (fn: any) =>
+  async (...args: any[]) => {
+    try {
+      return await fn(...args);
+    } catch (error: any) {
+      toast(error.message);
+    }
+  };
 
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls({ provider }: SetupNetworkResult) {
@@ -217,7 +227,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     }
   };
 
-  return {
+  const systemCalls = {
     explore,
     create_labor_building,
     destroy_labor_building,
@@ -260,10 +270,11 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_building,
     uuid,
   };
-}
 
-export function getEvents(receipt: any): any[] {
-  return receipt.events.filter((event: any) => {
-    return event.keys.length === 1 && event.keys[0] === import.meta.env.VITE_EVENT_KEY;
-  });
+  const wrappedSystemCalls = Object.entries(systemCalls).reduce<WrappedSystemCalls>((acc, [key, fn]) => {
+    acc[key] = withErrorHandling(fn);
+    return acc;
+  }, {});
+
+  return wrappedSystemCalls;
 }

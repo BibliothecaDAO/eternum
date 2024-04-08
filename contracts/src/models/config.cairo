@@ -162,11 +162,10 @@ struct MapExploreConfig {
 #[derive(Model, Copy, Drop, Serde)]
 struct TickConfig {
     #[key]
-    config_id: u128, 
+    config_id: u128,
     max_moves_per_tick: u8,
     tick_interval_in_seconds: u64
 }
-
 
 
 #[generate_trait]
@@ -270,15 +269,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
         );
         loop {
             match resource_types_1.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 1;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 1;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -288,15 +283,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_2.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 2;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 2;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -306,15 +297,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_3.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 3;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 3;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -324,15 +311,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_4.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 4;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 4;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -349,6 +332,29 @@ struct LaborBuildingCost {
     labor_category: u8,
     resource_cost_id: u128,
     resource_cost_count: u32,
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct ProductionConfig {
+    #[key]
+    resource_type: u8,
+    // production per tick
+    amount_per_tick: u128,
+    cost_resource_type_1: u8,
+    cost_resource_type_1_amount: u128,
+    cost_resource_type_2: u8,
+    cost_resource_type_2_amount: u128,
+}
+
+// a map from material to resources it produces
+// e.g if stone can be used to produce wood and ruby, 
+// material is stone, produced resources are wood and ruby
+#[derive(Model, Copy, Drop, Serde)]
+struct ProductionMaterialConfig {
+    #[key]
+    material_resource_type: u8,
+    produced_resource_type_1: u8,
+    produced_resource_type_2: u8,
 }
 
 

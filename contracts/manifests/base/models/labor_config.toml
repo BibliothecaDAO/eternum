@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x3f9898c7d85e29fac6c225bfc0ced008c5831e03d89a3f17e20bb72978f6320"
+class_hash = "0x4b5601b84471530a377d4943a1cc910acfdadb13048d1295e1b5d396eab386b"
+abi = "abis/base/models/labor_config.json"
 name = "eternum::models::config::labor_config"
 
 [[members]]

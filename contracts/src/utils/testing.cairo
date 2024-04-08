@@ -15,46 +15,24 @@ use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
 
 
 use eternum::models::config::{
-    world_config, WorldConfig,
-    speed_config, SpeedConfig,
-    capacity_config, CapacityConfig,
-    travel_config, TravelConfig,
-    labor_config, LaborConfig,
-    labor_cost_amount, LaborCostAmount,
-    labor_cost_resources, LaborCostResources,
-    weight_config, WeightConfig,
-    road_config, RoadConfig
-
+    world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,
+    travel_config, TravelConfig, labor_config, LaborConfig, labor_cost_amount, LaborCostAmount,
+    labor_cost_resources, LaborCostResources, weight_config, WeightConfig, road_config, RoadConfig
 };
-use eternum::models::quantity::{
-    quantity, Quantity, 
-    quantity_tracker, QuantityTracker
-};
-use eternum::models::movable::{
-    movable, Movable, 
-    arrival_time, ArrivalTime
-};
-use eternum::models::caravan::{
-    caravan_members, CaravanMembers,
-};
-use eternum::models::trade::{
-    status, Status, 
-    trade, Trade,
-};
+use eternum::models::quantity::{quantity, Quantity, quantity_tracker, QuantityTracker};
+use eternum::models::movable::{movable, Movable, arrival_time, ArrivalTime};
+use eternum::models::caravan::{caravan_members, CaravanMembers,};
+use eternum::models::trade::{status, Status, trade, Trade,};
 
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::test_utils::spawn_test_world;
 
-use starknet::{
-    syscalls::deploy_syscall,ClassHash, ContractAddress
-};
-
+use starknet::{syscalls::deploy_syscall, ClassHash, ContractAddress};
 
 
 // used to spawn a test world with all the models and systems registered
 fn spawn_eternum() -> IWorldDispatcher {
-
     let mut models = array![
         owner::TEST_CLASS_HASH,
         movable::TEST_CLASS_HASH,
@@ -85,19 +63,17 @@ fn spawn_eternum() -> IWorldDispatcher {
         labor_auction::TEST_CLASS_HASH,
         road_config::TEST_CLASS_HASH,
         hyper_structure::TEST_CLASS_HASH,
-        
     ];
 
     spawn_test_world(models)
-
 }
-
 
 
 fn deploy_system(class_hash_felt: felt252) -> ContractAddress {
     let (system_contract_address, _) = deploy_syscall(
         class_hash_felt.try_into().unwrap(), 0, array![].span(), false
-    ).unwrap();
+    )
+        .unwrap();
 
     system_contract_address
 }

@@ -1,0 +1,9 @@
+kind = "DojoContract"
+class_hash = "0x3420c9464d93172915060194787a9a63a65dc29adcc21b09385c4494584e4ae"
+original_class_hash = "0x3420c9464d93172915060194787a9a63a65dc29adcc21b09385c4494584e4ae"
+base_class_hash = "0x0"
+abi = "manifests/dev/abis/base/contracts/eternum_systems_resources_contracts_resource_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::resources::contracts::resource_systems"

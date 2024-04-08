@@ -1,8 +1,7 @@
 use eternum::models::position::CoordTrait;
 use core::zeroable::Zeroable;
 use eternum::models::production::{
-    Production, ProductionRateTrait, ProductionConfig,
-    ProductionBonusPercentageImpl
+    Production, ProductionRateTrait, ProductionBonusPercentageImpl
 };
 use eternum::models::resources::{Resource, ResourceCost};
 use eternum::models::owner::Owner;
@@ -12,6 +11,7 @@ use eternum::models::position::{Coord, Position, Direction};
 use core::poseidon::poseidon_hash_span as hash;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
+use eternum::models::config::{ProductionConfig, ProductionMaterialConfig};
 
 //todo we need to define border of innner hexes
 

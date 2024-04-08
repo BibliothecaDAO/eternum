@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x7471acaca862042a38e73fb4a4eef2fea795ce79155d77e574013bcec07b34c"
+class_hash = "0xdfa3be9acc06d8c7d9f4279213b7c8f98081eceff4d0691b17c9ec5d80013f"
+abi = "abis/base/models/attack.json"
 name = "eternum::models::combat::attack"
 
 [[members]]

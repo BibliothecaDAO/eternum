@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x1278bd7f4b0762ecc27fdb16f591aad71e94df0b399a7eb41454571cffa2c0"
+class_hash = "0x7aa13fcbe2df0259b18040fb9c74d0c47d51de494fef7004081ac230212b4c9"
+abi = "abis/base/models/bank_swap_resource_cost.json"
 name = "eternum::models::bank::bank_swap_resource_cost"
 
 [[members]]

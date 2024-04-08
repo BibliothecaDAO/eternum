@@ -101,6 +101,14 @@ type GLTFResult = GLTF & {
   };
 };
 
+type Castle = {
+  uiPos: { x: number; y: number };
+  contractPos: { x: number; y: number };
+  index: number;
+  depth: number;
+  id: bigint;
+};
+
 type CastlesProps = {
   hexData: Hexagon[];
 };
@@ -112,7 +120,7 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
   const realms = useGetRealms();
 
   const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const setSelectedEnttiy = useUIStore((state) => state.setSelectedEntity);
+  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const [hoveredCastleId, setHoveredCastleId] = useState<bigint | null>(null);
@@ -127,18 +135,19 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
         const hexIndex = hexData.findIndex((h) => h.col === colrow.col && h.row === colrow.row);
         // to have the exact height of the hexagon and place castle on top
         return {
-          position: getRealmUIPosition(realm.realmId),
+          uiPos: getRealmUIPosition(realm.realmId),
+          contractPos: { x: colrow.col, y: colrow.row },
           index: hexIndex,
           depth: BIOMES[hexData[hexIndex].biome].depth,
           id: realm.entity_id,
         };
       })
-      .filter(Boolean);
+      .filter(Boolean) as Castle[];
   }, []);
 
-  const onClick = (e: any, castle: any) => {
+  const onClick = (e: any, castle: Castle) => {
     e.stopPropagation();
-    setSelectedEnttiy({ id: castle.id, position: castle.position });
+    setSelectedEntity({ id: castle.id, position: castle.contractPos });
   };
 
   const hoverMaterial = materials.PaletteMaterial011.clone();
@@ -147,7 +156,7 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
   return (
     <group>
       {castles.map((castle) => {
-        const { position, index, depth } = castle;
+        const { uiPos: position, index, depth } = castle;
         if (index === -1) return null;
         const isHovered = hoveredCastleId === castle.id;
         return (
@@ -203,7 +212,6 @@ export const MyCastles = ({ hexData }: CastlesProps) => {
         const { position, index, depth } = castle;
 
         if (index === -1) return null;
-        // const height = meshPositions[index * 3];
         return (
           <mesh
             key={index}
@@ -215,7 +223,6 @@ export const MyCastles = ({ hexData }: CastlesProps) => {
             // rotate the castle in a random manner based on a seed
             rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
             position={[position.x, 0.31, -position.y]}
-            // position={[position.x, height + 1, -position.y]}
           />
         );
       })}

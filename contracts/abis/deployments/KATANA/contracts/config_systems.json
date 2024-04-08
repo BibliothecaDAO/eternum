@@ -67,10 +67,6 @@
         "name": "set_world_config",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "admin_address",
             "type": "core::starknet::contract_address::ContractAddress"
           },
@@ -108,10 +104,6 @@
         "name": "set_mint_config",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "resources",
             "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
           }
@@ -134,10 +126,6 @@
         "type": "function",
         "name": "set_exploration_config",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "wheat_burn_amount",
             "type": "core::integer::u128"
@@ -170,10 +158,6 @@
         "name": "set_capacity_config",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "entity_type",
             "type": "core::integer::u128"
           },
@@ -200,10 +184,6 @@
         "type": "function",
         "name": "set_weight_config",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "entity_type",
             "type": "core::integer::u128"
@@ -232,10 +212,6 @@
         "name": "set_tick_config",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "max_moves_per_tick",
             "type": "core::integer::u8"
           },
@@ -263,10 +239,6 @@
         "name": "set_combat_config",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "config_id",
             "type": "core::integer::u128"
           },
@@ -291,10 +263,6 @@
         "name": "set_soldier_config",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "resource_costs",
             "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
           },
@@ -314,10 +282,6 @@
         "type": "function",
         "name": "set_health_config",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "entity_type",
             "type": "core::integer::u128"
@@ -339,10 +303,6 @@
         "name": "set_attack_config",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "entity_type",
             "type": "core::integer::u128"
           },
@@ -358,10 +318,6 @@
         "type": "function",
         "name": "set_defence_config",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "entity_type",
             "type": "core::integer::u128"
@@ -389,10 +345,6 @@
         "type": "function",
         "name": "set_leveling_config",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "config_id",
             "type": "core::integer::u128"
@@ -457,10 +409,6 @@
         "name": "set_labor_cost_resources",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "resource_type_labor",
             "type": "core::felt252"
           },
@@ -480,10 +428,6 @@
         "type": "function",
         "name": "set_labor_cost_amount",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "resource_type_labor",
             "type": "core::felt252"
@@ -505,10 +449,6 @@
         "name": "set_labor_config",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "base_labor_units",
             "type": "core::integer::u64"
           },
@@ -528,10 +468,6 @@
         "type": "function",
         "name": "set_labor_auction",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "decay_constant",
             "type": "core::integer::u128"
@@ -564,10 +500,6 @@
         "name": "set_road_config",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "resource_costs",
             "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
           },
@@ -584,10 +516,6 @@
         "name": "set_speed_config",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "entity_type",
             "type": "core::integer::u128"
           },
@@ -603,10 +531,6 @@
         "type": "function",
         "name": "set_travel_config",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "free_transport_per_city",
             "type": "core::integer::u128"
@@ -644,10 +568,6 @@
         "type": "function",
         "name": "create_hyperstructure",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "hyperstructure_type",
             "type": "core::integer::u8"
@@ -704,10 +624,6 @@
         "name": "create_bank",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "coord",
             "type": "eternum::models::position::Coord"
           },
@@ -727,10 +643,6 @@
         "type": "function",
         "name": "set_bank_auction",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "bank_id",
             "type": "core::integer::u128"
@@ -770,10 +682,6 @@
         "type": "function",
         "name": "set_labor_buildings_config",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "level_multiplier",
             "type": "core::integer::u128"

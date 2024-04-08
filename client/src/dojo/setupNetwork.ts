@@ -1,24 +1,20 @@
 import { defineContractComponents } from "./contractComponents";
 import { world } from "./world";
+import { DojoConfig } from "@dojoengine/core";
 import { EternumProvider } from "@bibliothecadao/eternum";
-import dev_manifest from "../../../contracts/target/dev/manifest.json";
-import prod_manifest from "../../../contracts/target/release/manifest.json";
 import katana from "../../../contracts/manifests/deployments/KATANA.json";
 import * as torii from "@dojoengine/torii-client";
 
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 
-export async function setupNetwork() {
-  const { VITE_PUBLIC_WORLD_ADDRESS, VITE_PUBLIC_NODE_URL, VITE_PUBLIC_TORII } = import.meta.env;
-
-  const manifest = import.meta.env.VITE_DEV === "true" ? dev_manifest : prod_manifest;
-
-  const provider = new EternumProvider(katana, VITE_PUBLIC_NODE_URL, manifest);
+export async function setupNetwork({ ...config }: DojoConfig) {
+  const provider = new EternumProvider(katana, config.rpcUrl);
 
   const toriiClient = await torii.createClient([], {
-    rpcUrl: VITE_PUBLIC_NODE_URL,
-    toriiUrl: VITE_PUBLIC_TORII,
-    worldAddress: VITE_PUBLIC_WORLD_ADDRESS,
+    rpcUrl: config.rpcUrl,
+    toriiUrl: config.toriiUrl,
+    relayUrl: "",
+    worldAddress: config.manifest.world.address || "",
   });
 
   return {

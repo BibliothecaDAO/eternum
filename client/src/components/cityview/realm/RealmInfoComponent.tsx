@@ -70,10 +70,7 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
   const showOnMap = () => {
     setLocation("/map");
     setIsLoadingScreenEnabled(true);
-    moveCameraToWorldMapView();
-    setTimeout(() => {
-      moveCameraToRealm(Number(realm?.realmId));
-    }, 300);
+    moveCameraToRealm(Number(realm?.realmId), 0.01);
   };
 
   // TODO: get info from contract config file

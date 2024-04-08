@@ -1,7 +1,5 @@
-import NavgationComponent from "../components/navigation/NavigationBubbles";
-
 const NavigationModule = () => {
-  return <NavgationComponent />;
+  return <div></div>;
 };
 
 export default NavigationModule;

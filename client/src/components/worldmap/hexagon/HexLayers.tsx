@@ -30,6 +30,7 @@ import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
 import { useExplore } from "../../../hooks/helpers/useExplore";
 import { useTravel } from "../../../hooks/helpers/useTravel";
 import { useNotificationsStore } from "../../../hooks/store/useNotificationsStore";
+import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
@@ -44,11 +45,30 @@ type HexagonGridProps = {
   explored: Map<number, Set<number>>;
 };
 
-type BiomeComponentType = React.ComponentType<{ hexes: Hexagon[] }>;
+type BiomeComponentType = React.ComponentType<{ hexes: Hexagon[]; zOffsets?: boolean }>;
 
 interface BiomeComponentsMap {
   [key: string]: BiomeComponentType;
 }
+
+export const biomeComponents: BiomeComponentsMap = {
+  snow: SnowBiome,
+  bare: DesertBiome,
+  grassland: GrasslandBiome,
+  taiga: TaigaBiome,
+  ocean: OceanBiome,
+  deep_ocean: DeepOceanBiome,
+  temperate_desert: TemperateDesertBiome,
+  beach: BeachBiome,
+  scorched: ScorchedBiome,
+  shrubland: ShrublandBiome,
+  subtropical_desert: SubtropicalDesertBiome,
+  temperate_deciduous_forest: DeciduousForestBiome,
+  tropical_rain_forest: TropicalRainforestBiome,
+  tropical_seasonal_forest: TropicalSeasonalForestBiome,
+  tundra: TundraBiome,
+  temperate_rain_forest: TemperateRainforestBiome,
+};
 
 const color = new Color();
 
@@ -67,28 +87,6 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
       colors: [],
     };
   }, [startRow, endRow, startCol, endCol, hexData]);
-
-  const biomeComponents: BiomeComponentsMap = useMemo(
-    () => ({
-      snow: SnowBiome,
-      bare: DesertBiome,
-      grassland: GrasslandBiome,
-      taiga: TaigaBiome,
-      ocean: OceanBiome,
-      deep_ocean: DeepOceanBiome,
-      temperate_desert: TemperateDesertBiome,
-      beach: BeachBiome,
-      scorched: ScorchedBiome,
-      shrubland: ShrublandBiome,
-      subtropical_desert: SubtropicalDesertBiome,
-      temperate_deciduous_forest: DeciduousForestBiome,
-      tropical_rain_forest: TropicalRainforestBiome,
-      tropical_seasonal_forest: TropicalSeasonalForestBiome,
-      tundra: TundraBiome,
-      temperate_rain_forest: TemperateRainforestBiome,
-    }),
-    [],
-  );
 
   const biomeHexes = useMemo(() => {
     const biomesAccumulator = Object.keys(biomeComponents).reduce((acc: any, biome) => {
@@ -232,6 +230,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const setSelectedPath = useUIStore((state) => state.setSelectedPath);
   const setTravelingEntity = useUIStore((state) => state.setSelectedEntity);
   const setExploreNotification = useNotificationsStore((state) => state.setExploreNotification);
+  const { play: playExplore } = useUiSounds(soundSelector.explore);
   // refs
   const isTravelModeRef = useRef(false);
   const isExploreModeRef = useRef(false);
@@ -406,6 +405,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
       entityId: id,
       biome,
     });
+    playExplore();
     await exploreHex({
       explorerId: id,
       direction,

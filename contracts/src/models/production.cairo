@@ -5,38 +5,6 @@ use dojo::world::{IWorldDispatcher};
 use starknet::get_block_timestamp;
 use eternum::models::resources::Resource;
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
-// This exists a model per realm per resource
-
-// This is a model that represents the production of a resource
-
-// Whenever this resource is used on a realm, harvest() is called.
-
-// Whenever a resource is used on a realm we use the balance of the resource to determine how much of it is left, which is a computed value, not a fixed value. This allows us to have a dynamic balance that changes over time, and not rely on claiming of the resource. We use the computed value + the stored value to determine the total balance of the resource.
-
-// e.g resource is stone..dependents are wood andruby because they each depend on 
-// stone to be produced
-#[derive(Model, Copy, Drop, Serde)]
-struct ProductionConfig {
-    #[key]
-    resource_type: u8,
-    // production per tick
-    amount_per_tick: u128,
-    cost_resource_type_1: u8,
-    cost_resource_type_1_amount: u128,
-    cost_resource_type_2: u8,
-    cost_resource_type_2_amount: u128,
-}
-
-// a map from material to resources it produces
-// e.g if stone can be used to produce wood and ruby, 
-// material is stone, produced resources are wood and ruby
-#[derive(Model, Copy, Drop, Serde)]
-struct ProductionMaterialConfig {
-    #[key]
-    material_resource_type: u8,
-    produced_resource_type_1: u8,
-    produced_resource_type_2: u8,
-}
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Production {
