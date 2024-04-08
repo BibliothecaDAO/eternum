@@ -195,14 +195,14 @@ mod travel_systems {
             let entity_owner = get!(world, transport_id, EntityOwner);
             emit!(
                 world,
-                Travel {
+                (Event::Travel(Travel {
                     destination_coord_x: to_coord.x,
                     destination_coord_y: to_coord.y,
                     travel_time: 0,
                     travel_path: travel_path.span(),
                     realm_entity_id: entity_owner.entity_owner_id,
                     entity_id: transport_id
-                }
+                }),)
             );
         }
 
@@ -261,14 +261,14 @@ mod travel_systems {
             let entity_owner = get!(world, transport_id, EntityOwner);
             emit!(
                 world,
-                Travel {
+                (Event::Travel(Travel {
                     destination_coord_x: to_coord.x,
                     destination_coord_y: to_coord.y,
                     travel_time,
                     travel_path: array![from_coord, to_coord].span(),
                     realm_entity_id: entity_owner.entity_owner_id,
                     entity_id: transport_id
-                }
+                }),)
             );
         }
     }

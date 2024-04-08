@@ -241,7 +241,9 @@ mod resource_systems {
 
             emit!(
                 world,
-                Transfer { receiving_entity_id, sending_realm_id, sending_entity_id, resources }
+                (Event::Transfer(
+                    Transfer { receiving_entity_id, sending_realm_id, sending_entity_id, resources }
+                ),)
             );
         }
 
