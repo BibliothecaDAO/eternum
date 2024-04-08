@@ -37,7 +37,7 @@ fn setup() -> (
 ) {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
 
     let owner_fee_scaled: u128 = _0_1;
@@ -45,12 +45,12 @@ fn setup() -> (
     let bank_entity_id = bank_config_dispatcher
         .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
 
-    let bank_systems_address = deploy_system(bank_systems::TEST_CLASS_HASH);
+    let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 
     let bank_account_entity_id = bank_systems_dispatcher.open_account(bank_entity_id);
 
-    let liquidity_systems_address = deploy_system(liquidity_systems::TEST_CLASS_HASH);
+    let liquidity_systems_address = deploy_system(world, liquidity_systems::TEST_CLASS_HASH);
     let liquidity_systems_dispatcher = ILiquiditySystemsDispatcher {
         contract_address: liquidity_systems_address
     };
@@ -125,8 +125,7 @@ fn test_liquidity_remove() {
 
     liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
-    liquidity_systems_dispatcher
-        .remove(bank_entity_id, ResourceTypes::WOOD, liquidity.shares);
+    liquidity_systems_dispatcher.remove(bank_entity_id, ResourceTypes::WOOD, liquidity.shares);
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);

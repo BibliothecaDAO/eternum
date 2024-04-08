@@ -69,11 +69,9 @@ fn spawn_eternum() -> IWorldDispatcher {
 }
 
 
-fn deploy_system(class_hash_felt: felt252) -> ContractAddress {
-    let (system_contract_address, _) = deploy_syscall(
-        class_hash_felt.try_into().unwrap(), 0, array![].span(), false
-    )
-        .unwrap();
+fn deploy_system(world: IWorldDispatcher, class_hash_felt: felt252) -> ContractAddress {
+    let contract_address = world
+            .deploy_contract(class_hash_felt, class_hash_felt.try_into().unwrap());
 
-    system_contract_address
+    contract_address
 }

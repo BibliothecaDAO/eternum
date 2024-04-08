@@ -25,7 +25,7 @@ use core::array::{ArrayTrait, SpanTrait};
 fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher {
         contract_address: config_systems_address

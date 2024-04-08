@@ -14,7 +14,7 @@ const _0_1: u128 = 1844674407370955161; // 0.1
 fn test_set_labor_auction() {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     let labor_config_dispatcher = ILaborConfigDispatcher {
         contract_address: config_systems_address

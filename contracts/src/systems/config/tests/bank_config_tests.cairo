@@ -17,7 +17,7 @@ const _0_1: u128 = 1844674407370955161; // 0.1
 fn test_create_bank() {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
 
@@ -38,7 +38,7 @@ fn test_create_bank() {
 fn test_set_bank_config() {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
 

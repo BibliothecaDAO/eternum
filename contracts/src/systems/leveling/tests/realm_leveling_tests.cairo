@@ -28,7 +28,7 @@ use starknet::contract_address_const;
 fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let level_config_dispatcher = ILevelingConfigDispatcher {
         contract_address: config_systems_address
     };
@@ -67,7 +67,7 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
         );
 
     // set realm entity
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -103,7 +103,7 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
         )
     );
 
-    let leveling_systems_address = deploy_system(leveling_systems::TEST_CLASS_HASH);
+    let leveling_systems_address = deploy_system(world, leveling_systems::TEST_CLASS_HASH);
     let leveling_systems_dispatcher = ILevelingSystemsDispatcher {
         contract_address: leveling_systems_address
     };

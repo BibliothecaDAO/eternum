@@ -24,7 +24,7 @@ use core::clone::Clone;
 fn setup() -> (IWorldDispatcher, IRoadSystemsDispatcher) {
     let world = spawn_eternum();
 
-    let road_systems_address = deploy_system(road_systems::TEST_CLASS_HASH);
+    let road_systems_address = deploy_system(world, road_systems::TEST_CLASS_HASH);
     let road_systems_dispatcher = IRoadSystemsDispatcher { contract_address: road_systems_address };
 
     (world, road_systems_dispatcher)

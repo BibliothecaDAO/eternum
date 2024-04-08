@@ -26,7 +26,7 @@ fn setup() -> (IWorldDispatcher, ID, ILaborSystemsDispatcher) {
     let world = spawn_eternum();
 
     // set labor configuration entity
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let labor_config_dispatcher = ILaborConfigDispatcher {
         contract_address: config_systems_address
     };
@@ -39,7 +39,7 @@ fn setup() -> (IWorldDispatcher, ID, ILaborSystemsDispatcher) {
         );
 
     // set realm entity
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -60,7 +60,7 @@ fn setup() -> (IWorldDispatcher, ID, ILaborSystemsDispatcher) {
         // x needs to be > 470200 to get zone
         );
 
-    let labor_systems_address = deploy_system(labor_systems::TEST_CLASS_HASH);
+    let labor_systems_address = deploy_system(world, labor_systems::TEST_CLASS_HASH);
     let labor_systems_dispatcher = ILaborSystemsDispatcher {
         contract_address: labor_systems_address
     };
