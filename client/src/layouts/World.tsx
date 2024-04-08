@@ -101,9 +101,9 @@ export const World = () => {
       <LeftMiddleContainer>
         <LeftNavigationModule />
       </LeftMiddleContainer>
-      {/* <RightMiddleContainer>
-        <RightNavigationModule />
-      </RightMiddleContainer> */}
+      {/* <BottomLeftContainer>
+        <Map />
+      </BottomLeftContainer> */}
       <BottomMiddleContainer>
         <BottomNavigation />
       </BottomMiddleContainer>

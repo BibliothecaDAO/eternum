@@ -652,7 +652,7 @@ mod combat_systems {
                 .entity_owner_id;
             emit!(
                 world,
-                CombatOutcome {
+                (Event::CombatOutcome(CombatOutcome {
                     attacker_realm_entity_id,
                     target_realm_entity_id,
                     attacking_entity_ids: attacker_ids,
@@ -662,7 +662,7 @@ mod combat_systems {
                     winner,
                     damage,
                     ts,
-                }
+                }),)
             );
         }
 
@@ -794,7 +794,7 @@ mod combat_systems {
                     .entity_owner_id;
                 emit!(
                     world,
-                    CombatOutcome {
+                    (Event::CombatOutcome(CombatOutcome {
                         attacker_realm_entity_id,
                         target_realm_entity_id,
                         attacking_entity_ids: array![attacker_id].span(),
@@ -804,7 +804,7 @@ mod combat_systems {
                         winner: Winner::Attacker,
                         damage: 0,
                         ts
-                    }
+                    }),)
                 );
             } else {
                 // attack failed && target deals damage to attacker
@@ -822,7 +822,7 @@ mod combat_systems {
                     .entity_owner_id;
                 emit!(
                     world,
-                    CombatOutcome {
+                    (Event::CombatOutcome(CombatOutcome {
                         attacker_realm_entity_id,
                         target_realm_entity_id,
                         attacking_entity_ids: array![attacker_id].span(),
@@ -832,7 +832,7 @@ mod combat_systems {
                         winner: Winner::Target,
                         damage,
                         ts
-                    }
+                    }),)
                 );
             }
 

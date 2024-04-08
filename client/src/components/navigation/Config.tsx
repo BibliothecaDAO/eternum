@@ -5,7 +5,9 @@ export type OSWindows =
   | "Hyperstructures"
   | "Settings"
   | "Resources"
-  | "Military";
+  | "Military"
+  | "Entity Details"
+  | "Trade";
 
 export interface OSInterface {
   onClick: () => void;
@@ -22,3 +24,5 @@ export const hyperstructures: OSWindows = "Hyperstructures";
 export const settings: OSWindows = "Settings";
 export const resources: OSWindows = "Resources";
 export const military: OSWindows = "Military";
+export const entityDetails: OSWindows = "Entity Details";
+export const trade: OSWindows = "Trade";

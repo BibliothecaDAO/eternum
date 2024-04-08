@@ -16,16 +16,36 @@ const sizes = {
   xl: "w-14 h-14",
 };
 
-const CircleButton = ({ children, className, size, disabled, active, ...props }: CircleButtonProps) => {
+const CircleButton = ({ onClick, children, className, size, disabled, active, label, ...props }: CircleButtonProps) => {
+  const { play: hoverClick } = useUiSounds(soundSelector.hoverClick);
+
+  const setTooltip = useUIStore((state) => state.setTooltip);
+
+  const { play: playClick } = useUiSounds(soundSelector.click);
   return (
     <button
+      onMouseEnter={() => {
+        hoverClick();
+        label &&
+          setTooltip({
+            position: "bottom",
+            content: <span className="whitespace-nowrap pointer-events-none">{label}</span>,
+          });
+      }}
+      onMouseLeave={() => setTooltip(null)}
+      onClick={() => {
+        if (!disabled) {
+          onClick();
+          playClick();
+        }
+      }}
       className={clsx(
         "flex transition-all duration-150  border-gold border-2   cursor-pointer items-center justify-center   rounded-xl shadow-lg  shadow-black/50  fill-current text-gold hover:border-white/20",
         className,
         sizes[size],
         { "opacity-50 cursor-not-allowed": disabled },
         { "translate-y-0.5 border-white/20": active },
-        { "hover:-translate-y-0.5 ": !active },
+        { " ": !active },
       )}
       style={{
         backgroundImage: active

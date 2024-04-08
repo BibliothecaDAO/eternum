@@ -1,0 +1,15 @@
+kind = "DojoModel"
+class_hash = "0x4b6699a57804f0fc7e696ed0cf27f665ec79c6d342f44589f869836d0855c45"
+original_class_hash = "0x4b6699a57804f0fc7e696ed0cf27f665ec79c6d342f44589f869836d0855c45"
+abi = "manifests/release/abis/base/models/eternum_models_combat_defence.json"
+name = "eternum::models::combat::defence"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "value"
+type = "u128"
+key = false
