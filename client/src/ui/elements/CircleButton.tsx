@@ -21,7 +21,7 @@ const sizes = {
 };
 
 const CircleButton = ({ onClick, children, className, size, disabled, active, label, ...props }: CircleButtonProps) => {
-  const { play: hoverClick, stop } = useUiSounds(soundSelector.hoverClick);
+  const { play: hoverClick } = useUiSounds(soundSelector.hoverClick);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -33,7 +33,7 @@ const CircleButton = ({ onClick, children, className, size, disabled, active, la
         label &&
           setTooltip({
             position: "bottom",
-            content: <span className="whitespace-nowrap">{label}</span>,
+            content: <span className="whitespace-nowrap pointer-events-none">{label}</span>,
           });
       }}
       onMouseLeave={() => setTooltip(null)}
