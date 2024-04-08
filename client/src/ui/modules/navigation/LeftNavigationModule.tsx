@@ -9,6 +9,7 @@ import { ReactComponent as CrossSwords } from "@/assets/icons/common/cross-sword
 import { ReactComponent as PickAxe } from "@/assets/icons/common/pick-axe.svg";
 import { ReactComponent as LeaderBoard } from "@/assets/icons/common/leaderboard.svg";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
+import { ReactComponent as Donkey } from "@/assets/icons/units/donkey-circle.svg";
 import {
   banks,
   entityDetails,
@@ -18,6 +19,7 @@ import {
   military,
   resources,
   settings,
+  trade,
 } from "../../components/navigation/Config";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useLocation } from "wouter";
@@ -32,6 +34,7 @@ import { HyperStructures } from "../hyperstructures/Hyperstructures";
 import { Resources } from "@/ui/modules/resources/Resources";
 import { Military } from "@/ui/modules/military/Military";
 import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
+import { Trading } from "../trade/Trading";
 
 export const LeftNavigationModule = () => {
   const { togglePopup, closeAllPopups, openAllPopups, isPopupOpen } = useUIStore();
@@ -58,17 +61,17 @@ export const LeftNavigationModule = () => {
     {
       button: (
         <CircleButton label={military} active={isPopupOpen(military)} size="lg" onClick={() => togglePopup(military)}>
-          <CrossSwords className="h-5 fill-current" />
+          <CrossSwords className="h-6 fill-current" />
         </CircleButton>
       ),
     },
-    // {
-    //   button: (
-    //     <CircleButton label={eventLog} active={isPopupOpen(eventLog)} size="lg" onClick={() => togglePopup(eventLog)}>
-    //       <Pen className="w-7 fill-current" />
-    //     </CircleButton>
-    //   ),
-    // },
+    {
+      button: (
+        <CircleButton label={trade} active={isPopupOpen(trade)} size="lg" onClick={() => togglePopup(trade)}>
+          <Donkey className="w-9 fill-current" />
+        </CircleButton>
+      ),
+    },
     {
       button: (
         <CircleButton
@@ -182,6 +185,7 @@ export const LeftNavigationModule = () => {
       <Resources />
       <Military />
       <EntityDetails />
+      <Trading />
     </>
   );
 };
