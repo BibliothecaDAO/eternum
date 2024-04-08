@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "@/ui/elements/tab";
 
-export const HyperstructurePanel = ({ entity }: any) => {
+import { TroopSelect } from "../military/TroopSelect";
+
+export const ArmyPanel = ({ entity }: any) => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const tabs = useMemo(
@@ -10,19 +12,19 @@ export const HyperstructurePanel = ({ entity }: any) => {
         key: "all",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Status</div>
+            <div>Armies</div>
           </div>
         ),
         component: <></>,
       },
       {
-        key: "all",
+        key: "Create",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Send Resources</div>
+            <div>New Army</div>
           </div>
         ),
-        component: <></>,
+        component: <TroopSelect />,
       },
     ],
     [selectedTab],
@@ -32,8 +34,6 @@ export const HyperstructurePanel = ({ entity }: any) => {
     <div>
       <div className="flex justify-between">
         <h3>{entity.name}</h3>
-
-        <div>Owner: 0x..420</div>
       </div>
 
       <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">

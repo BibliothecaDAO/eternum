@@ -29,6 +29,7 @@ const CircleButton = ({ onClick, children, className, size, disabled, active, la
   return (
     <button
       onMouseEnter={() => {
+        hoverClick();
         label &&
           setTooltip({
             position: "bottom",
@@ -48,7 +49,7 @@ const CircleButton = ({ onClick, children, className, size, disabled, active, la
         sizes[size],
         { "opacity-50 cursor-not-allowed": disabled },
         { "translate-y-0.5 border-white/20": active },
-        { "hover:-translate-y-0.5 ": !active },
+        { " ": !active },
       )}
       style={{
         backgroundImage: active

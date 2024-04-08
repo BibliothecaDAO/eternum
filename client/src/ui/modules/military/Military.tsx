@@ -5,6 +5,14 @@ import { EntityList } from "@/ui/components/list/EntityList";
 import { Tabs } from "@/ui/elements/tab";
 import { useMemo, useState } from "react";
 import { ArmyList } from "@/ui/components/military/ArmyList";
+import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
+
+// This would be All Entities that can create Troops
+const exampleEntities = [
+  { id: 1, name: "Stolsi" },
+  { id: 2, name: "Settlement 1" },
+  { id: 3, name: "Settlement 2" },
+];
 
 export const Military = () => {
   const { togglePopup } = useUIStore();
@@ -20,7 +28,9 @@ export const Military = () => {
             <div>Settlements</div>
           </div>
         ),
-        component: <EntityList />,
+        component: (
+          <EntityList list={exampleEntities} title="armies" panel={({ entity }) => <ArmyPanel entity={entity} />} />
+        ),
       },
       {
         key: "mine",
@@ -37,8 +47,6 @@ export const Military = () => {
 
   return (
     <OSWindow width="600px" onClick={() => togglePopup(military)} show={isOpen} title={military}>
-      {/* COMPONENTS GO HERE */}
-
       <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
         <Tabs.List>
           {tabs.map((tab, index) => (
