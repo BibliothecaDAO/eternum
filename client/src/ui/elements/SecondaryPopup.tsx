@@ -108,7 +108,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      " items-center relative cursor-move -mb-[1px] z-30 bg-gray p-2 rounded-t-[4px] border-t border-x border-gold text-gold w-full whitespace-nowrap handle flex justify-between border-b uppercase ",
+      " items-center relative cursor-move -mb-[1px] z-30 p-2 rounded-t-xl border-t border-x  w-full whitespace-nowrap handle flex justify-between border-b uppercase bg-black/70 text-2xl hover:bg-black",
       className,
     )}
   >

@@ -8,7 +8,7 @@ const dir = "/sound/";
 
 export const soundSelector = {
   hoverClick: "ui/ui-click-1.wav",
-  click: "ui/click.mp3",
+  click: "ui/click-2.wav",
   sign: "ui/sign.mp3",
   harvest: "ui/harvest.mp3",
   fly: "ui/whoosh.mp3",

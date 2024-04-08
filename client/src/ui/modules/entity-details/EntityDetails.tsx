@@ -9,7 +9,7 @@ export const EntityDetails = () => {
   const isOpen = useUIStore((state) => state.isPopupOpen(entityDetails));
 
   return (
-    <OSWindow onClick={() => togglePopup(entityDetails)} show={isOpen} title={entityDetails}>
+    <OSWindow width="400px" onClick={() => togglePopup(entityDetails)} show={isOpen} title={entityDetails}>
       <HexagonInformationPanel />
     </OSWindow>
   );

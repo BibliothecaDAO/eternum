@@ -149,7 +149,7 @@ export const LeftNavigationModule = () => {
 
   return (
     <>
-      <div className=" p-1">
+      <div className=" p-2">
         <CircleButton
           onClick={() => {
             if (location !== "/map") {
@@ -164,15 +164,15 @@ export const LeftNavigationModule = () => {
           }}
           size="md"
         >
-          <WorldIcon className="fill-gold" />
+          <WorldIcon className="fill-gold w-7" />
         </CircleButton>
       </div>
-      <div className="flex flex-col bg-brown pr-2 rounded-r-3xl border-r-2 border-y-2 space-y-2 border-gold py-2">
+      <div className="flex flex-col ml-1 pr-2 rounded-r-3xl  space-y-2 py-2">
         {navigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
       </div>
-      <div className="flex flex-col rounded-r-3xl space-y-2 py-3 px-2">
+      <div className="flex flex-col rounded-r-3xl space-y-2 py-2 px-3">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
