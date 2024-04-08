@@ -1,5 +1,4 @@
-import useBlockchainStore from "../hooks/store/useBlockchainStore";
-import { TIME_PER_TICK } from "../components/network/EpochCountdown";
+import useBlockchainStore, { TIME_PER_TICK } from "../hooks/store/useBlockchainStore";
 
 export const TopMiddleNavigation = () => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
