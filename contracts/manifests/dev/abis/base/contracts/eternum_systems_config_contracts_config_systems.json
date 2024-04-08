@@ -627,26 +627,6 @@
     "interface_name": "eternum::systems::config::interface::IBankConfig"
   },
   {
-    "type": "struct",
-    "name": "core::array::Span::<(core::integer::u8, core::array::Span::<(core::integer::u8, core::integer::u128)>)>",
-    "members": [
-      {
-        "name": "snapshot",
-        "type": "@core::array::Array::<(core::integer::u8, core::array::Span::<(core::integer::u8, core::integer::u128)>)>"
-      }
-    ]
-  },
-  {
-    "type": "struct",
-    "name": "core::array::Span::<(core::integer::u8, core::integer::u32)>",
-    "members": [
-      {
-        "name": "snapshot",
-        "type": "@core::array::Array::<(core::integer::u8, core::integer::u32)>"
-      }
-    ]
-  },
-  {
     "type": "interface",
     "name": "eternum::systems::config::interface::IBankConfig",
     "items": [
@@ -659,8 +639,8 @@
             "type": "eternum::models::position::Coord"
           },
           {
-            "name": "swap_cost_resources",
-            "type": "core::array::Span::<(core::integer::u8, core::array::Span::<(core::integer::u8, core::integer::u128)>)>"
+            "name": "owner_fee_scaled",
+            "type": "core::integer::u128"
           }
         ],
         "outputs": [
@@ -672,26 +652,14 @@
       },
       {
         "type": "function",
-        "name": "set_bank_auction",
+        "name": "set_bank_config",
         "inputs": [
           {
-            "name": "bank_id",
+            "name": "lords_cost",
             "type": "core::integer::u128"
           },
           {
-            "name": "bank_swap_resource_cost_keys",
-            "type": "core::array::Span::<(core::integer::u8, core::integer::u32)>"
-          },
-          {
-            "name": "decay_constant",
-            "type": "core::integer::u128"
-          },
-          {
-            "name": "per_time_unit",
-            "type": "core::integer::u128"
-          },
-          {
-            "name": "price_update_interval",
+            "name": "lp_fee_scaled",
             "type": "core::integer::u128"
           }
         ],

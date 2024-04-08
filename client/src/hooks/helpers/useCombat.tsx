@@ -1,9 +1,9 @@
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import { DESTINATION_TYPE, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
-import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys } from "../../ui/utils/utils";
 import { CombatInfo } from "@bibliothecadao/eternum";
 import useBlockchainStore from "../store/useBlockchainStore";
 
@@ -98,7 +98,7 @@ export function useCombat() {
     }
   };
 
-  const getDefenceOnPosition = (position: Position): CombatInfo | undefined => {
+  const getWatchTowerOnPosition = (position: Position): CombatInfo | undefined => {
     const { x, y } = position;
     const realmEntityIds = Array.from(runQuery([HasValue(Position, { x, y }), Has(TownWatch)]));
     const watchTower = realmEntityIds.length === 1 ? getComponentValue(TownWatch, realmEntityIds[0]) : undefined;
@@ -293,7 +293,7 @@ export function useCombat() {
   return {
     getEntityWatchTowerId,
     getDefenceOnRealm,
-    getDefenceOnPosition,
+    getDefenceOnPosition: getWatchTowerOnPosition,
     getRealmRaidersEntities,
     getRealmRaidersIds,
     useRealmRaiders,

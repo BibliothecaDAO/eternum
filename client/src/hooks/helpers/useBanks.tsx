@@ -1,14 +1,14 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import { Position, Resource } from "@bibliothecadao/eternum";
-import { HexPositions, getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
+import { HexPositions, getEntityIdFromKeys, getUIPositionFromColRow } from "../../ui/utils/utils";
 import banks from "../../data/banks.json";
-import { computeCoefficient, getLordsAmountFromBankAuction } from "../../components/worldmap/banks/utils";
+import { computeCoefficient, getLordsAmountFromBankAuction } from "../../ui/components/worldmap/banks/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
 import { AuctionInterface, BankInterface, BankStaticInterface } from "@bibliothecadao/eternum";
-import bankHexPositions from "../../geodata/hex/bankHexPositions.json";
+import bankHexPositions from "../../data/geodata/hex/bankHexPositions.json";
 
 export const targetPrices = {
   254: 10,

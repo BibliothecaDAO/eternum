@@ -181,7 +181,11 @@
         "type": "core::integer::u8"
       },
       {
+<<<<<<< HEAD
         "name": "amount",
+=======
+        "name": "amount_per_tick",
+>>>>>>> lazy-production-client
         "type": "core::integer::u128"
       },
       {
@@ -226,4 +230,8 @@
     "kind": "enum",
     "variants": []
   }
+<<<<<<< HEAD
 ]
+=======
+]
+>>>>>>> lazy-production-client

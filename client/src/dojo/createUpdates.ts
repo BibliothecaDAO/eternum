@@ -6,7 +6,7 @@ import {
   TRANSFER_EVENT,
   TRAVEL_EVENT,
 } from "@bibliothecadao/eternum";
-import { numberToHex } from "../utils/utils";
+import { numberToHex } from "../ui/utils/utils";
 
 export const createUpdates = async () => {
   const eventUpdates = {

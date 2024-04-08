@@ -366,6 +366,15 @@ struct ProductionOutput {
     output_resource_type: u8
 }
 
+#[derive(Model, Copy, Drop, Serde)]
+struct BankConfig {
+    #[key]
+    config_id: u128,
+    lords_cost: u128,
+    lp_fee_scaled: u128,
+}
+
+
 
 #[cfg(test)]
 mod tests {

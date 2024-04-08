@@ -236,3 +236,24 @@ export interface CreateLaborBuildingProps extends SystemSigner {
 export interface DestroyLaborBuildingProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
 }
+
+export interface CreateBuildingProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  building_coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+  building_category: {
+    category: num.BigNumberish;
+    subcategory: num.BigNumberish;
+  };
+  produce_resource_type: num.BigNumberish;
+}
+
+export interface DestroyBuildingProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  building_coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+}

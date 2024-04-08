@@ -1,4 +1,4 @@
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import useRealmStore from "../store/useRealmStore";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

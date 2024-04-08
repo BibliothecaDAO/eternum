@@ -4,12 +4,11 @@ mod config_systems {
 
     use eternum::models::combat::TownWatch;
     use eternum::models::labor_auction::LaborAuction;
-    use eternum::models::bank::{Bank, BankSwapResourceCost, BankAuction};
     use eternum::models::config::{
         LaborCostResources, LaborCostAmount, LaborConfig, CapacityConfig, RoadConfig, SpeedConfig,
         TravelConfig, WeightConfig, WorldConfig, SoldierConfig, HealthConfig, AttackConfig,
         DefenceConfig, CombatConfig, LevelingConfig, RealmFreeMintConfig, LaborBuildingsConfig,
-        LaborBuildingCost, MapExploreConfig, TickConfig, ProductionConfig, ProductionInput, ProductionOutput
+        LaborBuildingCost, MapExploreConfig, TickConfig, ProductionConfig, ProductionInput, ProductionOutput, BankConfig
     };
 
     use eternum::systems::config::interface::{
@@ -27,6 +26,7 @@ mod config_systems {
     use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::resources::{ResourceCost, DetachedResource};
     use eternum::models::position::{Position, PositionTrait, Coord};
+    use eternum::models::bank::bank::{Bank};
 
 
     fn assert_caller_is_admin(world: IWorldDispatcher) {
@@ -642,116 +642,25 @@ impl ProductionConfigImpl of IProductionConfig<ContractState> {
     #[abi(embed_v0)]
     impl BankConfigImpl of IBankConfig<ContractState> {
         fn create_bank(
-            world: IWorldDispatcher,
-            coord: Coord,
-            swap_cost_resources: Span<(u8, Span<(u8, u128)>)>,
+            self: @ContractState, world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128,
         ) -> ID {
-            let bank_id: ID = world.uuid().into();
-
-            // add swap cost
-            let mut swap_cost_resources = swap_cost_resources;
-
-            let mut index = 0;
-            loop {
-                match swap_cost_resources.pop_front() {
-                    Option::Some((
-                        exchanged_resource_type, swap_resources
-                    )) => {
-                        let swap_resource_cost_id: ID = world.uuid().into();
-                        let swap_resources_count = (*swap_resources).len();
-
-                        let mut jndex = 0;
-                        let mut swap_resources = *swap_resources;
-                        loop {
-                            match swap_resources.pop_front() {
-                                Option::Some((
-                                    resource_type, resource_amount
-                                )) => {
-                                    assert(*resource_amount > 0, 'amount must not be 0');
-
-                                    set!(
-                                        world,
-                                        (ResourceCost {
-                                            entity_id: swap_resource_cost_id,
-                                            index: jndex,
-                                            resource_type: *resource_type,
-                                            amount: *resource_amount
-                                        })
-                                    );
-
-                                    jndex += 1;
-                                },
-                                Option::None => { break; }
-                            };
-                        };
-
-                        set!(
-                            world,
-                            (BankSwapResourceCost {
-                                bank_gives_resource_type: *exchanged_resource_type,
-                                index,
-                                resource_cost_id: swap_resource_cost_id,
-                                resource_cost_count: swap_resources_count
-                            })
-                        );
-
-                        index += 1;
-                    },
-                    Option::None => { break; }
-                }
-            };
+            let bank_entity_id: ID = world.uuid().into();
 
             set!(
                 world,
                 (
-                    Bank { entity_id: bank_id, exists: true },
-                    Position { entity_id: bank_id, x: coord.x, y: coord.y }
+                    Bank { entity_id: bank_entity_id, owner_fee_scaled, exists: true },
+                    Position { entity_id: bank_entity_id, x: coord.x, y: coord.y }
                 )
             );
-            bank_id
+            bank_entity_id
         }
 
 
-        fn set_bank_auction(
-            world: IWorldDispatcher,
-            bank_id: u128,
-            bank_swap_resource_cost_keys: Span<(u8, u32)>,
-            decay_constant: u128,
-            per_time_unit: u128,
-            price_update_interval: u128,
+        fn set_bank_config(
+            self: @ContractState, world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128
         ) {
-            let start_time = starknet::get_block_timestamp();
-
-            let bank = get!(world, (bank_id), Bank);
-            assert(bank.exists == true, 'no bank');
-
-            let mut index = 0;
-            loop {
-                if index == bank_swap_resource_cost_keys.len() {
-                    break;
-                }
-
-                let (bank_gives_resource_type, bank_swap_resource_cost_index) =
-                    *bank_swap_resource_cost_keys
-                    .at(index);
-
-                set!(
-                    world,
-                    (BankAuction {
-                        bank_id,
-                        bank_gives_resource_type,
-                        bank_swap_resource_cost_index,
-                        decay_constant_mag: decay_constant,
-                        decay_constant_sign: false,
-                        per_time_unit,
-                        start_time,
-                        sold: 0,
-                        price_update_interval,
-                    })
-                );
-
-                index += 1;
-            };
+            set!(world, (BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_scaled, }));
         }
     }
 

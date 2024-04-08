@@ -661,6 +661,15 @@
           },
           {
             "name": "price_update_interval",
+        "name": "set_bank_config",
+        "inputs": [
+          {
+            "name": "bank_id",
+            "name": "lords_cost",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "lp_fee_scaled",
             "type": "core::integer::u128"
           }
         ],

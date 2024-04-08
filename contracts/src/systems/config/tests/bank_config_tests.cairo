@@ -5,7 +5,7 @@ use eternum::models::resources::{ResourceCost, Resource};
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{IBankConfigDispatcher, IBankConfigDispatcherTrait};
 use eternum::utils::testing::{spawn_eternum, deploy_system};
-use eternum::constants::ResourceTypes;
+use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -13,7 +13,6 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 const _0_1: u128 = 1844674407370955161; // 0.1
 
 #[test]
-#[available_gas(3000000000000)]
 fn test_create_bank() {
     let world = spawn_eternum();
 
@@ -36,7 +35,7 @@ fn test_create_bank() {
                 .span()
         );
 
-    let bank_position = get!(world, bank_id, Position);
+    let bank_position = get!(world, bank_entity_id, Position);
     assert(bank_position.x == 30, 'wrong x position');
     assert(bank_position.y == 800, 'wrong y position');
 
@@ -66,8 +65,7 @@ fn test_create_bank() {
 }
 
 #[test]
-#[available_gas(3000000000000)]
-fn test_set_bank_auction() {
+fn test_set_bank_config() {
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);

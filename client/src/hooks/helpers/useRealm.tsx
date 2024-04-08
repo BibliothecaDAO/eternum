@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
-import { getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";
+import { useDojo } from "../context/DojoContext";
+import { getEntityIdFromKeys, hexToAscii, numberToHex } from "../../ui/utils/utils";
 import { getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
-import { unpackResources } from "../../utils/packedData";
+import { unpackResources } from "../../ui/utils/packedData";
 import { useEntityQuery } from "@dojoengine/react";
 import { RealmInterface } from "@bibliothecadao/eternum";
-import { getRealm, getRealmNameById } from "../../utils/realms";
+import { getRealm, getRealmNameById } from "../../ui/utils/realms";
 
 export type RealmExtended = RealmInterface & {
   entity_id: bigint;
@@ -20,6 +20,11 @@ export function useRealm() {
       components: { Realm, AddressName, Owner },
     },
   } = useDojo();
+
+  const isRealmIdSettled = (realmId: bigint) => {
+    const entityIds = runQuery([HasValue(Realm, { realm_id: realmId })]);
+    return entityIds.size > 0;
+  };
 
   const getNextRealmIdForOrder = (order: number) => {
     const orderName = getOrderName(order);
@@ -93,13 +98,20 @@ export function useRealm() {
     }
   };
 
+  const isEntityIdRealm = (entityId: bigint) => {
+    const realm = getComponentValue(Realm, getEntityIdFromKeys([entityId]));
+    return realm ? true : false;
+  };
+
   return {
+    isRealmIdSettled,
     getNextRealmIdForOrder,
     getAddressName,
     getRealmAddressName,
     getRealmIdForOrderAfter,
     getRealmIdFromRealmEntityId,
     getRealmEntityIdFromRealmId,
+    isEntityIdRealm,
   };
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import useRealmStore from "../store/useRealmStore";
 import { useLevel } from "../helpers/useLevel";
@@ -19,7 +19,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCombat } from "../helpers/useCombat";
 import { useBanks } from "../helpers/useBanks";
 // import { useHyperstructure } from "../helpers/useHyperstructure";
-import { parseCombatEvent } from "../../utils/combat";
+import { parseCombatEvent } from "../../ui/utils/combat";
 import useUIStore from "../store/useUIStore";
 import { Subscription } from "rxjs";
 
