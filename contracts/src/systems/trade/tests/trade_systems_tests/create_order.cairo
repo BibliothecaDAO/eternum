@@ -47,7 +47,7 @@ use core::array::{ArrayTrait, SpanTrait};
 fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     // set travel configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }
@@ -62,7 +62,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
         .set_weight_config(ResourceTypes::GOLD.into(), 200);
 
     // create maker's realm
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -115,7 +115,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
     // create two free transport unit for the realm
-    let transport_unit_systems_address = deploy_system(transport_unit_systems::TEST_CLASS_HASH);
+    let transport_unit_systems_address = deploy_system(world, transport_unit_systems::TEST_CLASS_HASH);
     let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
         contract_address: transport_unit_systems_address
     };
@@ -128,13 +128,13 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     ];
 
     // create maker caravan
-    let caravan_systems_address = deploy_system(caravan_systems::TEST_CLASS_HASH);
+    let caravan_systems_address = deploy_system(world, caravan_systems::TEST_CLASS_HASH);
     let caravan_systems_dispatcher = ICaravanSystemsDispatcher {
         contract_address: caravan_systems_address
     };
     let maker_transport_id = caravan_systems_dispatcher.create(transport_units);
 
-    let trade_systems_address = deploy_system(trade_systems::TEST_CLASS_HASH);
+    let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
     let trade_systems_dispatcher = ITradeSystemsDispatcher {
         contract_address: trade_systems_address
     };
@@ -304,7 +304,7 @@ fn test_transport_in_transit() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('not enough capacity', 'ENTRYPOINT_FAILED'))]
 fn test_transport_not_enough_capacity() {
-    let (_, maker_id, _, taker_id, trade_systems_dispatcher) = setup();
+    let (world, maker_id, _, taker_id, trade_systems_dispatcher) = setup();
 
     //          note
     // all previous tests passed because they didn't have 
@@ -312,12 +312,12 @@ fn test_transport_not_enough_capacity() {
     // capacity is unlimited
 
     // set capacity for transport to a very low amount
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     ICapacityConfigDispatcher { contract_address: config_systems_address }
         .set_capacity_config(FREE_TRANSPORT_ENTITY_TYPE, 1);
 
     // create two free transport unit for maker realm
-    let transport_unit_systems_address = deploy_system(transport_unit_systems::TEST_CLASS_HASH);
+    let transport_unit_systems_address = deploy_system(world, transport_unit_systems::TEST_CLASS_HASH);
     let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
         contract_address: transport_unit_systems_address
     };
@@ -333,7 +333,7 @@ fn test_transport_not_enough_capacity() {
     // create maker caravan
 
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
-    let caravan_systems_address = deploy_system(caravan_systems::TEST_CLASS_HASH);
+    let caravan_systems_address = deploy_system(world, caravan_systems::TEST_CLASS_HASH);
     let caravan_systems_dispatcher = ICaravanSystemsDispatcher {
         contract_address: caravan_systems_address
     };

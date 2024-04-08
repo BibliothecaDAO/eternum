@@ -40,7 +40,7 @@ fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
     let world = spawn_eternum();
 
     // set realm entity
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -71,7 +71,7 @@ fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
             position.clone(),
         );
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     // set speed configuration 
     ITransportConfigDispatcher { contract_address: config_systems_address }
@@ -85,7 +85,7 @@ fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
     ITransportConfigDispatcher { contract_address: config_systems_address }
         .set_travel_config(5); // 5 free transport per city
 
-    let transport_unit_systems_address = deploy_system(transport_unit_systems::TEST_CLASS_HASH);
+    let transport_unit_systems_address = deploy_system(world, transport_unit_systems::TEST_CLASS_HASH);
     let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
         contract_address: transport_unit_systems_address
     };

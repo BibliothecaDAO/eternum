@@ -54,7 +54,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     // set initial food resources
     let initial_resources = array![
@@ -85,7 +85,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     set!(world, (tick_config));
 
     // create realm
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -152,7 +152,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     );
 
     // deploy map systems
-    let map_systems_address = deploy_system(map_systems::TEST_CLASS_HASH);
+    let map_systems_address = deploy_system(world, map_systems::TEST_CLASS_HASH);
     let map_systems_dispatcher = IMapSystemsDispatcher { contract_address: map_systems_address };
 
     (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher)
@@ -203,7 +203,7 @@ fn test_map_explore() {
 #[test]
 #[should_panic(expected: ("max moves per tick exceeded", 'ENTRYPOINT_FAILED'))]
 fn test_map_explore__ensure_explorer_cant_hex_travel_till_next_tick() {
-    let (_, _, realm_army_unit_id, map_systems_dispatcher) = setup();
+    let (world, _, realm_army_unit_id, map_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
 
@@ -214,7 +214,7 @@ fn test_map_explore__ensure_explorer_cant_hex_travel_till_next_tick() {
     map_systems_dispatcher.explore(realm_army_unit_id, explore_tile_direction);
 
     // deploy travel systems
-    let travel_systems_address = deploy_system(travel_systems::TEST_CLASS_HASH);
+    let travel_systems_address = deploy_system(world, travel_systems::TEST_CLASS_HASH);
     let travel_systems_dispatcher = ITravelSystemsDispatcher {
         contract_address: travel_systems_address
     };

@@ -31,7 +31,7 @@ const _0_1: u128 = 1844674407370955161; // 0.1
 fn setup(labor_cost_resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystemsDispatcher) {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let labor_config_dispatcher = ILaborConfigDispatcher {
         contract_address: config_systems_address
     };
@@ -59,7 +59,7 @@ fn setup(labor_cost_resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystems
     labor_config_dispatcher.set_labor_auction(decay_constant, per_time_unit, price_update_interval);
 
     // set realm entity
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -123,7 +123,7 @@ fn setup(labor_cost_resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystems
         })
     );
 
-    let labor_systems_address = deploy_system(labor_systems::TEST_CLASS_HASH);
+    let labor_systems_address = deploy_system(world, labor_systems::TEST_CLASS_HASH);
     let labor_systems_dispatcher = ILaborSystemsDispatcher {
         contract_address: labor_systems_address
     };

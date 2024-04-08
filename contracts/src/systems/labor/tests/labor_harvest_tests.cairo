@@ -39,7 +39,7 @@ fn test_harvest_labor_non_food() {
     let world = spawn_eternum();
 
     // set labor configuration entity
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let labor_config_dispatcher = ILaborConfigDispatcher {
         contract_address: config_systems_address
     };
@@ -51,7 +51,7 @@ fn test_harvest_labor_non_food() {
         .set_labor_config(base_labor_units, base_resources_per_cycle, base_food_per_cycle);
 
     // set realm entity
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -73,7 +73,7 @@ fn test_harvest_labor_non_food() {
 
         );
 
-    let labor_systems_address = deploy_system(labor_systems::TEST_CLASS_HASH);
+    let labor_systems_address = deploy_system(world, labor_systems::TEST_CLASS_HASH);
     let labor_systems_dispatcher = ILaborSystemsDispatcher {
         contract_address: labor_systems_address
     };
@@ -135,7 +135,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
     let world = spawn_eternum();
 
     // set labor configuration entity
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let labor_config_dispatcher = ILaborConfigDispatcher {
         contract_address: config_systems_address
     };
@@ -147,7 +147,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
         .set_labor_config(base_labor_units, base_resources_per_cycle, base_food_per_cycle);
 
     // set realm entity
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -170,7 +170,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
 
         );
 
-    let labor_systems_address = deploy_system(labor_systems::TEST_CLASS_HASH);
+    let labor_systems_address = deploy_system(world, labor_systems::TEST_CLASS_HASH);
     let labor_systems_dispatcher = ILaborSystemsDispatcher {
         contract_address: labor_systems_address
     };
@@ -267,7 +267,7 @@ fn test_harvest_labor_food() {
     let world = spawn_eternum();
 
     // set labor configuration entity
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let labor_config_dispatcher = ILaborConfigDispatcher {
         contract_address: config_systems_address
     };
@@ -279,7 +279,7 @@ fn test_harvest_labor_food() {
         .set_labor_config(base_labor_units, base_resources_per_cycle, base_food_per_cycle);
 
     // set realm entity
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -301,7 +301,7 @@ fn test_harvest_labor_food() {
 
         );
 
-    let labor_systems_address = deploy_system(labor_systems::TEST_CLASS_HASH);
+    let labor_systems_address = deploy_system(world, labor_systems::TEST_CLASS_HASH);
     let labor_systems_dispatcher = ILaborSystemsDispatcher {
         contract_address: labor_systems_address
     };
@@ -364,7 +364,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
     let world = spawn_eternum();
 
     // set labor configuration entity
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let labor_config_dispatcher = ILaborConfigDispatcher {
         contract_address: config_systems_address
     };
@@ -376,7 +376,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
         .set_labor_config(base_labor_units, base_resources_per_cycle, base_food_per_cycle);
 
     // set realm entity
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -399,7 +399,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
 
         );
 
-    let labor_systems_address = deploy_system(labor_systems::TEST_CLASS_HASH);
+    let labor_systems_address = deploy_system(world, labor_systems::TEST_CLASS_HASH);
     let labor_systems_dispatcher = ILaborSystemsDispatcher {
         contract_address: labor_systems_address
     };

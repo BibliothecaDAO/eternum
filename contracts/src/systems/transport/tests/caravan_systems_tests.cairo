@@ -44,7 +44,7 @@ fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher, u128) {
     let world = spawn_eternum();
 
     // set realm entity
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -75,7 +75,7 @@ fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher, u128) {
             position.clone(),
         );
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     // set speed configuration 
     ITransportConfigDispatcher { contract_address: config_systems_address }
@@ -96,7 +96,7 @@ fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher, u128) {
         .set_travel_config(5); // 5 free transport per city
 
     // create two free transport unit for the realm
-    let transport_unit_systems_address = deploy_system(transport_unit_systems::TEST_CLASS_HASH);
+    let transport_unit_systems_address = deploy_system(world, transport_unit_systems::TEST_CLASS_HASH);
     let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
         contract_address: transport_unit_systems_address
     };
@@ -109,7 +109,7 @@ fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher, u128) {
     ];
 
     // deploy caravan systems
-    let caravan_systems_address = deploy_system(caravan_systems::TEST_CLASS_HASH);
+    let caravan_systems_address = deploy_system(world, caravan_systems::TEST_CLASS_HASH);
     let caravan_systems_dispatcher = ICaravanSystemsDispatcher {
         contract_address: caravan_systems_address
     };

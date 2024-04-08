@@ -42,24 +42,24 @@ fn setup(
 ) {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
 
     let bank_entity_id = bank_config_dispatcher
         .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
     bank_config_dispatcher.set_bank_config(0, lp_fee_scaled);
 
-    let bank_systems_address = deploy_system(bank_systems::TEST_CLASS_HASH);
+    let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 
     let bank_account_entity_id = bank_systems_dispatcher.open_account(bank_entity_id);
 
-    let liquidity_systems_address = deploy_system(liquidity_systems::TEST_CLASS_HASH);
+    let liquidity_systems_address = deploy_system(world, liquidity_systems::TEST_CLASS_HASH);
     let liquidity_systems_dispatcher = ILiquiditySystemsDispatcher {
         contract_address: liquidity_systems_address
     };
 
-    let swap_systems_address = deploy_system(swap_systems::TEST_CLASS_HASH);
+    let swap_systems_address = deploy_system(world, swap_systems::TEST_CLASS_HASH);
     let swap_systems_dispatcher = ISwapSystemsDispatcher { contract_address: swap_systems_address };
 
     // add some resources in the bank account

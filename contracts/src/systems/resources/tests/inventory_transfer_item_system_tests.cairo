@@ -36,7 +36,7 @@ mod inventory_transfer_system_tests {
     fn setup() -> (IWorldDispatcher, u128, u128, u128, IInventorySystemsDispatcher) {
         let world = spawn_eternum();
 
-        let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+        let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
         // set weight configuration for stone
         IWeightConfigDispatcher { contract_address: config_systems_address }
@@ -46,7 +46,7 @@ mod inventory_transfer_system_tests {
         IWeightConfigDispatcher { contract_address: config_systems_address }
             .set_weight_config(ResourceTypes::GOLD.into(), 200);
 
-        let resource_systems_address = deploy_system(resource_systems::TEST_CLASS_HASH);
+        let resource_systems_address = deploy_system(world, resource_systems::TEST_CLASS_HASH);
 
         let inventory_systems_dispatcher = IInventorySystemsDispatcher {
             contract_address: resource_systems_address
