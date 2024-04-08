@@ -4,7 +4,8 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import useUIStore from "../../../hooks/store/useUIStore";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat } from "../../utils/utils";
+import { currencyFormat, getEntityIdFromKeys } from "../../utils/utils";
+import { useComponentValue } from "@dojoengine/react";
 
 export const EntityResourceTable = () => {
   return (
@@ -50,9 +51,6 @@ export const ResourceComponent = ({
   const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  // const [productivity, setProductivity] = useState<number>(0);
-
-  // const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
   // const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
@@ -65,7 +63,7 @@ export const ResourceComponent = ({
 
   // const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
 
-  // const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
+  const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
 
   // useEffect(() => {
   //   let laborLeft: number = 0;
@@ -97,7 +95,7 @@ export const ResourceComponent = ({
       />
       <div className="flex space-x-3 items-center justify-center">
         <div className="font-bold">{findResourceById(resourceId)?.trait}</div>
-        <div>9999</div>
+        <div>{resource && resource?.balance.toString()}</div>
         {/* <div>{currencyFormat(resource ? Number(resource.balance) : 0, 2)}</div> */}
       </div>
       {/* <div className="flex text-xs">

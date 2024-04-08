@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useTexture } from "@react-three/drei";
-import BuildArea from "../../components/cityview/hexception/BuildArea";
+import BuildArea from "../../components/construction/BuildArea";
 import { HexPositions, getUIPositionFromColRow } from "../../utils/utils";
-import BigHexBiome from "../../components/cityview/hexception/BigHexBiome";
+import BigHexBiome from "../../components/construction/BigHexBiome";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import realmHexPositions from "../../../data/geodata/hex/realmHexPositions.json";

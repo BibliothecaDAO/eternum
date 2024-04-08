@@ -1,11 +1,11 @@
 import { Merged, useGLTF } from "@react-three/drei";
-import useUIStore from "../../../../hooks/store/useUIStore";
+import useUIStore from "../../../hooks/store/useUIStore";
 import GroundGrid, { isHexOccupied } from "./GroundGrid";
 import * as THREE from "three";
-import { getUIPositionFromColRow } from "../../../utils/utils";
+import { getUIPositionFromColRow } from "../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
-import { createHexagonShape } from "../../worldmap/hexagon/HexagonGeometry";
-import { HEX_RADIUS } from "../../worldmap/hexagon/WorldHexagon";
+import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
+import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
 
 const BuildArea = () => {
   return (

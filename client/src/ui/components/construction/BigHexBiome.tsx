@@ -1,11 +1,11 @@
 import * as THREE from "three";
-import { createHexagonShape } from "../../worldmap/hexagon/HexagonGeometry";
-import { FELT_CENTER, HEX_RADIUS } from "../../worldmap/hexagon/WorldHexagon";
-import { getUIPositionFromColRow } from "../../../utils/utils";
+import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
+import { FELT_CENTER, HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
+import { getUIPositionFromColRow } from "../../utils/utils";
 import { Instances, Instance } from "@react-three/drei";
 import { biomes } from "@bibliothecadao/eternum";
-import { Hexagon } from "../../../../types";
-import { biomeComponents } from "../../worldmap/hexagon/HexLayers";
+import { Hexagon } from "../../../types";
+import { biomeComponents } from "../worldmap/hexagon/HexLayers";
 
 const BigHexBiome = ({ biome }: { biome: keyof typeof biomes }) => {
   const biomeData = biomes[biome];

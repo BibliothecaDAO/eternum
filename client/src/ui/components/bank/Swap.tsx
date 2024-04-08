@@ -40,8 +40,8 @@ export const SwapBar = () => {
           <SelectValue placeholder="Resources" />
         </SelectTrigger>
         <SelectContent className="bg-brown text-gold">
-          {resources.map((resource) => (
-            <SelectItem value={resource.trait}>
+          {resources.map((resource, index) => (
+            <SelectItem key={index} value={resource.trait}>
               <div className="flex">
                 <ResourceIcon
                   withTooltip={false}

@@ -89,6 +89,7 @@ name = "eternum::systems::config::contracts::config_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x8e44985380e607cbaad3dcc39a0a5033ca225df0f74d943c428b287e9898b9"
 class_hash = "0x982c0fb4134d998141d35ce32c2be80d744a56761648a8a01af90d09a683a2"
 original_class_hash = "0x982c0fb4134d998141d35ce32c2be80d744a56761648a8a01af90d09a683a2"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -100,6 +101,7 @@ name = "eternum::systems::hyperstructure::contracts::hyperstructure_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x19b221350a9778d18bf86762936c91a196c7a816fb21e3985d7c03ee5d85994"
 class_hash = "0x3a7ffc427d172fcc45527f5cc2c6a37ea9fd3cfebbde1c1cba910f3e547442c"
 original_class_hash = "0x3a7ffc427d172fcc45527f5cc2c6a37ea9fd3cfebbde1c1cba910f3e547442c"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -111,6 +113,7 @@ name = "eternum::systems::labor::contracts::labor_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x6d08a1347df3214e6d192d14eb3fc6224afdb7182fe574e71865b94cb8ca43b"
 class_hash = "0x1ed6e020c514a78dea817f6f16af63ddbc20ad30f3f878fb2a15404d801fd8b"
 original_class_hash = "0x1ed6e020c514a78dea817f6f16af63ddbc20ad30f3f878fb2a15404d801fd8b"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -122,6 +125,7 @@ name = "eternum::systems::leveling::contracts::leveling_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0xe41bb92d0734340f4d6ad423426f5bf2f611fa13b3c94d325c5f3b64c7ddea"
 class_hash = "0x1e4399b7c2174b72b5d42cfa794ac027f8e693825315d052a968bcbd165f768"
 original_class_hash = "0x1e4399b7c2174b72b5d42cfa794ac027f8e693825315d052a968bcbd165f768"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -133,6 +137,7 @@ name = "eternum::systems::map::contracts::map_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x7ec9b2ac7dbfc56510886835a1d5c607dd56248492c1c5cceaadf32e87f8a0"
 class_hash = "0xd1f8b0612fc72136ffe3f47511d3135f22a9215bfaf4ee323859f9be33c05e"
 original_class_hash = "0xd1f8b0612fc72136ffe3f47511d3135f22a9215bfaf4ee323859f9be33c05e"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -144,6 +149,7 @@ name = "eternum::systems::name::contracts::name_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x78954c3172d81b184a548c25b9ac6831881f2a1bf0eda25a7576529fe70811e"
 class_hash = "0x638aa6f0a9d0c93239f9f6c4a45a20a8e40d31a518a82b5b9fe9e477b669c6b"
 original_class_hash = "0x638aa6f0a9d0c93239f9f6c4a45a20a8e40d31a518a82b5b9fe9e477b669c6b"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -155,6 +161,7 @@ name = "eternum::systems::realm::contracts::realm_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x3d2e8efbfb6b507fcdbdfac3d74a1f2b0852f6193b57aa01573aa95e8472c59"
 class_hash = "0x720b4cbd5a037e561b038a73752399e329b483d8e42da0d44229230ab458e56"
 original_class_hash = "0x720b4cbd5a037e561b038a73752399e329b483d8e42da0d44229230ab458e56"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -166,6 +173,7 @@ name = "eternum::systems::resources::contracts::resource_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x37ad4b6983e73203f3bc9be5ac3a457085d94320c98f6c6e74676827c35f36b"
 class_hash = "0x5bb90d3558c9c12e709379e671d6acd542d249fe587946577ca286ac4b4829b"
 original_class_hash = "0x5bb90d3558c9c12e709379e671d6acd542d249fe587946577ca286ac4b4829b"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -177,6 +185,7 @@ name = "eternum::systems::test::contracts::resource::test_resource_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x33be47a5861a422cb123bbdc81851e526db54b56bfde6e2b8069c7b93a7503"
 class_hash = "0x7053bb4ef33d3a115ddeab03e04f74972d1d2731f0f067eeb3e5643e4471add"
 original_class_hash = "0x7053bb4ef33d3a115ddeab03e04f74972d1d2731f0f067eeb3e5643e4471add"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -188,6 +197,7 @@ name = "eternum::systems::trade::contracts::trade_systems::trade_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x52c56d9abe99f6da1802f0f1bb850bd27336cd05fda5575c21fb20a9c87b116"
 class_hash = "0x1d31405a4dc7aa597897e8337d2f6ccec72f6c1de569878663fd373b80b1970"
 original_class_hash = "0x1d31405a4dc7aa597897e8337d2f6ccec72f6c1de569878663fd373b80b1970"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -199,6 +209,7 @@ name = "eternum::systems::transport::contracts::caravan_systems::caravan_systems
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x326d3b8b83d171eb1a87d09add38f4602faf0503cdac9bbb2a3c0d4248cdb4a"
 class_hash = "0x35f21156436ef5aa48428ee916e43cde9251889657c464bb6dcaf089d7ca128"
 original_class_hash = "0x35f21156436ef5aa48428ee916e43cde9251889657c464bb6dcaf089d7ca128"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -210,6 +221,7 @@ name = "eternum::systems::transport::contracts::road_systems::road_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x7f88d8bb58c91950a32c2ddb554466a75f05034d5c2f950046755e8945dcf1f"
 class_hash = "0x35cd40aa3dcd0b7af2cd1c7f792f843130b8c9237cbf096137fb9bc5e27fa2d"
 original_class_hash = "0x35cd40aa3dcd0b7af2cd1c7f792f843130b8c9237cbf096137fb9bc5e27fa2d"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
@@ -221,6 +233,7 @@ name = "eternum::systems::transport::contracts::transport_unit_systems::transpor
 
 [[contracts]]
 kind = "DojoContract"
+address = "0xe1f49815a807210be14ca3310a70cadcea3b4093c48b7303494adcffcf2715"
 class_hash = "0x3ca7c0bc1726183d06504405293514373ee703a4aa270e3046a6944eeb7bc99"
 original_class_hash = "0x3ca7c0bc1726183d06504405293514373ee703a4aa270e3046a6944eeb7bc99"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"

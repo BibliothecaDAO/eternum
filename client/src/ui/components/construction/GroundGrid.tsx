@@ -1,11 +1,11 @@
-import useUIStore from "../../../../hooks/store/useUIStore";
+import useUIStore from "../../../hooks/store/useUIStore";
 import * as THREE from "three";
-import { createHexagonShape } from "../../worldmap/hexagon/HexagonGeometry";
-import { HEX_RADIUS } from "../../worldmap/hexagon/WorldHexagon";
-import { getUIPositionFromColRow } from "../../../utils/utils";
+import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
+import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
+import { getUIPositionFromColRow } from "../../utils/utils";
 import { Html, Merged, useGLTF } from "@react-three/drei";
 import { useCallback } from "react";
-import { useBuildingSound } from "../../../../hooks/useUISound";
+import { useBuildingSound } from "../../../hooks/useUISound";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row);
