@@ -2,37 +2,41 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
-import { useState, useCallback } from "react";
 import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
 import { Bvh, Html, Merged, useGLTF } from "@react-three/drei";
+import { useCallback, useState } from "react";
 import { useBuildingSound } from "../../../hooks/useUISound";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { BuildingTooltip } from "../cityview/BuildingTooltip";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
+import { useQuery } from "@/hooks/helpers/useQuery";
+import { BuildingTooltip } from "../cityview/BuildingTooltip";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row);
 };
 
 const GroundGrid = () => {
+  const { hexPosition: globalHex } = useQuery();
+
   const { playBuildingSound } = useBuildingSound();
   const hexPositions = generateHexPositions();
-  const { previewBuilding, setHoveredBuildHex, existingBuildings, setExistingBuildings } = useUIStore((state) => ({
-    previewBuilding: state.previewBuilding,
-    hoveredBuildHex: state.hoveredBuildHex,
-    setHoveredBuildHex: state.setHoveredBuildHex,
-    existingBuildings: state.existingBuildings,
-    setExistingBuildings: state.setExistingBuildings,
-  }));
+  const { previewBuilding, hoveredBuildHex, setHoveredBuildHex, existingBuildings, setExistingBuildings } = useUIStore(
+    (state) => ({
+      previewBuilding: state.previewBuilding,
+      hoveredBuildHex: state.hoveredBuildHex,
+      setHoveredBuildHex: state.setHoveredBuildHex,
+      existingBuildings: state.existingBuildings,
+      setExistingBuildings: state.setExistingBuildings,
+    }),
+  );
   const { realmEntityId } = useRealmStore();
 
   const {
     account: { account },
     setup: {
       systemCalls: { create_building },
-      components: { Building },
     },
   } = useDojo();
 
@@ -50,39 +54,64 @@ const GroundGrid = () => {
   };
   //
   return (
-    <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
-      <Bvh firstHitOnly>
-        {hexPositions.map((hexPosition, index) => (
-          <Hexagon
-            key={index}
-            position={hexPosition}
-            onPointerMove={(e: any) => {
-              e.stopPropagation();
-              previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row });
-            }}
-            onClick={() => {
-              if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
-                handlePlacement(hexPosition.col, hexPosition.row);
-                setExistingBuildings([
-                  ...existingBuildings,
-                  { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
-                ]);
-                playBuildingSound(previewBuilding);
-              }
-            }}
-          />
-        ))}
-      </Bvh>
-    </group>
+    <>
+      {hexPositions.map((hexPosition, index) => (
+        <BuiltBuilding
+          key={index}
+          outerPosition={globalHex}
+          position={hexPosition}
+          onPointerMove={() => previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
+          onClick={() => {
+            if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
+              handlePlacement(hexPosition.col, hexPosition.row);
+              setExistingBuildings([
+                ...existingBuildings,
+                { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
+              ]);
+              playBuildingSound(previewBuilding);
+            }
+          }}
+        />
+      ))}
+      <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
+        <Bvh firstHitOnly>
+          {hexPositions.map((hexPosition, index) => (
+            <Hexagon
+              key={index}
+              position={hexPosition}
+              onPointerMove={(e: any) => {
+                e.stopPropagation();
+                previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row });
+              }}
+              onClick={() => {
+                if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
+                  handlePlacement(hexPosition.col, hexPosition.row);
+                  setExistingBuildings([
+                    ...existingBuildings,
+                    { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
+                  ]);
+                  playBuildingSound(previewBuilding);
+                }
+              }}
+            />
+          ))}
+        </Bvh>
+      </group>
+    </>
   );
 };
 
-export const Hexagon = ({ position, onPointerMove, onClick }: { position: any; onPointerMove: any; onClick: any }) => {
-  const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
-  const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
-  const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
-  const [showTooltip, setShowTooltip] = useState(false);
-
+export const BuiltBuilding = ({
+  outerPosition,
+  position,
+  onPointerMove,
+  onClick,
+}: {
+  outerPosition: { col: number; row: number };
+  position: any;
+  onPointerMove: any;
+  onClick: any;
+}) => {
   const models = useGLTF([
     "/models/buildings/castle.glb",
     "/models/buildings/farm.glb",
@@ -104,39 +133,45 @@ export const Hexagon = ({ position, onPointerMove, onClick }: { position: any; o
 
   const builtBuilding = useComponentValue(
     Building,
-    getEntityIdFromKeys([BigInt(2147483915), BigInt(2147483789), BigInt(position.row), BigInt(position.col)]),
+    getEntityIdFromKeys([
+      BigInt(outerPosition.col),
+      BigInt(outerPosition.row),
+      BigInt(position.col),
+      BigInt(position.row),
+    ]),
   );
 
-  if (builtBuilding) console.log("builtBuilding", builtBuilding);
+  const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
 
-  const model = models[2].scene.clone();
+  if (builtBuilding) return <primitive scale={3} object={models[2].scene.clone()} position={[x, 2.33, -y]} />;
+};
 
-  const hexPosition = getUIPositionFromColRow(position.col, position.row, true);
-
+export const Hexagon = ({ position, onPointerMove, onClick }: { position: any; onPointerMove: any; onClick: any }) => {
+  const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
+  const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
+  const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
+  const [showTooltip, setShowTooltip] = useState(false);
   return (
-    <>
-      {builtBuilding && <primitive scale={3} object={model} position={[hexPosition.x, 2.33, -hexPosition.y]} />}
-      <group position={[position.x, position.y, position.z]} onPointerMove={onPointerMove} onClick={onClick}>
-        <mesh geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]}>
-          <meshMatcapMaterial color={secondaryColor} />
-        </mesh>
-        {showTooltip ? <BuildingTooltip resourceId={10} /> : null}
+    <group position={[position.x, position.y, position.z]} onPointerMove={onPointerMove} onClick={onClick}>
+      <mesh geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]}>
+        <meshMatcapMaterial color={secondaryColor} />
+      </mesh>
+      {showTooltip ? <BuildingTooltip resourceId={10} /> : null}
 
-        <mesh
-          geometry={hexagonGeometry}
-          onPointerEnter={(e) => {
-            e.stopPropagation();
-            setShowTooltip(true);
-          }}
-          onPointerLeave={(e) => {
-            e.stopPropagation();
-            setShowTooltip(false);
-          }}
-        >
-          <meshMatcapMaterial color={mainColor} />
-        </mesh>
-      </group>
-    </>
+      <mesh
+        geometry={hexagonGeometry}
+        onPointerEnter={(e) => {
+          e.stopPropagation();
+          setShowTooltip(true);
+        }}
+        onPointerLeave={(e) => {
+          e.stopPropagation();
+          setShowTooltip(false);
+        }}
+      >
+        <meshMatcapMaterial color={mainColor} />
+      </mesh>
+    </group>
   );
 };
 

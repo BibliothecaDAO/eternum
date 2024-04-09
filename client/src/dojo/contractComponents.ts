@@ -204,7 +204,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: "Building",
             // todo: check if need cutom types for building category
-            types: ["u128", "u128", "u128", "u128", "u128", "u8", "u8", "u128", "u128"],
+            types: ["u128", "u128", "u128", "u128", "u128", "enum", "u8", "u128", "u128"],
             customTypes: [],
           },
         },
