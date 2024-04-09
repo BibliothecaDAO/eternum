@@ -26,7 +26,7 @@
     "@radix-ui/react-select": "^2.0.0",
     "@react-spring/three": "^9.7.3",
     "@react-three/drei": "^9.101.0",
-    "@react-three/fiber": "^8.15.19",
+    "@react-three/fiber": "^8.16.1",
     "@react-three/postprocessing": "2.16.2",
     "@svgr/rollup": "^8.1.0",
     "@types/react-resizable": "^3.0.7",
