@@ -2,16 +2,18 @@ import { useGLTF } from "@react-three/drei";
 import useUIStore from "../../../hooks/store/useUIStore";
 import GroundGrid, { isHexOccupied } from "./GroundGrid";
 import * as THREE from "three";
-import { getUIPositionFromColRow } from "../../utils/utils";
+import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
+import { useComponentValue } from "@dojoengine/react";
+import { useDojo } from "@/hooks/context/DojoContext";
 
 const BuildArea = () => {
   return (
     <group>
       <BuildingPreview />
-      <ExistingBuildings />
+      {/* <ExistingBuildings /> */}
       <GroundGrid />
     </group>
   );

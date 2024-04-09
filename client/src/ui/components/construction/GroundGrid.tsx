@@ -2,13 +2,14 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
-import { getUIPositionFromColRow } from "../../utils/utils";
+import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
 import { Html, Merged, useGLTF } from "@react-three/drei";
 import { useCallback } from "react";
 import { useBuildingSound } from "../../../hooks/useUISound";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row);
@@ -32,6 +33,7 @@ const GroundGrid = () => {
     account: { account },
     setup: {
       systemCalls: { create_building },
+      components: { Building },
     },
   } = useDojo();
 
@@ -47,7 +49,7 @@ const GroundGrid = () => {
       produce_resource_type: 1,
     });
   };
-
+  //
   return (
     <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
       {hexPositions.map((hexPosition, index) => (
@@ -71,23 +73,57 @@ const GroundGrid = () => {
   );
 };
 
-const Hexagon = ({ position, onPointerMove, onClick }: { position: any; onPointerMove: any; onClick: any }) => {
+export const Hexagon = ({ position, onPointerMove, onClick }: { position: any; onPointerMove: any; onClick: any }) => {
   const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
   const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
   const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
+
+  const models = useGLTF([
+    "/models/buildings/castle.glb",
+    "/models/buildings/farm.glb",
+    "/models/buildings/fishery.glb",
+    "/models/buildings/mine.glb",
+    "/models/buildings/stable.glb",
+    "/models/buildings/workhut.glb",
+    "/models/buildings/archer_range.glb",
+    "/models/buildings/barracks.glb",
+    "/models/buildings/market.glb",
+    "/models/buildings/storehouse.glb",
+  ]);
+
+  const {
+    setup: {
+      components: { Building },
+    },
+  } = useDojo();
+
+  const builtBuilding = useComponentValue(
+    Building,
+    getEntityIdFromKeys([BigInt(2147483915), BigInt(2147483789), BigInt(position.row), BigInt(position.col)]),
+  );
+
+  if (builtBuilding) console.log("builtBuilding", builtBuilding);
+
+  const model = models[2].scene.clone();
+
+  const hexPosition = getUIPositionFromColRow(position.col, position.row, true);
+
   return (
-    <group position={[position.x, position.y, position.z]} onPointerMove={onPointerMove} onClick={onClick}>
-      {/* <mesh geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]}>
-        <meshMatcapMaterial color={secondaryColor} />
-      </mesh> */}
-      <mesh geometry={hexagonGeometry}>
-        <meshMatcapMaterial color={mainColor} />
-      </mesh>
-    </group>
+    <>
+      {builtBuilding && <primitive scale={3} object={model} position={[hexPosition.x, 2.33, -hexPosition.y]} />}
+      <group position={[position.x, position.y, position.z]} onPointerMove={onPointerMove} onClick={onClick}>
+        <mesh geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]}>
+          <meshMatcapMaterial color={secondaryColor} />
+        </mesh>
+        <mesh geometry={hexagonGeometry}>
+          <meshMatcapMaterial color={mainColor} />
+        </mesh>
+      </group>
+    </>
   );
 };
 
-const generateHexPositions = () => {
+export const generateHexPositions = () => {
   const _color = new THREE.Color("gray");
   const center = { col: 4, row: 4 };
   const addOffset = center.row % 2 === 0 && center.row > 0 ? 0 : 1;
