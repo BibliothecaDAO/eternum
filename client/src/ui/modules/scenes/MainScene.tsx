@@ -38,9 +38,15 @@ export const DirectionalLightAndHelper = ({ locationType }: { locationType: stri
     useHelper(dLightRef, THREE.DirectionalLightHelper, 50, "hotpink");
   }
 
-  const { lightPosition, bias } = useControls({
+  const { lightPosition, bias, intensity } = useControls({
     lightPosition: {
       value: { x: 0, y: 15, z: 50 }, // Adjust y value to position the light above
+      step: 0.01,
+    },
+    intensity: {
+      value: 1.75,
+      min: 0,
+      max: 10,
       step: 0.01,
     },
     bias: {
@@ -67,7 +73,8 @@ export const DirectionalLightAndHelper = ({ locationType }: { locationType: stri
       shadow-camera-bottom={-3000}
       shadow-bias={bias}
       position={[lightPosition.x, lightPosition.y, lightPosition.z]}
-      intensity={2}
+      color={"#fff"}
+      intensity={intensity}
     ></directionalLight>
   );
 };
