@@ -6,7 +6,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "components": "npx @dojoengine/core ../contracts/manifests/deployments/KATANA.json src/dojo/contractComponents.ts http://localhost:5050 0x177a3f3d912cf4b55f0f74eccf3b7def7c6144efeba033e9f21d9cdb0230c64"
+    "components": "npx @dojoengine/core ../contracts/manifests/dev/manifest.json src/dojo/contractComponents.ts http://localhost:5050 0x177a3f3d912cf4b55f0f74eccf3b7def7c6144efeba033e9f21d9cdb0230c64"
   },
   "peerDependencies": {
     "starknet": "6.7.0"

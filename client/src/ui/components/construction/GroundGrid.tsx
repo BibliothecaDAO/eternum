@@ -64,10 +64,6 @@ const GroundGrid = () => {
           onClick={() => {
             if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
               handlePlacement(hexPosition.col, hexPosition.row);
-              setExistingBuildings([
-                ...existingBuildings,
-                { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
-              ]);
               playBuildingSound(previewBuilding);
             }
           }}

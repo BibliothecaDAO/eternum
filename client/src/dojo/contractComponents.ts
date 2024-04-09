@@ -193,8 +193,6 @@ export function defineContractComponents(world: World) {
           outer_row: RecsType.BigInt,
           inner_col: RecsType.BigInt,
           inner_row: RecsType.BigInt,
-          id: RecsType.BigInt,
-          // todo: check if works with enum
           category: RecsType.Number,
           produced_resource_type: RecsType.Number,
           entity_id: RecsType.BigInt,
@@ -203,9 +201,8 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             name: "Building",
-            // todo: check if need cutom types for building category
-            types: ["u128", "u128", "u128", "u128", "u128", "enum", "u8", "u128", "u128"],
-            customTypes: [],
+            types: ["u128", "u128", "u128", "u128", "enum", "u8", "u128", "u128"],
+            customTypes: ["BuildingCategory"],
           },
         },
       );
