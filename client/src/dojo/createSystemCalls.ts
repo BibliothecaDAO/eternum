@@ -1,47 +1,8 @@
 import { SetupNetworkResult } from "./setupNetwork";
 import { toast } from "react-toastify";
-import {
-  DisassembleCaravanAndReturnFreeUnitsProps,
-  SwapBankAndTravelBackProps,
-  AcceptOrderProps,
-  AttachCaravanProps,
-  BuildLaborProps,
-  CancelFungibleOrderProps,
-  CreateCaravanProps,
-  CreateFreeTransportUnitProps,
-  CreateOrderProps,
-  CreateRealmProps,
-  CreateRoadProps,
-  FeedHyperstructureAndTravelBackPropos,
-  HarvestLaborProps,
-  HarvestAllLaborProps,
-  PurchaseLaborProps,
-  SendResourcesToLocationProps,
-  TransferResourcesProps,
-  TravelProps,
-  TransferItemsProps,
-  CreateSoldiersProps,
-  DetachSoldiersProps,
-  AttackProps,
-  StealProps,
-  LevelUpRealmProps,
-  ControlHyperstructureProps,
-  CompleteHyperstructureProps,
-  SetAddressNameProps,
-  MergeSoldiersProps,
-  CreateAndMergeSoldiersProps,
-  HealSoldiersProps,
-  CreateMultipleRealmsProps,
-  TransferItemsFromMultipleProps,
-  CreateLaborBuildingProps,
-  DestroyLaborBuildingProps,
-  ExploreProps,
-  TravelHexProps,
-  CreateBuildingProps,
-  DestroyBuildingProps,
-} from "@bibliothecadao/eternum";
+import * as SystemProps from "@bibliothecadao/eternum";
 
-export type SystemCalls = ReturnType<typeof createSystemCalls>;
+export type SystemCallFunctions = ReturnType<typeof createSystemCalls>;
 type SystemCallFunction = (...args: any[]) => any;
 type WrappedSystemCalls = Record<string, SystemCallFunction>;
 
@@ -55,9 +16,8 @@ const withErrorHandling =
     }
   };
 
-// NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls({ provider }: SetupNetworkResult) {
-  const purchase_labor = async (props: PurchaseLaborProps) => {
+  const purchase_labor = async (props: SystemProps.PurchaseLaborProps) => {
     await provider.purchase_labor(props);
   };
 
@@ -66,155 +26,157 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   // Refactor the functions using the interfaces
-  const build_labor = async (props: BuildLaborProps) => {
+  const build_labor = async (props: SystemProps.BuildLaborProps) => {
     await provider.build_labor(props);
   };
 
-  const harvest_labor = async (props: HarvestLaborProps) => {
+  const harvest_labor = async (props: SystemProps.HarvestLaborProps) => {
     await provider.harvest_labor(props);
   };
 
-  const harvest_all_labor = async (props: HarvestAllLaborProps) => {
+  const harvest_all_labor = async (props: SystemProps.HarvestAllLaborProps) => {
     await provider.harvest_all_labor(props);
   };
 
-  const create_order = async (props: CreateOrderProps) => {
+  const create_order = async (props: SystemProps.CreateOrderProps) => {
     await provider.create_order(props);
   };
 
-  const accept_order = async (props: AcceptOrderProps) => {
+  const accept_order = async (props: SystemProps.AcceptOrderProps) => {
     await provider.accept_order(props);
   };
 
-  const cancel_fungible_order = async (props: CancelFungibleOrderProps) => {
+  const cancel_fungible_order = async (props: SystemProps.CancelFungibleOrderProps) => {
     await provider.cancel_fungible_order(props);
   };
 
-  const create_free_transport_unit = async (props: CreateFreeTransportUnitProps) => {
+  const create_free_transport_unit = async (props: SystemProps.CreateFreeTransportUnitProps) => {
     await provider.create_free_transport_unit(props);
   };
 
-  const create_caravan = async (props: CreateCaravanProps) => {
+  const create_caravan = async (props: SystemProps.CreateCaravanProps) => {
     await provider.create_caravan(props);
   };
 
-  const disassemble_caravan_and_return_free_units = async (props: DisassembleCaravanAndReturnFreeUnitsProps) => {
+  const disassemble_caravan_and_return_free_units = async (
+    props: SystemProps.DisassembleCaravanAndReturnFreeUnitsProps,
+  ) => {
     await provider.disassemble_caravan_and_return_free_units(props);
   };
 
-  const attach_caravan = async (props: AttachCaravanProps) => {
+  const attach_caravan = async (props: SystemProps.AttachCaravanProps) => {
     await provider.attach_caravan(props);
   };
 
-  const purchase_and_build_labor = async (props: PurchaseLaborProps & BuildLaborProps) => {
+  const purchase_and_build_labor = async (props: SystemProps.PurchaseLaborProps & SystemProps.BuildLaborProps) => {
     await provider.purchase_and_build_labor(props);
   };
 
-  const create_realm = async (props: CreateRealmProps) => {
+  const create_realm = async (props: SystemProps.CreateRealmProps) => {
     await provider.create_realm(props);
   };
 
-  const create_multiple_realms = async (props: CreateMultipleRealmsProps) => {
+  const create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
     await provider.create_multiple_realms(props);
   };
 
-  const create_road = async (props: CreateRoadProps) => {
+  const create_road = async (props: SystemProps.CreateRoadProps) => {
     await provider.create_road(props);
   };
 
-  const transfer_resources = async (props: TransferResourcesProps) => {
+  const transfer_resources = async (props: SystemProps.TransferResourcesProps) => {
     await provider.transfer_resources(props);
   };
 
-  const feed_hyperstructure_and_travel_back = async (props: FeedHyperstructureAndTravelBackPropos) => {
+  const feed_hyperstructure_and_travel_back = async (props: SystemProps.FeedHyperstructureAndTravelBackPropos) => {
     await provider.feed_hyperstructure_and_travel_back(props);
   };
 
-  const send_resources_to_location = async (props: SendResourcesToLocationProps) => {
+  const send_resources_to_location = async (props: SystemProps.SendResourcesToLocationProps) => {
     await provider.send_resources_to_location(props);
   };
 
-  const travel = async (props: TravelProps) => {
+  const travel = async (props: SystemProps.TravelProps) => {
     await provider.travel(props);
   };
 
-  const travel_hex = async (props: TravelHexProps) => {
+  const travel_hex = async (props: SystemProps.TravelHexProps) => {
     await provider.travel_hex(props);
   };
 
-  const create_soldiers = async (props: CreateSoldiersProps) => {
+  const create_soldiers = async (props: SystemProps.CreateSoldiersProps) => {
     await provider.create_soldiers(props);
   };
 
-  const attack = async (props: AttackProps) => {
+  const attack = async (props: SystemProps.AttackProps) => {
     await provider.attack(props);
   };
 
-  const steal = async (props: StealProps) => {
+  const steal = async (props: SystemProps.StealProps) => {
     await provider.steal(props);
   };
 
-  const detach_soldiers = async (props: DetachSoldiersProps) => {
+  const detach_soldiers = async (props: SystemProps.DetachSoldiersProps) => {
     await provider.detach_soldiers(props);
   };
 
-  const level_up_realm = async (props: LevelUpRealmProps) => {
+  const level_up_realm = async (props: SystemProps.LevelUpRealmProps) => {
     await provider.level_up_realm(props);
   };
 
-  const control_hyperstructure = async (props: ControlHyperstructureProps) => {
+  const control_hyperstructure = async (props: SystemProps.ControlHyperstructureProps) => {
     await provider.control_hyperstructure(props);
   };
 
-  const complete_hyperstructure = async (props: CompleteHyperstructureProps) => {
+  const complete_hyperstructure = async (props: SystemProps.CompleteHyperstructureProps) => {
     await provider.complete_hyperstructure(props);
   };
 
-  const set_address_name = async (props: SetAddressNameProps) => {
+  const set_address_name = async (props: SystemProps.SetAddressNameProps) => {
     await provider.set_address_name(props);
   };
 
-  const merge_soldiers = async (props: MergeSoldiersProps) => {
+  const merge_soldiers = async (props: SystemProps.MergeSoldiersProps) => {
     await provider.merge_soldiers(props);
   };
 
-  const create_and_merge_soldiers = async (props: CreateAndMergeSoldiersProps) => {
+  const create_and_merge_soldiers = async (props: SystemProps.CreateAndMergeSoldiersProps) => {
     await provider.create_and_merge_soldiers(props);
   };
 
-  const heal_soldiers = async (props: HealSoldiersProps) => {
+  const heal_soldiers = async (props: SystemProps.HealSoldiersProps) => {
     await provider.heal_soldiers(props);
   };
 
-  const swap_bank_and_travel_back = async (props: SwapBankAndTravelBackProps) => {
+  const swap_bank_and_travel_back = async (props: SystemProps.SwapBankAndTravelBackProps) => {
     await provider.swap_bank_and_travel_back(props);
   };
 
-  const transfer_items = async (props: TransferItemsProps) => {
+  const transfer_items = async (props: SystemProps.TransferItemsProps) => {
     await provider.transfer_items(props);
   };
 
-  const transfer_items_from_multiple = async (props: TransferItemsFromMultipleProps) => {
+  const transfer_items_from_multiple = async (props: SystemProps.TransferItemsFromMultipleProps) => {
     await provider.transfer_items_from_multiple(props);
   };
 
-  const create_labor_building = async (props: CreateLaborBuildingProps) => {
+  const create_labor_building = async (props: SystemProps.CreateLaborBuildingProps) => {
     await provider.create_labor_building(props);
   };
 
-  const destroy_labor_building = async (props: DestroyLaborBuildingProps) => {
+  const destroy_labor_building = async (props: SystemProps.DestroyLaborBuildingProps) => {
     await provider.destroy_labor_building(props);
   };
 
-  const explore = async (props: ExploreProps) => {
+  const explore = async (props: SystemProps.ExploreProps) => {
     await provider.explore(props);
   };
 
-  const create_building = async (props: CreateBuildingProps) => {
+  const create_building = async (props: SystemProps.CreateBuildingProps) => {
     await provider.create_building(props);
   };
 
-  const destroy_building = async (props: DestroyBuildingProps) => {
+  const destroy_building = async (props: SystemProps.DestroyBuildingProps) => {
     await provider.destroy_building(props);
   };
 

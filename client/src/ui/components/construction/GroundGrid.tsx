@@ -6,6 +6,8 @@ import { getUIPositionFromColRow } from "../../utils/utils";
 import { Html, Merged, useGLTF } from "@react-three/drei";
 import { useCallback } from "react";
 import { useBuildingSound } from "../../../hooks/useUISound";
+import { useDojo } from "@/hooks/context/DojoContext";
+import useRealmStore from "@/hooks/store/useRealmStore";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row);
@@ -23,6 +25,27 @@ const GroundGrid = () => {
       setExistingBuildings: state.setExistingBuildings,
     }),
   );
+  const { realmEntityId } = useRealmStore();
+
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { create_building },
+    },
+  } = useDojo();
+
+  const handlePlacement = async (col: number, row: number) => {
+    await create_building({
+      signer: account,
+      entity_id: realmEntityId,
+      building_coord: {
+        x: col.toString(),
+        y: row.toString(),
+      },
+      building_category: "3",
+      produce_resource_type: "2",
+    });
+  };
 
   return (
     <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
@@ -33,6 +56,7 @@ const GroundGrid = () => {
           onPointerMove={() => previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
           onClick={() => {
             if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
+              handlePlacement(hexPosition.col, hexPosition.row);
               setExistingBuildings([
                 ...existingBuildings,
                 { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },

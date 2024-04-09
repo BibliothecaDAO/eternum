@@ -1,4 +1,6 @@
 import { DojoProvider } from "@dojoengine/core";
+import { CairoCustomEnum, CallData } from "starknet";
+
 import {
   ExploreProps,
   AcceptOrderProps,
@@ -759,11 +761,22 @@ export class EternumProvider extends DojoProvider {
   public async create_building(props: CreateBuildingProps) {
     const { entity_id, building_coord, building_category, produce_resource_type, signer } = props;
 
+    console.log(
+      "create_building",
+      entity_id,
+      building_coord.x,
+      building_coord.y,
+      building_category,
+      produce_resource_type,
+    );
+
+    console.log();
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "building_systems"),
       entrypoint: "create",
-      calldata: [this.getWorldAddress(), entity_id, building_coord, building_category, produce_resource_type],
+      calldata: [entity_id, building_coord.x, building_coord.y, new CairoCustomEnum({ Farm: {} }), 1],
     });
+
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });
@@ -775,7 +788,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "building_systems"),
       entrypoint: "destroy",
-      calldata: [this.getWorldAddress(), entity_id, building_coord],
+      calldata: [entity_id, building_coord],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

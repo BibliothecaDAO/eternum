@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KATANA_TOML_PATH="./manifests/deployments/KATANA.toml"
+KATANA_TOML_PATH="./manifests/dev/manifest.toml"
 
 get_contract_address() {
     local contract_name="$1"
@@ -42,7 +42,7 @@ export BANK_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::b
 
 export HYPERSTRUCTURE_SYSTEMS=$(get_contract_address "eternum::systems::hyperstructure::contracts::hyperstructure_systems")
 
-export BUILDINGS_SYSTEMS=$(get_contract_address "eternum::systems::buildings::contracts::buildings_systems")
+export BUILDINGS_SYSTEMS=$(get_contract_address "eternum::systems::buildings::contracts::building_systems")
 
 export MAP_SYSTEMS=$(get_contract_address "eternum::systems::map::contracts::map_systems")
 

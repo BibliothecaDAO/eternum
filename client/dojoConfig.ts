@@ -1,4 +1,4 @@
-import manifest from "../contracts/manifests/deployments/KATANA.json";
+import manifest from "../contracts/manifests/dev/manifest.json";
 import { createDojoConfig } from "@dojoengine/core";
 
 const {

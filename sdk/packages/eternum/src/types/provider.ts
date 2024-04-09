@@ -243,10 +243,7 @@ export interface CreateBuildingProps extends SystemSigner {
     x: num.BigNumberish;
     y: num.BigNumberish;
   };
-  building_category: {
-    category: num.BigNumberish;
-    subcategory: num.BigNumberish;
-  };
+  building_category: num.BigNumberish;
   produce_resource_type: num.BigNumberish;
 }
 

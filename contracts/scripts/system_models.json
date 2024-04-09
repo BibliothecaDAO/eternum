@@ -101,7 +101,19 @@
     "Inventory"
   ],
   "HYPERSTRUCTURE_SYSTEMS": ["Orders", "HyperStructure"],
-  "BUILDINGS_SYSTEMS": ["Resource", "OwnedResourcesTracker", "LaborBuilding"],
+  "BUILDINGS_SYSTEMS": [
+    "Resource",
+    "OwnedResourcesTracker",
+    "LaborBuilding",
+    "Building",
+    "ProductionConfig",
+    "ProductionInput",
+    "TickConfig",
+    "Coord",
+    "Position",
+    "Direction",
+    "Production"
+  ],
   "MAP_SYSTEMS": [
     "Tile",
     "Resource",

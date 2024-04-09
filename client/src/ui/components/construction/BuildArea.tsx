@@ -1,4 +1,4 @@
-import { Merged, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import useUIStore from "../../../hooks/store/useUIStore";
 import GroundGrid, { isHexOccupied } from "./GroundGrid";
 import * as THREE from "three";
