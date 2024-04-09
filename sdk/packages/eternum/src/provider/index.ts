@@ -1,48 +1,7 @@
 import { DojoProvider } from "@dojoengine/core";
-import { CairoCustomEnum } from "starknet";
-
-import {
-  ExploreProps,
-  AcceptOrderProps,
-  AttachCaravanProps,
-  BuildLaborProps,
-  CancelFungibleOrderProps,
-  CreateCaravanProps,
-  CreateFreeTransportUnitProps,
-  CreateOrderProps,
-  CreateRealmProps,
-  CreateMultipleRealmsProps,
-  CreateRoadProps,
-  FeedHyperstructureAndTravelBackPropos,
-  HarvestLaborProps,
-  PurchaseLaborProps,
-  SendResourcesToLocationProps,
-  TransferResourcesProps,
-  TravelProps,
-  TravelHexProps,
-  TransferItemsProps,
-  TransferItemsFromMultipleProps,
-  CreateSoldiersProps,
-  DetachSoldiersProps,
-  AttackProps,
-  StealProps,
-  LevelUpRealmProps,
-  ControlHyperstructureProps,
-  CompleteHyperstructureProps,
-  SetAddressNameProps,
-  MergeSoldiersProps,
-  CreateAndMergeSoldiersProps,
-  HealSoldiersProps,
-  HarvestAllLaborProps,
-  SwapBankAndTravelBackProps,
-  MintResourcesProps,
-  DisassembleCaravanAndReturnFreeUnitsProps,
-  CreateLaborBuildingProps,
-  DestroyLaborBuildingProps,
-  CreateBuildingProps,
-  DestroyBuildingProps,
-} from "../types/provider";
+import * as SystemProps from "../types/provider";
 import { Call } from "starknet";
+import { getBuildingType } from "../utils";
 
 const UUID_OFFSET_CREATE_CARAVAN = 2;
 
@@ -80,7 +39,7 @@ export class EternumProvider extends DojoProvider {
     return receipt;
   }
 
-  public async purchase_labor(props: PurchaseLaborProps): Promise<any> {
+  public async purchase_labor(props: SystemProps.PurchaseLaborProps): Promise<any> {
     const { signer, entity_id, resource_type, labor_units, multiplier } = props;
 
     const tx = await this.executeMulti(signer, {
@@ -98,7 +57,7 @@ export class EternumProvider extends DojoProvider {
   }
 
   // Refactor the functions using the interfaces
-  public async build_labor(props: BuildLaborProps) {
+  public async build_labor(props: SystemProps.BuildLaborProps) {
     const { entity_id, resource_type, labor_units, multiplier, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "labor_systems"),
@@ -109,7 +68,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async harvest_labor(props: HarvestLaborProps) {
+  public async harvest_labor(props: SystemProps.HarvestLaborProps) {
     const { realm_id, resource_type, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "labor_systems"),
@@ -119,7 +78,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async harvest_all_labor(props: HarvestAllLaborProps) {
+  public async harvest_all_labor(props: SystemProps.HarvestAllLaborProps) {
     const { entity_ids, signer } = props;
 
     const calldata = entity_ids.map((entity_id) => {
@@ -134,7 +93,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async create_order(props: CreateOrderProps) {
+  public async create_order(props: SystemProps.CreateOrderProps) {
     const uuid = await this.uuid();
     const {
       maker_id,
@@ -199,7 +158,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async mint_resources(props: MintResourcesProps) {
+  public async mint_resources(props: SystemProps.MintResourcesProps) {
     const { receiver_id, resources } = props;
 
     const tx = await this.executeMulti(props.signer, {
@@ -211,7 +170,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async accept_order(props: AcceptOrderProps) {
+  public async accept_order(props: SystemProps.AcceptOrderProps) {
     const { taker_id, trade_id, donkeys_quantity, caravan_id, signer } = props;
 
     let transactions: Call[] = [];
@@ -249,7 +208,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async cancel_fungible_order(props: CancelFungibleOrderProps) {
+  public async cancel_fungible_order(props: SystemProps.CancelFungibleOrderProps) {
     const { trade_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "trade_systems"),
@@ -259,7 +218,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async transfer_items_from_multiple(props: TransferItemsFromMultipleProps) {
+  public async transfer_items_from_multiple(props: SystemProps.TransferItemsFromMultipleProps) {
     const { senders, signer } = props;
 
     let calldata = senders.flatMap((sender) => {
@@ -276,7 +235,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async transfer_items(props: TransferItemsProps) {
+  public async transfer_items(props: SystemProps.TransferItemsProps) {
     const { sender_id, indices, receiver_id, signer } = props;
 
     let calldata = indices.map((index) => {
@@ -304,7 +263,7 @@ export class EternumProvider extends DojoProvider {
     }
   }
 
-  public async create_free_transport_unit(props: CreateFreeTransportUnitProps) {
+  public async create_free_transport_unit(props: SystemProps.CreateFreeTransportUnitProps) {
     const { realm_id, quantity, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
@@ -314,7 +273,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async create_caravan(props: CreateCaravanProps) {
+  public async create_caravan(props: SystemProps.CreateCaravanProps) {
     const { entity_ids, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "caravan_systems"),
@@ -324,7 +283,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async disassemble_caravan_and_return_free_units(props: DisassembleCaravanAndReturnFreeUnitsProps) {
+  public async disassemble_caravan_and_return_free_units(props: SystemProps.DisassembleCaravanAndReturnFreeUnitsProps) {
     const { caravan_id, unit_ids, signer } = props;
     const tx = await this.executeMulti(signer, [
       {
@@ -341,7 +300,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async attach_caravan(props: AttachCaravanProps) {
+  public async attach_caravan(props: SystemProps.AttachCaravanProps) {
     const { realm_id, trade_id, caravan_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "trade_systems"),
@@ -351,7 +310,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async purchase_and_build_labor(props: PurchaseLaborProps & BuildLaborProps) {
+  public async purchase_and_build_labor(props: SystemProps.PurchaseLaborProps & SystemProps.BuildLaborProps) {
     const { entity_id, resource_type, labor_units, multiplier, signer } = props;
     const tx = await this.executeMulti(signer, [
       {
@@ -368,7 +327,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async create_realm(props: CreateRealmProps) {
+  public async create_realm(props: SystemProps.CreateRealmProps) {
     const {
       realm_id,
       resource_types_packed,
@@ -406,7 +365,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  create_multiple_realms = async (props: CreateMultipleRealmsProps) => {
+  create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
     let { realms, signer } = props;
 
     let calldata = realms.flatMap((realm) => {
@@ -451,7 +410,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   };
 
-  public async create_road(props: CreateRoadProps) {
+  public async create_road(props: SystemProps.CreateRoadProps) {
     const { creator_id, start_coord, end_coord, usage_count, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "road_systems"),
@@ -469,7 +428,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async transfer_resources(props: TransferResourcesProps) {
+  public async transfer_resources(props: SystemProps.TransferResourcesProps) {
     const { sending_entity_id, receiving_entity_id, resources, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "resource_systems"),
@@ -479,7 +438,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async send_resources_to_location(props: SendResourcesToLocationProps) {
+  public async send_resources_to_location(props: SystemProps.SendResourcesToLocationProps) {
     const {
       sending_entity_id,
       resources,
@@ -532,7 +491,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public swap_bank_and_travel_back = async (props: SwapBankAndTravelBackProps) => {
+  public swap_bank_and_travel_back = async (props: SystemProps.SwapBankAndTravelBackProps) => {
     const {
       sender_id,
       inventoryIndex,
@@ -565,7 +524,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   };
 
-  public feed_hyperstructure_and_travel_back = async (props: FeedHyperstructureAndTravelBackPropos) => {
+  public feed_hyperstructure_and_travel_back = async (props: SystemProps.FeedHyperstructureAndTravelBackPropos) => {
     const { entity_id, inventoryIndex, hyperstructure_id, destination_coord_x, destination_coord_y, signer } = props;
 
     const tx = await this.executeMulti(signer, [
@@ -583,7 +542,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   };
 
-  public async travel(props: TravelProps) {
+  public async travel(props: SystemProps.TravelProps) {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "travel_systems"),
@@ -593,7 +552,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async travel_hex(props: TravelHexProps) {
+  public async travel_hex(props: SystemProps.TravelHexProps) {
     const { travelling_entity_id, directions, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "travel_systems"),
@@ -603,7 +562,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async create_soldiers(props: CreateSoldiersProps) {
+  public async create_soldiers(props: SystemProps.CreateSoldiersProps) {
     const { realm_entity_id, quantity, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
@@ -613,7 +572,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async detach_soldiers(props: DetachSoldiersProps) {
+  public async detach_soldiers(props: SystemProps.DetachSoldiersProps) {
     const { unit_id, detached_quantity, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
@@ -623,7 +582,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async attack(props: AttackProps) {
+  public async attack(props: SystemProps.AttackProps) {
     const { attacker_ids, target_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
@@ -633,7 +592,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async steal(props: StealProps) {
+  public async steal(props: SystemProps.StealProps) {
     const { attacker_id, target_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
@@ -643,7 +602,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async control_hyperstructure(props: ControlHyperstructureProps) {
+  public async control_hyperstructure(props: SystemProps.ControlHyperstructureProps) {
     const { hyperstructure_id, order_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
@@ -653,7 +612,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async complete_hyperstructure(props: CompleteHyperstructureProps) {
+  public async complete_hyperstructure(props: SystemProps.CompleteHyperstructureProps) {
     const { hyperstructure_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
@@ -663,7 +622,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async level_up_realm(props: LevelUpRealmProps) {
+  public async level_up_realm(props: SystemProps.LevelUpRealmProps) {
     const { realm_entity_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "leveling_systems"),
@@ -673,7 +632,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async merge_soldiers(props: MergeSoldiersProps) {
+  public async merge_soldiers(props: SystemProps.MergeSoldiersProps) {
     const { merge_into_unit_id, units, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
@@ -683,7 +642,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async create_and_merge_soldiers(props: CreateAndMergeSoldiersProps) {
+  public async create_and_merge_soldiers(props: SystemProps.CreateAndMergeSoldiersProps) {
     const { realm_entity_id, quantity, merge_into_unit_id, signer } = props;
     const uuid = await this.uuid();
 
@@ -703,7 +662,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async heal_soldiers(props: HealSoldiersProps) {
+  public async heal_soldiers(props: SystemProps.HealSoldiersProps) {
     const { unit_id, health_amount, signer } = props;
 
     const tx = await this.executeMulti(signer, {
@@ -715,7 +674,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async set_address_name(props: SetAddressNameProps) {
+  public async set_address_name(props: SystemProps.SetAddressNameProps) {
     const { name, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "name_systems"),
@@ -725,7 +684,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async create_labor_building(props: CreateLaborBuildingProps) {
+  public async create_labor_building(props: SystemProps.CreateLaborBuildingProps) {
     const { realm_entity_id, building_type } = props;
 
     const tx = await this.executeMulti(props.signer, {
@@ -736,7 +695,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async destroy_labor_building(props: DestroyLaborBuildingProps) {
+  public async destroy_labor_building(props: SystemProps.DestroyLaborBuildingProps) {
     const { realm_entity_id } = props;
 
     const tx = await this.executeMulti(props.signer, {
@@ -747,7 +706,7 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async explore(props: ExploreProps) {
+  public async explore(props: SystemProps.ExploreProps) {
     const { unit_id, direction, signer } = props;
 
     const tx = await this.executeMulti(signer, {
@@ -758,23 +717,19 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async create_building(props: CreateBuildingProps) {
+  public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, building_coord, building_category, produce_resource_type, signer } = props;
 
-    console.log(
-      "create_building",
-      entity_id,
-      building_coord.x,
-      building_coord.y,
-      building_category,
-      produce_resource_type,
-    );
-
-    console.log();
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "building_systems"),
       entrypoint: "create",
-      calldata: [entity_id, building_coord.x, building_coord.y, new CairoCustomEnum({ Farm: {} }), 1],
+      calldata: [
+        entity_id,
+        building_coord.x,
+        building_coord.y,
+        getBuildingType(building_category),
+        produce_resource_type,
+      ],
     });
 
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -782,13 +737,13 @@ export class EternumProvider extends DojoProvider {
     });
   }
 
-  public async destroy_building(props: DestroyBuildingProps) {
+  public async destroy_building(props: SystemProps.DestroyBuildingProps) {
     const { entity_id, building_coord, signer } = props;
 
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "building_systems"),
       entrypoint: "destroy",
-      calldata: [entity_id, building_coord],
+      calldata: [entity_id, building_coord.x, building_coord.y],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
