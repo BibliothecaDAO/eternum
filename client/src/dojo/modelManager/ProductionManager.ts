@@ -1,5 +1,5 @@
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ProductionType, ResourceType } from "./types";
 
 export class ProductionManager {

@@ -1,0 +1,15 @@
+kind = "DojoModel"
+class_hash = "0x4f2eb92a08aeec4e640909db2e812ade1d1096db1c12a0c2f1a18340a581cb3"
+original_class_hash = "0x4f2eb92a08aeec4e640909db2e812ade1d1096db1c12a0c2f1a18340a581cb3"
+abi = "manifests/dev/abis/base/models/eternum_models_capacity_capacity.json"
+name = "eternum::models::capacity::capacity"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "weight_gram"
+type = "u128"
+key = false

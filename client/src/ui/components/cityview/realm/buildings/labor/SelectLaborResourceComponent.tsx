@@ -1,6 +1,6 @@
 import { Guilds, resourcesByGuild } from "@bibliothecadao/eternum";
-import { useResourceBalance } from "../../../../../hooks/helpers/useResources";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
+import useRealmStore from "@/hooks/store/useRealmStore";
 import { SelectableLaborResource } from "./SelectableLaborResource";
 
 interface SelectLaborResourceComponentProps {

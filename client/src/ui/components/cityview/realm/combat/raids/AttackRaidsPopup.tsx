@@ -10,7 +10,7 @@ import { useCombat } from "../../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
 import { useComponentValue } from "@dojoengine/react";
 import { SelectRaiders } from "./SelectRaiders";
-import { useResourceBalance, useResources } from "../../../../../hooks/helpers/useResources";
+import { useResourceBalance, useResources } from "@/hooks/helpers/useResources";
 import clsx from "clsx";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { type CombatInfo, type Position, type Resource, findResourceById, resources } from "@bibliothecadao/eternum";

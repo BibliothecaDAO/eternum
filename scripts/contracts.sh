@@ -11,4 +11,4 @@ cd contracts
 sozo build
 
 # Run katana with the disable-fee option
-katana --disable-fee
+katana --disable-fee --invoke-max-steps 20000000

@@ -10,13 +10,13 @@ import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinute
 import { useMemo } from "react";
 import { usePlayResourceSound, soundSelector, useUiSounds } from "../../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
-import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
-import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
-import { FoodType, useLabor } from "../../../../hooks/helpers/useLabor";
-import useUIStore from "../../../../hooks/store/useUIStore";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import { LevelIndex, useLevel } from "@/hooks/helpers/useLevel";
+import { EventType, useNotificationsStore } from "@/hooks/store/useNotificationsStore";
+import { FoodType, useLabor } from "@/hooks/helpers/useLabor";
+import useUIStore from "@/hooks/store/useUIStore";
 import { ReactComponent as People } from "../../../../assets/icons/common/people.svg";
-import { useResourceBalance } from "../../../../hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 
 interface LaborComponentProps {
   hasGuild: boolean;

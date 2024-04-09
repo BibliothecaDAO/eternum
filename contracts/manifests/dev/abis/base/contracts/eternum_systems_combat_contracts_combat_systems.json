@@ -1,0 +1,342 @@
+[
+  {
+    "type": "impl",
+    "name": "DojoResourceProviderImpl",
+    "interface_name": "dojo::world::IDojoResourceProvider"
+  },
+  {
+    "type": "interface",
+    "name": "dojo::world::IDojoResourceProvider",
+    "items": [
+      {
+        "type": "function",
+        "name": "dojo_resource",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::felt252"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "WorldProviderImpl",
+    "interface_name": "dojo::world::IWorldProvider"
+  },
+  {
+    "type": "struct",
+    "name": "dojo::world::IWorldDispatcher",
+    "members": [
+      {
+        "name": "contract_address",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "dojo::world::IWorldProvider",
+    "items": [
+      {
+        "type": "function",
+        "name": "world",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "dojo::world::IWorldDispatcher"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "SoldierSystemsImpl",
+    "interface_name": "eternum::systems::combat::interface::ISoldierSystems"
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<(core::integer::u128, core::integer::u128)>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<(core::integer::u128, core::integer::u128)>"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::combat::interface::ISoldierSystems",
+    "items": [
+      {
+        "type": "function",
+        "name": "create_soldiers",
+        "inputs": [
+          {
+            "name": "realm_entity_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "quantity",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u128"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "detach_soldiers",
+        "inputs": [
+          {
+            "name": "unit_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "detached_quantity",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u128"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "merge_soldiers",
+        "inputs": [
+          {
+            "name": "merge_into_unit_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "units",
+            "type": "core::array::Span::<(core::integer::u128, core::integer::u128)>"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "heal_soldiers",
+        "inputs": [
+          {
+            "name": "unit_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "health_amount",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "CombatSystemsImpl",
+    "interface_name": "eternum::systems::combat::interface::ICombatSystems"
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<core::integer::u128>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<core::integer::u128>"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::combat::interface::ICombatSystems",
+    "items": [
+      {
+        "type": "function",
+        "name": "attack",
+        "inputs": [
+          {
+            "name": "attacker_ids",
+            "type": "core::array::Span::<core::integer::u128>"
+          },
+          {
+            "name": "target_entity_id",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "steal",
+        "inputs": [
+          {
+            "name": "attacker_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "target_entity_id",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "UpgradableImpl",
+    "interface_name": "dojo::components::upgradeable::IUpgradeable"
+  },
+  {
+    "type": "interface",
+    "name": "dojo::components::upgradeable::IUpgradeable",
+    "items": [
+      {
+        "type": "function",
+        "name": "upgrade",
+        "inputs": [
+          {
+            "name": "new_class_hash",
+            "type": "core::starknet::class_hash::ClassHash"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "dojo::components::upgradeable::upgradeable::Upgraded",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "class_hash",
+        "type": "core::starknet::class_hash::ClassHash",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "dojo::components::upgradeable::upgradeable::Event",
+    "kind": "enum",
+    "variants": [
+      {
+        "name": "Upgraded",
+        "type": "dojo::components::upgradeable::upgradeable::Upgraded",
+        "kind": "nested"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "eternum::systems::combat::contracts::combat_systems::Winner",
+    "variants": [
+      {
+        "name": "Attacker",
+        "type": "()"
+      },
+      {
+        "name": "Target",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "eternum::systems::combat::contracts::combat_systems::CombatOutcome",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "attacker_realm_entity_id",
+        "type": "core::integer::u128",
+        "kind": "key"
+      },
+      {
+        "name": "target_realm_entity_id",
+        "type": "core::integer::u128",
+        "kind": "key"
+      },
+      {
+        "name": "target_entity_id",
+        "type": "core::integer::u128",
+        "kind": "key"
+      },
+      {
+        "name": "attacking_entity_ids",
+        "type": "core::array::Span::<core::integer::u128>",
+        "kind": "data"
+      },
+      {
+        "name": "stolen_resources",
+        "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+        "kind": "data"
+      },
+      {
+        "name": "stolen_chests",
+        "type": "core::array::Span::<core::integer::u128>",
+        "kind": "data"
+      },
+      {
+        "name": "winner",
+        "type": "eternum::systems::combat::contracts::combat_systems::Winner",
+        "kind": "data"
+      },
+      {
+        "name": "damage",
+        "type": "core::integer::u128",
+        "kind": "data"
+      },
+      {
+        "name": "ts",
+        "type": "core::integer::u64",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "eternum::systems::combat::contracts::combat_systems::Event",
+    "kind": "enum",
+    "variants": [
+      {
+        "name": "UpgradeableEvent",
+        "type": "dojo::components::upgradeable::upgradeable::Event",
+        "kind": "nested"
+      },
+      {
+        "name": "CombatOutcome",
+        "type": "eternum::systems::combat::contracts::combat_systems::CombatOutcome",
+        "kind": "nested"
+      }
+    ]
+  }
+]

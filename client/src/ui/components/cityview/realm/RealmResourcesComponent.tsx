@@ -11,9 +11,9 @@ import { ReactComponent as MoreIcon } from "@/assets/icons/common/more.svg";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
-import useUIStore from "../../../hooks/store/useUIStore";
-import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
-import { useResourceBalance } from "../../../hooks/helpers/useResources";
+import useUIStore from "@/hooks/store/useUIStore";
+import { LevelIndex, useLevel } from "@/hooks/helpers/useLevel";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 

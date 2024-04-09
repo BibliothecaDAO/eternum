@@ -23,7 +23,7 @@ import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 import { useGetRealm, useRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
-import { useResourceBalance, useResources } from "../../../../hooks/helpers/useResources";
+import { useResourceBalance, useResources } from "@/hooks/helpers/useResources";
 import ListSelect from "../../../../elements/ListSelect";
 import { getTotalResourceWeight } from "./utils";
 import { TradeRealmSelector } from "./TradeRealmSelector";

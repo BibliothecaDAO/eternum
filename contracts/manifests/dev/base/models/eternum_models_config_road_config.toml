@@ -1,0 +1,25 @@
+kind = "DojoModel"
+class_hash = "0x5e0bb5cb695de7e957d2cce81bd5f1dcfe132f58ed94276cc185641d6c2467c"
+original_class_hash = "0x5e0bb5cb695de7e957d2cce81bd5f1dcfe132f58ed94276cc185641d6c2467c"
+abi = "manifests/dev/abis/base/models/eternum_models_config_road_config.json"
+name = "eternum::models::config::road_config"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "resource_cost_id"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_cost_count"
+type = "u32"
+key = false
+
+[[members]]
+name = "speed_up_by"
+type = "u64"
+key = false
