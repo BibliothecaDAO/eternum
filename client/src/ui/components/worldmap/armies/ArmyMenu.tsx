@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import clsx from "clsx";
-import { CombatInfo, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { type CombatInfo, type Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
 import { useDojo } from "../../../../hooks/context/DojoContext";
@@ -10,13 +10,12 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useCombat } from "../../../../hooks/helpers/useCombat";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
-import { TIME_PER_TICK } from "@bibliothecadao/eternum";
 import { Html } from "@react-three/drei";
 import { useResources } from "../../../../hooks/helpers/useResources";
 
-type ArmyMenuProps = {
+interface ArmyMenuProps {
   entityId: bigint;
-};
+}
 
 const EXPLORATION_REWARD_RESOURCE_AMOUNT: number = 20;
 
@@ -53,13 +52,14 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getEntityWatchTowerId } = useCombat();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const currentTick = useBlockchainStore((state) => state.currentTick);
 
   useEffect(() => {
     if (!selectedEntity) return;
     const checkPlayerOwnsSelectedEntity = () => {
       if (selectedEntity?.id) {
-        let entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntity.id])) || undefined;
-        let realmEntityIdsFlat = realmEntityIds.map((realmEntityId) => realmEntityId.realmEntityId);
+        const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntity.id])) || undefined;
+        const realmEntityIdsFlat = realmEntityIds.map((realmEntityId) => realmEntityId.realmEntityId);
         if (
           realmEntityIdsFlat.includes(entityOwner?.entity_owner_id!) ||
           realmEntityIdsFlat.includes(selectedEntity.id)
@@ -71,9 +71,9 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     };
 
     if (!checkPlayerOwnsSelectedEntity()) {
-      const selectedEntityPosition = getComponentValue(Position, getEntityIdFromKeys([selectedEntity!.id!]));
-      let playerRaidersOnPosition = getOwnerRaidersOnPosition({
-        x: selectedEntityPosition!.x!,
+      const selectedEntityPosition = getComponentValue(Position, getEntityIdFromKeys([selectedEntity.id]));
+      const playerRaidersOnPosition = getOwnerRaidersOnPosition({
+        x: selectedEntityPosition!.x,
         y: selectedEntityPosition!.y,
       });
       setPlayerOwnsSelectedEntity(false);
@@ -86,15 +86,15 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     const realm = selectedEntity ? getComponentValue(Realm, getEntityIdFromKeys([selectedEntity.id])) : undefined;
     if (realm?.realm_id) {
       setSelectedEntityIsRealm(true);
-      setSelectedEntityRealmId(realm!.realm_id!);
+      setSelectedEntityRealmId(realm.realm_id);
       setEnemyRaidersOnPosition([]);
     } else {
       setSelectedEntityIsRealm(false);
-      setEnemyRaidersOnPosition(getEntitiesCombatInfo([selectedEntity!.id]));
+      setEnemyRaidersOnPosition(getEntitiesCombatInfo([selectedEntity.id]));
     }
 
-    const entityHealth = getComponentValue(Health, getEntityIdFromKeys([selectedEntity?.id!]));
-    const selectedEntityIsDead = entityHealth?.value ? false : true;
+    const entityHealth = getComponentValue(Health, getEntityIdFromKeys([selectedEntity?.id]));
+    const selectedEntityIsDead = !entityHealth?.value;
     setSelectedEntityIsDead(selectedEntityIsDead);
   }, [selectedEntity]);
 
@@ -116,7 +116,6 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const tickMove = selectedEntity ? getComponentValue(TickMove, getEntityIdFromKeys([selectedEntity.id])) : undefined;
   const isPassiveTravel = arrivalTime && nextBlockTimestamp ? arrivalTime.arrives_at > nextBlockTimestamp : false;
 
-  const currentTick = nextBlockTimestamp ? Math.floor(nextBlockTimestamp / TIME_PER_TICK) : 0;
   const isActiveTravel = tickMove !== undefined && tickMove.tick >= currentTick;
 
   const isTraveling = isPassiveTravel || isActiveTravel;

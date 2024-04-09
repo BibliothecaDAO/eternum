@@ -1,0 +1,7 @@
+kind = "DojoContract"
+class_hash = "0x1d31405a4dc7aa597897e8337d2f6ccec72f6c1de569878663fd373b80b1970"
+abi = "abis/base/contracts/caravan_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::transport::contracts::caravan_systems::caravan_systems"

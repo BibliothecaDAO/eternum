@@ -1,0 +1,14 @@
+kind = "DojoModel"
+class_hash = "0x3d8a85f6491537a025d697b9fc7f91d198473fe6f3bcb30180e361564593af6"
+abi = "abis/base/models/foreign_key.json"
+name = "eternum::models::metadata::foreign_key"
+
+[[members]]
+name = "foreign_key"
+type = "felt252"
+key = true
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = false

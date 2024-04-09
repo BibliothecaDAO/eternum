@@ -10,7 +10,5 @@ mod name;
 mod hyperstructure;
 mod buildings;
 mod map;
-mod bank;
-
 mod test;
 

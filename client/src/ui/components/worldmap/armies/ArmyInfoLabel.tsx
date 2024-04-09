@@ -5,8 +5,8 @@ import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils";
-import { CombatInfo, Resource, UIPosition } from "@bibliothecadao/eternum";
-// @ts-ignore
+import { type CombatInfo, type Resource, type UIPosition } from "@bibliothecadao/eternum";
+// @ts-expect-error
 import { useMemo } from "react";
 import { Html } from "@react-three/drei";
 import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
@@ -17,12 +17,11 @@ import ProgressBar from "../../../elements/ProgressBar";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { useResources } from "../../../../hooks/helpers/useResources";
 import { ResourceCost } from "../../../elements/ResourceCost";
-import { TIME_PER_TICK } from "@bibliothecadao/eternum";
 
-type ArmyInfoLabelProps = {
+interface ArmyInfoLabelProps {
   position: UIPosition;
   armyId: bigint;
-};
+}
 
 export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   const { getEntitiesCombatInfo } = useCombat();
@@ -36,6 +35,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   const { getResourcesFromInventory } = useResources();
   const { getRealmAddressName } = useRealm();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const currentTick = useBlockchainStore((state) => state.currentTick);
 
   const raider = useMemo(() => {
     return getEntitiesCombatInfo([armyId])[0];
@@ -44,7 +44,6 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   const tickMove = raider.entityId ? getComponentValue(TickMove, getEntityIdFromKeys([raider.entityId])) : undefined;
   const isPassiveTravel = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
 
-  const currentTick = nextBlockTimestamp ? Math.floor(nextBlockTimestamp / TIME_PER_TICK) : 0;
   const isActiveTravel = tickMove !== undefined ? tickMove.tick >= currentTick : false;
 
   return (
@@ -149,7 +148,7 @@ const RaiderInfo = ({
           <div className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
             <div
               className="flex items-center h-6 mr-2"
-              onMouseEnter={() =>
+              onMouseEnter={() => {
                 setTooltip({
                   position: "top",
                   content: (
@@ -157,9 +156,11 @@ const RaiderInfo = ({
                       <p className="whitespace-nowrap">Attack power</p>
                     </>
                   ),
-                })
-              }
-              onMouseLeave={() => setTooltip(null)}
+                });
+              }}
+              onMouseLeave={() => {
+                setTooltip(null);
+              }}
             >
               <img src="/images/icons/attack.png" className="h-full" />
               <div className="flex flex-col ml-1 text-center">
@@ -168,7 +169,7 @@ const RaiderInfo = ({
             </div>
             <div
               className="flex items-center h-6 mr-2"
-              onMouseEnter={() =>
+              onMouseEnter={() => {
                 setTooltip({
                   position: "top",
                   content: (
@@ -176,9 +177,11 @@ const RaiderInfo = ({
                       <p className="whitespace-nowrap">Defence power</p>
                     </>
                   ),
-                })
-              }
-              onMouseLeave={() => setTooltip(null)}
+                });
+              }}
+              onMouseLeave={() => {
+                setTooltip(null);
+              }}
             >
               <img src="/images/icons/defence.png" className="h-full" />
               <div className="flex flex-col ml-1 text-center">

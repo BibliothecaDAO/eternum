@@ -30,10 +30,7 @@ trait ICapacityConfig {
 
 #[dojo::interface]
 trait ITickConfig {
-    fn set_tick_config(
-        max_moves_per_tick: u8,
-        tick_interval_in_seconds: u64
-    );
+    fn set_tick_config(max_moves_per_tick: u8, tick_interval_in_seconds: u64);
 }
 
 
@@ -149,3 +146,12 @@ trait IMapConfig {
     );
 }
 
+
+#[dojo::interface]
+trait IProductionConfig {
+    fn set_production_config(
+        resource_type: u8,
+        amount: u128,
+        cost: Span<(u8, u128)>
+    );
+}

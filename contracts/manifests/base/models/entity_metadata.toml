@@ -1,0 +1,14 @@
+kind = "DojoModel"
+class_hash = "0x6e9530bb295ee165c8fc8678f6b85bb5900516a71b89f46e65ed8cf1a738ada"
+abi = "abis/base/models/entity_metadata.json"
+name = "eternum::models::metadata::entity_metadata"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "entity_type"
+type = "u128"
+key = false

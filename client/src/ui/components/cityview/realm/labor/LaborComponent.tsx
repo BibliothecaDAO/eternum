@@ -1,5 +1,5 @@
 import Button from "../../../../elements/Button";
-import { ResourcesIds, findResourceById, LABOR_CONFIG, RealmInterface } from "@bibliothecadao/eternum";
+import { ResourcesIds, findResourceById, LABOR_CONFIG, type RealmInterface } from "@bibliothecadao/eternum";
 import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils.js";
 import { ReactComponent as Clock } from "@/assets/icons/common/clock.svg";
 import { ReactComponent as Village } from "@/assets/icons/common/village.svg";
@@ -10,23 +10,24 @@ import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinute
 import { useMemo } from "react";
 import { usePlayResourceSound, soundSelector, useUiSounds } from "../../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { LevelIndex, useLevel } from "../../../../../hooks/helpers/useLevel";
-import { EventType, useNotificationsStore } from "../../../../../hooks/store/useNotificationsStore";
-import { FoodType, useLabor } from "../../../../../hooks/helpers/useLabor";
-import useUIStore from "../../../../../hooks/store/useUIStore";
-import { ReactComponent as People } from "@/assets/icons/common/people.svg";
+import useRealmStore from "../../../../hooks/store/useRealmStore";
+import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
+import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
+import { FoodType, useLabor } from "../../../../hooks/helpers/useLabor";
+import useUIStore from "../../../../hooks/store/useUIStore";
+import { ReactComponent as People } from "../../../../assets/icons/common/people.svg";
+import { useResourceBalance } from "../../../../hooks/helpers/useResources";
 
-type LaborComponentProps = {
+interface LaborComponentProps {
   hasGuild: boolean;
   resourceId: number;
   realm: RealmInterface;
   setBuildResource: (resourceId: number) => void;
-  buildLoadingStates: { [key: number]: boolean };
+  buildLoadingStates: Record<number, boolean>;
   setBuildLoadingStates: (prevStates: any) => void;
   className?: string;
   locked?: boolean;
-};
+}
 
 export const LaborComponent = ({
   hasGuild,
@@ -46,6 +47,8 @@ export const LaborComponent = ({
     account: { account },
   } = useDojo();
 
+  const { useBalance } = useResourceBalance();
+
   const { playResourceSound } = usePlayResourceSound();
   const { play: playBuildFarm } = useUiSounds(soundSelector.buildFarm);
   const { play: playBuildFishingVillage } = useUiSounds(soundSelector.buildFishingVillage);
@@ -56,8 +59,7 @@ export const LaborComponent = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
-
-  const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
+  const resource = useBalance(realmEntityId, resourceId);
 
   // time until the next possible harvest (that happens every 7200 seconds (2hrs))
   // if labor balance is less than current time, then there is no time to next harvest
@@ -88,10 +90,10 @@ export const LaborComponent = ({
   }, [realmEntityId, isFood]);
 
   const onBuild = async () => {
-    if (resourceId == ResourcesIds["Wheat"]) {
+    if (resourceId == ResourcesIds.Wheat) {
       playBuildFarm();
       await onBuildFood(FoodType.Wheat, realm);
-    } else if (resourceId == ResourcesIds["Fish"]) {
+    } else if (resourceId == ResourcesIds.Fish) {
       playBuildFishingVillage();
       await onBuildFood(FoodType.Fish, realm);
     } else {
@@ -164,7 +166,7 @@ export const LaborComponent = ({
             <div className="flex items-center mb-2">
               {/* <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" /> */}
               <div className="ml-2 text-sm font-bold text-white">
-                <span className="opacity-60">{currencyFormat(resource ? Number(resource.balance) : 0, 2)}</span>
+                <span className="opacity-60">{currencyFormat(resource ? Number(resource.amount) : 0, 2)}</span>
 
                 <span className={`ml-3  ${labor && laborLeft > 0 ? "text-gold" : "text-gray-gold"}`}>
                   {hyperstructureLevelBonus && labor && laborLeft > 0
@@ -184,10 +186,10 @@ export const LaborComponent = ({
               <div className="flex items-center ml-auto">
                 {isFood && <Village />}
                 {/* // DISCUSS: when there is no labor anymore, it means full decay of the buildings, so it should be multiplier 0 */}
-                {resourceId == ResourcesIds["Wheat"] && (
+                {resourceId == ResourcesIds.Wheat && (
                   <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.rivers}`}</div>
                 )}
-                {resourceId == ResourcesIds["Fish"] && (
+                {resourceId == ResourcesIds.Fish && (
                   <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>
                 )}
                 {/* // TODO: show visual cue that it's disabled */}
@@ -217,7 +219,7 @@ export const LaborComponent = ({
                   disabled={isFood && laborLeft > 0}
                   isLoading={buildLoadingStates[resourceId]}
                 >
-                  {isFood ? `Build` : `Add Production`}
+                  {isFood ? "Build" : "Add Production"}
                 </Button>
               </div>
             </div>

@@ -58,9 +58,17 @@ mod ResourceTypes {
     const UNREFINED_ORE: u8 = 26;
     const SUNKEN_SHEKEL: u8 = 27;
     const DEMONHIDE: u8 = 28;
+
+    // TROOPS // @dev: troops are not resources, but they are stored in the same data structure
+    const KNIGHT: u8 = 250;
+    const CROSSBOWMAN: u8 = 251;
+    const PALADIN: u8 = 252;
+
     const LORDS: u8 = 253;
     const WHEAT: u8 = 254;
     const FISH: u8 = 255;
+
+
 // note: update _resource_type_to_position 
 //  function is any new resources are added
 }

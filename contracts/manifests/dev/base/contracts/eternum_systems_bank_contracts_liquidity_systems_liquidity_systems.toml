@@ -1,9 +1,0 @@
-kind = "DojoContract"
-class_hash = "0x2b6718aec816fdcddb20ed6dc3cfdf98d3e894e0649b862da8b6f399316f938"
-original_class_hash = "0x2b6718aec816fdcddb20ed6dc3cfdf98d3e894e0649b862da8b6f399316f938"
-base_class_hash = "0x0"
-abi = "manifests/dev/abis/base/contracts/eternum_systems_bank_contracts_liquidity_systems_liquidity_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems"

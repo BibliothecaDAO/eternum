@@ -5,13 +5,19 @@ import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
 import { SelectableResource } from "../../../../elements/SelectableResource";
-import { ONE_MONTH, WEIGHTS, resources } from "@bibliothecadao/eternum";
+import {
+  ONE_MONTH,
+  WEIGHTS,
+  resources,
+  type CaravanInterface,
+  DONKEYS_PER_CITY,
+  WEIGHT_PER_DONKEY_KG,
+} from "@bibliothecadao/eternum";
 import { ReactComponent as ArrowSeparator } from "@/assets/icons/common/arrow-separator.svg";
 import { ReactComponent as Danger } from "@/assets/icons/common/danger.svg";
 import { ReactComponent as Donkey } from "@/assets/icons/units/donkey-circle.svg";
 import { Caravan } from "./Caravans/Caravan";
 import { Steps } from "../../../../elements/Steps";
-import { CaravanInterface } from "@bibliothecadao/eternum";
 import { useDojo } from "../../../../../hooks/context/DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
@@ -19,22 +25,21 @@ import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 import { useGetRealm, useRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
-import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
-import { useResources } from "../../../../../hooks/helpers/useResources";
+import { useResourceBalance, useResources } from "../../../../hooks/helpers/useResources";
 import { getTotalResourceWeight } from "./utils";
 import { TradeRealmSelector } from "./TradeRealmSelector";
 
-type CreateOfferPopupProps = {
+interface CreateOfferPopupProps {
   onClose: () => void;
   onCreate: () => void;
-};
+}
 
 export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const [step, setStep] = useState<number>(1);
   const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<number[]>([]);
   const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
-  const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
-  const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
+  const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<Record<number, number>>({});
+  const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<Record<number, number>>({});
   const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
   const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<bigint | undefined>();
   const [selectedRealmId, setSelectedRealmId] = useState<bigint | undefined>();
@@ -173,7 +178,9 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         <div className="flex justify-between m-2 text-xxs">
           <Button
             className="!px-[6px] !py-[2px] text-xxs"
-            onClick={() => (step === 1 ? onClose() : setStep(step - 1))}
+            onClick={() => {
+              step === 1 ? onClose() : setStep(step - 1);
+            }}
             variant="outline"
           >
             {step === 1 ? "Cancel" : "Back"}
@@ -226,7 +233,7 @@ const SelectResourcesPanel = ({
   selectedResourceIdsGet: number[];
   setSelectedResourceIdsGet: (selectedResourceIds: number[]) => void;
 }) => {
-  const { getBalance } = useResources();
+  const { getBalance } = useResourceBalance();
 
   const { realmEntityId } = useRealmStore();
 
@@ -236,7 +243,7 @@ const SelectResourcesPanel = ({
         <Headline className="mb-2">You Give</Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
-            let resource = getBalance(realmEntityId, id);
+            const resource = getBalance(realmEntityId, id);
             return (
               <SelectableResource
                 key={id}
@@ -263,7 +270,7 @@ const SelectResourcesPanel = ({
         <Headline className="mb-2">You Get</Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
-            let resource = getBalance(realmEntityId, id);
+            const resource = getBalance(realmEntityId, id);
             return (
               <SelectableResource
                 key={id}
@@ -301,22 +308,22 @@ const SelectResourcesAmountPanel = ({
 }: {
   selectedResourceIdsGive: number[];
   selectedResourceIdsGet: number[];
-  selectedResourcesGiveAmounts: { [key: number]: number };
-  selectedResourcesGetAmounts: { [key: number]: number };
+  selectedResourcesGiveAmounts: Record<number, number>;
+  selectedResourcesGetAmounts: Record<number, number>;
   resourceWeight: number;
-  setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
-  setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
+  setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: Record<number, number>) => void;
+  setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: Record<number, number>) => void;
   setResourceWeight: (resourceWeight: number) => void;
   selectedRealmId: bigint | undefined;
   setSelectedRealmId: (selectedRealmId: bigint) => void;
 }) => {
   const { realmEntityId } = useRealmStore();
 
-  const { getBalance } = useResources();
+  const { getBalance } = useResourceBalance();
 
   useEffect(() => {
     // set resource weight in kg
-    let resourcesGet = Object.keys(selectedResourcesGetAmounts).map((resourceId) => {
+    const resourcesGet = Object.keys(selectedResourcesGetAmounts).map((resourceId) => {
       return {
         resourceId: Number(resourceId),
         amount: selectedResourcesGetAmounts[Number(resourceId)],
@@ -331,7 +338,7 @@ const SelectResourcesAmountPanel = ({
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Give</Headline>
           {selectedResourceIdsGive.map((id) => {
-            let resource = getBalance(realmEntityId, id);
+            const resource = getBalance(realmEntityId, id);
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
@@ -367,7 +374,7 @@ const SelectResourcesAmountPanel = ({
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Get</Headline>
           {selectedResourceIdsGet.map((id) => {
-            let resource = getBalance(realmEntityId, id);
+            const resource = getBalance(realmEntityId, id);
 
             return (
               <div key={id} className="flex items-center w-full">
@@ -439,8 +446,8 @@ export const SelectCaravanPanel = ({
   setSelectedCaravan: (selectedCaravanId: bigint) => void;
   selectedResourceIdsGet: number[];
   selectedResourceIdsGive: number[];
-  selectedResourcesGetAmounts: { [key: number]: number };
-  selectedResourcesGiveAmounts: { [key: number]: number };
+  selectedResourcesGetAmounts: Record<number, number>;
+  selectedResourcesGiveAmounts: Record<number, number>;
   resourceWeight: number;
   hasEnoughDonkeys: boolean;
   headline?: string;
@@ -471,7 +478,7 @@ export const SelectCaravanPanel = ({
     return caravan.capacity ? caravan.capacity >= resourceWeight : false;
   };
 
-  let myAvailableCaravans = useMemo(
+  const myAvailableCaravans = useMemo(
     () =>
       realmCaravans
         ? (realmCaravans
@@ -570,7 +577,9 @@ export const SelectCaravanPanel = ({
               <div className="flex items-center col-span-3">
                 <NumberInput
                   value={donkeysCount}
-                  onChange={(value) => setDonkeysCount(Math.min(donkeysLeft || 0, value))}
+                  onChange={(value) => {
+                    setDonkeysCount(Math.min(donkeysLeft || 0, value));
+                  }}
                   max={donkeysLeft || 0}
                 />
                 <Donkey className="ml-2 w-5 h-5 min-w-[20px]" />
@@ -613,7 +622,9 @@ export const SelectCaravanPanel = ({
       )}
       {!isNewCaravan && (
         <div
-          onClick={() => setIsNewCaravan(true)}
+          onClick={() => {
+            setIsNewCaravan(true);
+          }}
           className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
         >
           <div className="text-xs text-center text-gold">+ New Caravan</div>
@@ -626,7 +637,9 @@ export const SelectCaravanPanel = ({
       )}
       {isNewCaravan && myAvailableCaravans.length > 0 && (
         <div
-          onClick={() => setIsNewCaravan(false)}
+          onClick={() => {
+            setIsNewCaravan(false);
+          }}
           className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
         >
           <div className="text-xs text-center text-gold">{`Show ${myAvailableCaravans.length} idle Caravans`}</div>
@@ -639,7 +652,9 @@ export const SelectCaravanPanel = ({
               key={caravan.caravanId}
               caravan={caravan}
               idleOnly={true}
-              onClick={() => setSelectedCaravan(caravan.caravanId)}
+              onClick={() => {
+                setSelectedCaravan(caravan.caravanId);
+              }}
               className={`w-full mt-2 border rounded-md ${
                 selectedCaravan === caravan.caravanId ? "border-order-brilliance" : ""
               }`}

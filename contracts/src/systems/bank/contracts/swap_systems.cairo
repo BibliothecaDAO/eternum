@@ -7,6 +7,7 @@ mod swap_systems {
     use eternum::systems::bank::interface::swap::ISwapSystems;
     use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use eternum::models::resources::{Resource, ResourceTrait};
+    use eternum::models::config::{TickImpl, TickTrait};
 
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
     use cubit::f128::math::ops::{mul};
@@ -51,13 +52,14 @@ mod swap_systems {
             let mut owner_lords = get!(
                 world, (owner_bank_account.entity_id, ResourceTypes::LORDS), Resource
             );
-            owner_lords.add(world, owner_fees_amount);
+            owner_lords.add(owner_fees_amount);
 
             // udpate player lords
             let mut player_lords = get!(
                 world, (bank_account_entity_id, ResourceTypes::LORDS), Resource
             );
-            player_lords.deduct(world, cost + owner_fees_amount + lp_fees_amount, true);
+            let tick = TickImpl::get(world);
+            player_lords.deduct(world, @tick, cost + owner_fees_amount + lp_fees_amount, true);
 
             // update player resources
             let mut resource = get!(world, (bank_account_entity_id, resource_type), Resource);
@@ -93,7 +95,7 @@ mod swap_systems {
             let mut owner_resource = get!(
                 world, (owner_bank_account.entity_id, resource_type), Resource
             );
-            owner_resource.add(world, owner_fees_amount);
+            owner_resource.add(owner_fees_amount);
 
             // update market
             let mut market = get!(world, (bank_entity_id, resource_type), Market);
@@ -106,11 +108,12 @@ mod swap_systems {
             let mut player_lords = get!(
                 world, (bank_account_entity_id, ResourceTypes::LORDS), Resource
             );
-            player_lords.add(world, payout);
+            player_lords.add(payout);
 
             // update player resource
             let mut resource = get!(world, (bank_account_entity_id, resource_type), Resource);
-            resource.deduct(world, amount, true);
+            let tick = TickImpl::get(world); 
+            resource.deduct(world, @tick, amount, true);
         }
     }
 

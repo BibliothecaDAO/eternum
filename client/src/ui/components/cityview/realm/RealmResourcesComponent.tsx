@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
-import { ResourcesIds, findResourceById, getIconResourceId, resources } from "@bibliothecadao/eternum";
+import { ResourcesIds, findResourceById, getIconResourceId, resources, LABOR_CONFIG } from "@bibliothecadao/eternum";
 import { currencyFormat, currencyIntlFormat, divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils.js";
 import clsx from "clsx";
 import { unpackResources } from "../../../utils/packedData";
@@ -11,9 +11,9 @@ import { ReactComponent as MoreIcon } from "@/assets/icons/common/more.svg";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
-import { LABOR_CONFIG } from "@bibliothecadao/eternum";
-import useUIStore from "../../../../hooks/store/useUIStore";
-import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
+import useUIStore from "../../../hooks/store/useUIStore";
+import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
+import { useResourceBalance } from "../../../hooks/helpers/useResources";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -21,7 +21,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
   const [showAllResources, setShowAllResources] = useState<boolean>(false);
   const [realmResourceIds, setRealmResourceIds] = useState<number[]>([]);
 
-  let realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const { realm } = useGetRealm(realmEntityId);
 
@@ -34,7 +34,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
 
   // unpack the resources
   useMemo((): any => {
-    let realmResourceIds: number[] = [ResourcesIds["Lords"], ResourcesIds["Wheat"], ResourcesIds["Fish"]];
+    let realmResourceIds: number[] = [ResourcesIds.Lords, ResourcesIds.Wheat, ResourcesIds.Fish];
     let unpackedResources: number[] = [];
 
     if (realm) {
@@ -118,7 +118,7 @@ export const ResourceComponent: React.FC<ResourceComponentProps> = ({
     },
   } = useDojo();
 
-  let { realmEntityId } = useRealmStore();
+  const { realmEntityId } = useRealmStore();
   const setTooltip = useUIStore((state) => state.setTooltip);
   const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
 
@@ -126,6 +126,7 @@ export const ResourceComponent: React.FC<ResourceComponentProps> = ({
   const [productivity, setProductivity] = useState<number>(0);
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
+  const { useBalance } = useResourceBalance();
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
@@ -138,7 +139,7 @@ export const ResourceComponent: React.FC<ResourceComponentProps> = ({
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
 
-  const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
+  const resource = useBalance(realmEntityId, resourceId);
 
   useEffect(() => {
     let laborLeft: number = 0;
@@ -159,7 +160,7 @@ export const ResourceComponent: React.FC<ResourceComponentProps> = ({
     setProductivity(productivity);
   }, [nextBlockTimestamp, labor]);
 
-  return resource && resource.balance > 0 ? (
+  return resource && resource.amount > 0 ? (
     <>
       <div
         onMouseEnter={() =>
@@ -169,7 +170,7 @@ export const ResourceComponent: React.FC<ResourceComponentProps> = ({
             content: (
               <div className="flex flex-col items-center justify-center">
                 <div className="font-bold">{findResourceById(resourceId)?.trait}</div>
-                <div>{currencyFormat(resource ? Number(resource.balance) : 0, 2)}</div>
+                <div>{currencyFormat(resource ? Number(resource.amount) : 0, 2)}</div>
               </div>
             ),
           })
@@ -182,13 +183,13 @@ export const ResourceComponent: React.FC<ResourceComponentProps> = ({
         <ResourceIcon
           isLabor={isLabor}
           withTooltip={false}
-          resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}
+          resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait!}
           size="md"
           className="mr-1"
         />
         <div className="flex text-xs">
           {currencyIntlFormat(
-            resource ? (!isLabor ? divideByPrecision(Number(resource.balance)) : Number(resource.balance)) : 0,
+            resource ? (!isLabor ? divideByPrecision(Number(resource.amount)) : Number(resource.amount)) : 0,
             2,
           )}
           {resourceId !== 253 && canFarm && (

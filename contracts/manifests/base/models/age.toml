@@ -1,0 +1,14 @@
+kind = "DojoModel"
+class_hash = "0x7d2d5d390cf1f968cece61c55ecc2d062fdf4519423a79f26d0410e8190c8b7"
+abi = "abis/base/models/age.json"
+name = "eternum::models::age::age"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "born_at"
+type = "u64"
+key = false

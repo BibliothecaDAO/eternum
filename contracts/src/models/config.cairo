@@ -169,10 +169,24 @@ struct TickConfig {
 
 
 #[generate_trait]
-impl TickConfigImpl of TickConfigTrait {
+impl TickImpl of TickTrait {
+
+    fn get(world: IWorldDispatcher) -> TickConfig {
+        let tick_config: TickConfig = get!(world, WORLD_CONFIG_ID, TickConfig);
+        return tick_config;   
+    }
+
     fn current(self: TickConfig) -> u64 {
         let now = starknet::get_block_timestamp();
         now / self.tick_interval_in_seconds
+    }
+
+    fn at(self: TickConfig, time: u64) -> u64 {
+        time / self.tick_interval_in_seconds
+    }
+    
+    fn after(self: TickConfig, time_spent: u64) -> u64 {
+        (starknet::get_block_timestamp() + time_spent) / self.tick_interval_in_seconds
     }
 }
 
@@ -320,6 +334,38 @@ struct LaborBuildingCost {
     resource_cost_count: u32,
 }
 
+#[derive(Model, Clone, Drop, Serde)]
+struct ProductionConfig {
+    #[key]
+    resource_type: u8,
+    // production amount per tick
+    amount: u128, 
+    // num materials required to produce this resource
+    input_count: u128,
+    // num different resources that this resource can produce
+    output_count: u128   
+}
+
+
+#[derive(Model, Copy, Drop, Serde)]
+struct ProductionInput {
+    #[key]
+    output_resource_type: u8,
+    #[key]
+    index: u8, 
+    input_resource_type: u8,
+    input_resource_amount: u128
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct ProductionOutput {
+    #[key]
+    input_resource_type: u8,
+    #[key]
+    index: u8, 
+    output_resource_type: u8
+}
+
 #[derive(Model, Copy, Drop, Serde)]
 struct BankConfig {
     #[key]
@@ -327,6 +373,7 @@ struct BankConfig {
     lords_cost: u128,
     lp_fee_scaled: u128,
 }
+
 
 
 #[cfg(test)]

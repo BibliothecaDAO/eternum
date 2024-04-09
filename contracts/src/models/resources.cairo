@@ -1,12 +1,16 @@
 use eternum::utils::math::{is_u32_bit_set, set_u32_bit};
 use eternum::constants::get_resource_probabilities;
 use eternum::constants::ResourceTypes;
+use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
+
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-// Used as helper struct throughout the world
+use eternum::models::production::{Production, ProductionRateTrait};
+use eternum::models::config::{ProductionOutput};
+
+
 #[derive(Model, Copy, Drop, Serde)]
 struct Resource {
-    // This is compound key of entity_id and resource_type
     #[key]
     entity_id: u128,
     #[key]
@@ -31,16 +35,76 @@ impl ResourceFoodImpl of ResourceFoodTrait {
     ) {
         let mut wheat: Resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
         let mut fish: Resource = get!(world, (entity_id, ResourceTypes::FISH), Resource);
-        wheat.deduct(world, wheat_amount, check_balance);
-        fish.deduct(world, fish_amount, check_balance);
+        let tick = TickImpl::get(world);
+
+        wheat.deduct(world, @tick, wheat_amount, check_balance);
+        wheat.save(world);
+
+        fish.deduct(world, @tick, fish_amount, check_balance);
+        fish.save(world);
+    }
+}
+
+#[generate_trait]
+impl ProductionMaterialImpl of ProductionMaterialTrait {
+    // what this aims to achieve is that if stone and coal are used to produce wood.
+    // (i.e stone and coal are the materials for wood), whenever stone or coal
+    // balance changes, the time that wood production will end should be updated 
+    // because if stone has a net negative production rate for example, by decreasing stone balance, 
+    // stone should run out faster. Similarly, by increasing stone balance, it should run out slower.
+    // anyway, this only happens when stone has a net negative production rate. if it is positive
+    // it can always pay for wood production and may still have   
+
+    // e.g resource is stone..dependents are wood and ruby because they each depend on 
+    // stone to be produced
+    fn reset_produced_exhaustion_tick(ref input_resource: Resource, world: IWorldDispatcher) {
+        let input_resource_production_config: ProductionConfig 
+            = get!(world, input_resource.resource_type, ProductionConfig);
+
+        let mut input_resource_production: Production 
+            = get!(world, input_resource.query_key(), Production);
+   
+        let tick = TickImpl::get(world);
+
+        let mut count = 0;
+        loop {
+            if count == input_resource_production_config.output_count {
+                break;
+            }
+
+            let output_resource_type: u8
+                = get!(world, (input_resource.resource_type, count), ProductionOutput)
+                    .output_resource_type;
+            let mut output_resource_production: Production
+                = get!(world, (input_resource.entity_id, output_resource_type), Production);
+     
+            output_resource_production
+                .set_end_tick(
+                    @input_resource_production, @input_resource, @tick);
+
+            count += 1;
+
+            set!(world, (output_resource_production));
+        };
     }
 }
 
 
 #[generate_trait]
 impl ResourceImpl of ResourceTrait {
-    fn deduct(ref self: Resource, world: IWorldDispatcher, amount: u128, check_balance: bool) {
-        let mut amount = amount;
+    fn query_key(self: Resource) -> (u128, u8) {
+        (self.entity_id, self.resource_type)
+    }
+
+    // todo@credence make sure all deductions are done through here
+    fn deduct(ref self: Resource, world: IWorldDispatcher, tick: @TickConfig, mut amount: u128, check_balance: bool) {
+
+        // harvest profit or loss
+        let mut production: Production = get!(world, self.query_key(), Production);
+        production.harvest(ref self, tick);
+        set!(world, (production));
+        
+        // do deduction
         if check_balance {
             assert(self.balance >= amount, 'insufficient balance');
         } else {
@@ -48,19 +112,20 @@ impl ResourceImpl of ResourceTrait {
                 amount = self.balance
             }
         }
+
         self.balance -= amount;
-        self.save(world);
     }
 
 
-    fn add(ref self: Resource, world: IWorldDispatcher, amount: u128) {
+    fn add(ref self: Resource, amount: u128) {
         self.balance += amount;
-        self.save(world);
     }
 
-    fn save(ref self: Resource, world: IWorldDispatcher,) {
+    fn save(ref self: Resource, world: IWorldDispatcher) {
         // Save the resource
         set!(world, (self));
+        ProductionMaterialImpl::reset_produced_exhaustion_tick(ref self, world);
+
 
         // Update the entity's owned resources
 
@@ -216,6 +281,12 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
             position = 32 - 2;
         } else if position == 253 {
             position = 32 - 3;
+        } else if position == 252 {
+            position = 32 - 4;
+        } else if position == 251 {
+            position = 32 - 5;
+        } else if position == 250 {
+            position = 32 - 6;
         } else {
             position -= 1;
         }

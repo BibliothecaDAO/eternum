@@ -10,32 +10,31 @@ import { useCombat } from "../../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
 import { useComponentValue } from "@dojoengine/react";
 import { SelectRaiders } from "./SelectRaiders";
-import { useResources } from "../../../../../../hooks/helpers/useResources";
+import { useResourceBalance, useResources } from "../../../../../hooks/helpers/useResources";
 import clsx from "clsx";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { CombatInfo, Position, Resource, findResourceById, resources } from "@bibliothecadao/eternum";
+import { type CombatInfo, type Position, type Resource, findResourceById, resources } from "@bibliothecadao/eternum";
 import { getRealmNameById } from "../../../../../utils/realms";
 import { SmallResource } from "../../SmallResource";
 import { LevelIndex, useLevel } from "../../../../../../hooks/helpers/useLevel";
 import { useHyperstructure } from "../../../../../../hooks/helpers/useHyperstructure";
 import useUIStore from "../../../../../../hooks/store/useUIStore";
 
-type AttackRaidsPopupProps = {
+interface AttackRaidsPopupProps {
   attackPosition: Position;
   targetEntityId: bigint;
   onClose: () => void;
-};
+}
 
 export const AttackRaidsPopup = ({ attackPosition, targetEntityId, onClose }: AttackRaidsPopupProps) => {
   const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getDefenceOnPosition } = useCombat();
   const { isEntityIdRealm } = useRealm();
+  const { getFoodResources } = useResourceBalance();
 
   const isTargetRealm = isEntityIdRealm(targetEntityId);
 
   const [step, setStep] = useState<number>(1);
   const [selectedRaiders, setSelectedRaiders] = useState<CombatInfo[]>([]);
-
-  const { getFoodResources } = useResources();
 
   const attackingEntities = attackPosition ? getOwnerRaidersOnPosition(attackPosition) : [];
   const attackingRaiders = useMemo(() => {
@@ -178,7 +177,7 @@ const AttackResultPanel = ({
           </div>
           <div className="italic text-light-pink text-xxs my-2">Enemy was damaged by your raid group!</div>
           <img
-            src={`/images/lost_raid.png`}
+            src={"/images/lost_raid.png"}
             className="object-cover  border border-gold w-full h-full rounded-[10px]"
           />
           <div className="flex flex-col mt-2 w-full">
@@ -226,7 +225,7 @@ const AttackResultPanel = ({
             </svg>
           </div>
           <div className="italic text-light-pink text-xxs my-2">Your raid group was defeated by the defence army.</div>
-          <img src={`/images/lost_raid.png`} className="object-cover w-full h-full rounded-[10px]" />
+          <img src={"/images/lost_raid.png"} className="object-cover w-full h-full rounded-[10px]" />
           <div className="flex flex-col mt-2 w-full">
             <div className="text-light-pink text-xs">{"Battle losses:"}</div>
             {selectedRaiders.map((raider) => (
@@ -237,7 +236,7 @@ const AttackResultPanel = ({
       )}
       <div className="flex justify-center w-full">
         <Button size="xs" onClick={onClose} variant="outline">
-          {`Close`}
+          {"Close"}
         </Button>
       </div>
     </div>
@@ -283,7 +282,8 @@ const StealResultPanel = ({
     },
   } = useDojo();
 
-  const { getResourcesFromInventory, getFoodResources } = useResources();
+  const { getResourcesFromInventory } = useResources();
+  const { getFoodResources } = useResourceBalance();
   const attackerHealth = selectedRaiders[0].entityId
     ? useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]))
     : undefined;
@@ -347,7 +347,7 @@ const StealResultPanel = ({
           {step !== 1 && <div className="italic text-light-pink text-xxs my-2">You’ve got a golden chest:</div>}
           {step === 1 && (
             <div className="flex relative">
-              <img src={`/images/pillage/pillage1.png`} className="object-cover w-full h-full rounded-[10px]" />
+              <img src={"/images/pillage/pillage1.png"} className="object-cover w-full h-full rounded-[10px]" />
               <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-70 rounded-lg"></div>
               {burnFood && (
                 <div className="flex justify-center items-center space-x-1 flex-wrap p-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -371,10 +371,10 @@ const StealResultPanel = ({
               )}
             </div>
           )}
-          {step === 2 && <img src={`/images/chest.png`} className="object-cover w-full h-full rounded-[10px]" />}
+          {step === 2 && <img src={"/images/chest.png"} className="object-cover w-full h-full rounded-[10px]" />}
           {step === 3 && (
             <div className="flex relative">
-              <img src={`/images/opened_chest.png`} className="object-cover w-full h-full rounded-[10px]" />
+              <img src={"/images/opened_chest.png"} className="object-cover w-full h-full rounded-[10px]" />
               {inventoryResources && (
                 <div className="flex justify-center items-center space-x-1 flex-wrap p-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                   <div className="text-light-pink text-lg w-full mb-2 text-center italic">You won!</div>
@@ -435,7 +435,7 @@ const StealResultPanel = ({
           <div className="italic text-light-pink text-xxs my-2">
             Your raid group was defeated and sent back to home realm.
           </div>
-          <img src={`/images/lost_raid.png`} className="object-cover w-full h-full rounded-[10px]" />
+          <img src={"/images/lost_raid.png"} className="object-cover w-full h-full rounded-[10px]" />
           <div className="flex flex-col mt-2 w-full">
             <div className="text-light-pink text-xs">{"Battle losses:"}</div>
             <AttackerHealthChange selectedRaider={selectedRaiders[0]} />
@@ -455,7 +455,7 @@ const StealResultPanel = ({
           }}
           variant="outline"
         >
-          {step === 1 ? "Steal Resources" : success && step === 2 ? `Open Chest` : "Close"}
+          {step === 1 ? "Steal Resources" : success && step === 2 ? "Open Chest" : "Close"}
         </Button>
       </div>
     </div>
@@ -495,7 +495,8 @@ const SelectRaidersPanel = ({
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
   const { getConqueredHyperstructures } = useHyperstructure();
-  const { getBalance, getResourcesFromInventory } = useResources();
+  const { getResourcesFromInventory } = useResources();
+  const { getBalance } = useResourceBalance();
 
   const [attackerTotalAttack, attackerTotalHealth] = useMemo(() => {
     // sum attack of the list
@@ -509,8 +510,8 @@ const SelectRaidersPanel = ({
   const hasWatchTower = defence && defence.health > 0;
 
   const [attackerLevelBonus, attackerHyperstructureLevelBonus] = useMemo(() => {
-    let level = getEntityLevel(realmEntityId)?.level || 0;
-    let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
+    const level = getEntityLevel(realmEntityId)?.level || 0;
+    const levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
     return [levelBonus, conqueredHyperstructureNumber * 25 + 100];
   }, [realmEntityId]);
 
@@ -524,9 +525,9 @@ const SelectRaidersPanel = ({
 
   const [defenderLevelBonus, defenderHyperstructureLevelBonus] = useMemo(() => {
     if (defence) {
-      let level = defence.entityOwnerId ? getEntityLevel(defence.entityOwnerId)?.level || 0 : 0;
-      let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
-      let hyperstructureLevelBonus = conqueredHyperstructures * 25 + 100;
+      const level = defence.entityOwnerId ? getEntityLevel(defence.entityOwnerId)?.level || 0 : 0;
+      const levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
+      const hyperstructureLevelBonus = conqueredHyperstructures * 25 + 100;
       return [levelBonus, hyperstructureLevelBonus];
     } else {
       return [100, 100];
@@ -548,7 +549,7 @@ const SelectRaidersPanel = ({
     );
   }, [attackerTotalAttack, attackerLevelBonus, defenderLevelBonus, defenderHyperstructureLevelBonus]);
 
-  // @ts-ignore
+  // @ts-expect-error
   const { realm } = useGetRealm(realmEntityId);
 
   const onAttack = async () => {
@@ -558,7 +559,7 @@ const SelectRaidersPanel = ({
     if (defence?.entityId) {
       await attack({
         signer: account,
-        attacker_ids: selectedRaiders.map((raider) => Number(raider.entityId)).filter(Boolean) as number[],
+        attacker_ids: selectedRaiders.map((raider) => Number(raider.entityId)).filter(Boolean),
         target_id: defence.entityId,
       });
       // when contract finished setloading false
@@ -588,7 +589,7 @@ const SelectRaidersPanel = ({
   };
 
   const [resoureBalances, hasResources] = useMemo(() => {
-    let resourceBalances: { resourceId: number; balance: number }[] = [];
+    let resourceBalances: Array<{ resourceId: number; balance: number }> = [];
     let hasResources = false;
     if (isTargetRealm) {
       if (defence?.locationEntityId) {
@@ -596,12 +597,12 @@ const SelectRaidersPanel = ({
           const balance = getBalance(defence?.locationEntityId, resource.id);
           if (balance && balance.balance > 0) {
             hasResources = true;
-            resourceBalances.push({ resourceId: balance.resource_type, balance: balance.balance });
+            resourceBalances.push({ resourceId: balance.resourceId, balance: balance.balance });
           }
         }
       }
       if (defence?.entityId) {
-        let resources = getResourcesFromInventory(defence.entityId).resources;
+        const resources = getResourcesFromInventory(defence.entityId).resources;
         for (const resource of resources) {
           if (resource.amount > 0) {
             hasResources = true;
@@ -666,7 +667,7 @@ const SelectRaidersPanel = ({
                   isLoading={loading}
                   variant="primary"
                 >
-                  {`Pillage`}
+                  {"Pillage"}
                 </Button>
                 {selectedRaiders.length == 1 && (
                   <div
@@ -688,7 +689,7 @@ const SelectRaidersPanel = ({
                     isLoading={loading}
                     variant="outline"
                   >
-                    {`Attack`}
+                    {"Attack"}
                   </Button>
                   {selectedRaiders.length > 0 && (
                     <div
@@ -717,7 +718,7 @@ const SelectRaidersPanel = ({
         <div className={"relative w-full mt-2"}>
           <div className="font-bold text-center text-white text-xs mb-2">Select Raiders</div>
           <div className="flex flex-row mb-1 text-xs items-center justify-center">
-            <span className="mr-1 text-gold">{`Realm Bonus: `}</span>
+            <span className="mr-1 text-gold">{"Realm Bonus: "}</span>
             <span className="text-order-brilliance">{`+${attackerLevelBonus - 100}%`}</span>
           </div>
           <div className="flex flex-row mb-3 text-xs items-center justify-center">
@@ -731,7 +732,7 @@ const SelectRaidersPanel = ({
           ></SelectRaiders>
         </div>
         <Button className="!px-[6px] mt-2 !py-[2px] text-xxs mr-auto" onClick={onClose} variant="outline">
-          {`Cancel`}
+          {"Cancel"}
         </Button>
       </div>
     </>

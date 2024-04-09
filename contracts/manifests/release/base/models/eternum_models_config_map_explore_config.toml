@@ -1,0 +1,25 @@
+kind = "DojoModel"
+class_hash = "0x5dfe4af8db1c3be464ffbd45ebc20475ece148e701951eeab9fb707fffbb30c"
+original_class_hash = "0x5dfe4af8db1c3be464ffbd45ebc20475ece148e701951eeab9fb707fffbb30c"
+abi = "manifests/release/abis/base/models/eternum_models_config_map_explore_config.json"
+name = "eternum::models::config::map_explore_config"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "wheat_burn_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "fish_burn_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "reward_resource_amount"
+type = "u128"
+key = false

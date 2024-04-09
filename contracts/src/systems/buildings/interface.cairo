@@ -1,11 +1,10 @@
-use eternum::alias::ID;
-use starknet::ContractAddress;
-use eternum::models::position::Position;
 use dojo::world::IWorldDispatcher;
 
+use eternum::models::buildings::BuildingCategory;
+use eternum::models::position::{Coord, Position, Direction};
 
 #[dojo::interface]
-trait IBuildingsSystems {
-    fn create(realm_entity_id: u128, building_type: u8);
-    fn destroy(realm_entity_id: u128);
+trait IBuildingContract<TContractState> {
+    fn create(entity_id: u128, building_coord: Coord, building_category: BuildingCategory, produce_resource_type: Option<u8>);
+    fn destroy(entity_id: u128, building_coord: Coord);
 }

@@ -23,4 +23,6 @@ mod order;
 mod buildings;
 mod map;
 mod tick;
+mod production;
+mod combatV2;
 mod bank;

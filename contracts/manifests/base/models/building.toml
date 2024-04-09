@@ -1,0 +1,43 @@
+kind = "DojoModel"
+class_hash = "0x44b2587019589f6c0cb05f5f35c15af5e4e22ecb0646e4538e1fc8f7a2b974d"
+name = "eternum::models::buildings::building"
+
+[[members]]
+name = "outer_col"
+type = "u128"
+key = true
+
+[[members]]
+name = "outer_row"
+type = "u128"
+key = true
+
+[[members]]
+name = "inner_col"
+type = "u128"
+key = true
+
+[[members]]
+name = "inner_row"
+type = "u128"
+key = true
+
+[[members]]
+name = "category"
+type = "BuildingCategory"
+key = false
+
+[[members]]
+name = "produced_resource_type"
+type = "u8"
+key = false
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = false
+
+[[members]]
+name = "outer_entity_id"
+type = "u128"
+key = false
