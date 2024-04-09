@@ -10,12 +10,15 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
+import { useQuery } from "@/hooks/helpers/useQuery";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row);
 };
 
 const GroundGrid = () => {
+  const { hexPosition } = useQuery();
+
   const { playBuildingSound } = useBuildingSound();
   const hexPositions = generateHexPositions();
   const { previewBuilding, hoveredBuildHex, setHoveredBuildHex, existingBuildings, setExistingBuildings } = useUIStore(
@@ -55,6 +58,7 @@ const GroundGrid = () => {
       {hexPositions.map((hexPosition, index) => (
         <Hexagon
           key={index}
+          outerPosition={hexPosition}
           position={hexPosition}
           onPointerMove={() => previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
           onClick={() => {
@@ -73,7 +77,17 @@ const GroundGrid = () => {
   );
 };
 
-export const Hexagon = ({ position, onPointerMove, onClick }: { position: any; onPointerMove: any; onClick: any }) => {
+export const Hexagon = ({
+  outerPosition,
+  position,
+  onPointerMove,
+  onClick,
+}: {
+  outerPosition: { col: number; row: number };
+  position: any;
+  onPointerMove: any;
+  onClick: any;
+}) => {
   const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
   const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
   const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
@@ -99,7 +113,12 @@ export const Hexagon = ({ position, onPointerMove, onClick }: { position: any; o
 
   const builtBuilding = useComponentValue(
     Building,
-    getEntityIdFromKeys([BigInt(2147483915), BigInt(2147483789), BigInt(position.row), BigInt(position.col)]),
+    getEntityIdFromKeys([
+      BigInt(outerPosition.col),
+      BigInt(outerPosition.row),
+      BigInt(position.col),
+      BigInt(position.row),
+    ]),
   );
 
   if (builtBuilding) console.log("builtBuilding", builtBuilding);

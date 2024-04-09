@@ -42,6 +42,23 @@ enum BuildingCategory {
     Stable,
 }
 
+impl DirectionIntoFelt252 of Into<BuildingCategory, felt252> {
+    fn into(self: BuildingCategory) -> felt252 {
+        match self {
+            BuildingCategory::None => 0,
+            BuildingCategory::Castle => 1,
+            BuildingCategory::Resource => 2,
+            BuildingCategory::Farm => 3,
+            BuildingCategory::FishingVillage => 4,
+            BuildingCategory::Barracks => 5,
+            BuildingCategory::Market => 6,
+            BuildingCategory::ArcheryRange => 7,
+            BuildingCategory::Stable => 8,
+        }
+    }
+}
+
+
 #[generate_trait]
 impl BuildingProductionImpl of BuildingProductionTrait {
     fn is_resource_producer(self: Building) -> bool {

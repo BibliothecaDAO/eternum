@@ -7,7 +7,7 @@ import BigHexBiome from "../../components/construction/BigHexBiome";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useGetRealms } from "../../../hooks/helpers/useRealm";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { useSearch } from "wouter/use-location";
+import { useSearch } from "wouter";
 
 export const HexceptionViewScene = () => {
   const { setIsLoadingScreenEnabled, hexData, moveCameraToRealmView } = useUIStore((state) => state);
