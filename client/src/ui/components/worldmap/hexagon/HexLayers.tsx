@@ -31,6 +31,7 @@ import { useExplore } from "../../../../hooks/helpers/useExplore";
 import { useTravel } from "../../../../hooks/helpers/useTravel";
 import { useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
+import { useLocation } from "wouter";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
@@ -128,7 +129,7 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
 };
 
 export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
-  const { hexData, moveCameraToTarget } = useUIStore((state) => state);
+  const { hexData, moveCameraToTarget, setIsLoadingScreenEnabled } = useUIStore((state) => state);
 
   const { hoverHandler, clickHandler } = useEventHandlers(explored);
 
@@ -202,6 +203,8 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
 
+  const [_, setLocation] = useLocation();
+
   const goToHex = useCallback(
     (e: any) => {
       const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
@@ -209,9 +212,12 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
       const instanceId = intersect.instanceId;
       const mesh = intersect.object;
       const pos = getPositionsAtIndex(mesh, instanceId);
-      if (pos) {
-        moveCameraToTarget(pos);
-      }
+      if (!pos) return;
+      const colRow = getColRowFromUIPosition(pos.x, pos.y);
+      setIsLoadingScreenEnabled(true);
+      setTimeout(() => {
+        setLocation(`/hex?col=${colRow.col}&row=${colRow.row}`);
+      }, 300);
     },
     [moveCameraToTarget],
   );

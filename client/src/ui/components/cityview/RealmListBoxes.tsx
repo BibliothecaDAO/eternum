@@ -1,8 +1,6 @@
 import clsx from "clsx";
 import { ComponentPropsWithRef, useEffect, useMemo, useState } from "react";
-import CircleButton from "../../elements/CircleButton";
-import { OrderIcon } from "../../elements/OrderIcon";
-import { Badge } from "../../elements/Badge";
+import realmHexPositions from "@/data/geodata/hex/realmHexPositions.json";
 import { RealmBadge } from "../../elements/RealmBadge";
 import { useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
@@ -14,6 +12,7 @@ import { useDojo } from "../../../hooks/context/DojoContext";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEntityQuery } from "@dojoengine/react";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
+import { HexPositions } from "@/ui/utils/utils";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
@@ -23,6 +22,7 @@ export type RealmBubble = {
   realmId: bigint;
   name: string;
   order: string;
+  position: { x: number; y: number };
 };
 
 export const RealmListBoxes = ({ className }: RealmSwitchProps) => {
@@ -33,6 +33,7 @@ export const RealmListBoxes = ({ className }: RealmSwitchProps) => {
     },
   } = useDojo();
 
+  const realmPositions = realmHexPositions as HexPositions;
   const [showRealms, setShowRealms] = useState(false);
   const [yourRealms, setYourRealms] = useState<RealmBubble[]>([]);
 
@@ -82,6 +83,7 @@ export const RealmListBoxes = ({ className }: RealmSwitchProps) => {
         realmId: realm.realmId,
         name,
         order: orderNameDict[realm.order],
+        position: realm.position,
       });
     });
     return fetchedYourRealms;
@@ -105,10 +107,10 @@ export const RealmListBoxes = ({ className }: RealmSwitchProps) => {
             onClick={() => {
               setIsLoadingScreenEnabled(true);
               setTimeout(() => {
-                if (location.includes(`/realm`)) {
+                if (location.includes(`/hex`)) {
                   setIsLoadingScreenEnabled(false);
                 }
-                setLocation(`/realm/${Number(realm.realmId)}`);
+                setLocation(`/hex?col=${realm.position.x}&row=${realm.position.y}`);
                 setRealmEntityId(realm.id);
                 setRealmId(realm.realmId);
               }, 300);
