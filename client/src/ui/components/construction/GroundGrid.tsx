@@ -17,7 +17,7 @@ export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
 };
 
 const GroundGrid = () => {
-  const { hexPosition } = useQuery();
+  const { hexPosition: globalHex } = useQuery();
 
   const { playBuildingSound } = useBuildingSound();
   const hexPositions = generateHexPositions();
@@ -58,7 +58,7 @@ const GroundGrid = () => {
       {hexPositions.map((hexPosition, index) => (
         <Hexagon
           key={index}
-          outerPosition={hexPosition}
+          outerPosition={globalHex}
           position={hexPosition}
           onPointerMove={() => previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
           onClick={() => {
@@ -128,7 +128,7 @@ export const Hexagon = ({
   const hexPosition = getUIPositionFromColRow(position.col, position.row, true);
 
   return (
-    <>
+    <mesh>
       {builtBuilding && <primitive scale={3} object={model} position={[hexPosition.x, 2.33, -hexPosition.y]} />}
       <group position={[position.x, position.y, position.z]} onPointerMove={onPointerMove} onClick={onClick}>
         <mesh geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]}>
@@ -138,7 +138,7 @@ export const Hexagon = ({
           <meshMatcapMaterial color={mainColor} />
         </mesh>
       </group>
-    </>
+    </mesh>
   );
 };
 
