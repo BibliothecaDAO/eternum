@@ -128,7 +128,7 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
 };
 
 export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
-  const hexData = useUIStore((state) => state.hexData);
+  const { hexData, moveCameraToTarget } = useUIStore((state) => state);
 
   const { hoverHandler, clickHandler } = useEventHandlers(explored);
 
@@ -202,10 +202,23 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
 
+  const goToHex = useCallback(
+    (e: any) => {
+      const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
+      if (!intersect) return;
+      const instanceId = intersect.instanceId;
+      const mesh = intersect.object;
+      const pos = getPositionsAtIndex(mesh, instanceId);
+      if (pos) {
+        moveCameraToTarget(pos);
+      }
+    },
+    [moveCameraToTarget],
+  );
   return (
     <Bvh firstHitOnly>
       <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
-        <primitive object={mesh} />
+        <primitive object={mesh} onDoubleClick={goToHex} />
       </group>
     </Bvh>
   );
