@@ -183,12 +183,12 @@ export const MainScene = () => {
       raycaster={{
         params: {
           Points: { threshold: 0.2 },
-          Mesh: {},
+          Mesh: { threshold: 0.2 },
           Line: {
             threshold: 0.2,
           },
-          LOD: {},
-          Sprite: {},
+          LOD: { threshold: 0.2 },
+          Sprite: { threshold: 0.2 },
         },
       }}
       className="rounded-xl"
