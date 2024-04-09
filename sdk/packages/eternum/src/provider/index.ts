@@ -1,5 +1,5 @@
 import { DojoProvider } from "@dojoengine/core";
-import { CairoCustomEnum, CallData } from "starknet";
+import { CairoCustomEnum } from "starknet";
 
 import {
   ExploreProps,
