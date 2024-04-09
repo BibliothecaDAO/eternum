@@ -1,9 +1,0 @@
-kind = "DojoContract"
-class_hash = "0x3a7ffc427d172fcc45527f5cc2c6a37ea9fd3cfebbde1c1cba910f3e547442c"
-original_class_hash = "0x3a7ffc427d172fcc45527f5cc2c6a37ea9fd3cfebbde1c1cba910f3e547442c"
-base_class_hash = "0x0"
-abi = "manifests/dev/abis/base/contracts/eternum_systems_labor_contracts_labor_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::labor::contracts::labor_systems"

@@ -20,7 +20,7 @@ const _0_1: u128 = 1844674407370955161; // 0.1
 fn setup() -> (IWorldDispatcher, IBankConfigDispatcher, IBankSystemsDispatcher, u128) {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
 
     let owner_fee_scaled: u128 = _0_1;
@@ -28,7 +28,7 @@ fn setup() -> (IWorldDispatcher, IBankConfigDispatcher, IBankSystemsDispatcher, 
     let bank_entity_id = bank_config_dispatcher
         .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
 
-    let bank_systems_address = deploy_system(bank_systems::TEST_CLASS_HASH);
+    let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
     // add some resources in the bank account
     (world, bank_config_dispatcher, bank_systems_dispatcher, bank_entity_id)

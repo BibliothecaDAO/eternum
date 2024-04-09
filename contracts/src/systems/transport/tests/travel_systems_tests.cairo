@@ -63,7 +63,7 @@ fn setup() -> (IWorldDispatcher, u64, Position, Coord, ITravelSystemsDispatcher)
     destination_tile.explored_at = 78671;
     set!(world, (destination_tile));
 
-    let travel_systems_address = deploy_system(travel_systems::TEST_CLASS_HASH);
+    let travel_systems_address = deploy_system(world, travel_systems::TEST_CLASS_HASH);
     let travel_systems_dispatcher = ITravelSystemsDispatcher {
         contract_address: travel_systems_address
     };
@@ -486,7 +486,7 @@ fn setup_hex_travel() -> (IWorldDispatcher, u64, Position, ITravelSystemsDispatc
         })
     );
 
-    let travel_systems_address = deploy_system(travel_systems::TEST_CLASS_HASH);
+    let travel_systems_address = deploy_system(world, travel_systems::TEST_CLASS_HASH);
     let travel_systems_dispatcher = ITravelSystemsDispatcher {
         contract_address: travel_systems_address
     };

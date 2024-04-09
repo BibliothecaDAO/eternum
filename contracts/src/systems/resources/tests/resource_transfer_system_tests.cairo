@@ -34,7 +34,7 @@ mod resource_transfer_system_tests {
     fn setup() -> (IWorldDispatcher, IResourceSystemsDispatcher) {
         let world = spawn_eternum();
 
-        let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+        let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
         // set weight configuration for stone
         IWeightConfigDispatcher { contract_address: config_systems_address }
@@ -44,7 +44,7 @@ mod resource_transfer_system_tests {
         IWeightConfigDispatcher { contract_address: config_systems_address }
             .set_weight_config(ResourceTypes::WOOD.into(), 200);
 
-        let resource_systems_address = deploy_system(resource_systems::TEST_CLASS_HASH);
+        let resource_systems_address = deploy_system(world, resource_systems::TEST_CLASS_HASH);
 
         let resource_systems_dispatcher = IResourceSystemsDispatcher {
             contract_address: resource_systems_address

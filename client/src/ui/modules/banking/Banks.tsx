@@ -10,7 +10,7 @@ import { EntityList } from "@/ui/components/list/EntityList";
 const exampleBanks = [
   { id: 1, name: "Iron Bank" },
   { id: 2, name: "Bank of Loaf" },
-  { id: 2, name: "Bank of Power" },
+  { id: 3, name: "Bank of Power" },
 ];
 
 export const Banks = () => {

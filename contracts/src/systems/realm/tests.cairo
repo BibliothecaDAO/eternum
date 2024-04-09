@@ -34,7 +34,7 @@ const INITIAL_RESOURCE_2_AMOUNT: u128 = 700;
 fn setup() -> IWorldDispatcher {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     // set initially minted resources
     let initial_resources = array![
@@ -56,7 +56,7 @@ fn test_realm_create() {
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
     // create realm
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -117,10 +117,10 @@ fn test_realm_create() {
 #[test]
 #[available_gas(3000000000000)]
 fn test_realm_create_equal_max_realms_per_address() {
-    setup();
+    let world = setup();
 
     // create realm
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -165,10 +165,10 @@ fn test_realm_create_equal_max_realms_per_address() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('max num of realms settled', 'ENTRYPOINT_FAILED'))]
 fn test_realm_create_greater_than_max_realms_per_address() {
-    setup();
+    let world = setup();
 
     // create realm
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };

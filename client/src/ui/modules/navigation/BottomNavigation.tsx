@@ -1,12 +1,12 @@
-import CircleButton from "../../elements/CircleButton";
+import CircleButton from "@/ui/elements/CircleButton";
 import { ReactComponent as Skull } from "@/assets/icons/common/skull.svg";
 import { ReactComponent as City } from "@/assets/icons/common/city.svg";
 import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 
 import { useState } from "react";
 
-import { RealmListBoxes } from "../../components/cityview/RealmListBoxes";
-import { SelectPreviewBuilding } from "../../components/cityview/hexception/SelectPreviewBuilding";
+import { RealmListBoxes } from "@/ui/components/cityview/RealmListBoxes";
+import { SelectPreviewBuilding } from "@/ui/components/construction/SelectPreviewBuilding";
 
 export const BottomNavigation = () => {
   const [activeBar, setActiveBar] = useState<null | "R" | "B" | "A">(null);
@@ -23,23 +23,23 @@ export const BottomNavigation = () => {
     {
       name: "bar1",
       button: (
-        <CircleButton active={activeBar === "R"} size="lg" onClick={() => toggleBar("R")}>
-          <Skull className="w-5 fill-current" />
+        <CircleButton label="Realms" active={activeBar === "R"} size="lg" onClick={() => toggleBar("R")}>
+          <City className="w-6 fill-current" />
         </CircleButton>
       ),
     },
-    {
-      name: "bar2",
-      button: (
-        <CircleButton active={activeBar === "B"} size="lg" onClick={() => toggleBar("B")}>
-          <City className="w-5 fill-current" />
-        </CircleButton>
-      ),
-    },
+    // {
+    //   name: "bar2",
+    //   button: (
+    //     <CircleButton active={activeBar === "B"} size="lg" onClick={() => toggleBar("B")}>
+    //       <City className="w-5 fill-current" />
+    //     </CircleButton>
+    //   ),
+    // },
     {
       name: "bar3",
       button: (
-        <CircleButton active={activeBar === "A"} size="lg" onClick={() => toggleBar("A")}>
+        <CircleButton label="Armies" active={activeBar === "A"} size="lg" onClick={() => toggleBar("A")}>
           <Shield className="w-5 fill-current" />
         </CircleButton>
       ),
@@ -70,7 +70,7 @@ export const BottomNavigation = () => {
             activeBar === "B" ? "h-auto" : "h-0 hidden"
           }`}
         >
-          <SelectPreviewBuilding />
+          {/* <SelectPreviewBuilding /> */}
         </div>
         <div
           className={`w-full transition-all duration-300 overflow-auto pb-2 ${

@@ -43,7 +43,7 @@ use core::traits::Into;
 fn setup() -> (IWorldDispatcher, u128, Span<u128>, ISoldierSystemsDispatcher) {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     // set soldier cost configuration 
     let combat_config_dispatcher = ICombatConfigDispatcher {
@@ -72,7 +72,7 @@ fn setup() -> (IWorldDispatcher, u128, Span<u128>, ISoldierSystemsDispatcher) {
     ICapacityConfigDispatcher { contract_address: config_systems_address }
         .set_capacity_config(SOLDIER_ENTITY_TYPE, 44);
 
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -120,7 +120,7 @@ fn setup() -> (IWorldDispatcher, u128, Span<u128>, ISoldierSystemsDispatcher) {
 
     starknet::testing::set_contract_address(contract_address_const::<'caller'>());
 
-    let combat_systems_address = deploy_system(combat_systems::TEST_CLASS_HASH);
+    let combat_systems_address = deploy_system(world, combat_systems::TEST_CLASS_HASH);
     let soldier_systems_dispatcher = ISoldierSystemsDispatcher {
         contract_address: combat_systems_address
     };

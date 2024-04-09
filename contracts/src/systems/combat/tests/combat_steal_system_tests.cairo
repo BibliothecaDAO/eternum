@@ -66,7 +66,7 @@ const TYPE_TWO_RESOURCE_TO_BE_STOLEN_FROM_TARGET: u8 = 14;
 fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatcher) {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     // set soldier cost configuration 
     let combat_config_dispatcher = ICombatConfigDispatcher {
@@ -83,8 +83,10 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
 
     combat_config_dispatcher
         .set_soldier_config(
-            array![// pay for each soldier with the following
-            (ResourceTypes::DRAGONHIDE, 40), (ResourceTypes::DEMONHIDE, 40),].span(),
+            array![ // pay for each soldier with the following
+                (ResourceTypes::DRAGONHIDE, 40), (ResourceTypes::DEMONHIDE, 40),
+            ]
+                .span(),
             WHEAT_BURN_PER_SOLDIER_DURING_ATTACK,
             FISH_BURN_PER_SOLDIER_DURING_ATTACK
         );
@@ -109,7 +111,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     IWeightConfigDispatcher { contract_address: config_systems_address }
         .set_weight_config(TYPE_TWO_RESOURCE_TO_BE_STOLEN_FROM_TARGET.into(), 200);
 
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -252,7 +254,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     };
     target_resource_precalc_2.save(world);
 
-    let combat_systems_address = deploy_system(combat_systems::TEST_CLASS_HASH);
+    let combat_systems_address = deploy_system(world, combat_systems::TEST_CLASS_HASH);
     let soldier_systems_dispatcher = ISoldierSystemsDispatcher {
         contract_address: combat_systems_address
     };

@@ -51,7 +51,7 @@ mod internal_leveling_systems {
         ]
             .span();
 
-        let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+        let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
         let level_config_dispatcher = ILevelingConfigDispatcher {
             contract_address: config_systems_address
         };

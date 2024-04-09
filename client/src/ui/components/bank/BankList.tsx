@@ -1,8 +1,25 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "@/ui/elements/tab";
 import { ResourceSwap } from "./Swap";
-import { EntityResourceTable } from "../resources/EntityResourceTable";
-import Button from "@/ui/elements/Button";
+
+import { BankEntityList } from "./BankEntityList";
+import { EntityList } from "../list/EntityList";
+
+// These would be entities passed into the table
+export const exampleEntities = [
+  {
+    name: "Stolsi",
+    id: 1,
+  },
+  {
+    name: "Bank 2",
+    id: 2,
+  },
+  {
+    name: "Bank 3",
+    id: 3,
+  },
+];
 
 export const BankPanel = ({ entity }: any) => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -25,7 +42,9 @@ export const BankPanel = ({ entity }: any) => {
             <div>My Account</div>
           </div>
         ),
-        component: <EntityResourceTable />,
+        component: (
+          <EntityList title="Banks" panel={({ entity }) => <BankEntityList entity={entity} />} list={exampleEntities} />
+        ),
       },
       {
         key: "all",

@@ -63,7 +63,7 @@ fn setup(
 ) -> (IWorldDispatcher, u128, u128, u128, u128, ITradeSystemsDispatcher) {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
     // set travel configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }
@@ -94,7 +94,7 @@ fn setup(
     IWeightConfigDispatcher { contract_address: config_systems_address }
         .set_weight_config(ResourceTypes::SILVER.into(), 200);
 
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -165,7 +165,7 @@ fn setup(
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
     // create two free transport unit for maker realm
-    let transport_unit_systems_address = deploy_system(transport_unit_systems::TEST_CLASS_HASH);
+    let transport_unit_systems_address = deploy_system(world, transport_unit_systems::TEST_CLASS_HASH);
     let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
         contract_address: transport_unit_systems_address
     };
@@ -178,13 +178,13 @@ fn setup(
     ];
 
     // create maker caravan
-    let caravan_systems_address = deploy_system(caravan_systems::TEST_CLASS_HASH);
+    let caravan_systems_address = deploy_system(world, caravan_systems::TEST_CLASS_HASH);
     let caravan_systems_dispatcher = ICaravanSystemsDispatcher {
         contract_address: caravan_systems_address
     };
     let maker_transport_id = caravan_systems_dispatcher.create(maker_transport_units);
 
-    let trade_systems_address = deploy_system(trade_systems::TEST_CLASS_HASH);
+    let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
     let trade_systems_dispatcher = ITradeSystemsDispatcher {
         contract_address: trade_systems_address
     };
@@ -937,7 +937,7 @@ fn test_transport_in_transit() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('not enough capacity', 'ENTRYPOINT_FAILED'))]
 fn test_transport_not_enough_capacity() {
-    let (_, trade_id, _, taker_id, _, trade_systems_dispatcher) = setup(true);
+    let (world, trade_id, _, taker_id, _, trade_systems_dispatcher) = setup(true);
 
     //          note
     // all previous tests passed because they didn't have 
@@ -945,12 +945,12 @@ fn test_transport_not_enough_capacity() {
     // capacity is unlimited
 
     // set capacity for transport to a very low amount
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     ICapacityConfigDispatcher { contract_address: config_systems_address }
         .set_capacity_config(FREE_TRANSPORT_ENTITY_TYPE, 1);
 
     // create two free transport unit for taker realm
-    let transport_unit_systems_address = deploy_system(transport_unit_systems::TEST_CLASS_HASH);
+    let transport_unit_systems_address = deploy_system(world, transport_unit_systems::TEST_CLASS_HASH);
     let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
         contract_address: transport_unit_systems_address
     };
@@ -966,7 +966,7 @@ fn test_transport_not_enough_capacity() {
     // create taker caravan
 
     starknet::testing::set_contract_address(contract_address_const::<'taker'>());
-    let caravan_systems_address = deploy_system(caravan_systems::TEST_CLASS_HASH);
+    let caravan_systems_address = deploy_system(world, caravan_systems::TEST_CLASS_HASH);
     let caravan_systems_dispatcher = ICaravanSystemsDispatcher {
         contract_address: caravan_systems_address
     };

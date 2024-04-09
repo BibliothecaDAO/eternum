@@ -8,8 +8,8 @@ import { ReactComponent as Expand } from "@/assets/icons/common/expand.svg";
 import { ReactComponent as CrossSwords } from "@/assets/icons/common/cross-swords.svg";
 import { ReactComponent as PickAxe } from "@/assets/icons/common/pick-axe.svg";
 import { ReactComponent as LeaderBoard } from "@/assets/icons/common/leaderboard.svg";
-import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import { ReactComponent as Donkey } from "@/assets/icons/units/donkey-circle.svg";
+import { ReactComponent as City } from "@/assets/icons/common/city.svg";
 import {
   banks,
   entityDetails,
@@ -20,6 +20,7 @@ import {
   resources,
   settings,
   trade,
+  construction,
 } from "../../components/navigation/Config";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useLocation } from "wouter";
@@ -35,6 +36,7 @@ import { Resources } from "@/ui/modules/resources/Resources";
 import { Military } from "@/ui/modules/military/Military";
 import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
 import { Trading } from "../trade/Trading";
+import { Construction } from "../construction/Construction";
 
 export const LeftNavigationModule = () => {
   const { togglePopup, closeAllPopups, openAllPopups, isPopupOpen } = useUIStore();
@@ -62,6 +64,18 @@ export const LeftNavigationModule = () => {
       button: (
         <CircleButton label={military} active={isPopupOpen(military)} size="lg" onClick={() => togglePopup(military)}>
           <CrossSwords className="h-6 fill-current" />
+        </CircleButton>
+      ),
+    },
+    {
+      button: (
+        <CircleButton
+          label={construction}
+          active={isPopupOpen(construction)}
+          size="lg"
+          onClick={() => togglePopup(construction)}
+        >
+          <City className="h-6 fill-current" />
         </CircleButton>
       ),
     },
@@ -124,7 +138,17 @@ export const LeftNavigationModule = () => {
           label={"expand all popups"}
           size="sm"
           onClick={() =>
-            openAllPopups([entityDetails, leaderboard, settings, hyperstructures, banks, resources, eventLog, military])
+            openAllPopups([
+              entityDetails,
+              leaderboard,
+              settings,
+              hyperstructures,
+              banks,
+              resources,
+              eventLog,
+              military,
+              construction,
+            ])
           }
         >
           <Expand className="w-4" />
@@ -186,6 +210,7 @@ export const LeftNavigationModule = () => {
       <Military />
       <EntityDetails />
       <Trading />
+      <Construction />
     </>
   );
 };
