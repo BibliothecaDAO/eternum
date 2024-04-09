@@ -4,7 +4,7 @@ use eternum::models::owner::Owner;
 use eternum::models::weight::Weight;
 use eternum::models::movable::ArrivalTime;
 use eternum::models::inventory::Inventory;
-use eternum::models::resources::{ResourceCost, Resource};
+use eternum::models::resources::{ResourceCost, ResourceImpl, Resource};
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{
@@ -119,20 +119,24 @@ fn test_bank_swap_for_wheat_fish_and_coal() {
     let after_transport_weight = get!(world, transport_id, Weight);
     assert(after_transport_weight.value != initial_transport_weight.value, 'wrong weight value');
 
-    let transport_wheat_resource = get!(world, (transport_id, ResourceTypes::WHEAT), Resource);
+    let transport_wheat_resource 
+        = ResourceImpl::get(world, (transport_id, ResourceTypes::WHEAT));
     assert(transport_wheat_resource.balance == 500 - 431, 'wrong wheat balance');
 
-    let transport_fish_resource = get!(world, (transport_id, ResourceTypes::FISH), Resource);
+    let transport_fish_resource 
+        = ResourceImpl::get(world, (transport_id, ResourceTypes::FISH));
     assert(transport_fish_resource.balance == 500 - 172, 'wrong fish balance');
 
-    let transport_coal_resource = get!(world, (transport_id, ResourceTypes::COAL), Resource);
+    let transport_coal_resource 
+        = ResourceImpl::get(world, (transport_id, ResourceTypes::COAL));
     assert(transport_coal_resource.balance == 500 - 258, 'wrong coal balance');
 
     let bank_auction = get!(world, (bank_id, ResourceTypes::LORDS, 0), BankAuction);
     assert(bank_auction.sold == lords_bought, 'wrong auction sold');
 
     // ensure no excess shekel was minted
-    let bank_shekel_resource = get!(world, (bank_id, ResourceTypes::LORDS), Resource);
+    let bank_shekel_resource 
+        = ResourceImpl::get(world, (bank_id, ResourceTypes::LORDS));
     assert(bank_shekel_resource.balance == 0, 'wrong bank balance');
 
     // ensure item was added to transport's inventory
@@ -156,16 +160,16 @@ fn test_bank_swap_for_dragonhide() {
     let after_transport_weight = get!(world, transport_id, Weight);
     assert(after_transport_weight.value != initial_transport_weight.value, 'wrong weight value');
 
-    let transport_dragonhide_resource = get!(
-        world, (transport_id, ResourceTypes::DRAGONHIDE), Resource
-    );
+    let transport_dragonhide_resource 
+        = ResourceImpl::get(world, (transport_id, ResourceTypes::DRAGONHIDE));
     assert(transport_dragonhide_resource.balance == 500 - 172, 'wrong fish balance');
 
     let bank_auction = get!(world, (bank_id, ResourceTypes::LORDS, 1), BankAuction);
     assert(bank_auction.sold == lords_bought, 'wrong auction sold');
 
     // ensure no excess shekel was minted
-    let bank_shekel_resource = get!(world, (bank_id, ResourceTypes::LORDS), Resource);
+    let bank_shekel_resource 
+        = ResourceImpl::get(world, (bank_id, ResourceTypes::LORDS));
     assert(bank_shekel_resource.balance == 0, 'wrong bank balance');
 
     // ensure item was added to transport's inventory

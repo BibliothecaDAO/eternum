@@ -21,7 +21,7 @@ use eternum::models::bank::market::{Market};
 use eternum::models::bank::liquidity::{Liquidity};
 use eternum::models::position::{Coord};
 use eternum::constants::{ResourceTypes};
-use eternum::models::resources::Resource;
+use eternum::models::resources::{Resource, ResourceImpl};
 
 use starknet::contract_address_const;
 
@@ -109,8 +109,8 @@ fn test_swap_buy_without_fees() {
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
-    let wood = get!(world, (bank_account.entity_id, ResourceTypes::WOOD), Resource);
-    let lords = get!(world, (bank_account.entity_id, ResourceTypes::LORDS), Resource);
+    let wood = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::WOOD));
+    let lords = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::LORDS));
 
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
@@ -143,8 +143,8 @@ fn test_swap_buy_with_fees() {
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
-    let wood = get!(world, (bank_account.entity_id, ResourceTypes::WOOD), Resource);
-    let lords = get!(world, (bank_account.entity_id, ResourceTypes::LORDS), Resource);
+    let wood = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::WOOD));
+    let lords = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::LORDS));
 
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
@@ -178,8 +178,8 @@ fn test_swap_sell_without_fees() {
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
-    let wood = get!(world, (bank_account.entity_id, ResourceTypes::WOOD), Resource);
-    let lords = get!(world, (bank_account.entity_id, ResourceTypes::LORDS), Resource);
+    let wood = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::WOOD));
+    let lords = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::LORDS));
 
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
@@ -214,8 +214,8 @@ fn test_swap_sell_with_fees() {
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
-    let wood = get!(world, (bank_account.entity_id, ResourceTypes::WOOD), Resource);
-    let lords = get!(world, (bank_account.entity_id, ResourceTypes::LORDS), Resource);
+    let wood = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::WOOD));
+    let lords = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::LORDS));
 
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);

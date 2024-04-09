@@ -19,7 +19,7 @@ use eternum::models::bank::market::{Market};
 use eternum::models::bank::bank::{BankAccounts};
 use eternum::models::position::{Coord};
 use eternum::constants::{ResourceTypes};
-use eternum::models::resources::Resource;
+use eternum::models::resources::{ResourceImpl,Resource};
 
 use starknet::contract_address_const;
 
@@ -97,8 +97,8 @@ fn test_liquidity_add() {
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
-    let wood = get!(world, (bank_account.entity_id, ResourceTypes::WOOD), Resource);
-    let lords = get!(world, (bank_account.entity_id, ResourceTypes::LORDS), Resource);
+    let wood = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::WOOD));
+    let lords = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::LORDS));
 
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
@@ -129,8 +129,8 @@ fn test_liquidity_remove() {
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
-    let wood = get!(world, (bank_account.entity_id, ResourceTypes::WOOD), Resource);
-    let lords = get!(world, (bank_account.entity_id, ResourceTypes::LORDS), Resource);
+    let wood = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::WOOD));
+    let lords = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::LORDS));
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
 
     assert(market.lords_amount == 0, 'market.lords_amount');

@@ -2,7 +2,7 @@
 mod resource_systems {
     use core::array::SpanTrait;
     use eternum::alias::ID;
-    use eternum::models::resources::{Resource, ResourceTrait, ResourceAllowance};
+    use eternum::models::resources::{Resource, ResourceImpl,ResourceTrait, ResourceAllowance};
     use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
     use eternum::models::inventory::{Inventory, InventoryTrait};
     use eternum::models::realm::Realm;
@@ -194,9 +194,8 @@ mod resource_systems {
                     Option::Some((
                         resource_type, resource_amount
                     )) => {
-                        let mut entity_resource = get!(
-                            world, (receiver_id, *resource_type), Resource
-                        );
+                        let mut entity_resource 
+                            = ResourceImpl::get(world, (receiver_id, *resource_type));
 
                         entity_resource.balance += *resource_amount;
                         entity_resource.save(world);
@@ -345,9 +344,8 @@ mod resource_systems {
                     break ();
                 }
                 let detached_resource = get!(world, (entity_id, index), DetachedResource);
-                let mut donor_resource = get!(
-                    world, (donor_id, detached_resource.resource_type), Resource
-                );
+                let mut donor_resource 
+                    = ResourceImpl::get(world, (donor_id, detached_resource.resource_type));
                 assert(
                     donor_resource.balance >= detached_resource.resource_amount,
                     'insufficient balance'
@@ -387,7 +385,7 @@ mod resource_systems {
 
                 let (resource_type, resource_amount) = *resources.at(index);
                 if donor_id != 0 {
-                    let mut donor_resource = get!(world, (donor_id, resource_type), Resource);
+                    let mut donor_resource = ResourceImpl::get(world, (donor_id, resource_type));
                     assert(donor_resource.balance >= resource_amount, 'insufficient balance');
 
                     // remove resources from donor's balance
@@ -473,9 +471,8 @@ mod resource_systems {
                     world, (resource_chest.entity_id, index), DetachedResource
                 );
 
-                let mut receiving_entity_resource = get!(
-                    world, (receiving_entity_id, resource_chest_resource.resource_type), Resource
-                );
+                let mut receiving_entity_resource
+                    = ResourceImpl::get(world, (receiving_entity_id, resource_chest_resource.resource_type));
 
                 // update entity balance
                 receiving_entity_resource.balance += resource_chest_resource.resource_amount;
