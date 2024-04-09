@@ -17,7 +17,7 @@ export const Tooltip = ({ className }: TooltipProps) => {
           className={clsx(
             "fixed z-[100] inline-flex opacity-90 text-xxs -translate-x-1/2 p-2 bg-black rounded-xl flex-col justify-start items-center text-white",
             position == "top" && "-translate-y-[150%]",
-            position == "bottom" && "translate-y-1/2",
+            position == "bottom" && "translate-y-full",
             position == "left" && "-translate-x-[110%] -translate-y-1/2",
             className,
           )}
