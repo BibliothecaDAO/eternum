@@ -334,27 +334,36 @@ struct LaborBuildingCost {
     resource_cost_count: u32,
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Model, Clone, Drop, Serde)]
 struct ProductionConfig {
     #[key]
     resource_type: u8,
-    // production per tick
-    amount_per_tick: u128,
-    cost_resource_type_1: u8,
-    cost_resource_type_1_amount: u128,
-    cost_resource_type_2: u8,
-    cost_resource_type_2_amount: u128,
+    // production amount per tick
+    amount: u128, 
+    // num materials required to produce this resource
+    input_count: u128,
+    // num different resources that this resource can produce
+    output_count: u128   
 }
 
-// a map from material to resources it produces
-// e.g if stone can be used to produce wood and ruby, 
-// material is stone, produced resources are wood and ruby
+
 #[derive(Model, Copy, Drop, Serde)]
-struct ProductionMaterialConfig {
+struct ProductionInput {
     #[key]
-    material_resource_type: u8,
-    produced_resource_type_1: u8,
-    produced_resource_type_2: u8,
+    output_resource_type: u8,
+    #[key]
+    index: u8, 
+    input_resource_type: u8,
+    input_resource_amount: u128
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct ProductionOutput {
+    #[key]
+    input_resource_type: u8,
+    #[key]
+    index: u8, 
+    output_resource_type: u8
 }
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -364,6 +373,7 @@ struct BankConfig {
     lords_cost: u128,
     lp_fee_scaled: u128,
 }
+
 
 
 #[cfg(test)]

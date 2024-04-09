@@ -504,44 +504,12 @@
             "type": "core::integer::u8"
           },
           {
-            "name": "amount_per_tick",
+            "name": "amount",
             "type": "core::integer::u128"
           },
           {
-            "name": "cost_resource_type_1",
-            "type": "core::integer::u8"
-          },
-          {
-            "name": "cost_resource_type_1_amount",
-            "type": "core::integer::u128"
-          },
-          {
-            "name": "cost_resource_type_2",
-            "type": "core::integer::u8"
-          },
-          {
-            "name": "cost_resource_type_2_amount",
-            "type": "core::integer::u128"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "set_production_material_config",
-        "inputs": [
-          {
-            "name": "material_resource_type",
-            "type": "core::integer::u8"
-          },
-          {
-            "name": "produced_resource_type_1",
-            "type": "core::integer::u8"
-          },
-          {
-            "name": "produced_resource_type_2",
-            "type": "core::integer::u8"
+            "name": "cost",
+            "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
           }
         ],
         "outputs": [],

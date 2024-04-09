@@ -1,0 +1,19 @@
+kind = "DojoModel"
+class_hash = "0x504ed6ae73d71dc09633dc6593771e3948147598a1d8bf00475d02db3ff9f3d"
+abi = "abis/base/models/caravan_members.json"
+name = "eternum::models::caravan::caravan_members"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "key"
+type = "u128"
+key = false
+
+[[members]]
+name = "count"
+type = "u32"
+key = false

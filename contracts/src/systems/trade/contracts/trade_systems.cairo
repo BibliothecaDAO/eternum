@@ -107,9 +107,9 @@ mod trade_systems {
 
             emit!(
                 world,
-                CreateOrder {
+                (Event::CreateOrder(CreateOrder {
                     taker_id, maker_id, trade_id, maker_gives_resources, taker_gives_resources
-                }
+                }),)
             );
 
             trade_id

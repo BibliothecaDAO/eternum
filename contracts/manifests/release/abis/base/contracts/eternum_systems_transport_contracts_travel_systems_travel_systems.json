@@ -1,0 +1,264 @@
+[
+  {
+    "type": "impl",
+    "name": "DojoResourceProviderImpl",
+    "interface_name": "dojo::world::IDojoResourceProvider"
+  },
+  {
+    "type": "interface",
+    "name": "dojo::world::IDojoResourceProvider",
+    "items": [
+      {
+        "type": "function",
+        "name": "dojo_resource",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::felt252"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "WorldProviderImpl",
+    "interface_name": "dojo::world::IWorldProvider"
+  },
+  {
+    "type": "struct",
+    "name": "dojo::world::IWorldDispatcher",
+    "members": [
+      {
+        "name": "contract_address",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "dojo::world::IWorldProvider",
+    "items": [
+      {
+        "type": "function",
+        "name": "world",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "dojo::world::IWorldDispatcher"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "TravelSystemsImpl",
+    "interface_name": "eternum::systems::transport::interface::travel_systems_interface::ITravelSystems"
+  },
+  {
+    "type": "struct",
+    "name": "eternum::models::position::Coord",
+    "members": [
+      {
+        "name": "x",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "y",
+        "type": "core::integer::u128"
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "eternum::models::position::Direction",
+    "variants": [
+      {
+        "name": "East",
+        "type": "()"
+      },
+      {
+        "name": "NorthEast",
+        "type": "()"
+      },
+      {
+        "name": "NorthWest",
+        "type": "()"
+      },
+      {
+        "name": "West",
+        "type": "()"
+      },
+      {
+        "name": "SouthWest",
+        "type": "()"
+      },
+      {
+        "name": "SouthEast",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<eternum::models::position::Direction>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<eternum::models::position::Direction>"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::transport::interface::travel_systems_interface::ITravelSystems",
+    "items": [
+      {
+        "type": "function",
+        "name": "travel",
+        "inputs": [
+          {
+            "name": "travelling_entity_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "destination_coord",
+            "type": "eternum::models::position::Coord"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "travel_hex",
+        "inputs": [
+          {
+            "name": "travelling_entity_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "directions",
+            "type": "core::array::Span::<eternum::models::position::Direction>"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "UpgradableImpl",
+    "interface_name": "dojo::components::upgradeable::IUpgradeable"
+  },
+  {
+    "type": "interface",
+    "name": "dojo::components::upgradeable::IUpgradeable",
+    "items": [
+      {
+        "type": "function",
+        "name": "upgrade",
+        "inputs": [
+          {
+            "name": "new_class_hash",
+            "type": "core::starknet::class_hash::ClassHash"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "dojo::components::upgradeable::upgradeable::Upgraded",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "class_hash",
+        "type": "core::starknet::class_hash::ClassHash",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "dojo::components::upgradeable::upgradeable::Event",
+    "kind": "enum",
+    "variants": [
+      {
+        "name": "Upgraded",
+        "type": "dojo::components::upgradeable::upgradeable::Upgraded",
+        "kind": "nested"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<eternum::models::position::Coord>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<eternum::models::position::Coord>"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "eternum::systems::transport::contracts::travel_systems::travel_systems::Travel",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "destination_coord_x",
+        "type": "core::integer::u128",
+        "kind": "key"
+      },
+      {
+        "name": "destination_coord_y",
+        "type": "core::integer::u128",
+        "kind": "key"
+      },
+      {
+        "name": "realm_entity_id",
+        "type": "core::integer::u128",
+        "kind": "key"
+      },
+      {
+        "name": "entity_id",
+        "type": "core::integer::u128",
+        "kind": "data"
+      },
+      {
+        "name": "travel_time",
+        "type": "core::integer::u64",
+        "kind": "data"
+      },
+      {
+        "name": "travel_path",
+        "type": "core::array::Span::<eternum::models::position::Coord>",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "eternum::systems::transport::contracts::travel_systems::travel_systems::Event",
+    "kind": "enum",
+    "variants": [
+      {
+        "name": "UpgradeableEvent",
+        "type": "dojo::components::upgradeable::upgradeable::Event",
+        "kind": "nested"
+      },
+      {
+        "name": "Travel",
+        "type": "eternum::systems::transport::contracts::travel_systems::travel_systems::Travel",
+        "kind": "nested"
+      }
+    ]
+  }
+]

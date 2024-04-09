@@ -130,14 +130,15 @@ mod map_systems {
 
             emit!(
                 world,
-                MapExplored {
+                (Event::MapExplored(
+                    MapExplored {
                     entity_id: entity_id,
                     entity_owner_id: entity_owned_by.entity_owner_id,
                     col: tile.col,
                     row: tile.row,
                     biome: tile.biome,
                     reward
-                }
+                }),)
             );
 
             tile

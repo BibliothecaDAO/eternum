@@ -1,12 +1,12 @@
 use eternum::utils::math::{is_u32_bit_set, set_u32_bit};
 use eternum::constants::get_resource_probabilities;
 use eternum::constants::ResourceTypes;
-use eternum::models::config::{TickConfig, TickImpl, TickTrait};
+use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::models::production::{Production, ProductionRateTrait};
-use eternum::models::config::{ProductionMaterialConfig};
+use eternum::models::config::{ProductionOutput};
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -57,33 +57,35 @@ impl ProductionMaterialImpl of ProductionMaterialTrait {
 
     // e.g resource is stone..dependents are wood and ruby because they each depend on 
     // stone to be produced
-    fn reset_produced_exhaustion_tick(ref material_resource: Resource, world: IWorldDispatcher) {
-        let mut material_production: Production 
-            = get!(world, material_resource.query_key(), Production);
-        let material_config: ProductionMaterialConfig 
-            = get!(world, material_resource.resource_type, ProductionMaterialConfig);
+    fn reset_produced_exhaustion_tick(ref input_resource: Resource, world: IWorldDispatcher) {
+        let input_resource_production_config: ProductionConfig 
+            = get!(world, input_resource.resource_type, ProductionConfig);
+
+        let mut input_resource_production: Production 
+            = get!(world, input_resource.query_key(), Production);
+   
         let tick = TickImpl::get(world);
-        if material_config.produced_resource_type_1 != 0 {
-            let mut dependent_production_one:  Production = get!(
-                world, (material_resource.entity_id, material_config.produced_resource_type_1), Production
-            );
-            dependent_production_one
-                .set_materials_exhaustion_tick(
-                    ref material_production, ref material_resource, @tick);
 
-            set!(world, (dependent_production_one));
-        }
+        let mut count = 0;
+        loop {
+            if count == input_resource_production_config.output_count {
+                break;
+            }
 
-        if material_config.produced_resource_type_2 != 0 {
-            let mut dependent_production_two: Production = get!(
-                world, (material_resource.entity_id, material_config.produced_resource_type_2), Production
-            );
-            dependent_production_two
-                .set_materials_exhaustion_tick(
-                    ref material_production, ref material_resource, @tick);
+            let output_resource_type: u8
+                = get!(world, (input_resource.resource_type, count), ProductionOutput)
+                    .output_resource_type;
+            let mut output_resource_production: Production
+                = get!(world, (input_resource.entity_id, output_resource_type), Production);
+     
+            output_resource_production
+                .set_end_tick(
+                    @input_resource_production, @input_resource, @tick);
 
-            set!(world, (dependent_production_two));       
-        }
+            count += 1;
+
+            set!(world, (output_resource_production));
+        };
     }
 }
 

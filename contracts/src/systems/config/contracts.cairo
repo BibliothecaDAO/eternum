@@ -8,7 +8,7 @@ mod config_systems {
         LaborCostResources, LaborCostAmount, LaborConfig, CapacityConfig, RoadConfig, SpeedConfig,
         TravelConfig, WeightConfig, WorldConfig, SoldierConfig, HealthConfig, AttackConfig,
         DefenceConfig, CombatConfig, LevelingConfig, RealmFreeMintConfig, LaborBuildingsConfig,
-        LaborBuildingCost, MapExploreConfig, TickConfig, ProductionConfig, ProductionMaterialConfig, BankConfig
+        LaborBuildingCost, MapExploreConfig, TickConfig, ProductionConfig, ProductionInput, ProductionOutput, BankConfig
     };
 
     use eternum::systems::config::interface::{
@@ -463,49 +463,57 @@ mod config_systems {
         }
     }
 
-    #[abi(embed_v0)]
-    impl ProductionConfigImpl of IProductionConfig<ContractState> {
-        fn set_production_config(
-            world: IWorldDispatcher, 
-            resource_type: u8,
-            amount_per_tick: u128,
-            cost_resource_type_1: u8,
-            cost_resource_type_1_amount: u128,
-            cost_resource_type_2: u8,
-            cost_resource_type_2_amount: u128,
-        ) {
-            assert_caller_is_admin(world);
+#[abi(embed_v0)]
+impl ProductionConfigImpl of IProductionConfig<ContractState> {
+    fn set_production_config(
+        world: IWorldDispatcher, 
+        resource_type: u8,
+        amount: u128,
+        mut cost: Span<(u8, u128)>
+    ) {
+        assert_caller_is_admin(world);
 
-            set!(world, (
-                ProductionConfig {
-                    resource_type,
-                    amount_per_tick,
-                    cost_resource_type_1,
-                    cost_resource_type_1_amount,
-                    cost_resource_type_2,
-                    cost_resource_type_2_amount
-                }
-            ));
-        }
+        let mut resource_production_config : ProductionConfig
+            = get!(world, resource_type, ProductionConfig);
+        resource_production_config.amount = amount;
+    
+        loop {
+            match cost.pop_front() {
+                Option::Some((input_resource_type, input_resource_amount)) => {
+                    // update output resource's production input/material
+                    set!(world, (
+                        ProductionInput {
+                            output_resource_type: resource_type,
+                            index: resource_production_config.input_count.try_into().unwrap(),
+                            input_resource_type: *input_resource_type,
+                            input_resource_amount: *input_resource_amount
+                        }
+                    ));
 
-        fn set_production_material_config(
-            world: IWorldDispatcher, 
-            material_resource_type: u8,
-            produced_resource_type_1: u8,
-            produced_resource_type_2: u8
-        ) {
+                    resource_production_config.input_count += 1;
 
-            assert_caller_is_admin(world);
+                    // update input resource's production output
+                    let mut input_resource_production_config : ProductionConfig
+                        = get!(world, *input_resource_type, ProductionConfig);
+                    
+                    set!(world, (
+                        ProductionOutput {
+                            input_resource_type: *input_resource_type,
+                            index: input_resource_production_config.output_count.try_into().unwrap(),
+                            output_resource_type: resource_type,
+                        }
+                    ));
 
-            set!(world, (
-                ProductionMaterialConfig {
-                    material_resource_type,
-                    produced_resource_type_1,
-                    produced_resource_type_2,
-                }
-            ));
-        }
+                    input_resource_production_config.output_count += 1;
+                    set!(world, (input_resource_production_config));
+                },
+                Option::None => {break;}
+            }
+        };
+
+        set!(world, (resource_production_config));
     }
+}
 
 
     #[abi(embed_v0)]
