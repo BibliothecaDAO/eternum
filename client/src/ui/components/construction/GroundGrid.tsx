@@ -81,10 +81,10 @@ const GroundGrid = () => {
             onClick={() => {
               if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
                 handlePlacement(hexPosition.col, hexPosition.row);
-                setExistingBuildings([
-                  ...existingBuildings,
-                  { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
-                ]);
+                // setExistingBuildings([
+                //   ...existingBuildings,
+                //   { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
+                // ]);
                 playBuildingSound(previewBuilding);
               }
             }}
@@ -135,13 +135,9 @@ export const BuiltBuilding = ({
     ]),
   );
 
-  if (builtBuilding) console.log("builtBuilding", builtBuilding);
+  const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
 
-  const model = models[2].scene.clone();
-
-  const hexPosition = getUIPositionFromColRow(position.col, position.row, true);
-
-  return builtBuilding && <primitive scale={3} object={model} position={[hexPosition.x, 2.33, -hexPosition.y]} />;
+  if (builtBuilding) return <primitive scale={3} object={models[2].scene.clone()} position={[x, 2.33, -y]} />;
 };
 
 export const Hexagon = ({ position, onPointerMove, onClick }: { position: any; onPointerMove: any; onClick: any }) => {
