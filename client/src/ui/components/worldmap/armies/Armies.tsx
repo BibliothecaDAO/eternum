@@ -33,7 +33,7 @@ export const Armies = ({}: ArmiesProps) => {
   useUpdateAnimationPaths();
 
   const realmOrder = useMemo(() => {
-    const realmId = realms[0].realmId;
+    const realmId = realms[0].realmId || BigInt(0);
     const orderName = getRealmOrderNameById(realmId);
     return orderName.charAt(0).toUpperCase() + orderName.slice(1);
   }, []);

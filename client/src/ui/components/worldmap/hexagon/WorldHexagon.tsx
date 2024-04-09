@@ -75,7 +75,9 @@ export const WorldMap = () => {
         {hexData && <MyCastles hexData={hexData} />}
         {hexData && <OtherCastles hexData={hexData} />}
         {/* {hexData && <Hyperstructures hexData={hexData} />} */}
-        <Armies />
+
+        {/* TODO: Fix Armies  */}
+        {/* <Armies /> */}
       </>
     );
   }, [hexData]);

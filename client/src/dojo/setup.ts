@@ -16,7 +16,7 @@ export async function setup({ ...config }: DojoConfig) {
   const updates = await createUpdates();
 
   // fetch all existing entities from torii
-  await getSyncEntities(network.toriiClient, network.contractComponents as any, 5000);
+  await getSyncEntities(network.toriiClient, network.contractComponents as any, 1000);
 
   return {
     network,

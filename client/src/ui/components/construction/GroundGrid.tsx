@@ -36,7 +36,6 @@ const GroundGrid = () => {
     account: { account },
     setup: {
       systemCalls: { create_building },
-      components: { Building },
     },
   } = useDojo();
 
@@ -54,9 +53,9 @@ const GroundGrid = () => {
   };
   //
   return (
-    <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
+    <>
       {hexPositions.map((hexPosition, index) => (
-        <Hexagon
+        <BuiltBuilding
           key={index}
           outerPosition={globalHex}
           position={hexPosition}
@@ -73,11 +72,30 @@ const GroundGrid = () => {
           }}
         />
       ))}
-    </group>
+      <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
+        {hexPositions.map((hexPosition, index) => (
+          <Hexagon
+            key={index}
+            position={hexPosition}
+            onPointerMove={() => previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
+            onClick={() => {
+              if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
+                handlePlacement(hexPosition.col, hexPosition.row);
+                setExistingBuildings([
+                  ...existingBuildings,
+                  { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
+                ]);
+                playBuildingSound(previewBuilding);
+              }
+            }}
+          />
+        ))}
+      </group>
+    </>
   );
 };
 
-export const Hexagon = ({
+export const BuiltBuilding = ({
   outerPosition,
   position,
   onPointerMove,
@@ -88,10 +106,6 @@ export const Hexagon = ({
   onPointerMove: any;
   onClick: any;
 }) => {
-  const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
-  const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
-  const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
-
   const models = useGLTF([
     "/models/buildings/castle.glb",
     "/models/buildings/farm.glb",
@@ -127,18 +141,23 @@ export const Hexagon = ({
 
   const hexPosition = getUIPositionFromColRow(position.col, position.row, true);
 
+  return builtBuilding && <primitive scale={3} object={model} position={[hexPosition.x, 2.33, -hexPosition.y]} />;
+};
+
+export const Hexagon = ({ position, onPointerMove, onClick }: { position: any; onPointerMove: any; onClick: any }) => {
+  const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
+  const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
+  const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
+
   return (
-    <mesh>
-      {builtBuilding && <primitive scale={3} object={model} position={[hexPosition.x, 2.33, -hexPosition.y]} />}
-      <group position={[position.x, position.y, position.z]} onPointerMove={onPointerMove} onClick={onClick}>
-        <mesh geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]}>
-          <meshMatcapMaterial color={secondaryColor} />
-        </mesh>
-        <mesh geometry={hexagonGeometry}>
-          <meshMatcapMaterial color={mainColor} />
-        </mesh>
-      </group>
-    </mesh>
+    <group position={[position.x, position.y, position.z]} onPointerMove={onPointerMove} onClick={onClick}>
+      <mesh geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]}>
+        <meshMatcapMaterial color={secondaryColor} />
+      </mesh>
+      <mesh geometry={hexagonGeometry}>
+        <meshMatcapMaterial color={mainColor} />
+      </mesh>
+    </group>
   );
 };
 
