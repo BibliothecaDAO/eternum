@@ -3,14 +3,15 @@ import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
 import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
-import { Html, Merged, useGLTF } from "@react-three/drei";
-import { useCallback } from "react";
+import { Bvh, Html, Merged, useGLTF } from "@react-three/drei";
+import { useCallback, useState } from "react";
 import { useBuildingSound } from "../../../hooks/useUISound";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useQuery } from "@/hooks/helpers/useQuery";
+import { BuildingTooltip } from "../cityview/BuildingTooltip";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row);
@@ -73,23 +74,28 @@ const GroundGrid = () => {
         />
       ))}
       <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
-        {hexPositions.map((hexPosition, index) => (
-          <Hexagon
-            key={index}
-            position={hexPosition}
-            onPointerMove={() => previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
-            onClick={() => {
-              if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
-                handlePlacement(hexPosition.col, hexPosition.row);
-                // setExistingBuildings([
-                //   ...existingBuildings,
-                //   { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
-                // ]);
-                playBuildingSound(previewBuilding);
-              }
-            }}
-          />
-        ))}
+        <Bvh firstHitOnly>
+          {hexPositions.map((hexPosition, index) => (
+            <Hexagon
+              key={index}
+              position={hexPosition}
+              onPointerMove={(e: any) => {
+                e.stopPropagation();
+                previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row });
+              }}
+              onClick={() => {
+                if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
+                  handlePlacement(hexPosition.col, hexPosition.row);
+                  setExistingBuildings([
+                    ...existingBuildings,
+                    { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
+                  ]);
+                  playBuildingSound(previewBuilding);
+                }
+              }}
+            />
+          ))}
+        </Bvh>
       </group>
     </>
   );
@@ -144,13 +150,25 @@ export const Hexagon = ({ position, onPointerMove, onClick }: { position: any; o
   const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
   const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
   const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
-
+  const [showTooltip, setShowTooltip] = useState(false);
   return (
     <group position={[position.x, position.y, position.z]} onPointerMove={onPointerMove} onClick={onClick}>
       <mesh geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]}>
         <meshMatcapMaterial color={secondaryColor} />
       </mesh>
-      <mesh geometry={hexagonGeometry}>
+      {showTooltip ? <BuildingTooltip resourceId={10} /> : null}
+
+      <mesh
+        geometry={hexagonGeometry}
+        onPointerEnter={(e) => {
+          e.stopPropagation();
+          setShowTooltip(true);
+        }}
+        onPointerLeave={(e) => {
+          e.stopPropagation();
+          setShowTooltip(false);
+        }}
+      >
         <meshMatcapMaterial color={mainColor} />
       </mesh>
     </group>

@@ -1,6 +1,6 @@
 kind = "DojoContract"
-class_hash = "0xed9d60956aeb97e231fe813e48d241610822bc0f0fcb369d6a3d084e5f1093"
-original_class_hash = "0xed9d60956aeb97e231fe813e48d241610822bc0f0fcb369d6a3d084e5f1093"
+class_hash = "0xca9577a3276e4231f8332f0b5703b6dd879be9c00ae3dce26fe53047739a39"
+original_class_hash = "0xca9577a3276e4231f8332f0b5703b6dd879be9c00ae3dce26fe53047739a39"
 base_class_hash = "0x0"
 abi = "manifests/dev/abis/base/contracts/eternum_systems_config_contracts_config_systems.json"
 reads = []

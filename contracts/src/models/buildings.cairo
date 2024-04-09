@@ -1,7 +1,7 @@
 use eternum::models::position::CoordTrait;
 use core::zeroable::Zeroable;
-use eternum::models::production::{Production, ProductionRateTrait, ProductionBonusPercentageImpl};
-use eternum::models::resources::{Resource, ResourceCost};
+use eternum::models::production::{Production,ProductionInput, ProductionRateTrait, ProductionBonusPercentageImpl};
+use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 use eternum::models::owner::Owner;
 use eternum::models::owner::EntityOwner;
 use eternum::constants::ResourceTypes;
@@ -9,7 +9,7 @@ use eternum::models::position::{Coord, Position, Direction};
 use core::poseidon::poseidon_hash_span as hash;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
-use eternum::models::config::{ProductionConfig, ProductionInput};
+use eternum::models::config::{ProductionConfig};
 
 //todo we need to define border of innner hexes
 
@@ -104,9 +104,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         if self.is_resource_producer() {
             let tick = TickImpl::get(world);
             let produced_resource_type = self.produced_resource();
-            let mut produced_resource: Resource = get!(
-                world, (self.outer_entity_id, produced_resource_type), Resource
-            );
+            let mut produced_resource: Resource 
+                = ResourceImpl::get(world, (self.outer_entity_id, produced_resource_type));
 
             // add resource production settings
             let production_config: ProductionConfig = get!(
@@ -134,9 +133,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 let (input_resource_type, input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
-                let mut input_resource: Resource = get!(
-                    world, (self.outer_entity_id, input_resource_type), Resource
-                );
+                let mut input_resource: Resource 
+                    = ResourceImpl::get(world, (self.outer_entity_id, input_resource_type));
                 let mut input_production: Production = get!(
                     world, (self.outer_entity_id, input_resource_type), Production
                 );
@@ -160,9 +158,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         if self.is_resource_producer() {
             let tick = TickImpl::get(world);
             let produced_resource_type = self.produced_resource();
-            let mut produced_resource: Resource = get!(
-                world, (self.outer_entity_id, produced_resource_type), Resource
-            );
+            let mut produced_resource: Resource 
+                = ResourceImpl::get(world, (self.outer_entity_id, produced_resource_type));
 
             // stop resource production
             let production_config: ProductionConfig = get!(
@@ -187,9 +184,9 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 let (input_resource_type, input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
-                let mut input_resource: Resource = get!(
-                    world, (self.outer_entity_id, input_resource_type), Resource
-                );
+                let mut input_resource: Resource 
+                    = ResourceImpl::get(world, (self.outer_entity_id, input_resource_type));
+                
                 let mut input_production: Production = get!(
                     world, (self.outer_entity_id, input_resource_type), Production
                 );

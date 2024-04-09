@@ -1,16 +1,14 @@
 import React from "react";
 import { Html } from "@react-three/drei";
 
-type BaseRegionTooltipProps = {
+type BaseThreeTooltipProps = {
   children?: React.ReactNode;
-  position: [number, number, number];
-  distanceFactor: number;
 };
 
-export const BaseRegionTooltip = ({ position, distanceFactor, children }: BaseRegionTooltipProps) => {
+export const BaseThreeTooltip = ({ children }: BaseThreeTooltipProps) => {
   return (
-    <Html position={position} distanceFactor={distanceFactor}>
-      <div className="border min-w-[215px] relative border-gold p-2 rounded-xl bg-gray text-white">
+    <Html distanceFactor={50}>
+      <div className="border min-w-[215px] relative border-gold p-2 rounded-xl bg-gray text-white pointer-events-none -ml-[107px] -mt-[135px]">
         {children}
         <svg
           className="absolute bottom-[1px] translate-y-full left-1/2 -translate-x-1/2"

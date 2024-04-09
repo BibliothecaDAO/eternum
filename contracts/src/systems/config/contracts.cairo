@@ -8,7 +8,7 @@ mod config_systems {
         LaborCostResources, LaborCostAmount, LaborConfig, CapacityConfig, RoadConfig, SpeedConfig,
         TravelConfig, WeightConfig, WorldConfig, SoldierConfig, HealthConfig, AttackConfig,
         DefenceConfig, CombatConfig, LevelingConfig, RealmFreeMintConfig, LaborBuildingsConfig,
-        LaborBuildingCost, MapExploreConfig, TickConfig, ProductionConfig, ProductionInput, ProductionOutput, BankConfig
+        LaborBuildingCost, MapExploreConfig, TickConfig, ProductionConfig, BankConfig
     };
 
     use eternum::systems::config::interface::{
@@ -26,6 +26,7 @@ mod config_systems {
     use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::resources::{ResourceCost, DetachedResource};
     use eternum::models::position::{Position, PositionTrait, Coord};
+    use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::bank::bank::{Bank};
 
 

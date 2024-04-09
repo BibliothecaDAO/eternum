@@ -1,7 +1,7 @@
 #[dojo::contract]
 mod leveling_systems {
     use eternum::alias::ID;
-    use eternum::models::resources::{Resource, ResourceCost};
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::owner::{Owner};
     use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::config::{LevelingConfig};
@@ -76,13 +76,13 @@ mod leveling_systems {
 
             if (next_index == LevelIndex::FOOD) {
                 let wheat_cost = (cost_multiplier * leveling_config.wheat_base_amount) / 100;
-                let mut wheat = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
+                let mut wheat = ResourceImpl::get(world, (entity_id, ResourceTypes::WHEAT));
                 assert(wheat.balance >= wheat_cost, 'not enough wheat');
                 wheat.balance -= wheat_cost;
                 set!(world, (wheat));
 
                 let fish_cost = (cost_multiplier * leveling_config.fish_base_amount) / 100;
-                let mut fish = get!(world, (entity_id, ResourceTypes::FISH), Resource);
+                let mut fish = ResourceImpl::get(world, (entity_id, ResourceTypes::FISH));
                 assert(fish.balance >= fish_cost, 'not enough fish');
                 fish.balance -= fish_cost;
                 set!(world, (fish));
@@ -111,9 +111,8 @@ mod leveling_systems {
 
                     let total_cost = (cost_multiplier * resource_cost.amount) / 100;
 
-                    let mut resource = get!(
-                        world, (entity_id, resource_cost.resource_type), Resource
-                    );
+                    let mut resource 
+                        = ResourceImpl::get(world, (entity_id, resource_cost.resource_type));
                     assert(resource.balance >= total_cost, 'not enough resource');
                     resource.balance -= total_cost;
                     set!(world, (resource));

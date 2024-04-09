@@ -7,7 +7,7 @@ import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
 import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake, Bvh } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef } from "react";
-import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
+import { EffectComposer, Bloom, Noise, SMAA, ToneMapping, BrightnessContrast } from "@react-three/postprocessing";
 // @ts-ignore
 
 import { useControls } from "leva";
@@ -38,9 +38,15 @@ export const DirectionalLightAndHelper = ({ locationType }: { locationType: stri
     useHelper(dLightRef, THREE.DirectionalLightHelper, 50, "hotpink");
   }
 
-  const { lightPosition, bias } = useControls({
+  const { lightPosition, bias, intensity } = useControls({
     lightPosition: {
       value: { x: 0, y: 15, z: 50 }, // Adjust y value to position the light above
+      step: 0.01,
+    },
+    intensity: {
+      value: 1.75,
+      min: 0,
+      max: 10,
       step: 0.01,
     },
     bias: {
@@ -67,7 +73,8 @@ export const DirectionalLightAndHelper = ({ locationType }: { locationType: stri
       shadow-camera-bottom={-3000}
       shadow-bias={bias}
       position={[lightPosition.x, lightPosition.y, lightPosition.z]}
-      intensity={2}
+      color={"#fff"}
+      intensity={intensity}
     ></directionalLight>
   );
 };
@@ -83,46 +90,12 @@ export const MainScene = () => {
     }
   }, [location]);
 
-  const data = useControls("GL", {
-    exposure: { value: 0.9, min: -5, max: 5 },
-    toneMapping: {
-      options: {
-        filmic: THREE.ACESFilmicToneMapping,
-        linear: THREE.LinearToneMapping,
-        notone: THREE.NoToneMapping,
-        reinhard: THREE.ReinhardToneMapping,
-        cineon: THREE.CineonToneMapping,
-      },
-    },
-    legacyLights: { value: false },
-    fog: "#fff",
-    encoding: {
-      options: {
-        rgb: THREE.sRGBEncoding,
-        linear: THREE.LinearEncoding,
-      },
-    },
-  });
-
-  const shakeConfig = useMemo(
-    () => ({
-      maxYaw: 0.01, // Max amount camera can yaw in either direction
-      maxPitch: 0, // Max amount camera can pitch in either direction
-      maxRoll: 0, // Max amount camera can roll in either direction
-      yawFrequency: 0.04, // Frequency of the the yaw rotation
-      pitchFrequency: 0, // Frequency of the pitch rotation
-      rollFrequency: 0, // Frequency of the roll rotation
-      intensity: 1, // initial intensity of the shake
-      controls: undefined, // if using orbit controls, pass a ref here so we can update the rotation
-    }),
-    [],
-  );
-
-  const { mapFogNear, mapFogFar, realmFogNear, realmFogFar } = useControls("Fog", {
+  const { mapFogNear, mapFogFar, realmFogNear, realmFogFar, fogColor } = useControls("Fog", {
     mapFogNear: { value: 831, min: 0, max: 3000, step: 1 },
     mapFogFar: { value: 1426, min: 0, max: 3000, step: 1 },
     realmFogNear: { value: 1885, min: 0, max: 1000, step: 1 },
     realmFogFar: { value: 2300, min: 0, max: 1000, step: 1 },
+    fogColor: { value: "#fff", label: "Color" },
   });
 
   const fogDistance = useMemo(
@@ -133,42 +106,69 @@ export const MainScene = () => {
             far: mapFogFar,
           }
         : {
-            near: 1885,
-            far: 2300,
+            near: realmFogNear,
+            far: realmFogFar,
           },
     [locationType, mapFogFar, mapFogNear, realmFogFar, realmFogNear],
   );
+
+  const {
+    mapCloudsPosition,
+    mapCloudsOpacity,
+    mapCloudsBounds,
+    mapCloudsVolume,
+    hexceptionCloudsPosition,
+    hexceptionCloudsOpacity,
+    hexceptionCloudsBounds,
+    hexceptionCloudsVolume,
+  } = useControls("Clouds", {
+    mapCloudsPosition: { value: [1250, 400, -650], label: "Map Clouds Position" },
+    mapCloudsOpacity: { value: 0.05, min: 0, max: 1, step: 0.01, label: "Map Clouds Opacity" },
+    mapCloudsBounds: { value: [1500, 1, 700], label: "Map Clouds Bounds" },
+    mapCloudsVolume: { value: 700, min: 0, max: 1000, step: 1, label: "Map Clouds Volume" },
+    hexceptionCloudsPosition: { value: [0, 255, -250], label: "Hexception Clouds Position" },
+    hexceptionCloudsOpacity: { value: 0.1, min: 0, max: 1, step: 0.01, label: "Hexception Clouds Opacity" },
+    hexceptionCloudsBounds: { value: [700, 10, 300], label: "Hexception Clouds Bounds" },
+    hexceptionCloudsVolume: { value: 200, min: 0, max: 1000, step: 1, label: "Hexception Clouds Volume" },
+  });
 
   const cloudsConfig = useMemo(
     () =>
       locationType === "map"
         ? {
-            position: [1250, 400, -650],
-            opacity: 0.05,
-            bounds: [1500, 1, 700],
-            volume: 700,
+            position: mapCloudsPosition,
+            opacity: mapCloudsOpacity,
+            bounds: mapCloudsBounds,
+            volume: mapCloudsVolume,
           }
         : {
-            position: [0, 255, -250],
-            opacity: 0.1,
-            bounds: [700, 10, 300],
-            volume: 200,
+            position: hexceptionCloudsPosition,
+            opacity: hexceptionCloudsOpacity,
+            bounds: hexceptionCloudsBounds,
+            volume: hexceptionCloudsVolume,
           },
-    [locationType],
+    [
+      locationType,
+      mapCloudsPosition,
+      mapCloudsOpacity,
+      mapCloudsBounds,
+      mapCloudsVolume,
+      hexceptionCloudsPosition,
+      hexceptionCloudsOpacity,
+      hexceptionCloudsBounds,
+      hexceptionCloudsVolume,
+    ],
   );
 
   const { ambientColor, ambientIntensity } = useControls("Ambient Light", {
     ambientColor: { value: "#fff", label: "Color" },
-    ambientIntensity: { value: 1, min: 0, max: 1, step: 0.01 },
+    ambientIntensity: { value: 0.36, min: 0, max: 1, step: 0.01 },
   });
 
-  const { azimuth, inclination, distance, sunPosition } = useControls("Sky", {
-    azimuth: { value: 0.1, min: 0, max: 1, step: 0.01 },
-    inclination: { value: 0.6, min: 0, max: 1, step: 0.01 },
-    distance: { value: 3000, min: 0, max: 10000, step: 100 },
-    sunPosition: { value: { x: 0, y: 0, z: 0 } },
+  const { brightness, contrast } = useControls("BrightnessContrast", {
+    brightness: { value: 0.18, min: 0, max: 1, step: 0.01 },
+    contrast: { value: 0.41, min: 0, max: 1, step: 0.01 },
   });
-
   const setHexData = useUIStore((state) => state.setHexData);
 
   useEffect(() => {
@@ -180,7 +180,17 @@ export const MainScene = () => {
   return (
     <Canvas
       frameloop="demand" // for fps limiter
-      raycaster={{ params: { Points: { threshold: 0.2 } } }}
+      raycaster={{
+        params: {
+          Points: { threshold: 0.2 },
+          Mesh: { threshold: 0.2 },
+          Line: {
+            threshold: 0.2,
+          },
+          LOD: { threshold: 0.2 },
+          Sprite: { threshold: 0.2 },
+        },
+      }}
       className="rounded-xl"
       camera={{ fov: 15, position: [0, 700, 0], far: 10000 }}
       dpr={[0.5, 1]}
@@ -193,14 +203,12 @@ export const MainScene = () => {
         type: THREE.PCFSoftShadowMap,
       }}
       gl={{
-        powerPreference: "low-power",
+        powerPreference: "high-performance",
         antialias: false,
         stencil: false,
         depth: false,
         logarithmicDepthBuffer: true,
-        toneMappingExposure: Math.pow(2, data.exposure),
-        toneMapping: data.toneMapping,
-        useLegacyLights: data.legacyLights,
+        // useLegacyLights: data.legacyLights,
         // outputEncoding: data.encoding,
       }}
     >
@@ -248,10 +256,12 @@ export const MainScene = () => {
           </a.group>
         </Suspense>
         <EffectComposer multisampling={0}>
+          <BrightnessContrast brightness={brightness} contrast={contrast} />
           <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />
           <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />
           <SMAA />
         </EffectComposer>
+        <fog attach="fog" color={fogColor} near={fogDistance.near} far={fogDistance.far} />
         <AdaptiveDpr pixelated />
       </FPSLimiter>
     </Canvas>

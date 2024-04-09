@@ -10,7 +10,7 @@ mod realm_systems {
     use eternum::models::position::Position;
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::combat::TownWatch;
-    use eternum::models::resources::{DetachedResource, Resource, ResourceTrait};
+    use eternum::models::resources::{DetachedResource, Resource, ResourceImpl, ResourceTrait};
     use eternum::models::config::{CapacityConfig, RealmFreeMintConfig};
     use eternum::constants::{
         WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, SOLDIER_ENTITY_TYPE, MAX_REALMS_PER_ADDRESS
@@ -124,9 +124,8 @@ mod realm_systems {
                 let mut detached_resource = get!(
                     world, (realm_free_mint_config.detached_resource_id, index), DetachedResource
                 );
-                let mut realm_resource = get!(
-                    world, (entity_id, detached_resource.resource_type), Resource
-                );
+                let mut realm_resource 
+                    = ResourceImpl::get(world, (entity_id.into(), detached_resource.resource_type));
 
                 realm_resource.balance += detached_resource.resource_amount;
                 realm_resource.save(world);

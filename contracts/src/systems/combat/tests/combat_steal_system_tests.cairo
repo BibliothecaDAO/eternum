@@ -1,7 +1,7 @@
 use core::debug::PrintTrait;
 use eternum::models::position::Position;
 use eternum::models::metadata::ForeignKey;
-use eternum::models::resources::{Resource, ResourceTrait, ResourceCost};
+use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceCost};
 use eternum::models::level::Level;
 use eternum::models::realm::Realm;
 use eternum::models::order::Orders;
@@ -378,7 +378,7 @@ fn test_steal_success() {
             break;
         }
         let resource_type = *stolen_resource_types.at(index);
-        let target_realm_resource = get!(world, (target_realm_entity_id, resource_type), Resource);
+        let target_realm_resource = ResourceImpl::get(world, (target_realm_entity_id, resource_type));
         assert(target_realm_resource.balance < INITIAL_RESOURCE_BALANCE, 'wrong target balance');
 
         index += 1;

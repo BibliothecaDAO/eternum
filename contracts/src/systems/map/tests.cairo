@@ -186,7 +186,7 @@ fn test_map_explore() {
     // ensure that the right amount of food was burnt 
     let expected_wheat_balance = INITIAL_WHEAT_BALANCE - MAP_EXPLORE_WHEAT_BURN_AMOUNT;
     let expected_fish_balance = INITIAL_FISH_BALANCE - MAP_EXPLORE_FISH_BURN_AMOUNT;
-    let (realm_wheat, realm_fish) = ResourceFoodImpl::get_food(world, realm_entity_id);
+    let (realm_wheat, realm_fish) = ResourceFoodImpl::get(world, realm_entity_id);
     assert_eq!(realm_wheat.balance, expected_wheat_balance, "wrong wheat balance");
     assert_eq!(realm_fish.balance, expected_fish_balance, "wrong wheat balance");
 
