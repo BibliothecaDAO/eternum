@@ -57,7 +57,7 @@ importers:
         specifier: ^9.101.0
         version: 9.105.2(@react-three/fiber@8.16.1)(@types/react@18.2.74)(@types/three@0.163.0)(react-dom@18.2.0)(react@18.2.0)(three@0.163.0)
       '@react-three/fiber':
-        specifier: ^8.15.19
+        specifier: ^8.16.1
         version: 8.16.1(react-dom@18.2.0)(react@18.2.0)(three@0.163.0)
       '@react-three/postprocessing':
         specifier: 2.16.2

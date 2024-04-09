@@ -124,8 +124,9 @@ mod realm_systems {
                 let mut detached_resource = get!(
                     world, (realm_free_mint_config.detached_resource_id, index), DetachedResource
                 );
-                let mut realm_resource 
-                    = ResourceImpl::get(world, (entity_id.into(), detached_resource.resource_type));
+                let mut realm_resource = ResourceImpl::get(
+                    world, (entity_id.into(), detached_resource.resource_type)
+                );
 
                 realm_resource.balance += detached_resource.resource_amount;
                 realm_resource.save(world);

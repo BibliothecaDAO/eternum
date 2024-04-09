@@ -12,7 +12,8 @@
     "QuantityTracker",
     "Resource",
     "OwnedResourcesTracker",
-    "Tile"
+    "Tile",
+    "Production"
   ],
   "CARAVAN_SYSTEMS": [
     "Movable",
