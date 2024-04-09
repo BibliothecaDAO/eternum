@@ -2,33 +2,51 @@ import { useEffect, useMemo } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useTexture } from "@react-three/drei";
 import BuildArea from "../../components/construction/BuildArea";
-import { HexPositions, getUIPositionFromColRow } from "../../utils/utils";
+import { getUIPositionFromColRow } from "../../utils/utils";
 import BigHexBiome from "../../components/construction/BigHexBiome";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { useGetRealm } from "../../../hooks/helpers/useRealm";
-import realmHexPositions from "../../../data/geodata/hex/realmHexPositions.json";
-import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { useGetRealms } from "../../../hooks/helpers/useRealm";
+import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { useSearch } from "wouter/use-location";
 
-export const RealmCityViewScene = () => {
-  const realmPositions = realmHexPositions as HexPositions;
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const { realmEntityId } = useRealmStore();
-  const { realm } = useGetRealm(realmEntityId);
-  const hexData = useUIStore((state) => state.hexData);
+export const HexceptionViewScene = () => {
+  const { setIsLoadingScreenEnabled, hexData, moveCameraToRealmView } = useUIStore((state) => state);
+  const { setRealmId, setRealmEntityId } = useRealmStore();
 
-  const { neighborHexes, realmHex } = useMemo(() => {
-    if (!realm) return { neighborHexes: [], realmHex: undefined };
-    const realmPosition = realmPositions[Number(realm?.realmId)];
-    const realmHex = hexData?.find((hex) => hex.col === realmPosition[0].col && hex.row === realmPosition[0].row);
+  const realms = useGetRealms();
+  const searchString = useSearch();
 
-    const neighborOffsets = realmPosition[0].row % 2 !== 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+  const hexPosition = useMemo(() => {
+    const params = new URLSearchParams(searchString);
+    const x = params.get("col");
+    const y = params.get("row");
+    return { col: Number(x), row: Number(y) };
+  }, [searchString]);
+
+  const realm = useMemo(() => {
+    const _tmp = realms.find((realm) => realm.position.x === hexPosition.col && realm.position.y === hexPosition.row);
+    if (!_tmp) return undefined;
+    return _tmp;
+  }, [hexPosition, realms]);
+
+  useEffect(() => {
+    if (realm) {
+      setRealmId(realm.realmId);
+      setRealmEntityId(realm.entity_id);
+    }
+  }, [realm]);
+
+  const { neighborHexes, mainHex } = useMemo(() => {
+    const mainHex = hexData?.find((hex) => hex.col === hexPosition.col && hex.row === hexPosition.row);
+
+    const neighborOffsets = hexPosition.row % 2 !== 0 ? neighborOffsetsEven : neighborOffsetsOdd;
     const neighborHexes = neighborOffsets.map((neighbor: { i: number; j: number; direction: number }) => {
-      const tmpCol = realmPosition[0].col + neighbor.i;
-      const tmpRow = realmPosition[0].row + neighbor.j;
+      const tmpCol = hexPosition.col + neighbor.i;
+      const tmpRow = hexPosition.row + neighbor.j;
       return { col: tmpCol, row: tmpRow };
     });
-    return { neighborHexes, realmHex };
-  }, [realm]);
+    return { neighborHexes, mainHex };
+  }, [hexPosition]);
 
   const neighborHexesInsideView = useMemo(() => {
     return hexData?.filter((hex) =>
@@ -37,6 +55,7 @@ export const RealmCityViewScene = () => {
   }, [hexData, neighborHexes]);
 
   useEffect(() => {
+    moveCameraToRealmView();
     setIsLoadingScreenEnabled(false);
   }, []);
 
@@ -56,11 +75,9 @@ export const RealmCityViewScene = () => {
   const pos6 = getUIPositionFromColRow(0, -9, true);
   return (
     <>
-      {realmHex && (
-        <group position={[mainPosition.x, 0, -mainPosition.y]} rotation={[0, 0, 0]}>
-          <BuildArea />
-        </group>
-      )}
+      <group position={[mainPosition.x, 0, -mainPosition.y]} rotation={[0, 0, 0]}>
+        {realm ? <BuildArea /> : <BigHexBiome biome={mainHex?.biome as any} />}
+      </group>
 
       {neighborHexesInsideView && neighborHexesInsideView.length > 0 && (
         <group>

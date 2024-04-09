@@ -19,9 +19,9 @@ import { useLocation } from "wouter";
 import { orderNameDict } from "@bibliothecadao/eternum";
 import { getRealm } from "../utils/realms";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
-import { RealmBubble } from "../components/cityview/RealmSwitch";
 import { useEntityQuery } from "@dojoengine/react";
 import { useRealm } from "../../hooks/helpers/useRealm";
+import { RealmBubble } from "../components/cityview/RealmListBoxes";
 
 export const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -49,7 +49,7 @@ export const Onboarding = () => {
 
   const [_yourRealms, setYourRealms] = useState<RealmBubble[]>([]);
 
-  const { realmId, setRealmId, setRealmEntityId, realmEntityIds, setRealmEntityIds } = useRealmStore();
+  const { realmId, realmEntityIds, setRealmEntityIds } = useRealmStore();
 
   const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
 
@@ -68,6 +68,7 @@ export const Onboarding = () => {
   }, [entityIds]);
 
   const [_location, setLocation] = useLocation();
+  const { moveCameraToWorldMapView } = useUIStore((state) => state);
 
   const realm = useMemo(() => (realmId ? getRealm(realmId) : undefined), [realmId]);
 
@@ -82,6 +83,7 @@ export const Onboarding = () => {
         realmId: realm.realmId,
         name,
         order: orderNameDict[realm.order],
+        position: realm.position,
       });
     });
     return fetchedYourRealms;
@@ -133,9 +135,8 @@ export const Onboarding = () => {
                 variant="outline"
                 onClick={() => {
                   showBlankOverlay(false);
-                  setLocation(`/realm/${realms[0].id}/labor`);
-                  setRealmEntityId(realms[0].id);
-                  setRealmId(realms[0].realmId);
+                  moveCameraToWorldMapView();
+                  setLocation(`/hex?col=${realms[0].position.x}&row=${realms[0].position.y}`);
                 }}
               >
                 begin
@@ -167,7 +168,7 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
     },
   } = useDojo();
 
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const { setTooltip } = useUIStore((state) => state);
 
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);

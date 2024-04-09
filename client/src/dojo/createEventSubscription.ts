@@ -33,8 +33,6 @@ export async function createEventSubscription(
 
   const formattedKeys = keys.map((key) => `"${key}"`).join(",");
 
-  console.log({ formattedKeys });
-
   if (addPast) {
     const queryBuilder = `
     query {

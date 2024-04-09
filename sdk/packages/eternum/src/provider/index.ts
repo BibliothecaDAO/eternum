@@ -1,5 +1,4 @@
 import { DojoProvider } from "@dojoengine/core";
-
 import * as SystemProps from "../types/provider";
 import { Call } from "starknet";
 import { getBuildingType } from "../utils";

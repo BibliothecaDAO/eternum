@@ -1,6 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { WorldMapScene } from "./WorldMapScene";
-import { RealmCityViewScene } from "./RealmCityViewScene";
+import { HexceptionViewScene } from "./HexceptionViewScene";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
@@ -79,7 +79,7 @@ export const MainScene = () => {
     if (location === "/map" || location === "/") {
       return "map";
     } else {
-      return "realm";
+      return "hexception";
     }
   }, [location]);
 
@@ -216,9 +216,9 @@ export const MainScene = () => {
               <Route path="map">
                 <WorldMapScene />
               </Route>
-              <Route path="realm">
+              <Route path="hexception">
                 {/* <CameraShake {...shakeConfig} /> */}
-                <RealmCityViewScene />
+                <HexceptionViewScene />
                 <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
                   <Cloud
                     concentrate="random"
