@@ -4,11 +4,15 @@ import { leaderboard, resources } from "../../components/navigation/Config";
 import { EntityResourceTable } from "../../components/resources/EntityResourceTable";
 import { Tabs } from "@/ui/elements/tab";
 import { useMemo, useState } from "react";
+import useRealmStore from "@/hooks/store/useRealmStore";
 
 export const Resources = () => {
   const { togglePopup } = useUIStore();
   const [selectedTab, setSelectedTab] = useState(0);
   const isOpen = useUIStore((state) => state.isPopupOpen(resources));
+
+  // This should be replaced with Selected entity - so Realms, Settlement etc
+  let { realmEntityId } = useRealmStore();
   const tabs = useMemo(
     () => [
       {
@@ -18,7 +22,7 @@ export const Resources = () => {
             <div>Balance</div>
           </div>
         ),
-        component: <EntityResourceTable />,
+        component: <EntityResourceTable entityId={realmEntityId} />,
       },
       {
         key: "mine",
