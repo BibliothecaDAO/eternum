@@ -233,10 +233,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     uuid,
   };
 
-  const wrappedSystemCalls = Object.entries(systemCalls).reduce<WrappedSystemCalls>((acc, [key, fn]) => {
-    acc[key] = withErrorHandling(fn);
-    return acc;
-  }, {});
+  // TODO: Fix Type
+  const wrappedSystemCalls = Object.fromEntries(
+    Object.entries(systemCalls).map(([key, fn]) => [key, withErrorHandling(fn)]),
+  );
 
-  return wrappedSystemCalls;
+  return systemCalls;
 }
