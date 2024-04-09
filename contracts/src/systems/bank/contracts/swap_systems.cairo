@@ -6,7 +6,7 @@ mod swap_systems {
     use eternum::models::config::{BankConfig};
     use eternum::systems::bank::interface::swap::ISwapSystems;
     use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
-    use eternum::models::resources::{Resource, ResourceTrait};
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
     use eternum::models::config::{TickImpl, TickTrait};
 
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
@@ -49,20 +49,18 @@ mod swap_systems {
             let owner_bank_account = get!(
                 world, (bank_entity_id, bank_owner.address), BankAccounts
             );
-            let mut owner_lords = get!(
-                world, (owner_bank_account.entity_id, ResourceTypes::LORDS), Resource
-            );
-            owner_lords.add(owner_fees_amount);
+            let mut owner_lords 
+                = ResourceImpl::get(world, (owner_bank_account.entity_id, ResourceTypes::LORDS));
+            owner_lords.balance += owner_fees_amount;
 
             // udpate player lords
-            let mut player_lords = get!(
-                world, (bank_account_entity_id, ResourceTypes::LORDS), Resource
-            );
-            let tick = TickImpl::get(world);
-            player_lords.deduct(world, @tick, cost + owner_fees_amount + lp_fees_amount, true);
+            let mut player_lords 
+                = ResourceImpl::get(world, (bank_account_entity_id, ResourceTypes::LORDS));
+            player_lords.balance -= cost + owner_fees_amount + lp_fees_amount;
 
             // update player resources
-            let mut resource = get!(world, (bank_account_entity_id, resource_type), Resource);
+            let mut resource 
+                = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
             resource.balance += amount;
             resource.save(world);
         }
@@ -92,10 +90,9 @@ mod swap_systems {
             let owner_bank_account = get!(
                 world, (bank_entity_id, bank_owner.address), BankAccounts
             );
-            let mut owner_resource = get!(
-                world, (owner_bank_account.entity_id, resource_type), Resource
-            );
-            owner_resource.add(owner_fees_amount);
+            let mut owner_resource 
+                = ResourceImpl::get(world, (owner_bank_account.entity_id, resource_type));
+            owner_resource.balance += owner_fees_amount;
 
             // update market
             let mut market = get!(world, (bank_entity_id, resource_type), Market);
@@ -105,15 +102,15 @@ mod swap_systems {
             set!(world, (market));
 
             // update player lords
-            let mut player_lords = get!(
-                world, (bank_account_entity_id, ResourceTypes::LORDS), Resource
-            );
-            player_lords.add(payout);
+            let mut player_lords 
+                = ResourceImpl::get(world, (bank_account_entity_id, ResourceTypes::LORDS));
+            player_lords.balance += payout;
 
             // update player resource
-            let mut resource = get!(world, (bank_account_entity_id, resource_type), Resource);
+            let mut resource 
+                = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
             let tick = TickImpl::get(world); 
-            resource.deduct(world, @tick, amount, true);
+            resource.balance -= amount;
         }
     }
 

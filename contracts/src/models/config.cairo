@@ -348,25 +348,6 @@ struct ProductionConfig {
 
 
 #[derive(Model, Copy, Drop, Serde)]
-struct ProductionInput {
-    #[key]
-    output_resource_type: u8,
-    #[key]
-    index: u8, 
-    input_resource_type: u8,
-    input_resource_amount: u128
-}
-
-#[derive(Model, Copy, Drop, Serde)]
-struct ProductionOutput {
-    #[key]
-    input_resource_type: u8,
-    #[key]
-    index: u8, 
-    output_resource_type: u8
-}
-
-#[derive(Model, Copy, Drop, Serde)]
 struct BankConfig {
     #[key]
     config_id: u128,

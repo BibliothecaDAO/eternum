@@ -1,7 +1,7 @@
 #[dojo::contract]
 mod hyperstructure_systems {
     use eternum::alias::ID;
-    use eternum::models::resources::{Resource, ResourceCost};
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::owner::Owner;
     use eternum::models::hyperstructure::{HyperStructure};
     use eternum::models::realm::{Realm};
@@ -30,9 +30,8 @@ mod hyperstructure_systems {
                     }
 
                     let resource_cost = get!(world, (completion_cost_id, index), ResourceCost);
-                    let resource = get!(
-                        world, (hyperstructure_id, resource_cost.resource_type), Resource
-                    );
+                    let resource 
+                        = ResourceImpl::get(world, (hyperstructure_id, resource_cost.resource_type));
                     assert(resource.balance == 0, 'not conquered');
 
                     index += 1;
@@ -67,9 +66,8 @@ mod hyperstructure_systems {
                 }
 
                 let resource_cost = get!(world, (completion_cost_id, index), ResourceCost);
-                let resource = get!(
-                    world, (hyperstructure_id, resource_cost.resource_type), Resource
-                );
+                let resource : Resource
+                    = ResourceImpl::get(world, (hyperstructure_id, resource_cost.resource_type));
                 assert(resource.balance >= resource_cost.amount, 'not enough resources');
 
                 index += 1;

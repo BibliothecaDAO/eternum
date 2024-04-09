@@ -6,7 +6,7 @@ mod combat_systems {
     use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::resources::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
 
-    use eternum::models::resources::{Resource, ResourceCost, ResourceFoodImpl};
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost, ResourceFoodImpl};
     use eternum::models::position::{Position};
     use eternum::models::config::{
         SpeedConfig, WeightConfig, CapacityConfig, CombatConfig, SoldierConfig, HealthConfig,
@@ -108,9 +108,8 @@ mod combat_systems {
                 let resource_cost = get!(
                     world, (soldier_config.resource_cost_id, index), ResourceCost
                 );
-                let mut realm_resource = get!(
-                    world, (realm_entity_id, resource_cost.resource_type), Resource
-                );
+                let mut realm_resource 
+                    = ResourceImpl::get(world, (realm_entity_id, resource_cost.resource_type));
 
                 assert(
                     realm_resource.balance >= resource_cost.amount * quantity,
@@ -457,9 +456,8 @@ mod combat_systems {
                 let resource_cost = get!(
                     world, (soldier_health_config.resource_cost_id, index), ResourceCost
                 );
-                let mut realm_resource = get!(
-                    world, (unit_realm_entity_id, resource_cost.resource_type), Resource
-                );
+                let mut realm_resource 
+                    = ResourceImpl::get(world, (unit_realm_entity_id, resource_cost.resource_type));
 
                 assert(
                     realm_resource.balance >= resource_cost.amount * health_amount,
@@ -893,13 +891,8 @@ mod combat_systems {
                 * attacker_quantity.value;
             let mut fish_burn_amount = combat_config.fish_burn_per_soldier
                 * attacker_quantity.value;
-            ResourceFoodImpl::burn_food(
-                world,
-                target_realm_entity_id,
-                wheat_burn_amount,
-                fish_burn_amount,
-                check_balance: false
-            );
+            ResourceFoodImpl::burn(
+                world, target_realm_entity_id, wheat_burn_amount, fish_burn_amount);
 
             // steal resources
             let mut stolen_resources: Array<(u8, u128)> = array![];
@@ -946,9 +939,9 @@ mod combat_systems {
                 let resource_weight = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig)
                     .weight_gram;
 
-                let target_resource = get!(
-                    world, (target_realm_entity_id, resource_type), Resource
-                );
+                let target_resource 
+                    = ResourceImpl::get(world, (target_realm_entity_id, resource_type));
+
                 let target_resource_weight = resource_weight * target_resource.balance;
 
                 if target_resource_weight > 0 {

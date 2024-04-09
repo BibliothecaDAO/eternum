@@ -5,7 +5,7 @@ mod liquidity_systems {
     use eternum::models::bank::liquidity::{Liquidity};
     use eternum::systems::bank::interface::liquidity::ILiquiditySystems;
     use eternum::models::bank::bank::{BankAccounts};
-    use eternum::models::resources::{Resource, ResourceTrait};
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
     use eternum::constants::ResourceTypes;
 
     // Extenal imports
@@ -26,12 +26,11 @@ mod liquidity_systems {
             let bank_account_entity_id = bank_account.entity_id;
             assert(bank_account_entity_id != 0, 'bank account not found');
 
-            let mut resource = get!(world, (bank_account_entity_id, resource_type), Resource);
+            let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
             assert(resource.balance >= resource_amount, 'not enough resources');
 
-            let mut player_lords = get!(
-                world, (bank_account_entity_id, ResourceTypes::LORDS), Resource
-            );
+            let mut player_lords 
+                = ResourceImpl::get(world, (bank_account_entity_id, ResourceTypes::LORDS));
             assert(lords_amount <= player_lords.balance, 'not enough lords');
 
             let market = get!(world, (bank_entity_id, resource_type), Market);
@@ -100,14 +99,13 @@ mod liquidity_systems {
             );
 
             // update player lords
-            let mut player_lords = get!(
-                world, (bank_account_entity_id, ResourceTypes::LORDS), Resource
-            );
+            let mut player_lords 
+                = ResourceImpl::get(world, (bank_account_entity_id, ResourceTypes::LORDS));
             player_lords.balance += payout_lords;
             player_lords.save(world);
 
             // update player resource
-            let mut resource = get!(world, (bank_account_entity_id, resource_type), Resource);
+            let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
             resource.balance += payout_resource_amount;
             resource.save(world);
 
