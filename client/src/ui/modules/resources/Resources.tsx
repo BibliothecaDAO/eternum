@@ -12,7 +12,7 @@ export const Resources = () => {
   const isOpen = useUIStore((state) => state.isPopupOpen(resources));
 
   // This should be replaced with Selected entity - so Realms, Settlement etc
-  let { realmEntityId } = useRealmStore();
+  const { realmEntityId } = useRealmStore();
   const tabs = useMemo(
     () => [
       {
