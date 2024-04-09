@@ -1,4 +1,6 @@
 import { Account, AccountInterface, num } from "starknet";
+import { BuildingType } from "../utils";
+import { ResourcesIds } from "../constants";
 
 interface SystemSigner {
   signer: AccountInterface | Account;
@@ -243,8 +245,8 @@ export interface CreateBuildingProps extends SystemSigner {
     x: num.BigNumberish;
     y: num.BigNumberish;
   };
-  building_category: num.BigNumberish;
-  produce_resource_type: num.BigNumberish;
+  building_category: BuildingType;
+  produce_resource_type: ResourcesIds;
 }
 
 export interface DestroyBuildingProps extends SystemSigner {

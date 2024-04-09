@@ -8,6 +8,7 @@ import { useCallback } from "react";
 import { useBuildingSound } from "../../../hooks/useUISound";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
+import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row);
@@ -42,8 +43,8 @@ const GroundGrid = () => {
         x: col.toString(),
         y: row.toString(),
       },
-      building_category: "3",
-      produce_resource_type: "2",
+      building_category: BuildingType.Farm,
+      produce_resource_type: 1,
     });
   };
 
