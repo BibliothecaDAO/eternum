@@ -13,6 +13,60 @@ export enum BuildingType {
   Stable = 8,
 }
 
+export enum ResourceBuildingType {
+  Wood = 1,
+  Stone = 2,
+  Coal = 3,
+  Copper = 4,
+  Obsidian = 5,
+  Silver = 6,
+  Ironwood = 7,
+  ColdIron = 8,
+  Gold = 9,
+  Hartwood = 10,
+  Diamonds = 11,
+  Sapphire = 12,
+  Ruby = 13,
+  DeepCrystal = 14,
+  Ignium = 15,
+  EtherealSilica = 16,
+  TrueIce = 17,
+  TwilightQuartz = 18,
+  AlchemicalSilver = 19,
+  Adamantine = 20,
+  Mithral = 21,
+  Dragonhide = 22,
+}
+
+export const CombinedBuildingTypes = {
+  ...BuildingType,
+  ...ResourceBuildingType,
+};
+
+export const BuildingEnumToString = {
+  0: "None",
+  1: "Castle",
+  2: "Resource",
+  3: "Farm",
+  4: "FishingVillage",
+  5: "Barracks",
+  6: "Market",
+  7: "ArcheryRange",
+  8: "Stable",
+};
+
+export const BuildingStringToEnum = {
+  None: 0,
+  Castle: 1,
+  Resource: 2,
+  Farm: 3,
+  FishingVillage: 4,
+  Barracks: 5,
+  Market: 6,
+  ArcheryRange: 7,
+  Stable: 8,
+};
+
 export function getBuildingType(name: BuildingType): CairoCustomEnum {
   switch (name) {
     case BuildingType.Castle:

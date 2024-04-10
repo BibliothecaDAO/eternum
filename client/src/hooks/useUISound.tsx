@@ -1,8 +1,7 @@
 import useSound from "use-sound";
 import useUIStore from "./store/useUIStore";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
-import { BuildingType } from "./store/_buildModeStore";
 
 const dir = "/sound/";
 
@@ -234,19 +233,19 @@ export const useBuildingSound = () => {
       case BuildingType.Farm:
         playBuildFarm();
         break;
-      case BuildingType.Fishery:
-        playBuildFishingVillage();
-        break;
-      case BuildingType.Mine:
+      // case BuildingType.Fishery:
+      //   playBuildFishingVillage();
+      //   break;
+      case BuildingType.Resource:
         playBuildMine();
         break;
       case BuildingType.Stable:
         playBuildStables();
         break;
-      case BuildingType.Workhut:
-        playBuildWorkHut();
-        break;
-      case BuildingType.ArcherRange:
+      // case BuildingType.Workhut:
+      //   playBuildWorkHut();
+      //   break;
+      case BuildingType.ArcheryRange:
         playBuildArcherRange();
         break;
       case BuildingType.Barracks:
@@ -255,9 +254,9 @@ export const useBuildingSound = () => {
       case BuildingType.Market:
         playBuildMarket();
         break;
-      case BuildingType.Storehouse:
-        playBuildStorehouse();
-        break;
+      // case BuildingType.Storehouse:
+      //   playBuildStorehouse();
+      //   break;
       default:
         break;
     }

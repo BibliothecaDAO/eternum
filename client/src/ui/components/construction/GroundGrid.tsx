@@ -8,7 +8,7 @@ import { useState } from "react";
 import { useBuildingSound } from "../../../hooks/useUISound";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingType, ResourcesIds, BuildingStringToEnum } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { BuildingTooltip } from "../cityview/BuildingTooltip";
 import { Component, getComponentValue } from "@dojoengine/recs";
@@ -23,41 +23,37 @@ const GroundGrid = () => {
 
   const { playBuildingSound } = useBuildingSound();
   const hexPositions = generateHexPositions();
-  const { previewBuilding, hoveredBuildHex, setHoveredBuildHex, existingBuildings, setExistingBuildings } = useUIStore(
-    (state) => ({
-      previewBuilding: state.previewBuilding,
-      hoveredBuildHex: state.hoveredBuildHex,
-      setHoveredBuildHex: state.setHoveredBuildHex,
-      existingBuildings: state.existingBuildings,
-      setExistingBuildings: state.setExistingBuildings,
-    }),
-  );
+  const {
+    previewBuilding,
+    hoveredBuildHex,
+    setHoveredBuildHex,
+    existingBuildings,
+    setExistingBuildings,
+    selectedResource,
+    setResourceId,
+  } = useUIStore((state) => ({
+    previewBuilding: state.previewBuilding,
+    hoveredBuildHex: state.hoveredBuildHex,
+    setHoveredBuildHex: state.setHoveredBuildHex,
+    existingBuildings: state.existingBuildings,
+    setExistingBuildings: state.setExistingBuildings,
+    selectedResource: state.selectedResource,
+    setResourceId: state.setResourceId,
+  }));
   const { realmEntityId } = useRealmStore();
 
   const {
     account: { account },
     setup: {
       systemCalls: { create_building },
+      components: { Building },
     },
   } = useDojo();
-
-  const handlePlacement = async (col: number, row: number) => {
-    await create_building({
-      signer: account,
-      entity_id: realmEntityId,
-      building_coord: {
-        x: col.toString(),
-        y: row.toString(),
-      },
-      building_category: 2,
-      produce_resource_type: new CairoOption<Number>(CairoOptionVariant.Some, ResourcesIds.Gold),
-    });
-  };
 
   const models = useGLTF([
     "/models/buildings/castle.glb",
     "/models/buildings/farm.glb",
-    "/models/buildings/fishery.glb",
+    // "/models/buildings/fishery.glb",
     "/models/buildings/mine.glb",
     "/models/buildings/stable.glb",
     "/models/buildings/workhut.glb",
@@ -66,11 +62,23 @@ const GroundGrid = () => {
     "/models/buildings/market.glb",
     "/models/buildings/storehouse.glb",
   ]);
-  const {
-    setup: {
-      components: { Building },
-    },
-  } = useDojo();
+
+  const handlePlacement = async (col: number, row: number, previewBuilding: BuildingType) => {
+    await create_building({
+      signer: account,
+      entity_id: realmEntityId,
+      building_coord: {
+        x: col.toString(),
+        y: row.toString(),
+      },
+      building_category: previewBuilding,
+      produce_resource_type:
+        previewBuilding == BuildingType.Resource && selectedResource
+          ? new CairoOption<Number>(CairoOptionVariant.Some, selectedResource)
+          : new CairoOption<Number>(CairoOptionVariant.None, 0),
+    });
+  };
+
   return (
     <>
       {hexPositions.map((hexPosition, index) => {
@@ -89,7 +97,9 @@ const GroundGrid = () => {
             <BuiltBuilding
               key={index}
               models={models}
-              buildingCategory={BuildingType.Farm}
+              buildingCategory={
+                BuildingStringToEnum[productionModelValue.category as keyof typeof BuildingStringToEnum]
+              }
               position={hexPosition}
               onPointerMove={() =>
                 previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })
@@ -109,7 +119,7 @@ const GroundGrid = () => {
               }
               onClick={() => {
                 if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
-                  handlePlacement(hexPosition.col, hexPosition.row);
+                  handlePlacement(hexPosition.col, hexPosition.row, previewBuilding);
                   playBuildingSound(previewBuilding);
                 }
               }}
@@ -130,7 +140,7 @@ export const BuiltBuilding = ({
   position: any;
   onPointerMove: any;
   models: any;
-  buildingCategory: BuildingType;
+  buildingCategory: number;
 }) => {
   const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
 
@@ -151,14 +161,14 @@ export const Hexagon = ({ position, onClick, onPointerMove }: { position: any; o
 
       <mesh
         geometry={hexagonGeometry}
-        onPointerEnter={(e) => {
-          e.stopPropagation();
-          setShowTooltip(true);
-        }}
-        onPointerLeave={(e) => {
-          e.stopPropagation();
-          setShowTooltip(false);
-        }}
+        // onPointerEnter={(e) => {
+        //   e.stopPropagation();
+        //   setShowTooltip(true);
+        // }}
+        // onPointerLeave={(e) => {
+        //   e.stopPropagation();
+        //   setShowTooltip(false);
+        // }}
       >
         <meshMatcapMaterial color={mainColor} />
       </mesh>

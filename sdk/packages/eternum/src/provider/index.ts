@@ -1,7 +1,6 @@
 import { DojoProvider } from "@dojoengine/core";
 import * as SystemProps from "../types/provider";
-import { Call } from "starknet";
-import { getBuildingType } from "../utils";
+import { Call, CallData } from "starknet";
 
 const UUID_OFFSET_CREATE_CARAVAN = 2;
 
@@ -720,18 +719,20 @@ export class EternumProvider extends DojoProvider {
   public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, building_coord, building_category, produce_resource_type, signer } = props;
 
-    console.log("Building category: ", getBuildingType(building_category), produce_resource_type);
+    console.log(
+      CallData.compile([entity_id, building_coord.x, building_coord.y, building_category, produce_resource_type]),
+    );
 
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "building_systems"),
       entrypoint: "create",
-      calldata: [
+      calldata: CallData.compile([
         entity_id,
         building_coord.x,
         building_coord.y,
-        getBuildingType(building_category),
+        building_category,
         produce_resource_type,
-      ],
+      ]),
     });
 
     return await this.provider.waitForTransaction(tx.transaction_hash, {
