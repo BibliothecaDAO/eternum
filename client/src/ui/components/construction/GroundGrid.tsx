@@ -11,8 +11,9 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingType, ResourcesIds, BuildingStringToEnum } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { BuildingTooltip } from "../cityview/BuildingTooltip";
-import { Component, getComponentValue } from "@dojoengine/recs";
+import { Component, Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { CairoOption, CairoOptionVariant } from "starknet";
+import { useEntityQuery } from "@dojoengine/react";
 
 // 1. Working and fairly smooth minimal lag and good transitions. And the construction OS box is nice
 // 2. Graphics are good and the hexagons are well placed
@@ -82,30 +83,31 @@ const GroundGrid = () => {
     });
   };
 
+  const builtBuildings = useEntityQuery([
+    Has(Building),
+    HasValue(Building, { outer_col: BigInt(globalHex.col), outer_row: BigInt(globalHex.row) }),
+  ]);
+
   return (
     <>
-      {hexPositions.map((hexPosition, index) => {
-        const productionModelValue = getComponentValue(
-          Building,
-          getEntityIdFromKeys([
-            BigInt(globalHex.col),
-            BigInt(globalHex.row),
-            BigInt(hexPosition.col),
-            BigInt(hexPosition.row),
-          ]),
-        );
+      {builtBuildings.map((entity) => {
+        const productionModelValue = getComponentValue(Building, entity);
 
         return (
           productionModelValue && (
             <BuiltBuilding
-              key={index}
+              key={entity}
               models={models}
               buildingCategory={
                 BuildingStringToEnum[productionModelValue.category as keyof typeof BuildingStringToEnum]
               }
-              position={hexPosition}
+              position={{ col: Number(productionModelValue.inner_col), row: Number(productionModelValue.inner_row) }}
               onPointerMove={() =>
-                previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })
+                previewBuilding &&
+                setHoveredBuildHex({
+                  col: Number(productionModelValue.inner_col),
+                  row: Number(productionModelValue.inner_row),
+                })
               }
             />
           )
@@ -151,10 +153,10 @@ export const BuiltBuilding = ({
 };
 
 const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
+const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
+const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
 
 export const Hexagon = ({ position, onClick, onPointerMove }: { position: any; onClick: any; onPointerMove: any }) => {
-  const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
-  const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
   const [showTooltip, setShowTooltip] = useState(false);
   return (
     <group position={[position.x, position.y, position.z]} onPointerMove={onPointerMove} onClick={onClick}>
