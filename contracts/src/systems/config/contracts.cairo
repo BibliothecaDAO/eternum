@@ -28,6 +28,7 @@ mod config_systems {
     use eternum::models::position::{Position, PositionTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::bank::bank::{Bank};
+    use debug::PrintTrait;
 
 
     fn assert_caller_is_admin(world: IWorldDispatcher) {

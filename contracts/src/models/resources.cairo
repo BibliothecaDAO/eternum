@@ -110,7 +110,7 @@ impl ResourceImpl of ResourceTrait {
         }
     }
 
-    fn harvest(ref self: Resource, world: IWorldDispatcher) -> u128 {
+    fn harvest(ref self: Resource, world: IWorldDispatcher) {
         let mut production: Production = get!(world, (self.entity_id, self.resource_type), Production);
         let tick = TickImpl::get(world);
 
@@ -119,8 +119,6 @@ impl ResourceImpl of ResourceTrait {
             set!(world, (self));
             set!(world, (production));
         }
-
-        return self.balance;
     }
 
 

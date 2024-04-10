@@ -176,13 +176,20 @@ impl TickImpl of TickTrait {
         return tick_config;   
     }
 
+    fn interval(self: TickConfig) -> u64 {
+        if self.tick_interval_in_seconds == 0 {
+            return 1;
+        }
+        return self.tick_interval_in_seconds;
+    }
+
     fn current(self: TickConfig) -> u64 {
         let now = starknet::get_block_timestamp();
-        now / self.tick_interval_in_seconds
+        now / self.interval()
     }
 
     fn at(self: TickConfig, time: u64) -> u64 {
-        time / self.tick_interval_in_seconds
+        time / self.interval()
     }
     
     fn after(self: TickConfig, time_spent: u64) -> u64 {
