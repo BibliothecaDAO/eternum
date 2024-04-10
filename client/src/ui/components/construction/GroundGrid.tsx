@@ -3,15 +3,16 @@ import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
 import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
-import { Bvh, Html, Merged, useGLTF } from "@react-three/drei";
-import { useCallback, useState } from "react";
+import { Bvh, useGLTF } from "@react-three/drei";
+import { useState } from "react";
 import { useBuildingSound } from "../../../hooks/useUISound";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
-import { useComponentValue } from "@dojoengine/react";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { BuildingTooltip } from "../cityview/BuildingTooltip";
+import { Component, getComponentValue } from "@dojoengine/recs";
+import { CairoOption, CairoOptionVariant } from "starknet";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row);
@@ -48,66 +49,11 @@ const GroundGrid = () => {
         x: col.toString(),
         y: row.toString(),
       },
-      building_category: BuildingType.Farm,
-      produce_resource_type: 1,
+      building_category: 2,
+      produce_resource_type: new CairoOption<Number>(CairoOptionVariant.Some, ResourcesIds.Gold),
     });
   };
-  //
-  return (
-    <>
-      {hexPositions.map((hexPosition, index) => (
-        <BuiltBuilding
-          key={index}
-          outerPosition={globalHex}
-          position={hexPosition}
-          onPointerMove={() => previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
-          onClick={() => {
-            if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
-              handlePlacement(hexPosition.col, hexPosition.row);
-              playBuildingSound(previewBuilding);
-            }
-          }}
-        />
-      ))}
-      <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
-        <Bvh firstHitOnly>
-          {hexPositions.map((hexPosition, index) => (
-            <Hexagon
-              key={index}
-              position={hexPosition}
-              onPointerMove={(e: any) => {
-                e.stopPropagation();
-                previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row });
-              }}
-              onClick={() => {
-                if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
-                  handlePlacement(hexPosition.col, hexPosition.row);
-                  setExistingBuildings([
-                    ...existingBuildings,
-                    { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
-                  ]);
-                  playBuildingSound(previewBuilding);
-                }
-              }}
-            />
-          ))}
-        </Bvh>
-      </group>
-    </>
-  );
-};
 
-export const BuiltBuilding = ({
-  outerPosition,
-  position,
-  onPointerMove,
-  onClick,
-}: {
-  outerPosition: { col: number; row: number };
-  position: any;
-  onPointerMove: any;
-  onClick: any;
-}) => {
   const models = useGLTF([
     "/models/buildings/castle.glb",
     "/models/buildings/farm.glb",
@@ -120,29 +66,78 @@ export const BuiltBuilding = ({
     "/models/buildings/market.glb",
     "/models/buildings/storehouse.glb",
   ]);
-
   const {
     setup: {
       components: { Building },
     },
   } = useDojo();
+  return (
+    <>
+      {hexPositions.map((hexPosition, index) => {
+        const productionModelValue = getComponentValue(
+          Building,
+          getEntityIdFromKeys([
+            BigInt(globalHex.col),
+            BigInt(globalHex.row),
+            BigInt(hexPosition.col),
+            BigInt(hexPosition.row),
+          ]),
+        );
 
-  const builtBuilding = useComponentValue(
-    Building,
-    getEntityIdFromKeys([
-      BigInt(outerPosition.col),
-      BigInt(outerPosition.row),
-      BigInt(position.col),
-      BigInt(position.row),
-    ]),
+        return (
+          productionModelValue && (
+            <BuiltBuilding
+              key={index}
+              models={models}
+              buildingCategory={BuildingType.Farm}
+              position={hexPosition}
+              onPointerMove={() =>
+                previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })
+              }
+            />
+          )
+        );
+      })}
+      <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
+        <Bvh firstHitOnly>
+          {hexPositions.map((hexPosition, index) => (
+            <Hexagon
+              key={index}
+              position={hexPosition}
+              onPointerMove={() =>
+                previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })
+              }
+              onClick={() => {
+                if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
+                  handlePlacement(hexPosition.col, hexPosition.row);
+                  playBuildingSound(previewBuilding);
+                }
+              }}
+            />
+          ))}
+        </Bvh>
+      </group>
+    </>
   );
-
-  const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
-
-  if (builtBuilding) return <primitive scale={3} object={models[2].scene.clone()} position={[x, 2.33, -y]} />;
 };
 
-export const Hexagon = ({ position, onPointerMove, onClick }: { position: any; onPointerMove: any; onClick: any }) => {
+export const BuiltBuilding = ({
+  position,
+  onPointerMove,
+  models,
+  buildingCategory,
+}: {
+  position: any;
+  onPointerMove: any;
+  models: any;
+  buildingCategory: BuildingType;
+}) => {
+  const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
+
+  return <primitive scale={3} object={models[buildingCategory].scene.clone()} position={[x, 2.33, -y]} />;
+};
+
+export const Hexagon = ({ position, onClick, onPointerMove }: { position: any; onClick: any; onPointerMove: any }) => {
   const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
   const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
   const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);

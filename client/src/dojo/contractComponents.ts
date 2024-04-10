@@ -193,7 +193,7 @@ export function defineContractComponents(world: World) {
           outer_row: RecsType.BigInt,
           inner_col: RecsType.BigInt,
           inner_row: RecsType.BigInt,
-          category: RecsType.Number,
+          category: RecsType.String,
           produced_resource_type: RecsType.Number,
           entity_id: RecsType.BigInt,
           outer_entity_id: RecsType.BigInt,

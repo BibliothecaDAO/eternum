@@ -2,14 +2,15 @@ import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
 
 export enum BuildingType {
-  Castle = 0,
-  Resource = 1,
-  Farm = 2,
-  FishingVillage = 3,
-  Barracks = 4,
-  Market = 5,
-  ArcheryRange = 6,
-  Stable = 7,
+  None = 0,
+  Castle = 1,
+  Resource = 2,
+  Farm = 3,
+  FishingVillage = 4,
+  Barracks = 5,
+  Market = 6,
+  ArcheryRange = 7,
+  Stable = 8,
 }
 
 export function getBuildingType(name: BuildingType): CairoCustomEnum {
@@ -30,6 +31,8 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ ArcheryRange: {} });
     case BuildingType.Stable:
       return new CairoCustomEnum({ Stable: {} });
+    case BuildingType.None:
+      return new CairoCustomEnum({ None: {} });
   }
 }
 
@@ -51,5 +54,7 @@ export function getProducedResource(name: BuildingType): number {
       return ResourcesIds.Crossbowmen;
     case BuildingType.Stable:
       return ResourcesIds.Paladin;
+    case BuildingType.None:
+      return 0;
   }
 }

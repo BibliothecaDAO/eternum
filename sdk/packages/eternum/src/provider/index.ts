@@ -720,6 +720,8 @@ export class EternumProvider extends DojoProvider {
   public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, building_coord, building_category, produce_resource_type, signer } = props;
 
+    console.log("Building category: ", getBuildingType(building_category), produce_resource_type);
+
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "building_systems"),
       entrypoint: "create",
