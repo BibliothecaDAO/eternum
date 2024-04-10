@@ -194,7 +194,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                     .decrease_consumption_rate(ref input_resource, @tick, input_resource_amount);
 
                 // reset production stop time
-                resource_production.set_end_tick(@input_production, @input_resource, @tick);
+                resource_production.set_input_exhaustion_tick(@input_production, @input_resource, @tick);
 
                 count += 1;
 

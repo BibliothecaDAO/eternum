@@ -89,7 +89,7 @@ impl ResourceImpl of ResourceTrait {
         set!(world, (self));
 
         // sync end ticks of resources that depend on this one
-        ProductionOutputImpl::sync_end_ticks(@self,world);
+        ProductionOutputImpl::sync_input_exhaustion_ticks(@self,world);
 
         // Update the entity's owned resources
 

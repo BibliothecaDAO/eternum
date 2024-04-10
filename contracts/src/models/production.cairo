@@ -19,7 +19,7 @@ struct Production {
     bonus_percent: u128,
     consumption_rate: u128,
     last_updated_tick: u64,
-    end_tick: u64,
+    input_exhaustion_tick: u64,
 }
 
 #[generate_trait]
@@ -124,7 +124,7 @@ impl ProductionRateImpl of ProductionRateTrait {
         }
     }
 
-    fn set_end_tick(
+    fn set_input_exhaustion_tick(
         ref self: Production, input_production: @Production, 
         input_resource: @Resource, tick: @TickConfig) 
         {
@@ -132,17 +132,17 @@ impl ProductionRateImpl of ProductionRateTrait {
         
         if self.is_active() {
 
-            let end_tick 
+            let input_exhaustion_tick 
                 = input_production
                     .balance_exhaustion_tick(input_resource, tick);
-            if self.last_updated_tick >= self.end_tick {
-                if end_tick > self.last_updated_tick {
-                    self.end_tick = end_tick;
+            if self.last_updated_tick >= self.input_exhaustion_tick {
+                if input_exhaustion_tick > self.last_updated_tick {
+                    self.input_exhaustion_tick = input_exhaustion_tick;
                 }
             } else {
                 // stop sooner if need be
-                if  end_tick < self.end_tick  {
-                    self.end_tick = end_tick;
+                if  input_exhaustion_tick < self.input_exhaustion_tick  {
+                    self.input_exhaustion_tick = input_exhaustion_tick;
                 }
             }
         
@@ -172,28 +172,28 @@ impl ProductionRateImpl of ProductionRateTrait {
     }
 
     fn production_duration(self: Production, tick: @TickConfig) -> u64 {
-        if self.last_updated_tick >= self.end_tick {
+        if self.last_updated_tick >= self.input_exhaustion_tick {
             return 0;
         }
         let current_tick = (*tick).current();
 
-        if self.end_tick > current_tick {
+        if self.input_exhaustion_tick > current_tick {
             // if stop time is in future
             current_tick - self.last_updated_tick
         } else {
             // if stop time has passed
-            self.end_tick - self.last_updated_tick
+            self.input_exhaustion_tick - self.last_updated_tick
         }
     }
 
     fn depletion_duration(self: Production, tick: @TickConfig) -> u64 {
-        if self.end_tick > self.last_updated_tick {
+        if self.input_exhaustion_tick > self.last_updated_tick {
             return 0;
         }
 
         let exhaustion_tick 
-            = self.end_tick 
-                + (self.last_updated_tick - self.end_tick);
+            = self.input_exhaustion_tick 
+                + (self.last_updated_tick - self.input_exhaustion_tick);
         let current_tick = (*tick).current();
         return current_tick - exhaustion_tick;
     }
@@ -226,7 +226,7 @@ struct ProductionOutput {
 impl ProductionOutputImpl of ProductionOutputTrait {
     /// Updates end ticks for dependent resources based 
     /// on changes in this resource's balance.
-    fn sync_end_ticks(
+    fn sync_input_exhaustion_ticks(
         resource: @Resource,
         world: IWorldDispatcher
     ) {
@@ -259,7 +259,7 @@ impl ProductionOutputImpl of ProductionOutputTrait {
                 get!(world, (resource.entity_id, output_resource_type), Production);
 
             // Update the end tick for the output resource based on changes in the current resource
-            output_resource_production.set_end_tick(
+            output_resource_production.set_input_exhaustion_tick(
                 @resource_production,
                 @resource,
                 @tick
@@ -296,7 +296,7 @@ mod tests_production {
         let production_bonus_percent = ProductionBonusPercentageImpl::_10(); // 10%
         let production_consumption_rate = 20;
         let production_last_updated_tick = 0;
-        let production_end_tick = 0;
+        let production_input_exhaustion_tick = 0;
         
         let mut wood_production: Production = Production {
             entity_id: 'entity_id'.try_into().unwrap(),
@@ -306,7 +306,7 @@ mod tests_production {
             bonus_percent: production_bonus_percent,
             consumption_rate: production_consumption_rate,
             last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
+            input_exhaustion_tick: production_input_exhaustion_tick
         };
 
         assert_eq!(wood_production.bonus(), 28);
@@ -337,7 +337,7 @@ mod tests_production {
         let production_bonus_percent = 0; 
         let production_consumption_rate = 23;
         let production_last_updated_tick = 0;
-        let production_end_tick = 0;
+        let production_input_exhaustion_tick = 0;
         
         let mut wood_production: Production = Production {
             entity_id,
@@ -347,15 +347,15 @@ mod tests_production {
             bonus_percent: production_bonus_percent,
             consumption_rate: production_consumption_rate,
             last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
+            input_exhaustion_tick: production_input_exhaustion_tick
         };
 
-        let wood_production_end_tick 
+        let wood_production_input_exhaustion_tick 
             = wood_production
             .balance_exhaustion_tick(@wood_resource, @tick_config);
 
         let max_tick: u64 = tick_config.at(BoundedInt::max());
-        assert_eq!(wood_production_end_tick, max_tick);
+        assert_eq!(wood_production_input_exhaustion_tick, max_tick);
     }
 
     #[test]
@@ -382,7 +382,7 @@ mod tests_production {
         let production_bonus_percent = 0; 
         let production_consumption_rate = 25;
         let production_last_updated_tick = 0;
-        let production_end_tick = 0;
+        let production_input_exhaustion_tick = 0;
         
         let mut wood_production: Production = Production {
             entity_id,
@@ -392,14 +392,14 @@ mod tests_production {
             bonus_percent: production_bonus_percent,
             consumption_rate: production_consumption_rate,
             last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
+            input_exhaustion_tick: production_input_exhaustion_tick
         };
 
-        let wood_production_end_tick 
+        let wood_production_input_exhaustion_tick 
             = wood_production
             .balance_exhaustion_tick(@wood_resource, @tick_config);
 
-        assert_eq!(wood_production_end_tick, 300);
+        assert_eq!(wood_production_input_exhaustion_tick, 300);
     }
 
     #[test]
@@ -426,7 +426,7 @@ mod tests_production {
         let production_bonus_percent = 0; 
         let production_consumption_rate = 24;
         let production_last_updated_tick = 0;
-        let production_end_tick = 0;
+        let production_input_exhaustion_tick = 0;
         
         let mut wood_production: Production = Production {
             entity_id,
@@ -436,15 +436,15 @@ mod tests_production {
             bonus_percent: production_bonus_percent,
             consumption_rate: production_consumption_rate,
             last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
+            input_exhaustion_tick: production_input_exhaustion_tick
         };
 
-        let wood_production_end_tick 
+        let wood_production_input_exhaustion_tick 
             = wood_production
             .balance_exhaustion_tick(@wood_resource, @tick_config);
 
         let current_tick: u64 = tick_config.current();
-        assert_eq!(wood_production_end_tick, current_tick);
+        assert_eq!(wood_production_input_exhaustion_tick, current_tick);
     }
 
 
@@ -472,7 +472,7 @@ mod tests_production {
         let production_bonus_percent = 0; 
         let production_consumption_rate = 24;
         let production_last_updated_tick = 0;
-        let production_end_tick = 0;
+        let production_input_exhaustion_tick = 0;
         
         let mut wood_production: Production = Production {
             entity_id,
@@ -482,15 +482,15 @@ mod tests_production {
             bonus_percent: production_bonus_percent,
             consumption_rate: production_consumption_rate,
             last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
+            input_exhaustion_tick: production_input_exhaustion_tick
         };
 
-        let wood_production_end_tick 
+        let wood_production_input_exhaustion_tick 
             = wood_production
             .balance_exhaustion_tick(@wood_resource, @tick_config);
         
         let max_tick: u64 = tick_config.at(BoundedInt::max());
-        assert_eq!(wood_production_end_tick, max_tick);
+        assert_eq!(wood_production_input_exhaustion_tick, max_tick);
     }
 
     #[test]
@@ -521,7 +521,7 @@ mod tests_production {
         let production_bonus_percent = ProductionBonusPercentageImpl::_10(); // 10%
         let production_consumption_rate = 2;
         let production_last_updated_tick = 0;
-        let production_end_tick = _7_ticks_in_future;
+        let production_input_exhaustion_tick = _7_ticks_in_future;
         
         let mut wood_production: Production = Production {
             entity_id,
@@ -531,7 +531,7 @@ mod tests_production {
             bonus_percent: production_bonus_percent,
             consumption_rate: production_consumption_rate,
             last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
+            input_exhaustion_tick: production_input_exhaustion_tick
         };
 
 
@@ -569,7 +569,7 @@ mod tests_production {
         let production_bonus_percent = ProductionBonusPercentageImpl::_10(); // 10%
         let production_consumption_rate = 12;
         let production_last_updated_tick = 0;
-        let production_end_tick = 0;
+        let production_input_exhaustion_tick = 0;
         
         let mut wood_production: Production = Production {
             entity_id,
@@ -579,7 +579,7 @@ mod tests_production {
             bonus_percent: production_bonus_percent,
             consumption_rate: production_consumption_rate,
             last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
+            input_exhaustion_tick: production_input_exhaustion_tick
         };
 
 
@@ -618,7 +618,7 @@ mod tests_production {
         let production_bonus_percent = ProductionBonusPercentageImpl::_10(); // 10%
         let production_consumption_rate = 12;
         let production_last_updated_tick = 0;
-        let production_end_tick = 0;
+        let production_input_exhaustion_tick = 0;
         
         let mut wood_production: Production = Production {
             entity_id,
@@ -628,15 +628,15 @@ mod tests_production {
             bonus_percent: production_bonus_percent,
             consumption_rate: production_consumption_rate,
             last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
+            input_exhaustion_tick: production_input_exhaustion_tick
         };
 
 
         wood_production
-            .set_end_tick(
+            .set_input_exhaustion_tick(
                 @wood_production, @wood_resource, @tick_config);
 
-        assert_eq!(wood_production.end_tick, 300 / (12 -2) + 7); // 300 / (12 -2) + 7 ticks since were in the seventh tick
+        assert_eq!(wood_production.input_exhaustion_tick, 300 / (12 -2) + 7); // 300 / (12 -2) + 7 ticks since were in the seventh tick
 
     }
 }
@@ -684,7 +684,7 @@ mod tests_production_output {
             bonus_percent: 0,
             consumption_rate: 2,
             last_updated_tick: 0,
-            end_tick: 0
+            input_exhaustion_tick: 0
         };
         let mut wheat_resource: Resource = Resource {
             entity_id,
@@ -705,7 +705,7 @@ mod tests_production_output {
             bonus_percent: 0,
             consumption_rate: 8,
             last_updated_tick: 0,
-            end_tick: 0
+            input_exhaustion_tick: 0
         };
 
         let mut coal_resource: Resource =Resource {
@@ -726,7 +726,7 @@ mod tests_production_output {
             bonus_percent: 0,
             consumption_rate: 2,
             last_updated_tick: 0,
-            end_tick: 0
+            input_exhaustion_tick: 0
         };
         let mut stone_resource: Resource =Resource {
             entity_id,
@@ -745,7 +745,7 @@ mod tests_production_output {
             bonus_percent: 0,
             consumption_rate: 2,
             last_updated_tick: 0,
-            end_tick: 0
+            input_exhaustion_tick: 0
         };
         set!(world, (wood_production));
 
@@ -756,7 +756,7 @@ mod tests_production_output {
     }
 
     #[test]
-    fn test_sync_end_ticks() {
+    fn test_sync_input_exhaustion_ticks() {
         let (world, entity_id, _, _) = setup();
 
 
@@ -764,9 +764,9 @@ mod tests_production_output {
         let coal_resource: Resource = get!(world, (entity_id, ResourceTypes::COAL), Resource);
         let stone_resource: Resource = get!(world, (entity_id, ResourceTypes::STONE), Resource);
 
-        ProductionOutputImpl::sync_end_ticks(@wheat_resource, world);
-        ProductionOutputImpl::sync_end_ticks(@coal_resource, world);
-        ProductionOutputImpl::sync_end_ticks(@stone_resource, world);
+        ProductionOutputImpl::sync_input_exhaustion_ticks(@wheat_resource, world);
+        ProductionOutputImpl::sync_input_exhaustion_ticks(@coal_resource, world);
+        ProductionOutputImpl::sync_input_exhaustion_ticks(@stone_resource, world);
 
 
         let coal_production: Production 
@@ -779,7 +779,7 @@ mod tests_production_output {
                 .balance_exhaustion_tick(@coal_resource, @tick_config);
         let wood_production: Production 
             = get!(world, (entity_id, ResourceTypes::WOOD), Production);
-        assert_eq!(coal_production_end, wood_production.end_tick);
+        assert_eq!(coal_production_end, wood_production.input_exhaustion_tick);
 
     }
 }
