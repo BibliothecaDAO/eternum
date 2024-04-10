@@ -14,6 +14,9 @@ import { BuildingTooltip } from "../cityview/BuildingTooltip";
 import { Component, getComponentValue } from "@dojoengine/recs";
 import { CairoOption, CairoOptionVariant } from "starknet";
 
+// 1. Working and fairly smooth minimal lag and good transitions. And the construction OS box is nice
+// 2. Graphics are good and the hexagons are well placed
+
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row);
 };
@@ -147,8 +150,9 @@ export const BuiltBuilding = ({
   return <primitive scale={3} object={models[buildingCategory].scene.clone()} position={[x, 2.33, -y]} />;
 };
 
+const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
+
 export const Hexagon = ({ position, onClick, onPointerMove }: { position: any; onClick: any; onPointerMove: any }) => {
-  const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
   const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
   const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
   const [showTooltip, setShowTooltip] = useState(false);
