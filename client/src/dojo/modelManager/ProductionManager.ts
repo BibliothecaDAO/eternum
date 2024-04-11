@@ -46,14 +46,18 @@ export class ProductionManager {
     return production.production_rate * BigInt(production.building_count) + this.bonus();
   }
 
-  public netRate(): [boolean, bigint] {
+  public netRate(): [boolean, number] {
     const production = this.getProduction();
-    if (!production || !this.isActive()) return [false, BigInt(0)];
+
+    if (!production) return [false, 0];
     let productionRate = this.actualProductionRate();
-    if (productionRate > production.consumption_rate) {
-      return [true, productionRate - production.consumption_rate];
+    // Convert bigint to number before subtraction to get a signed result
+    let difference = Number(productionRate) - Number(production.consumption_rate);
+
+    if (difference > 0) {
+      return [true, difference];
     } else {
-      return [false, production.consumption_rate - productionRate];
+      return [false, difference];
     }
   }
 
@@ -67,7 +71,7 @@ export class ProductionManager {
     if (value > BigInt(0)) {
       if (!sign) {
         const lossPerTick = value;
-        const numTicksLeft = resource.balance / lossPerTick;
+        const numTicksLeft = Number(resource.balance) / lossPerTick;
         return currentTick + Number(numTicksLeft); // Assuming conversion is safe
       } else {
         return Number.MAX_SAFE_INTEGER;

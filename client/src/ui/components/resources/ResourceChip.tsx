@@ -29,7 +29,12 @@ export const ResourceChip = ({
       <div className="flex space-x-3 items-center justify-center">
         <div className="font-bold">{findResourceById(resourceId)?.trait}</div>
         <div>{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
-        {rate !== "" && <div className="text-green">+ {currencyFormat(rate, 2)}</div>}
+        {rate && (
+          <div className={Number(rate) < 0 ? "text-red" : "text-green"}>
+            {parseFloat(rate) < 0 ? "" : "+"}
+            {currencyFormat(rate, 2)}
+          </div>
+        )}
       </div>
     </div>
   );

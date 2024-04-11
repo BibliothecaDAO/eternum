@@ -22,7 +22,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: bigint }) => {
                     key={resourceId}
                     balance={balance.balance}
                     resourceId={resourceId}
-                    rate={(active && rate.toString()) || ""}
+                    rate={rate.toString() || ""}
                   />
                 );
               })}
