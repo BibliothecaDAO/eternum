@@ -1,13 +1,13 @@
 import { MapControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import gsap from "gsap";
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useCallback } from "react";
 import { Vector3 } from "three";
 import { useControls, button } from "leva";
-import { useLocation, useRoute } from "wouter";
+import { useRoute } from "wouter";
 import { soundSelector, useUiSounds } from "../../hooks/useUISound";
 import * as THREE from "three";
-import useUIStore from "../../hooks/store/useUIStore";
+
 interface Props {
   position: {
     x: number;
@@ -22,6 +22,17 @@ interface Props {
     transitionDuration?: number;
   };
 }
+
+const maxMapDistance = 1000;
+const maxHexceptionDistance = 150;
+const minDistance = 100;
+const maxPolarAngle = Math.PI / 3;
+const minPolarAngle = 0;
+const upVector = new Vector3(0, 1, 0);
+const _v = new THREE.Vector3();
+const minPan = new THREE.Vector3(0, -Infinity, -1400);
+const maxPan = new THREE.Vector3(2700, Infinity, 0);
+
 const CameraControls = ({ position, target }: Props) => {
   const {
     camera,
@@ -30,16 +41,6 @@ const CameraControls = ({ position, target }: Props) => {
   const ref = useRef<any>(null);
 
   const [isMapView] = useRoute("/map");
-  const [location]: any = useLocation();
-  const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
-
-  const maxDistance = 1000;
-
-  const minDistance = 100;
-
-  const maxPolarAngle = Math.PI / 3;
-
-  const minPolarAngle = 0;
 
   useControls({
     saveCameraPosition: button(() => {
@@ -53,7 +54,10 @@ const CameraControls = ({ position, target }: Props) => {
 
   const { play: playFly } = useUiSounds(soundSelector.fly);
 
-  camera.up = new Vector3(0, 1, 0);
+  useEffect(() => {
+    camera.up = upVector;
+  }, [camera]);
+
   function cameraAnimate(): void {
     if (ref.current) {
       gsap.killTweensOf(camera.position);
@@ -90,16 +94,15 @@ const CameraControls = ({ position, target }: Props) => {
     playFly();
   }, [target, position]);
 
-  useEffect(() => {
-    console.log(location);
-    if (location.includes("/realm")) {
-      moveCameraToRealmView();
-    }
-  }, [location]);
-
-  var minPan = isMapView ? new THREE.Vector3(0, -Infinity, -1400) : new THREE.Vector3(-175, -Infinity, -150);
-  var maxPan = isMapView ? new THREE.Vector3(2700, Infinity, 0) : new THREE.Vector3(300, Infinity, 100);
-  var _v = new THREE.Vector3();
+  const clampPan = useCallback(
+    (e: any) => {
+      _v.copy(e?.target.target);
+      e?.target.target.clamp(minPan, maxPan);
+      _v.sub(e?.target.target);
+      camera.position.sub(_v);
+    },
+    [camera],
+  );
 
   return (
     <MapControls
@@ -107,19 +110,14 @@ const CameraControls = ({ position, target }: Props) => {
       args={[camera, domElement]}
       panSpeed={1}
       enableRotate={true}
-      maxDistance={maxDistance}
+      enablePan={isMapView}
+      maxDistance={isMapView ? maxMapDistance : maxHexceptionDistance}
       minDistance={minDistance}
       maxPolarAngle={maxPolarAngle}
       minPolarAngle={minPolarAngle}
-      zoomToCursor
+      zoomToCursor={isMapView}
       makeDefault
-      onChange={(e) => {
-        const controls = e?.target;
-        _v.copy(controls.target);
-        controls.target.clamp(minPan, maxPan);
-        _v.sub(controls.target);
-        camera.position.sub(_v);
-      }}
+      onChange={clampPan}
     />
   );
 };

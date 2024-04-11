@@ -115,6 +115,10 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
       });
     });
 
+    // Object.keys(biomeComponents).forEach((biome) => {
+    //   biomesAccumulator[biome] = group.filter((hex) => hex.biome === biome);
+    // });
+
     return biomesAccumulator;
   }, [explored]);
 

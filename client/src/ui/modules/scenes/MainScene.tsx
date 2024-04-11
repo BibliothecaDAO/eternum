@@ -4,25 +4,19 @@ import { HexceptionViewScene } from "./HexceptionViewScene";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
-import { a } from "@react-spring/three";
-import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake, Bvh } from "@react-three/drei";
-import { Suspense, useEffect, useMemo, useRef } from "react";
-import { EffectComposer, Bloom, Noise, SMAA, ToneMapping, BrightnessContrast } from "@react-three/postprocessing";
+import { AdaptiveDpr, useHelper, Clouds, Cloud, Bvh } from "@react-three/drei";
+import { Suspense, useMemo, useRef } from "react";
+import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast } from "@react-three/postprocessing";
 // @ts-ignore
-
 import { useControls } from "leva";
 import { CameraControls } from "../../utils/Camera";
 import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
 import FPSLimiter from "../../utils/FPSLimiter";
-import { Hexagon } from "../../../types";
 
 export const Camera = () => {
-  // const [isMapView] = useRoute("/map");
-
   const cameraPosition = useUIStore((state) => state.cameraPosition);
-  // const camera1 = { x: 0, y: 50, z: -500 };
-  // const camera2 = { x: 100, y: 30, z: -500 }
+
   const cameraTarget = useUIStore((state) => state.cameraTarget);
 
   return (
@@ -91,7 +85,7 @@ export const MainScene = () => {
   }, [location]);
 
   const { mapFogNear, mapFogFar, realmFogNear, realmFogFar, fogColor } = useControls("Fog", {
-    mapFogNear: { value: 831, min: 0, max: 3000, step: 1 },
+    mapFogNear: { value: 1195, min: 0, max: 3000, step: 1 },
     mapFogFar: { value: 1426, min: 0, max: 3000, step: 1 },
     realmFogNear: { value: 1885, min: 0, max: 1000, step: 1 },
     realmFogFar: { value: 2300, min: 0, max: 1000, step: 1 },
@@ -169,17 +163,11 @@ export const MainScene = () => {
     brightness: { value: 0.18, min: 0, max: 1, step: 0.01 },
     contrast: { value: 0.41, min: 0, max: 1, step: 0.01 },
   });
-  const setHexData = useUIStore((state) => state.setHexData);
-
-  useEffect(() => {
-    fetch("/jsons/hexData.json")
-      .then((response) => response.json())
-      .then((data) => setHexData(data as Hexagon[]));
-  }, []);
 
   return (
     <Canvas
       frameloop="demand" // for fps limiter
+      className="rounded-xl"
       raycaster={{
         params: {
           Points: { threshold: 0.2 },
@@ -191,15 +179,14 @@ export const MainScene = () => {
           Sprite: { threshold: 0.2 },
         },
       }}
-      className="rounded-xl"
-      camera={{ fov: 15, position: [0, 700, 0], far: 10000 }}
+      camera={{ fov: 15, position: [0, 700, 0], far: 1300, near: 75 }}
       dpr={[0.5, 1]}
       performance={{
         min: 0.1,
         max: 1,
       }}
       shadows={{
-        enabled: true, // Always Enabled, but in Lights.tsx control render mode
+        enabled: true,
         type: THREE.PCFSoftShadowMap,
       }}
       gl={{
@@ -208,18 +195,15 @@ export const MainScene = () => {
         stencil: false,
         depth: false,
         logarithmicDepthBuffer: true,
-        // useLegacyLights: data.legacyLights,
-        // outputEncoding: data.encoding,
       }}
     >
       {import.meta.env.DEV && <Perf position="bottom-left" />}
       <FPSLimiter>
-        {/* <Sky azimuth={azimuth} inclination={inclination} distance={distance} /> */}
         <ambientLight color={ambientColor} intensity={ambientIntensity} />
         <Camera />
         <DirectionalLightAndHelper locationType={locationType} />
-        <Suspense fallback={null}>
-          <a.group>
+        <Bvh firstHitOnly>
+          <Suspense fallback={null}>
             <Switch location={locationType}>
               <Route path="map">
                 <WorldMapScene />
@@ -253,8 +237,8 @@ export const MainScene = () => {
                 </Clouds>
               </Route>
             </Switch>
-          </a.group>
-        </Suspense>
+          </Suspense>
+        </Bvh>
         <EffectComposer multisampling={0}>
           <BrightnessContrast brightness={brightness} contrast={contrast} />
           <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />
