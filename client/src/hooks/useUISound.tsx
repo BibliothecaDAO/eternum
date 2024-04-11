@@ -233,18 +233,15 @@ export const useBuildingSound = () => {
       case BuildingType.Farm:
         playBuildFarm();
         break;
-      // case BuildingType.Fishery:
-      //   playBuildFishingVillage();
-      //   break;
+      case BuildingType.FishingVillage:
+        playBuildFishingVillage();
+        break;
       case BuildingType.Resource:
         playBuildMine();
         break;
       case BuildingType.Stable:
         playBuildStables();
         break;
-      // case BuildingType.Workhut:
-      //   playBuildWorkHut();
-      //   break;
       case BuildingType.ArcheryRange:
         playBuildArcherRange();
         break;
@@ -254,9 +251,7 @@ export const useBuildingSound = () => {
       case BuildingType.Market:
         playBuildMarket();
         break;
-      // case BuildingType.Storehouse:
-      //   playBuildStorehouse();
-      //   break;
+
       default:
         break;
     }
