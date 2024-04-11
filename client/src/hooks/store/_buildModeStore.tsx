@@ -21,5 +21,5 @@ export const createBuildModeStoreSlice = (set: any) => ({
   setExistingBuildings: (existingBuildings: { col: number; row: number; type: BuildingType }[]) =>
     set({ existingBuildings }),
   selectedResource: ResourcesIds.Wheat,
-  setResourceId: (resourceId: ResourcesIds) => set({ selectedResource: resourceId }),
+  setResourceId: (resourceId: ResourcesIds | null) => set({ selectedResource: resourceId }),
 });
