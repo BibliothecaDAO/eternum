@@ -135,7 +135,6 @@ export const Onboarding = () => {
                 variant="outline"
                 onClick={() => {
                   showBlankOverlay(false);
-                  moveCameraToWorldMapView();
                   setLocation(`/hex?col=${realms[0].position.x}&row=${realms[0].position.y}`);
                 }}
               >

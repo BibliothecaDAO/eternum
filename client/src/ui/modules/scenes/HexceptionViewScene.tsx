@@ -9,6 +9,14 @@ import { useGetRealms } from "../../../hooks/helpers/useRealm";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { useSearch } from "wouter/use-location";
 
+const mainPosition = getUIPositionFromColRow(0, 0, true);
+const pos = getUIPositionFromColRow(7, 4, true);
+const pos2 = getUIPositionFromColRow(-7, 5, true);
+const pos3 = getUIPositionFromColRow(-7, -4, true);
+const pos4 = getUIPositionFromColRow(7, -5, true);
+const pos5 = getUIPositionFromColRow(0, 9, true);
+const pos6 = getUIPositionFromColRow(0, -9, true);
+
 export const HexceptionViewScene = () => {
   const { setIsLoadingScreenEnabled, hexData, moveCameraToRealmView } = useUIStore((state) => state);
   const { setRealmId, setRealmEntityId } = useRealmStore();
@@ -66,13 +74,6 @@ export const HexceptionViewScene = () => {
     normalMap: "/textures/paper/paper-normal.jpg",
   });
 
-  const mainPosition = getUIPositionFromColRow(0, 0, true);
-  const pos = getUIPositionFromColRow(7, 4, true);
-  const pos2 = getUIPositionFromColRow(-7, 5, true);
-  const pos3 = getUIPositionFromColRow(-7, -4, true);
-  const pos4 = getUIPositionFromColRow(7, -5, true);
-  const pos5 = getUIPositionFromColRow(0, 9, true);
-  const pos6 = getUIPositionFromColRow(0, -9, true);
   return (
     <>
       <group position={[mainPosition.x, 0, -mainPosition.y]} rotation={[0, 0, 0]}>
