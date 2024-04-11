@@ -31,7 +31,7 @@ export class ProductionManager {
 
   public isActive() {
     const production = this.getProduction();
-    return production && production.building_count > 0 && production.active;
+    return production && production.building_count > 0;
   }
 
   public bonus() {
@@ -48,7 +48,7 @@ export class ProductionManager {
 
   public netRate(): [boolean, bigint] {
     const production = this.getProduction();
-    if (!production || !production?.active) return [false, BigInt(0)];
+    if (!production || !this.isActive()) return [false, BigInt(0)];
     let productionRate = this.actualProductionRate();
     if (productionRate > production.consumption_rate) {
       return [true, productionRate - production.consumption_rate];
@@ -79,16 +79,21 @@ export class ProductionManager {
 
   public productionDuration(currentTick: number): number {
     const production = this.getProduction();
+
+    console.log("currentTick", currentTick);
+    console.log("last_updated_tick", production?.last_updated_tick);
+    console.log("end_tick", production?.end_tick);
+
     if (!production) return 0;
 
-    if (production.last_updated_tick >= production.materials_exhaustion_tick) {
-      return 0;
-    }
+    // if (production.last_updated_tick >= production.end_tick) {
+    //   return 0;
+    // }
 
-    if (production.materials_exhaustion_tick > currentTick) {
-      return currentTick - production.last_updated_tick;
+    if (production.end_tick > currentTick) {
+      return Number(currentTick) - Number(production.last_updated_tick);
     } else {
-      return production.materials_exhaustion_tick - production.last_updated_tick;
+      return Number(production.end_tick) - Number(production.last_updated_tick);
     }
   }
 
@@ -96,13 +101,12 @@ export class ProductionManager {
     const production = this.getProduction();
     if (!production) return 0;
 
-    if (production.materials_exhaustion_tick >= production.last_updated_tick) {
+    if (production.end_tick > production.last_updated_tick) {
       return 0;
     }
 
-    const exhaustionTick =
-      production.materials_exhaustion_tick + (production.last_updated_tick - production.materials_exhaustion_tick);
-    return currentTick - exhaustionTick;
+    const exhaustionTick = production.end_tick + (production.last_updated_tick - production.end_tick);
+    return Number(currentTick) - Number(exhaustionTick);
   }
 
   public balance(currentTick: number): number {

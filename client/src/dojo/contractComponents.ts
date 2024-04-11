@@ -14,14 +14,44 @@ export function defineContractComponents(world: World) {
           production_rate: RecsType.BigInt,
           bonus_percent: RecsType.BigInt,
           consumption_rate: RecsType.BigInt,
-          last_updated_tick: RecsType.Number,
-          materials_exhaustion_tick: RecsType.Number,
-          active: RecsType.Boolean,
+          last_updated_tick: RecsType.BigInt,
+          end_tick: RecsType.BigInt,
         },
         {
           metadata: {
             name: "Production",
-            types: ["u128", "u8", "u128", "u128", "u128", "u128", "u64", "u64", "bool"],
+            types: ["u128", "u8", "u128", "u128", "u128", "u128", "u64", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    ProductionInput: (() => {
+      return defineComponent(
+        world,
+        {
+          output_resource_type: RecsType.Number,
+          index: RecsType.Number,
+          input_resource_type: RecsType.Number,
+          input_resource_amount: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "ProductionInput",
+            types: ["u8", "u8", "u8", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    ProductionOutput: (() => {
+      return defineComponent(
+        world,
+        { input_resource_type: RecsType.Number, index: RecsType.Number, output_resource_type: RecsType.Number },
+        {
+          metadata: {
+            name: "ProductionOutput",
+            types: ["u8", "u8", "u8"],
             customTypes: [],
           },
         },

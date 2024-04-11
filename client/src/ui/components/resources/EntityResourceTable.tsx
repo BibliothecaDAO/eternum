@@ -14,16 +14,21 @@ export const EntityResourceTable = ({ entityId }: { entityId: bigint }) => {
             <hr />
             <div className="flex my-3 flex-wrap">
               {resourceIds.map((resourceId) => {
-                const manager = getProductionManager(BigInt(entityId), resourceId);
+                console.log("entityId", entityId);
+                const balance = getBalance(entityId, resourceId);
 
-                console.log(manager.netRate());
+                const [active, rate] = getProductionManager(entityId, resourceId).netRate();
 
                 return (
-                  <ResourceChip
-                    entityId={getEntityIdFromKeys([BigInt(entityId), BigInt(resourceId)])}
-                    key={resourceId}
-                    resourceId={resourceId}
-                  />
+                  <>
+                    <ResourceChip
+                      entityId={getEntityIdFromKeys([BigInt(entityId), BigInt(resourceId)])}
+                      key={resourceId}
+                      balance={balance.balance}
+                      resourceId={resourceId}
+                    />
+                    {active && <p>rate: {active && rate.toString()}</p>}
+                  </>
                 );
               })}
             </div>

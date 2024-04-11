@@ -8,10 +8,12 @@ import { Entity } from "@dojoengine/recs";
 export const ResourceChip = ({
   isLabor = false,
   resourceId,
+  balance,
   entityId,
 }: {
   isLabor?: boolean;
   resourceId: number;
+  balance: number;
   entityId: Entity;
 }) => {
   const {
@@ -20,7 +22,7 @@ export const ResourceChip = ({
     },
   } = useDojo();
 
-  const resource = useComponentValue(Resource, entityId);
+  // const resource = useComponentValue(Resource, entityId);
 
   return (
     <div className={`flex relative group items-center text-sm border rounded px-2 p-1`}>
@@ -33,7 +35,7 @@ export const ResourceChip = ({
       />
       <div className="flex space-x-3 items-center justify-center">
         <div className="font-bold">{findResourceById(resourceId)?.trait}</div>
-        <div>{currencyFormat(resource ? Number(resource.balance) : 0, 2)}</div>
+        <div>{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
       </div>
     </div>
   );

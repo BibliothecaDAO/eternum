@@ -7,9 +7,8 @@ export type ProductionType = {
   production_rate: RecsType.BigInt;
   bonus_percent: RecsType.BigInt;
   consumption_rate: RecsType.BigInt;
-  last_updated_tick: RecsType.Number;
-  materials_exhaustion_tick: RecsType.Number;
-  active: RecsType.Boolean;
+  last_updated_tick: RecsType.BigInt;
+  end_tick: RecsType.BigInt;
 };
 
 export type ResourceType = {
@@ -23,9 +22,7 @@ export type BuildingType = {
   outer_row: RecsType.BigInt;
   inner_col: RecsType.BigInt;
   inner_row: RecsType.BigInt;
-  id: RecsType.BigInt;
-  // todo: check if works with enum
-  category: RecsType.Number;
+  category: RecsType.String;
   produced_resource_type: RecsType.Number;
   entity_id: RecsType.BigInt;
   outer_entity_id: RecsType.BigInt;
