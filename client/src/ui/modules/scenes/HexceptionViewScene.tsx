@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
-import { useTexture } from "@react-three/drei";
+import { BakeShadows, useTexture } from "@react-three/drei";
 import BuildArea from "../../components/construction/BuildArea";
 import { getUIPositionFromColRow } from "../../utils/utils";
 import BigHexBiome from "../../components/construction/BigHexBiome";
@@ -8,6 +8,7 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useGetRealms } from "../../../hooks/helpers/useRealm";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { useSearch } from "wouter/use-location";
+import { useThree } from "@react-three/fiber";
 
 const mainPosition = getUIPositionFromColRow(0, 0, true);
 const pos = getUIPositionFromColRow(7, 4, true);
@@ -23,6 +24,8 @@ export const HexceptionViewScene = () => {
 
   const realms = useGetRealms();
   const searchString = useSearch();
+
+  const { gl } = useThree();
 
   const hexPosition = useMemo(() => {
     const params = new URLSearchParams(searchString);
@@ -41,6 +44,9 @@ export const HexceptionViewScene = () => {
     if (realm) {
       setRealmId(realm.realmId);
       setRealmEntityId(realm.entity_id);
+      setTimeout(() => {
+        gl.shadowMap.needsUpdate = true;
+      }, 0);
     }
   }, [realm]);
 
@@ -79,7 +85,6 @@ export const HexceptionViewScene = () => {
       <group position={[mainPosition.x, 0, -mainPosition.y]} rotation={[0, 0, 0]}>
         {realm ? <BuildArea /> : <BigHexBiome biome={mainHex?.biome as any} />}
       </group>
-
       {neighborHexesInsideView && neighborHexesInsideView.length > 0 && (
         <group>
           <group position={[pos.x, 0, -pos.y]} rotation={[0, 0, 0]}>
@@ -107,6 +112,7 @@ export const HexceptionViewScene = () => {
         <planeGeometry args={[2668, 1390.35]} />
         <meshStandardMaterial {...texture} />
       </mesh>
+      <BakeShadows />
     </>
   );
 };

@@ -4,7 +4,7 @@ import { HexceptionViewScene } from "./HexceptionViewScene";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
-import { AdaptiveDpr, useHelper, Clouds, Cloud, Bvh } from "@react-three/drei";
+import { AdaptiveDpr, useHelper, Clouds, Cloud, Bvh, BakeShadows } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
 import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast } from "@react-three/postprocessing";
 // @ts-ignore
@@ -34,7 +34,7 @@ export const DirectionalLightAndHelper = ({ locationType }: { locationType: stri
 
   const { lightPosition, bias, intensity } = useControls({
     lightPosition: {
-      value: { x: 0, y: 15, z: 50 }, // Adjust y value to position the light above
+      value: { x: 0, y: 30, z: 50 }, // Adjust y value to position the light above
       step: 0.01,
     },
     intensity: {
@@ -44,7 +44,7 @@ export const DirectionalLightAndHelper = ({ locationType }: { locationType: stri
       step: 0.01,
     },
     bias: {
-      value: -0.002,
+      value: 0.02,
       min: -0.05,
       max: 0.05,
       step: 0.001,
@@ -60,11 +60,11 @@ export const DirectionalLightAndHelper = ({ locationType }: { locationType: stri
       ref={dLightRef}
       castShadow
       shadow-mapSize={[4096, 4096]}
-      shadow-camera-far={3000}
-      shadow-camera-left={-3000}
-      shadow-camera-right={3000}
-      shadow-camera-top={3000}
-      shadow-camera-bottom={-3000}
+      shadow-camera-far={1000}
+      shadow-camera-left={-1000}
+      shadow-camera-right={1000}
+      shadow-camera-top={1000}
+      shadow-camera-bottom={-1000}
       shadow-bias={bias}
       position={[lightPosition.x, lightPosition.y, lightPosition.z]}
       color={"#fff"}
@@ -187,7 +187,7 @@ export const MainScene = () => {
       }}
       shadows={{
         enabled: true,
-        type: THREE.PCFSoftShadowMap,
+        type: 2,
       }}
       gl={{
         powerPreference: "high-performance",
@@ -206,6 +206,7 @@ export const MainScene = () => {
           <Suspense fallback={null}>
             <Switch location={locationType}>
               <Route path="map">
+                <BakeShadows />
                 <WorldMapScene />
               </Route>
               <Route path="hexception">
@@ -241,7 +242,7 @@ export const MainScene = () => {
         </Bvh>
         <EffectComposer multisampling={0}>
           <BrightnessContrast brightness={brightness} contrast={contrast} />
-          <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />
+          <Bloom luminanceThreshold={1} intensity={0.1} mipmapBlur />
           <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />
           <SMAA />
         </EffectComposer>
