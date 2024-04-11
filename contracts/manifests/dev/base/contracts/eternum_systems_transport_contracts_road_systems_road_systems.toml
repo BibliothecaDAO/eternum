@@ -1,6 +1,6 @@
 kind = "DojoContract"
-class_hash = "0x54adb0ce4e6b1bb6bd357f483fa48352a5b9f8885d2a340984bf4486dbb9e3f"
-original_class_hash = "0x54adb0ce4e6b1bb6bd357f483fa48352a5b9f8885d2a340984bf4486dbb9e3f"
+class_hash = "0xc727d829339c4976470d17df97965e644b18f4446b0a7ac42d860c4acc5886"
+original_class_hash = "0xc727d829339c4976470d17df97965e644b18f4446b0a7ac42d860c4acc5886"
 base_class_hash = "0x0"
 abi = "manifests/dev/abis/base/contracts/eternum_systems_transport_contracts_road_systems_road_systems.json"
 reads = []

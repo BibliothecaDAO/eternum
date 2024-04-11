@@ -9,21 +9,14 @@ export const ResourceChip = ({
   isLabor = false,
   resourceId,
   balance,
-  entityId,
+  rate,
 }: {
   isLabor?: boolean;
   resourceId: number;
   balance: number;
-  entityId: Entity;
+
+  rate?: string;
 }) => {
-  const {
-    setup: {
-      components: { Resource },
-    },
-  } = useDojo();
-
-  // const resource = useComponentValue(Resource, entityId);
-
   return (
     <div className={`flex relative group items-center text-sm border rounded px-2 p-1`}>
       <ResourceIcon
@@ -36,6 +29,7 @@ export const ResourceChip = ({
       <div className="flex space-x-3 items-center justify-center">
         <div className="font-bold">{findResourceById(resourceId)?.trait}</div>
         <div>{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
+        {rate !== "" && <div className="text-green">+ {currencyFormat(rate, 2)}</div>}
       </div>
     </div>
   );

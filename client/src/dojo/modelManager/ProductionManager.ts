@@ -80,17 +80,13 @@ export class ProductionManager {
   public productionDuration(currentTick: number): number {
     const production = this.getProduction();
 
-    console.log("currentTick", currentTick);
-    console.log("last_updated_tick", production?.last_updated_tick);
-    console.log("end_tick", production?.end_tick);
-
     if (!production) return 0;
 
-    // if (production.last_updated_tick >= production.end_tick) {
-    //   return 0;
-    // }
+    if (production.last_updated_tick >= production.end_tick && production.end_tick !== BigInt(0)) {
+      return 0;
+    }
 
-    if (production.end_tick > currentTick) {
+    if (production.end_tick === BigInt(0) || production.end_tick > currentTick) {
       return Number(currentTick) - Number(production.last_updated_tick);
     } else {
       return Number(production.end_tick) - Number(production.last_updated_tick);

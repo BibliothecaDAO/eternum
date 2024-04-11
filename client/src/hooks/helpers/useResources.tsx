@@ -250,6 +250,7 @@ export function useResourceBalance() {
     return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
   };
 
+  // We should deprecate this hook and use getBalance instead - too many useEffects
   const useBalance = (entityId: bigint, resourceId: number) => {
     const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
 
