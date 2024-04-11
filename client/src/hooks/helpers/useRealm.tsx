@@ -125,7 +125,7 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
   const [realm, setRealm] = useState<RealmInterface | undefined>(undefined);
 
   useMemo((): any => {
-    if (realmEntityId) {
+    if (realmEntityId !== undefined) {
       let entityId = getEntityIdFromKeys([realmEntityId]);
       const realm = getComponentValue(Realm, entityId);
       const owner = getComponentValue(Owner, entityId);
