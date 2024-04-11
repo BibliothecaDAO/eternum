@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
 import { getUIPositionFromColRow } from "../../utils/utils";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useBuildingSound } from "../../../hooks/useUISound";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
@@ -11,14 +11,16 @@ import { BuildingType } from "@bibliothecadao/eternum";
 import { CairoOption, CairoOptionVariant } from "starknet";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
-  return buildings.some((building) => building.col === col && building.row === row);
+  return buildings.some((building) => building.col === col && building.row === row) || (col === 4 && row === 4);
 };
 
 const GroundGrid = () => {
   const hexPositions = useMemo(() => generateHexPositions(), []);
 
   const { playBuildingSound } = useBuildingSound();
-  const { previewBuilding, setHoveredBuildHex, existingBuildings, selectedResource } = useUIStore((state) => state);
+  const { previewBuilding, setHoveredBuildHex, existingBuildings, selectedResource, setPreviewBuilding } = useUIStore(
+    (state) => state,
+  );
   const { realmEntityId } = useRealmStore();
 
   const {
@@ -44,6 +46,10 @@ const GroundGrid = () => {
     });
   };
 
+  useEffect(() => {
+    setPreviewBuilding(null);
+  }, [realmEntityId]);
+
   return (
     <>
       <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
@@ -55,6 +61,7 @@ const GroundGrid = () => {
             onClick={() => {
               if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
                 handlePlacement(hexPosition.col, hexPosition.row, previewBuilding);
+                setPreviewBuilding(null);
                 playBuildingSound(previewBuilding);
               }
             }}

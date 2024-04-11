@@ -2,14 +2,15 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { BuildingStringToEnum } from "@bibliothecadao/eternum";
+import { BuildingStringToEnum, BuildingType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useGLTF } from "@react-three/drei";
+import { useEffect, useMemo } from "react";
 
 export const ExistingBuildings = () => {
   const { hexPosition: globalHex } = useQuery();
-  const { previewBuilding, setHoveredBuildHex, existingBuildings } = useUIStore((state) => state);
+  const { existingBuildings, setExistingBuildings } = useUIStore((state) => state);
 
   const {
     setup: {
@@ -19,15 +20,13 @@ export const ExistingBuildings = () => {
 
   const models = useGLTF([
     "/models/buildings/castle.glb",
+    "/models/buildings/mine.glb",
     "/models/buildings/farm.glb",
     "/models/buildings/fishery.glb",
-    "/models/buildings/mine.glb",
-    "/models/buildings/stable.glb",
-    "/models/buildings/workhut.glb",
-    "/models/buildings/archer_range.glb",
     "/models/buildings/barracks.glb",
     "/models/buildings/market.glb",
-    "/models/buildings/storehouse.glb",
+    "/models/buildings/archer_range.glb",
+    "/models/buildings/stable.glb",
   ]);
 
   const builtBuildings = useEntityQuery([
@@ -35,35 +34,34 @@ export const ExistingBuildings = () => {
     HasValue(Building, { outer_col: BigInt(globalHex.col), outer_row: BigInt(globalHex.row) }),
   ]);
 
+  useEffect(() => {
+    const _tmp = builtBuildings.map((entity) => {
+      const productionModelValue = getComponentValue(Building, entity);
+      const type = productionModelValue?.category
+        ? BuildingStringToEnum[productionModelValue.category as keyof typeof BuildingStringToEnum]
+        : BuildingType.None;
+      return {
+        col: Number(productionModelValue?.inner_col),
+        row: Number(productionModelValue?.inner_row),
+        type: type - 1,
+      };
+    });
+    setExistingBuildings(_tmp);
+  }, [builtBuildings]);
+
+  const castlePosition = useMemo(() => getUIPositionFromColRow(4, 4, true), []);
+
   return (
     <>
-      {builtBuildings.map((entity) => {
-        const productionModelValue = getComponentValue(Building, entity);
-
-        return (
-          productionModelValue && (
-            <BuiltBuilding
-              key={entity}
-              models={models}
-              buildingCategory={
-                BuildingStringToEnum[productionModelValue.category as keyof typeof BuildingStringToEnum]
-              }
-              position={{ col: Number(productionModelValue.inner_col), row: Number(productionModelValue.inner_row) }}
-              onPointerMove={() =>
-                previewBuilding &&
-                setHoveredBuildHex({
-                  col: Number(productionModelValue.inner_col),
-                  row: Number(productionModelValue.inner_row),
-                })
-              }
-            />
-          )
-        );
-      })}
-      {existingBuildings.map((building, index) => {
-        const position = getUIPositionFromColRow(building.col, building.row, true);
-        return <primitive scale={3} object={models[0].scene} key={index} position={[position.x, 2.33, -position.y]} />;
-      })}
+      {existingBuildings.map((building, index) => (
+        <BuiltBuilding
+          key={index}
+          models={models}
+          buildingCategory={building.type}
+          position={{ col: building.col, row: building.row }}
+        />
+      ))}
+      <primitive scale={3} object={models[0].scene} position={[castlePosition.x, 2.33, -castlePosition.y]} />;
     </>
   );
 };
@@ -74,11 +72,10 @@ export const BuiltBuilding = ({
   buildingCategory,
 }: {
   position: any;
-  onPointerMove: any;
   models: any;
   buildingCategory: number;
 }) => {
   const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
-
-  return <primitive scale={3} object={models[buildingCategory].scene.clone()} position={[x, 2.33, -y]} />;
+  const model = useMemo(() => models[buildingCategory].scene.clone(), [buildingCategory, models]);
+  return <primitive scale={3} object={model} position={[x, 2.33, -y]} />;
 };

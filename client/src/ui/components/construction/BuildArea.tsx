@@ -31,15 +31,13 @@ const BuildingPreview = () => {
 
   const originalModels = useGLTF([
     "/models/buildings/castle.glb",
+    "/models/buildings/mine.glb",
     "/models/buildings/farm.glb",
     "/models/buildings/fishery.glb",
-    "/models/buildings/mine.glb",
-    "/models/buildings/stable.glb",
-    "/models/buildings/workhut.glb",
-    "/models/buildings/archer_range.glb",
     "/models/buildings/barracks.glb",
     "/models/buildings/market.glb",
-    "/models/buildings/storehouse.glb",
+    "/models/buildings/archer_range.glb",
+    "/models/buildings/stable.glb",
   ]);
 
   // Clone all models for manipulation
@@ -51,7 +49,7 @@ const BuildingPreview = () => {
     if (!previewBuilding) return;
     const newColor = isHexOccupied(hoveredBuildHex.col, hoveredBuildHex.row, existingBuildings) ? "red" : "green";
     setColor(new THREE.Color(newColor));
-    models[previewBuilding].traverse((node) => {
+    models[previewBuilding - 1].traverse((node) => {
       if (node instanceof THREE.Mesh) {
         node.material = node.material.clone();
         node.material.color.set(newColor);
@@ -63,7 +61,7 @@ const BuildingPreview = () => {
 
   const previewModel = useMemo(() => {
     if (!previewBuilding) return null;
-    return models[previewBuilding];
+    return models[previewBuilding - 1];
   }, [previewBuilding, models]);
 
   const hexagonGeometry = useMemo(() => new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS)), []);
