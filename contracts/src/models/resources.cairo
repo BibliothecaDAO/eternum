@@ -7,6 +7,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
 use core::integer::BoundedInt;
+use debug::PrintTrait;
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -89,7 +90,7 @@ impl ResourceImpl of ResourceTrait {
         set!(world, (self));
 
         // sync end ticks of resources that depend on this one
-        ProductionOutputImpl::sync_end_ticks(@self,world);
+        ProductionOutputImpl::sync_all_inputs_exhaustion_ticks_for(@self,world);
 
         // Update the entity's owned resources
 
@@ -113,7 +114,6 @@ impl ResourceImpl of ResourceTrait {
     fn harvest(ref self: Resource, world: IWorldDispatcher) {
         let mut production: Production = get!(world, (self.entity_id, self.resource_type), Production);
         let tick = TickImpl::get(world);
-
         if production.last_updated_tick != tick.current() {
             production.harvest(ref self, @tick);
             set!(world, (self));
@@ -279,6 +279,166 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
         return position; // since resource types start from 1
     }
 }
+
+#[cfg(test)]
+mod tests_resource_traits {
+    use eternum::models::resources::ResourceTrait;
+use eternum::models::production::ProductionRateTrait;
+    use core::option::OptionTrait;
+    use super::{Production, ProductionOutputImpl, Resource, ResourceImpl};
+    use debug::PrintTrait;
+    use traits::Into;
+    use traits::TryInto;
+    use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+    use eternum::models::config::{TickConfig, TickImpl, TickTrait};
+    use core::integer::BoundedInt;
+    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use eternum::systems::config::contracts::config_systems;
+    use eternum::systems::config::interface::{
+        IProductionConfigDispatcher, IProductionConfigDispatcherTrait
+    };
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
+    fn setup() -> (IWorldDispatcher, u128, u128, Span<(u8, u128)>) {
+        let world = spawn_eternum();
+        let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+
+        // set tick config 
+        let tick_config = TickConfig {
+            config_id: WORLD_CONFIG_ID,
+            max_moves_per_tick: 5,
+            tick_interval_in_seconds: 5
+        };
+        set!(world, (tick_config));
+
+        // wood production cost 3 gold per tick
+        let wood_cost_gold_rate : u128 = 3;
+        let wood_cost = array![(ResourceTypes::GOLD, wood_cost_gold_rate)];
+        let entity_id: u128 = 1;
+
+
+
+        // set wood production
+
+        let wood_production_rate: u128 = 50;
+        let mut wood_production: Production = Production {
+            entity_id,
+            resource_type: ResourceTypes::WOOD,
+            building_count: 1,
+            production_rate: wood_production_rate,
+            bonus_percent: 0,
+            consumption_rate: 2,
+            last_updated_tick: 0,
+            end_tick: 0
+        };
+        set!(world, (wood_production));
+
+
+
+        // set gold consumption rate to be wood cost
+
+
+        let mut gold_production: Production = Production {
+            entity_id,
+            resource_type: ResourceTypes::GOLD,
+            building_count: 0,
+            production_rate: 0,
+            bonus_percent: 0,
+            consumption_rate: wood_cost_gold_rate,
+            last_updated_tick: 0,
+            end_tick: 0
+        };
+
+        // set gold resource balance 
+        let mut gold_resource: Resource = Resource {
+            entity_id,
+            resource_type: ResourceTypes::GOLD,
+            balance: 100
+        };
+        set!(world, (gold_production, gold_resource));
+
+   
+
+        IProductionConfigDispatcher { contract_address: config_systems_address }
+            .set_production_config(ResourceTypes::WOOD, wood_production_rate, wood_cost.span());
+
+        // update wood end tick
+        ProductionOutputImpl::sync_all_inputs_exhaustion_ticks_for(@gold_resource, world);
+        
+        return (world, entity_id, wood_production_rate, wood_cost.span());
+    }
+
+    #[test]
+    fn test_resource_get_while_gold_is_available() {
+        // Ensure production is harvested and added to the
+        // resource's balance when ResourceImpl::get is called
+        //
+        let (world, entity_id, _, _) = setup();
+
+        let tick_config = TickImpl::get(world);
+
+        // advance time by 3 ticks
+        starknet::testing::set_block_timestamp(
+            3 * tick_config.tick_interval_in_seconds);
+
+
+        // check wood balance after 3 ticks
+        let wood_resource = ResourceImpl::get(world, (entity_id, ResourceTypes::WOOD));
+        assert_eq!(wood_resource.balance, (50 - 2) * 3);
+
+
+        // check that wood production end tick was computed correctly
+        let gold_resource: Resource
+            = get!(world, (entity_id, ResourceTypes::GOLD), Resource);
+        let gold_production_end 
+            = gold_resource.balance / 3; // wood_cost_gold_rate
+        let wood_production: Production 
+            = get!(world, (entity_id, ResourceTypes::WOOD), Production);
+        assert_eq!(gold_production_end, wood_production.end_tick.into());
+
+    }
+
+
+
+    #[test]
+    fn test_resource_get_after_gold_has_finished() {
+        // Ensure production is harvested and added to the
+        // resource's balance when ResourceImpl::get is called
+        //
+        let (world, entity_id, _, _) = setup();
+
+        let tick_config = TickImpl::get(world);
+
+        // advance time by 900 ticks (way after 33 ticks when gold finishes)
+        starknet::testing::set_block_timestamp(
+            900 * tick_config.tick_interval_in_seconds);
+
+        let wood_resource = ResourceImpl::get(world, (entity_id, ResourceTypes::WOOD));
+        assert_eq!(wood_resource.balance, (50 - 2) * 33);
+
+    }
+
+
+    #[test]
+    fn test_resource_save() {
+        // Ensure wood production end tick is reset after
+        // gold's balance gets updated
+        //
+        let (world, entity_id, _, _) = setup();
+
+       
+        let mut gold_resource = ResourceImpl::get(world, (entity_id, ResourceTypes::GOLD));
+        gold_resource.balance += 4; // makes balance 104
+        gold_resource.save(world);
+        assert_eq!(gold_resource.balance, 104);
+
+        let wood_production: Production 
+            = get!(world, (entity_id, ResourceTypes::WOOD), Production);
+        assert_eq!(wood_production.end_tick, (104 - 2) / 3); // 3 =  wood_cost_gold_rate
+
+    }
+}
+
 
 
 #[cfg(test)]

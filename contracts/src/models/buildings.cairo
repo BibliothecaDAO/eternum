@@ -1,6 +1,7 @@
 use eternum::models::position::CoordTrait;
 use core::zeroable::Zeroable;
 use eternum::models::production::{Production,ProductionInput, ProductionRateTrait, ProductionBonusPercentageImpl};
+use eternum::models::production::{ProductionInputImpl};
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 use eternum::models::owner::Owner;
 use eternum::models::owner::EntityOwner;
@@ -42,7 +43,7 @@ enum BuildingCategory {
     Stable,
 }
 
-impl DirectionIntoFelt252 of Into<BuildingCategory, felt252> {
+impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
     fn into(self: BuildingCategory) -> felt252 {
         match self {
             BuildingCategory::None => 0,
@@ -193,13 +194,17 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 input_production
                     .decrease_consumption_rate(ref input_resource, @tick, input_resource_amount);
 
-                // reset production stop time
-                resource_production.set_end_tick(@input_production, @input_resource, @tick);
-
                 count += 1;
 
                 set!(world, (input_production, input_resource));
             };
+
+            let resource_production_finish_tick
+                = ProductionInputImpl::least_resource_finish_tick(@resource_production, world);
+            resource_production
+                    .set_end_tick(
+                        ref produced_resource, @tick, resource_production_finish_tick);
+
 
             set!(world, (produced_resource));
             set!(world, (resource_production));
