@@ -1,3 +1,4 @@
+use core::debug::PrintTrait;
 use eternum::constants::{WORLD_CONFIG_ID};
 use eternum::utils::unpack::unpack_resource_types;
 
