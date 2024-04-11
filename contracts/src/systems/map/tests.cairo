@@ -6,6 +6,7 @@ use eternum::models::quantity::Quantity;
 use eternum::models::capacity::Capacity;
 use eternum::models::tick::TickConfig;
 use eternum::models::movable::{Movable};
+use eternum::models::combat::{Health};
 use eternum::models::position::{Position, Coord, CoordTrait, Direction};
 use eternum::models::realm::Realm;
 use eternum::models::inventory::{Inventory, InventoryTrait};
@@ -124,6 +125,14 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     let realm_army_unit_id: u128 = 'army unit'.try_into().unwrap();
     let army_quantity_value: u128 = 7;
     let army_capacity_value_per_soldier: u128 = 7;
+
+    // set army health value to make it alive
+    set!(world, (
+        Health {
+            entity_id: realm_army_unit_id,
+            value: 1
+        }
+    ));
 
     set!(
         world,
