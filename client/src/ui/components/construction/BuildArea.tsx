@@ -2,12 +2,11 @@ import { useGLTF } from "@react-three/drei";
 import useUIStore from "../../../hooks/store/useUIStore";
 import GroundGrid, { isHexOccupied } from "./GroundGrid";
 import * as THREE from "three";
-import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
+import { getUIPositionFromColRow } from "../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
-import { useComponentValue } from "@dojoengine/react";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { ExistingBuildings } from "./ExistingBuildings";
 
 const BuildArea = () => {
   return (
@@ -77,32 +76,4 @@ const BuildingPreview = () => {
       </mesh>
     </group>
   ) : null;
-};
-
-// TODO: This should only be the Castle..
-const ExistingBuildings = () => {
-  const existingBuildings = useUIStore((state) => state.existingBuildings);
-  const models = useGLTF([
-    "/models/buildings/castle.glb",
-    "/models/buildings/farm.glb",
-    "/models/buildings/fishery.glb",
-    "/models/buildings/mine.glb",
-    "/models/buildings/stable.glb",
-    "/models/buildings/workhut.glb",
-    "/models/buildings/archer_range.glb",
-    "/models/buildings/barracks.glb",
-    "/models/buildings/market.glb",
-    "/models/buildings/storehouse.glb",
-  ]);
-
-  return (
-    <>
-      {existingBuildings.map((building, index) => {
-        const position = getUIPositionFromColRow(building.col, building.row, true);
-        const model = models[building.type].scene.clone();
-
-        return <primitive scale={3} object={model} key={index} position={[position.x, 2.33, -position.y]} />;
-      })}
-    </>
-  );
 };
