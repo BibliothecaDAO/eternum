@@ -246,11 +246,15 @@ export function useResourceBalance() {
     return { balance: productionManager.balance(currentTick), resourceId };
   };
 
+  const getProductionManager = (entityId: bigint, resourceId: number): ProductionManager => {
+    return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+  };
+
   const useBalance = (entityId: bigint, resourceId: number) => {
     const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
 
-    const resource = useComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
-    const production = useComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
+    const resource = getComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
+    const production = getComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
 
     useEffect(() => {
       const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
@@ -264,5 +268,6 @@ export function useResourceBalance() {
     getFoodResources,
     getBalance,
     useBalance,
+    getProductionManager,
   };
 }
