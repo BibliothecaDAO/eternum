@@ -197,8 +197,9 @@ struct ProductionInput {
 
 #[generate_trait]
 impl ProductionInputImpl of ProductionInputTrait {
-    /// Get the tick that the production inputs will finish at and return the
-    /// first one to end
+    /// Production ends when any input material runs out of balance so what this 
+    /// function does is that it finds the first input resource to run out of balance that 
+    /// returns the tick it runs out 
     fn least_resource_finish_tick(production: @Production, world: IWorldDispatcher) -> u64 {
         let production_config = get!(world, *production.resource_type, ProductionConfig);
         let tick_config = TickImpl::get(world);
