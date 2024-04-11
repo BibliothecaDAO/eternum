@@ -5,7 +5,7 @@ import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { BuildingStringToEnum, BuildingType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
-import { useGLTF } from "@react-three/drei";
+import { useAnimations, useGLTF } from "@react-three/drei";
 import { useEffect, useMemo } from "react";
 
 export const ExistingBuildings = () => {
@@ -77,5 +77,16 @@ export const BuiltBuilding = ({
 }) => {
   const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
   const model = useMemo(() => models[buildingCategory].scene.clone(), [buildingCategory, models]);
+
+  const { actions } = useAnimations(models[buildingCategory].animations, model);
+
+  useEffect(() => {
+    setTimeout(() => {
+      if (actions["windmill_fan_rotation"]) {
+        actions["windmill_fan_rotation"].play();
+      }
+    }, Math.random() * 1000);
+  }, [actions]);
+
   return <primitive scale={3} object={model} position={[x, 2.33, -y]} />;
 };
