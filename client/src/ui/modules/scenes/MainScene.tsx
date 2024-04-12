@@ -4,7 +4,7 @@ import { HexceptionViewScene } from "./HexceptionViewScene";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
-import { AdaptiveDpr, useHelper, Clouds, Cloud, Bvh, BakeShadows } from "@react-three/drei";
+import { AdaptiveDpr, useHelper, Clouds, Cloud, Bvh, BakeShadows, CameraShake } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast } from "@react-three/postprocessing";
 // @ts-ignore
@@ -152,34 +152,6 @@ export const MainScene = () => {
     hexceptionCloudsVolume: { value: 200, min: 0, max: 1000, step: 1, label: "Hexception Clouds Volume" },
   });
 
-  const cloudsConfig = useMemo(
-    () =>
-      locationType === "map"
-        ? {
-            position: mapCloudsPosition,
-            opacity: mapCloudsOpacity,
-            bounds: mapCloudsBounds,
-            volume: mapCloudsVolume,
-          }
-        : {
-            position: hexceptionCloudsPosition,
-            opacity: hexceptionCloudsOpacity,
-            bounds: hexceptionCloudsBounds,
-            volume: hexceptionCloudsVolume,
-          },
-    [
-      locationType,
-      mapCloudsPosition,
-      mapCloudsOpacity,
-      mapCloudsBounds,
-      mapCloudsVolume,
-      hexceptionCloudsPosition,
-      hexceptionCloudsOpacity,
-      hexceptionCloudsBounds,
-      hexceptionCloudsVolume,
-    ],
-  );
-
   const { ambientColor, ambientIntensity } = useControls("Ambient Light", {
     ambientColor: { value: "#fff", label: "Color" },
     ambientIntensity: { value: 0.23, min: 0, max: 1, step: 0.01 },
@@ -189,6 +161,20 @@ export const MainScene = () => {
     brightness: { value: 0.22, min: 0, max: 1, step: 0.01 },
     contrast: { value: 0.48, min: 0, max: 1, step: 0.01 },
   });
+
+  const shakeConfig = useMemo(
+    () => ({
+      maxYaw: 0.01, // Max amount camera can yaw in either direction
+      maxPitch: 0, // Max amount camera can pitch in either direction
+      maxRoll: 0, // Max amount camera can roll in either direction
+      yawFrequency: 0.04, // Frequency of the the yaw rotation
+      pitchFrequency: 0, // Frequency of the pitch rotation
+      rollFrequency: 0, // Frequency of the roll rotation
+      intensity: 1, // initial intensity of the shake
+      controls: undefined, // if using orbit controls, pass a ref here so we can update the rotation
+    }),
+    [],
+  );
 
   return (
     <Canvas
@@ -236,7 +222,7 @@ export const MainScene = () => {
                 <WorldMapScene />
               </Route>
               <Route path="hexception">
-                {/* <CameraShake {...shakeConfig} /> */}
+                <CameraShake {...shakeConfig} />
                 <HexceptionViewScene />
               </Route>
             </Switch>
