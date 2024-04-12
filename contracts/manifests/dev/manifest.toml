@@ -5,7 +5,7 @@ original_class_hash = "0x799bc4e9da10bfb3dd88e6f223c9cfbf7745435cd14f5d69675ea44
 abi = "abis/deployments/dojo_world_world.json"
 address = "0x177a3f3d912cf4b55f0f74eccf3b7def7c6144efeba033e9f21d9cdb0230c64"
 transaction_hash = "0x52d225e62111b2912d60d547d09d4f02b6113cf424097ff6078ba1dd3231355"
-block_number = 3
+block_number = 334
 seed = "eternum"
 name = "dojo::world::world"
 
@@ -18,8 +18,8 @@ name = "dojo::base::base"
 [[contracts]]
 kind = "DojoContract"
 address = "0x5e248d25812ebb9ffa35d7d15f37e37a84b7631d691b5c8191e359ef3071776"
-class_hash = "0x7177805e2c26b87335cae45c0e91603bd6a0b958b90ddc2552d1313136ddbc6"
-original_class_hash = "0x7177805e2c26b87335cae45c0e91603bd6a0b958b90ddc2552d1313136ddbc6"
+class_hash = "0x7eb00fe5c5ef9be9435d49c2ea7d91382f6527eab7e76872296300fbb21cd7"
+original_class_hash = "0x7eb00fe5c5ef9be9435d49c2ea7d91382f6527eab7e76872296300fbb21cd7"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_buildings_contracts_building_systems.json"
 reads = []

@@ -117,6 +117,11 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             );
             resource_production.set_rate(production_config.amount);
             resource_production.increase_building_count(ref produced_resource, @tick);
+            let resource_production_finish_tick
+                = ProductionInputImpl::least_resource_finish_tick(@resource_production, world);
+            resource_production
+                    .set_end_tick(
+                        ref produced_resource, @tick, resource_production_finish_tick);
 
             set!(world, (produced_resource));
             set!(world, (resource_production));
@@ -170,6 +175,11 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 world, (self.outer_entity_id, produced_resource_type), Production
             );
             resource_production.decrease_building_count(ref produced_resource, @tick);
+            let resource_production_finish_tick
+                = ProductionInputImpl::least_resource_finish_tick(@resource_production, world);
+            resource_production
+                    .set_end_tick(
+                        ref produced_resource, @tick, resource_production_finish_tick);
 
             // stop payment for production and decrease consumption rate
 
@@ -198,13 +208,6 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
                 set!(world, (input_production, input_resource));
             };
-
-            let resource_production_finish_tick
-                = ProductionInputImpl::least_resource_finish_tick(@resource_production, world);
-            resource_production
-                    .set_end_tick(
-                        ref produced_resource, @tick, resource_production_finish_tick);
-
 
             set!(world, (produced_resource));
             set!(world, (resource_production));
@@ -387,7 +390,9 @@ impl BuildingImpl of BuildingTrait {
                 );
                 building.produced_resource_type = resource_type;
             },
-            Option::None => ()
+            Option::None => {
+                building.produced_resource_type = building.produced_resource();
+            }
         }
 
         set!(world, (building));
