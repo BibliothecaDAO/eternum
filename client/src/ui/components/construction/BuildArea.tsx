@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
 import { ExistingBuildings } from "./ExistingBuildings";
+import { ShaderMaterial, Vector3 } from "three";
 
 const BuildArea = () => {
   return (
@@ -26,6 +27,7 @@ const BuildingPreview = () => {
   const existingBuildings = useUIStore((state) => state.existingBuildings);
 
   const previewCoords = useMemo(() => {
+    if (!hoveredBuildHex) return null;
     return getUIPositionFromColRow(hoveredBuildHex.col, hoveredBuildHex.row, true);
   }, [hoveredBuildHex]);
 
@@ -43,12 +45,9 @@ const BuildingPreview = () => {
   // Clone all models for manipulation
   const models = useMemo(() => originalModels.map((model) => model.scene.clone()), [originalModels]);
 
-  const [color, setColor] = useState(new THREE.Color("red"));
-
   useEffect(() => {
-    if (!previewBuilding) return;
+    if (!previewBuilding || !hoveredBuildHex) return;
     const newColor = isHexOccupied(hoveredBuildHex.col, hoveredBuildHex.row, existingBuildings) ? "red" : "green";
-    setColor(new THREE.Color(newColor));
     models[previewBuilding - 1].traverse((node) => {
       if (node instanceof THREE.Mesh) {
         node.material = node.material.clone();
@@ -64,14 +63,11 @@ const BuildingPreview = () => {
     return models[previewBuilding - 1];
   }, [previewBuilding, models]);
 
-  const hexagonGeometry = useMemo(() => new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS)), []);
-
-  return previewModel ? (
-    <group position={[previewCoords.x, 2.33, -previewCoords.y]}>
-      <primitive scale={3} object={previewModel} />
-      <mesh rotation={[-0.5 * Math.PI, 0, 0]} geometry={hexagonGeometry}>
-        <meshMatcapMaterial attach="material" color={color} transparent opacity={0.5} />
-      </mesh>
-    </group>
+  return previewModel && previewCoords ? (
+    <>
+      <group position={[previewCoords.x, 2.33, -previewCoords.y]}>
+        <primitive position={[0, 0, 0]} scale={3} object={previewModel} />
+      </group>
+    </>
   ) : null;
 };

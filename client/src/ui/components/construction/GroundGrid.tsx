@@ -9,6 +9,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingType } from "@bibliothecadao/eternum";
 import { CairoOption, CairoOptionVariant } from "starknet";
+import { placeholderMaterial } from "@/shaders/placeholderMaterial";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row) || (col === 4 && row === 4);
@@ -16,7 +17,6 @@ export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
 
 const GroundGrid = () => {
   const hexPositions = useMemo(() => generateHexPositions(), []);
-
   const { playBuildingSound } = useBuildingSound();
   const { previewBuilding, setHoveredBuildHex, existingBuildings, selectedResource, setPreviewBuilding } = useUIStore(
     (state) => state,
@@ -33,7 +33,7 @@ const GroundGrid = () => {
   const handlePlacement = async (col: number, row: number, previewBuilding: BuildingType) => {
     await create_building({
       signer: account,
-      entity_id: realmEntityId,
+      entity_id: realmEntityId as bigint,
       building_coord: {
         x: col.toString(),
         y: row.toString(),
@@ -54,18 +54,31 @@ const GroundGrid = () => {
     <>
       <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
         {hexPositions.map((hexPosition, index) => (
-          <Hexagon
-            key={index}
-            position={hexPosition}
-            onPointerEnter={() => previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
-            onClick={() => {
-              if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
-                handlePlacement(hexPosition.col, hexPosition.row, previewBuilding);
-                setPreviewBuilding(null);
-                playBuildingSound(previewBuilding);
+          <group key={index}>
+            {!isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) && previewBuilding && (
+              <mesh
+                name="free-cell-placeholder"
+                position={[hexPosition.x, hexPosition.y, hexPosition.z + 0.02]}
+                geometry={hexagonGeometry}
+                material={placeholderMaterial}
+              />
+            )}
+
+            <Hexagon
+              position={hexPosition}
+              onPointerEnter={() =>
+                previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })
               }
-            }}
-          />
+              onClick={() => {
+                if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
+                  handlePlacement(hexPosition.col, hexPosition.row, previewBuilding);
+                  setPreviewBuilding(null);
+                  setHoveredBuildHex(null);
+                  playBuildingSound(previewBuilding);
+                }
+              }}
+            />
+          </group>
         ))}
       </group>
     </>
