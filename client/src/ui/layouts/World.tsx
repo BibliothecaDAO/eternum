@@ -22,11 +22,11 @@ import { WorldPopups } from "../components/worldmap/WorldPopups";
 import { HooksComponent } from "../components/HooksComponent";
 import { BottomLeftContainer } from "@/ui/containers/BottomLeftContainer";
 import { Map } from "@/ui/modules/map/Map";
+import { MouseTracker } from "../components/MouseTracker";
 
 export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const setMouseCoords = useUIStore((state) => state.setMouseCoords);
 
   const progress = useProgress((state) => state.progress);
 
@@ -39,15 +39,7 @@ export const World = () => {
   }, [progress]);
 
   return (
-    <div
-      onMouseMove={(e) =>
-        setMouseCoords({
-          x: e.clientX,
-          y: e.clientY,
-        })
-      }
-      className="fixed antialiased top-0 left-0 z-0 w-screen h-screen p-2 overflow-hidden"
-    >
+    <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen p-2 overflow-hidden">
       <WorldPopups />
       <BackgroundContainer className="border border-gold rounded-xl relative">
         <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-12 bg-gradient-to-b from-black/20 to-transparent opacity-90" />
@@ -94,6 +86,7 @@ export const World = () => {
         </a>
       </div>
       <HooksComponent />
+      <MouseTracker />
     </div>
   );
 };
