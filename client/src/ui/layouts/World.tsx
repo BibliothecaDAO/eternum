@@ -86,7 +86,6 @@ export const World = () => {
         </a>
       </div>
       <HooksComponent />
-      <MouseTracker />
     </div>
   );
 };

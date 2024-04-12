@@ -238,30 +238,6 @@ export const MainScene = () => {
               <Route path="hexception">
                 {/* <CameraShake {...shakeConfig} /> */}
                 <HexceptionViewScene />
-                <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
-                  <Cloud
-                    concentrate="random"
-                    seed={7331}
-                    speed={0.06}
-                    segments={100}
-                    castShadow={true}
-                    opacity={cloudsConfig.opacity}
-                    bounds={cloudsConfig.bounds as any}
-                    volume={cloudsConfig.volume}
-                    color="white"
-                  />
-                  <Cloud
-                    concentrate="random"
-                    seed={1337}
-                    castShadow={true}
-                    speed={0.03}
-                    segments={100}
-                    opacity={cloudsConfig.opacity}
-                    bounds={cloudsConfig.bounds as any}
-                    volume={cloudsConfig.volume}
-                    color="white"
-                  />
-                </Clouds>
               </Route>
             </Switch>
           </Suspense>
