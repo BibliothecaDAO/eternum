@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useRoute } from "wouter";
 import * as THREE from "three";
 
@@ -6,7 +6,9 @@ import useUIStore from "../../../hooks/store/useUIStore.js";
 
 import HighlightedHexes from "../../components/worldmap/hexagon/HighlightedHexes.js";
 import { WorldMap } from "../../components/worldmap/hexagon/WorldHexagon.js";
-import { useTexture } from "@react-three/drei";
+import { useHelper, useTexture } from "@react-three/drei";
+import { useControls } from "leva";
+import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();
@@ -58,6 +60,51 @@ export const WorldMapScene = () => {
         <planeGeometry args={[2668, 1390.35]} />
         <meshStandardMaterial {...texture} />
       </mesh>
+      <WorldMapLight />
     </>
+  );
+};
+
+const WorldMapLight = () => {
+  const dLightRef = useRef<any>();
+  // if (import.meta.env.DEV) {
+  //   useHelper(dLightRef, THREE.DirectionalLightHelper, 10, "hotpink");
+  // }
+
+  const { lightPosition, intensity } = useControls("Worldmap Light", {
+    lightPosition: {
+      value: {
+        x: 1383.6945872489268,
+        y: 404.2563729638701,
+        z: -1329.476006704701,
+      },
+      step: 0.01,
+    },
+    intensity: {
+      value: 1.65,
+      min: 0,
+      max: 10,
+      step: 0.01,
+    },
+  });
+
+  const target = useMemo(() => {
+    const pos = getUIPositionFromColRow(2147483908, 2147483772);
+    return new THREE.Vector3(pos.x, pos.y, pos.z);
+  }, []);
+
+  useEffect(() => {
+    dLightRef.current.target.position.set(target.x, 0, -target.y);
+  }, [target]);
+
+  return (
+    <group>
+      <directionalLight
+        ref={dLightRef}
+        position={[lightPosition.x, lightPosition.y, lightPosition.z]}
+        color={"#fff"}
+        intensity={intensity}
+      ></directionalLight>
+    </group>
   );
 };
