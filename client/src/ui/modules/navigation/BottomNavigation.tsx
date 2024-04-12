@@ -47,10 +47,10 @@ export const BottomNavigation = () => {
   ];
 
   return (
-    <div className="flex bg-brown rounded-t-3xl border-x-2 border-t-2 border-gold py-3 w-[600px] justify-center flex-wrap h-48 relative">
-      <div className="absolute -left-16 top-8">
+    <div className="flex bg-brown rounded-t-3xl border-x-2 border-t-2 border-gold py-3 w-[600px] justify-center flex-wrap h-24 relative">
+      {/* <div className="absolute -left-16 top-8">
         <img className="w-32 h-32 rounded-full border-4 border-gold" src="/images/avatars/1.png" alt="" />
-      </div>
+      </div> */}
 
       <div className="w-full flex space-x-2 justify-start -mt-8 pl-24">
         {navigation.map((item) => (

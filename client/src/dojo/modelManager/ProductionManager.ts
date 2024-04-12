@@ -29,9 +29,9 @@ export class ProductionManager {
     return getComponentValue(this.resourceModel, getEntityIdFromKeys([this.entityId, this.resourceId]));
   }
 
-  public isActive() {
+  public isActive(): boolean {
     const production = this.getProduction();
-    return production && production.building_count > 0;
+    return production !== undefined && production.building_count > 0;
   }
 
   public bonus() {
@@ -46,15 +46,12 @@ export class ProductionManager {
     return production.production_rate * BigInt(production.building_count) + this.bonus();
   }
 
-  public netRate(): [boolean, bigint] {
+  public netRate(): [boolean, number] {
     const production = this.getProduction();
-    if (!production || !this.isActive()) return [false, BigInt(0)];
-    let productionRate = this.actualProductionRate();
-    if (productionRate > production.consumption_rate) {
-      return [true, productionRate - production.consumption_rate];
-    } else {
-      return [false, production.consumption_rate - productionRate];
-    }
+    if (!production) return [false, 0];
+    const productionRate = this.actualProductionRate();
+    const difference = Number(productionRate) - Number(production.consumption_rate);
+    return [difference > 0, difference];
   }
 
   public balanceExhaustionTick(currentTick: number): number {
@@ -67,7 +64,7 @@ export class ProductionManager {
     if (value > BigInt(0)) {
       if (!sign) {
         const lossPerTick = value;
-        const numTicksLeft = resource.balance / lossPerTick;
+        const numTicksLeft = Number(resource.balance) / lossPerTick;
         return currentTick + Number(numTicksLeft); // Assuming conversion is safe
       } else {
         return Number.MAX_SAFE_INTEGER;
@@ -98,7 +95,7 @@ export class ProductionManager {
     if (!production) return 0;
 
     if (production.end_tick > production.last_updated_tick) {
-      return 0;
+      return Number(currentTick) - Number(production.last_updated_tick);
     }
 
     const exhaustionTick = production.end_tick + (production.last_updated_tick - production.end_tick);
@@ -108,14 +105,19 @@ export class ProductionManager {
   public balance(currentTick: number): number {
     const resource = this.getResource();
 
-    const [sign, value] = this.netRate();
-    if (value > BigInt(0)) {
+    const [sign, rate] = this.netRate();
+
+    console.log(sign, rate);
+    if (rate !== 0) {
       if (sign) {
-        return Number(resource?.balance || 0n) + this.productionDuration(currentTick) * Number(value);
+        // Positive net rate, increase balance
+        return Number(resource?.balance || 0n) + this.productionDuration(currentTick) * rate;
       } else {
-        return Math.max(Number(resource?.balance || 0n) - this.depletionDuration(currentTick) * Number(value), 0);
+        // Negative net rate, decrease balance but not below zero
+        return Number(resource?.balance || 0n) - -this.depletionDuration(currentTick) * rate;
       }
     } else {
+      // No net rate change, return current balance
       return Number(resource?.balance || 0n);
     }
   }

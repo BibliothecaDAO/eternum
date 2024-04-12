@@ -14,7 +14,7 @@ export const HooksComponent = () => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   useEffect(() => {
-    syncCombatHistory(realmEntityId);
+    syncCombatHistory(realmEntityId as bigint);
   }, [realmEntityId]);
 
   const { refreshAllHyperstructures } = useRefreshHyperstructure();

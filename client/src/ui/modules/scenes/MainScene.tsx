@@ -20,11 +20,7 @@ export const Camera = () => {
 
   const cameraTarget = useUIStore((state) => state.cameraTarget);
 
-  return (
-    <>
-      <CameraControls position={cameraPosition} target={cameraTarget} />
-    </>
-  );
+  return <CameraControls position={cameraPosition} target={cameraTarget} />;
 };
 
 export const MainScene = () => {
