@@ -4,16 +4,14 @@ import { HexceptionViewScene } from "./HexceptionViewScene";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
-import { AdaptiveDpr, useHelper, Clouds, Cloud, Bvh, BakeShadows, CameraShake } from "@react-three/drei";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { AdaptiveDpr, Bvh, BakeShadows, CameraShake, Stats } from "@react-three/drei";
+import { Suspense, useMemo } from "react";
 import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast } from "@react-three/postprocessing";
 // @ts-ignore
 import { useControls } from "leva";
 import { CameraControls } from "../../utils/Camera";
 import { BlendFunction } from "postprocessing";
-import * as THREE from "three";
 import FPSLimiter from "../../utils/FPSLimiter";
-import { getUIPositionFromColRow } from "@/ui/utils/utils";
 
 export const Camera = () => {
   const cameraPosition = useUIStore((state) => state.cameraPosition);
@@ -138,7 +136,13 @@ export const MainScene = () => {
         logarithmicDepthBuffer: true,
       }}
     >
-      {import.meta.env.DEV && <Perf position="bottom-left" />}
+      {import.meta.env.DEV && (
+        <>
+          <Stats />
+          <Perf position="bottom-left" />
+        </>
+      )}
+
       <FPSLimiter>
         <ambientLight color={ambientColor} intensity={ambientIntensity} />
         <Camera />
