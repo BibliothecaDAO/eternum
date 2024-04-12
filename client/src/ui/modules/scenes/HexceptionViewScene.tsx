@@ -112,7 +112,6 @@ export const HexceptionViewScene = () => {
         <planeGeometry args={[2668, 1390.35]} />
         <meshStandardMaterial {...texture} />
       </mesh>
-      <BakeShadows />
     </>
   );
 };

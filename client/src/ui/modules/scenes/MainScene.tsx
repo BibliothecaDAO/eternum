@@ -5,7 +5,7 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { AdaptiveDpr, useHelper, Clouds, Cloud, Bvh, BakeShadows } from "@react-three/drei";
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast } from "@react-three/postprocessing";
 // @ts-ignore
 import { useControls } from "leva";
@@ -13,6 +13,7 @@ import { CameraControls } from "../../utils/Camera";
 import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
 import FPSLimiter from "../../utils/FPSLimiter";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
 
 export const Camera = () => {
   const cameraPosition = useUIStore((state) => state.cameraPosition);
@@ -28,48 +29,73 @@ export const Camera = () => {
 
 export const DirectionalLightAndHelper = ({ locationType }: { locationType: string }) => {
   const dLightRef = useRef<any>();
+  const sLightRef = useRef<any>();
   if (import.meta.env.DEV) {
-    useHelper(dLightRef, THREE.DirectionalLightHelper, 50, "hotpink");
+    //useHelper(dLightRef, THREE.DirectionalLightHelper, 10, "hotpink");
+    // useHelper(sLightRef, THREE.PointLightHelper, 10, "green");
   }
 
   const { lightPosition, bias, intensity } = useControls({
     lightPosition: {
-      value: { x: 0, y: 30, z: 50 }, // Adjust y value to position the light above
+      // value: { x: 37, y: 17, z: 2 },
+      // value: { x: 22, y: 9, z: -5 },
+      value: { x: 29, y: 20, z: 35 },
       step: 0.01,
     },
     intensity: {
-      value: 1.75,
+      value: 1.65,
       min: 0,
       max: 10,
       step: 0.01,
     },
     bias: {
-      value: 0.02,
+      value: 0.04,
       min: -0.05,
       max: 0.05,
       step: 0.001,
     },
   });
 
-  const yPos = useMemo(() => {
-    return locationType === "map" ? 100 : 300;
-  }, [locationType]);
+  const { sLightPosition, sLightIntensity, power } = useControls("Spot Light", {
+    sLightPosition: { value: { x: 21, y: 12, z: -18 }, label: "Position" },
+    sLightIntensity: { value: 75, min: 0, max: 100, step: 0.01 },
+    power: { value: 2000, min: 0, max: 10000, step: 1 },
+  });
+
+  const target = useMemo(() => {
+    const pos = getUIPositionFromColRow(4, 4, true);
+    return new THREE.Vector3(pos.x, pos.y, pos.z);
+  }, []);
+
+  useEffect(() => {
+    dLightRef.current.target.position.set(target.x, 2, -target.y);
+    // sLightRef.current.target.position.set(target.x, 2, -target.y);
+  }, [target]);
 
   return (
-    <directionalLight
-      ref={dLightRef}
-      castShadow
-      shadow-mapSize={[4096, 4096]}
-      shadow-camera-far={1000}
-      shadow-camera-left={-1000}
-      shadow-camera-right={1000}
-      shadow-camera-top={1000}
-      shadow-camera-bottom={-1000}
-      shadow-bias={bias}
-      position={[lightPosition.x, lightPosition.y, lightPosition.z]}
-      color={"#fff"}
-      intensity={intensity}
-    ></directionalLight>
+    <group>
+      <directionalLight
+        ref={dLightRef}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-far={75}
+        shadow-camera-left={-75}
+        shadow-camera-right={75}
+        shadow-camera-top={75}
+        shadow-camera-bottom={-75}
+        shadow-bias={bias}
+        position={[lightPosition.x, lightPosition.y, lightPosition.z]}
+        color={"#fff"}
+        intensity={intensity}
+      ></directionalLight>
+      <pointLight
+        ref={sLightRef}
+        position={[sLightPosition.x, sLightPosition.y, sLightPosition.z]}
+        color="#fff"
+        intensity={sLightIntensity}
+        power={power}
+      />
+    </group>
   );
 };
 
@@ -156,12 +182,12 @@ export const MainScene = () => {
 
   const { ambientColor, ambientIntensity } = useControls("Ambient Light", {
     ambientColor: { value: "#fff", label: "Color" },
-    ambientIntensity: { value: 0.36, min: 0, max: 1, step: 0.01 },
+    ambientIntensity: { value: 0.23, min: 0, max: 1, step: 0.01 },
   });
 
   const { brightness, contrast } = useControls("BrightnessContrast", {
-    brightness: { value: 0.18, min: 0, max: 1, step: 0.01 },
-    contrast: { value: 0.41, min: 0, max: 1, step: 0.01 },
+    brightness: { value: 0.22, min: 0, max: 1, step: 0.01 },
+    contrast: { value: 0.48, min: 0, max: 1, step: 0.01 },
   });
 
   return (
@@ -242,7 +268,7 @@ export const MainScene = () => {
         </Bvh>
         <EffectComposer multisampling={0}>
           <BrightnessContrast brightness={brightness} contrast={contrast} />
-          <Bloom luminanceThreshold={1} intensity={0.1} mipmapBlur />
+          <Bloom luminanceThreshold={0.9} intensity={0.1} mipmapBlur />
           <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />
           <SMAA />
         </EffectComposer>
