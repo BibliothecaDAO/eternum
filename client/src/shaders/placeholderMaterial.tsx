@@ -24,9 +24,9 @@ varying vec3 vPosition;
 
 void main() {
   #include <logdepthbuf_fragment>
-  float edgeDistance = length(vPosition.xy) * 0.15;
-  float gradient = smoothstep(1.0, 0.0, edgeDistance); 
-  float finalOpacity = mix(1.0, opacity, gradient);
+  float edgeDistance = length(vPosition.xy) * 0.35;
+  float gradient = smoothstep(1.5, 0.0, edgeDistance); 
+  float finalOpacity = mix(0.35, opacity, gradient);
   
   gl_FragColor = vec4(color, finalOpacity);
 }
@@ -37,7 +37,7 @@ export const placeholderMaterial = new ShaderMaterial({
   fragmentShader,
   uniforms: {
     color: { value: new Color("green") },
-    opacity: { value: 0.15 },
+    opacity: { value: 0 },
   },
   transparent: true,
 });
