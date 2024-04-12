@@ -2,7 +2,9 @@ import { findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
 
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { currencyFormat } from "../../utils/utils";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { useProductionManager } from "@/hooks/helpers/useResources";
+import { useMemo } from "react";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 
 export const ResourceChip = ({
   isLabor = false,
@@ -13,10 +15,20 @@ export const ResourceChip = ({
   resourceId: number;
   entityId: bigint;
 }) => {
-  const { getBalance, getProductionManager } = useResourceBalance();
+  const currentTick = useBlockchainStore((state) => state.currentTick);
+  const productionManager = useProductionManager(entityId, resourceId);
 
-  const balance = getBalance(entityId, resourceId);
-  const [_, rate] = getProductionManager(entityId, resourceId).netRate();
+  const production = useMemo(() => {
+    return productionManager.getProduction();
+  }, [productionManager]);
+
+  const balance = useMemo(() => {
+    return productionManager.balance(currentTick);
+  }, [productionManager, production]);
+
+  const netRate = useMemo(() => {
+    return productionManager.netRate()[1];
+  }, [productionManager, production]);
 
   return (
     <div className={`flex relative group items-center text-sm border rounded px-2 p-1`}>
@@ -29,11 +41,11 @@ export const ResourceChip = ({
       />
       <div className="flex space-x-3 items-center justify-center">
         <div className="font-bold">{findResourceById(resourceId)?.trait}</div>
-        <div>{currencyFormat(balance.balance ? Number(balance.balance) : 0, 2)}</div>
-        {rate && (
-          <div className={Number(rate) < 0 ? "text-red" : "text-green"}>
-            {parseFloat(rate.toString()) < 0 ? "" : "+"}
-            {currencyFormat(rate, 2)}
+        <div>{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
+        {netRate && (
+          <div className={Number(netRate) < 0 ? "text-red" : "text-green"}>
+            {parseFloat(netRate.toString()) < 0 ? "" : "+"}
+            {currencyFormat(netRate, 2)}
           </div>
         )}
       </div>

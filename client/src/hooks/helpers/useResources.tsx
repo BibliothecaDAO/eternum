@@ -7,7 +7,7 @@ import { type BigNumberish } from "starknet";
 import { type Resource } from "@bibliothecadao/eternum";
 import { EventType, useNotificationsStore } from "../store/useNotificationsStore";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useBlockchainStore from "../store/useBlockchainStore";
 
 export function useResources() {
@@ -272,3 +272,15 @@ export function useResourceBalance() {
     getProductionManager,
   };
 }
+
+export const useProductionManager = (entityId: bigint, resourceId: number) => {
+  const {
+    setup: {
+      components: { Resource, Production },
+    },
+  } = useDojo();
+
+  return useMemo(() => {
+    return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+  }, [entityId, resourceId]);
+};

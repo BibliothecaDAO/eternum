@@ -7,7 +7,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: bigint | undefined
     return <div>Entity not found</div>;
   }
 
-  const resourceElements = useMemo(() => {
+  const resourceElements = () => {
     return Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
       const resources = resourceIds.map((resourceId) => {
         return <ResourceChip key={resourceId} resourceId={resourceId} entityId={entityId} />;
@@ -21,7 +21,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: bigint | undefined
         </div>
       );
     });
-  }, [entityId]);
+  };
 
-  return <div>{resourceElements}</div>;
+  return <div>{resourceElements()}</div>;
 };
