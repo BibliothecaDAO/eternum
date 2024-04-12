@@ -37,6 +37,7 @@ import { Military } from "@/ui/modules/military/Military";
 import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
 import { Trading } from "../trade/Trading";
 import { Construction } from "../construction/Construction";
+import { useHexPosition } from "@/hooks/helpers/useHexPosition";
 
 export const LeftNavigationModule = () => {
   const { togglePopup, closeAllPopups, openAllPopups, isPopupOpen } = useUIStore();
@@ -45,7 +46,9 @@ export const LeftNavigationModule = () => {
   const { moveCameraToRealm } = useUIStore();
 
   const { realmEntityId } = useRealmStore();
-  const { realm } = useGetRealm(realmEntityId);
+
+  // this could be moved up a layer
+  const { realm } = useHexPosition();
 
   const navigation = [
     {
@@ -171,6 +174,10 @@ export const LeftNavigationModule = () => {
     },
   ];
 
+  if (!realmEntityId) {
+    return null;
+  }
+
   return (
     <>
       <div className=" p-2">
@@ -206,7 +213,7 @@ export const LeftNavigationModule = () => {
       <Leaderboard />
       <HyperStructures />
       <SettingsWindow />
-      <Resources />
+      <Resources entityId={realmEntityId} />
       <Military />
       <EntityDetails />
       <Trading />

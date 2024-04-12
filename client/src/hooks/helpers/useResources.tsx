@@ -7,7 +7,7 @@ import { type BigNumberish } from "starknet";
 import { type Resource } from "@bibliothecadao/eternum";
 import { EventType, useNotificationsStore } from "../store/useNotificationsStore";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useBlockchainStore from "../store/useBlockchainStore";
 
 export function useResources() {
@@ -246,9 +246,9 @@ export function useResourceBalance() {
     return { balance: productionManager.balance(currentTick), resourceId };
   };
 
-  const getProductionManager = (entityId: bigint, resourceId: number): ProductionManager => {
+  const getProductionManager = useCallback((entityId: bigint, resourceId: number): ProductionManager => {
     return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
-  };
+  }, []);
 
   // We should deprecate this hook and use getBalance instead - too many useEffects
   const useBalance = (entityId: bigint, resourceId: number) => {
@@ -260,7 +260,7 @@ export function useResourceBalance() {
     useEffect(() => {
       const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
       setResourceBalance({ amount: productionManager.balance(currentTick), resourceId });
-    }, [resource, production]);
+    }, []);
 
     return resourceBalance;
   };

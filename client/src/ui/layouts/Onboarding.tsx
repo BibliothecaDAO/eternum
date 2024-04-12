@@ -13,17 +13,14 @@ import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import Avatar from "../elements/Avatar";
-import useRealmStore from "../../hooks/store/useRealmStore";
-import realmsNames from "../../data/geodata/realms.json";
 import { useLocation } from "wouter";
-import { orderNameDict } from "@bibliothecadao/eternum";
-import { getRealm } from "../utils/realms";
-import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
-import { useEntityQuery } from "@dojoengine/react";
 import { useRealm } from "../../hooks/helpers/useRealm";
-import { RealmBubble } from "../components/cityview/RealmListBoxes";
+import { useEntities } from "@/hooks/helpers/useEntities";
 
 export const Onboarding = () => {
+  const { playerRealms } = useEntities();
+  const [_location, setLocation] = useLocation();
+
   const [currentStep, setCurrentStep] = useState(1);
 
   const skipOrderSelection = () => setCurrentStep(currentStep + 2);
@@ -31,65 +28,7 @@ export const Onboarding = () => {
   const prevStep = () => setCurrentStep(currentStep - 1);
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
-  const step_headings = [
-    <span>
-      The Age Of Exploration <br /> has <span className="text-white">begun</span>....
-    </span>,
-    "Create Your Leader ",
-    "Choose Your Allegiance",
-    "",
-  ];
-
-  const {
-    account: { account },
-    setup: {
-      components: { Realm, Owner },
-    },
-  } = useDojo();
-
-  const [_yourRealms, setYourRealms] = useState<RealmBubble[]>([]);
-
-  const { realmId, realmEntityIds, setRealmEntityIds } = useRealmStore();
-
-  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
-
-  // set realm entity ids everytime the entity ids change
-  useEffect(() => {
-    let realmEntityIds = entityIds
-      .map((id) => {
-        const realm = getComponentValue(Realm, id);
-        if (realm) {
-          return { realmEntityId: realm.entity_id, realmId: realm?.realm_id };
-        }
-      })
-      .filter(Boolean)
-      .sort((a, b) => Number(a!.realmId) - Number(b!.realmId)) as { realmEntityId: bigint; realmId: bigint }[];
-    setRealmEntityIds(realmEntityIds);
-  }, [entityIds]);
-
-  const [_location, setLocation] = useLocation();
-  const { moveCameraToWorldMapView } = useUIStore((state) => state);
-
-  const realm = useMemo(() => (realmId ? getRealm(realmId) : undefined), [realmId]);
-
-  const realms = useMemo(() => {
-    const fetchedYourRealms: RealmBubble[] = [];
-    realmEntityIds.forEach(({ realmEntityId, realmId }) => {
-      const realm = getRealm(realmId);
-      if (!realm) return;
-      const name = realmsNames.features[Number(realm.realmId) - 1].name;
-      fetchedYourRealms.push({
-        id: realmEntityId,
-        realmId: realm.realmId,
-        name,
-        order: orderNameDict[realm.order],
-        position: realm.position,
-      });
-    });
-    return fetchedYourRealms;
-  }, [realmEntityIds, realm]);
-
-  const canSettle = realmEntityIds.length < MAX_REALMS;
+  const canSettle = playerRealms().length < MAX_REALMS;
 
   const handleNamingNext = useCallback(() => {
     if (canSettle) {
@@ -106,9 +45,14 @@ export const Onboarding = () => {
     }
   }, [canSettle, currentStep]);
 
-  useEffect(() => {
-    setYourRealms(realms);
-  }, [realms]);
+  const step_headings = [
+    <span>
+      The Age Of Exploration <br /> has <span className="text-white">begun</span>....
+    </span>,
+    "Create Your Leader ",
+    "Choose Your Allegiance",
+    "",
+  ];
 
   return (
     <div className="relative h-screen w-screen">
@@ -135,7 +79,7 @@ export const Onboarding = () => {
                 variant="outline"
                 onClick={() => {
                   showBlankOverlay(false);
-                  setLocation(`/hex?col=${realms[0].position.x}&row=${realms[0].position.y}`);
+                  setLocation(`/hex?col=${playerRealms()[0]?.position.x}&row=${playerRealms()[0]?.position.y}`);
                 }}
               >
                 begin

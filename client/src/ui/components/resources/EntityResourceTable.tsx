@@ -1,35 +1,27 @@
 import { RESOURCE_TIERS } from "@bibliothecadao/eternum";
 import { ResourceChip } from "./ResourceChip";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { useMemo } from "react";
 
-export const EntityResourceTable = ({ entityId }: { entityId: bigint }) => {
-  const { getBalance, getProductionManager } = useResourceBalance();
-  return (
-    <div>
-      {Object.entries(RESOURCE_TIERS).map(([tier, resourceIds], index) => {
-        return (
-          <div className="my-3 px-3" key={index}>
-            <h5>{tier}</h5>
-            <hr />
-            <div className="flex my-3 flex-wrap">
-              {resourceIds.map((resourceId) => {
-                const balance = getBalance(entityId, resourceId);
+export const EntityResourceTable = ({ entityId }: { entityId: bigint | undefined }) => {
+  if (!entityId) {
+    return <div>Entity not found</div>;
+  }
 
-                const [active, rate] = getProductionManager(entityId, resourceId).netRate();
+  const resourceElements = useMemo(() => {
+    return Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
+      const resources = resourceIds.map((resourceId) => {
+        return <ResourceChip key={resourceId} resourceId={resourceId} entityId={entityId} />;
+      });
 
-                return (
-                  <ResourceChip
-                    key={resourceId}
-                    balance={balance.balance}
-                    resourceId={resourceId}
-                    rate={rate.toString() || ""}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+      return (
+        <div className="my-3 px-3" key={tier}>
+          <h5>{tier}</h5>
+          <hr />
+          <div className="flex my-3 flex-wrap">{resources}</div>
+        </div>
+      );
+    });
+  }, [entityId]);
+
+  return <div>{resourceElements}</div>;
 };

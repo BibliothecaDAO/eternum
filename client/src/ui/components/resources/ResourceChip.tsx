@@ -1,22 +1,23 @@
 import { findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
-import { useDojo } from "../../../hooks/context/DojoContext";
+
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { currencyFormat } from "../../utils/utils";
-import { useComponentValue } from "@dojoengine/react";
-import { Entity } from "@dojoengine/recs";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 
 export const ResourceChip = ({
   isLabor = false,
   resourceId,
-  balance,
-  rate,
+  entityId,
 }: {
   isLabor?: boolean;
   resourceId: number;
-  balance: number;
-
-  rate?: string;
+  entityId: bigint;
 }) => {
+  const { getBalance, getProductionManager } = useResourceBalance();
+
+  const balance = getBalance(entityId, resourceId);
+  const [_, rate] = getProductionManager(entityId, resourceId).netRate();
+
   return (
     <div className={`flex relative group items-center text-sm border rounded px-2 p-1`}>
       <ResourceIcon
@@ -28,10 +29,10 @@ export const ResourceChip = ({
       />
       <div className="flex space-x-3 items-center justify-center">
         <div className="font-bold">{findResourceById(resourceId)?.trait}</div>
-        <div>{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
+        <div>{currencyFormat(balance.balance ? Number(balance.balance) : 0, 2)}</div>
         {rate && (
           <div className={Number(rate) < 0 ? "text-red" : "text-green"}>
-            {parseFloat(rate) < 0 ? "" : "+"}
+            {parseFloat(rate.toString()) < 0 ? "" : "+"}
             {currencyFormat(rate, 2)}
           </div>
         )}
