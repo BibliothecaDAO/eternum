@@ -174,7 +174,7 @@ export const LeftNavigationModule = () => {
     },
   ];
 
-  if (!realmEntityId) {
+  if (realmEntityId === undefined) {
     return null;
   }
 
