@@ -24,7 +24,7 @@ export const TopMiddleNavigation = () => {
   const offset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="flex bg-brown rounded-b-3xl border-x-2 border-b border-gold pb-3 w-[600px] text-gold px-4 justify-between">
+    <div className="flex bg-brown rounded-b-3xl border-x-2 border-b border-gold p-3 w-[600px] text-gold px-4 justify-between">
       {/* <div
         className="h-8 bg-gold rounded text-brown text-center flex justify-center"
         style={{ width: `${progress}%` }}
@@ -36,7 +36,7 @@ export const TopMiddleNavigation = () => {
 
       {/* <div className="self-center text-center w-full">{progress.toFixed()}%</div> */}
 
-      <div className="absolute right-1/2 top-3">
+      <div className="absolute right-1/2 top-12">
         {" "}
         <svg className="progress-circle" width="50" height="50">
           <circle className="progress-circle__background" cx="25" cy="25" r={radius} fill="transparent" />
@@ -52,9 +52,9 @@ export const TopMiddleNavigation = () => {
         </svg>
       </div>
 
-      <div className="flex space-x-2 self-center text-xs">
-        <div className="">x: {colRow?.col ?? 0}</div>
-        <div className="">y: {colRow?.row ?? 0}</div>
+      <div className="flex flex-col self-center">
+        <div className="">x: {colRow?.col.toLocaleString() ?? 0}</div>
+        <div className="">y: {colRow?.row.toLocaleString() ?? 0}</div>
       </div>
     </div>
   );

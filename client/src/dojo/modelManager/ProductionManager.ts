@@ -29,9 +29,9 @@ export class ProductionManager {
     return getComponentValue(this.resourceModel, getEntityIdFromKeys([this.entityId, this.resourceId]));
   }
 
-  public isActive() {
+  public isActive(): boolean {
     const production = this.getProduction();
-    return production && production.building_count > 0;
+    return production !== undefined && production.building_count > 0;
   }
 
   public bonus() {
@@ -48,17 +48,10 @@ export class ProductionManager {
 
   public netRate(): [boolean, number] {
     const production = this.getProduction();
-
     if (!production) return [false, 0];
-    let productionRate = this.actualProductionRate();
-    // Convert bigint to number before subtraction to get a signed result
-    let difference = Number(productionRate) - Number(production.consumption_rate);
-
-    if (difference > 0) {
-      return [true, difference];
-    } else {
-      return [false, difference];
-    }
+    const productionRate = this.actualProductionRate();
+    const difference = Number(productionRate) - Number(production.consumption_rate);
+    return [difference > 0, difference];
   }
 
   public balanceExhaustionTick(currentTick: number): number {

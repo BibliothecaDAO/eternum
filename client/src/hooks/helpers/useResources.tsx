@@ -246,9 +246,9 @@ export function useResourceBalance() {
     return { balance: productionManager.balance(currentTick), resourceId };
   };
 
-  const getProductionManager = useCallback((entityId: bigint, resourceId: number): ProductionManager => {
-    return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
-  }, []);
+  // const getProductionManager = useMemo(() => {
+  //   return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+  // }, [entityId, resourceId]);
 
   // We should deprecate this hook and use getBalance instead - too many useEffects
   const useBalance = (entityId: bigint, resourceId: number) => {
@@ -269,7 +269,7 @@ export function useResourceBalance() {
     getFoodResources,
     getBalance,
     useBalance,
-    getProductionManager,
+    // getProductionManager,
   };
 }
 

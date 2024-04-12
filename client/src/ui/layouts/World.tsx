@@ -45,7 +45,7 @@ export const World = () => {
             y: e.clientY,
           })
         }
-        className="fixed antialiased top-0 left-0 z-0 w-screen h-screen p-2 overflow-hidden"
+        className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden"
       >
         <>
           <BlankOverlayContainer>
