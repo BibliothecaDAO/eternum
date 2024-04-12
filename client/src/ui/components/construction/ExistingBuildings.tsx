@@ -28,6 +28,15 @@ export const ExistingBuildings = () => {
     "/models/buildings/archer_range.glb",
     "/models/buildings/stable.glb",
   ]);
+  useEffect(() => {
+    models.forEach((model) => {
+      model.scene.traverse((child: any) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+        }
+      });
+    });
+  }, [models]);
 
   const builtBuildings = useEntityQuery([
     Has(Building),
@@ -88,5 +97,5 @@ export const BuiltBuilding = ({
     }, Math.random() * 1000);
   }, [actions]);
 
-  return <primitive scale={3} object={model} position={[x, 2.33, -y]} />;
+  return <primitive dropShadow scale={3} object={model} position={[x, 2.33, -y]} />;
 };

@@ -4,8 +4,8 @@ import { HexceptionViewScene } from "./HexceptionViewScene";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
-import { AdaptiveDpr, useHelper, Clouds, Cloud, Bvh } from "@react-three/drei";
-import { Suspense, useMemo, useRef } from "react";
+import { AdaptiveDpr, useHelper, Clouds, Cloud, Bvh, BakeShadows, CameraShake } from "@react-three/drei";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast } from "@react-three/postprocessing";
 // @ts-ignore
 import { useControls } from "leva";
@@ -13,6 +13,7 @@ import { CameraControls } from "../../utils/Camera";
 import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
 import FPSLimiter from "../../utils/FPSLimiter";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
 
 export const Camera = () => {
   const cameraPosition = useUIStore((state) => state.cameraPosition);
@@ -20,53 +21,6 @@ export const Camera = () => {
   const cameraTarget = useUIStore((state) => state.cameraTarget);
 
   return <CameraControls position={cameraPosition} target={cameraTarget} />;
-};
-
-export const DirectionalLightAndHelper = ({ locationType }: { locationType: string }) => {
-  const dLightRef = useRef<any>();
-  if (import.meta.env.DEV) {
-    useHelper(dLightRef, THREE.DirectionalLightHelper, 50, "hotpink");
-  }
-
-  const { lightPosition, bias, intensity } = useControls({
-    lightPosition: {
-      value: { x: 0, y: 15, z: 50 }, // Adjust y value to position the light above
-      step: 0.01,
-    },
-    intensity: {
-      value: 1.75,
-      min: 0,
-      max: 10,
-      step: 0.01,
-    },
-    bias: {
-      value: -0.002,
-      min: -0.05,
-      max: 0.05,
-      step: 0.001,
-    },
-  });
-
-  const yPos = useMemo(() => {
-    return locationType === "map" ? 100 : 300;
-  }, [locationType]);
-
-  return (
-    <directionalLight
-      ref={dLightRef}
-      castShadow
-      shadow-mapSize={[4096, 4096]}
-      shadow-camera-far={3000}
-      shadow-camera-left={-3000}
-      shadow-camera-right={3000}
-      shadow-camera-top={3000}
-      shadow-camera-bottom={-3000}
-      shadow-bias={bias}
-      position={[lightPosition.x, lightPosition.y, lightPosition.z]}
-      color={"#fff"}
-      intensity={intensity}
-    ></directionalLight>
-  );
 };
 
 export const MainScene = () => {
@@ -122,43 +76,34 @@ export const MainScene = () => {
     hexceptionCloudsVolume: { value: 200, min: 0, max: 1000, step: 1, label: "Hexception Clouds Volume" },
   });
 
-  const cloudsConfig = useMemo(
-    () =>
-      locationType === "map"
-        ? {
-            position: mapCloudsPosition,
-            opacity: mapCloudsOpacity,
-            bounds: mapCloudsBounds,
-            volume: mapCloudsVolume,
-          }
-        : {
-            position: hexceptionCloudsPosition,
-            opacity: hexceptionCloudsOpacity,
-            bounds: hexceptionCloudsBounds,
-            volume: hexceptionCloudsVolume,
-          },
-    [
-      locationType,
-      mapCloudsPosition,
-      mapCloudsOpacity,
-      mapCloudsBounds,
-      mapCloudsVolume,
-      hexceptionCloudsPosition,
-      hexceptionCloudsOpacity,
-      hexceptionCloudsBounds,
-      hexceptionCloudsVolume,
-    ],
-  );
-
-  const { ambientColor, ambientIntensity } = useControls("Ambient Light", {
+  const { ambientColor, ambientIntensityHexception, ambientIntensityMap } = useControls("Ambient Light", {
     ambientColor: { value: "#fff", label: "Color" },
-    ambientIntensity: { value: 0.36, min: 0, max: 1, step: 0.01 },
+    ambientIntensityHexception: { value: 0.23, min: 0, max: 1, step: 0.01 },
+    ambientIntensityMap: { value: 0.75, min: 0, max: 1, step: 0.01 },
   });
+
+  const ambientIntensity = useMemo(() => {
+    return locationType === "map" ? ambientIntensityMap : ambientIntensityHexception;
+  }, [ambientIntensityHexception, ambientIntensityMap, locationType]);
 
   const { brightness, contrast } = useControls("BrightnessContrast", {
-    brightness: { value: 0.18, min: 0, max: 1, step: 0.01 },
-    contrast: { value: 0.41, min: 0, max: 1, step: 0.01 },
+    brightness: { value: 0.22, min: 0, max: 1, step: 0.01 },
+    contrast: { value: 0.48, min: 0, max: 1, step: 0.01 },
   });
+
+  const shakeConfig = useMemo(
+    () => ({
+      maxYaw: 0.01, // Max amount camera can yaw in either direction
+      maxPitch: 0, // Max amount camera can pitch in either direction
+      maxRoll: 0, // Max amount camera can roll in either direction
+      yawFrequency: 0.04, // Frequency of the the yaw rotation
+      pitchFrequency: 0, // Frequency of the pitch rotation
+      rollFrequency: 0, // Frequency of the roll rotation
+      intensity: 1, // initial intensity of the shake
+      controls: undefined, // if using orbit controls, pass a ref here so we can update the rotation
+    }),
+    [],
+  );
 
   return (
     <Canvas
@@ -183,7 +128,7 @@ export const MainScene = () => {
       }}
       shadows={{
         enabled: true,
-        type: THREE.PCFSoftShadowMap,
+        type: 2,
       }}
       gl={{
         powerPreference: "high-performance",
@@ -197,47 +142,23 @@ export const MainScene = () => {
       <FPSLimiter>
         <ambientLight color={ambientColor} intensity={ambientIntensity} />
         <Camera />
-        <DirectionalLightAndHelper locationType={locationType} />
         <Bvh firstHitOnly>
           <Suspense fallback={null}>
             <Switch location={locationType}>
               <Route path="map">
+                <BakeShadows />
                 <WorldMapScene />
               </Route>
               <Route path="hexception">
-                {/* <CameraShake {...shakeConfig} /> */}
+                <CameraShake {...shakeConfig} />
                 <HexceptionViewScene />
-                <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
-                  <Cloud
-                    concentrate="random"
-                    seed={7331}
-                    speed={0.06}
-                    segments={100}
-                    castShadow={true}
-                    opacity={cloudsConfig.opacity}
-                    bounds={cloudsConfig.bounds as any}
-                    volume={cloudsConfig.volume}
-                    color="white"
-                  />
-                  <Cloud
-                    concentrate="random"
-                    seed={1337}
-                    castShadow={true}
-                    speed={0.03}
-                    segments={100}
-                    opacity={cloudsConfig.opacity}
-                    bounds={cloudsConfig.bounds as any}
-                    volume={cloudsConfig.volume}
-                    color="white"
-                  />
-                </Clouds>
               </Route>
             </Switch>
           </Suspense>
         </Bvh>
         <EffectComposer multisampling={0}>
           <BrightnessContrast brightness={brightness} contrast={contrast} />
-          <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />
+          <Bloom luminanceThreshold={0.9} intensity={0.1} mipmapBlur />
           <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />
           <SMAA />
         </EffectComposer>

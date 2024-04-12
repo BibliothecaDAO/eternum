@@ -1,19 +1,36 @@
 import clsx from "clsx";
 import useUIStore from "../../hooks/store/useUIStore";
+import { useEffect, useRef } from "react";
+import { throttle } from "lodash";
 
 type TooltipProps = {
   className?: string;
 };
 
 export const Tooltip = ({ className }: TooltipProps) => {
-  const mouseCoords = useUIStore((state) => state.mouseCoords);
+  const ref = useRef<HTMLDivElement>(null);
   const tooltip = useUIStore((state) => state.tooltip);
   const position = tooltip?.position ? tooltip.position : "top";
+
+  useEffect(() => {
+    const mouseMoveHandler = throttle((e: MouseEvent) => {
+      if (ref.current) {
+        ref.current.style.left = `${e.clientX}px`;
+        ref.current.style.top = `${e.clientY}px`;
+      }
+    }, 10); // Throttling the event handler to execute once every 100ms
+    document.addEventListener("mousemove", mouseMoveHandler);
+    return () => {
+      document.removeEventListener("mousemove", mouseMoveHandler);
+      mouseMoveHandler.cancel(); // Cancel any trailing invocation of the throttled function
+    };
+  }, []);
 
   return (
     <>
       {tooltip && tooltip.content && (
         <div
+          ref={ref}
           className={clsx(
             "fixed z-[100] inline-flex opacity-90 text-xxs -translate-x-1/2 p-2 bg-black rounded-xl flex-col justify-start items-center text-white",
             position == "top" && "-translate-y-[150%]",
@@ -21,10 +38,6 @@ export const Tooltip = ({ className }: TooltipProps) => {
             position == "left" && "-translate-x-[110%] -translate-y-1/2",
             className,
           )}
-          style={{
-            left: `${mouseCoords.x || -500}px`,
-            top: `${mouseCoords.y || -500}px`,
-          }}
         >
           {tooltip.content}
           <svg
