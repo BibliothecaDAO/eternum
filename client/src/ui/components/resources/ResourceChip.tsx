@@ -31,23 +31,27 @@ export const ResourceChip = ({
   }, [productionManager, production]);
 
   return (
-    <div className={`flex relative group items-center text-sm border rounded px-2 p-1`}>
+    <div className={`flex relative group items-center text-sm border rounded px-2 p-1 hover:bg-gold/20 `}>
       <ResourceIcon
         isLabor={isLabor}
         withTooltip={false}
         resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}
-        size="md"
-        className="mr-1"
+        size="sm"
+        className="mr-3 self-center"
       />
-      <div className="flex space-x-3 items-center justify-center">
-        <div className="font-bold">{findResourceById(resourceId)?.trait}</div>
-        <div>{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
-        {netRate && (
-          <div className={Number(netRate) < 0 ? "text-red" : "text-green"}>
-            {parseFloat(netRate.toString()) < 0 ? "" : "+"}
-            {currencyFormat(netRate, 2)}
-          </div>
-        )}
+      <div className="flex flex-wrap  ">
+        <div className="text-xs font-bold w-full">{findResourceById(resourceId)?.trait}</div>
+        <div className="flex">
+          <div className=" text-lg self-center">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
+          {netRate ? (
+            <div className={`${Number(netRate) < 0 ? "text-light-red" : "text-green"} self-center pl-2`}>
+              {parseFloat(netRate.toString()) < 0 ? "" : "+"}
+              {currencyFormat(netRate, 2)}
+            </div>
+          ) : (
+            <div className="self-center ml-2"></div>
+          )}
+        </div>
       </div>
     </div>
   );
