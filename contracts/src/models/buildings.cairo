@@ -279,6 +279,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                     world,
                     sign
                 );
+
+            set!(world, (building_production));
         }
     }
 
@@ -320,18 +322,18 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
     fn _update_bonus_received_from(
         self: @Building,
-        ref production: Production,
+        ref self_production: Production,
         inner_coord: Coord,
         world: IWorldDispatcher,
         sign: bool
     ) {
         let building_at_coord: Building = get!(
             world, ((*self).outer_col, (*self).outer_row, inner_coord.x, inner_coord.y), Building
-        );
+        );        
         if sign {
-            production.increase_boost_percentage(building_at_coord.production_multiplier());
+            self_production.increase_boost_percentage(building_at_coord.production_multiplier());
         } else {
-            production.decrease_boost_percentage(building_at_coord.production_multiplier());
+            self_production.decrease_boost_percentage(building_at_coord.production_multiplier());
         }
     }
 
@@ -342,7 +344,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             world, (self.outer_col, self.outer_row, inner_coord.x, inner_coord.y), Building
         );
         if building_at_coord.is_resource_producer() {
-            let produced_resource_type = self.produced_resource();
+            let produced_resource_type = building_at_coord.produced_resource();
             let mut production: Production = get!(
                 world, (self.outer_entity_id, produced_resource_type), Production
             );
