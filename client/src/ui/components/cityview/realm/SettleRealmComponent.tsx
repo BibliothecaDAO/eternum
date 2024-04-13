@@ -12,7 +12,7 @@ import clsx from "clsx";
 import { order_statments } from "../../../../data/orders";
 import realmsHexPositions from "../../../../data/geodata/hex/realmHexPositions.json";
 
-export const MAX_REALMS = 5;
+export const MAX_REALMS = 3;
 
 export const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);

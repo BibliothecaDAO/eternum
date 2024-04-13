@@ -24,7 +24,7 @@ export const RealmBadge = ({ active, realm, className, ...props }: RealmBadgePro
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className={clsx(
-        "flex h-8 p-2 w-auto transition-all duration-200 items-center text-xs overflow-hidden text-white border rounded-[10px] cursor-pointer border-gold bg-brown whitespace-nowrap",
+        "flex h-12 px-4 w-auto transition-all duration-200 items-center  overflow-hidden text-white border rounded-[10px] cursor-pointer bg-brown whitespace-nowrap",
         hoveredOrActive ? "max-w-[150px] border-white text-white" : "max-w-[40px]",
         active && `bg-order-${realm.order}`,
         className,

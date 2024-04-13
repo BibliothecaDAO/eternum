@@ -214,8 +214,9 @@ export const LeftNavigationModule = () => {
 
   return (
     <>
-      <div className=" px-4">
+      <div className="">
         <CircleButton
+          image={BuildingThumbs.leaderboard}
           onClick={() => {
             if (location !== "/map") {
               setIsLoadingScreenEnabled(true);
@@ -227,17 +228,17 @@ export const LeftNavigationModule = () => {
               moveCameraToRealm(Number(realm?.realmId));
             }
           }}
-          size="md"
+          size="xl"
         >
           <WorldIcon className="fill-gold w-7" />
         </CircleButton>
       </div>
-      <div className="flex flex-col ml-1 pr-2 rounded-r-3xl  space-y-2 py-2">
+      <div className="flex flex-col py-2">
         {navigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
       </div>
-      <div className="flex flex-col rounded-r-3xl space-y-2 py-2 px-5">
+      <div className="flex flex-col rounded-r-3xl space-y-2 py-2 px-4">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}

@@ -7,6 +7,7 @@ import { TIME_PER_TICK } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 
 export const TopMiddleNavigation = () => {
+  const { hexPosition } = useQuery();
   const { highlightPositions } = useUIStore();
   const { realmId } = useRealmStore();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -24,10 +25,8 @@ export const TopMiddleNavigation = () => {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (progress / 100) * circumference;
 
-  const { hexPosition } = useQuery();
-
   return (
-    <div className="flex bg-brown/70 rounded-b-3xl   p-3 w-[600px] text-gold px-4 justify-between">
+    <div className="flex bg-black/70 rounded-b  p-3 w-[600px] text-gold px-4 justify-between border-gold/50 border-b-2">
       <div>
         <h3 className="self-center">{realmId ? getRealmNameById(realmId as any | "") : ""}</h3>
         <h6>{"0x...420"}</h6>
