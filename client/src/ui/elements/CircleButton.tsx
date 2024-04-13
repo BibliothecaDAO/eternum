@@ -10,6 +10,7 @@ type CircleButtonProps = {
   disabled?: boolean;
   active?: boolean;
   label?: string;
+  image?: string; // Added image prop
 } & React.ComponentPropsWithRef<"button">;
 
 const sizes = {
@@ -17,15 +18,24 @@ const sizes = {
   sm: "w-8 h-8",
   md: "w-10 h-10",
   lg: "w-12 h-12",
-  xl: "w-14 h-14",
+  xl: "w-16 h-16",
 };
 
-const CircleButton = ({ onClick, children, className, size, disabled, active, label, ...props }: CircleButtonProps) => {
+const CircleButton = ({
+  onClick,
+  children,
+  className,
+  size,
+  disabled,
+  active,
+  label,
+  image,
+  ...props
+}: CircleButtonProps) => {
   const { play: hoverClick } = useUiSounds(soundSelector.hoverClick);
-
   const setTooltip = useUIStore((state) => state.setTooltip);
-
   const { play: playClick } = useUiSounds(soundSelector.click);
+
   return (
     <button
       onMouseEnter={() => {
@@ -44,7 +54,7 @@ const CircleButton = ({ onClick, children, className, size, disabled, active, la
         }
       }}
       className={clsx(
-        "flex transition-all duration-150  border-gold border   cursor-pointer items-center justify-center   rounded-xl   shadow-black/50  fill-current text-gold hover:border-white/20",
+        "flex transition-all duration-150  cursor-pointer items-center justify-center rounded shadow-black/50 fill-current text-gold hover:border-white/20 hover:opacity-90 border-double border-4 border-black/40 shadow-2xl",
         className,
         sizes[size],
         { "opacity-50 cursor-not-allowed": disabled },
@@ -52,9 +62,13 @@ const CircleButton = ({ onClick, children, className, size, disabled, active, la
         { " ": !active },
       )}
       style={{
-        backgroundImage: active
+        backgroundImage: image
+          ? `url(${image})`
+          : active
           ? "radial-gradient(50% 50.00% at 50% 100%, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.00) 100%), linear-gradient(0deg, #4B413C 0%, #24130A 100%)"
           : "radial-gradient(50% 50.00% at 50% 0.00%, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.00) 100%), linear-gradient(180deg, #4B413C 0%, #24130A 100%)",
+        backgroundSize: "cover", // Ensure the image covers the button
+        backgroundPosition: "center", // Center the background image
       }}
       disabled={disabled}
       {...props}

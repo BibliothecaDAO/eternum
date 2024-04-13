@@ -39,6 +39,17 @@ import { Trading } from "../trade/Trading";
 import { Construction } from "../construction/Construction";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
 
+export const BuildingThumbs = {
+  hex: "/images/buildings/thumb/question.png",
+  military: "/images/buildings/thumb/military.png",
+  construction: "/images/buildings/thumb/crane.png",
+  trade: "/images/buildings/thumb/trade.png",
+  resources: "/images/buildings/thumb/resources.png",
+  banks: "/images/buildings/thumb/banks.png",
+  hyperstructures: "/images/buildings/thumb/hyperstructure.png",
+  leaderboard: "/images/buildings/thumb/leaderboard.png",
+};
+
 export const LeftNavigationModule = () => {
   const { togglePopup, closeAllPopups, openAllPopups, isPopupOpen } = useUIStore();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
@@ -54,81 +65,104 @@ export const LeftNavigationModule = () => {
     {
       button: (
         <CircleButton
+          image={BuildingThumbs.hex}
           label={entityDetails}
           active={isPopupOpen(entityDetails)}
-          size="lg"
+          size="xl"
           onClick={() => togglePopup(entityDetails)}
         >
-          <Hex className="h-12 fill-current" />
-        </CircleButton>
-      ),
-    },
-    {
-      button: (
-        <CircleButton label={military} active={isPopupOpen(military)} size="lg" onClick={() => togglePopup(military)}>
-          <CrossSwords className="h-6 fill-current" />
+          {/* <Hex className="h-12 fill-current" /> */}
         </CircleButton>
       ),
     },
     {
       button: (
         <CircleButton
+          image={BuildingThumbs.military}
+          label={military}
+          active={isPopupOpen(military)}
+          size="xl"
+          onClick={() => togglePopup(military)}
+        >
+          {/* <CrossSwords className="h-6 fill-current" /> */}
+        </CircleButton>
+      ),
+    },
+    {
+      button: (
+        <CircleButton
+          image={BuildingThumbs.construction}
           label={construction}
           active={isPopupOpen(construction)}
-          size="lg"
+          size="xl"
           onClick={() => togglePopup(construction)}
         >
-          <City className="h-6 fill-current" />
-        </CircleButton>
-      ),
-    },
-    {
-      button: (
-        <CircleButton label={trade} active={isPopupOpen(trade)} size="lg" onClick={() => togglePopup(trade)}>
-          <Donkey className="w-9 fill-current" />
+          {/* <City className="h-6 fill-current" /> */}
         </CircleButton>
       ),
     },
     {
       button: (
         <CircleButton
+          image={BuildingThumbs.trade}
+          label={trade}
+          active={isPopupOpen(trade)}
+          size="xl"
+          onClick={() => togglePopup(trade)}
+        >
+          {/* <Donkey className="w-9 fill-current" /> */}
+        </CircleButton>
+      ),
+    },
+    {
+      button: (
+        <CircleButton
+          image={BuildingThumbs.resources}
           label={resources}
           active={isPopupOpen(resources)}
-          size="lg"
+          size="xl"
           onClick={() => togglePopup(resources)}
         >
-          <PickAxe className="w-6 stroke-current" />
-        </CircleButton>
-      ),
-    },
-    {
-      button: (
-        <CircleButton label={banks} active={isPopupOpen(banks)} size="lg" onClick={() => togglePopup(banks)}>
-          <Coin className="w-6 fill-current" />
+          {/* <PickAxe className="w-6 stroke-current" /> */}
         </CircleButton>
       ),
     },
     {
       button: (
         <CircleButton
+          image={BuildingThumbs.banks}
+          label={banks}
+          active={isPopupOpen(banks)}
+          size="xl"
+          onClick={() => togglePopup(banks)}
+        >
+          {/* <Coin className="w-6 fill-current" /> */}
+        </CircleButton>
+      ),
+    },
+    {
+      button: (
+        <CircleButton
+          image={BuildingThumbs.hyperstructures}
           label={hyperstructures}
           active={isPopupOpen(hyperstructures)}
-          size="lg"
+          size="xl"
           onClick={() => togglePopup(hyperstructures)}
         >
-          <Relic className="w-5 fill-current" />
+          {/* <Relic className="w-5 fill-current" /> */}
         </CircleButton>
       ),
     },
     {
       button: (
         <CircleButton
+          image={BuildingThumbs.leaderboard}
           label={leaderboard}
           active={isPopupOpen(leaderboard)}
-          size="lg"
+          size="xl"
           onClick={() => togglePopup(leaderboard)}
         >
-          <LeaderBoard className="w-6" />
+          {/* <LeaderBoard className="w-6" /> */}
         </CircleButton>
       ),
     },
@@ -180,8 +214,9 @@ export const LeftNavigationModule = () => {
 
   return (
     <>
-      <div className=" p-2">
+      <div className="">
         <CircleButton
+          image={BuildingThumbs.leaderboard}
           onClick={() => {
             if (location !== "/map") {
               setIsLoadingScreenEnabled(true);
@@ -193,17 +228,17 @@ export const LeftNavigationModule = () => {
               moveCameraToRealm(Number(realm?.realmId));
             }
           }}
-          size="md"
+          size="xl"
         >
           <WorldIcon className="fill-gold w-7" />
         </CircleButton>
       </div>
-      <div className="flex flex-col ml-1 pr-2 rounded-r-3xl  space-y-2 py-2">
+      <div className="flex flex-col py-2">
         {navigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
       </div>
-      <div className="flex flex-col rounded-r-3xl space-y-2 py-2 px-3">
+      <div className="flex flex-col rounded-r-3xl space-y-2 py-2 px-4">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}

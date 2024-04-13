@@ -23,40 +23,39 @@ export const BottomNavigation = () => {
     {
       name: "bar1",
       button: (
-        <CircleButton label="Realms" active={activeBar === "R"} size="lg" onClick={() => toggleBar("R")}>
-          <City className="w-6 fill-current" />
+        <CircleButton
+          image="/images/buildings/thumb/realm.png"
+          label="Realms"
+          active={activeBar === "R"}
+          size="xl"
+          onClick={() => toggleBar("R")}
+        >
+          {/* <City className="w-6 fill-current" /> */}
         </CircleButton>
       ),
     },
-    // {
-    //   name: "bar2",
-    //   button: (
-    //     <CircleButton active={activeBar === "B"} size="lg" onClick={() => toggleBar("B")}>
-    //       <City className="w-5 fill-current" />
-    //     </CircleButton>
-    //   ),
-    // },
     {
       name: "bar3",
       button: (
-        <CircleButton label="Armies" active={activeBar === "A"} size="lg" onClick={() => toggleBar("A")}>
-          <Shield className="w-5 fill-current" />
+        <CircleButton
+          image="/images/buildings/thumb/army.png"
+          label="Armies"
+          active={activeBar === "A"}
+          size="xl"
+          onClick={() => toggleBar("A")}
+        >
+          {/* <Shield className="w-5 fill-current" /> */}
         </CircleButton>
       ),
     },
   ];
 
   return (
-    <div className="flex bg-brown rounded-t-3xl border-x-2 border-t-2 border-gold py-3 w-[600px] justify-center flex-wrap h-24 relative">
+    <div className="flex  py-3 w-[600px] justify-center flex-wrap  relative">
       {/* <div className="absolute -left-16 top-8">
         <img className="w-32 h-32 rounded-full border-4 border-gold" src="/images/avatars/1.png" alt="" />
       </div> */}
 
-      <div className="w-full flex space-x-2 justify-start -mt-8 pl-24">
-        {navigation.map((item) => (
-          <div key={item.name}>{item.button}</div>
-        ))}
-      </div>
       <div className=" w-full ml-24 mr-4  h-full mt-4">
         <div
           className={`w-full transition-all duration-300 overflow-auto pb-2 ${
@@ -79,6 +78,11 @@ export const BottomNavigation = () => {
         >
           armies
         </div>
+      </div>
+      <div className="w-full flex space-x-2 justify-start  pl-24">
+        {navigation.map((item) => (
+          <div key={item.name}>{item.button}</div>
+        ))}
       </div>
     </div>
   );

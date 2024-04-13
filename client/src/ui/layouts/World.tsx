@@ -47,7 +47,7 @@ export const World = () => {
         </div>
       </TopContainer>
       <WorldPopups />
-      <BackgroundContainer className="border border-gold rounded-xl relative">
+      <BackgroundContainer className=" rounded-xl relative">
         <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-12 bg-gradient-to-b from-black/20 to-transparent opacity-90" />
         <div className="h-full w-full main-scene">
           <MainScene />

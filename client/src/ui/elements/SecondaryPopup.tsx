@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import Draggable from "react-draggable";
 import { ReactComponent as CloseIcon } from "@/assets/icons/common/cross-circle.svg";
 import Button from "./Button";
+import { motion } from "framer-motion";
 
 type FilterPopupProps = {
   children: React.ReactNode;
@@ -72,28 +73,32 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
   }, [loaded]);
 
   return (
-    <>
-      <div className="fixed top-0 left-0 z-10 popup text-gold ">
-        {loaded && (
-          <Draggable
-            grid={[50, 50]}
-            handle=".handle"
-            defaultPosition={position}
-            nodeRef={nodeRef}
-            onDrag={handleDrag}
-            onStop={handleStop}
+    <motion.div
+      className="flex justify-center popup text-gold"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
+    >
+      {loaded && (
+        <Draggable
+          grid={[50, 50]}
+          handle=".handle"
+          defaultPosition={position}
+          nodeRef={nodeRef}
+          onDrag={handleDrag}
+          onStop={handleStop}
+        >
+          <div
+            onClick={handleClick}
+            ref={nodeRef}
+            className={clsx("fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px] p-2 ", className)}
           >
-            <div
-              onClick={handleClick}
-              ref={nodeRef}
-              className={clsx("fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px] p-2 ", className)}
-            >
-              {children}
-            </div>
-          </Draggable>
-        )}
-      </div>
-    </>
+            {children}
+          </div>
+        </Draggable>
+      )}
+    </motion.div>
   );
 };
 
@@ -108,7 +113,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      " items-center relative cursor-move -mb-[1px] z-30 p-2 rounded-t-xl border-t border-x  w-full whitespace-nowrap handle flex justify-between border-b uppercase bg-black/70 text-2xl hover:bg-black",
+      " items-center relative cursor-move -mb-[1px] z-30 p-2 rounded-t border-t border-x border-gold/50  w-full whitespace-nowrap handle flex justify-between border-b uppercase bg-black/90 text-2xl hover:bg-black ",
       className,
     )}
   >
@@ -163,7 +168,7 @@ SecondaryPopup.Body = ({
         width ? "" : "min-w-[438px]",
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
-        `relative z-10 bg-gray border flex flex-col border-gold rounded-tr-[4px] rounded-b-[4px] overflow-auto `,
+        `relative z-10 bg-gray border flex flex-col border-gold/50 rounded-tr-[4px] rounded-b-[4px] overflow-auto `,
       )}
       style={{ width: width ? width : "", height: height ? height : "", maxHeight: maxHeight ? `${maxHeight}px` : "" }}
     >

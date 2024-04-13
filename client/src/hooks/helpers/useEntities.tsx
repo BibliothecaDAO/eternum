@@ -2,6 +2,7 @@ import { useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../context/DojoContext";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { getPosition } from "@/ui/utils/utils";
+import { getRealmNameById } from "@/ui/utils/realms";
 
 export const useEntities = () => {
   const {
@@ -18,7 +19,7 @@ export const useEntities = () => {
       return playerRealms.map((id) => {
         const realm = getComponentValue(Realm, id);
         if (realm) {
-          return { ...realm, position: getPosition(realm.realm_id) };
+          return { ...realm, position: getPosition(realm.realm_id), name: getRealmNameById(realm.realm_id) };
         }
       });
     },

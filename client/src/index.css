@@ -91,9 +91,6 @@ body {
   pointer-events: auto;
 }
 
-h1 {
-  @apply text-4xl font-bold;
-}
 
 .track-name-container {
   width: 100%;
@@ -120,10 +117,6 @@ h1 {
   transform: rotate(-90deg); /* Rotate the circle to start from the top */
 }
 
-.progress-circle__background {
-  stroke: black; /* Color for the background circle */
-  stroke-width: 8;
-}
 
 .progress-circle__progress {
   @apply stroke-gold;
