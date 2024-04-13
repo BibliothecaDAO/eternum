@@ -147,6 +147,12 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
                 input_production
                     .increase_consumption_rate(ref input_resource, @tick, input_resource_amount);
+                let input_production_finish_tick
+                    = ProductionInputImpl::least_resource_finish_tick(@input_production, world);
+                input_production
+                    .set_end_tick(
+                            ref produced_resource, @tick, input_production_finish_tick);
+
                 count += 1;
 
                 set!(world, (input_production, input_resource));
@@ -203,6 +209,11 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 );
                 input_production
                     .decrease_consumption_rate(ref input_resource, @tick, input_resource_amount);
+                let input_production_finish_tick
+                    = ProductionInputImpl::least_resource_finish_tick(@input_production, world);
+                input_production
+                    .set_end_tick(
+                            ref produced_resource, @tick, input_production_finish_tick);
 
                 count += 1;
 

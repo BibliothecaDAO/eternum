@@ -92,14 +92,7 @@ export class ProductionManager {
 
   public depletionDuration(currentTick: number): number {
     const production = this.getProduction();
-    if (!production) return 0;
-
-    if (production.end_tick > production.last_updated_tick) {
-      return Number(currentTick) - Number(production.last_updated_tick);
-    }
-
-    const exhaustionTick = production.end_tick + (production.last_updated_tick - production.end_tick);
-    return Number(currentTick) - Number(exhaustionTick);
+    return Number(currentTick) - Number(production?.last_updated_tick);
   }
 
   public balance(currentTick: number): number {
