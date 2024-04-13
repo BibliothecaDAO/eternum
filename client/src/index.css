@@ -120,10 +120,6 @@ h1 {
   transform: rotate(-90deg); /* Rotate the circle to start from the top */
 }
 
-.progress-circle__background {
-  stroke: black; /* Color for the background circle */
-  stroke-width: 8;
-}
 
 .progress-circle__progress {
   @apply stroke-gold;
