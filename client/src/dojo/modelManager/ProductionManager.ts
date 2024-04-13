@@ -36,9 +36,6 @@ export class ProductionManager {
 
   public bonus() {
     const production = this.getProduction();
-    if (production?.resource_type == 3) {
-      console.log("show production", { production });
-    }
     if (!production) return BigInt(0);
     return (production.production_rate * BigInt(production.building_count) * production.bonus_percent) / BigInt(10_000);
   }
