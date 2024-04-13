@@ -36,6 +36,9 @@ export class ProductionManager {
 
   public bonus() {
     const production = this.getProduction();
+    if (production?.resource_type == 3) {
+      console.log("show production", { production });
+    }
     if (!production) return BigInt(0);
     return (production.production_rate * BigInt(production.building_count) * production.bonus_percent) / BigInt(10_000);
   }
@@ -107,7 +110,12 @@ export class ProductionManager {
         return Number(resource?.balance || 0n) + this.productionDuration(currentTick) * rate;
       } else {
         // Negative net rate, decrease balance but not below zero
-        return Number(resource?.balance || 0n) - -this.depletionDuration(currentTick) * rate;
+        let balance = Number(resource?.balance || 0n) - -this.depletionDuration(currentTick) * rate;
+        if (balance < 0) {
+          return 0;
+        } else {
+          return balance;
+        }
       }
     } else {
       // No net rate change, return current balance
