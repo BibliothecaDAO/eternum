@@ -24,7 +24,7 @@ export const TopMiddleNavigation = () => {
   const offset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="flex bg-brown rounded-b-3xl border-x-2 border-b border-gold p-3 w-[600px] text-gold px-4 justify-between">
+    <div className="flex bg-brown/70 rounded-b-3xl   p-3 w-[600px] text-gold px-4 justify-between">
       {/* <div
         className="h-8 bg-gold rounded text-brown text-center flex justify-center"
         style={{ width: `${progress}%` }}

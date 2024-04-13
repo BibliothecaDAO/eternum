@@ -6,18 +6,14 @@ import { Tabs } from "@/ui/elements/tab";
 import { useMemo, useState } from "react";
 import { ArmyList } from "@/ui/components/military/ArmyList";
 import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
-
-// This would be All Entities that can create Troops
-const exampleEntities = [
-  { id: 1, name: "Stolsi" },
-  { id: 2, name: "Settlement 1" },
-  { id: 3, name: "Settlement 2" },
-];
+import { useEntities } from "@/hooks/helpers/useEntities";
 
 export const Military = () => {
   const { togglePopup } = useUIStore();
   const [selectedTab, setSelectedTab] = useState(0);
   const isOpen = useUIStore((state) => state.isPopupOpen(military));
+
+  const { playerRealms } = useEntities();
 
   const tabs = useMemo(
     () => [
@@ -29,7 +25,7 @@ export const Military = () => {
           </div>
         ),
         component: (
-          <EntityList list={exampleEntities} title="armies" panel={({ entity }) => <ArmyPanel entity={entity} />} />
+          <EntityList list={playerRealms()} title="armies" panel={({ entity }) => <ArmyPanel entity={entity} />} />
         ),
       },
       {
