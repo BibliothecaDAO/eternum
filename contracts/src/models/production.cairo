@@ -170,15 +170,8 @@ impl ProductionRateImpl of ProductionRateTrait {
     }
 
     fn depletion_duration(self: Production, tick: @TickConfig) -> u64 {
-        if self.end_tick > self.last_updated_tick {
-            return 0;
-        }
-
-        let exhaustion_tick 
-            = self.end_tick 
-                + (self.last_updated_tick - self.end_tick);
         let current_tick = (*tick).current();
-        return current_tick - exhaustion_tick;
+        return current_tick - self.last_updated_tick;
     }
 }
 
