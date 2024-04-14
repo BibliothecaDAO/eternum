@@ -16,7 +16,7 @@ export default {
         8: "8px",
       },
       colors: {
-        gold: "#E0AF65",
+        gold: "#F3C99F",
         crimson: "#89192D",
         brilliance: "#7DFFBA",
         orange: "#FE993C",

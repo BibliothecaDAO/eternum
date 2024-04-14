@@ -31,7 +31,9 @@ export const ResourceChip = ({
   }, [productionManager, production]);
 
   return (
-    <div className={`flex relative group items-center text-sm border rounded px-2 p-1 hover:bg-gold/20 `}>
+    <div
+      className={`flex relative group items-center text-sm border border-gold/50 rounded px-2 p-1 hover:bg-gold/20 `}
+    >
       <ResourceIcon
         isLabor={isLabor}
         withTooltip={false}
