@@ -15,8 +15,9 @@ type ButtonProps = {
 
 const STYLES = {
   baseStyle:
-    "inline-flex whitespace-nowrap cursor-pointer white transition-all duration-300 items-center justify-center p-2 text-xs font-medium rounded-md",
-  primary: "rounded-full py-1 bg-gold hover:bg-gold/50 focus:outline-none",
+    "inline-flex whitespace-nowrap cursor-pointer white transition-all duration-300 items-center justify-center p-2 text-xs font-medium text-gold uppercase",
+  primary:
+    "px-6 py-2 bg-gradient-to-r from-yellow-600 to-yellow-700  font-semibold text-lg uppercase tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-600 border-y-2 border-gold border-x hover:bg-gold hover:text-brown",
   default: "text-white/90 border border-transparent shadow-sm",
   enabledStyle: "bg-black/10 hover:bg-black/30 focus:outline-none",
   disabledStyle: "bg-gray-300 cursor-not-allowed !border-gray-gold !text-gray-gold",
@@ -25,7 +26,7 @@ const STYLES = {
   outline: "border border-gold !text-gold bg-transparent hover:bg-gold/10",
   danger: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
   secondary: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
-  loadingStyle: "relative w-6 h-6",
+  loadingStyle: "relative",
 };
 
 const SIZES = {
@@ -63,8 +64,8 @@ const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {isLoading ? (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-4 h-4 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin"></div>
+        <div className="absolute inset-0 flex items-center justify-center h-full">
+          <div className="w-4 h-4 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin "></div>
         </div>
       ) : (
         children

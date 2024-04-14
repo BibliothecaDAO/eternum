@@ -153,3 +153,6 @@ h6 {
   @apply text-sm sm:text-base md:text-lg font-thin ;
 }
 
+.border-gradient {
+  border-image: linear-gradient(to right, transparent, #F3C99F, transparent) 1;
+}

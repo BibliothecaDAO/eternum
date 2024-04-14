@@ -27,7 +27,7 @@ export const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-black/80 p-8 text-gold sharp-corners max-w-[800px] rounded border-2 border-gold backdrop-blur-lg ">
+      <div className="self-center bg-brown/80 p-8 text-gold sharp-corners max-w-[800px] rounded border-2 border-gold backdrop-blur-lg ">
         {children}
       </div>
     </motion.div>
@@ -46,7 +46,7 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
         </h2>
       </div>
       <div className="flex space-x-2 mt-8 justify-center">
-        <Button size="md" className="mx-auto" variant="outline" onClick={onNext}>
+        <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
           Choose your Leader
           <ArrowRight className="w-2 ml-2" />
         </Button>
@@ -164,24 +164,18 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
         {/* <Avatar src={`/images/avatars/${addressToNumber(account.address)}.png`} size="xxl" /> */}
         <div className="flex space-x-6 pt-4">
           <div>
-            <div className="text-white border-gold border text-xl rounded-lg p-2 w-full">
+            <div className=" border-gold border p-2 w-full">
               {loading ? (
                 <span>Loading...</span>
               ) : addressName ? (
                 <span>{addressName}</span>
               ) : (
                 <div className="flex w-full">
-                  <TextInput
-                    className="text-xl "
-                    placeholder="Your Name..."
-                    maxLength={12}
-                    value={inputName}
-                    onChange={setInputName}
-                  />
+                  <TextInput placeholder="Your Name..." maxLength={12} value={inputName} onChange={setInputName} />
                   <Button
                     isLoading={loading}
                     onClick={onSetName}
-                    variant="outline"
+                    variant="primary"
                     disabled={loading || inputName.length === 0}
                   >
                     Set Name
@@ -199,7 +193,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                 value={account.address}
                 onChange={select}
               />
-              <Button variant={"default"} onClick={create} disabled={isDeploying} isLoading={isDeploying}>
+              <Button variant={"primary"} onClick={create} disabled={isDeploying} isLoading={isDeploying}>
                 {isDeploying ? "" : "Create New"}
               </Button>
             </div>
@@ -258,7 +252,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
       </div>
       {
         <div className="flex space-x-2 mt-8 justify-center">
-          <Button size="md" className="mx-auto" variant="outline" onClick={onNext}>
+          <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
             <ArrowRight className="w-2" />
           </Button>
         </div>
@@ -290,8 +284,8 @@ export const StepThree = () => {
       </p>
       <div className="flex w-full justify-center">
         <Button
-          className="mx-auto"
-          variant="outline"
+          size="md"
+          variant="primary"
           onClick={() => {
             showBlankOverlay(false);
             setLocation(`/hex?col=${playerRealms()[0]?.position.x}&row=${playerRealms()[0]?.position.y}`);

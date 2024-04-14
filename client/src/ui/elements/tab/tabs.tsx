@@ -11,11 +11,11 @@ import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 export const VARIANTS: any = {
   default: {
     tab: {
-      base: "text-xs px-3 py-1 !outline-none border border-transparent transition-color duration-200 hover:bg-gold rounded-md space-x-1 hover:text-brown font-bold text-gold",
-      active: "    !border-gold",
+      base: "text-xs px-3 py-1 !outline-none border-y-2 border-transparent   transition-color duration-200 hover:bg-gold rounded space-x-1 hover:text-brown font-bold text-gold",
+      active: "    !border-gold border-gradient",
       inactive: "text-gray-gold",
     },
-    tabList: "flex w-full justify-center bg-gradient-to-t from-black to-[#151515]  p-2 border-y border-gold",
+    tabList: "flex w-full justify-center bg-gradient-to-t from-brown  p-2 ",
   },
   primary: {
     tab: {
@@ -31,7 +31,7 @@ export const VARIANTS: any = {
       active: "bg-gradient-to-r from-red-600 to-red-900 text-yellow-100 border-yellow-700",
       inactive: "bg-transparent text-gray-200",
     },
-    tabList: "flex p-1 space-x-2 border rounded-lg border-yellow-800/40",
+    tabList: "flex p-1 space-x-2 rounded-lg",
   },
 };
 

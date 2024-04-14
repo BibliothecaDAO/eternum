@@ -34,8 +34,8 @@ export const TopMiddleNavigation = () => {
 
   return (
     <div className="flex">
-      <div className="self-center text-center text-4xl px-4">{progress.toFixed()}%</div>
-      <div className="flex bg-brown/70 rounded-b  p-3 w-[600px] text-gold px-4 justify-between border-gold/50 border-b-2">
+      <div className="self-center text-center text-4xl px-4 text-gold">{progress.toFixed()}%</div>
+      <div className="flex bg-brown/70 rounded-b border-gradient  p-3 w-[600px] text-gold px-4 justify-between border-gold/50 border-b-2">
         <div>
           <h3 className="self-center">{realmId ? getRealmNameById(realmId as any | "") : ""}</h3>
           <h6>{"0x...420"}</h6>
