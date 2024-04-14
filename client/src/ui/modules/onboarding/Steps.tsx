@@ -6,13 +6,12 @@ import { useAddressStore } from "@/hooks/store/useAddressStore";
 import { useDojo } from "@/hooks/context/DojoContext";
 import TextInput from "@/ui/elements/TextInput";
 import ListSelect from "@/ui/elements/ListSelect";
-import { addressToNumber, displayAddress } from "@/ui/utils/utils";
+import { displayAddress } from "@/ui/utils/utils";
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
-import Avatar from "@/ui/elements/Avatar";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
@@ -27,7 +26,7 @@ export const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-brown/80 p-8 text-gold sharp-corners max-w-[800px] rounded border-2 border-gold backdrop-blur-lg ">
+      <div className="self-center bg-brown/80 p-8 text-gold sharp-corners min-w-[800px] max-w-[800px] rounded border-2 border-gold backdrop-blur-lg ">
         {children}
       </div>
     </motion.div>

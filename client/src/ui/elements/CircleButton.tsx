@@ -62,11 +62,7 @@ const CircleButton = ({
         { " ": !active },
       )}
       style={{
-        backgroundImage: image
-          ? `url(${image})`
-          : active
-          ? "radial-gradient(50% 50.00% at 50% 100%, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.00) 100%), linear-gradient(0deg, #4B413C 0%, #24130A 100%)"
-          : "radial-gradient(50% 50.00% at 50% 0.00%, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.00) 100%), linear-gradient(180deg, #4B413C 0%, #24130A 100%)",
+        backgroundImage: image ? `url(${image})` : active ? "" : "",
         backgroundSize: "cover", // Ensure the image covers the button
         backgroundPosition: "center", // Center the background image
       }}

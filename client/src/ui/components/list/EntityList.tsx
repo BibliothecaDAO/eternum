@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-
+import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import Button from "@/ui/elements/Button";
 
 interface EntityListProps {
@@ -20,9 +20,9 @@ export const EntityList = ({ title, panel, list }: EntityListProps) => {
   };
 
   return (
-    <div className="p-2">
+    <div>
       {selectedEntity ? (
-        <div>
+        <div className="p-2">
           <Button className="mb-3" variant="outline" size="xs" onClick={handleBreadcrumbClick}>
             &lt; Back to {title}
           </Button>
@@ -34,11 +34,11 @@ export const EntityList = ({ title, panel, list }: EntityListProps) => {
           <ul>
             {list.map((entity) => (
               <li
-                className="text-xl py-2 border-b flex justify-between hover:bg-black"
+                className="py-2 px-2 border-b border-gold/40 flex justify-between hover:bg-brown"
                 key={entity.id}
                 onClick={() => handleBankClick(entity)}
               >
-                {entity.name} <span>see</span>
+                {entity.name} <ArrowRight className="w-2" />
               </li>
             ))}
           </ul>

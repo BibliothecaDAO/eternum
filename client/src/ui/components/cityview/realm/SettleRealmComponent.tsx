@@ -130,7 +130,7 @@ export const SettleRealmComponent = () => {
           isLoading={isLoading}
           onClick={() => (!isLoading ? settleRealms() : null)}
           className="mx-auto mt-4 text-xl"
-          variant={!isLoading ? "success" : "danger"}
+          variant={"primary"}
         >
           {!isLoading ? "Settle Empire" : ""}
         </Button>
