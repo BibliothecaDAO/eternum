@@ -48,6 +48,7 @@ export const BuildingThumbs = {
   banks: "/images/buildings/thumb/banks.png",
   hyperstructures: "/images/buildings/thumb/hyperstructure.png",
   leaderboard: "/images/buildings/thumb/leaderboard.png",
+  worldMap: "/images/buildings/thumb/world-map.png",
 };
 
 export const LeftNavigationModule = () => {
@@ -214,7 +215,7 @@ export const LeftNavigationModule = () => {
 
   return (
     <>
-      <div className="">
+      {/* <div className="">
         <CircleButton
           image={BuildingThumbs.leaderboard}
           onClick={() => {
@@ -232,7 +233,7 @@ export const LeftNavigationModule = () => {
         >
           <WorldIcon className="fill-gold w-7" />
         </CircleButton>
-      </div>
+      </div> */}
       <div className="flex flex-col py-2">
         {navigation.map((a, index) => (
           <div key={index}>{a.button}</div>

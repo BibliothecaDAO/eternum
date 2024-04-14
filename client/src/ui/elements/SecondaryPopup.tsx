@@ -113,11 +113,12 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      " items-center relative cursor-move -mb-[1px] z-30 p-2 rounded-t border-t border-x border-gold/50  w-full whitespace-nowrap handle flex justify-between border-b uppercase bg-black/90 text-2xl hover:bg-black ",
+      " items-center relative cursor-move z-30 p-2 rounded-t  w-full whitespace-nowrap handle flex justify-between bg-brown/90  hover:bg-brown backdrop-blur-lg",
       className,
     )}
   >
-    {children}
+    <h5>{children}</h5>
+
     {onClose && (
       <Button size="xs" onClick={onClose}>
         <CloseIcon className="w-4 h-4 ml-1 cursor-pointer fill-gold" />
@@ -168,7 +169,7 @@ SecondaryPopup.Body = ({
         width ? "" : "min-w-[438px]",
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
-        `relative z-10 bg-gray border flex flex-col border-gold/50 rounded-tr-[4px] rounded-b-[4px] overflow-auto `,
+        `relative z-10 bg-brown/80 flex flex-col border-brown/50 border-2 rounded-b overflow-auto `,
       )}
       style={{ width: width ? width : "", height: height ? height : "", maxHeight: maxHeight ? `${maxHeight}px` : "" }}
     >
