@@ -41,13 +41,13 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
           <img src="/images/eternum-logo.svg" className="w-48 mx-auto" alt="Eternum Logo" />
         </div>
         <h2 className="">
-          The Age Of Exploration <br /> has <span className="text-white">begun</span>....
+          Forge your empire, conquer the hex, and <span className="text-white">shape the onchain world</span>...
         </h2>
       </div>
       <div className="flex space-x-2 mt-8 justify-center">
         <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
           Choose your Leader
-          <ArrowRight className="w-2 ml-2" />
+          <ArrowRight className="w-2 ml-2 fill-current" />
         </Button>
       </div>
     </StepContainer>
@@ -73,6 +73,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   const { getAddressName } = useRealm();
 
   const name = getAddressName(account.address);
+  const { playerRealms } = useEntities();
 
   // @dev: refactor this
   useEffect(() => {
@@ -249,13 +250,16 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
           />
         </div>
       </div>
-      {
-        <div className="flex space-x-2 mt-8 justify-center">
+
+      <div className="flex space-x-2 mt-8 justify-center">
+        {playerRealms().length > 0 ? (
+          <NavigateToRealm text={"begin"} />
+        ) : (
           <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
-            <ArrowRight className="w-2" />
+            Continue <ArrowRight className="w-2 fill-current ml-3" />
           </Button>
-        </div>
-      }
+        )}
+      </div>
     </StepContainer>
   );
 };
@@ -273,26 +277,33 @@ export const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) 
 };
 
 export const StepThree = () => {
+  return (
+    <StepContainer>
+      <p className="leading-loose text-2xl text-center mb-8">
+        In a universe where ancient hyperstructures lie shattered, the Orders must{" "}
+        <span className="text-white">rise from the cosmic ruins</span> and forge a new future.
+      </p>
+      <div className="flex w-full justify-center">
+        <NavigateToRealm text={"begin"} />
+      </div>
+    </StepContainer>
+  );
+};
+
+export const NavigateToRealm = ({ text }: { text: string }) => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const [_location, setLocation] = useLocation();
   const { playerRealms } = useEntities();
   return (
-    <StepContainer>
-      <p className="leading-loose text-2xl text-center">
-        In a world shadowed by the ruins of hyperstructures, the Orders face the grim task of rebuilding from the ashes.
-      </p>
-      <div className="flex w-full justify-center">
-        <Button
-          size="md"
-          variant="primary"
-          onClick={() => {
-            showBlankOverlay(false);
-            setLocation(`/hex?col=${playerRealms()[0]?.position.x}&row=${playerRealms()[0]?.position.y}`);
-          }}
-        >
-          begin
-        </Button>
-      </div>
-    </StepContainer>
+    <Button
+      size="md"
+      variant="primary"
+      onClick={() => {
+        showBlankOverlay(false);
+        setLocation(`/hex?col=${playerRealms()[0]?.position.x}&row=${playerRealms()[0]?.position.y}`);
+      }}
+    >
+      {text}
+    </Button>
   );
 };
