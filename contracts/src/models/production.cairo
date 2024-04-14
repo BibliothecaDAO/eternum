@@ -16,26 +16,11 @@ struct Production {
     resource_type: u8,
     building_count: u128,
     production_rate: u128,
-    bonus_percent: u128,
     consumption_rate: u128,
     last_updated_tick: u64,
-    end_tick: u64,
+    input_finish_tick: u64,
 }
 
-#[generate_trait]
-impl ProductionBonusPercentageImpl of ProductionBonusPercentageTrait {
-    fn _1() -> u128 {
-        100
-    }
-
-    fn _10() -> u128 {
-        1_000
-    }
-
-    fn _100() -> u128 {
-        10_000
-    }
-}
 
 // We could make this a nice JS Class with a constructor and everything
 // Then maintaining logic in client will be easy
@@ -52,35 +37,21 @@ impl ProductionRateImpl of ProductionRateTrait {
         return false;
     }
 
-    fn set_rate(ref self: Production, production_rate: u128) {
-        self.production_rate = production_rate;
+    fn increase_production_rate(ref self: Production, ref resource: Resource, tick: @TickConfig, amount: u128) {
+        self.harvest(ref resource, tick);
+        self.production_rate += amount;
     }
 
-
-    fn bonus(self: @Production) -> u128 {
-        (*self.production_rate * *self.building_count * *self.bonus_percent) 
-            / ProductionBonusPercentageImpl::_100()
-    }
-
-    fn actual_production_rate(self: @Production) -> u128 {
-        (*self.production_rate * *self.building_count) + self.bonus()
-    }
-
-    fn increase_boost_percentage(ref self: Production, amount: u128) {
-        self.bonus_percent += amount;
-    }
-
-    fn decrease_boost_percentage(ref self: Production, amount: u128) {
-        self.bonus_percent -= amount;
+    fn decrease_production_rate(ref self: Production, ref resource: Resource, tick: @TickConfig, amount: u128) {
+        self.harvest(ref resource, tick);
+        self.production_rate -= amount;
     }
     
-    fn increase_building_count(ref self: Production, ref resource: Resource, tick: @TickConfig) {
-        self.harvest(ref resource, tick);
+    fn increase_building_count(ref self: Production) {
         self.building_count += 1;
     }
 
-    fn decrease_building_count(ref self: Production, ref resource: Resource, tick: @TickConfig) {
-        self.harvest(ref resource, tick);
+    fn decrease_building_count(ref self: Production) {
         self.building_count -= 1;
     }
 
@@ -117,19 +88,18 @@ impl ProductionRateImpl of ProductionRateTrait {
         if !(*self).is_active() {
             return (false, 0);
         }
-        let production_rate = self.actual_production_rate();
 
-        if production_rate > *self.consumption_rate {
-            (true, production_rate - *self.consumption_rate)
+        if *self.production_rate > *self.consumption_rate {
+            (true, *self.production_rate - *self.consumption_rate)
         } else {
-            (false, *self.consumption_rate - production_rate)
+            (false, *self.consumption_rate - *self.production_rate)
         }
     }
 
 
-    fn set_end_tick(ref self: Production, ref resource: Resource, tick: @TickConfig, value: u64) {
+    fn set_input_finish_tick(ref self: Production, ref resource: Resource, tick: @TickConfig, value: u64) {
         self.harvest(ref resource, tick);
-        self.end_tick = value;
+        self.input_finish_tick = value;
     }
 
 
@@ -155,17 +125,17 @@ impl ProductionRateImpl of ProductionRateTrait {
     }
 
     fn production_duration(self: Production, tick: @TickConfig) -> u64 {
-        if self.last_updated_tick >= self.end_tick {
+        if self.last_updated_tick >= self.input_finish_tick {
             return 0;
         }
         let current_tick = (*tick).current();
 
-        if self.end_tick > current_tick {
+        if self.input_finish_tick > current_tick {
             // if stop time is in future
             current_tick - self.last_updated_tick
         } else {
             // if stop time has passed
-            self.end_tick - self.last_updated_tick
+            self.input_finish_tick - self.last_updated_tick
         }
     }
 
@@ -193,7 +163,7 @@ impl ProductionInputImpl of ProductionInputTrait {
     /// Production ends when any input material runs out of balance so what this 
     /// function does is that it finds the first input resource to run out of balance that 
     /// returns the tick it runs out 
-    fn least_resource_finish_tick(production: @Production, world: IWorldDispatcher) -> u64 {
+    fn first_input_finish_tick(production: @Production, world: IWorldDispatcher) -> u64 {
         let production_config = get!(world, *production.resource_type, ProductionConfig);
         let tick_config = TickImpl::get(world);
 
@@ -277,9 +247,9 @@ impl ProductionOutputImpl of ProductionOutputTrait {
             
             // Update the end tick for the output resource based on changes in the current resource
             let output_resource_finish_tick 
-                = ProductionInputImpl::least_resource_finish_tick(@output_resource_production, world);            
+                = ProductionInputImpl::first_input_finish_tick(@output_resource_production, world);            
             output_resource_production
-                    .set_end_tick(
+                    .set_input_finish_tick(
                         ref output_resource,  @tick, output_resource_finish_tick);
             
             count += 1;
@@ -290,522 +260,3 @@ impl ProductionOutputImpl of ProductionOutputTrait {
     }
 }
 
-
-#[cfg(test)]
-mod tests_production {
-
-    use eternum::models::production::ProductionRateTrait;
-    use core::option::OptionTrait;
-    use super::{Production, Resource, ProductionInputImpl, ProductionBonusPercentageImpl};
-    use debug::PrintTrait;
-    use traits::Into;
-    use traits::TryInto;
-    use eternum::constants::{ResourceTypes};
-    use eternum::models::config::{TickConfig, TickImpl, TickTrait};
-    use core::integer::BoundedInt;
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
-    
-
-    #[test]
-    fn test_bonus() {
-
- 
-        let production_building_count = 2;
-        let production_rate = 140;
-        let production_bonus_percent = ProductionBonusPercentageImpl::_10(); // 10%
-        let production_consumption_rate = 20;
-        let production_last_updated_tick = 0;
-        let production_end_tick = 0;
-        
-        let mut wood_production: Production = Production {
-            entity_id: 'entity_id'.try_into().unwrap(),
-            resource_type: ResourceTypes::WOOD,
-            building_count: production_building_count,
-            production_rate: production_rate,
-            bonus_percent: production_bonus_percent,
-            consumption_rate: production_consumption_rate,
-            last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
-        };
-
-        assert_eq!(wood_production.bonus(), 28);
-    }
-
-
-    #[test]
-    fn test_balance_exhaustion_tick_with_positive_net_rate() {
-
-        let tick_id: u128 = 'tick_id'.try_into().unwrap();
-        let tick_config = TickConfig {
-            config_id: tick_id,
-            max_moves_per_tick: 5,
-            tick_interval_in_seconds: 5
-        };
-
-        let entity_id : u128 = 'resource_id'.try_into().unwrap();
-        let resource_type: u8 = ResourceTypes::WOOD;
-        let mut wood_resource: Resource = Resource {
-            entity_id,
-            resource_type,
-            balance: 300,
-        };
-
-
-        let production_building_count = 2;
-        let production_rate = 12;
-        let production_bonus_percent = 0; 
-        let production_consumption_rate = 23;
-        let production_last_updated_tick = 0;
-        let production_end_tick = 0;
-        
-        let mut wood_production: Production = Production {
-            entity_id,
-            resource_type,
-            building_count: production_building_count,
-            production_rate: production_rate,
-            bonus_percent: production_bonus_percent,
-            consumption_rate: production_consumption_rate,
-            last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
-        };
-
-        let wood_production_end_tick 
-            = wood_production
-            .balance_exhaustion_tick(@wood_resource, @tick_config);
-
-        let max_tick: u64 = tick_config.at(BoundedInt::max());
-        assert_eq!(wood_production_end_tick, max_tick);
-    }
-
-    #[test]
-    fn test_balance_exhaustion_tick_with_negative_net_rate() {
-
-        let tick_id: u128 = 'tick_id'.try_into().unwrap();
-        let tick_config = TickConfig {
-            config_id: tick_id,
-            max_moves_per_tick: 5,
-            tick_interval_in_seconds: 5
-        };
-
-        let entity_id : u128 = 'resource_id'.try_into().unwrap();
-        let resource_type: u8 = ResourceTypes::WOOD;
-        let mut wood_resource: Resource = Resource {
-            entity_id,
-            resource_type,
-            balance: 300,
-        };
-
-
-        let production_building_count = 2;
-        let production_rate = 12;
-        let production_bonus_percent = 0; 
-        let production_consumption_rate = 25;
-        let production_last_updated_tick = 0;
-        let production_end_tick = 0;
-        
-        let mut wood_production: Production = Production {
-            entity_id,
-            resource_type,
-            building_count: production_building_count,
-            production_rate: production_rate,
-            bonus_percent: production_bonus_percent,
-            consumption_rate: production_consumption_rate,
-            last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
-        };
-
-        let wood_production_end_tick 
-            = wood_production
-            .balance_exhaustion_tick(@wood_resource, @tick_config);
-
-        assert_eq!(wood_production_end_tick, 300);
-    }
-
-    #[test]
-    fn test_balance_exhaustion_tick_with_0_net_rate_and_0_balance() {
-
-        let tick_id: u128 = 'tick_id'.try_into().unwrap();
-        let tick_config = TickConfig {
-            config_id: tick_id,
-            max_moves_per_tick: 5,
-            tick_interval_in_seconds: 5
-        };
-
-        let entity_id : u128 = 'resource_id'.try_into().unwrap();
-        let resource_type: u8 = ResourceTypes::WOOD;
-        let mut wood_resource: Resource = Resource {
-            entity_id,
-            resource_type,
-            balance: 0,
-        };
-
-
-        let production_building_count = 2;
-        let production_rate = 12;
-        let production_bonus_percent = 0; 
-        let production_consumption_rate = 24;
-        let production_last_updated_tick = 0;
-        let production_end_tick = 0;
-        
-        let mut wood_production: Production = Production {
-            entity_id,
-            resource_type,
-            building_count: production_building_count,
-            production_rate: production_rate,
-            bonus_percent: production_bonus_percent,
-            consumption_rate: production_consumption_rate,
-            last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
-        };
-
-        let wood_production_end_tick 
-            = wood_production
-            .balance_exhaustion_tick(@wood_resource, @tick_config);
-
-        let current_tick: u64 = tick_config.current();
-        assert_eq!(wood_production_end_tick, current_tick);
-    }
-
-
-    #[test]
-    fn test_balance_exhaustion_tick_with_0_net_rate_and_positive_balance() {
-
-        let tick_id: u128 = 'tick_id'.try_into().unwrap();
-        let tick_config = TickConfig {
-            config_id: tick_id,
-            max_moves_per_tick: 5,
-            tick_interval_in_seconds: 5
-        };
-
-        let entity_id : u128 = 'resource_id'.try_into().unwrap();
-        let resource_type: u8 = ResourceTypes::WOOD;
-        let mut wood_resource: Resource = Resource {
-            entity_id,
-            resource_type,
-            balance: 1,
-        };
-
-
-        let production_building_count = 2;
-        let production_rate = 12;
-        let production_bonus_percent = 0; 
-        let production_consumption_rate = 24;
-        let production_last_updated_tick = 0;
-        let production_end_tick = 0;
-        
-        let mut wood_production: Production = Production {
-            entity_id,
-            resource_type,
-            building_count: production_building_count,
-            production_rate: production_rate,
-            bonus_percent: production_bonus_percent,
-            consumption_rate: production_consumption_rate,
-            last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
-        };
-
-        let wood_production_end_tick 
-            = wood_production
-            .balance_exhaustion_tick(@wood_resource, @tick_config);
-        
-        let max_tick: u64 = tick_config.at(BoundedInt::max());
-        assert_eq!(wood_production_end_tick, max_tick);
-    }
-
-    #[test]
-    fn test_harvest_gain() {
-
-        let tick_id: u128 = 'tick_id'.try_into().unwrap();
-        let tick_config = TickConfig {
-            config_id: tick_id,
-            max_moves_per_tick: 5,
-            tick_interval_in_seconds: 5
-        };
-
-        // move time 7 ticks in future
-        let _7_ticks_in_future = tick_config.tick_interval_in_seconds * 7;
-        starknet::testing::set_block_timestamp(_7_ticks_in_future);
-
-        let entity_id : u128 = 'resource_id'.try_into().unwrap();
-        let resource_type: u8 = ResourceTypes::WOOD;
-        let mut wood_resource: Resource = Resource {
-            entity_id: entity_id,
-            resource_type,
-            balance: 300,
-        };
-
-
-        let production_building_count = 2;
-        let production_rate = 12;
-        let production_bonus_percent = ProductionBonusPercentageImpl::_10(); // 10%
-        let production_consumption_rate = 2;
-        let production_last_updated_tick = 0;
-        let production_end_tick = _7_ticks_in_future;
-        
-        let mut wood_production: Production = Production {
-            entity_id,
-            resource_type,
-            building_count: production_building_count,
-            production_rate: production_rate,
-            bonus_percent: production_bonus_percent,
-            consumption_rate: production_consumption_rate,
-            last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
-        };
-
-
-        wood_production.harvest(ref wood_resource, @tick_config);
-        assert_eq!(wood_resource.balance, 300 + 168);
-    }
-
-
-    #[test]
-    fn test_harvest_loss() {
-        // consumption rate is higher than production
-
-        let tick_id: u128 = 'tick_id'.try_into().unwrap();
-        let tick_config = TickConfig {
-            config_id: tick_id,
-            max_moves_per_tick: 5,
-            tick_interval_in_seconds: 5
-        };
-
-        // move time 7 ticks in future
-        let _7_ticks_in_future = tick_config.tick_interval_in_seconds * 7;
-        starknet::testing::set_block_timestamp(_7_ticks_in_future);
-
-        let entity_id : u128 = 'resource_id'.try_into().unwrap();
-        let resource_type: u8 = ResourceTypes::WOOD;
-        let mut wood_resource: Resource = Resource {
-            entity_id: entity_id,
-            resource_type,
-            balance: 300,
-        };
-
-
-        let production_building_count = 1;
-        let production_rate = 2;
-        let production_bonus_percent = ProductionBonusPercentageImpl::_10(); // 10%
-        let production_consumption_rate = 12;
-        let production_last_updated_tick = 0;
-        let production_end_tick = 0;
-        
-        let mut wood_production: Production = Production {
-            entity_id,
-            resource_type,
-            building_count: production_building_count,
-            production_rate: production_rate,
-            bonus_percent: production_bonus_percent,
-            consumption_rate: production_consumption_rate,
-            last_updated_tick: production_last_updated_tick,
-            end_tick: production_end_tick
-        };
-
-
-        wood_production.harvest(ref wood_resource, @tick_config);
-        assert_eq!(wood_resource.balance, 300 - 70);
-    }
-
-
-
-    // #[test]
-    // fn test_food_prod() {
-    //     // consumption rate is higher than production
-
-    //     let tick_id: u128 = 'tick_id'.try_into().unwrap();
-    //     let tick_config = TickConfig {
-    //         config_id: tick_id,
-    //         max_moves_per_tick: 5,
-    //         tick_interval_in_seconds: 5
-    //     };
-
-    //     // move time 7 ticks in future
-    //     let _7_ticks_in_future = tick_config.tick_interval_in_seconds * 7;
-    //     starknet::testing::set_block_timestamp(_7_ticks_in_future);
-
-    //     let entity_id : u128 = 'resource_id'.try_into().unwrap();
-    //     let resource_type: u8 = ResourceTypes::WOOD;
-    //     let mut wood_resource: Resource = Resource {
-    //         entity_id: entity_id,
-    //         resource_type,
-    //         balance: 300,
-    //     };
-
-
-    //     let production_building_count = 1;
-    //     let production_rate = 2;
-    //     let production_bonus_percent = ProductionBonusPercentageImpl::_10(); // 10%
-    //     let production_consumption_rate = 12;
-    //     let production_last_updated_tick = 0;
-    //     let production_end_tick = 0;
-        
-    //     let mut wood_production: Production = Production {
-    //         entity_id,
-    //         resource_type,
-    //         building_count: production_building_count,
-    //         production_rate: production_rate,
-    //         bonus_percent: production_bonus_percent,
-    //         consumption_rate: production_consumption_rate,
-    //         last_updated_tick: production_last_updated_tick,
-    //         end_tick: production_end_tick
-    //     };
-
-
-    //     let wood_resource_finish_tick 
-    //             = ProductionInputImpl::least_resource_finish_tick(@wood_production, world);
-    //         resource_production
-    //                 .set_end_tick(
-    //                     ref produced_resource,  @tick, production_end_tick);
-
-
-    //     wood_production
-    //         .set_end_tick(
-    //             @wood_production, @wood_resource, @tick_config);
-
-    //     assert_eq!(wood_production.end_tick, 300 / (12 -2) + 7); // 300 / (12 -2) + 7 ticks since were in the seventh tick
-
-    // }
-}
-
-
-#[cfg(test)]
-mod tests_production_output {
-
-    use eternum::models::production::ProductionRateTrait;
-    use core::option::OptionTrait;
-    use super::{Production, ProductionOutputImpl, Resource, ProductionBonusPercentageImpl};
-    use debug::PrintTrait;
-    use traits::Into;
-    use traits::TryInto;
-    use eternum::constants::{ResourceTypes};
-    use eternum::models::config::{TickConfig, TickImpl, TickTrait};
-    use core::integer::BoundedInt;
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
-    use eternum::systems::config::contracts::config_systems;
-    use eternum::systems::config::interface::{
-        IProductionConfigDispatcher, IProductionConfigDispatcherTrait
-    };
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
-    fn setup() -> (IWorldDispatcher, u128, u128, Span<(u8, u128)>) {
-        let world = spawn_eternum();
-        let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
-
-        // set 
-        let wood_cost = array![
-            (ResourceTypes::WHEAT, 100), 
-            (ResourceTypes::COAL, 200), 
-            (ResourceTypes::STONE, 300), 
-        ];
-        let entity_id: u128 = 1;
-
-
-        // set wheat production 
-
-        let mut wheat_production: Production = Production {
-            entity_id,
-            resource_type: ResourceTypes::WHEAT,
-            building_count: 1,
-            production_rate: 7,
-            bonus_percent: 0,
-            consumption_rate: 2,
-            last_updated_tick: 0,
-            end_tick: 0
-        };
-        let mut wheat_resource: Resource = Resource {
-            entity_id,
-            resource_type: ResourceTypes::WHEAT,
-            balance: 100
-        };
-        set!(world, (wheat_resource, wheat_production));
-
-        // set coal production and resource
-
-        // coal's consumption is higher than production so 
-        // its balance will get depleted eventually
-        let mut coal_production: Production = Production {
-            entity_id,
-            resource_type: ResourceTypes::COAL,
-            building_count: 1,
-            production_rate: 4,
-            bonus_percent: 0,
-            consumption_rate: 8,
-            last_updated_tick: 0,
-            end_tick: 0
-        };
-
-        let mut coal_resource: Resource =Resource {
-            entity_id,
-            resource_type: ResourceTypes::COAL,
-            balance: 100
-        };
-        set!(world, (coal_resource, coal_production));
-
-
-        // set stone production 
-
-        let mut stone_production: Production = Production {
-            entity_id,
-            resource_type: ResourceTypes::STONE,
-            building_count: 1,
-            production_rate: 6,
-            bonus_percent: 0,
-            consumption_rate: 2,
-            last_updated_tick: 0,
-            end_tick: 0
-        };
-        let mut stone_resource: Resource =Resource {
-            entity_id,
-            resource_type: ResourceTypes::STONE,
-            balance: 100
-        };
-        set!(world, (stone_resource, stone_production));
-
-        // start wood production
-        let wood_production_rate: u128 = 50;
-        let mut wood_production: Production = Production {
-            entity_id,
-            resource_type: ResourceTypes::WOOD,
-            building_count: 1,
-            production_rate: wood_production_rate,
-            bonus_percent: 0,
-            consumption_rate: 2,
-            last_updated_tick: 0,
-            end_tick: 0
-        };
-        set!(world, (wood_production));
-
-        IProductionConfigDispatcher { contract_address: config_systems_address }
-            .set_production_config(ResourceTypes::WOOD, wood_production_rate, wood_cost.span());
-
-        return (world, entity_id, wood_production_rate, wood_cost.span());
-    }
-
-    #[test]
-    fn test_sync_all_inputs_exhaustion_ticks_for() {
-        let (world, entity_id, _, _) = setup();
-
-
-        let wheat_resource: Resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
-        let coal_resource: Resource = get!(world, (entity_id, ResourceTypes::COAL), Resource);
-        let stone_resource: Resource = get!(world, (entity_id, ResourceTypes::STONE), Resource);
-
-        ProductionOutputImpl::sync_all_inputs_exhaustion_ticks_for(@wheat_resource, world);
-        ProductionOutputImpl::sync_all_inputs_exhaustion_ticks_for(@coal_resource, world);
-        ProductionOutputImpl::sync_all_inputs_exhaustion_ticks_for(@stone_resource, world);
-
-
-        let coal_production: Production 
-            = get!(world, (entity_id, ResourceTypes::COAL), Production);
-        let coal_resource: Resource
-            = get!(world, (entity_id, ResourceTypes::COAL), Resource);
-        let tick_config : TickConfig = TickImpl::get(world);
-        let coal_production_end 
-            = coal_production
-                .balance_exhaustion_tick(@coal_resource, @tick_config);
-        let wood_production: Production 
-            = get!(world, (entity_id, ResourceTypes::WOOD), Production);
-        assert_eq!(coal_production_end, wood_production.end_tick);
-
-    }
-}

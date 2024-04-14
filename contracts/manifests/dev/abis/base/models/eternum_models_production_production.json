@@ -193,10 +193,6 @@
         "type": "core::integer::u128"
       },
       {
-        "name": "bonus_percent",
-        "type": "core::integer::u128"
-      },
-      {
         "name": "consumption_rate",
         "type": "core::integer::u128"
       },
@@ -205,7 +201,7 @@
         "type": "core::integer::u64"
       },
       {
-        "name": "end_tick",
+        "name": "input_finish_tick",
         "type": "core::integer::u64"
       }
     ]

@@ -12,10 +12,9 @@ export function defineContractComponents(world: World) {
           resource_type: RecsType.Number,
           building_count: RecsType.BigInt,
           production_rate: RecsType.BigInt,
-          bonus_percent: RecsType.BigInt,
           consumption_rate: RecsType.BigInt,
           last_updated_tick: RecsType.BigInt,
-          end_tick: RecsType.BigInt,
+          input_finish_tick: RecsType.BigInt,
         },
         {
           metadata: {
@@ -225,6 +224,7 @@ export function defineContractComponents(world: World) {
           inner_row: RecsType.BigInt,
           category: RecsType.String,
           produced_resource_type: RecsType.Number,
+          bonus_percent: RecsType.BigInt,
           entity_id: RecsType.BigInt,
           outer_entity_id: RecsType.BigInt,
         },

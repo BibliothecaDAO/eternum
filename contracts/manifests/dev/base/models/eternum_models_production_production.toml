@@ -1,6 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x16e190cbc317cfef21953208c879aea476aa4cbd06215a7f6ba72dd51dce2b5"
-original_class_hash = "0x16e190cbc317cfef21953208c879aea476aa4cbd06215a7f6ba72dd51dce2b5"
+class_hash = "0x504034bca2e531a745ca797be51c9dfc8c1d0b27678337e37472d0c35370c81"
+original_class_hash = "0x504034bca2e531a745ca797be51c9dfc8c1d0b27678337e37472d0c35370c81"
 abi = "manifests/dev/abis/base/models/eternum_models_production_production.json"
 name = "eternum::models::production::production"
 
@@ -25,11 +25,6 @@ type = "u128"
 key = false
 
 [[members]]
-name = "bonus_percent"
-type = "u128"
-key = false
-
-[[members]]
 name = "consumption_rate"
 type = "u128"
 key = false
@@ -40,6 +35,6 @@ type = "u64"
 key = false
 
 [[members]]
-name = "end_tick"
+name = "input_finish_tick"
 type = "u64"
 key = false
