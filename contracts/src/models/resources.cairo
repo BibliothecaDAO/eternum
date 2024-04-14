@@ -329,7 +329,7 @@ use eternum::models::production::ProductionRateTrait;
             bonus_percent: 0,
             consumption_rate: 2,
             last_updated_tick: 0,
-            end_tick: 0
+            input_finish_tick: 0
         };
         set!(world, (wood_production));
 
@@ -346,7 +346,7 @@ use eternum::models::production::ProductionRateTrait;
             bonus_percent: 0,
             consumption_rate: wood_cost_gold_rate,
             last_updated_tick: 0,
-            end_tick: 0
+            input_finish_tick: 0
         };
 
         // set gold resource balance 
@@ -394,7 +394,7 @@ use eternum::models::production::ProductionRateTrait;
             = gold_resource.balance / 3; // wood_cost_gold_rate
         let wood_production: Production 
             = get!(world, (entity_id, ResourceTypes::WOOD), Production);
-        assert_eq!(gold_production_end, wood_production.end_tick.into());
+        assert_eq!(gold_production_end, wood_production.input_finish_tick.into());
 
     }
 
@@ -434,7 +434,7 @@ use eternum::models::production::ProductionRateTrait;
 
         let wood_production: Production 
             = get!(world, (entity_id, ResourceTypes::WOOD), Production);
-        assert_eq!(wood_production.end_tick, (104 - 2) / 3); // 3 =  wood_cost_gold_rate
+        assert_eq!(wood_production.input_finish_tick, (104 - 2) / 3); // 3 =  wood_cost_gold_rate
 
     }
 }

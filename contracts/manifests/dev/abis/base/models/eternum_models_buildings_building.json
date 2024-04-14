@@ -243,6 +243,10 @@
         "type": "core::integer::u8"
       },
       {
+        "name": "bonus_percent",
+        "type": "core::integer::u128"
+      },
+      {
         "name": "entity_id",
         "type": "core::integer::u128"
       },
