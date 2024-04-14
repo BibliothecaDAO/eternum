@@ -1,3 +1,5 @@
+const plugin = require("tailwindcss/plugin");
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
@@ -161,5 +163,14 @@ export default {
     "text-biome-tropical_seasonal_forest",
     "text-biome-tropical_rain_forest",
   ],
-  plugins: [],
+  plugins: [
+    plugin(function ({ addUtilities }) {
+      const newUtilities = {
+        ".border-gradient": {
+          borderImage: "linear-gradient(to right, transparent, #F3C99F, transparent) 1",
+        },
+      };
+      addUtilities(newUtilities, ["responsive"]);
+    }),
+  ],
 };

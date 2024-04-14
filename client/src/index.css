@@ -117,17 +117,6 @@ h1,h2,h3,h4,h5,h6 {
   }
 }
 
-.progress-circle {
-  transform: rotate(-90deg); /* Rotate the circle to start from the top */
-}
-
-
-.progress-circle__progress {
-  @apply stroke-gold;
-  stroke-width: 10;
-  transition: stroke-dashoffset 0.35s; /* Smooth transition for the progress */
-  transform-origin: center; /* Ensure the rotation pivot is the center of the circle */
-}
 
 h1 {
   @apply text-4xl sm:text-5xl md:text-6xl font-bold ;
@@ -151,8 +140,4 @@ h5 {
 
 h6 {
   @apply text-sm sm:text-base md:text-lg font-thin ;
-}
-
-.border-gradient {
-  border-image: linear-gradient(to right, transparent, #F3C99F, transparent) 1;
 }

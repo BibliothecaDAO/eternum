@@ -5,7 +5,7 @@ import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 
 import { useState } from "react";
 
-import { RealmListBoxes } from "@/ui/components/cityview/RealmListBoxes";
+import { RealmListBoxes } from "@/ui/components/list/RealmListBoxes";
 import { SelectPreviewBuilding } from "@/ui/components/construction/SelectPreviewBuilding";
 
 export const BottomNavigation = () => {
@@ -34,20 +34,20 @@ export const BottomNavigation = () => {
         </CircleButton>
       ),
     },
-    {
-      name: "bar3",
-      button: (
-        <CircleButton
-          image="/images/buildings/thumb/army.png"
-          label="Armies"
-          active={activeBar === "A"}
-          size="xl"
-          onClick={() => toggleBar("A")}
-        >
-          {/* <Shield className="w-5 fill-current" /> */}
-        </CircleButton>
-      ),
-    },
+    // {
+    //   name: "bar3",
+    //   button: (
+    //     <CircleButton
+    //       image="/images/buildings/thumb/army.png"
+    //       label="Armies"
+    //       active={activeBar === "A"}
+    //       size="xl"
+    //       onClick={() => toggleBar("A")}
+    //     >
+    //       {/* <Shield className="w-5 fill-current" /> */}
+    //     </CircleButton>
+    //   ),
+    // },
   ];
 
   return (

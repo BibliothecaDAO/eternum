@@ -11,7 +11,12 @@ export const useQuery = () => {
     return { col: Number(x), row: Number(y) };
   }, [searchString]);
 
+  const isLocation = (col: number, row: number) => {
+    return hexPosition.col === col && hexPosition.row === row;
+  };
+
   return {
     hexPosition,
+    isLocation,
   };
 };
