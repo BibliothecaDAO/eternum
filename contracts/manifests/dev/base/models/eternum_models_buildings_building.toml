@@ -1,6 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x47776461b1d7baba5532a797306ff2698328810a2d9df5419cb563d85bcf5b2"
-original_class_hash = "0x47776461b1d7baba5532a797306ff2698328810a2d9df5419cb563d85bcf5b2"
+class_hash = "0x2b6687b50d54cf576758c9aef79d4583687558c6ba19fa52c8c68959a017f30"
+original_class_hash = "0x2b6687b50d54cf576758c9aef79d4583687558c6ba19fa52c8c68959a017f30"
 abi = "manifests/dev/abis/base/models/eternum_models_buildings_building.json"
 name = "eternum::models::buildings::building"
 
@@ -32,6 +32,11 @@ key = false
 [[members]]
 name = "produced_resource_type"
 type = "u8"
+key = false
+
+[[members]]
+name = "bonus_percent"
+type = "u128"
 key = false
 
 [[members]]

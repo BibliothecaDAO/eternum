@@ -8,7 +8,7 @@ export type ProductionType = {
   bonus_percent: RecsType.BigInt;
   consumption_rate: RecsType.BigInt;
   last_updated_tick: RecsType.BigInt;
-  end_tick: RecsType.BigInt;
+  input_finish_tick: RecsType.BigInt;
 };
 
 export type ResourceType = {

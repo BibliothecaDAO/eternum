@@ -31,26 +31,13 @@ export class ProductionManager {
 
   public isActive(): boolean {
     const production = this.getProduction();
-    return production !== undefined && production.building_count > 0;
-  }
-
-  public bonus() {
-    const production = this.getProduction();
-    if (!production) return BigInt(0);
-    return (production.production_rate * BigInt(production.building_count) * production.bonus_percent) / BigInt(10_000);
-  }
-
-  public actualProductionRate() {
-    const production = this.getProduction();
-    if (!production) return BigInt(0);
-    return production.production_rate * BigInt(production.building_count) + this.bonus();
+    return production !== undefined && (production.building_count > 0 || production.consumption_rate > 0);
   }
 
   public netRate(): [boolean, number] {
     const production = this.getProduction();
     if (!production) return [false, 0];
-    const productionRate = this.actualProductionRate();
-    const difference = Number(productionRate) - Number(production.consumption_rate);
+    const difference = Number(production.production_rate) - Number(production.consumption_rate);
     return [difference > 0, difference];
   }
 
@@ -79,14 +66,14 @@ export class ProductionManager {
 
     if (!production) return 0;
 
-    if (production.last_updated_tick >= production.end_tick && production.end_tick !== BigInt(0)) {
+    if (production.last_updated_tick >= production.input_finish_tick && production.input_finish_tick !== BigInt(0)) {
       return 0;
     }
 
-    if (production.end_tick === BigInt(0) || production.end_tick > currentTick) {
+    if (production.input_finish_tick === BigInt(0) || production.input_finish_tick > currentTick) {
       return Number(currentTick) - Number(production.last_updated_tick);
     } else {
-      return Number(production.end_tick) - Number(production.last_updated_tick);
+      return Number(production.input_finish_tick) - Number(production.last_updated_tick);
     }
   }
 
