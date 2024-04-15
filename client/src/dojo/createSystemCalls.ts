@@ -180,6 +180,34 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.destroy_building(props);
   };
 
+  const create_bank = async (props: SystemProps.CreateBankProps) => {
+    await provider.create_bank(props);
+  };
+
+  const open_account = async (props: SystemProps.OpenAccountProps) => {
+    await provider.open_account(props);
+  };
+
+  const change_bank_owner_fee = async (props: SystemProps.ChangeBankOwnerFeeProps) => {
+    await provider.change_bank_owner_fee(props);
+  };
+
+  const buy_resources = async (props: SystemProps.BuyResourcesProps) => {
+    await provider.buy_resources(props);
+  };
+
+  const sell_resources = async (props: SystemProps.SellResourcesProps) => {
+    await provider.sell_resources(props);
+  };
+
+  const add_liquidity = async (props: SystemProps.AddLiquidityProps) => {
+    await provider.add_liquidity(props);
+  };
+
+  const remove_liquidity = async (props: SystemProps.RemoveLiquidityProps) => {
+    await provider.remove_liquidity(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -190,6 +218,13 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const systemCalls = {
+    remove_liquidity,
+    add_liquidity,
+    sell_resources,
+    buy_resources,
+    change_bank_owner_fee,
+    open_account,
+    create_bank,
     explore,
     create_labor_building,
     destroy_labor_building,

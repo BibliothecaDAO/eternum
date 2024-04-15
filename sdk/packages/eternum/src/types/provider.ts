@@ -255,3 +255,45 @@ export interface DestroyBuildingProps extends SystemSigner {
     y: num.BigNumberish;
   };
 }
+
+export interface CreateBankProps extends SystemSigner {
+  coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+  owner_fee_scaled: num.BigNumberish;
+}
+
+export interface OpenAccountProps extends SystemSigner {
+  bank_entity_id: num.BigNumberish;
+}
+
+export interface ChangeBankOwnerFeeProps extends SystemSigner {
+  bank_entity_id: num.BigNumberish;
+  new_swap_fee_unscaled: num.BigNumberish;
+}
+
+export interface BuyResourcesProps extends SystemSigner {
+  bank_entity_id: num.BigNumberish;
+  resource_type: num.BigNumberish;
+  amount: num.BigNumberish;
+}
+
+export interface SellResourcesProps extends SystemSigner {
+  bank_entity_id: num.BigNumberish;
+  resource_type: num.BigNumberish;
+  amount: num.BigNumberish;
+}
+
+export interface AddLiquidityProps extends SystemSigner {
+  bank_entity_id: num.BigNumberish;
+  resource_type: num.BigNumberish;
+  resource_amount: num.BigNumberish;
+  lords_amount: num.BigNumberish;
+}
+
+export interface RemoveLiquidityProps extends SystemSigner {
+  bank_entity_id: num.BigNumberish;
+  resource_type: num.BigNumberish;
+  shares: num.BigNumberish;
+}
