@@ -9,7 +9,9 @@ export type OSWindows =
   | "Entity Details"
   | "Trade"
   | "Construction"
-  | "Assistant";
+  | "Assistant"
+  | "Create Offer"
+  | "Accept Offer";
 
 export interface OSInterface {
   onClick: () => void;
@@ -30,3 +32,5 @@ export const entityDetails: OSWindows = "Entity Details";
 export const trade: OSWindows = "Trade";
 export const construction: OSWindows = "Construction";
 export const assistant: OSWindows = "Assistant";
+export const createOffer: OSWindows = "Create Offer";
+export const acceptOfferTitle: OSWindows = "Accept Offer";

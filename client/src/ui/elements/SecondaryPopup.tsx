@@ -38,19 +38,14 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
       }
     });
     if (nodeRef && nodeRef.current) {
+      nodeRef.current.setAttribute("data-old-z-index", nodeRef.current.style.zIndex);
+
       nodeRef.current.style.zIndex = `${maxZIndex + 1}`;
       document.querySelectorAll("[data-old-z-index]").forEach((popup: any) => {
         popup.style.zIndex = popup.getAttribute("data-old-z-index");
         popup.removeAttribute("data-old-z-index");
       });
-      let parent = nodeRef.current.parentElement;
-      while (parent && getComputedStyle(parent).position !== "fixed") {
-        parent = parent.parentElement;
-      }
-      if (parent) {
-        parent.setAttribute("data-old-z-index", parent.style.zIndex);
-        parent.style.zIndex = `${maxZIndex + 1}`;
-      }
+      nodeRef.current.style.zIndex = `${maxZIndex + 1}`;
     }
   };
 
@@ -74,7 +69,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
 
   return (
     <motion.div
-      className="flex justify-center popup text-gold "
+      className="flex justify-center text-gold "
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -86,13 +81,14 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
           handle=".handle"
           defaultPosition={position}
           nodeRef={nodeRef}
+          onStart={handleClick}
           onDrag={handleDrag}
           onStop={handleStop}
         >
           <div
             onClick={handleClick}
             ref={nodeRef}
-            className={clsx("fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px] p-2 ", className)}
+            className={clsx("fixed popup z-50 flex flex-col translate-x-6 top-[200px] left-[450px] p-2 ", className)}
           >
             {children}
           </div>

@@ -10,7 +10,6 @@ import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
 import { sortTrades, useTrade } from "../../../../../../hooks/helpers/useTrade";
 import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
-import { MarketPopup } from "./MarketPopup";
 import { MarketInterface } from "@bibliothecadao/eternum";
 import useMarketStore from "../../../../../../hooks/store/useMarketStore";
 import useUIStore from "../../../../../../hooks/store/useUIStore";
@@ -129,7 +128,6 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   return (
     <>
       {showCreateOffer && <FastCreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
-      {showMarketplace && <MarketPopup onClose={() => setShowMarketplace(false)} />}
       {showDirectOffersExplorer && <DirectOffersExplorerPopup onClose={() => setShowDirectOffersExplorer(false)} />}
       {buildRoadToEntityId !== undefined && (
         <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />

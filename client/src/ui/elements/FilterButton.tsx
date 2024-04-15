@@ -18,7 +18,7 @@ export const FilterButton = ({ active, children, onClick }: FilterButtonProps) =
       onClick={onClick}
     >
       {children}
-      {active ? <Cross className="ml-1 fill-current" /> : <CaretDownFill className="ml-1 fill-current" />}
+      {active ? <Cross className="ml-1 w-4 fill-current" /> : <CaretDownFill className="ml-1 fill-current" />}
     </button>
   );
 };

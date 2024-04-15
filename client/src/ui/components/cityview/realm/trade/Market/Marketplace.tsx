@@ -23,9 +23,10 @@ import { useDojo } from "../../../../../../hooks/context/DojoContext";
 import useMarketStore from "../../../../../../hooks/store/useMarketStore";
 import { useCaravan } from "../../../../../../hooks/helpers/useCaravans";
 
-type MarketPopupProps = {
-  onClose: () => void;
-};
+interface MarketplaceProps {
+  onCreateOffer: (resourceId: number | null, isBuy: boolean) => void;
+  setSelectedTrade: (trade: MarketInterface | null) => void;
+}
 
 interface DepthOfMarket {
   price: number;
@@ -40,9 +41,8 @@ interface ResourceOffersSummary {
   depthOfMarket: DepthOfMarket[];
 }
 
-export const MarketPopup = ({ onClose }: MarketPopupProps) => {
+export const Marketplace = ({ onCreateOffer, setSelectedTrade }: MarketplaceProps) => {
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
-  const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [isBuy, setIsBuy] = useState(false);
 
   const marketOffers = useMarketStore((state) => state.lordsMarket);
@@ -204,47 +204,30 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
 
   return (
     <>
-      {showCreateOffer && (
-        <FastCreateOfferPopup
-          resourceId={selectedResource || 1}
+      {selectedResource ? (
+        <MarketplaceResourceOffersPanel
+          offers={isBuy ? selectedResourceAskOffers : selectedResourceBidOffers}
           isBuy={isBuy}
-          marketplaceMode
-          onClose={() => setShowCreateOffer(false)}
-          onCreate={() => {}}
+          resourceId={selectedResource}
+          onBack={() => setSelectedResource(null)}
+          onCreate={() => onCreateOffer(selectedResource, isBuy)}
+          setSelectedTrade={setSelectedTrade}
+        />
+      ) : (
+        <MarketplaceOverviewPanel
+          askOffersSummary={askOffersSummary}
+          bidOffersSummary={bidOffersSummary}
+          onBuy={(resourceId: number) => {
+            setIsBuy(true);
+            setSelectedResource(resourceId);
+          }}
+          onSell={(resourceId: number) => {
+            setIsBuy(false);
+            setSelectedResource(resourceId);
+          }}
+          onCreate={() => onCreateOffer(selectedResource, isBuy)}
         />
       )}
-      <SecondaryPopup name="marketplace">
-        <SecondaryPopup.Head onClose={onClose}>
-          <div className="flex items-center space-x-1">
-            <div className="mr-0.5">Marketplace</div>
-          </div>
-        </SecondaryPopup.Head>
-        <SecondaryPopup.Body width={"660px"}>
-          {selectedResource ? (
-            <MarketplaceResourceOffersPanel
-              offers={isBuy ? selectedResourceAskOffers : selectedResourceBidOffers}
-              isBuy={isBuy}
-              resourceId={selectedResource}
-              onBack={() => setSelectedResource(null)}
-              onCreate={() => setShowCreateOffer(true)}
-            />
-          ) : (
-            <MarketplaceOverviewPanel
-              askOffersSummary={askOffersSummary}
-              bidOffersSummary={bidOffersSummary}
-              onBuy={(resourceId: number) => {
-                setIsBuy(true);
-                setSelectedResource(resourceId);
-              }}
-              onSell={(resourceId: number) => {
-                setIsBuy(false);
-                setSelectedResource(resourceId);
-              }}
-              onCreate={() => setShowCreateOffer(true)}
-            />
-          )}
-        </SecondaryPopup.Body>
-      </SecondaryPopup>
     </>
   );
 };
@@ -359,7 +342,7 @@ const OverviewResourceRow = ({
 
   const realmResource = getComponentValue(
     Resource,
-    getEntityIdFromKeys([realmEntityId, BigInt(askSummary?.resourceId || 0n)]),
+    getEntityIdFromKeys([realmEntityId!, BigInt(askSummary?.resourceId || 0n)]),
   );
 
   const depthOfMarketBids = useMemo(() => {
@@ -553,16 +536,17 @@ const MarketplaceResourceOffersPanel = ({
   onCreate,
   resourceId,
   onBack,
+  setSelectedTrade,
 }: {
   offers: MarketInterface[];
   isBuy: boolean;
   onCreate: () => void;
   resourceId: number;
   onBack: () => void;
+  setSelectedTrade: (trade: MarketInterface | null) => void;
 }) => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const [selectedTrade, setSelectedTrade] = useState<MarketInterface | null>(null);
   const sortingParams = useMemo(() => {
     return [
       { label: "Sell", sortKey: "sell", className: "" },
@@ -580,14 +564,6 @@ const MarketplaceResourceOffersPanel = ({
 
   return (
     <>
-      {selectedTrade && (
-        <AcceptOfferPopup
-          onClose={() => {
-            setSelectedTrade(null);
-          }}
-          selectedTrade={selectedTrade}
-        />
-      )}
       <div className="flex flex-col p-2">
         <div className="flex items-center justify-between">
           <FiltersPanel>
@@ -631,7 +607,7 @@ const MarketplaceResourceOffersPanel = ({
           {offers.map((offer) => (
             <ResourceOfferRow
               key={offer.tradeId}
-              realmEntityId={realmEntityId}
+              realmEntityId={realmEntityId!}
               isBuy={isBuy}
               offer={offer}
               onClick={() => setSelectedTrade(offer)}
