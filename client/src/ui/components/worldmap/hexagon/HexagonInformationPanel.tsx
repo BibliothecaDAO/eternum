@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SelectWorldMapBuilding } from "@/ui/components/worldmap/hexagon/SelectWorldMapBuilding";
 
 export const HexagonInformationPanel = () => {
   const [openPanel, setOpenPanel] = useState<string | null>(null);
@@ -6,7 +7,7 @@ export const HexagonInformationPanel = () => {
   const panels = [
     { key: "combat", title: "Military", content: <div className="p-2">Military</div> },
     { key: "entities", title: "Commerce", content: <div className="p-2">Commerce</div> },
-    { key: "build", title: "Build", content: <div className="p-2">Build</div> },
+    { key: "build", title: "Build", content: <SelectWorldMapBuilding /> },
   ];
 
   const togglePanel = (key: string) => {
