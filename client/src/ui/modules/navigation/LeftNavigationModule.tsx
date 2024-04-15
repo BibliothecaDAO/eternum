@@ -21,6 +21,7 @@ import {
   settings,
   trade,
   construction,
+  assistant,
 } from "../../components/navigation/Config";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useLocation } from "wouter";
@@ -38,6 +39,7 @@ import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
 import { Trading } from "../trade/Trading";
 import { Construction } from "../construction/Construction";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
+import { Assistant } from "../assistant/Assistant";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -71,9 +73,7 @@ export const LeftNavigationModule = () => {
           active={isPopupOpen(entityDetails)}
           size="xl"
           onClick={() => togglePopup(entityDetails)}
-        >
-          {/* <Hex className="h-12 fill-current" /> */}
-        </CircleButton>
+        ></CircleButton>
       ),
     },
     {
@@ -84,9 +84,7 @@ export const LeftNavigationModule = () => {
           active={isPopupOpen(military)}
           size="xl"
           onClick={() => togglePopup(military)}
-        >
-          {/* <CrossSwords className="h-6 fill-current" /> */}
-        </CircleButton>
+        ></CircleButton>
       ),
     },
     {
@@ -97,9 +95,7 @@ export const LeftNavigationModule = () => {
           active={isPopupOpen(construction)}
           size="xl"
           onClick={() => togglePopup(construction)}
-        >
-          {/* <City className="h-6 fill-current" /> */}
-        </CircleButton>
+        ></CircleButton>
       ),
     },
     {
@@ -123,9 +119,7 @@ export const LeftNavigationModule = () => {
           active={isPopupOpen(resources)}
           size="xl"
           onClick={() => togglePopup(resources)}
-        >
-          {/* <PickAxe className="w-6 stroke-current" /> */}
-        </CircleButton>
+        ></CircleButton>
       ),
     },
     {
@@ -136,9 +130,7 @@ export const LeftNavigationModule = () => {
           active={isPopupOpen(banks)}
           size="xl"
           onClick={() => togglePopup(banks)}
-        >
-          {/* <Coin className="w-6 fill-current" /> */}
-        </CircleButton>
+        ></CircleButton>
       ),
     },
     {
@@ -149,9 +141,7 @@ export const LeftNavigationModule = () => {
           active={isPopupOpen(hyperstructures)}
           size="xl"
           onClick={() => togglePopup(hyperstructures)}
-        >
-          {/* <Relic className="w-5 fill-current" /> */}
-        </CircleButton>
+        ></CircleButton>
       ),
     },
     {
@@ -162,9 +152,18 @@ export const LeftNavigationModule = () => {
           active={isPopupOpen(leaderboard)}
           size="xl"
           onClick={() => togglePopup(leaderboard)}
-        >
-          {/* <LeaderBoard className="w-6" /> */}
-        </CircleButton>
+        ></CircleButton>
+      ),
+    },
+    {
+      button: (
+        <CircleButton
+          image={BuildingThumbs.leaderboard}
+          label={assistant}
+          active={isPopupOpen(assistant)}
+          size="xl"
+          onClick={() => togglePopup(assistant)}
+        ></CircleButton>
       ),
     },
   ];
@@ -215,25 +214,6 @@ export const LeftNavigationModule = () => {
 
   return (
     <>
-      {/* <div className="">
-        <CircleButton
-          image={BuildingThumbs.leaderboard}
-          onClick={() => {
-            if (location !== "/map") {
-              setIsLoadingScreenEnabled(true);
-              setTimeout(() => {
-                setLocation("/map");
-                moveCameraToRealm(Number(realm?.realmId), 0.01);
-              }, 100);
-            } else {
-              moveCameraToRealm(Number(realm?.realmId));
-            }
-          }}
-          size="xl"
-        >
-          <WorldIcon className="fill-gold w-7" />
-        </CircleButton>
-      </div> */}
       <div className="flex flex-col py-2">
         {navigation.map((a, index) => (
           <div key={index}>{a.button}</div>
@@ -254,6 +234,7 @@ export const LeftNavigationModule = () => {
       <EntityDetails />
       <Trading />
       <Construction />
+      <Assistant />
     </>
   );
 };

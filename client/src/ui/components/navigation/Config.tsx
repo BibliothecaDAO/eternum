@@ -8,7 +8,8 @@ export type OSWindows =
   | "Military"
   | "Entity Details"
   | "Trade"
-  | "Construction";
+  | "Construction"
+  | "Assistant";
 
 export interface OSInterface {
   onClick: () => void;
@@ -28,3 +29,4 @@ export const military: OSWindows = "Military";
 export const entityDetails: OSWindows = "Entity Details";
 export const trade: OSWindows = "Trade";
 export const construction: OSWindows = "Construction";
+export const assistant: OSWindows = "Assistant";
