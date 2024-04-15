@@ -69,6 +69,19 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    BankAccounts: (() => {
+      return defineComponent(
+        world,
+        { bank_entity_id: RecsType.BigInt, owner: RecsType.BigInt, entity_id: RecsType.BigInt },
+        {
+          metadata: {
+            name: "BankAccounts",
+            types: ["u128", "u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Bank: (() => {
       return defineComponent(
         world,

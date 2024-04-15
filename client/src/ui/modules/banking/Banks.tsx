@@ -6,6 +6,7 @@ import { Tabs } from "@/ui/elements/tab";
 import { useMemo, useState } from "react";
 import { BankPanel } from "@/ui/components/bank/BankList";
 import { EntityList } from "@/ui/components/list/EntityList";
+import { useGetBanks } from "@/hooks/helpers/useBanks";
 
 const exampleBanks = [
   { id: 1, name: "Iron Bank" },
@@ -18,6 +19,15 @@ export const Banks = () => {
   const [selectedTab, setSelectedTab] = useState(0);
   const isOpen = useUIStore((state) => state.isPopupOpen(banks));
 
+  const bankEntities = useGetBanks();
+
+  const bankList = bankEntities.map((bank) => {
+    return {
+      id: bank.entityId,
+      name: `Bank ${bank.entityId}`,
+    };
+  });
+
   const tabs = useMemo(
     () => [
       {
@@ -27,9 +37,7 @@ export const Banks = () => {
             <div>All Banks</div>
           </div>
         ),
-        component: (
-          <EntityList title="Banks" panel={({ entity }) => <BankPanel entity={entity} />} list={exampleBanks} />
-        ),
+        component: <EntityList title="Banks" panel={({ entity }) => <BankPanel entity={entity} />} list={bankList} />,
       },
       {
         key: "mine",

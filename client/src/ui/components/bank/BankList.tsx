@@ -4,25 +4,36 @@ import { ResourceSwap } from "./Swap";
 
 import { BankEntityList } from "./BankEntityList";
 import { EntityList } from "../list/EntityList";
+import { useBanks } from "@/hooks/helpers/useBanks";
 
 // These would be entities passed into the table
-export const exampleEntities = [
-  {
-    name: "Stolsi",
-    id: 1,
-  },
-  {
-    name: "Bank 2",
-    id: 2,
-  },
-  {
-    name: "Bank 3",
-    id: 3,
-  },
-];
+// export const exampleEntities = [
+//   {
+//     name: "Stolsi",
+//     id: 1,
+//   },
+//   {
+//     name: "Bank 2",
+//     id: 2,
+//   },
+//   {
+//     name: "Bank 3",
+//     id: 3,
+//   },
+// ];
 
 export const BankPanel = ({ entity }: any) => {
   const [selectedTab, setSelectedTab] = useState(0);
+  const { getMyAccounts } = useBanks();
+
+  const myBankAccountsIds = getMyAccounts(entity.id, 0);
+
+  const myBankAccountList = myBankAccountsIds.map((id) => {
+    return {
+      id,
+      name: `Bank Account ${id}`,
+    };
+  });
 
   const tabs = useMemo(
     () => [
@@ -43,7 +54,11 @@ export const BankPanel = ({ entity }: any) => {
           </div>
         ),
         component: (
-          <EntityList title="Banks" panel={({ entity }) => <BankEntityList entity={entity} />} list={exampleEntities} />
+          <EntityList
+            title="Banks"
+            panel={({ entity }) => <BankEntityList entity={entity} />}
+            list={myBankAccountList}
+          />
         ),
       },
       {

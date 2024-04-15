@@ -21,8 +21,6 @@ export const SelectWorldMapBuilding = () => {
   };
 
   const onBuild = async () => {
-    console.log("on build bank");
-    console.log({ worldMapBuilding, clickedHex });
     // build the building
     if (worldMapBuilding && clickedHex) {
       // build the building

@@ -15,6 +15,9 @@ mod bank_systems {
         ) -> ID {
             let bank_entity_id: ID = world.uuid().into();
 
+            //todo: check that no bank on this position
+            //todo: check that no realm on this position
+
             set!(
                 world,
                 (
@@ -23,6 +26,11 @@ mod bank_systems {
                     Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() }
                 )
             );
+
+            InternalBankSystemsImpl::open_bank_account(
+                world, bank_entity_id, starknet::get_caller_address()
+            );
+
             bank_entity_id
         }
 
@@ -33,27 +41,11 @@ mod bank_systems {
             let bank = get!(world, bank_entity_id, Bank);
             assert(bank.exists == true, 'Bank does not exist');
 
-            // get bank position
-            let bank_position = get!(world, bank_entity_id, Position);
-
             // checks if no bank account opened
             let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
             assert(bank_account.entity_id == 0, 'Bank account already opened');
 
-            // creates new entity id
-            let entity_id = world.uuid();
-            set!(
-                world,
-                (BankAccounts {
-                    bank_entity_id: bank_entity_id, owner: player, entity_id: entity_id.into()
-                })
-            );
-            set!(
-                world,
-                (Position { entity_id: entity_id.into(), x: bank_position.x, y: bank_position.y })
-            );
-
-            entity_id.into()
+            InternalBankSystemsImpl::open_bank_account(world, bank_entity_id, player)
         }
 
         fn change_owner_fee(
@@ -68,6 +60,33 @@ mod bank_systems {
             bank.owner_fee_scaled = new_swap_fee_unscaled;
 
             set!(world, (bank));
+        }
+    }
+
+    #[generate_trait]
+    impl InternalBankSystemsImpl of InternalBankSystemsTrait {
+        fn open_bank_account(
+            world: IWorldDispatcher, bank_entity_id: u128, player: starknet::ContractAddress
+        ) -> ID {
+            // get bank position
+            let bank_position = get!(world, bank_entity_id, Position);
+
+            // creates new entity id
+            let entity_id = world.uuid();
+            set!(
+                world,
+                (BankAccounts {
+                    bank_entity_id: bank_entity_id, owner: player, entity_id: entity_id.into()
+                })
+            );
+            set!(
+                world,
+                (Position { entity_id: entity_id.into(), x: bank_position.x, y: bank_position.y })
+            );
+
+            set!(world, (Owner { entity_id: entity_id.into(), address: player }));
+
+            entity_id.into()
         }
     }
 }
