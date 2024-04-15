@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { BanksListItem } from "./BanksListItem";
 import { BankPopup } from "./BankPopup";
-import { targetPrices, useBanks } from "../../../../hooks/helpers/useBanks";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { BankStaticInterface } from "@bibliothecadao/eternum";
@@ -14,7 +13,6 @@ export const BanksListComponent = ({}: BanksListComponentProps) => {
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { getBanksStatic } = useBanks();
   const banks = getBanksStatic();
 
   return (

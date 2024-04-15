@@ -8,10 +8,11 @@ import { useDojo } from "@/hooks/context/DojoContext";
 export const SelectWorldMapBuilding = () => {
   const buildingTypes = ["Banks"];
 
-  const { worldMapBuilding, setWorldMapBuilding } = useUIStore();
+  const { worldMapBuilding, setWorldMapBuilding, clickedHex } = useUIStore();
   const {
+    account: { account },
     setup: {
-      systemCalls: {},
+      systemCalls: { create_bank },
     },
   } = useDojo();
 
@@ -19,12 +20,13 @@ export const SelectWorldMapBuilding = () => {
     setWorldMapBuilding(buildingType);
   };
 
-  console.log(worldMapBuilding);
-
-  const onBuild = () => {
+  const onBuild = async () => {
+    console.log("on build bank");
+    console.log({ worldMapBuilding, clickedHex });
     // build the building
-    if (worldMapBuilding) {
+    if (worldMapBuilding && clickedHex) {
       // build the building
+      await create_bank({ coord: { x: clickedHex.col, y: clickedHex.row }, owner_fee_scaled: 0, signer: account });
     }
   };
 
@@ -51,13 +53,7 @@ export const SelectWorldMapBuilding = () => {
         </div>
       ))}
       <div>
-        <Button
-          onClick={() => {
-            // build the building
-          }}
-        >
-          Build
-        </Button>
+        <Button onClick={onBuild}>Build</Button>
       </div>
     </div>
   );

@@ -19,7 +19,6 @@ import {
 import { calculateNextHarvest } from "../../ui/components/cityview/realm/labor/laborUtils";
 import { LevelIndex } from "../helpers/useLevel";
 import { getLordsAmountFromBankAuction } from "../../ui/components/worldmap/banks/utils";
-import { BANK_AUCTION_DECAY, targetPrices } from "../helpers/useBanks";
 import { type realmsPosition } from "./utils";
 
 export interface UpdatedEntity {
@@ -184,126 +183,6 @@ export const generateEmptyChestNotifications = (
           },
         });
       }
-    }
-  }
-
-  return notifications;
-};
-
-/**
- * Generate caravans arrived at hyperstructure or bank notifications
- * @param owner address of the owner
- * @param components all components
- * @param banks list of banks
- * @returns
- */
-export const generateArrivedAtBankNotifications = (
-  owner: bigint,
-  components: Components,
-  nextBlockTimestamp: number,
-  banks: BankInterface[],
-  getResourcesFromInventory: (entityId: bigint) => {
-    resources: Resource[];
-    indices: number[];
-  },
-) => {
-  const notifications: NotificationType[] = [];
-  const entityIds = Array.from(
-    runQuery([
-      Has(components.ArrivalTime),
-      Has(components.CaravanMembers),
-      HasValue(components.Owner, { address: owner }),
-    ]),
-  );
-
-  for (const id of entityIds) {
-    const arrivalTime = getComponentValue(components.ArrivalTime, id) as { arrives_at: number } | undefined;
-    const entityOwner = getComponentValue(components.EntityOwner, id) as
-      | { entity_id: bigint; entity_owner_id: bigint }
-      | undefined;
-    const position = getComponentValue(components.Position, id) as { x: number; y: number } | undefined;
-    const homePosition = entityOwner
-      ? (getComponentValue(components.Position, getEntityIdFromKeys([entityOwner.entity_owner_id])) as
-          | { x: number; y: number }
-          | undefined)
-      : undefined;
-
-    // check that arrival is bigger than current block timestamp
-    // and also that notfication close is smaller than arrival (not seen yet by user)
-    const timestamps = getLastLoginTimestamp();
-    const hasArrivedAndNotSeen =
-      arrivalTime &&
-      arrivalTime.arrives_at > timestamps.lastLoginBlockTimestamp &&
-      arrivalTime.arrives_at < nextBlockTimestamp;
-
-    if (!hasArrivedAndNotSeen) continue;
-
-    let bank: BankInterface | undefined;
-    banks.forEach((possibleBank) => {
-      if (possibleBank.position.x === position?.x && possibleBank.position.y === position?.y) {
-        bank = possibleBank;
-      }
-    });
-
-    const { resources, indices } = getResourcesFromInventory(entityOwner?.entity_id || 0n);
-
-    if (!bank) continue;
-
-    const lordsAmountFromWheat =
-      bank.wheatAuction && nextBlockTimestamp
-        ? getLordsAmountFromBankAuction(
-            resources.find((resource) => {
-              return resource.resourceId === 254;
-            })?.amount || 0,
-            targetPrices[254],
-            BANK_AUCTION_DECAY,
-            Number(bank.wheatAuction.per_time_unit),
-            bank.wheatAuction.start_time,
-            nextBlockTimestamp,
-            Number(bank.wheatAuction.sold),
-            Number(bank.wheatAuction.price_update_interval),
-          )
-        : 0;
-
-    const lordsAmountFromFish =
-      bank.fishAuction && nextBlockTimestamp
-        ? getLordsAmountFromBankAuction(
-            resources.find((resource) => {
-              return resource.resourceId === 255;
-            })?.amount || 0,
-            targetPrices[255],
-            BANK_AUCTION_DECAY,
-            Number(bank.fishAuction.per_time_unit),
-            bank.fishAuction.start_time,
-            nextBlockTimestamp,
-            Number(bank.fishAuction.sold),
-            Number(bank.fishAuction.price_update_interval),
-          )
-        : 0;
-
-    let lordsAmounts: number[] = [];
-    if (lordsAmountFromWheat > 0 && lordsAmountFromFish > 0) {
-      lordsAmounts = [lordsAmountFromWheat, lordsAmountFromFish];
-    } else if (lordsAmountFromWheat > 0 && lordsAmountFromFish === 0) {
-      lordsAmounts = [lordsAmountFromWheat];
-    } else if (lordsAmountFromWheat === 0 && lordsAmountFromFish > 0) {
-      lordsAmounts = [lordsAmountFromFish];
-    }
-
-    if (bank && entityOwner && homePosition) {
-      notifications.push({
-        eventType: EventType.ArrivedAtBank,
-        keys: [entityOwner.entity_id.toString()],
-        data: {
-          bank,
-          caravanId: entityOwner.entity_id,
-          realmEntityId: entityOwner.entity_owner_id,
-          resources,
-          indices,
-          lordsAmounts,
-          homePosition: { x: homePosition.x, y: homePosition.y },
-        },
-      });
     }
   }
 

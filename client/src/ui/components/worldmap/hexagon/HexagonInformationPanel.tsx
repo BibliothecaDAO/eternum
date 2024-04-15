@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { SelectWorldMapBuilding } from "@/ui/components/worldmap/hexagon/SelectWorldMapBuilding";
+import useUIStore from "@/hooks/store/useUIStore";
 
 export const HexagonInformationPanel = () => {
   const [openPanel, setOpenPanel] = useState<string | null>(null);
+  const clickedHex = useUIStore((state) => state.clickedHex);
 
   const panels = [
     { key: "combat", title: "Military", content: <div className="p-2">Military</div> },
@@ -17,6 +19,10 @@ export const HexagonInformationPanel = () => {
   return (
     <>
       <div className="space-y-2">
+        <div className="px-2">
+          <div>{`x: ${clickedHex?.col}`}</div>
+          <div>{`y: ${clickedHex?.row}`}</div>
+        </div>
         {panels.map((panel) => (
           <div key={panel.key} className="border-b border-gray-200">
             <button

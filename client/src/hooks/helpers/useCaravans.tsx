@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { divideByPrecision, getEntityIdFromKeys, getForeignKeyEntityId } from "../../ui/utils/utils";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { useHyperstructure } from "./useHyperstructure";
-import { useBanks } from "./useBanks";
 
 const FREE_TRANSPORT_ENTITY_TYPE = 256;
 
@@ -30,7 +29,6 @@ export function useCaravan() {
   } = useDojo();
 
   const { getHyperstructureEntityId } = useHyperstructure();
-  const { getBankEntityId } = useBanks();
 
   const getCaravanInfo = (caravanId: bigint): CaravanInterface => {
     const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([caravanId]));
@@ -53,8 +51,6 @@ export function useCaravan() {
     let destinationType: DESTINATION_TYPE | undefined;
     if (position && getHyperstructureEntityId({ x: position.x, y: position.y })) {
       destinationType = DESTINATION_TYPE.HYPERSTRUCTURE;
-    } else if (position && getBankEntityId({ x: position.x, y: position.y })) {
-      destinationType = DESTINATION_TYPE.BANK;
     } else {
       destinationType = DESTINATION_TYPE.HOME;
     }
