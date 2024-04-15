@@ -5,16 +5,19 @@ import { Tabs } from "@/ui/elements/tab";
 import { useCallback, useMemo, useState } from "react";
 import { FastCreateOfferPopup } from "@/ui/components/cityview/realm/trade/FastCreateOffer";
 import { Marketplace } from "@/ui/components/cityview/realm/trade/Market/Marketplace";
+import { AcceptOfferPopup } from "@/ui/components/cityview/realm/trade/AcceptOffer";
+import { MarketInterface } from "@bibliothecadao/eternum";
 
 export const Trading = () => {
   const { togglePopup } = useUIStore();
   const [selectedTab, setSelectedTab] = useState(0);
   const isOpen = useUIStore((state) => state.isPopupOpen(trade));
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
+  const [selectedTrade, setSelectedTrade] = useState<MarketInterface | null>(null);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [isBuy, setIsBuy] = useState(false);
 
-  const onCreateOffer = useCallback((resourceId: number, isBuy: boolean) => {
+  const onCreateOffer = useCallback((resourceId: number | null, isBuy: boolean) => {
     setIsBuy(isBuy);
     setSelectedResource(resourceId);
     setShowCreateOffer(true);
@@ -29,7 +32,7 @@ export const Trading = () => {
             <div>Market</div>
           </div>
         ),
-        component: <Marketplace onCreateOffer={onCreateOffer} />,
+        component: <Marketplace setSelectedTrade={setSelectedTrade} onCreateOffer={onCreateOffer} />,
       },
       {
         key: "transfer",
@@ -53,6 +56,9 @@ export const Trading = () => {
         onClose={() => setShowCreateOffer(false)}
         onCreate={() => {}}
       />
+      {selectedTrade && (
+        <AcceptOfferPopup show={true} onClose={() => setSelectedTrade(null)} selectedTrade={selectedTrade!} />
+      )}
       <OSWindow width="650px" onClick={() => togglePopup(trade)} show={isOpen} title={trade}>
         {/* COMPONENTS GO HERE */}
         <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">

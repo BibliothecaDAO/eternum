@@ -25,6 +25,7 @@ import { useCaravan } from "../../../../../../hooks/helpers/useCaravans";
 
 interface MarketplaceProps {
   onCreateOffer: (resourceId: number | null, isBuy: boolean) => void;
+  setSelectedTrade: (trade: MarketInterface | null) => void;
 }
 
 interface DepthOfMarket {
@@ -40,7 +41,7 @@ interface ResourceOffersSummary {
   depthOfMarket: DepthOfMarket[];
 }
 
-export const Marketplace = ({ onCreateOffer }: MarketplaceProps) => {
+export const Marketplace = ({ onCreateOffer, setSelectedTrade }: MarketplaceProps) => {
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
   const [isBuy, setIsBuy] = useState(false);
 
@@ -210,6 +211,7 @@ export const Marketplace = ({ onCreateOffer }: MarketplaceProps) => {
           resourceId={selectedResource}
           onBack={() => setSelectedResource(null)}
           onCreate={() => onCreateOffer(selectedResource, isBuy)}
+          setSelectedTrade={setSelectedTrade}
         />
       ) : (
         <MarketplaceOverviewPanel
@@ -534,16 +536,17 @@ const MarketplaceResourceOffersPanel = ({
   onCreate,
   resourceId,
   onBack,
+  setSelectedTrade,
 }: {
   offers: MarketInterface[];
   isBuy: boolean;
   onCreate: () => void;
   resourceId: number;
   onBack: () => void;
+  setSelectedTrade: (trade: MarketInterface | null) => void;
 }) => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const [selectedTrade, setSelectedTrade] = useState<MarketInterface | null>(null);
   const sortingParams = useMemo(() => {
     return [
       { label: "Sell", sortKey: "sell", className: "" },
@@ -561,14 +564,6 @@ const MarketplaceResourceOffersPanel = ({
 
   return (
     <>
-      {selectedTrade && (
-        <AcceptOfferPopup
-          onClose={() => {
-            setSelectedTrade(null);
-          }}
-          selectedTrade={selectedTrade}
-        />
-      )}
       <div className="flex flex-col p-2">
         <div className="flex items-center justify-between">
           <FiltersPanel>
