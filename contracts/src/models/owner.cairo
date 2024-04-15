@@ -21,8 +21,13 @@ struct EntityOwner {
 }
 
 
+
 #[generate_trait]
 impl EntityOwnerImpl of EntityOwnerTrait {
+    fn owner_address(self: EntityOwner, world: IWorldDispatcher) -> ContractAddress {
+        return get!(world, self.entity_owner_id, Owner).address;
+    }
+
     fn get_realm_id(self: EntityOwner, world: IWorldDispatcher) -> u128 {
         get!(world, (self.entity_owner_id), Realm).realm_id
     }

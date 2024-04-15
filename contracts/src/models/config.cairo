@@ -364,6 +364,44 @@ struct BankConfig {
 }
 
 
+#[derive(Model, Copy, Drop, Serde)]
+struct TroopConfig {
+    #[key]
+    config_id: u128,
+    knight_health: u32, 
+    paladin_health: u32, 
+    crossbowman_health: u32,
+    knight_strength: u32, 
+    paladin_strength: u32, 
+    crossbowman_strength: u32,
+    advantage_percent: u32,
+    disadvantage_percent: u32,
+}
+
+
+#[generate_trait]
+impl TroopConfigImpl of TroopConfigTrait {
+    fn get(world: IWorldDispatcher) -> TroopConfig {
+        return get!(world, WORLD_CONFIG_ID, TroopConfig);
+    }
+}
+
+
+#[derive(Model, Copy, Drop, Serde)]
+struct BattleConfig {
+    #[key]
+    entity_id: u128,
+    max_tick_duration: u64,
+}
+
+#[generate_trait]
+impl BattleConfigImpl of BattleConfigTrait {
+    fn get(world: IWorldDispatcher) -> BattleConfig {
+        return get!(world, WORLD_CONFIG_ID, BattleConfig);
+    }
+}
+
+
 
 #[cfg(test)]
 mod tests {

@@ -59,3 +59,32 @@ fn set_u32_bit(number: u32, position: u8, value: bool) -> u32 {
     return (number & ~mask) | ((U32BitShift::shl(value, position.into())) & mask);
 }
 
+trait PercentageTrait<T> {
+    fn get(value: T, numerator: u32) -> T;
+}
+
+impl PercentageImpl
+    <T, +Mul<T>, +Div<T>, +Into<u32,T>, +Copy<T>, +Drop<T>> of PercentageTrait<T> {
+    fn get(value: T, numerator: u32) -> T {
+        return (value * numerator.into()) / PercentageValueImpl::_100().into();
+    }
+}
+
+#[generate_trait]
+impl PercentageValueImpl of PercentageValueTrait {
+    fn _1() -> u32 {
+        100
+    }
+
+    fn _10() -> u32 {
+        1_000
+    }
+
+    fn _50() -> u32 {
+        5_000
+    }
+
+    fn _100() -> u32 {
+        10_000 
+    }
+}
