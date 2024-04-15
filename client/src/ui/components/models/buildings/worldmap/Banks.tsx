@@ -54,28 +54,37 @@ type GLTFResult = GLTF & {
   };
 };
 
-export default function Banks(props: JSX.IntrinsicElements["group"]) {
+type BanksProps = {
+  props?: JSX.IntrinsicElements["group"];
+};
+
+export const Banks = ({ props }: BanksProps) => {
   const { nodes, materials } = useGLTF("/models/bank2.glb") as unknown as GLTFResult;
 
   const banks = useGetBanks();
 
-  return banks.map((bank) => {
-    const uiPosition = getUIPositionFromColRow(bank.position.x, bank.position.y);
-    <group {...props} dispose={null}>
-      <group
-        position={[uiPosition.x, 0.31, -uiPosition.y]}
-        rotation={[0, pseudoRandom(uiPosition.x, uiPosition.y) * 2 * Math.PI, 0]}
-      >
-        <mesh geometry={nodes.defaultMaterial.geometry} material={materials.lambert4} />
-        <mesh geometry={nodes.defaultMaterial_1.geometry} material={materials.lambert3} />
-        <mesh geometry={nodes.defaultMaterial_2.geometry} material={materials.lambert6} />
-        <mesh geometry={nodes.defaultMaterial_3.geometry} material={materials.lambert5} />
-        <mesh geometry={nodes.defaultMaterial_4.geometry} material={materials.lambert2} />
-        <mesh geometry={nodes.defaultMaterial_5.geometry} material={materials.lambert7} />
-        <mesh geometry={nodes.defaultMaterial_6.geometry} material={materials.lambert8} />
-      </group>
-    </group>;
-  });
-}
+  return (
+    <>
+      {banks.map((bank) => {
+        const uiPosition = getUIPositionFromColRow(bank.position.x, bank.position.y);
+        <group {...props} dispose={null}>
+          <group
+            scale={1}
+            position={[uiPosition.x, 0.31, -uiPosition.y]}
+            rotation={[0, pseudoRandom(uiPosition.x, uiPosition.y) * 2 * Math.PI, 0]}
+          >
+            <mesh geometry={nodes.defaultMaterial.geometry} material={materials.lambert4} />
+            <mesh geometry={nodes.defaultMaterial_1.geometry} material={materials.lambert3} />
+            <mesh geometry={nodes.defaultMaterial_2.geometry} material={materials.lambert6} />
+            <mesh geometry={nodes.defaultMaterial_3.geometry} material={materials.lambert5} />
+            <mesh geometry={nodes.defaultMaterial_4.geometry} material={materials.lambert2} />
+            <mesh geometry={nodes.defaultMaterial_5.geometry} material={materials.lambert7} />
+            <mesh geometry={nodes.defaultMaterial_6.geometry} material={materials.lambert8} />
+          </group>
+        </group>;
+      })}
+    </>
+  );
+};
 
 useGLTF.preload("/models/bank2.glb");

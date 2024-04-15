@@ -757,7 +757,7 @@ export class EternumProvider extends DojoProvider {
     const { coord, owner_fee_scaled, signer } = props;
 
     const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, "bank_systems"),
       entrypoint: "create_bank",
       calldata: [coord, owner_fee_scaled],
     });

@@ -42,11 +42,11 @@ fn setup() -> (
 
     let owner_fee_scaled: u128 = _0_1;
 
-    let bank_entity_id = bank_config_dispatcher
-        .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
-
     let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
+
+    let bank_entity_id = bank_systems_dispatcher
+        .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
 
     let bank_account_entity_id = bank_systems_dispatcher.open_account(bank_entity_id);
 

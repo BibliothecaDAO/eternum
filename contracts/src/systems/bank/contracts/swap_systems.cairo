@@ -109,7 +109,6 @@ mod swap_systems {
             // update player resource
             let mut resource 
                 = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
-            let tick = TickImpl::get(world); 
             resource.balance -= amount;
         }
     }

@@ -45,12 +45,13 @@ fn setup(
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
 
-    let bank_entity_id = bank_config_dispatcher
-        .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
     bank_config_dispatcher.set_bank_config(0, lp_fee_scaled);
 
     let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
+
+    let bank_entity_id = bank_systems_dispatcher
+        .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
 
     let bank_account_entity_id = bank_systems_dispatcher.open_account(bank_entity_id);
 

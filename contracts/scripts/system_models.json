@@ -90,16 +90,21 @@
   "LEVELING_SYSTEMS": ["Level", "Resource", "OwnedResourcesTracker"],
   "NAME_SYSTEMS": ["AddressName"],
   "BANK_SYSTEMS": [
-    "BankAuction",
-    "Resource",
+    "Bank",
+    "Position",
+    "BankAccounts",
+    "Owner"
+  ],
+  "SWAP_SYSTEMS": [
+    "Market",
     "OwnedResourcesTracker",
-    "ResourceAllowance",
-    "Owner",
-    "Weight",
-    "ResourceChest",
-    "DetachedResource",
-    "ForeignKey",
-    "Inventory"
+    "Resource"
+  ],
+  "LIQUIDITY_SYSTEMS": [
+    "Market",
+    "OwnedResourcesTracker",
+    "Resource",
+    "Liquidity"
   ],
   "HYPERSTRUCTURE_SYSTEMS": ["Orders", "HyperStructure"],
   "BUILDINGS_SYSTEMS": [
