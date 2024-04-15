@@ -23,7 +23,7 @@ export const Construction = () => {
   //   [selectedTab],
   // );
   return (
-    <OSWindow width="500px" onClick={() => togglePopup(construction)} show={isOpen} title={construction}>
+    <OSWindow onClick={() => togglePopup(construction)} show={isOpen} title={construction}>
       <SelectPreviewBuilding />
       {/* <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
         <Tabs.List>

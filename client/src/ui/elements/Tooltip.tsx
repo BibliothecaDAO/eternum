@@ -36,6 +36,7 @@ export const Tooltip = ({ className }: TooltipProps) => {
             position == "top" && "-translate-y-[150%]",
             position == "bottom" && "translate-y-full",
             position == "left" && "-translate-x-[110%] -translate-y-1/2",
+            position == "right" && "translate-x-[30%] -translate-y-1/2",
             className,
           )}
         >
@@ -46,6 +47,7 @@ export const Tooltip = ({ className }: TooltipProps) => {
               position == "top" && "bottom-0 translate-y-1/2 -translate-x-1/2 left-1/2 bottom-0",
               position == "bottom" && "top-0 -translate-y-1/2 rotate-180 -translate-x-1/2 left-1/2 bottom-0",
               position == "left" && "right-0 top-1/2 -translate-y-1/2 translate-x-1/2 -rotate-90",
+              position == "right" && "left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 rotate-90",
             )}
             width="26"
             height="18"

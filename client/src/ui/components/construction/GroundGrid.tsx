@@ -4,7 +4,7 @@ import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
 import { getUIPositionFromColRow } from "../../utils/utils";
 import { useEffect, useMemo } from "react";
-import { useBuildingSound } from "../../../hooks/useUISound";
+import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingType } from "@bibliothecadao/eternum";
@@ -18,6 +18,7 @@ export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
 const GroundGrid = () => {
   const hexPositions = useMemo(() => generateHexPositions(), []);
   const { playBuildingSound } = useBuildingSound();
+  const { play: playShovel } = useShovelSound();
   const { previewBuilding, setHoveredBuildHex, existingBuildings, selectedResource, setPreviewBuilding } = useUIStore(
     (state) => state,
   );
@@ -66,9 +67,12 @@ const GroundGrid = () => {
 
             <Hexagon
               position={hexPosition}
-              onPointerEnter={() =>
-                previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })
-              }
+              onPointerEnter={() => {
+                if (previewBuilding) {
+                  setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row });
+                  playShovel();
+                }
+              }}
               onClick={() => {
                 if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
                   handlePlacement(hexPosition.col, hexPosition.row, previewBuilding);
