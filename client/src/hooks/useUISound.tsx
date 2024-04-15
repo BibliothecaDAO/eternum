@@ -13,6 +13,8 @@ export const soundSelector = {
   fly: "ui/whoosh.mp3",
   levelUp: "ui/level-up.mp3",
   explore: "ui/explore.mp3",
+  shovelMain: "ui/shovel_1.mp3",
+  shovelAlternative: "ui/shovel_2.mp3",
   buildLabor: "buildings/workhuts.mp3",
   buildMilitary: "buildings/military.mp3",
   buildCastle: "buildings/castle.mp3",
@@ -210,6 +212,25 @@ export const useRunningSound = () => {
   return {
     play,
     stop,
+  };
+};
+
+export const useShovelSound = () => {
+  const { play: playShovelMain } = useUiSounds(soundSelector.shovelMain);
+  const { play: playShovelAlternative } = useUiSounds(soundSelector.shovelAlternative);
+  const [isFirst, setIsFirst] = useState(true);
+
+  const play = useCallback(() => {
+    if (isFirst) {
+      playShovelMain();
+    } else {
+      playShovelAlternative();
+    }
+    setIsFirst((prev) => !prev);
+  }, [isFirst, playShovelAlternative, playShovelMain]);
+
+  return {
+    play,
   };
 };
 
