@@ -2,37 +2,29 @@ import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { SetupResult, setup } from "./dojo/setup";
+import { setup } from "./dojo/setup";
 import { DojoProvider } from "./hooks/context/DojoContext";
 import { LoadingScreen } from "./ui/modules/LoadingScreen";
 import { dojoConfig } from "../dojoConfig";
 
-const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
+async function init() {
+  const rootElement = document.getElementById("root");
+  if (!rootElement) throw new Error("React root not found");
+  const root = ReactDOM.createRoot(rootElement as HTMLElement);
 
-function Main() {
-  const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
-
-  useEffect(() => {
-    async function initialize() {
-      const result = await setup(dojoConfig);
-      setSetupResult(result);
-    }
-
-    initialize();
-  }, []);
+  const setupResult = await setup(dojoConfig);
 
   if (!setupResult) {
-    // Render the LoadingScreen component while setup is not complete
     return <LoadingScreen />;
   }
 
-  return (
+  root.render(
     <React.StrictMode>
       <DojoProvider value={setupResult}>
         <App />
       </DojoProvider>
-    </React.StrictMode>
+    </React.StrictMode>,
   );
 }
 
-root.render(<Main />);
+init();

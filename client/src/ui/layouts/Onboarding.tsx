@@ -32,7 +32,7 @@ export const Onboarding = () => {
 
   return (
     <div className="relative h-screen w-screen">
-      <img className="absolute h-screen w-screen object-cover" src="/images/cover-2.png" alt="" />
+      <img className="absolute h-screen w-screen object-cover" src="/images/cover-3.jpeg" alt="" />
       <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center ">
         {currentStep === 1 && <StepOne onNext={nextStep} />}
         {currentStep === 2 && <Naming onNext={handleNamingNext} />}

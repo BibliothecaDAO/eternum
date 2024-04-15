@@ -169,8 +169,11 @@ export default {
         ".border-gradient": {
           borderImage: "linear-gradient(to right, transparent, #F3C99F, transparent) 1",
         },
+        ".clip-squared": {
+          clipPath: "polygon(10% 0, 90% 0, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0 90%, 0 10%)",
+        },
       };
-      addUtilities(newUtilities, ["responsive"]);
+      addUtilities(newUtilities, ["responsive", "hover"]);
     }),
   ],
 };

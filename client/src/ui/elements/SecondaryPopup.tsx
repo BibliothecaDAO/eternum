@@ -74,7 +74,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
 
   return (
     <motion.div
-      className="flex justify-center popup text-gold"
+      className="flex justify-center popup text-gold "
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
