@@ -45,6 +45,13 @@ export const WorldMapScene = () => {
     normalMap: "/textures/paper/paper-normal.jpg",
   });
 
+  Object.keys(texture).forEach((key) => {
+    const _texture = texture[key as keyof typeof texture];
+    _texture.wrapS = THREE.RepeatWrapping;
+    _texture.wrapT = THREE.RepeatWrapping;
+    _texture.repeat.set(60, 60);
+  });
+
   useEffect(() => {
     setTimeout(() => {
       setIsLoadingScreenEnabled(false);

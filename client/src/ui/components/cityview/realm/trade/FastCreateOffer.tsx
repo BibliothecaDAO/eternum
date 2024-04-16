@@ -28,6 +28,8 @@ import ListSelect from "../../../../elements/ListSelect";
 import { getTotalResourceWeight } from "./utils";
 import { TradeRealmSelector } from "./TradeRealmSelector";
 import { usePlayResourceSound } from "../../../../../hooks/useUISound";
+import { OSWindow } from "@/ui/components/navigation/OSWindow";
+import { createOffer } from "@/ui/components/navigation/Config";
 
 interface FastCreateOfferPopupProps {
   resourceId?: number;
@@ -36,6 +38,7 @@ interface FastCreateOfferPopupProps {
   directOfferRealmId?: bigint;
   onClose: () => void;
   onCreate: () => void;
+  show: boolean;
 }
 
 export const FastCreateOfferPopup = ({
@@ -44,6 +47,7 @@ export const FastCreateOfferPopup = ({
   onClose,
   marketplaceMode,
   directOfferRealmId,
+  show,
 }: FastCreateOfferPopupProps) => {
   const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<number[]>([]);
   const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
@@ -139,61 +143,54 @@ export const FastCreateOfferPopup = ({
   }, [donkeysCount, resourceWeight]);
 
   return (
-    <SecondaryPopup name="create-offer">
-      <SecondaryPopup.Head onClose={onClose}>
-        <div className="flex items-center space-x-1">
-          <div className="mr-0.5">Create Offer:</div>
-        </div>
-      </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"550px"}>
-        <div className="flex flex-col items-center p-2 overflow-auto">
-          <SelectResourcesAmountPanel
-            selectedResourceIdsGive={selectedResourceIdsGive}
-            selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
-            setSelectedResourceIdsGive={setSelectedResourceIdsGive}
-            setSelectedResourcesGiveAmounts={setSelectedResourcesGiveAmounts}
-            resourceWeight={resourceWeight}
-            selectedResourceIdsGet={selectedResourceIdsGet}
-            selectedResourcesGetAmounts={selectedResourcesGetAmounts}
-            setSelectedResourceIdsGet={setSelectedResourceIdsGet}
-            setSelectedResourcesGetAmounts={setSelectedResourcesGetAmounts}
-            setResourceWeight={setResourceWeight}
-            selectedRealmId={selectedRealmId}
-            setSelectedRealmId={setSelectedRealmId}
-            marketplaceMode={marketplaceMode}
-          />
+    <OSWindow title={createOffer} onClick={onClose} show={show} width="450px">
+      <div className="flex flex-col items-center p-2 overflow-auto">
+        <SelectResourcesAmountPanel
+          selectedResourceIdsGive={selectedResourceIdsGive}
+          selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
+          setSelectedResourceIdsGive={setSelectedResourceIdsGive}
+          setSelectedResourcesGiveAmounts={setSelectedResourcesGiveAmounts}
+          resourceWeight={resourceWeight}
+          selectedResourceIdsGet={selectedResourceIdsGet}
+          selectedResourcesGetAmounts={selectedResourcesGetAmounts}
+          setSelectedResourceIdsGet={setSelectedResourceIdsGet}
+          setSelectedResourcesGetAmounts={setSelectedResourcesGetAmounts}
+          setResourceWeight={setResourceWeight}
+          selectedRealmId={selectedRealmId}
+          setSelectedRealmId={setSelectedRealmId}
+          marketplaceMode={marketplaceMode}
+        />
 
-          <SelectCaravanPanel
-            donkeysCount={donkeysCount}
-            setDonkeysCount={setDonkeysCount}
-            isNewCaravan={isNewCaravan}
-            setIsNewCaravan={setIsNewCaravan}
-            selectedCaravan={selectedCaravan}
-            setSelectedCaravan={setSelectedCaravan}
-            selectedResourceIdsGet={selectedResourceIdsGet}
-            selectedResourcesGetAmounts={selectedResourcesGetAmounts}
-            selectedResourceIdsGive={selectedResourceIdsGive}
-            selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
-            resourceWeight={resourceWeight}
-            hasEnoughDonkeys={hasEnoughDonkeys}
-          />
-        </div>
-        <div className="flex justify-between m-2  text-xxs">
-          <Button
-            className="!px-[6px] !py-[2px] w-full"
-            disabled={!canCreateOffer}
-            isLoading={isLoading}
-            onClick={() => {
-              createOrder();
-            }}
-            size="md"
-            variant={"primary"}
-          >
-            {selectedRealmId ? "Create Direct Offer" : "Create Order"}
-          </Button>
-        </div>
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
+        <SelectCaravanPanel
+          donkeysCount={donkeysCount}
+          setDonkeysCount={setDonkeysCount}
+          isNewCaravan={isNewCaravan}
+          setIsNewCaravan={setIsNewCaravan}
+          selectedCaravan={selectedCaravan}
+          setSelectedCaravan={setSelectedCaravan}
+          selectedResourceIdsGet={selectedResourceIdsGet}
+          selectedResourcesGetAmounts={selectedResourcesGetAmounts}
+          selectedResourceIdsGive={selectedResourceIdsGive}
+          selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
+          resourceWeight={resourceWeight}
+          hasEnoughDonkeys={hasEnoughDonkeys}
+        />
+      </div>
+      <div className="flex justify-between m-2  text-xxs">
+        <Button
+          className="!px-[6px] !py-[2px] w-full"
+          disabled={!canCreateOffer}
+          isLoading={isLoading}
+          onClick={() => {
+            createOrder();
+          }}
+          size="md"
+          variant={"primary"}
+        >
+          {selectedRealmId ? "Create Direct Offer" : "Create Order"}
+        </Button>
+      </div>
+    </OSWindow>
   );
 };
 

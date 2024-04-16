@@ -10,10 +10,12 @@ interface TextInputProps {
   onBlur?: (e: any) => void;
   onFocus?: (e: any) => void;
   onKeyDown?: (e: any) => void;
+  onKeyPress?: (e: any) => void;
 }
 
 const TextInput = (props: TextInputProps) => {
-  const { value, disabled, onChange, className, placeholder, maxLength, onBlur, onFocus, onKeyDown } = props;
+  const { value, disabled, onChange, className, placeholder, maxLength, onBlur, onFocus, onKeyDown, onKeyPress } =
+    props;
   return (
     <input
       className={clsx(
@@ -29,6 +31,7 @@ const TextInput = (props: TextInputProps) => {
       onBlur={onBlur}
       onFocus={onFocus}
       onKeyDown={onKeyDown}
+      onKeyPress={onKeyPress}
     />
   );
 };

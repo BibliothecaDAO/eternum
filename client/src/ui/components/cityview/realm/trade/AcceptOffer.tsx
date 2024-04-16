@@ -10,13 +10,16 @@ import { WEIGHT_PER_DONKEY_KG, MarketInterface } from "@bibliothecadao/eternum";
 import { getTotalResourceWeight } from "./utils";
 import useMarketStore from "../../../../../hooks/store/useMarketStore";
 import { EventType, useNotificationsStore } from "../../../../../hooks/store/useNotificationsStore";
+import { OSWindow } from "@/ui/components/navigation/OSWindow";
+import { acceptOfferTitle } from "@/ui/components/navigation/Config";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
   selectedTrade: MarketInterface;
+  show: boolean;
 };
 
-export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupProps) => {
+export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPopupProps) => {
   const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
   const [isNewCaravan, setIsNewCaravan] = useState(true);
   const [donkeysCount, setDonkeysCount] = useState(1);
@@ -105,44 +108,37 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
   }, [selectedTrade]);
 
   return (
-    <SecondaryPopup name="accept-offer">
-      <SecondaryPopup.Head onClose={onClose}>
-        <div className="flex items-center space-x-1">
-          <div className="mr-0.5">Accept Offer:</div>
-        </div>
-      </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"476px"}>
-        <div className="flex flex-col items-center pt-2">
-          <SelectCaravanPanel
-            donkeysCount={donkeysCount}
-            setDonkeysCount={setDonkeysCount}
-            isNewCaravan={isNewCaravan}
-            setIsNewCaravan={setIsNewCaravan}
-            selectedCaravan={selectedCaravan}
-            setSelectedCaravan={setSelectedCaravan}
-            selectedResourceIdsGet={resourcesGet.map((resource) => resource.resourceId) || []}
-            selectedResourcesGetAmounts={selectedResourcesGetAmounts}
-            selectedResourceIdsGive={resourcesGive.map((resource) => resource.resourceId) || []}
-            selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
-            resourceWeight={resourceWeight}
-            hasEnoughDonkeys={hasEnoughDonkeys}
-          />
-        </div>
-        <div className="flex justify-between m-2 text-xxs">
-          <Button className="!px-[6px] !py-[2px] text-xxs" onClick={onClose} variant="outline">
-            Cancel
-          </Button>
-          <Button
-            disabled={!canAcceptOffer}
-            className="!px-[6px] !py-[2px] text-xxs"
-            onClick={onAccept}
-            variant={canAcceptOffer ? "success" : "danger"}
-            isLoading={isLoading}
-          >
-            Accept Offer
-          </Button>
-        </div>
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
+    <OSWindow title={acceptOfferTitle} onClick={onClose} show={show} width="456px">
+      <div className="flex flex-col items-center pt-2">
+        <SelectCaravanPanel
+          donkeysCount={donkeysCount}
+          setDonkeysCount={setDonkeysCount}
+          isNewCaravan={isNewCaravan}
+          setIsNewCaravan={setIsNewCaravan}
+          selectedCaravan={selectedCaravan}
+          setSelectedCaravan={setSelectedCaravan}
+          selectedResourceIdsGet={resourcesGet.map((resource) => resource.resourceId) || []}
+          selectedResourcesGetAmounts={selectedResourcesGetAmounts}
+          selectedResourceIdsGive={resourcesGive.map((resource) => resource.resourceId) || []}
+          selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
+          resourceWeight={resourceWeight}
+          hasEnoughDonkeys={hasEnoughDonkeys}
+        />
+      </div>
+      <div className="flex justify-between m-2 text-xxs">
+        <Button className="!px-[6px] !py-[2px] text-xxs" onClick={onClose} variant="outline">
+          Cancel
+        </Button>
+        <Button
+          disabled={!canAcceptOffer}
+          className="!px-[6px] !py-[2px] text-xxs"
+          onClick={onAccept}
+          variant={canAcceptOffer ? "success" : "danger"}
+          isLoading={isLoading}
+        >
+          Accept Offer
+        </Button>
+      </div>
+    </OSWindow>
   );
 };

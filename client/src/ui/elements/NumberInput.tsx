@@ -24,7 +24,7 @@ export const NumberInput = ({ value, onChange, className, step = 1, max, min = 0
           playClick();
         }}
       >
-        <ArrowLeft />
+        <ArrowLeft className="fill-gold" />
       </div>
 
       <input
@@ -42,7 +42,7 @@ export const NumberInput = ({ value, onChange, className, step = 1, max, min = 0
           playClick();
         }}
       >
-        <ArrowRight width={"6px"} height={"8px"} />
+        <ArrowRight className="fill-gold" width={"6px"} height={"8px"} />
       </div>
     </div>
   );

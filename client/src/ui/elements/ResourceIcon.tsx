@@ -69,7 +69,7 @@ const STYLES = {
     xs: "w-2 h-2 md:w-4 md:h-4",
     sm: "w-4 h-4 md:w-6 md:h-6",
     md: "w-6 h-6",
-    lg: "w-8 h-8 md:w-12 md:h-16",
+    lg: "w-8 h-8",
     xl: "w-12 h-12 md:w-16 md:h-16",
     xxl: "w-16 h-16 md:w-20 md:h-20",
   },
@@ -77,8 +77,8 @@ const STYLES = {
 
 export const ResourceIcon = ({ isLabor = false, withTooltip = true, ...props }: Props) => {
   const Icon = (
-    <div className={`flex self-center paper relative group rounded-xl justify-center ${props.containerClassName}`}>
-      <div className={`relative mx-auto ${clsx(STYLES.size[props.size], props.className)} `}>
+    <div className={`flex paper relative group rounded-xl justify-center ${props.containerClassName}`}>
+      <div className={`relative ${clsx(STYLES.size[props.size], props.className)} `}>
         {Components[props.resource.replace(" ", "").replace("'", "")]?.component}
         {isLabor && <People className="absolute left-4 h-2.5 top-3"></People>}
       </div>
