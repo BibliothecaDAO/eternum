@@ -116,10 +116,16 @@ export function useCaravan() {
     }
   }
 
-  const useGetPositionCaravans = (x: number, y: number) => {
+  const useGetPositionCaravans = (x: number, y: number, onlyMine?: boolean) => {
     const [caravans, setCaravans] = useState<CaravanInterface[]>([]);
 
-    const entityIds = useEntityQuery([HasValue(Position, { x, y }), Has(CaravanMembers)]);
+    let query: any = [HasValue(Position, { x, y }), Has(CaravanMembers)];
+
+    if (onlyMine) {
+      query.push(HasValue(Owner, { address: BigInt(account.address) }));
+    }
+
+    const entityIds = useEntityQuery(query);
 
     useMemo((): any => {
       const caravans = entityIds
