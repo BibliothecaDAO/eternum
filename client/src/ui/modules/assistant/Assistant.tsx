@@ -77,7 +77,7 @@ export const Assistant = () => {
       ws.send(JSON.stringify({ text: text }));
     }
   };
-  console.log("chunks", chunks);
+
   return (
     <OSWindow width="600px" onClick={() => togglePopup(assistant)} show={isOpen} title={assistant}>
       <div className="p-5 ">

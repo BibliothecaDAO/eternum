@@ -1,6 +1,7 @@
 import { DojoProvider } from "@dojoengine/core";
 import * as SystemProps from "../types/provider";
-import { Call, CallData } from "starknet";
+import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
+import EventEmitter from "eventemitter3";
 
 const UUID_OFFSET_CREATE_CARAVAN = 2;
 
@@ -13,7 +14,26 @@ export const getContractByName = (manifest: any, name: string) => {
   }
 };
 
-export class EternumProvider extends DojoProvider {
+function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
+  return class extends Base {
+    eventEmitter = new EventEmitter();
+
+    emit(event: string, ...args: any[]) {
+      this.eventEmitter.emit(event, ...args);
+    }
+
+    on(event: string, listener: (...args: any[]) => void) {
+      this.eventEmitter.on(event, listener);
+    }
+
+    off(event: string, listener: (...args: any[]) => void) {
+      this.eventEmitter.off(event, listener);
+    }
+  };
+}
+const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
+
+export class EternumProvider extends EnhancedDojoProvider {
   constructor(katana: any, url?: string) {
     super(katana, url);
     this.manifest = katana;
@@ -22,6 +42,15 @@ export class EternumProvider extends DojoProvider {
       const worldAddress = this.manifest.world.address;
       return worldAddress;
     };
+  }
+
+  private async executeAndCheckTransaction(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): Promise<any> {
+    const tx = await this.executeMulti(signer, transactionDetails);
+    this.emit("transactionComplete", await this.waitForTransactionWithCheck(tx.transaction_hash));
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   // Wrapper function to check for transaction errors
@@ -41,7 +70,7 @@ export class EternumProvider extends DojoProvider {
   public async purchase_labor(props: SystemProps.PurchaseLaborProps): Promise<any> {
     const { signer, entity_id, resource_type, labor_units, multiplier } = props;
 
-    const tx = await this.executeMulti(signer, {
+    return this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "labor_systems"),
       calldata: {
         world: this.getWorldAddress(),
@@ -51,8 +80,6 @@ export class EternumProvider extends DojoProvider {
       },
       entrypoint: "purchase",
     });
-
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   // Refactor the functions using the interfaces
@@ -719,11 +746,7 @@ export class EternumProvider extends DojoProvider {
   public async create_building(props: SystemProps.CreateBuildingProps) {
     const { entity_id, building_coord, building_category, produce_resource_type, signer } = props;
 
-    console.log(
-      CallData.compile([entity_id, building_coord.x, building_coord.y, building_category, produce_resource_type]),
-    );
-
-    const tx = await this.executeMulti(signer, {
+    return this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "building_systems"),
       entrypoint: "create",
       calldata: CallData.compile([
@@ -733,10 +756,6 @@ export class EternumProvider extends DojoProvider {
         building_category,
         produce_resource_type,
       ]),
-    });
-
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
     });
   }
 

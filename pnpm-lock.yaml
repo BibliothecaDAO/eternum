@@ -246,6 +246,9 @@ importers:
       '@dojoengine/core':
         specifier: 0.6.121
         version: 0.6.121(starknet@6.7.0)
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.1
       starknet:
         specifier: 6.7.0
         version: 6.7.0
