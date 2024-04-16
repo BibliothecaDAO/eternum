@@ -9,7 +9,7 @@ import { useDojo } from "../../../../../../DojoContext";
 export const TravelersPanel = () => {
   const {
     setup: {
-      components: { Npc: NpcComponent, EntityOwner, Position},
+      components: { Npc: NpcComponent, EntityOwner, Position },
     },
   } = useDojo();
   const { realmId, realmEntityId } = useRealmStore();

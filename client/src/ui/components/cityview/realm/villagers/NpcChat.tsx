@@ -28,7 +28,8 @@ const NpcChat = ({}) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (selectedTownhall === null) {
+    if (selectedTownhall === null || localStorage.getItem(LOCAL_STORAGE_ID) == null) {
+      console.log(selectedTownhall);
       return;
     }
     setLastMessageDisplayedIndex(0);
@@ -36,6 +37,10 @@ const NpcChat = ({}) => {
   }, [selectedTownhall]);
 
   useEffect(() => {
+    if (localStorage.getItem(LOCAL_STORAGE_ID) == null) {
+      return;
+    }
+
     if (lastMessageDisplayedIndex !== 0) {
       scrollToElement(bottomRef);
     }

@@ -55,7 +55,7 @@ export const TownhallPanel = ({ type = "all" }: TownhallPanelProps) => {
   const gatherVillagers = async () => {
     setIsTownHallLoading(true);
     try {
-      let response = await loreMachineJsonRpcCall("generate_town_hall", {
+      let response = await loreMachineJsonRpcCall("generateDiscussion", {
         realm_id: Number(realmId!),
         realm_entity_id: Number(realmEntityId!),
         order_id: realm!.order,

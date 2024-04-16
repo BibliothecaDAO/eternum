@@ -63,10 +63,11 @@ export const ResidentsPanel = () => {
       return;
     }
     try {
-      let response = await loreMachineJsonRpcCall("spawn_npc", {
+      let response = await loreMachineJsonRpcCall("spawnNpc", {
         realm_entity_id: Number(realmEntityId),
       });
       response = keysSnakeToCamel(response);
+
       await spawn_npc({
         signer: account,
         realm_entity_id: realmEntityId,
