@@ -64,7 +64,8 @@
     "ResourceChest",
     "DetachedResource",
     "ForeignKey",
-    "Inventory"
+    "Inventory",
+    "Production"
   ],
   "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
   "COMBAT_SYSTEMS": [

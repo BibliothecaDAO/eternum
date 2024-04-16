@@ -15,6 +15,7 @@ mod bank_systems {
         ) -> ID {
             let bank_entity_id: ID = world.uuid().into();
 
+            //todo: check that tile explored
             //todo: check that no bank on this position
             //todo: check that no realm on this position
 
