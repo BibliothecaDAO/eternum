@@ -130,7 +130,6 @@ export const SendResourcesPanel = ({
   const totalResources = useMemo(() => {
     const totalResources: Record<string, number> = {};
     resources.forEach((resource) => {
-      console.log({ resource, senderEntityId });
       let resourceAmount = getComponentValue(
         Resource,
         getEntityIdFromKeys([BigInt(senderEntityId), BigInt(resource.id)]),
@@ -193,6 +192,7 @@ export const SendResourcesPanel = ({
           </>
           <PercentageSelection percentages={[0, 25, 50, 75, 100]} setPercentage={setPercentage}></PercentageSelection>
           <SelectCaravanPanel
+            realmEntityId={senderEntityId}
             className="!p-0"
             donkeysCount={donkeysCount}
             setDonkeysCount={setDonkeysCount}

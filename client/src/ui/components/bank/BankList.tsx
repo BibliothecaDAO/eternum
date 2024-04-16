@@ -30,16 +30,10 @@ export const BankPanel = ({ entity }: BankListProps) => {
 
   const { playerRealms } = useEntities();
 
-  const myBankAccountsIds = getMyAccountsInBank(entity.id);
+  const myBankAccountsEntityIds = getMyAccountsInBank(entity.id);
+  const myBankAccountEntityId = myBankAccountsEntityIds.length === 1 ? myBankAccountsEntityIds[0] : undefined;
 
   const position = getComponentValue(Position, getEntityIdFromKeys([entity.id]));
-
-  const myBankAccountList = myBankAccountsIds.map((id) => {
-    return {
-      id,
-      name: `Bank Account ${id}`,
-    };
-  });
 
   const tabs = useMemo(
     () => [
@@ -59,13 +53,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>My Account</div>
           </div>
         ),
-        component: (
-          <EntityList
-            title="Banks"
-            panel={({ entity }) => <BankEntityList entity={entity} />}
-            list={myBankAccountList}
-          />
-        ),
+        component: <BankEntityList entity={{ id: myBankAccountEntityId }} />,
       },
       {
         key: "all",
@@ -77,12 +65,34 @@ export const BankPanel = ({ entity }: BankListProps) => {
         component: (
           <EntityList
             list={playerRealms()}
-            title="armies"
+            title="Send"
             panel={({ entity }) => (
               <SendResourcesPanel
                 senderEntityId={entity.entity_id}
                 position={position}
-                onSendCaravan={() => setSelectedTab(3)}
+                onSendCaravan={() => setSelectedTab(4)}
+              />
+            )}
+          />
+        ),
+      },
+
+      {
+        key: "all",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Withdraw Resources</div>
+          </div>
+        ),
+        component: (
+          <EntityList
+            list={playerRealms()}
+            title="Witdraw"
+            panel={({ entity }) => (
+              <SendResourcesPanel
+                senderEntityId={myBankAccountEntityId!}
+                position={getComponentValue(Position, getEntityIdFromKeys([entity.entity_id]))}
+                onSendCaravan={() => setSelectedTab(1)}
               />
             )}
           />

@@ -22,12 +22,13 @@ import { useDojo } from "../../../../../hooks/context/DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
-import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
 import { useGetRealm, useRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { useResourceBalance, useResources } from "@/hooks/helpers/useResources";
 import { getTotalResourceWeight } from "./utils";
 import { TradeRealmSelector } from "./TradeRealmSelector";
+import { getComponentValue } from "@dojoengine/recs";
 
 interface CreateOfferPopupProps {
   onClose: () => void;
@@ -423,6 +424,7 @@ const SelectResourcesAmountPanel = ({
 };
 
 export const SelectCaravanPanel = ({
+  realmEntityId,
   donkeysCount,
   setDonkeysCount,
   isNewCaravan,
@@ -438,6 +440,7 @@ export const SelectCaravanPanel = ({
   headline = "You Give",
   className,
 }: {
+  realmEntityId: bigint;
   donkeysCount: number;
   setDonkeysCount: (donkeysCount: number) => void;
   isNewCaravan: boolean;
@@ -453,14 +456,18 @@ export const SelectCaravanPanel = ({
   headline?: string;
   className?: string;
 }) => {
-  const { realmEntityId } = useRealmStore();
-
+  const {
+    setup: {
+      components: { Position },
+    },
+  } = useDojo();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { useRealmDonkeysCount, useGetPositionCaravans } = useCaravan();
   const { getResourcesFromInventory } = useResources();
   const { realm } = useGetRealm(realmEntityId);
-  const { caravans: realmCaravans } = useGetPositionCaravans(realm?.position.x || 0, realm?.position.y || 0);
+  const position = getComponentValue(Position, getEntityIdFromKeys([realmEntityId]));
+  const { caravans: realmCaravans } = useGetPositionCaravans(position?.x || 0, position?.y || 0);
 
   const [donkeysLeft, setDonkeysLeft] = useState<number>(0);
   const realmDonkeysCount = useRealmDonkeysCount(realmEntityId);
