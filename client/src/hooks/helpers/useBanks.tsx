@@ -11,8 +11,8 @@ export const useBanks = () => {
     },
   } = useDojo();
 
-  const getMyAccountsInBank = (bankEntityId: bigint) => {
-    const entityIds = runQuery([
+  const useMyAccountsInBank = (bankEntityId: bigint) => {
+    const entityIds = useEntityQuery([
       HasValue(BankAccounts, { bank_entity_id: bankEntityId, owner: BigInt(account.address) }),
     ]);
     return Array.from(entityIds)
@@ -25,7 +25,7 @@ export const useBanks = () => {
   };
 
   return {
-    getMyAccountsInBank,
+    useMyAccountsInBank,
   };
 };
 

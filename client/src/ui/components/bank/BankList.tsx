@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "@/ui/elements/tab";
 import { ResourceSwap } from "./Swap";
-
+import { OpenBankAccount } from "./OpenBankAccount";
 import { BankEntityList } from "./BankEntityList";
 import { EntityList } from "../list/EntityList";
 import { useBanks } from "@/hooks/helpers/useBanks";
@@ -26,11 +26,11 @@ export const BankPanel = ({ entity }: BankListProps) => {
   } = useDojo();
 
   const [selectedTab, setSelectedTab] = useState(0);
-  const { getMyAccountsInBank } = useBanks();
+  const { useMyAccountsInBank } = useBanks();
 
   const { playerRealms } = useEntities();
 
-  const myBankAccountsEntityIds = getMyAccountsInBank(entity.id);
+  const myBankAccountsEntityIds = useMyAccountsInBank(entity.id);
   const myBankAccountEntityId = myBankAccountsEntityIds.length === 1 ? myBankAccountsEntityIds[0] : undefined;
 
   const position = getComponentValue(Position, getEntityIdFromKeys([entity.id]));
@@ -53,7 +53,11 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>My Account</div>
           </div>
         ),
-        component: <BankEntityList entity={{ id: myBankAccountEntityId }} />,
+        component: !myBankAccountEntityId ? (
+          <OpenBankAccount bank_entity_id={entity.id} />
+        ) : (
+          <BankEntityList entity={{ id: myBankAccountEntityId }} />
+        ),
       },
       {
         key: "all",
@@ -108,7 +112,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
         component: <EntitiesOnPositionList position={position} />,
       },
     ],
-    [selectedTab, position],
+    [myBankAccountsEntityIds, position],
   );
 
   return (
