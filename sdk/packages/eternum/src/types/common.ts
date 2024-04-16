@@ -105,6 +105,7 @@ export interface CaravanInterface {
   isMine: boolean;
   isRoundTrip: boolean;
   position: Position | undefined;
+  homePosition: Position | undefined;
   destinationType: DESTINATION_TYPE;
 }
 

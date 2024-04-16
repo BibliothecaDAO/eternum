@@ -1,13 +1,13 @@
-import { type Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { type Entity, Has, HasValue, NotValue, getComponentValue, runQuery, Not } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys, getForeignKeyEntityId } from "../../ui/utils/utils";
-import { useComponentValue, useEntityQuery } from "@dojoengine/react";
+import { useEntityQuery } from "@dojoengine/react";
 import { type BigNumberish } from "starknet";
-import { type Resource } from "@bibliothecadao/eternum";
+import { Position, type Resource } from "@bibliothecadao/eternum";
 import { EventType, useNotificationsStore } from "../store/useNotificationsStore";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useBlockchainStore from "../store/useBlockchainStore";
 
 export function useResources() {
@@ -283,4 +283,27 @@ export const useProductionManager = (entityId: bigint, resourceId: number) => {
   return useMemo(() => {
     return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
   }, [entityId, resourceId]);
+};
+
+export const useGetResourceDepositEntities = (address: bigint, position: Position) => {
+  const {
+    setup: {
+      components: { Owner, Position, Movable, Bank },
+    },
+  } = useDojo();
+
+  const entities = runQuery([
+    HasValue(Owner, { address }),
+    Not(Movable),
+    Not(Bank),
+    HasValue(Position, { ...position }),
+  ]);
+
+  return Array.from(entities)
+    .map((entityId) => {
+      const position = getComponentValue(Position, entityId);
+      if (!position) return;
+      return position?.entity_id;
+    })
+    .filter(Boolean) as bigint[];
 };

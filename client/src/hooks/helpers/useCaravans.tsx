@@ -48,6 +48,11 @@ export function useCaravan() {
 
     const position = getComponentValue(Position, getEntityIdFromKeys([caravanId]));
 
+    const ownerEntity = getComponentValue(EntityOwner, getEntityIdFromKeys([caravanId]))?.entity_owner_id;
+    const homePosition = ownerEntity
+      ? getComponentValue(Position, getEntityIdFromKeys([BigInt(ownerEntity)]))
+      : undefined;
+
     let destinationType: DESTINATION_TYPE | undefined;
     if (position && getHyperstructureEntityId({ x: position.x, y: position.y })) {
       destinationType = DESTINATION_TYPE.HYPERSTRUCTURE;
@@ -64,6 +69,7 @@ export function useCaravan() {
       capacity: divideByPrecision(Number(capacity?.weight_gram) || 0),
       intermediateDestination,
       position: position ? { x: position.x, y: position.y } : undefined,
+      homePosition: homePosition ? { x: homePosition.x, y: homePosition.y } : undefined,
       owner: owner?.address,
       isMine: owner?.address === BigInt(account.address),
       isRoundTrip: movable?.round_trip || false,

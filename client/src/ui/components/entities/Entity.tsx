@@ -1,8 +1,6 @@
 import React, { useMemo } from "react";
 import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import { ReactComponent as CaretDownFill } from "@/assets/icons/common/caret-down-fill.svg";
-import { ReactComponent as DonkeyIcon } from "@/assets/icons/units/donkey-circle.svg";
 import ProgressBar from "@/ui/elements/ProgressBar";
 import { Dot } from "@/ui/elements/Dot";
 import clsx from "clsx";
@@ -13,7 +11,7 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "@/ui/utils/realms";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { useResources } from "@/hooks/helpers/useResources";
+import { useGetResourceDepositEntities, useResources } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useCaravan } from "@/hooks/helpers/useCaravans";
@@ -41,6 +39,7 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
   const {
     caravanId: entityId,
     position,
+    homePosition,
     arrivalTime,
     isRoundTrip,
     intermediateDestination,
@@ -62,13 +61,12 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
 
   const { getResourcesFromInventory } = useResources();
   const { getCaravanMembers } = useCaravan();
-  const { getMyAccountsOnPosition } = useBanks();
-  const { getRealmEntityIdsOnPosition } = useRealm();
 
   const inventoryResources = getResourcesFromInventory(entityId);
-  const bankAccounts = position ? getMyAccountsOnPosition(position.x, position.y) : [];
-  const realmEntityId = position ? getRealmEntityIdsOnPosition(position.x, position.y) : undefined;
-  const bankAccountEntityId = bankAccounts.length === 1 ? bankAccounts[0] : undefined;
+  const depositEntityIds = position ? useGetResourceDepositEntities(BigInt(account.address), position) : [];
+  // const depositEntityId = depositEntityIds[0];
+  // note: for testing (my account)
+  const depositEntityId = 31n;
 
   // capacity
   let resourceWeight = useMemo(() => {
@@ -76,6 +74,8 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
   }, [inventoryResources]);
 
   const hasResources = resourceWeight > 0;
+
+  const isHome = position && homePosition && position.x === homePosition.x && position.y === homePosition.y;
 
   const intermediateDestinationRealmId = intermediateDestination
     ? getRealmIdByPosition(intermediateDestination)
@@ -129,8 +129,6 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
   const onCloseTravel = () => {
     setShowTravel(false);
   };
-
-  const onTravel = async () => {};
 
   return (
     <div
@@ -250,36 +248,24 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
                 </div>
               </div>
               <div className="">
-                <Button variant="success" isLoading={isLoading} disabled={!isIdle} size="xs" onClick={redeemDonkeys}>
-                  Redeem
-                </Button>
-                {hasResources && bankAccountEntityId !== undefined && (
+                {isHome && (
+                  <Button variant="success" isLoading={isLoading} disabled={!isIdle} size="xs" onClick={redeemDonkeys}>
+                    Redeem
+                  </Button>
+                )}
+                {hasResources && depositEntityId !== undefined && (
                   <Button
                     size="xs"
                     className="ml-auto"
                     isLoading={isLoading}
                     disabled={isTraveling}
-                    onClick={() => onOffload(bankAccountEntityId)}
+                    onClick={() => onOffload(depositEntityId)}
                     variant="success"
                     withoutSound
                   >
-                    {`Deposit in Bank`}
+                    {`Deposit Resources`}
                   </Button>
                 )}
-                {hasResources && realmEntityId !== undefined && (
-                  <Button
-                    size="xs"
-                    className="ml-auto"
-                    isLoading={isLoading}
-                    disabled={isTraveling}
-                    onClick={() => onOffload(realmEntityId)}
-                    variant="success"
-                    withoutSound
-                  >
-                    {`Deposit in Realm`}
-                  </Button>
-                )}
-                !
                 {!isTraveling && !blocked && (
                   <Button
                     size="xs"

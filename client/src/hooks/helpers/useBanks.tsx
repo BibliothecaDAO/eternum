@@ -24,23 +24,8 @@ export const useBanks = () => {
       .filter(Boolean) as bigint[];
   };
 
-  const getMyAccountsOnPosition = (x: number, y: number) => {
-    const entityIds = runQuery([
-      HasValue(Position, { x, y }),
-      HasValue(BankAccounts, { owner: BigInt(account.address) }),
-    ]);
-    return Array.from(entityIds)
-      .map((entityId) => {
-        const position = getComponentValue(BankAccounts, entityId);
-        if (!position) return;
-        return position?.entity_id;
-      })
-      .filter(Boolean) as bigint[];
-  };
-
   return {
     getMyAccountsInBank,
-    getMyAccountsOnPosition,
   };
 };
 

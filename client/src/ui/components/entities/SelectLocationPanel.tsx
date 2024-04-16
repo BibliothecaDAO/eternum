@@ -1,7 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";
-import { Entity, Has, getComponentValue, runQuery } from "@dojoengine/recs";
-import useRealmStore from "@/hooks/store/useRealmStore";
+import { Entity, getComponentValue } from "@dojoengine/recs";
 import { useCaravan } from "@/hooks/helpers/useCaravans";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { getRealm } from "@/ui/utils/realms";
@@ -32,7 +31,7 @@ export const SelectLocationPanel = ({
 
   const {
     setup: {
-      components: { Realm, Bank },
+      components: { Realm, Bank, EntityOwner },
     },
   } = useDojo();
 
@@ -65,6 +64,7 @@ export const SelectLocationPanel = ({
 
   useEffect(() => {
     const buildSelectableLocations = () => {
+      const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([travelingEntityId]));
       let locations = Array.from(entityIds).map((entity) => {
         const realm = getComponentValue(Realm, entity);
         const bank = getComponentValue(Bank, entity);
@@ -86,6 +86,7 @@ export const SelectLocationPanel = ({
         const addressName = entityId ? getRealmAddressName(entityId) : "";
         return {
           entityId,
+          home: entityId === entityOwner?.entity_owner_id,
           realmId: realm?.realm_id,
           name,
           order: order ? getOrderName(order) : "",
@@ -142,7 +143,10 @@ export const SelectLocationPanel = ({
         </SortPanel>
         <div className="flex flex-col px-1 mb-1 space-y-2 max-h-40 overflow-y-auto">
           {sortedRealms.map(
-            ({ entityId, order, name, addressName, distance, level, entityId: destinationEntityId, defence }, i) => {
+            (
+              { home, entityId, order, name, addressName, distance, level, entityId: destinationEntityId, defence },
+              i,
+            ) => {
               return (
                 <div
                   key={i}
@@ -161,7 +165,7 @@ export const SelectLocationPanel = ({
                       <OrderIcon order={order} size="xs" />
                     </div>
                     <div className="flex-none w-16 text-left">{addressName}</div>
-                    <div className="flex-none w-20 text-left">{name}</div>
+                    <div className="flex-none w-20 text-left">{home ? "👑 " + name : name}</div>
                     <div className="flex-none w-20 text-center">{`${distance.toFixed(0)} km`}</div>
                     <div className="flex-none w-16 text-center">{level}</div>
                     <div className="flex-none w-10 text-center">{defence?.attack || 0}</div>
