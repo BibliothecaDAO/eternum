@@ -51,6 +51,7 @@ export const BuildingThumbs = {
   hyperstructures: "/images/buildings/thumb/hyperstructure.png",
   leaderboard: "/images/buildings/thumb/leaderboard.png",
   worldMap: "/images/buildings/thumb/world-map.png",
+  squire: "/images/buildings/thumb/squire.png",
 };
 
 export const LeftNavigationModule = () => {
@@ -152,17 +153,6 @@ export const LeftNavigationModule = () => {
           active={isPopupOpen(leaderboard)}
           size="xl"
           onClick={() => togglePopup(leaderboard)}
-        ></CircleButton>
-      ),
-    },
-    {
-      button: (
-        <CircleButton
-          image={BuildingThumbs.leaderboard}
-          label={assistant}
-          active={isPopupOpen(assistant)}
-          size="xl"
-          onClick={() => togglePopup(assistant)}
         ></CircleButton>
       ),
     },

@@ -3,7 +3,7 @@ import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { assistant } from "@/ui/components/navigation/Config";
 import { useState, useEffect } from "react";
 import Button from "@/ui/elements/Button";
-import TextInput from "@/ui/elements/TextInput";
+import { Textarea } from "@/ui/elements/TextArea";
 
 export const Assistant = () => {
   const { togglePopup } = useUIStore();
@@ -14,45 +14,42 @@ export const Assistant = () => {
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
-    const newWs = new WebSocket("ws://localhost:3000");
+    const newWs = new WebSocket("wss://sensei-production-5c8f.up.railway.app/ws");
 
     newWs.onopen = () => {
       console.log("WebSocket connection established");
     };
 
     newWs.onmessage = (event) => {
-      console.log("Message from server ", event.data);
+      console.log("Message from server ", event);
       const data = JSON.parse(event.data);
-      if (data.output === "END_OF_STREAM") {
+      if (data.answer === "") {
         console.log("No more data from server");
-        newWs.close();
-        setIsLoading(false); // Stop loading when no more data is expected
+        // newWs.close();
+        setIsLoading(false);
       } else if (data.error) {
         console.error("Error from server: ", data.details);
-        setIsLoading(false); // Stop loading on error
+        setIsLoading(false);
       } else {
         setChunks((prevChunks) => {
-          const newChunks = [...prevChunks];
+          const newChunks: any = [...prevChunks];
           for (const key of Object.keys(data)) {
-            const existingChunkIndex = newChunks.findIndex((chunk) => chunk.hasOwnProperty(key));
+            const existingChunkIndex = newChunks.findIndex((chunk: any) => chunk.hasOwnProperty(key));
             if (existingChunkIndex !== -1) {
-              // Ensure the existing data is treated as a string
               const existingData = String(newChunks[existingChunkIndex][key]);
               const newData = String(data[key]);
-              // Check if the new data is already appended
+
               if (!existingData.endsWith(newData)) {
                 newChunks[existingChunkIndex][key] = existingData + newData;
               }
             } else {
-              // Add new chunk if key does not exist, ensuring data is treated as a string
-              const newChunk = {};
+              const newChunk: any = {};
               newChunk[key] = String(data[key]);
               newChunks.push(newChunk);
             }
           }
           return newChunks;
         });
-        setIsLoading(false); // Stop loading after processing the data
       }
     };
 
@@ -73,28 +70,39 @@ export const Assistant = () => {
   }, []);
 
   const callChunks = (text: string) => {
+    setMessage("");
+    setChunks([]);
     if (ws) {
       setIsLoading(true);
       ws.send(JSON.stringify({ text: text }));
     }
   };
-  console.log(chunks);
+  console.log("chunks", chunks);
   return (
     <OSWindow width="600px" onClick={() => togglePopup(assistant)} show={isOpen} title={assistant}>
-      <div className="p-5">
-        {chunks.reduce((acc, chunk) => {
-          const cleanAnswer = chunk.answer ? chunk.answer.trim() : "";
+      <div className="p-5 ">
+        <div className="flex ">
+          <img src="./images/buildings/thumb/squire.png" className="rounded-full w-12 h-12 mr-4" alt="" />
+          <div>
+            <h5>Squire</h5>
+            {chunks.reduce((acc, chunk) => {
+              const cleanAnswer = chunk.answer ? chunk.answer.trim() : "";
 
-          return acc + (acc && cleanAnswer.match(/^\w/) ? " " : "") + cleanAnswer;
-        }, "")}
-        <TextInput
+              return acc + (acc && cleanAnswer.match(/^\w/) ? " " : "") + cleanAnswer;
+            }, "")}
+            {isLoading && <div className="animate-pulse">Thinking...</div>}
+          </div>
+        </div>
+
+        <Textarea
           className="border my-4"
           placeholder="Write something..."
           value={message}
-          onChange={setMessage}
-          onKeyPress={(event) => {
+          onChange={(event) => setMessage(event.target.value)}
+          onKeyDown={(event) => {
             if (event.key === "Enter") {
               callChunks(message);
+              event.preventDefault();
             }
           }}
         />
