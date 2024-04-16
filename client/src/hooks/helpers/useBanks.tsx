@@ -7,11 +7,11 @@ export const useBanks = () => {
   const {
     account: { account },
     setup: {
-      components: { BankAccounts },
+      components: { BankAccounts, Position },
     },
   } = useDojo();
 
-  const getMyAccounts = (bankEntityId: bigint) => {
+  const getMyAccountsInBank = (bankEntityId: bigint) => {
     const entityIds = runQuery([
       HasValue(BankAccounts, { bank_entity_id: bankEntityId, owner: BigInt(account.address) }),
     ]);
@@ -24,8 +24,23 @@ export const useBanks = () => {
       .filter(Boolean) as bigint[];
   };
 
+  const getMyAccountsOnPosition = (x: number, y: number) => {
+    const entityIds = runQuery([
+      HasValue(Position, { x, y }),
+      HasValue(BankAccounts, { owner: BigInt(account.address) }),
+    ]);
+    return Array.from(entityIds)
+      .map((entityId) => {
+        const position = getComponentValue(BankAccounts, entityId);
+        if (!position) return;
+        return position?.entity_id;
+      })
+      .filter(Boolean) as bigint[];
+  };
+
   return {
-    getMyAccounts,
+    getMyAccountsInBank,
+    getMyAccountsOnPosition,
   };
 };
 

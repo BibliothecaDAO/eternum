@@ -22,7 +22,7 @@ export const SendResourcesPanel = ({
   onSendCaravan,
 }: {
   senderEntityId: bigint;
-  position: { x: number; y: number };
+  position: { x: number; y: number } | undefined;
   onClose: () => void;
   onSendCaravan: () => void;
 }) => {
@@ -42,8 +42,7 @@ export const SendResourcesPanel = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const sendResources = async () => {
-    console.log("console.log all the things");
-
+    if (!position) return;
     setIsLoading(true);
     const resourcesList = Object.keys(feedResourcesGiveAmounts)
       .filter((id) => feedResourcesGiveAmounts[Number(id)] > 0)

@@ -7,30 +7,32 @@ import { EntityList } from "../list/EntityList";
 import { useBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { SendResourcesPanel } from "../worldmap/hyperstructures/SendResourcesPanel";
+import { Position } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { EntitiesOnPositionList } from "../entities/EntitiesOnPositionList";
 
-// These would be entities passed into the table
-// export const exampleEntities = [
-//   {
-//     name: "Stolsi",
-//     id: 1,
-//   },
-//   {
-//     name: "Bank 2",
-//     id: 2,
-//   },
-//   {
-//     name: "Bank 3",
-//     id: 3,
-//   },
-// ];
+type BankListProps = {
+  entity: any;
+  position: Position;
+};
 
-export const BankPanel = ({ entity }: any) => {
+export const BankPanel = ({ entity }: BankListProps) => {
+  const {
+    setup: {
+      components: { Position },
+    },
+  } = useDojo();
+
   const [selectedTab, setSelectedTab] = useState(0);
-  const { getMyAccounts } = useBanks();
+  const { getMyAccountsInBank } = useBanks();
 
   const { playerRealms } = useEntities();
 
-  const myBankAccountsIds = getMyAccounts(entity.id, 0);
+  const myBankAccountsIds = getMyAccountsInBank(entity.id);
+
+  const position = getComponentValue(Position, getEntityIdFromKeys([entity.id]));
 
   const myBankAccountList = myBankAccountsIds.map((id) => {
     return {
@@ -49,21 +51,6 @@ export const BankPanel = ({ entity }: any) => {
           </div>
         ),
         component: <ResourceSwap />,
-      },
-      {
-        key: "all",
-        label: (
-          <div className="flex relative group flex-col items-center">
-            <div>My Entities</div>
-          </div>
-        ),
-        component: (
-          <EntityList
-            title="Banks"
-            panel={({ entity }) => <BankEntityList entity={entity} />}
-            list={myBankAccountList}
-          />
-        ),
       },
       {
         key: "all",
@@ -92,13 +79,26 @@ export const BankPanel = ({ entity }: any) => {
             list={playerRealms()}
             title="armies"
             panel={({ entity }) => (
-              <SendResourcesPanel senderEntityId={entity.entity_id} position={{ x: 1000, y: 1000 }} />
+              <SendResourcesPanel
+                senderEntityId={entity.entity_id}
+                position={position}
+                onSendCaravan={() => setSelectedTab(3)}
+              />
             )}
           />
         ),
       },
+      {
+        key: "all",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Entities</div>
+          </div>
+        ),
+        component: <EntitiesOnPositionList position={position} />,
+      },
     ],
-    [selectedTab],
+    [selectedTab, position],
   );
 
   return (
