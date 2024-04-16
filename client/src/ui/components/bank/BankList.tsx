@@ -5,6 +5,8 @@ import { ResourceSwap } from "./Swap";
 import { BankEntityList } from "./BankEntityList";
 import { EntityList } from "../list/EntityList";
 import { useBanks } from "@/hooks/helpers/useBanks";
+import { useEntities } from "@/hooks/helpers/useEntities";
+import { SendResourcesPanel } from "../worldmap/hyperstructures/SendResourcesPanel";
 
 // These would be entities passed into the table
 // export const exampleEntities = [
@@ -25,6 +27,8 @@ import { useBanks } from "@/hooks/helpers/useBanks";
 export const BankPanel = ({ entity }: any) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const { getMyAccounts } = useBanks();
+
+  const { playerRealms } = useEntities();
 
   const myBankAccountsIds = getMyAccounts(entity.id, 0);
 
@@ -50,6 +54,21 @@ export const BankPanel = ({ entity }: any) => {
         key: "all",
         label: (
           <div className="flex relative group flex-col items-center">
+            <div>My Entities</div>
+          </div>
+        ),
+        component: (
+          <EntityList
+            title="Banks"
+            panel={({ entity }) => <BankEntityList entity={entity} />}
+            list={myBankAccountList}
+          />
+        ),
+      },
+      {
+        key: "all",
+        label: (
+          <div className="flex relative group flex-col items-center">
             <div>My Account</div>
           </div>
         ),
@@ -68,7 +87,15 @@ export const BankPanel = ({ entity }: any) => {
             <div>Send Resources</div>
           </div>
         ),
-        component: <></>,
+        component: (
+          <EntityList
+            list={playerRealms()}
+            title="armies"
+            panel={({ entity }) => (
+              <SendResourcesPanel senderEntityId={entity.entity_id} position={{ x: 1000, y: 1000 }} />
+            )}
+          />
+        ),
       },
     ],
     [selectedTab],
