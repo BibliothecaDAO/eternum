@@ -5,7 +5,6 @@ export type ProductionType = {
   resource_type: RecsType.Number;
   building_count: RecsType.BigInt;
   production_rate: RecsType.BigInt;
-  bonus_percent: RecsType.BigInt;
   consumption_rate: RecsType.BigInt;
   last_updated_tick: RecsType.BigInt;
   input_finish_tick: RecsType.BigInt;

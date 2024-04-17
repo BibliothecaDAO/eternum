@@ -9,6 +9,7 @@ Title: Medieval House
 
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
+import * as THREE from "three";
 
 type GLTFResult = GLTF & {
   nodes: {

@@ -56,7 +56,7 @@
   {
     "type": "impl",
     "name": "BuildingContractImpl",
-    "interface_name": "eternum::systems::buildings::interface::IBuildingContract"
+    "interface_name": "eternum::systems::buildings::contracts::IBuildingContract"
   },
   {
     "type": "struct",
@@ -130,7 +130,7 @@
   },
   {
     "type": "interface",
-    "name": "eternum::systems::buildings::interface::IBuildingContract",
+    "name": "eternum::systems::buildings::contracts::IBuildingContract",
     "items": [
       {
         "type": "function",
