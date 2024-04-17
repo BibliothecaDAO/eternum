@@ -7,44 +7,48 @@ on:
   pull_request: {}
 
 jobs:
-  test-models:
+  setup-environment:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
       - name: Set up environment
         run: |
           sudo apt-get update
           sudo apt-get install -y curl
-      - name: Download Dojo release artifact
-        run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v0.6.0/dojo_v0.6.0_linux_amd64.tar.gz
-          tar -xzf dojo-linux-x86_64.tar.gz
-          sudo mv sozo /usr/local/bin/
-      - name: Run Dojo Build
-        run: |
-          cd contracts && sozo build
-      - name: Run Dojo Test for Models
-        run: |
-          cd contracts && sozo test -f models
 
-  test-systems:
+  setup-dojo:
+    needs: setup-environment
     runs-on: ubuntu-latest
+    outputs:
+      cache-hit: ${{ steps.cache-dojo.outputs.cache-hit }}
+    steps:
+      - name: Cache Dojo
+        id: cache-dojo
+        uses: actions/cache@v2
+        with:
+          path: ~/dojo
+          key: ${{ runner.os }}-dojo-${{ hashFiles('**/dojo-linux-x86_64.tar.gz') }}
+          restore-keys: |
+            ${{ runner.os }}-dojo-
+      - name: Download Dojo release artifact
+        if: steps.cache-dojo.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/dojo
+          curl -L -o ~/dojo/dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v0.6.0/dojo_v0.6.0_linux_amd64.tar.gz
+          tar -xzf ~/dojo/dojo-linux-x86_64.tar.gz -C ~/dojo/
+          sudo mv ~/dojo/sozo /usr/local/bin/
+
+  test-various:
+    needs: [setup-environment, setup-dojo]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test: [combat, buildings, config, hyperstructure, bank, map, name, resources, trade, transport]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Set up environment
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y curl
-      - name: Download Dojo release artifact
-        run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v0.6.0/dojo_v0.6.0_linux_amd64.tar.gz
-          tar -xzf dojo-linux-x86_64.tar.gz
-          sudo mv sozo /usr/local/bin/
       - name: Run Dojo Build
         run: |
           cd contracts && sozo build
-      - name: Run Dojo Test for Systems
+      - name: Run Dojo Test for ${{ matrix.test }}
         run: |
-          cd contracts && sozo test -f systems
+          cd contracts && sozo test -f ${{ matrix.test }}
