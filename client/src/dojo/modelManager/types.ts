@@ -1,5 +1,20 @@
 import { Type as RecsType } from "@dojoengine/recs";
 
+export type LiquidityType = {
+  bank_entity_id: RecsType.BigInt;
+  player: RecsType.BigInt;
+  resource_type: RecsType.BigInt;
+  shares_mag: RecsType.BigInt;
+  shares_sign: RecsType.Boolean;
+};
+
+export type MarketType = {
+  bank_entity_id: RecsType.BigInt;
+  resource_type: RecsType.BigInt;
+  lords_amount: RecsType.BigInt;
+  resource_amount: RecsType.BigInt;
+};
+
 export type ProductionType = {
   entity_id: RecsType.BigInt;
   resource_type: RecsType.Number;

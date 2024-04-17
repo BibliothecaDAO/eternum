@@ -12,6 +12,8 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { EntitiesOnPositionList } from "../entities/EntitiesOnPositionList";
+import { LiquidityTable } from "./LiquidityTable";
+import AddLiquidity from "./AddLiquidity";
 
 type BankListProps = {
   entity: any;
@@ -44,7 +46,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>Swap</div>
           </div>
         ),
-        component: <ResourceSwap />,
+        component: <ResourceSwap entityId={myBankAccountEntityId!} />,
       },
       {
         key: "all",
@@ -57,6 +59,20 @@ export const BankPanel = ({ entity }: BankListProps) => {
           <OpenBankAccount bank_entity_id={entity.id} />
         ) : (
           <BankEntityList entity={{ id: myBankAccountEntityId }} />
+        ),
+      },
+      {
+        key: "all",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Pools</div>
+          </div>
+        ),
+        component: (
+          <>
+            <AddLiquidity entityId={myBankAccountEntityId!} />
+            <LiquidityTable bank_entity_id={entity.id} bank_account_entity_id={myBankAccountEntityId} />
+          </>
         ),
       },
       {
