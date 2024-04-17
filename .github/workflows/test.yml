@@ -4,33 +4,47 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+  pull_request: {}
 
 jobs:
-  test:
+  test-models:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
       - name: Set up environment
         run: |
           sudo apt-get update
           sudo apt-get install -y curl
-
       - name: Download Dojo release artifact
         run: |
           curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v0.6.0/dojo_v0.6.0_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
-
       - name: Run Dojo Build
         run: |
           cd contracts && sozo build
-
-      - name: Run Dojo Test
+      - name: Run Dojo Test for Models
         run: |
           cd contracts && sozo test -f models
+
+  test-systems:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl
+      - name: Download Dojo release artifact
+        run: |
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v0.6.0/dojo_v0.6.0_linux_amd64.tar.gz
+          tar -xzf dojo-linux-x86_64.tar.gz
+          sudo mv sozo /usr/local/bin/
+      - name: Run Dojo Build
+        run: |
+          cd contracts && sozo build
+      - name: Run Dojo Test for Systems
+        run: |
+          cd contracts && sozo test -f systems
