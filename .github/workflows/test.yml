@@ -44,4 +44,4 @@ jobs:
       - uses: software-mansion/setup-scarb@v1
         with:
           scarb-version: "2.6.4"
-      - run: scarb fmt --check
+      - run: cd contracts && scarb fmt --check
