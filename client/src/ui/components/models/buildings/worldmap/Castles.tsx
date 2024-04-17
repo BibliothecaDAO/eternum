@@ -9,7 +9,7 @@ import { biomes } from "@bibliothecadao/eternum";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { ArmyMenu } from "../../../worldmap/armies/ArmyMenu";
 import { Hexagon } from "../../../../../types";
-
+import * as THREE from "three";
 // @ts-nocheck
 type GLTFResult = GLTF & {
   nodes: {

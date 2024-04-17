@@ -549,9 +549,6 @@ const SelectRaidersPanel = ({
     );
   }, [attackerTotalAttack, attackerLevelBonus, defenderLevelBonus, defenderHyperstructureLevelBonus]);
 
-  // @ts-expect-error
-  const { realm } = useGetRealm(realmEntityId);
-
   const onAttack = async () => {
     // set is loading
     setLoading(true);

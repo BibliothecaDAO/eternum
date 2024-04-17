@@ -14,12 +14,12 @@ import { useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../utils/realms";
 import { unpackResources } from "../../utils/packedData";
-import { FarmsRegionTooltip } from "./regions/FarmsRegionTooltip";
+// import { FarmsRegionTooltip } from "./regions/FarmsRegionTooltip";
 import { extend } from "@react-three/fiber";
-import { FisheryRegionTooltip } from "./regions/FisheryRegionTooltip";
+// import { FisheryRegionTooltip } from "./regions/FisheryRegionTooltip";
 import Farms from "./Farms";
 import { LaborRegionTooltip } from "./regions/LaborRegionTooltip";
-extend({ FarmsRegionTooltip });
+// extend({ FarmsRegionTooltip });
 type GLTFResult = GLTF & {
   nodes: {
     archer_tower: THREE.Mesh;
