@@ -7,3 +7,5 @@ contracts/KATANA.toml
 contracts/manifests/*
 !contracts/manifests/dev/manifest.json
 !contracts/manifests/dev/manifest.toml
+!contracts/manifests/prod/manifest.json
+!contracts/manifests/prod/manifest.toml
