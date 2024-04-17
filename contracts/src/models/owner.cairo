@@ -1,8 +1,7 @@
 use starknet::ContractAddress;
-
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 use eternum::models::realm::Realm;
+use eternum::constants::ErrorMessages;
 
 // contract address owning an entity
 #[derive(Model, Copy, Drop, Serde)]
@@ -20,7 +19,12 @@ struct EntityOwner {
     entity_owner_id: u128,
 }
 
-
+#[generate_trait]
+impl OwnerImpl of OwnerTrait {
+    fn assert_caller_owner(self: Owner, caller: ContractAddress) {
+        assert(self.address == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
+    }
+}
 
 #[generate_trait]
 impl EntityOwnerImpl of EntityOwnerTrait {

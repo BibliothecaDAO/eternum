@@ -81,57 +81,53 @@ impl FightersImpl of FightersTrait {
         let total_paladin_health = troop_config.paladin_health * self.paladin_count;
         let total_crossbowman_health = troop_config.crossbowman_health * self.crossbowman_count;
 
-        return total_knight_health.into() 
-                + total_paladin_health.into() 
-                    + total_crossbowman_health.into();
+        return total_knight_health.into()
+            + total_paladin_health.into()
+            + total_crossbowman_health.into();
     }
 
     fn purchase(ref self: Fighters, purchaser_id: u128, world: IWorldDispatcher) {
-                
         // pay for knights using KNIGHT resource
 
         if self.knight_count > 0 {
-            let mut knight_resoure 
-                = ResourceImpl::get(world, (purchaser_id, ResourceTypes::KNIGHT));
+            let mut knight_resoure = ResourceImpl::get(
+                world, (purchaser_id, ResourceTypes::KNIGHT)
+            );
             assert!(
-                knight_resoure.balance >= self.knight_count.into(), 
-                    "insufficient resources to purchase knights"
+                knight_resoure.balance >= self.knight_count.into(),
+                "insufficient resources to purchase knights"
             );
             knight_resoure.balance -= self.knight_count.into();
             knight_resoure.save(world);
         }
-        
 
         // pay for paladin using PALADIN resource
 
-
         if self.paladin_count > 0 {
-            let mut paladin_resoure 
-                = ResourceImpl::get(world, (purchaser_id, ResourceTypes::PALADIN));
+            let mut paladin_resoure = ResourceImpl::get(
+                world, (purchaser_id, ResourceTypes::PALADIN)
+            );
             assert!(
-                paladin_resoure.balance >= self.paladin_count.into(), 
-                    "insufficient resources to purchase paladins"
+                paladin_resoure.balance >= self.paladin_count.into(),
+                "insufficient resources to purchase paladins"
             );
             paladin_resoure.balance -= self.paladin_count.into();
             paladin_resoure.save(world);
         }
 
-
-
         // pay for crossbowman using CROSSBOWMAN resource
 
-
         if self.crossbowman_count > 0 {
-            let mut crossbowman_resoure 
-                = ResourceImpl::get(world, (purchaser_id, ResourceTypes::CROSSBOWMAN));
+            let mut crossbowman_resoure = ResourceImpl::get(
+                world, (purchaser_id, ResourceTypes::CROSSBOWMAN)
+            );
             assert!(
-                crossbowman_resoure.balance >= self.crossbowman_count.into(), 
-                    "insufficient resources to purchase crossbowmen"
+                crossbowman_resoure.balance >= self.crossbowman_count.into(),
+                "insufficient resources to purchase crossbowmen"
             );
             crossbowman_resoure.balance -= self.crossbowman_count.into();
             crossbowman_resoure.save(world);
         }
-
     }
 }
 
@@ -159,18 +155,10 @@ impl TroopIntoFightersImpl of Into<Troop, Fighters> {
 
 #[generate_trait]
 impl TroopImpl of TroopTrait {
-
     fn create(owner_id: u128, mut fighters: Fighters, world: IWorldDispatcher) -> Troop {
-        
-        // ensure caller is entity owner 
-
-        let owner_address = get!(world, owner_id, Owner).address;
-        let caller = starknet::get_caller_address();
-        assert!(caller == owner_address, "caller not entity owner");
-
         // make payment for troops 
         fighters.purchase(owner_id, world);
-    
+
         // set troop 
 
         let troop_id: u128 = world.uuid().into();
@@ -179,13 +167,10 @@ impl TroopImpl of TroopTrait {
         troop.add_fighters(fighters, world);
         set!(world, (troop));
 
-
         // set troop owner entity
 
-        let troop_owned_by 
-            = EntityOwner{entity_id: troop.entity_id, entity_owner_id: owner_id};
+        let troop_owned_by = EntityOwner { entity_id: troop.entity_id, entity_owner_id: owner_id };
         set!(world, (troop_owned_by));
-
 
         // set troop position
 
@@ -194,42 +179,37 @@ impl TroopImpl of TroopTrait {
         troop_position.x = owner_position.x;
         troop_position.y = owner_position.y;
         set!(world, (troop_position));
-   
 
         return troop;
     }
 
-    
+
     fn add_fighters(ref self: Troop, fighters: Fighters, world: IWorldDispatcher) {
-        self.knight_count+= fighters.knight_count;
-        self.paladin_count+= fighters.paladin_count;
+        self.knight_count += fighters.knight_count;
+        self.paladin_count += fighters.paladin_count;
         self.crossbowman_count += fighters.crossbowman_count;
 
         let mut troop_health: Healthv2 = get!(world, self.entity_id, Healthv2);
         // todo check
         troop_health.increase_by(fighters.health(world));
-        
-        set!(world, (troop_health));
 
+        set!(world, (troop_health));
     }
 
     fn remove_fighters(ref self: Troop, fighters: Fighters, world: IWorldDispatcher) {
-        self.knight_count-= fighters.knight_count;
-        self.paladin_count-= fighters.paladin_count;
-        self.crossbowman_count-= fighters.crossbowman_count;
+        self.knight_count -= fighters.knight_count;
+        self.paladin_count -= fighters.paladin_count;
+        self.crossbowman_count -= fighters.crossbowman_count;
 
         let mut troop_health: Healthv2 = get!(world, self.entity_id, Healthv2);
         // todo check
         troop_health.decrease_by(fighters.health(world));
-        
-        set!(world, (troop_health));
 
+        set!(world, (troop_health));
     }
 
 
-
     fn delta(self: @Troop, enemy_troop: @Troop, world: IWorldDispatcher) -> (u32, u32) {
-
         let self_strength = self.strength_against(enemy_troop, world);
         let enemy_strength = enemy_troop.strength_against(self, world);
         let strength_difference = self_strength - enemy_strength;
@@ -244,56 +224,54 @@ impl TroopImpl of TroopTrait {
         let troop_config = TroopConfigImpl::get(world);
 
         //////////////////////////////////////////////////////////////////////////////////////////
-        
-        let mut self_knight_strength: u32 =
-             troop_config.knight_strength * self.knight_count;
-        self_knight_strength
-            = PercentageImpl::get(self_knight_strength.into(), troop_config.advantage_percent.into());
-        
-        let mut self_paladin_strength: u32 =
-             troop_config.paladin_strength * self.paladin_count;
-        self_paladin_strength
-            = PercentageImpl::get(self_paladin_strength.into(), troop_config.advantage_percent.into());
-        
-                
-        let mut self_crossbowman_strength: u32 =
-             troop_config.crossbowman_strength * self.crossbowman_count;
-        self_crossbowman_strength
-            = PercentageImpl::get(self_crossbowman_strength.into(), troop_config.advantage_percent.into());
-        
-        //////////////////////////////////////////////////////////////////////////////////////////
 
-        let mut enemy_knight_strength: u32 =
-             troop_config.knight_strength * enemy_troop.knight_count;
-        enemy_knight_strength
-            = PercentageImpl::get(enemy_knight_strength, troop_config.disadvantage_percent.into());
+        let mut self_knight_strength: u32 = troop_config.knight_strength * self.knight_count;
+        self_knight_strength =
+            PercentageImpl::get(self_knight_strength.into(), troop_config.advantage_percent.into());
 
+        let mut self_paladin_strength: u32 = troop_config.paladin_strength * self.paladin_count;
+        self_paladin_strength =
+            PercentageImpl::get(
+                self_paladin_strength.into(), troop_config.advantage_percent.into()
+            );
 
-        let mut enemy_paladin_strength: u32 =
-             troop_config.paladin_strength * enemy_troop.paladin_count;
-        enemy_paladin_strength
-            = PercentageImpl::get(enemy_paladin_strength, troop_config.disadvantage_percent.into());
-
-        let mut enemy_crossbowman_strength: u32 =
-             troop_config.crossbowman_strength * enemy_troop.crossbowman_count;
-        enemy_crossbowman_strength
-            = PercentageImpl::get(enemy_crossbowman_strength, troop_config.disadvantage_percent.into());
+        let mut self_crossbowman_strength: u32 = troop_config.crossbowman_strength
+            * self.crossbowman_count;
+        self_crossbowman_strength =
+            PercentageImpl::get(
+                self_crossbowman_strength.into(), troop_config.advantage_percent.into()
+            );
 
         //////////////////////////////////////////////////////////////////////////////////////////
 
+        let mut enemy_knight_strength: u32 = troop_config.knight_strength
+            * enemy_troop.knight_count;
+        enemy_knight_strength =
+            PercentageImpl::get(enemy_knight_strength, troop_config.disadvantage_percent.into());
 
-        let self_knight_strength: i64 
-            = self_knight_strength.into() - enemy_paladin_strength.into();
-        let self_paladin_strength: i64 
-            = self_paladin_strength.into() - enemy_crossbowman_strength.into();
-        let self_crossbowman_strength: i64 
-            = self_crossbowman_strength.into() - enemy_knight_strength.into();
+        let mut enemy_paladin_strength: u32 = troop_config.paladin_strength
+            * enemy_troop.paladin_count;
+        enemy_paladin_strength =
+            PercentageImpl::get(enemy_paladin_strength, troop_config.disadvantage_percent.into());
+
+        let mut enemy_crossbowman_strength: u32 = troop_config.crossbowman_strength
+            * enemy_troop.crossbowman_count;
+        enemy_crossbowman_strength =
+            PercentageImpl::get(
+                enemy_crossbowman_strength, troop_config.disadvantage_percent.into()
+            );
+
+        //////////////////////////////////////////////////////////////////////////////////////////
+
+        let self_knight_strength: i64 = self_knight_strength.into() - enemy_paladin_strength.into();
+        let self_paladin_strength: i64 = self_paladin_strength.into()
+            - enemy_crossbowman_strength.into();
+        let self_crossbowman_strength: i64 = self_crossbowman_strength.into()
+            - enemy_knight_strength.into();
 
         return self_knight_strength + self_paladin_strength + self_crossbowman_strength;
     }
 }
-
-
 
 
 #[derive(Copy, Drop, Serde, Model)]
@@ -307,18 +285,19 @@ struct Army {
 
 #[generate_trait]
 impl ArmyImpl of ArmyTrait {
-    fn join(ref self: Army, ref joiner_troop: Troop,  world: IWorldDispatcher) {
-        
+    fn join(ref self: Army, ref joiner_troop: Troop, world: IWorldDispatcher) {
         assert!(joiner_troop.battle_id == 0, "joiner troop is in a battle");
-        
+
         let joiner_troop_position = get!(world, joiner_troop.entity_id, Position);
         let army_troop_position = get!(world, self.troop_id, Position);
         assert!(
-            Into::<Position, Coord>::into(joiner_troop_position) 
-                == Into::<Position, Coord>::into(army_troop_position),
+            Into::<
+                Position, Coord
+                >::into(joiner_troop_position) == Into::<
+                Position, Coord
+            >::into(army_troop_position),
             "joiner troop not in same position as army"
         );
-
 
         joiner_troop.battle_id = self.battle_id;
         joiner_troop.battle_side = self.battle_side;
@@ -336,15 +315,13 @@ impl ArmyImpl of ArmyTrait {
     }
 
 
-    fn leave(ref self: Army, ref joiner_troop: Troop,  world: IWorldDispatcher) {
-        
+    fn leave(ref self: Army, ref joiner_troop: Troop, world: IWorldDispatcher) {
         assert!(joiner_troop.battle_id == self.battle_id, "troop not in this battle");
-        
+
         // remove troop from army troop 
-        
+
         let mut army_troop: Troop = get!(world, self.troop_id, Troop);
         army_troop.remove_fighters(joiner_troop.into(), world);
-
 
         joiner_troop.battle_id = 0;
         joiner_troop.battle_side = BattleSide::None;
@@ -354,7 +331,6 @@ impl ArmyImpl of ArmyTrait {
         set!(world, (joiner_troop_movable));
     }
 }
-
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -387,28 +363,30 @@ impl BattleSideIntoFelt252 of Into<BattleSide, felt252> {
 
 #[generate_trait]
 impl BattleImpl of BattleTrait {
-
     fn create_army(self: Battle, battle_side: BattleSide, world: IWorldDispatcher) {
-        let mut army : Army = get!(world, (self.entity_id, battle_side), Army);
-        assert!(army.troop_id == 0, "army already exists"); 
+        let mut army: Army = get!(world, (self.entity_id, battle_side), Army);
+        assert!(army.troop_id == 0, "army already exists");
 
         army.troop_id = world.uuid().into();
         set!(world, (army));
     }
 
-     fn join(ref self: Battle, battle_side: BattleSide, ref troop: Troop, world: IWorldDispatcher) {
+    fn join(ref self: Battle, battle_side: BattleSide, ref troop: Troop, world: IWorldDispatcher) {
         assert!(battle_side != BattleSide::None, "choose correct battle side");
 
         // update battle state before any other actions
         self.update_state(world);
 
-        assert!(self.tick_duration_left > 0,"Battle has ended");
+        assert!(self.tick_duration_left > 0, "Battle has ended");
 
         let battle_position = get!(world, self.entity_id, Position);
         let troop_position = get!(world, troop.entity_id, Position);
         assert!(
-            Into::<Position, Coord>::into(battle_position) 
-                == Into::<Position, Coord>::into(troop_position),
+            Into::<
+                Position, Coord
+                >::into(battle_position) == Into::<
+                Position, Coord
+            >::into(troop_position),
             "troop not in battle position"
         );
 
@@ -420,13 +398,13 @@ impl BattleImpl of BattleTrait {
         let mut army = self.army(battle_side, world);
         army.join(ref troop, world);
         set!(world, (army));
-        
+
         self.restart(world);
     }
-    
-    fn army(self: Battle, battle_side: BattleSide, world: IWorldDispatcher) -> Army{
-        let army : Army = get!(world, (self.entity_id, battle_side), Army);
-        return army;       
+
+    fn army(self: Battle, battle_side: BattleSide, world: IWorldDispatcher) -> Army {
+        let army: Army = get!(world, (self.entity_id, battle_side), Army);
+        return army;
     }
 
     fn troop(self: Battle, battle_side: BattleSide, world: IWorldDispatcher) -> Troop {
@@ -435,13 +413,13 @@ impl BattleImpl of BattleTrait {
     }
 
     fn start(attack_troop_id: u128, defence_troop_id: u128, world: IWorldDispatcher) -> Battle {
-
         let mut attack_troop: Troop = get!(world, attack_troop_id, Troop);
         assert!(attack_troop.battle_id == 0, "attack troop is in a battle");
-        
+
         let mut attack_troop_owned_by: EntityOwner = get!(world, attack_troop_id, EntityOwner);
-        assert!(attack_troop_owned_by.owner_address(world) == starknet::get_caller_address(), 
-                "attacker is not the caller"
+        assert!(
+            attack_troop_owned_by.owner_address(world) == starknet::get_caller_address(),
+            "attacker is not the caller"
         );
 
         let mut defence_troop: Troop = get!(world, defence_troop_id, Troop);
@@ -450,34 +428,32 @@ impl BattleImpl of BattleTrait {
         let attack_troop_position = get!(world, attack_troop_id, Position);
         let defence_troop_position = get!(world, defence_troop_id, Position);
         assert!(
-            Into::<Position, Coord>::into(attack_troop_position) 
-                == Into::<Position, Coord>::into(defence_troop_position),
+            Into::<
+                Position, Coord
+                >::into(attack_troop_position) == Into::<
+                Position, Coord
+            >::into(defence_troop_position),
             "both troops not on same position"
         );
 
-        let (attack_delta, defence_delta) 
-            = attack_troop.delta(@defence_troop, world);
+        let (attack_delta, defence_delta) = attack_troop.delta(@defence_troop, world);
 
-  
         // store battle 
-        let tick= TickImpl::get(world);
+        let tick = TickImpl::get(world);
         let mut battle = Battle {
             entity_id: world.uuid().into(),
             attack_delta: attack_delta,
             defence_delta: defence_delta,
-            tick_last_updated : tick.current(),
+            tick_last_updated: tick.current(),
             tick_duration_left: 0
         };
         battle.restart(world);
 
         // set battle position 
         let battle_position = Position {
-            entity_id: battle.entity_id, 
-            x: attack_troop_position.x,
-            y: attack_troop_position.y,
+            entity_id: battle.entity_id, x: attack_troop_position.x, y: attack_troop_position.y,
         };
         set!(world, (battle_position));
-
 
         // create attack army and let attack troop join army
 
@@ -493,19 +469,16 @@ impl BattleImpl of BattleTrait {
         set!(world, (attack_troop));
         set!(world, (defence_troop));
 
-   
         return battle;
     }
 
 
     fn update_state(ref self: Battle, world: IWorldDispatcher) {
-
         let battle_duration_passed = self.duration_passed(world);
-        let attack_troop : Troop = self.troop(BattleSide::Attack, world);
-        let defence_troop : Troop = self.troop(BattleSide::Defence, world);
+        let attack_troop: Troop = self.troop(BattleSide::Attack, world);
+        let defence_troop: Troop = self.troop(BattleSide::Defence, world);
         let mut attack_troop_health: Healthv2 = get!(world, attack_troop.entity_id, Healthv2);
-        attack_troop_health
-            .decrease_by((self.attack_delta.into() * battle_duration_passed.into()));
+        attack_troop_health.decrease_by((self.attack_delta.into() * battle_duration_passed.into()));
 
         let mut defence_troop_health: Healthv2 = get!(world, attack_troop.entity_id, Healthv2);
         defence_troop_health
@@ -519,33 +492,33 @@ impl BattleImpl of BattleTrait {
 
     fn restart(ref self: Battle, world: IWorldDispatcher) {
         // ensure state has been updated 
-        let tick= TickImpl::get(world);
+        let tick = TickImpl::get(world);
         assert!(self.tick_last_updated == tick.current(), "state not updated");
         self.tick_duration_left = self.duration(world);
     }
-    
+
 
     fn duration(self: Battle, world: IWorldDispatcher) -> u64 {
-        let attack_troop : Troop = self.troop(BattleSide::Attack, world);
-        let defence_troop : Troop = self.troop(BattleSide::Defence, world);
+        let attack_troop: Troop = self.troop(BattleSide::Attack, world);
+        let defence_troop: Troop = self.troop(BattleSide::Defence, world);
         let (attack_delta, defence_delta) = attack_troop.delta(@defence_troop, world);
 
         let attack_troop_health: Healthv2 = get!(world, attack_troop.entity_id, Healthv2);
         let defence_troop_health: Healthv2 = get!(world, attack_troop.entity_id, Healthv2);
-        
-        let mut attack_num_ticks_to_death 
-            = attack_troop_health.steps_to_finish(defence_delta.into());
-            
-        let mut defence_num_ticks_to_death 
-            = defence_troop_health.steps_to_finish(attack_delta.into());
-        
+
+        let mut attack_num_ticks_to_death = attack_troop_health
+            .steps_to_finish(defence_delta.into());
+
+        let mut defence_num_ticks_to_death = defence_troop_health
+            .steps_to_finish(attack_delta.into());
+
         if defence_num_ticks_to_death < attack_num_ticks_to_death {
             return defence_num_ticks_to_death.try_into().unwrap();
         } else {
             return attack_num_ticks_to_death.try_into().unwrap();
         }
     }
-    
+
 
     fn duration_passed(ref self: Battle, world: IWorldDispatcher) -> u64 {
         let tick = TickImpl::get(world);
@@ -563,6 +536,4 @@ impl BattleImpl of BattleTrait {
             return duration;
         }
     }
-
-
 }

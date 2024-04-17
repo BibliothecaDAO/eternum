@@ -67,8 +67,6 @@ mod ResourceTypes {
     const LORDS: u8 = 253;
     const WHEAT: u8 = 254;
     const FISH: u8 = 255;
-
-
 // note: update _resource_type_to_position 
 //  function is any new resources are added
 }
@@ -149,4 +147,8 @@ mod LevelIndex {
     const RESOURCE: u8 = 2;
     const TRAVEL: u8 = 3;
     const COMBAT: u8 = 4;
+}
+
+mod ErrorMessages {
+    const NOT_OWNER: felt252 = 'Not Owner';
 }
