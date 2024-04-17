@@ -4,8 +4,8 @@ contracts/target/*
 !contracts/target/release/manifest.json
 contracts/torii.db
 contracts/KATANA.toml
-# contracts/manifests/*
-!contracts/manifests/dev/manifest.json
-!contracts/manifests/dev/manifest.toml
-!contracts/manifests/prod/manifest.json
-!contracts/manifests/prod/manifest.toml
+contracts/manifests/*
+# !contracts/manifests/dev/manifest.json
+# !contracts/manifests/dev/manifest.toml
+# !contracts/manifests/prod/manifest.json
+# !contracts/manifests/prod/manifest.toml
