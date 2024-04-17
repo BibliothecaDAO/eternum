@@ -6,7 +6,6 @@ use eternum::models::resources::{resource_cost, ResourceCost};
 use eternum::models::position::{position, Position};
 use eternum::models::capacity::{capacity, Capacity};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
-use eternum::models::age::{age, Age};
 use eternum::models::labor::{labor, Labor};
 use eternum::models::metadata::{foreign_key, ForeignKey};
 use eternum::models::road::{road, Road};
@@ -52,7 +51,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         resource::TEST_CLASS_HASH,
         resource_cost::TEST_CLASS_HASH,
         status::TEST_CLASS_HASH,
-        age::TEST_CLASS_HASH,
         travel_config::TEST_CLASS_HASH,
         labor::TEST_CLASS_HASH,
         labor_config::TEST_CLASS_HASH,
@@ -71,7 +69,7 @@ fn spawn_eternum() -> IWorldDispatcher {
 
 fn deploy_system(world: IWorldDispatcher, class_hash_felt: felt252) -> ContractAddress {
     let contract_address = world
-            .deploy_contract(class_hash_felt, class_hash_felt.try_into().unwrap());
+        .deploy_contract(class_hash_felt, class_hash_felt.try_into().unwrap());
 
     contract_address
 }
