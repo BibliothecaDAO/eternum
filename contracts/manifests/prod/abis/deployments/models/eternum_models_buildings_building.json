@@ -1,0 +1,283 @@
+[
+  {
+    "type": "impl",
+    "name": "DojoModelImpl",
+    "interface_name": "dojo::model::IDojoModel"
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<core::integer::u8>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<core::integer::u8>"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<core::felt252>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<core::felt252>"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "dojo::database::introspect::Struct",
+    "members": [
+      {
+        "name": "name",
+        "type": "core::felt252"
+      },
+      {
+        "name": "attrs",
+        "type": "core::array::Span::<core::felt252>"
+      },
+      {
+        "name": "children",
+        "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "dojo::database::introspect::Enum",
+    "members": [
+      {
+        "name": "name",
+        "type": "core::felt252"
+      },
+      {
+        "name": "attrs",
+        "type": "core::array::Span::<core::felt252>"
+      },
+      {
+        "name": "children",
+        "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "dojo::database::introspect::Ty",
+    "variants": [
+      {
+        "name": "Primitive",
+        "type": "core::felt252"
+      },
+      {
+        "name": "Struct",
+        "type": "dojo::database::introspect::Struct"
+      },
+      {
+        "name": "Enum",
+        "type": "dojo::database::introspect::Enum"
+      },
+      {
+        "name": "Tuple",
+        "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+      },
+      {
+        "name": "Array",
+        "type": "core::integer::u32"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "dojo::model::IDojoModel",
+    "items": [
+      {
+        "type": "function",
+        "name": "name",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::felt252"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "unpacked_size",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::integer::u32"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "packed_size",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::integer::u32"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "layout",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::array::Span::<core::integer::u8>"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "schema",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "dojo::database::introspect::Ty"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "buildingImpl",
+    "interface_name": "eternum::models::buildings::Ibuilding"
+  },
+  {
+    "type": "enum",
+    "name": "eternum::models::buildings::BuildingCategory",
+    "variants": [
+      {
+        "name": "None",
+        "type": "()"
+      },
+      {
+        "name": "Castle",
+        "type": "()"
+      },
+      {
+        "name": "Resource",
+        "type": "()"
+      },
+      {
+        "name": "Farm",
+        "type": "()"
+      },
+      {
+        "name": "FishingVillage",
+        "type": "()"
+      },
+      {
+        "name": "Barracks",
+        "type": "()"
+      },
+      {
+        "name": "Market",
+        "type": "()"
+      },
+      {
+        "name": "ArcheryRange",
+        "type": "()"
+      },
+      {
+        "name": "Stable",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "eternum::models::buildings::Building",
+    "members": [
+      {
+        "name": "outer_col",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "outer_row",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "inner_col",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "inner_row",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "category",
+        "type": "eternum::models::buildings::BuildingCategory"
+      },
+      {
+        "name": "produced_resource_type",
+        "type": "core::integer::u8"
+      },
+      {
+        "name": "bonus_percent",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "entity_id",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "outer_entity_id",
+        "type": "core::integer::u128"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "eternum::models::buildings::Ibuilding",
+    "items": [
+      {
+        "type": "function",
+        "name": "ensure_abi",
+        "inputs": [
+          {
+            "name": "model",
+            "type": "eternum::models::buildings::Building"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "eternum::models::buildings::building::Event",
+    "kind": "enum",
+    "variants": []
+  }
+]
