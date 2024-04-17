@@ -81,7 +81,7 @@ export function WarriorModel({
   ...props
 }: WarriorModelProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const { scene, animations } = useGLTF("/models/Warrior-transformed.glb") as GLTFResult;
+  const { scene, animations } = useGLTF("/models/warrior.glb") as GLTFResult;
   const { actions } = useAnimations(animations, groupRef);
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes, materials } = useGraph(clone);
@@ -192,4 +192,4 @@ export function WarriorModel({
   );
 }
 
-useGLTF.preload("/models/Warrior-transformed.glb");
+useGLTF.preload("/models/warrior.glb");

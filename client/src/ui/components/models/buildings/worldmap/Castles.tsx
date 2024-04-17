@@ -116,7 +116,7 @@ type CastlesProps = {
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
 export const OtherCastles = ({ hexData }: CastlesProps) => {
-  const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
+  const { nodes, materials } = useGLTF("/models/realm-buildings.glb") as GLTFResult;
   const realms = useGetRealms();
 
   const selectedEntity = useUIStore((state) => state.selectedEntity);
@@ -187,7 +187,7 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
 export const MyCastles = ({ hexData }: CastlesProps) => {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
-  const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
+  const { nodes, materials } = useGLTF("/models/realm-buildings.glb") as GLTFResult;
 
   const realmPositions = realmHexPositions as HexPositions;
 
@@ -229,3 +229,5 @@ export const MyCastles = ({ hexData }: CastlesProps) => {
     </group>
   );
 };
+
+useGLTF.preload("/models/realm-buildings.glb");

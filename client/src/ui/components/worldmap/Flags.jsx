@@ -41,7 +41,7 @@ realmsJson.features = realmsJson.features.map((feature, index) => {
 });
 
 export function Flags(props) {
-  const { nodes, materials } = useGLTF("/models/flags_1-transformed.glb");
+  const { nodes, materials } = useGLTF("/models/flags.glb");
 
   const setCameraPosition = useUIStore((state) => state.setCameraPosition);
   const setCameraTarget = useUIStore((state) => state.setCameraTarget);
@@ -249,4 +249,4 @@ export function Flags(props) {
   );
 }
 
-useGLTF.preload("/models/flags_1-transformed.glb");
+useGLTF.preload("/models/flags.glb");
