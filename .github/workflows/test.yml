@@ -33,4 +33,4 @@ jobs:
 
       - name: Run Dojo Test
         run: |
-          cd contracts && sozo test -f eternum
+          cd contracts && sozo test -f models
