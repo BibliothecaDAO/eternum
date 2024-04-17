@@ -285,10 +285,10 @@ export const useProductionManager = (entityId: bigint, resourceId: number) => {
   }, [entityId, resourceId]);
 };
 
-export const useGetResourceDepositEntities = (address: bigint, position: Position) => {
+export const useGetBankAccountOnPosition = (address: bigint, position: Position) => {
   const {
     setup: {
-      components: { Owner, Position, Movable, Bank },
+      components: { Owner, Position, Movable, Bank, Realm },
     },
   } = useDojo();
 
@@ -296,6 +296,7 @@ export const useGetResourceDepositEntities = (address: bigint, position: Positio
     HasValue(Owner, { address }),
     Not(Movable),
     Not(Bank),
+    Not(Realm),
     HasValue(Position, { ...position }),
   ]);
 

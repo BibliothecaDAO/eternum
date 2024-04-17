@@ -42,13 +42,13 @@ export class MarketManager {
   public getSharesScaled = () => {
     const liquidity = this.getLiquidity();
     if (!liquidity) return 0;
-    return Math.floor(Number(liquidity.shares) / 2 ** 64);
+    return Math.floor(Number(liquidity.shares.mag) / 2 ** 64);
   };
 
   public getSharesUnscaled = () => {
     const liquidity = this.getLiquidity();
-    if (!liquidity) return 0;
-    return Number(liquidity.shares);
+    if (!liquidity) return 0n;
+    return liquidity.shares.mag;
   };
 
   public getMyLP() {

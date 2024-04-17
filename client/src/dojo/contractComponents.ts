@@ -76,8 +76,7 @@ export function defineContractComponents(world: World) {
           bank_entity_id: RecsType.BigInt,
           player: RecsType.BigInt,
           resource_type: RecsType.BigInt,
-          shares_mag: RecsType.BigInt,
-          shares_sign: RecsType.Boolean,
+          shares: { mag: RecsType.BigInt, sign: RecsType.Boolean },
         },
         {
           metadata: {

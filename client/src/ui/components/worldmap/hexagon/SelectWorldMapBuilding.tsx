@@ -16,15 +16,20 @@ export const SelectWorldMapBuilding = () => {
     },
   } = useDojo();
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleSelectBuilding = (buildingType: WorldMapBuildingType) => {
     setWorldMapBuilding(buildingType);
   };
 
-  const onBuild = async () => {
+  const onBuild = () => {
     // build the building
     if (worldMapBuilding && clickedHex) {
       // build the building
-      await create_bank({ coord: { x: clickedHex.col, y: clickedHex.row }, owner_fee_scaled: 0, signer: account });
+      setIsLoading(true);
+      create_bank({ coord: { x: clickedHex.col, y: clickedHex.row }, owner_fee_scaled: 0, signer: account })
+        .then(() => setIsLoading(false))
+        .catch(() => setIsLoading(false));
     }
   };
 
@@ -51,7 +56,9 @@ export const SelectWorldMapBuilding = () => {
         </div>
       ))}
       <div>
-        <Button onClick={onBuild}>Build</Button>
+        <Button isLoading={isLoading} onClick={onBuild}>
+          Build
+        </Button>
       </div>
     </div>
   );

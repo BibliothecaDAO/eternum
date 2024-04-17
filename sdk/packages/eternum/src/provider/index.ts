@@ -825,7 +825,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "liquidity_systems"),
       entrypoint: "remove",
-      calldata: [bank_entity_id, resource_type, shares],
+      calldata: [bank_entity_id, resource_type, shares, false],
     });
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   };

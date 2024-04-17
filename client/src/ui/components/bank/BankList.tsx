@@ -70,7 +70,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
         ),
         component: (
           <>
-            <AddLiquidity entityId={myBankAccountEntityId!} />
+            <AddLiquidity bank_entity_id={entity.id} entityId={myBankAccountEntityId!} />
             <LiquidityTable bank_entity_id={entity.id} bank_account_entity_id={myBankAccountEntityId} />
           </>
         ),

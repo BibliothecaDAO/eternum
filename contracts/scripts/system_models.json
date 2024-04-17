@@ -104,6 +104,7 @@
   "LIQUIDITY_SYSTEMS": [
     "Market",
     "OwnedResourcesTracker",
+    "Production",
     "Resource",
     "Liquidity"
   ],

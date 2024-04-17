@@ -29,7 +29,7 @@ export const LiquidityTable = ({
         {Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
           if (tier === "lords") return;
           return resourceIds.map((resourceId) => (
-            <LiquidityResourceRow key={resourceId} bankEntityId={bank_account_entity_id!} resourceId={resourceId} />
+            <LiquidityResourceRow key={resourceId} bankEntityId={bank_entity_id!} resourceId={resourceId} />
           ));
         })}
       </tbody>

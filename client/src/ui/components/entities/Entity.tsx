@@ -11,12 +11,10 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "@/ui/utils/realms";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { useGetResourceDepositEntities, useResources } from "@/hooks/helpers/useResources";
+import { useGetBankAccountOnPosition, useResources } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useCaravan } from "@/hooks/helpers/useCaravans";
-import { useBanks } from "@/hooks/helpers/useBanks";
-import { useRealm } from "@/hooks/helpers/useRealm";
 import { TravelEntityPopup } from "./TravelEntityPopup";
 
 enum ENTITY_TYPE {
@@ -63,10 +61,8 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
   const { getCaravanMembers } = useCaravan();
 
   const inventoryResources = getResourcesFromInventory(entityId);
-  const depositEntityIds = position ? useGetResourceDepositEntities(BigInt(account.address), position) : [];
-  // const depositEntityId = depositEntityIds[0];
-  // note: for testing (my account)
-  const depositEntityId = 31n;
+  const depositEntityIds = position ? useGetBankAccountOnPosition(BigInt(account.address), position) : [];
+  const depositEntityId = depositEntityIds[0];
 
   // capacity
   let resourceWeight = useMemo(() => {
@@ -182,11 +178,7 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
             Trade Bound <Pen className="ml-1 fill-gold" />
           </div>
         )}
-        {isWaitingToOffload && (
-          <div className="flex ml-auto -mt-2 italic text-gold">
-            Waiting to offload <Pen className="ml-1 fill-gold" />
-          </div>
-        )}
+        {isWaitingToOffload && <div className="flex ml-auto -mt-2 italic text-gold">Waiting to offload</div>}
         {isIdle && (
           <div className="flex ml-auto -mt-2 italic text-gold">
             Idle
