@@ -33,3 +33,6 @@ name = "Realms: Eternum"
 description = "Rule the Realms"
 cover_uri = "file://assets/bg.webp"
 website = "https://alpha-eternum.realms.world/"
+
+[scripts]
+unit_tests = "sozo test -f models"
