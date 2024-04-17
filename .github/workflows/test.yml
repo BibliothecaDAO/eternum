@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test: [combat, buildings, config, hyperstructure, bank, map, name, resources, trade, transport]
+        test: [combat, buildings, config, hyperstructure, bank, map, name, resources, trade, transport, models]
     steps:
       - name: Download Dojo release artifact
         run: |
