@@ -35,3 +35,13 @@ jobs:
       - name: Run Dojo Test for ${{ matrix.test }}
         run: |
           cd contracts && sozo test -f ${{ matrix.test }}
+
+  test-scarb-fmt:
+    needs: [setup-environment]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.6.4"
+      - run: cd contracts && scarb fmt --check
