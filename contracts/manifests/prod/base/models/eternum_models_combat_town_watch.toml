@@ -1,0 +1,15 @@
+kind = "DojoModel"
+class_hash = "0x80a7648d1bfde9dd0a67cb6a808f987aa41a2266d2f5a187f6700d7d2a1fc2"
+original_class_hash = "0x80a7648d1bfde9dd0a67cb6a808f987aa41a2266d2f5a187f6700d7d2a1fc2"
+abi = "manifests/prod/abis/base/models/eternum_models_combat_town_watch.json"
+name = "eternum::models::combat::town_watch"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "town_watch_id"
+type = "u128"
+key = false
