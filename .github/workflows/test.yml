@@ -15,23 +15,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y curl
 
-  setup-dojo:
-    needs: setup-environment
+  test-various:
+    needs: [setup-environment]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test: [combat, buildings, config, hyperstructure, bank, map, name, resources, trade, transport]
     steps:
       - name: Download Dojo release artifact
         run: |
           curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v0.6.0/dojo_v0.6.0_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
           sudo mv sozo /usr/local/bin/
-
-  test-various:
-    needs: [setup-environment, setup-dojo]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test: [combat, buildings, config, hyperstructure, bank, map, name, resources, trade, transport]
-    steps:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Run Dojo Build
