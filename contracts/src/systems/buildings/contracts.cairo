@@ -1,5 +1,18 @@
+#[dojo::interface]
+trait IBuildingContract<TContractState> {
+    fn create(
+        entity_id: u128,
+        building_coord: eternum::models::position::Coord,
+        building_category: eternum::models::buildings::BuildingCategory,
+        produce_resource_type: Option<u8>
+    );
+    fn destroy(entity_id: u128, building_coord: eternum::models::position::Coord);
+}
+
 #[dojo::contract]
 mod building_systems {
+    use super::IBuildingContract;
+
     use core::option::OptionTrait;
     use eternum::alias::ID;
     use eternum::models::{
@@ -8,7 +21,6 @@ mod building_systems {
         buildings::{BuildingCategory, Building, BuildingImpl},
         production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
     };
-    use eternum::systems::buildings::interface::IBuildingContract;
 
     #[abi(embed_v0)]
     impl BuildingContractImpl of IBuildingContract<ContractState> {
