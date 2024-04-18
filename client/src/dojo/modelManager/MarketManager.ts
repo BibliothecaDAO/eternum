@@ -119,6 +119,11 @@ export class MarketManager {
     return Math.floor(Math.sqrt(lords_amount * resource_amount));
   }
 
+  public getTotalLiquidityUnscaled() {
+    const liquidity = this.getTotalLiquidity();
+    return BigInt(liquidity * 2 ** 64);
+  }
+
   public hasLiquidity() {
     return this.getSharesScaled() > 0;
   }

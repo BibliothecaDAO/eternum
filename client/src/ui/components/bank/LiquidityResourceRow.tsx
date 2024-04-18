@@ -36,16 +36,17 @@ export const LiquidityResourceRow = ({ bankEntityId, resourceId }: { bankEntityI
   const [totalLords, totalResource] = marketManager.getReserves();
   const myLiquidity = marketManager.getLiquidity();
 
-  const canWithdraw = (myLiquidity?.shares.mag || 0) > 0;
-
-  const sharesUnscaled = marketManager.getSharesUnscaled();
+  const canWithdraw = (myLiquidity?.shares.mag || 0) > 0 && (totalLords > 0 || totalResource > 0);
 
   const onWithdraw = () => {
+    const sharesUnscaled = marketManager.getSharesUnscaled();
+    const totalLiquidityUnscaled = marketManager.getTotalLiquidityUnscaled();
+    const withdrawShares = BigInt(Math.min(Number(sharesUnscaled), Number(totalLiquidityUnscaled)));
     setIsLoading(true);
     remove_liquidity({
       bank_entity_id: bankEntityId,
       resource_type: BigInt(resourceId),
-      shares: sharesUnscaled,
+      shares: withdrawShares,
       signer: account,
     })
       .then(() => setIsLoading(false))
@@ -55,10 +56,10 @@ export const LiquidityResourceRow = ({ bankEntityId, resourceId }: { bankEntityI
   return (
     <tr className="hover:bg-gray-100">
       <td>{pair}</td>
-      <td>{divideByPrecision(totalLords)}</td>
-      <td>{divideByPrecision(totalResource)}</td>
-      <td>{divideByPrecision(lordsAmount)}</td>
-      <td>{divideByPrecision(resourceAmount)}</td>
+      <td>{divideByPrecision(totalLords).toFixed(0)}</td>
+      <td>{divideByPrecision(totalResource).toFixed(0)}</td>
+      <td>{divideByPrecision(lordsAmount).toFixed(0)}</td>
+      <td>{divideByPrecision(resourceAmount).toFixed(0)}</td>
       <td>
         <Button onClick={onWithdraw} isLoading={isLoading} disabled={!canWithdraw}>
           Withdraw

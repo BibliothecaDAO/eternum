@@ -50,7 +50,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
           <Button
             isLoading={isLoading}
             disabled={!canAdd}
-            className="text-brown"
+            className="text-brown bg-brown"
             onClick={onAddLiquidity}
             variant="primary"
           >
