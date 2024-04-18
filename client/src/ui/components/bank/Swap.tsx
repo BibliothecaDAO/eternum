@@ -8,6 +8,7 @@ import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { Resources, findResourceById, findResourceIdByTrait, resources } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
+import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 
 const LORDS_RESOURCE_ID = 253n;
 
@@ -20,6 +21,9 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
     },
   } = useDojo();
 
+  const { getBalance } = useResourceBalance();
+
+  const [isBuyResource, setIsBuyResource] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [resourceId, setResourceId] = useState<bigint>(1n);
   const [lordsAmount, setLordsAmount] = useState(0);
@@ -31,11 +35,34 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
   );
 
   useEffect(() => {
-    const buyResource = marketManager.buyResource(multiplyByPrecision(lordsAmount));
-    setResourceAmount(divideByPrecision(buyResource));
+    if (isBuyResource) {
+      const resource = marketManager.buyResource(multiplyByPrecision(lordsAmount));
+      setResourceAmount(divideByPrecision(resource));
+    }
   }, [lordsAmount]);
 
-  const canSwap = lordsAmount > 0 && resourceAmount > 0;
+  useEffect(() => {
+    if (!isBuyResource) {
+      const resource = marketManager.sellResource(multiplyByPrecision(resourceAmount));
+      setLordsAmount(divideByPrecision(resource));
+    }
+  }, [resourceAmount]);
+
+  const hasEnough = isBuyResource
+    ? multiplyByPrecision(lordsAmount) <= getBalance(entityId, Number(LORDS_RESOURCE_ID)).balance
+    : multiplyByPrecision(resourceAmount) <= getBalance(entityId, Number(resourceId)).balance;
+
+  const isNotZero = lordsAmount > 0 && resourceAmount > 0;
+
+  const canSwap = hasEnough && isNotZero;
+
+  const onInvert = () => {
+    setIsBuyResource((prev) => !prev);
+  };
+
+  const onSwap = () => {
+    isBuyResource ? onBuy() : onSell();
+  };
 
   const onBuy = () => {
     setIsLoading(true);
@@ -61,36 +88,56 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
       .catch(() => setIsLoading(false));
   };
 
+  const lordsBar = (disableInput: boolean) => (
+    <SwapBar
+      entityId={entityId}
+      resources={[resources[0]]}
+      amount={lordsAmount}
+      setAmount={setLordsAmount}
+      resourceId={LORDS_RESOURCE_ID}
+      setResourceId={setResourceId}
+      disableInput={disableInput}
+    />
+  );
+
+  const resourceBar = (disableInput: boolean) => (
+    <SwapBar
+      entityId={entityId}
+      resources={resources.slice(1, resources.length)}
+      amount={resourceAmount}
+      setAmount={setResourceAmount}
+      resourceId={resourceId}
+      setResourceId={setResourceId}
+      disableInput={disableInput}
+    />
+  );
+
   return (
     <div>
       <div className="p-2 relative">
-        <SwapBar
-          entityId={entityId}
-          resources={[resources[0]]}
-          amount={lordsAmount}
-          setAmount={setLordsAmount}
-          resourceId={LORDS_RESOURCE_ID}
-          setResourceId={setResourceId}
-        />
-
-        <div className="w-full mt-2 absolute top-1/3 left-1/3">
-          <Button className="text-brown" isLoading={isLoading} disabled={!canSwap} onClick={onBuy} variant="primary">
-            Swap
+        {isBuyResource ? lordsBar(false) : resourceBar(false)}
+        <div className="w-full absolute top-1/4 left-1/3">
+          <Button
+            className="text-brown bg-brown"
+            isLoading={false}
+            disabled={false}
+            onClick={onInvert}
+            variant="primary"
+          >
+            <Refresh className="text-gold cursor-pointer h-7"></Refresh>
           </Button>
         </div>
-
-        <SwapBar
-          entityId={entityId}
-          resources={resources.slice(1, resources.length)}
-          amount={resourceAmount}
-          setAmount={() => {}}
-          resourceId={resourceId}
-          setResourceId={setResourceId}
-        />
+        {isBuyResource ? resourceBar(true) : lordsBar(true)}
+        <div className="w-full flex flex-col justify-center mt-2">
+          <Button className="text-brown" isLoading={isLoading} disabled={!canSwap} onClick={onSwap} variant="primary">
+            Swap
+          </Button>
+          {!canSwap && <div className="ml-1 text-danger">Warning: not enough resources or amount is zero</div>}
+        </div>
       </div>
       <div className="p-2">
         <h3>Rate: 1:1</h3>
-        <Button onClick={() => console.log("")} variant="primary">
+        <Button onClick={onSwap} variant="primary">
           Swap
         </Button>
       </div>
@@ -105,6 +152,7 @@ export const SwapBar = ({
   setResourceId,
   amount,
   setAmount,
+  disableInput = false,
 }: {
   entityId: bigint;
   resources: Resources[];
@@ -112,6 +160,7 @@ export const SwapBar = ({
   setResourceId: (resourceId: bigint) => void;
   amount: number;
   setAmount: (amount: number) => void;
+  disableInput?: boolean;
 }) => {
   const { getBalance } = useResourceBalance();
 
@@ -127,16 +176,18 @@ export const SwapBar = ({
   };
 
   const handleAmountChange = (amount: string) => {
-    setAmount && setAmount(Math.min(parseInt(amount), selectedResourceBalance));
+    !disableInput && setAmount && setAmount(parseInt(amount));
   };
 
   return (
     <div className="w-full rounded border p-2 flex justify-between">
       <div className="self-center">
         <TextInput value={amount.toString()} onChange={(amount) => handleAmountChange(amount)} />
-        <div className="text-xs text-white" onClick={() => handleAmountChange(selectedResourceBalance.toString())}>
-          Max: {selectedResourceBalance}
-        </div>
+        {!disableInput && (
+          <div className="text-xs text-white" onClick={() => handleAmountChange(selectedResourceBalance.toString())}>
+            Max: {selectedResourceBalance}
+          </div>
+        )}
       </div>
 
       <Select
