@@ -12,7 +12,7 @@ struct Owner {
 }
 
 // entity owning an entity
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Model, Copy, Drop, Serde, Default)]
 struct EntityOwner {
     #[key]
     entity_id: u128,

@@ -150,5 +150,8 @@ mod LevelIndex {
 }
 
 mod ErrorMessages {
+    // we can't use this because values are not "strings" but 'felts'
+    // and we can only use string literals in assert! macro
+    // 
     const NOT_OWNER: felt252 = 'Not Owner';
 }

@@ -180,7 +180,7 @@ impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 }
 
 
-#[derive(Model, PartialEq, Copy, Drop, Serde, PrintTrait)]
+#[derive(Model, PartialEq, Copy, Drop, Serde, PrintTrait, Default)]
 struct Position {
     #[key]
     entity_id: u128,
