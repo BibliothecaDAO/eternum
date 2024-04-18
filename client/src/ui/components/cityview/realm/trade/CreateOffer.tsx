@@ -29,6 +29,7 @@ import { useResourceBalance, useResources } from "@/hooks/helpers/useResources";
 import { getTotalResourceWeight } from "./utils";
 import { TradeRealmSelector } from "./TradeRealmSelector";
 import { getComponentValue } from "@dojoengine/recs";
+import { Entity } from "@/ui/components/entities/Entity";
 
 interface CreateOfferPopupProps {
   onClose: () => void;
@@ -467,7 +468,7 @@ export const SelectCaravanPanel = ({
   const { getResourcesFromInventory } = useResources();
   const { realm } = useGetRealm(realmEntityId);
   const position = getComponentValue(Position, getEntityIdFromKeys([realmEntityId]));
-  const { caravans: realmCaravans } = useGetPositionCaravans(position?.x || 0, position?.y || 0);
+  const { caravans: realmCaravans } = useGetPositionCaravans(position?.x || 0, position?.y || 0, true);
 
   const [donkeysLeft, setDonkeysLeft] = useState<number>(0);
   const realmDonkeysCount = useRealmDonkeysCount(realmEntityId);
@@ -655,9 +656,9 @@ export const SelectCaravanPanel = ({
       {!isNewCaravan && (
         <div className="flex flex-col max-h-[350px] overflow-auto w-full">
           {myAvailableCaravans.map((caravan) => (
-            <Caravan
+            <Entity
               key={caravan.caravanId}
-              caravan={caravan}
+              entity={caravan}
               idleOnly={true}
               onClick={() => {
                 setSelectedCaravan(caravan.caravanId);

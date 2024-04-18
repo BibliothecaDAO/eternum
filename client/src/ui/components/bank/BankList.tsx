@@ -14,16 +14,16 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { EntitiesOnPositionList } from "../entities/EntitiesOnPositionList";
 import { LiquidityTable } from "./LiquidityTable";
 import AddLiquidity from "./AddLiquidity";
+import { hexToAscii, numberToHex } from "@/ui/utils/utils";
 
 type BankListProps = {
   entity: any;
-  position: Position;
 };
 
 export const BankPanel = ({ entity }: BankListProps) => {
   const {
     setup: {
-      components: { Position, Bank },
+      components: { Position, Bank, Owner, AddressName },
     },
   } = useDojo();
 
@@ -36,6 +36,8 @@ export const BankPanel = ({ entity }: BankListProps) => {
   const myBankAccountEntityId = myBankAccountsEntityIds.length === 1 ? myBankAccountsEntityIds[0] : undefined;
 
   const bank = getComponentValue(Bank, getEntityIdFromKeys([entity.id]));
+  const owner = getComponentValue(Owner, getEntityIdFromKeys([entity.id]));
+  const ownerName = owner ? getComponentValue(AddressName, getEntityIdFromKeys([owner.address]))?.name : undefined;
   const position = getComponentValue(Position, getEntityIdFromKeys([entity.id]));
 
   const tabs = useMemo(
@@ -138,7 +140,10 @@ export const BankPanel = ({ entity }: BankListProps) => {
         <h3>{entity.name}</h3>
 
         <div className="mr-3">
-          <div>Banker: 0x..420</div>
+          <div>
+            Banker:{" "}
+            {ownerName ? hexToAscii(numberToHex(Number(ownerName))) : numberToHex(Number(owner!.address)).slice(0, 5)}
+          </div>
           {bank && <div>{`Owner fees: ${(Number(bank.owner_fee_scaled) / 2 ** 64) * 100}%`}</div>}
           <div>LP fees: 0%</div>
         </div>

@@ -29,14 +29,16 @@ export const useBanks = () => {
   };
 };
 
-export const useGetBanks = () => {
+export const useGetBanks = (onlyMine?: boolean) => {
   const {
+    account: { account },
     setup: {
-      components: { Bank, Position },
+      components: { Bank, Position, Owner },
     },
   } = useDojo();
 
-  const entityIds = useEntityQuery([Has(Bank)]);
+  const query = onlyMine ? [Has(Bank), HasValue(Owner, { address: BigInt(account.address) })] : [Has(Bank)];
+  const entityIds = useEntityQuery(query);
 
   return entityIds
     .map((entityId) => {

@@ -20,8 +20,17 @@ export const Banks = () => {
   const isOpen = useUIStore((state) => state.isPopupOpen(banks));
 
   const bankEntities = useGetBanks();
+  const onlyMine = true;
+  const myBankEntities = useGetBanks(onlyMine);
 
   const bankList = bankEntities.map((bank) => {
+    return {
+      id: bank.entityId,
+      name: `Bank ${bank.entityId}`,
+    };
+  });
+
+  const myBankList = myBankEntities.map((bank) => {
     return {
       id: bank.entityId,
       name: `Bank ${bank.entityId}`,
@@ -46,7 +55,7 @@ export const Banks = () => {
             <div>My Banks</div>
           </div>
         ),
-        component: <></>,
+        component: <EntityList title="Banks" panel={({ entity }) => <BankPanel entity={entity} />} list={myBankList} />,
       },
     ],
     [selectedTab],
