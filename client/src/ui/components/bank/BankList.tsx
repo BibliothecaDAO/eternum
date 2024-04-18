@@ -46,7 +46,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>Swap</div>
           </div>
         ),
-        component: <ResourceSwap entityId={myBankAccountEntityId!} />,
+        component: <ResourceSwap bankEntityId={entity.id} entityId={myBankAccountEntityId!} />,
       },
       {
         key: "all",

@@ -490,57 +490,6 @@ export class EternumProvider extends DojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public swap_bank_and_travel_back = async (props: SystemProps.SwapBankAndTravelBackProps) => {
-    const {
-      sender_id,
-      inventoryIndex,
-      bank_id,
-      resource_types,
-      resource_amounts,
-      indices,
-      destination_coord_x,
-      destination_coord_y,
-      signer,
-    } = props;
-
-    const tx = await this.executeMulti(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, "resource_systems"),
-        entrypoint: "transfer_item",
-        calldata: [sender_id, inventoryIndex, sender_id],
-      },
-      ...indices.map((index, i) => ({
-        contractAddress: getContractByName(this.manifest, "bank_systems"),
-        entrypoint: "swap",
-        calldata: [bank_id, index, sender_id, resource_types[i], resource_amounts[i]],
-      })),
-      {
-        contractAddress: getContractByName(this.manifest, "travel_systems"),
-        entrypoint: "travel",
-        calldata: [sender_id, destination_coord_x, destination_coord_y],
-      },
-    ]);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  };
-
-  public feed_hyperstructure_and_travel_back = async (props: SystemProps.FeedHyperstructureAndTravelBackPropos) => {
-    const { entity_id, inventoryIndex, hyperstructure_id, destination_coord_x, destination_coord_y, signer } = props;
-
-    const tx = await this.executeMulti(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, "resource_systems"),
-        entrypoint: "transfer_item",
-        calldata: [entity_id, inventoryIndex, hyperstructure_id],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, "travel_systems"),
-        entrypoint: "travel",
-        calldata: [entity_id, destination_coord_x, destination_coord_y],
-      },
-    ]);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  };
-
   public async travel(props: SystemProps.TravelProps) {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
     const tx = await this.executeMulti(signer, {

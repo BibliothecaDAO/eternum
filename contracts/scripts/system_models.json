@@ -99,7 +99,8 @@
   "SWAP_SYSTEMS": [
     "Market",
     "OwnedResourcesTracker",
-    "Resource"
+    "Resource",
+    "Production"
   ],
   "LIQUIDITY_SYSTEMS": [
     "Market",

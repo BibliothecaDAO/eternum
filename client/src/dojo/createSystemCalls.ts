@@ -148,10 +148,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.heal_soldiers(props);
   };
 
-  const swap_bank_and_travel_back = async (props: SystemProps.SwapBankAndTravelBackProps) => {
-    await provider.swap_bank_and_travel_back(props);
-  };
-
   const transfer_items = async (props: SystemProps.TransferItemsProps) => {
     await provider.transfer_items(props);
   };
@@ -231,7 +227,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     control_hyperstructure,
     complete_hyperstructure,
     disassemble_caravan_and_return_free_units,
-    swap_bank_and_travel_back,
     set_address_name,
     create_and_merge_soldiers,
     level_up_realm,

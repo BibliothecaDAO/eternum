@@ -51,8 +51,50 @@ export class MarketManager {
     return liquidity.shares.mag;
   };
 
+  public quoteResource = (lordsAmount: number) => {
+    const [reserveLordsAmount, reserveResourceAmount] = this.getReserves();
+
+    let resourceOptimal = (reserveResourceAmount * lordsAmount) / reserveLordsAmount;
+
+    return Math.floor(resourceOptimal);
+  };
+
+  public quoteLords = (resourceAmount: number) => {
+    const [reserveLordsAmount, reserveResourceAmount] = this.getReserves();
+
+    let lordsOptimal = (reserveLordsAmount * resourceAmount) / reserveResourceAmount;
+
+    return Math.floor(lordsOptimal);
+  };
+
+  public buyResource = (lordsAmount: number) => {
+    const market = this.getMarket();
+    if (!market) return 0;
+    const cashInput = lordsAmount;
+    const available = Number(market.resource_amount);
+    const cash = Number(market.lords_amount);
+
+    let k = cash * available;
+    let newCash = cash + cashInput;
+    let newResource = k / newCash;
+    let resourcePayout = available - newResource;
+
+    return Math.floor(resourcePayout);
+  };
+
+  public sellResource = (resourceAmount: number) => {
+    const market = this.getMarket();
+    if (!market) return 0;
+    const quantity = resourceAmount;
+    const available = Number(market.resource_amount);
+    const cash = Number(market.lords_amount);
+    let k = cash * available;
+    let payout = cash - k / (available + quantity);
+    return Math.floor(payout);
+  };
+
   public getMyLP() {
-    const [reserve_lords_amount, reserve_resource_amount] = this.getReserves();
+    const [reserveLordsAmount, reserveResourceAmount] = this.getReserves();
     const liquidity = this.getTotalLiquidity();
     const shares = this.getSharesScaled();
 
@@ -60,8 +102,8 @@ export class MarketManager {
     let resource_amount = 0;
 
     if (liquidity > 0) {
-      lords_amount = (shares * reserve_lords_amount) / liquidity;
-      resource_amount = (shares * reserve_resource_amount) / liquidity;
+      lords_amount = (shares * reserveLordsAmount) / liquidity;
+      resource_amount = (shares * reserveResourceAmount) / liquidity;
     }
 
     return [lords_amount, resource_amount];
