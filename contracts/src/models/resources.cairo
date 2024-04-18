@@ -326,7 +326,6 @@ use eternum::models::production::ProductionRateTrait;
             resource_type: ResourceTypes::WOOD,
             building_count: 1,
             production_rate: wood_production_rate,
-            bonus_percent: 0,
             consumption_rate: 2,
             last_updated_tick: 0,
             input_finish_tick: 0
@@ -343,7 +342,6 @@ use eternum::models::production::ProductionRateTrait;
             resource_type: ResourceTypes::GOLD,
             building_count: 0,
             production_rate: 0,
-            bonus_percent: 0,
             consumption_rate: wood_cost_gold_rate,
             last_updated_tick: 0,
             input_finish_tick: 0

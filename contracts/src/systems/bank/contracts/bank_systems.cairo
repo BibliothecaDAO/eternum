@@ -12,7 +12,7 @@ mod bank_systems {
     impl BankSystemsImpl of IBankSystems<ContractState> {
         fn create_bank(
             self: @ContractState, world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128,
-        ) -> ID {
+        ) -> (ID, ID) {
             let bank_entity_id: ID = world.uuid().into();
 
             //todo: check that tile explored
@@ -28,11 +28,11 @@ mod bank_systems {
                 )
             );
 
-            InternalBankSystemsImpl::open_bank_account(
+            let bank_account_entity_id = InternalBankSystemsImpl::open_bank_account(
                 world, bank_entity_id, starknet::get_caller_address()
             );
 
-            bank_entity_id
+            (bank_entity_id, bank_account_entity_id)
         }
 
         fn open_account(world: IWorldDispatcher, bank_entity_id: u128) -> ID {
