@@ -51,6 +51,12 @@ export class MarketManager {
     return liquidity.shares.mag;
   };
 
+  public getMarketPrice = () => {
+    const market = this.getMarket();
+    if (!market) return 0;
+    return Number(market.lords_amount) / Number(market.resource_amount);
+  };
+
   public quoteResource = (lordsAmount: number) => {
     const [reserveLordsAmount, reserveResourceAmount] = this.getReserves();
 

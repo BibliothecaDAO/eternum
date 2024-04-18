@@ -241,7 +241,14 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
               </div>
               <div className="">
                 {isHome && (
-                  <Button variant="success" isLoading={isLoading} disabled={!isIdle} size="xs" onClick={redeemDonkeys}>
+                  <Button
+                    variant="success"
+                    isLoading={isLoading}
+                    disabled={!isIdle}
+                    size="xs"
+                    onClick={redeemDonkeys}
+                    withoutSound
+                  >
                     Redeem
                   </Button>
                 )}
@@ -259,13 +266,7 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
                   </Button>
                 )}
                 {!isTraveling && !blocked && (
-                  <Button
-                    size="xs"
-                    className="ml-auto"
-                    onClick={() => setShowTravel(true)}
-                    variant={"success"}
-                    withoutSound
-                  >
+                  <Button size="xs" className="ml-auto" onClick={() => setShowTravel(true)} variant={"success"}>
                     {"Travel"}
                   </Button>
                 )}

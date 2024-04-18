@@ -23,7 +23,7 @@ type BankListProps = {
 export const BankPanel = ({ entity }: BankListProps) => {
   const {
     setup: {
-      components: { Position },
+      components: { Position, Bank },
     },
   } = useDojo();
 
@@ -35,6 +35,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
   const myBankAccountsEntityIds = useMyAccountsInBank(entity.id);
   const myBankAccountEntityId = myBankAccountsEntityIds.length === 1 ? myBankAccountsEntityIds[0] : undefined;
 
+  const bank = getComponentValue(Bank, getEntityIdFromKeys([entity.id]));
   const position = getComponentValue(Position, getEntityIdFromKeys([entity.id]));
 
   const tabs = useMemo(
@@ -46,7 +47,11 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>Swap</div>
           </div>
         ),
-        component: <ResourceSwap bankEntityId={entity.id} entityId={myBankAccountEntityId!} />,
+        component: !myBankAccountEntityId ? (
+          <OpenBankAccount bank_entity_id={entity.id} />
+        ) : (
+          <ResourceSwap bankEntityId={entity.id} entityId={myBankAccountEntityId!} />
+        ),
       },
       {
         key: "all",
@@ -55,11 +60,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>My Account</div>
           </div>
         ),
-        component: !myBankAccountEntityId ? (
-          <OpenBankAccount bank_entity_id={entity.id} />
-        ) : (
-          <BankEntityList entity={{ id: myBankAccountEntityId }} />
-        ),
+        component: <BankEntityList entity={{ id: myBankAccountEntityId }} />,
       },
       {
         key: "all",
@@ -90,7 +91,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
               <SendResourcesPanel
                 senderEntityId={entity.entity_id}
                 position={position}
-                onSendCaravan={() => setSelectedTab(4)}
+                onSendCaravan={() => setSelectedTab(5)}
               />
             )}
           />
@@ -112,7 +113,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
               <SendResourcesPanel
                 senderEntityId={myBankAccountEntityId!}
                 position={getComponentValue(Position, getEntityIdFromKeys([entity.entity_id]))}
-                onSendCaravan={() => setSelectedTab(1)}
+                onSendCaravan={() => setSelectedTab(5)}
               />
             )}
           />
@@ -136,10 +137,18 @@ export const BankPanel = ({ entity }: BankListProps) => {
       <div className="flex justify-between">
         <h3>{entity.name}</h3>
 
-        <div>Banker: 0x..420</div>
+        <div className="mr-3">
+          <div>Banker: 0x..420</div>
+          {bank && <div>{`Owner fees: ${(Number(bank.owner_fee_scaled) / 2 ** 64) * 100}%`}</div>}
+          <div>LP fees: 0%</div>
+        </div>
       </div>
 
-      <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
+      <Tabs
+        selectedIndex={selectedTab}
+        onChange={(index: any) => (!myBankAccountEntityId ? setSelectedTab(0) : setSelectedTab(index))}
+        className="h-full"
+      >
         <Tabs.List>
           {tabs.map((tab, index) => (
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>

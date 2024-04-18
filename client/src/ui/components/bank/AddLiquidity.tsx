@@ -1,9 +1,10 @@
 import Button from "@/ui/elements/Button";
 import { resources } from "@bibliothecadao/eternum";
 import { useState } from "react";
-import { SwapBar } from "./Swap";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { multiplyByPrecision } from "@/ui/utils/utils";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { ResourceBar } from "./ResourceBar";
 
 const LORDS_RESOURCE_ID = 253n;
 
@@ -14,12 +15,20 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
       systemCalls: { add_liquidity },
     },
   } = useDojo();
+
+  const { getBalance } = useResourceBalance();
+
   const [isLoading, setIsLoading] = useState(false);
   const [resourceId, setResourceId] = useState<bigint>(1n);
   const [lordsAmount, setLordsAmount] = useState(0);
   const [resourceAmount, setResourceAmount] = useState(0);
 
-  const canAdd = lordsAmount > 0 && resourceAmount > 0;
+  const hasEnough =
+    getBalance(entityId, Number(LORDS_RESOURCE_ID)).balance > multiplyByPrecision(lordsAmount) &&
+    getBalance(entityId, Number(resourceId)).balance > multiplyByPrecision(resourceAmount);
+
+  const isNotZero = lordsAmount > 0 && resourceAmount > 0;
+  const canAdd = hasEnough && isNotZero;
 
   const onAddLiquidity = () => {
     setIsLoading(true);
@@ -37,7 +46,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
   return (
     <div>
       <div className="p-2 relative">
-        <SwapBar
+        <ResourceBar
           entityId={entityId}
           resources={[resources[0]]}
           amount={lordsAmount}
@@ -58,7 +67,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
           </Button>
         </div>
 
-        <SwapBar
+        <ResourceBar
           entityId={entityId}
           resources={resources.slice(1, resources.length)}
           amount={resourceAmount}
@@ -67,6 +76,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
           setResourceId={setResourceId}
         />
       </div>
+      {!canAdd && <div className="ml-1 text-danger">Warning: not enough resources or amount is zero</div>}
     </div>
   );
 };

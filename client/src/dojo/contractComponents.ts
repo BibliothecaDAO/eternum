@@ -121,11 +121,11 @@ export function defineContractComponents(world: World) {
     Bank: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.BigInt, exists: RecsType.Boolean },
+        { entity_id: RecsType.BigInt, owner_fee_scaled: RecsType.BigInt, exists: RecsType.Boolean },
         {
           metadata: {
             name: "Bank",
-            types: ["u128", "bool"],
+            types: ["u128", "u128", "bool"],
             customTypes: [],
           },
         },

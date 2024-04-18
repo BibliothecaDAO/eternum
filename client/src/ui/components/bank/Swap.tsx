@@ -2,13 +2,12 @@ import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import TextInput from "@/ui/elements/TextInput";
-import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { Resources, findResourceById, findResourceIdByTrait, resources } from "@bibliothecadao/eternum";
-import { useEffect, useMemo, useState } from "react";
+import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "@/ui/utils/utils";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
+import { useComponentValue } from "@dojoengine/react";
+import { ResourceBar } from "@/ui/components/bank/ResourceBar";
+import { resources } from "@bibliothecadao/eternum";
 
 const LORDS_RESOURCE_ID = 253n;
 
@@ -29,93 +28,66 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
   const [lordsAmount, setLordsAmount] = useState(0);
   const [resourceAmount, setResourceAmount] = useState(0);
 
+  const market = useComponentValue(Market, getEntityIdFromKeys([bankEntityId, resourceId]));
   const marketManager = useMemo(
-    () => new MarketManager(Market, Liquidity, bankEntityId, BigInt(account.address), BigInt(resourceId)),
-    [Market, Liquidity, bankEntityId, resourceId, account.address],
+    () => new MarketManager(Market, Liquidity, bankEntityId, BigInt(account.address), resourceId),
+    [Market, Liquidity, bankEntityId, resourceId, account.address, market],
   );
 
   useEffect(() => {
-    if (isBuyResource) {
-      const resource = marketManager.buyResource(multiplyByPrecision(lordsAmount));
-      setResourceAmount(divideByPrecision(resource));
+    const amount = isBuyResource ? lordsAmount : resourceAmount;
+    const setAmount = isBuyResource ? setResourceAmount : setLordsAmount;
+    const operation = isBuyResource ? marketManager.buyResource : marketManager.sellResource;
+
+    if (amount > 0) {
+      const resource = operation(multiplyByPrecision(amount));
+      setAmount(divideByPrecision(resource));
     }
-  }, [lordsAmount]);
+  }, [lordsAmount, resourceAmount, isBuyResource, marketManager]);
 
-  useEffect(() => {
-    if (!isBuyResource) {
-      const resource = marketManager.sellResource(multiplyByPrecision(resourceAmount));
-      setLordsAmount(divideByPrecision(resource));
-    }
-  }, [resourceAmount]);
+  const hasEnough = useMemo(() => {
+    const amount = isBuyResource ? lordsAmount : resourceAmount;
+    const balanceId = isBuyResource ? LORDS_RESOURCE_ID : resourceId;
+    return multiplyByPrecision(amount) <= getBalance(entityId, Number(balanceId)).balance;
+  }, [isBuyResource, lordsAmount, resourceAmount, getBalance, entityId, resourceId]);
 
-  const hasEnough = isBuyResource
-    ? multiplyByPrecision(lordsAmount) <= getBalance(entityId, Number(LORDS_RESOURCE_ID)).balance
-    : multiplyByPrecision(resourceAmount) <= getBalance(entityId, Number(resourceId)).balance;
-
-  const isNotZero = lordsAmount > 0 && resourceAmount > 0;
-
-  const canSwap = hasEnough && isNotZero;
-
-  const onInvert = () => {
-    setIsBuyResource((prev) => !prev);
-  };
-
-  const onSwap = () => {
-    isBuyResource ? onBuy() : onSell();
-  };
-
-  const onBuy = () => {
-    setIsLoading(true);
-    buy_resources({
-      signer: account,
-      bank_entity_id: bankEntityId,
-      resource_type: resourceId,
-      amount: multiplyByPrecision(resourceAmount),
-    })
-      .then(() => setIsLoading(false))
-      .catch(() => setIsLoading(false));
-  };
-
-  const onSell = () => {
-    setIsLoading(true);
-    sell_resources({
-      signer: account,
-      bank_entity_id: bankEntityId,
-      resource_type: resourceId,
-      amount: multiplyByPrecision(resourceAmount),
-    })
-      .then(() => setIsLoading(false))
-      .catch(() => setIsLoading(false));
-  };
-
-  const lordsBar = (disableInput: boolean) => (
-    <SwapBar
-      entityId={entityId}
-      resources={[resources[0]]}
-      amount={lordsAmount}
-      setAmount={setLordsAmount}
-      resourceId={LORDS_RESOURCE_ID}
-      setResourceId={setResourceId}
-      disableInput={disableInput}
-    />
+  const canSwap = useMemo(
+    () => lordsAmount > 0 && resourceAmount > 0 && hasEnough,
+    [lordsAmount, resourceAmount, hasEnough],
   );
 
-  const resourceBar = (disableInput: boolean) => (
-    <SwapBar
-      entityId={entityId}
-      resources={resources.slice(1, resources.length)}
-      amount={resourceAmount}
-      setAmount={setResourceAmount}
-      resourceId={resourceId}
-      setResourceId={setResourceId}
-      disableInput={disableInput}
-    />
+  const onInvert = useCallback(() => setIsBuyResource((prev) => !prev), []);
+
+  const onSwap = useCallback(() => {
+    setIsLoading(true);
+    const operation = isBuyResource ? buy_resources : sell_resources;
+    operation({
+      signer: account,
+      bank_entity_id: bankEntityId,
+      resource_type: resourceId,
+      amount: multiplyByPrecision(isBuyResource ? resourceAmount : lordsAmount),
+    }).finally(() => setIsLoading(false));
+  }, [isBuyResource, buy_resources, sell_resources, account, bankEntityId, resourceId, resourceAmount, lordsAmount]);
+
+  const renderResourceBar = useCallback(
+    (disableInput: boolean, isLords: boolean) => (
+      <ResourceBar
+        entityId={entityId}
+        resources={isLords ? [resources[0]] : resources.slice(1)}
+        amount={isLords ? lordsAmount : resourceAmount}
+        setAmount={isLords ? setLordsAmount : setResourceAmount}
+        resourceId={isLords ? LORDS_RESOURCE_ID : resourceId}
+        setResourceId={setResourceId}
+        disableInput={disableInput}
+      />
+    ),
+    [entityId, lordsAmount, resourceAmount, resourceId],
   );
 
   return (
     <div>
       <div className="p-2 relative">
-        {isBuyResource ? lordsBar(false) : resourceBar(false)}
+        {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
         <div className="w-full absolute top-1/4 left-1/3">
           <Button
             className="text-brown bg-brown"
@@ -127,7 +99,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
             <Refresh className="text-gold cursor-pointer h-7"></Refresh>
           </Button>
         </div>
-        {isBuyResource ? resourceBar(true) : lordsBar(true)}
+        {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
         <div className="w-full flex flex-col justify-center mt-2">
           <Button className="text-brown" isLoading={isLoading} disabled={!canSwap} onClick={onSwap} variant="primary">
             Swap
@@ -136,80 +108,11 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
         </div>
       </div>
       <div className="p-2">
-        <h3>Rate: 1:1</h3>
+        <h3>Price: {marketManager.getMarketPrice().toFixed(2)} $LORDS</h3>
         <Button onClick={onSwap} variant="primary">
           Swap
         </Button>
       </div>
-    </div>
-  );
-};
-
-export const SwapBar = ({
-  entityId,
-  resources,
-  resourceId,
-  setResourceId,
-  amount,
-  setAmount,
-  disableInput = false,
-}: {
-  entityId: bigint;
-  resources: Resources[];
-  resourceId: bigint;
-  setResourceId: (resourceId: bigint) => void;
-  amount: number;
-  setAmount: (amount: number) => void;
-  disableInput?: boolean;
-}) => {
-  const { getBalance } = useResourceBalance();
-
-  const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
-
-  useEffect(() => {
-    setSelectedResourceBalance(divideByPrecision(getBalance(entityId, Number(resourceId)).balance));
-  }, [resourceId]);
-
-  const handleResourceChange = (trait: string) => {
-    const resourceId = findResourceIdByTrait(trait);
-    setResourceId && setResourceId(BigInt(resourceId));
-  };
-
-  const handleAmountChange = (amount: string) => {
-    !disableInput && setAmount && setAmount(parseInt(amount));
-  };
-
-  return (
-    <div className="w-full rounded border p-2 flex justify-between">
-      <div className="self-center">
-        <TextInput value={amount.toString()} onChange={(amount) => handleAmountChange(amount)} />
-        {!disableInput && (
-          <div className="text-xs text-white" onClick={() => handleAmountChange(selectedResourceBalance.toString())}>
-            Max: {selectedResourceBalance}
-          </div>
-        )}
-      </div>
-
-      <Select
-        value={findResourceById(Number(resourceId))!.trait}
-        onValueChange={(trait) => handleResourceChange(trait)}
-      >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Resources" />
-        </SelectTrigger>
-        <SelectContent className="bg-brown text-gold">
-          {resources.map((resource, index) => (
-            <SelectItem key={index} value={resource.trait}>
-              <div className="flex">
-                <ResourceCost
-                  resourceId={resource.id}
-                  amount={divideByPrecision(getBalance(entityId, resource.id).balance)}
-                ></ResourceCost>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
     </div>
   );
 };
