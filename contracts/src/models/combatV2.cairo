@@ -1,13 +1,4 @@
-use core::option::OptionTrait;
-use core::traits::TryInto;
-use core::traits::Into;
-use starknet::get_block_timestamp;
-use eternum::constants::ResourceTypes;
-use eternum::constants::WORLD_CONFIG_ID;
-use eternum::models::position::{Position, Coord};
-use eternum::models::movable::Movable;
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
 use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
 use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
@@ -37,7 +28,7 @@ struct Healthv2 {
 #[generate_trait]
 impl Healthv2Impl of Healthv2Trait {
     fn is_alive(ref self: Healthv2) -> bool {
-        return self.current > 0;
+        self.current > 0
     }
 
     fn increase_by(ref self: Healthv2, value: u128) {
@@ -58,7 +49,7 @@ impl Healthv2Impl of Healthv2Trait {
         if (num_steps % deduction) > 0 {
             num_steps += 1;
         }
-        return num_steps;
+        num_steps
     }
 }
 
@@ -74,36 +65,30 @@ struct Troops {
 #[generate_trait]
 impl TroopsImpl of TroopsTrait {
     fn add(ref self: Troops, other: Troops) {
-        self.knight_count+= other.knight_count;
-        self.paladin_count+= other.paladin_count;
+        self.knight_count += other.knight_count;
+        self.paladin_count += other.paladin_count;
         self.crossbowman_count += other.crossbowman_count;
     }
-    
+
     fn full_health(self: Troops, troop_config: TroopConfig) -> u128 {
         let total_knight_health = troop_config.knight_health * self.knight_count;
         let total_paladin_health = troop_config.paladin_health * self.paladin_count;
         let total_crossbowman_health = troop_config.crossbowman_health * self.crossbowman_count;
 
-        return total_knight_health.into()
-            + total_paladin_health.into()
-            + total_crossbowman_health.into();
+        total_knight_health.into() + total_paladin_health.into() + total_crossbowman_health.into()
     }
 
     fn purchase(
-            self: Troops,
-            purchaser_id: u128, 
-            ref troops_resources: (Resource, Resource, Resource),  
-        ) {
-
-        let (mut knight_resource, mut paladin_resoure, mut crossbowman_resoure) 
-            = troops_resources;           
+        self: Troops, purchaser_id: u128, ref troops_resources: (Resource, Resource, Resource),
+    ) {
+        let (mut knight_resource, mut paladin_resoure, mut crossbowman_resoure) = troops_resources;
 
         // pay for knights using KNIGHT resource
 
         if self.knight_count > 0 {
             assert!(
-                knight_resource.balance >= self.knight_count.into(), 
-                    "insufficient resources to purchase knights"
+                knight_resource.balance >= self.knight_count.into(),
+                "insufficient resources to purchase knights"
             );
 
             knight_resource.balance -= self.knight_count.into();
@@ -131,15 +116,19 @@ impl TroopsImpl of TroopsTrait {
     }
 
     fn delta(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> (u32, u32) {
-
         let self_strength = self.strength_against(enemy_troops, troop_config);
         let enemy_strength = enemy_troops.strength_against(self, troop_config);
         let strength_difference = self_strength - enemy_strength;
 
         // should be at least one to prevent division errrors
-        return (1, 1);
+        (1, 1)
     }
 
+    /// @dev Calculates the net combat strength of one troop against another, factoring in troop-specific strengths and advantages/disadvantages.
+    /// @param self Reference to the instance of the Troops struct representing the attacking troops.
+    /// @param enemy_troops Reference to the instance of the Troops struct representing the defending troops.
+    /// @param troop_config Configuration object containing strength and advantage/disadvantage percentages for each troop type.
+    /// @return The net combat strength as an integer, where a positive number indicates a strength advantage for the attacking troops.
     fn strength_against(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> i64 {
         let self = *self;
         let enemy_troops = *enemy_troops;
@@ -190,7 +179,7 @@ impl TroopsImpl of TroopsTrait {
         let self_crossbowman_strength: i64 = self_crossbowman_strength.into()
             - enemy_knight_strength.into();
 
-        return self_knight_strength + self_paladin_strength + self_crossbowman_strength;
+        self_knight_strength + self_paladin_strength + self_crossbowman_strength
     }
 }
 
@@ -204,19 +193,13 @@ struct Army {
     battle_side: BattleSide
 }
 
-
-#[generate_trait]
-impl ArmyImpl of ArmyTrait {}
-
-
-
 #[derive(Model, Copy, Drop, Serde, Default)]
 struct Battle {
     #[key]
     entity_id: u128,
     attack_army: Army,
     defence_army: Army,
-    attack_army_health: Healthv2, 
+    attack_army_health: Healthv2,
     defence_army_health: Healthv2,
     attack_delta: u32,
     defence_delta: u32,
@@ -250,24 +233,25 @@ impl BattleSideIntoFelt252 of Into<BattleSide, felt252> {
 
 #[generate_trait]
 impl BattleImpl of BattleTrait {
-
     fn update_state(ref self: Battle, tick: TickConfig) {
-
         let battle_duration_passed = self.duration_passed(tick);
-        self.attack_army_health
+        self
+            .attack_army_health
             .decrease_by((self.attack_delta.into() * battle_duration_passed.into()));
-        self.defence_army_health
+        self
+            .defence_army_health
             .decrease_by((self.attack_delta.into() * battle_duration_passed.into()));
     }
-
 
     fn restart(ref self: Battle, tick: TickConfig, troop_config: TroopConfig) {
         // ensure state has been updated 
         assert!(self.tick_last_updated == tick.current(), "state not updated");
 
         // reset attack and defence delta 
-        let (attack_delta, defence_delta) 
-            = self.attack_army.troops.delta(@self.defence_army.troops, troop_config);
+        let (attack_delta, defence_delta) = self
+            .attack_army
+            .troops
+            .delta(@self.defence_army.troops, troop_config);
         self.attack_delta = attack_delta;
         self.defence_delta = defence_delta;
 
@@ -277,16 +261,18 @@ impl BattleImpl of BattleTrait {
 
 
     fn duration(self: Battle) -> u64 {
-        let mut attack_num_ticks_to_death 
-            = self.attack_army_health.steps_to_finish(self.defence_delta.into());
-            
-        let mut defence_num_ticks_to_death 
-            = self.defence_army_health.steps_to_finish(self.attack_delta.into());
-        
+        let mut attack_num_ticks_to_death = self
+            .attack_army_health
+            .steps_to_finish(self.defence_delta.into());
+
+        let mut defence_num_ticks_to_death = self
+            .defence_army_health
+            .steps_to_finish(self.attack_delta.into());
+
         if defence_num_ticks_to_death < attack_num_ticks_to_death {
-            return defence_num_ticks_to_death.try_into().unwrap();
+            defence_num_ticks_to_death.try_into().unwrap()
         } else {
-            return attack_num_ticks_to_death.try_into().unwrap();
+            attack_num_ticks_to_death.try_into().unwrap()
         }
     }
 
@@ -298,12 +284,12 @@ impl BattleImpl of BattleTrait {
             self.tick_duration_left -= duration_since_last_update;
             self.tick_last_updated = current_tick;
 
-            return duration_since_last_update;
+            duration_since_last_update
         } else {
             let duration = self.tick_duration_left;
             self.tick_duration_left = 0;
             self.tick_last_updated = current_tick;
-            return duration;
+            duration
         }
     }
 }
