@@ -25,7 +25,7 @@ export interface MapStore {
 }
 export const createMapStoreSlice = (set: any) => ({
   worldMapBuilding: undefined,
-  setWorldMapBuilding: (building: WorldMapBuildingType | undefined) => {
+  setWorldMapBuilding: (building: WorldBuildingType | undefined) => {
     set({ worldMapBuilding: building });
   },
   clickedHex: undefined,

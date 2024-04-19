@@ -12,7 +12,7 @@ const BuildPanel = ({ playerRealms }: { playerRealms: () => any }) => (
   <EntityList
     list={playerRealms()}
     title="Build"
-    panel={({ entity }) => <SelectWorldMapBuilding entity_id={entity.entity_id} />}
+    panel={({ entity }) => <SelectWorldMapBuilding entityId={entity.entity_id} />}
   />
 );
 

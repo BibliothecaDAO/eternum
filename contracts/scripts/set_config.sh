@@ -8,7 +8,7 @@ resource_precision=1000
 commands+=(
     # owner cost in lords
     # lp fees
-    "sozo execute $CONFIG_SYSTEMS set_bank_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,0"
+    "sozo execute $CONFIG_SYSTEMS set_bank_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 100000,0"
 )
 
 ## set tick config

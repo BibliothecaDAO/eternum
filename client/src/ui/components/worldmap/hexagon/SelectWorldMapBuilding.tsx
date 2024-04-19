@@ -6,6 +6,8 @@ import { InfoIcon } from "lucide-react";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { WorldBuildingType } from "@bibliothecadao/eternum";
 import Button from "@/ui/elements/Button";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 const BUILDING_IMAGES_PATH = {
@@ -14,7 +16,19 @@ const BUILDING_IMAGES_PATH = {
   [WorldBuildingType.Hyperstructure]: BUILD_IMAGES_PREFIX + "fishing_village.png",
 };
 
-export const SelectWorldMapBuilding = (entityId: any) => {
+const BUILDING_COST = {
+  [WorldBuildingType.Bank]: 100,
+  [WorldBuildingType.Settlement]: 100,
+  [WorldBuildingType.Hyperstructure]: 100,
+};
+
+const BUILDING_UNBLOCKED = {
+  [WorldBuildingType.Bank]: true,
+  [WorldBuildingType.Settlement]: false,
+  [WorldBuildingType.Hyperstructure]: false,
+};
+
+export const SelectWorldMapBuilding = ({ entityId }: any) => {
   const buildingTypes = Object.keys(WorldBuildingType).filter((type) => isNaN(Number(type)) && type !== "None");
 
   const { worldMapBuilding, setWorldMapBuilding, clickedHex, setTooltip } = useUIStore();
@@ -25,10 +39,21 @@ export const SelectWorldMapBuilding = (entityId: any) => {
     },
   } = useDojo();
 
+  const { getBalance } = useResourceBalance();
+
+  const lordsBalance = getBalance(entityId, 253).balance;
+
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSelectBuilding = (buildingType: WorldBuildingType) => {
+    if (
+      !BUILDING_UNBLOCKED[buildingType] ||
+      multiplyByPrecision(BUILDING_COST[buildingType]) > lordsBalance ||
+      !clickedHex
+    )
+      return;
     setWorldMapBuilding(buildingType);
+    console.log({ buildingType });
   };
 
   const onBuild = () => {
@@ -36,9 +61,12 @@ export const SelectWorldMapBuilding = (entityId: any) => {
     if (worldMapBuilding && clickedHex) {
       // build the building
       setIsLoading(true);
-      create_bank({ coord: { x: clickedHex.col, y: clickedHex.row }, owner_fee_scaled: 0, signer: account }).finally(
-        () => setIsLoading(false),
-      );
+      create_bank({
+        realm_entity_id: entityId,
+        coord: { x: clickedHex.col, y: clickedHex.row },
+        owner_fee_scaled: 0,
+        signer: account,
+      }).finally(() => setIsLoading(false));
     }
   };
 
@@ -54,6 +82,10 @@ export const SelectWorldMapBuilding = (entityId: any) => {
                 "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis p-2 cursor-pointer h-16 relative",
                 {
                   "!border-lightest !text-lightest": worldMapBuilding === building,
+                },
+                {
+                  "opacity-30 cursor-not-allowed":
+                    !BUILDING_UNBLOCKED[building] || lordsBalance < multiplyByPrecision(BUILDING_COST[building]),
                 },
               )}
               style={{
@@ -75,7 +107,7 @@ export const SelectWorldMapBuilding = (entityId: any) => {
               <InfoIcon
                 onMouseEnter={() => {
                   setTooltip({
-                    content: <MineInfo />,
+                    content: <CostInfo cost={BUILDING_COST[building]} lordsBalance={lordsBalance} />,
                     position: "right",
                   });
                 }}
@@ -97,23 +129,17 @@ export const SelectWorldMapBuilding = (entityId: any) => {
   );
 };
 
-const MineInfo = () => {
+const CostInfo = ({ cost, lordsBalance }: { cost: number; lordsBalance: number }) => {
   return (
     <div className="flex flex-col text-white text-sm p-2">
-      <div className="font-bold">Producing</div>
-      <div className="flex space-x-2 font-bold">
-        <div>+100</div> <ResourceIcon resource={"Ruby"} size="xs" />
-        /tick
-      </div>
-
-      <div className="mt-3">Consuming</div>
+      <div className="mt-3">Cost</div>
       <div className="font-bold flex space-x-2">
-        <div className="text-order-giants">-50</div> <ResourceIcon resource={"Wood"} size="xs" />
-        /tick
+        <div className="text-order-giants">-{cost}</div> <ResourceIcon resource={"Lords"} size="xs" />
       </div>
+      <div className="mt-3">Balance</div>
       <div className="font-bold flex space-x-2">
-        <div className="text-order-giants">-50</div> <ResourceIcon resource={"Coal"} size="xs" />
-        /tick
+        <div className="text-order-brilliance">{divideByPrecision(lordsBalance)}</div>{" "}
+        <ResourceIcon resource={"Lords"} size="xs" />
       </div>
     </div>
   );

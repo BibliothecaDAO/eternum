@@ -257,6 +257,7 @@ export interface DestroyBuildingProps extends SystemSigner {
 }
 
 export interface CreateBankProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
   coord: {
     x: num.BigNumberish;
     y: num.BigNumberish;

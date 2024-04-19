@@ -1,23 +1,42 @@
 #[dojo::contract]
 mod bank_systems {
     use eternum::models::bank::bank::{BankAccounts, Bank};
+    use eternum::models::config::{BankConfig};
     use eternum::models::position::{Position, Coord};
+    use eternum::models::resources::{Resource, ResourceImpl};
     use eternum::models::owner::Owner;
     use eternum::systems::bank::interface::bank::IBankSystems;
     use eternum::alias::ID;
+    use eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
 
     use traits::Into;
 
     #[abi(embed_v0)]
     impl BankSystemsImpl of IBankSystems<ContractState> {
         fn create_bank(
-            self: @ContractState, world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128,
+            self: @ContractState,
+            world: IWorldDispatcher,
+            realm_entity_id: ID,
+            coord: Coord,
+            owner_fee_scaled: u128,
         ) -> (ID, ID) {
             let bank_entity_id: ID = world.uuid().into();
 
-            //todo: check that tile explored
+            //todo: check that tile is explored
             //todo: check that no bank on this position
             //todo: check that no realm on this position
+
+            // remove the resources from the realm
+            let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
+
+            let mut realm_resource = ResourceImpl::get(
+                world, (realm_entity_id, ResourceTypes::LORDS)
+            );
+
+            assert(realm_resource.balance >= bank_config.lords_cost, 'insufficient resources');
+
+            realm_resource.balance -= bank_config.lords_cost;
+            realm_resource.save(world);
 
             set!(
                 world,

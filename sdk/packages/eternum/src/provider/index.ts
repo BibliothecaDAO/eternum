@@ -703,12 +703,12 @@ export class EternumProvider extends DojoProvider {
   }
 
   public async create_bank(props: SystemProps.CreateBankProps) {
-    const { coord, owner_fee_scaled, signer } = props;
+    const { realm_entity_id, coord, owner_fee_scaled, signer } = props;
 
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "bank_systems"),
       entrypoint: "create_bank",
-      calldata: [coord, owner_fee_scaled],
+      calldata: [realm_entity_id, coord, owner_fee_scaled],
     });
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }

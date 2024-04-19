@@ -94,7 +94,9 @@
     "Bank",
     "Position",
     "BankAccounts",
-    "Owner"
+    "Owner",
+    "Resource",
+    "Production"
   ],
   "SWAP_SYSTEMS": [
     "Market",
