@@ -58,6 +58,8 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
 
   const onInvert = useCallback(() => setIsBuyResource((prev) => !prev), []);
 
+  const marketPrice = marketManager.getMarketPrice();
+  const slippage = (marketPrice - lordsAmount / resourceAmount) * 100;
   const onSwap = useCallback(() => {
     setIsLoading(true);
     const operation = isBuyResource ? buy_resources : sell_resources;
@@ -108,7 +110,10 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
         </div>
       </div>
       <div className="p-2">
-        <h3>Price: {marketManager.getMarketPrice().toFixed(2)} $LORDS</h3>
+        <div className="mb-2">
+          <div>Price: {marketPrice.toFixed(2)} $LORDS</div>
+          {marketPrice > 0 && <div className="text-order-giants">Slippage: {slippage.toFixed(2)} %</div>}
+        </div>
         <Button onClick={onSwap} variant="primary">
           Swap
         </Button>
