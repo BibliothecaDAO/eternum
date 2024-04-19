@@ -11,7 +11,7 @@ import useUIStore from "../../../../hooks/store/useUIStore";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import RealmCombatComponent from "./RealmCombatComponent";
 import RealmInfoComponent from "./RealmInfoComponent";
-import { RealmBuildingsComponent } from "./RealmBuildingsComponent";
+// import { RealmBuildingsComponent } from "./RealmBuildingsComponent";
 
 const RealmManagementComponent = () => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
@@ -129,7 +129,7 @@ const RealmManagementComponent = () => {
             <City className="mb-2 fill-gold" /> <div>Buildings</div>
           </div>
         ),
-        component: <RealmBuildingsComponent />,
+        component: <></>,
       },
     ],
     [selectedTab],
