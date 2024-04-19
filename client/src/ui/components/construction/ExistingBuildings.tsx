@@ -70,7 +70,12 @@ export const ExistingBuildings = () => {
           position={{ col: building.col, row: building.row }}
         />
       ))}
-      <primitive scale={3} object={models[0].scene} position={[castlePosition.x, 2.33, -castlePosition.y]} />
+      <primitive
+        scale={3}
+        object={models[0].scene}
+        position={[castlePosition.x, 2.33, -castlePosition.y]}
+        rotation={[0, Math.PI * 1.5, 0]}
+      />
     </>
   );
 };
