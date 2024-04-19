@@ -24,8 +24,8 @@ export interface MapStore {
   setIsAttackMode: (isAttackMode: boolean) => void;
 }
 export const createMapStoreSlice = (set: any) => ({
-  worldMapBuilding: undefined,
-  setWorldMapBuilding: (building: WorldBuildingType | undefined) => {
+  worldMapBuilding: null,
+  setWorldMapBuilding: (building: WorldBuildingType | null) => {
     set({ worldMapBuilding: building });
   },
   clickedHex: undefined,

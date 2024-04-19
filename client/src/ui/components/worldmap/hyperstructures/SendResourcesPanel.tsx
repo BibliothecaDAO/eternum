@@ -18,12 +18,10 @@ import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
 export const SendResourcesPanel = ({
   senderEntityId,
   position,
-  onClose,
   onSendCaravan,
 }: {
   senderEntityId: bigint;
   position: { x: number; y: number } | undefined;
-  onClose: () => void;
   onSendCaravan: () => void;
 }) => {
   const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
@@ -211,13 +209,6 @@ export const SendResourcesPanel = ({
         </>
       )}
       <div className="flex justify-between items-center mt-3 w-full text-xxs">
-        <Button
-          className="!px-[6px] !py-[2px] text-xxs"
-          onClick={() => (step === 1 ? onClose() : setStep(step - 1))}
-          variant="outline"
-        >
-          {step === 1 ? "Cancel" : "Back"}
-        </Button>
         <Steps className="absolute -translate-x-1/2 left-1/2 bottom-3" step={step} maxStep={3} />
         {!isLoading && (
           <Button

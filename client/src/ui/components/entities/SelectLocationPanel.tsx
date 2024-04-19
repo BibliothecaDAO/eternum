@@ -1,5 +1,10 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";
+import {
+  CombatInfo,
+  SelectableLocationInterface,
+  SelectableRealmInterface,
+  getOrderName,
+} from "@bibliothecadao/eternum";
 import { Entity, getComponentValue } from "@dojoengine/recs";
 import { useCaravan } from "@/hooks/helpers/useCaravans";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
@@ -25,8 +30,8 @@ export const SelectLocationPanel = ({
   setSelectedEntityId: (selectedEntityId: bigint) => void;
 }) => {
   const [nameFilter, setNameFilter] = useState("");
-  const [originalLocations, setOriginalLocations] = useState<SelectableRealmInterface[]>([]);
-  const [sortedRealms, setSortedRealms] = useState<SelectableRealmInterface[]>([]);
+  const [originalLocations, setOriginalLocations] = useState<SelectableLocationInterface[]>([]);
+  const [sortedLocations, setSortedLocations] = useState<SelectableLocationInterface[]>([]);
   const deferredNameFilter = useDeferredValue(nameFilter);
 
   const {
@@ -65,37 +70,39 @@ export const SelectLocationPanel = ({
   useEffect(() => {
     const buildSelectableLocations = () => {
       const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([travelingEntityId]));
-      let locations = Array.from(entityIds).map((entity) => {
-        const realm = getComponentValue(Realm, entity);
-        const bank = getComponentValue(Bank, entity);
-        let name = undefined;
-        let order = undefined;
-        let takerRealmId = undefined;
-        if (realm) {
-          const realmData = getRealm(realm.realm_id);
-          if (!realmData) return;
-          const { name: realmName, order: realmOrder, realmId } = realmData;
-          name = realmName;
-          order = realmOrder;
-          takerRealmId = realmId;
-        }
-        const entityId = realm?.entity_id || bank?.entity_id;
-        const distance = entityId ? calculateDistance(travelingEntityId, BigInt(entityId)) ?? 0 : 0;
-        const defence = entityId ? getDefenceOnRealm(BigInt(entityId)) : undefined;
-        const level = entityId ? getEntityLevel(BigInt(entityId)) : undefined;
-        const addressName = entityId ? getRealmAddressName(entityId) : "";
-        return {
-          entityId,
-          home: entityId === entityOwner?.entity_owner_id,
-          realmId: realm?.realm_id,
-          name,
-          order: order ? getOrderName(order) : "",
-          distance,
-          defence,
-          level: level?.level,
-          addressName,
-        };
-      });
+      let locations = Array.from(entityIds)
+        .map((entity) => {
+          const realm = getComponentValue(Realm, entity);
+          const bank = getComponentValue(Bank, entity);
+          let name = undefined;
+          let order = undefined;
+          let takerRealmId = undefined;
+          if (realm) {
+            const realmData = getRealm(realm.realm_id);
+            if (!realmData) return;
+            const { name: realmName, order: realmOrder, realmId } = realmData;
+            name = realmName;
+            order = realmOrder;
+            takerRealmId = realmId;
+          }
+          const entityId = realm?.entity_id || bank?.entity_id;
+          const distance = entityId ? calculateDistance(travelingEntityId, BigInt(entityId)) ?? 0 : 0;
+          const defence = entityId ? getDefenceOnRealm(BigInt(entityId)) : undefined;
+          const level = entityId ? getEntityLevel(BigInt(entityId)) : undefined;
+          const addressName = entityId ? getRealmAddressName(entityId) : "";
+          return {
+            entityId,
+            home: entityId === entityOwner?.entity_owner_id,
+            realmId: realm?.realm_id,
+            name,
+            order: order ? getOrderName(order) : "",
+            distance,
+            defence,
+            level: level?.level,
+            addressName,
+          };
+        })
+        .filter(Boolean) as SelectableLocationInterface[];
       setOriginalLocations(locations);
     };
     buildSelectableLocations();
@@ -109,10 +116,10 @@ export const SelectLocationPanel = ({
           realm.name.toLowerCase().includes(deferredNameFilter.toLowerCase()) ||
           realm.realmId.toString().includes(deferredNameFilter),
       );
-      setSortedRealms(filtered);
+      setSortedLocations(filtered);
       return;
     }
-    setSortedRealms(sorted);
+    setSortedLocations(sorted);
   }, [originalLocations, activeSort, deferredNameFilter]);
 
   return (
@@ -142,7 +149,7 @@ export const SelectLocationPanel = ({
           ))}
         </SortPanel>
         <div className="flex flex-col px-1 mb-1 space-y-2 max-h-40 overflow-y-auto">
-          {sortedRealms.map(
+          {sortedLocations.map(
             (
               { home, entityId, order, name, addressName, distance, level, entityId: destinationEntityId, defence },
               i,
@@ -188,14 +195,14 @@ export const SelectLocationPanel = ({
  * sort realms based on active filters
  */
 export function sortLocations(
-  realms: SelectableRealmInterface[],
+  locations: SelectableLocationInterface[],
   activeSort: SortInterface,
-): SelectableRealmInterface[] {
-  const sortedRealms = [...realms]; // Making a copy of the realms array
+): SelectableLocationInterface[] {
+  const sortedLocations = [...locations]; // Making a copy of the realms array
 
   if (activeSort.sort !== "none") {
     if (activeSort.sortKey === "id") {
-      return sortedRealms.sort((a, b) => {
+      return sortedLocations.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return Number(a.realmId - b.realmId);
         } else {
@@ -203,7 +210,7 @@ export function sortLocations(
         }
       });
     } else if (activeSort.sortKey === "name") {
-      return sortedRealms.sort((a, b) => {
+      return sortedLocations.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return a.name.localeCompare(b.name);
         } else {
@@ -211,7 +218,7 @@ export function sortLocations(
         }
       });
     } else if (activeSort.sortKey === "addressName") {
-      return sortedRealms.sort((a, b) => {
+      return sortedLocations.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return a.addressName.localeCompare(b.addressName);
         } else {
@@ -219,7 +226,7 @@ export function sortLocations(
         }
       });
     } else if (activeSort.sortKey === "distance") {
-      return sortedRealms.sort((a, b) => {
+      return sortedLocations.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return a.distance - b.distance;
         } else {
@@ -227,7 +234,7 @@ export function sortLocations(
         }
       });
     } else if (activeSort.sortKey === "order") {
-      return sortedRealms.sort((a, b) => {
+      return sortedLocations.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return a.order.localeCompare(b.order);
         } else {
@@ -235,7 +242,7 @@ export function sortLocations(
         }
       });
     } else if (activeSort.sortKey === "level") {
-      return sortedRealms.sort((a, b) => {
+      return sortedLocations.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return (a?.level || 0) - (b?.level || 0);
         } else {
@@ -243,7 +250,7 @@ export function sortLocations(
         }
       });
     } else if (activeSort.sortKey === "defence") {
-      return sortedRealms.sort((a, b) => {
+      return sortedLocations.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return (a?.defence?.defence || 0) - (b?.defence?.defence || 0);
         } else {
@@ -251,9 +258,9 @@ export function sortLocations(
         }
       });
     } else {
-      return sortedRealms;
+      return sortedLocations;
     }
   } else {
-    return sortedRealms.sort((a, b) => Number(b.realmId - a.realmId));
+    return sortedLocations.sort((a, b) => Number(b.realmId - a.realmId));
   }
 }

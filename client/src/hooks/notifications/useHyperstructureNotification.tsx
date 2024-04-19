@@ -7,9 +7,9 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import {
-  ArrivedAtHyperstructureData,
+  type ArrivedAtHyperstructureData,
   EventType,
-  NotificationType,
+  type NotificationType,
   useNotificationsStore,
 } from "../store/useNotificationsStore";
 import { ResourceCost } from "../../ui/elements/ResourceCost";
@@ -28,7 +28,6 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
   const {
     account: { account },
     setup: {
-      systemCalls: { feed_hyperstructure_and_travel_back },
       components: { Realm },
     },
   } = useDojo();
@@ -50,15 +49,6 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
   const realmName = realm_id ? getRealmNameById(realm_id) : "";
 
   const transferAndReturn = async () => {
-    await feed_hyperstructure_and_travel_back({
-      signer: account,
-      entity_id: data.caravanId,
-      hyperstructure_id: data.hyperstructureId,
-      inventoryIndex: 0,
-      resources: data.resources.flatMap((resource) => Object.values(resource)),
-      destination_coord_x: data.homePosition.x,
-      destination_coord_y: data.homePosition.y,
-    });
     deleteNotification([data.caravanId.toString()], EventType.ArrivedAtHyperstructure);
   };
 
@@ -82,13 +72,13 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
       <div className="flex items-center">
         <Badge size="lg" type="danger" className="mr-2">
           <Checkmark className="fill-current mr-1" />
-          {`Arrived At Hyperstructure`}
+          {"Arrived At Hyperstructure"}
         </Badge>
 
         <div className="flex items-center">
           on
           <OrderIcon size="xs" className="mx-1" order={realmOrderName} />{" "}
-          <div className="inline-block text-gold">{`Hyperstructure`}</div>
+          <div className="inline-block text-gold">{"Hyperstructure"}</div>
         </div>
       </div>
     ),

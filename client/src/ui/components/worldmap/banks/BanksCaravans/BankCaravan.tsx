@@ -42,7 +42,6 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
   const {
     account: { account },
     setup: {
-      systemCalls: { swap_bank_and_travel_back },
       components: { CaravanMembers, EntityOwner, ForeignKey, Position },
     },
   } = useDojo();
@@ -122,18 +121,6 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
   }, [lordsAmountFromFish, lordsAmountFromWheat]);
 
   const transferAndReturn = async () => {
-    await swap_bank_and_travel_back({
-      signer: account,
-      sender_id: caravan.caravanId,
-      bank_id: bank.bankId,
-      inventoryIndex: 0,
-      resource_types,
-      indices,
-      // lords amount
-      resource_amounts: resource_amounts.map((amount) => Math.floor(amount * 1000)),
-      destination_coord_x: returnPosition?.x || 0,
-      destination_coord_y: returnPosition?.y || 0,
-    });
     deleteNotification([caravan.caravanId.toString()], EventType.ArrivedAtBank);
   };
 

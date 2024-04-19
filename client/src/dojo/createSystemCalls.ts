@@ -88,10 +88,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.transfer_resources(props);
   };
 
-  const feed_hyperstructure_and_travel_back = async (props: SystemProps.FeedHyperstructureAndTravelBackPropos) => {
-    await provider.feed_hyperstructure_and_travel_back(props);
-  };
-
   const send_resources_to_location = async (props: SystemProps.SendResourcesToLocationProps) => {
     await provider.send_resources_to_location(props);
   };
@@ -253,7 +249,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_road,
     transfer_resources,
     send_resources_to_location,
-    feed_hyperstructure_and_travel_back,
     travel,
     travel_hex,
     merge_soldiers,
