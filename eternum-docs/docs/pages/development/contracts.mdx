@@ -1,0 +1,27 @@
+# Contracts
+
+### Models
+
+#### Entity Key
+
+Use the ID
+
+#### Model design
+
+entity_id: u128
+
+
+#### Implementations
+
+Where possible make traits for the models so they are stateless for unit testing.
+
+
+### Systems
+
+Design systems like this in the directory
+
+- SystemName
+- - system_name.cairo 
+- - tests.cairo
+
+system_name.cairo should include the interface of the system

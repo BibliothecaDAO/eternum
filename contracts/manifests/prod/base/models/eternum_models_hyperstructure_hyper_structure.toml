@@ -1,0 +1,35 @@
+kind = "DojoModel"
+class_hash = "0x5c155bf1246b96b20a902f34eadefa15f2f8a6e701786ecd7828c11b465576c"
+original_class_hash = "0x5c155bf1246b96b20a902f34eadefa15f2f8a6e701786ecd7828c11b465576c"
+abi = "manifests/prod/abis/base/models/eternum_models_hyperstructure_hyper_structure.json"
+name = "eternum::models::hyperstructure::hyper_structure"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "hyperstructure_type"
+type = "u8"
+key = false
+
+[[members]]
+name = "controlling_order"
+type = "u8"
+key = false
+
+[[members]]
+name = "completed"
+type = "bool"
+key = false
+
+[[members]]
+name = "completion_cost_id"
+type = "u128"
+key = false
+
+[[members]]
+name = "completion_resource_count"
+type = "u32"
+key = false

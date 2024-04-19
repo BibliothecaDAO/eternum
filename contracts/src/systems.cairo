@@ -61,7 +61,6 @@ mod hyperstructure {
 }
 mod buildings {
     mod contracts;
-    mod interface;
     #[cfg(test)]
     mod tests;
 }
@@ -81,4 +80,5 @@ mod bank {
     #[cfg(test)]
     mod tests;
 }
+
 

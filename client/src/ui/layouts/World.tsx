@@ -20,6 +20,7 @@ import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "./Onboarding";
 import { WorldPopups } from "../components/worldmap/WorldPopups";
 import { HooksComponent } from "../components/HooksComponent";
+import { Transactions } from "../modules/transactions/Transactions";
 
 export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
@@ -62,7 +63,9 @@ export const World = () => {
           <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
         </div>
       </BackgroundContainer>
-
+      <BottomRightContainer>
+        <Transactions />
+      </BottomRightContainer>
       <TopMiddleContainer>
         <TopMiddleNavigation />
       </TopMiddleContainer>
