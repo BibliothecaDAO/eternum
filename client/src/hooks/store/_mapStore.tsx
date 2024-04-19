@@ -1,10 +1,9 @@
-import { HyperStructureInterface, Position } from "@bibliothecadao/eternum";
+import { HyperStructureInterface, Position, WorldBuildingType } from "@bibliothecadao/eternum";
 import { Hexagon } from "../../types";
-import { WorldMapBuildingType } from "@/dojo/modelManager/types";
 
 export interface MapStore {
-  worldMapBuilding: WorldMapBuildingType | undefined;
-  setWorldMapBuilding: (building: WorldMapBuildingType | undefined) => void;
+  worldMapBuilding: WorldBuildingType | null;
+  setWorldMapBuilding: (building: WorldBuildingType | null) => void;
   clickedHex: { col: number; row: number; hexIndex: number } | undefined;
   setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => void;
   setClickedHyperstructure: (hyperstructure: HyperStructureInterface | undefined) => void;

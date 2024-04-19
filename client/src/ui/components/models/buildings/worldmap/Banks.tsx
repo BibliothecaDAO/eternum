@@ -10,81 +10,27 @@ Title: Medieval House
 import { useGetBanks } from "@/hooks/helpers/useBanks";
 import { getUIPositionFromColRow, pseudoRandom } from "@/ui/utils/utils";
 import { useGLTF } from "@react-three/drei";
-import { GLTF } from "three-stdlib";
+import { useMemo } from "react";
 
-type GLTFResult = GLTF & {
-  nodes: {
-    defaultMaterial: {
-      geometry: THREE.BufferGeometry;
-      material: THREE.Material;
-    };
-    defaultMaterial_1: {
-      geometry: THREE.BufferGeometry;
-      material: THREE.Material;
-    };
-    defaultMaterial_2: {
-      geometry: THREE.BufferGeometry;
-      material: THREE.Material;
-    };
-    defaultMaterial_3: {
-      geometry: THREE.BufferGeometry;
-      material: THREE.Material;
-    };
-    defaultMaterial_4: {
-      geometry: THREE.BufferGeometry;
-      material: THREE.Material;
-    };
-    defaultMaterial_5: {
-      geometry: THREE.BufferGeometry;
-      material: THREE.Material;
-    };
-    defaultMaterial_6: {
-      geometry: THREE.BufferGeometry;
-      material: THREE.Material;
-    };
-  };
-  materials: {
-    lambert4: THREE.MeshStandardMaterial;
-    lambert3: THREE.MeshStandardMaterial;
-    lambert6: THREE.MeshStandardMaterial;
-    lambert5: THREE.MeshStandardMaterial;
-    lambert2: THREE.MeshStandardMaterial;
-    lambert7: THREE.MeshStandardMaterial;
-    lambert8: THREE.MeshStandardMaterial;
-  };
-};
-
-type BanksProps = {
-  props?: JSX.IntrinsicElements["group"];
-};
-
-export const Banks = ({ props }: BanksProps) => {
-  const { nodes, materials } = useGLTF("/models/bank2.glb") as unknown as GLTFResult;
-
+export const Banks = () => {
   const banks = useGetBanks();
 
   return (
-    <>
-      {banks.map((bank) => {
-        const uiPosition = getUIPositionFromColRow(bank.position.x, bank.position.y);
-        <group {...props} dispose={null}>
-          <group
-            scale={1}
-            position={[uiPosition.x, 0.31, -uiPosition.y]}
-            rotation={[0, pseudoRandom(uiPosition.x, uiPosition.y) * 2 * Math.PI, 0]}
-          >
-            <mesh geometry={nodes.defaultMaterial.geometry} material={materials.lambert4} />
-            <mesh geometry={nodes.defaultMaterial_1.geometry} material={materials.lambert3} />
-            <mesh geometry={nodes.defaultMaterial_2.geometry} material={materials.lambert6} />
-            <mesh geometry={nodes.defaultMaterial_3.geometry} material={materials.lambert5} />
-            <mesh geometry={nodes.defaultMaterial_4.geometry} material={materials.lambert2} />
-            <mesh geometry={nodes.defaultMaterial_5.geometry} material={materials.lambert7} />
-            <mesh geometry={nodes.defaultMaterial_6.geometry} material={materials.lambert8} />
-          </group>
-        </group>;
+    <group>
+      {banks.map((bank, index) => {
+        const { x, y } = getUIPositionFromColRow(bank.position.x, bank.position.y, false);
+        return <BankModel key={index} position={[x, 0.31, -y]} />;
       })}
-    </>
+    </group>
   );
 };
 
-useGLTF.preload("/models/bank2.glb");
+export const BankModel = ({ position }: { position: any }) => {
+  const bankModel = useGLTF("/models/buildings/castle.glb");
+  const clone = useMemo(() => {
+    const clone = bankModel.scene.clone();
+    return clone;
+  }, [bankModel]);
+
+  return <primitive scale={3} object={clone} position={position} />;
+};

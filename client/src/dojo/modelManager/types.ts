@@ -34,8 +34,6 @@ export type ResourceType = {
   balance: RecsType.BigInt;
 };
 
-export type WorldMapBuildingType = "Banks";
-
 export type BuildingType = {
   outer_col: RecsType.BigInt;
   outer_row: RecsType.BigInt;

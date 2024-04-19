@@ -1,15 +1,31 @@
 import { useState } from "react";
 import { SelectWorldMapBuilding } from "@/ui/components/worldmap/hexagon/SelectWorldMapBuilding";
 import useUIStore from "@/hooks/store/useUIStore";
+import { EntityList } from "../../list/EntityList";
+import { useEntities } from "@/hooks/helpers/useEntities";
+
+const MilitaryPanel = () => <div className="p-2">Military</div>;
+
+const CommercePanel = () => <div className="p-2">Commerce</div>;
+
+const BuildPanel = ({ playerRealms }: { playerRealms: () => any }) => (
+  <EntityList
+    list={playerRealms()}
+    title="Build"
+    panel={({ entity }) => <SelectWorldMapBuilding entity_id={entity.entity_id} />}
+  />
+);
 
 export const HexagonInformationPanel = () => {
   const [openPanel, setOpenPanel] = useState<string | null>(null);
   const clickedHex = useUIStore((state) => state.clickedHex);
 
+  const { playerRealms } = useEntities();
+
   const panels = [
-    { key: "combat", title: "Military", content: <div className="p-2">Military</div> },
-    { key: "entities", title: "Commerce", content: <div className="p-2">Commerce</div> },
-    { key: "build", title: "Build", content: <SelectWorldMapBuilding /> },
+    { key: "combat", title: "Military", content: <MilitaryPanel /> },
+    { key: "entities", title: "Commerce", content: <CommercePanel /> },
+    { key: "build", title: "Build", content: <BuildPanel playerRealms={playerRealms} /> },
   ];
 
   const togglePanel = (key: string) => {

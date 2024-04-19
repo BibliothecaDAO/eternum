@@ -7,7 +7,6 @@ import { EntityList } from "../list/EntityList";
 import { useBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { SendResourcesPanel } from "../worldmap/hyperstructures/SendResourcesPanel";
-import { Position } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

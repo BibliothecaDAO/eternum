@@ -8,12 +8,6 @@ import { BankPanel } from "@/ui/components/bank/BankList";
 import { EntityList } from "@/ui/components/list/EntityList";
 import { useGetBanks } from "@/hooks/helpers/useBanks";
 
-const exampleBanks = [
-  { id: 1, name: "Iron Bank" },
-  { id: 2, name: "Bank of Loaf" },
-  { id: 3, name: "Bank of Power" },
-];
-
 export const Banks = () => {
   const { togglePopup } = useUIStore();
   const [selectedTab, setSelectedTab] = useState(0);
