@@ -6,22 +6,18 @@ import ListSelect from "@/ui/elements/ListSelect";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { resources } from "@bibliothecadao/eternum";
+import clsx from "clsx";
 import { useMemo, useState } from "react";
 
 enum STEP_ID {
-  SELECT_ENTITY_FROM = 1,
-  SELECT_ENTITY_TO = 2,
-  SELECT_RESOURCES = 3,
+  SELECT_ENTITIES = 1,
+  SELECT_RESOURCES = 2,
 }
 const STEPS = [
   {
-    id: STEP_ID.SELECT_ENTITY_FROM,
-    title: "Select entity you want to transfer from",
-  },
-  {
-    id: STEP_ID.SELECT_ENTITY_TO,
-    title: "Select entity you want to transfer to",
+    id: STEP_ID.SELECT_ENTITIES,
+    title: "Select entities you want to transfer between",
   },
   {
     id: STEP_ID.SELECT_RESOURCES,
@@ -34,19 +30,46 @@ export const TransferBetweenEntities = () => {
   const [selectedEntityIdTo, setSelectedEntityIdTo] = useState<bigint | null>(null);
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState({});
+  const [selectedStepId, setSelectedStepId] = useState(STEP_ID.SELECT_ENTITIES);
 
-  const selectedStep = useMemo(() => {
-    if (!selectedEntityIdFrom) return STEPS.find((step) => step.id === STEP_ID.SELECT_ENTITY_FROM);
-    if (!selectedEntityIdTo) return STEPS.find((step) => step.id === STEP_ID.SELECT_ENTITY_TO);
-    return STEPS.find((step) => step.id === STEP_ID.SELECT_RESOURCES);
-  }, [selectedEntityIdFrom, selectedEntityIdTo]);
+  const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
+  const { playerRealms } = useEntities();
 
   return (
     <div className="p-2">
-      <div className="text-center">{selectedStep?.title}</div>
-      {selectedStep?.id === STEP_ID.SELECT_ENTITY_FROM && <SelectEntityFromList onSelect={setSelectedEntityIdFrom} />}
-      {selectedStep?.id === STEP_ID.SELECT_ENTITY_TO && <SelectEntityToList onSelect={setSelectedEntityIdTo} />}
-      {selectedStep?.id === STEP_ID.SELECT_RESOURCES && (
+      <div className="text-center">{currentStep?.title}</div>
+      {currentStep?.id === STEP_ID.SELECT_ENTITIES && (
+        <div className="flex flex-col mt-3">
+          <div className="flex justify-around">
+            <div>From</div>
+            <div>To</div>
+          </div>
+          <div className="flex justify-around">
+            <SelectEntityFromList
+              onSelect={setSelectedEntityIdFrom}
+              selectedEntityId={selectedEntityIdFrom}
+              entities={playerRealms()}
+            />
+            <SelectEntityFromList
+              onSelect={setSelectedEntityIdTo}
+              selectedEntityId={selectedEntityIdTo}
+              entities={playerRealms()}
+            />
+          </div>
+          <Button
+            className="w-full mt-2"
+            disabled={!selectedEntityIdFrom || !selectedEntityIdTo}
+            variant="primary"
+            size="md"
+            onClick={() => {
+              setSelectedStepId(STEP_ID.SELECT_RESOURCES);
+            }}
+          >
+            Next
+          </Button>
+        </div>
+      )}
+      {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
         <SelectResoruces
           selectedResourceIds={selectedResourceIds}
           setSelectedResourceIds={setSelectedResourceIds}
@@ -59,31 +82,32 @@ export const TransferBetweenEntities = () => {
   );
 };
 
-const SelectEntityFromList = ({ onSelect }: { onSelect: (entityId: bigint) => void }) => {
-  const { playerRealms } = useEntities();
+const SelectEntityFromList = ({
+  onSelect,
+  selectedEntityId,
+  entities,
+}: {
+  onSelect: (entityId: bigint) => void;
+  selectedEntityId: bigint | null;
+  entities: any[];
+}) => {
   return (
     <div>
-      {playerRealms().map((realm) => (
-        <div className="flex justify-between rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 text-lightest text-xs">
+      {entities.map((realm) => (
+        <div
+          className={clsx(
+            "flex w-[200px] justify-between rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-2 text-lightest text-xs",
+            selectedEntityId === realm.realm_id && "border-order-brilliance",
+          )}
+        >
           <div>{realm.name}</div>
-          <Button size="xs" variant="success" onClick={() => onSelect(realm.realm_id!)}>
-            Select
-          </Button>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const SelectEntityToList = ({ onSelect }: { onSelect: (entityId: bigint) => void }) => {
-  const { playerRealms } = useEntities();
-  return (
-    <div>
-      {playerRealms().map((realm) => (
-        <div className="flex justify-between rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 text-lightest text-xs">
-          <div>{realm.name}</div>
-          <Button size="xs" variant="success" onClick={() => onSelect(realm.realm_id!)}>
-            Select
+          <Button
+            disabled={selectedEntityId === realm.realm_id}
+            size="xs"
+            variant={"outline"}
+            onClick={() => onSelect(realm.realm_id!)}
+          >
+            {selectedEntityId === realm.realm_id ? "Selected" : "Select"}
           </Button>
         </div>
       ))}
@@ -188,7 +212,6 @@ const SelectResoruces = ({
         );
       })}
       <Button
-        className="w-full"
         variant="primary"
         size="md"
         onClick={() => {
@@ -197,7 +220,7 @@ const SelectResoruces = ({
       >
         Add Resource
       </Button>
-      <Button className="w-full" variant="primary" size="md" onClick={() => {}}>
+      <Button variant="primary" size="md" onClick={() => {}}>
         Confirm
       </Button>
     </div>
