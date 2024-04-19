@@ -4,9 +4,10 @@ import { trade } from "@/ui/components/navigation/Config";
 import { Tabs } from "@/ui/elements/tab";
 import { useCallback, useMemo, useState } from "react";
 import { FastCreateOfferPopup } from "@/ui/components/cityview/realm/trade/FastCreateOffer";
-import { Marketplace } from "@/ui/components/cityview/realm/trade/Market/Marketplace";
+import { Marketplace } from "@/ui/components/trading/Marketplace";
 import { AcceptOfferPopup } from "@/ui/components/cityview/realm/trade/AcceptOffer";
 import { MarketInterface } from "@bibliothecadao/eternum";
+import { TransferBetweenEntities } from "@/ui/components/trading/TransferBetweenEntities";
 
 export const Trading = () => {
   const { togglePopup } = useUIStore();
@@ -41,7 +42,7 @@ export const Trading = () => {
             <div>Transfer</div>
           </div>
         ),
-        component: <div>Transfer Between Entities</div>,
+        component: <TransferBetweenEntities />,
       },
     ],
     [selectedTab],
