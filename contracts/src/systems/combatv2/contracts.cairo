@@ -4,7 +4,8 @@ use eternum::models::{combatV2::{Troops, Battle, BattleSide}};
 trait ICombatv2Contract<TContractState> {
     fn create_army(owner_id: u128, troops: Troops);
     fn start_battle(attacking_army_id: u128, defending_army_id: u128);
-    fn join_battle(army_id: u128, battle_id: u128, battle_side: BattleSide);
+    fn join_battle(battle_id: u128, battle_side: BattleSide, army_id: u128);
+    fn leave_battle(battle_id: u128, army_id: u128);
     // fn end_battle(battle_entity_id: u128, army_entity_id: u128 );
 }
 
@@ -15,7 +16,7 @@ mod combat_v2_systems {
     use eternum::alias::ID;
     use eternum::models::{
         combatV2::{
-            Army, ArmyImpl, ArmyTrait, 
+            Army, 
             Troops, TroopsImpl, TroopsTrait,
             Healthv2, Healthv2Impl, Healthv2Trait,
             Battle, BattleImpl, BattleTrait, BattleSide
@@ -131,7 +132,7 @@ mod combat_v2_systems {
 
 
         
-        fn join_battle(world: IWorldDispatcher, army_id: u128, battle_id: u128, battle_side: BattleSide) {
+        fn join_battle(world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128) {
             assert!(battle_side != BattleSide::None, "choose correct battle side");
 
             let mut army_owned_by: EntityOwner = get!(world, army_id, EntityOwner);
@@ -153,10 +154,10 @@ mod combat_v2_systems {
             assert!(caller_army.battle_id == 0, "army is in a battle");
             
             let caller_army_position = get!(world, caller_army.entity_id, Position);
-            let battle_army_position = get!(world, battle.entity_id, Position);
+            let battle_position = get!(world, battle.entity_id, Position);
             assert!(
                 Into::<Position, Coord>::into(caller_army_position) 
-                    == Into::<Position, Coord>::into(battle_army_position),
+                    == Into::<Position, Coord>::into(battle_position),
                 "caller army not in same position as army"
             );
 
@@ -194,6 +195,85 @@ mod combat_v2_systems {
             battle.restart(tick, troop_config);
             set!(world, (battle));
         }
+        
+
+                
+        fn leave_battle(world: IWorldDispatcher, battle_id: u128, army_id: u128) {
+
+            let mut army_owned_by: EntityOwner = get!(world, army_id, EntityOwner);
+            assert!(army_owned_by.owner_address(world) == starknet::get_caller_address(), 
+                "caller is not army owner"
+            );
+
+
+            // update battle state before any other actions
+            let mut battle: Battle = get!(world, battle_id, Battle);
+            let tick= TickImpl::get(world);
+            battle.update_state(tick);
+
+            let mut caller_army: Army = get!(world, army_id, Army);
+            assert!(caller_army.battle_id == battle_id, "wrong battle id");
+            assert!(caller_army.battle_side != BattleSide::None, "choose correct battle side");
+
+            let mut caller_army_movable: Movable = get!(world, caller_army.entity_id, Movable);
+            assert!(caller_army_movable.blocked, "caller army should be blocked");
+
+            caller_army_movable.blocked = false;
+            set!(world, (caller_army_movable));
+
+            if battle.has_ended() {
+                if battle.winner() != caller_army.battle_side { 
+                    panic!("Battle has ended and your team lost");
+                }
+            }
+
+            // merge caller army with army troops 
+            let mut battle_army = battle.attack_army;
+            let mut battle_army_health = battle.attack_army_health;
+            if caller_army.battle_side == BattleSide::Defence {
+                battle_army = battle.defence_army;
+                battle_army_health = battle.defence_army_health;
+
+            }
+
+
+
+            let mut caller_army_health : Healthv2 = get!(world, army_id, Healthv2);            
+            let caller_army_original_health: u128 = caller_army_health.current;
+            let caller_army_original_troops: Troops = caller_army.troops;
+
+            let caller_army_health_left: u128 
+                = (caller_army_health.current * battle_army_health.current) 
+                    / battle_army_health.lifetime;
+            
+            caller_army_health
+                .decrease_by(
+                    caller_army_health.current - caller_army_health_left);
+        
+            caller_army.troops
+                .deduct_percentage(
+                    battle_army_health.current, 
+                    battle_army_health.lifetime);
+
+            set!(world, (caller_army, caller_army_health));
+
+
+            battle_army.troops.deduct(caller_army_original_troops);
+            battle_army_health.decrease_by(caller_army_original_health);
+
+
+            if caller_army.battle_side == BattleSide::Defence {
+                battle.defence_army = battle_army;
+                battle.defence_army_health = battle_army_health;
+            } else {
+                battle.attack_army = battle_army;
+                battle.attack_army_health = battle_army_health;
+            }
+
+            let troop_config = TroopConfigImpl::get(world);
+            battle.restart(tick, troop_config);
+            set!(world, (battle));
+        } 
         
          
     }
