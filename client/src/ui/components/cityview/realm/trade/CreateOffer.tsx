@@ -162,6 +162,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
           )}
           {step == 3 && (
             <SelectCaravanPanel
+              realmEntityId={realmEntityId}
               donkeysCount={donkeysCount}
               setDonkeysCount={setDonkeysCount}
               isNewCaravan={isNewCaravan}

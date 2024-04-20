@@ -18,7 +18,6 @@ import {
 } from "../store/useNotificationsStore";
 import { calculateNextHarvest } from "../../ui/components/cityview/realm/labor/laborUtils";
 import { LevelIndex } from "../helpers/useLevel";
-import { getLordsAmountFromBankAuction } from "../../ui/components/worldmap/banks/utils";
 import { type realmsPosition } from "./utils";
 
 export interface UpdatedEntity {
