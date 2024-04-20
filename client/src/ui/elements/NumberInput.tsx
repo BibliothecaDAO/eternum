@@ -24,7 +24,7 @@ export const NumberInput = ({ value, onChange, className, step = 1, max, min = 0
           playClick();
         }}
       >
-        <ArrowLeft className="fill-gold" />
+        <ArrowLeft className="fill-gold" width={"6px"} height={"8px"} />
       </div>
 
       <input
