@@ -1,33 +1,43 @@
 import React, { useMemo } from "react";
-import { OrderIcon } from "../../../../../elements/OrderIcon";
+import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import { ReactComponent as CaretDownFill } from "@/assets/icons/common/caret-down-fill.svg";
-import { ReactComponent as DonkeyIcon } from "@/assets/icons/units/donkey-circle.svg";
-import ProgressBar from "../../../../../elements/ProgressBar";
-import { Dot } from "../../../../../elements/Dot";
+import ProgressBar from "@/ui/elements/ProgressBar";
+import { Dot } from "@/ui/elements/Dot";
 import clsx from "clsx";
-import useBlockchainStore from "../../../../../../hooks/store/useBlockchainStore";
-import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import { CaravanInterface, DESTINATION_TYPE } from "@bibliothecadao/eternum";
-import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
-import { ResourceCost } from "../../../../../elements/ResourceCost";
-import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
-import { getTotalResourceWeight } from "../utils";
-import { divideByPrecision } from "../../../../../utils/utils";
-import { useResources } from "../../../../../../hooks/helpers/useResources";
-import Button from "../../../../../elements/Button";
-import { useDojo } from "../../../../../../hooks/context/DojoContext";
-import { useCaravan } from "../../../../../../hooks/helpers/useCaravans";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
+import { CaravanInterface, DESTINATION_TYPE, CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "@/ui/utils/realms";
+import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
+import { divideByPrecision } from "@/ui/utils/utils";
+import { useGetBankAccountOnPosition, useResources } from "@/hooks/helpers/useResources";
+import Button from "@/ui/elements/Button";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useCaravan } from "@/hooks/helpers/useCaravans";
+import { TravelEntityPopup } from "./TravelEntityPopup";
 
-type CaravanProps = {
-  caravan: CaravanInterface;
+enum ENTITY_TYPE {
+  CARAVAN,
+  TROOP,
+}
+
+const entityIcon = {
+  [ENTITY_TYPE.CARAVAN]: "🫏",
+  [ENTITY_TYPE.TROOP]: "🥷",
+};
+
+type EntityProps = {
+  entity: CaravanInterface;
   idleOnly?: boolean;
   selectedCaravan?: number;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Caravan = ({ caravan, ...props }: CaravanProps) => {
+export const Entity = ({ entity, ...props }: EntityProps) => {
   const {
-    caravanId,
+    caravanId: entityId,
+    position,
+    homePosition,
     arrivalTime,
     isRoundTrip,
     intermediateDestination,
@@ -35,26 +45,33 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     capacity,
     pickupArrivalTime,
     destinationType,
-  } = caravan;
+  } = entity;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const {
     account: { account },
     setup: {
-      systemCalls: { disassemble_caravan_and_return_free_units },
+      systemCalls: { disassemble_caravan_and_return_free_units, transfer_items },
     },
   } = useDojo();
 
   const [isLoading, setIsLoading] = React.useState(false);
+  const [showTravel, setShowTravel] = React.useState(false);
 
   const { getResourcesFromInventory } = useResources();
   const { getCaravanMembers } = useCaravan();
 
-  const resourcesGet = getResourcesFromInventory(caravanId);
+  const inventoryResources = getResourcesFromInventory(entityId);
+  const depositEntityIds = position ? useGetBankAccountOnPosition(BigInt(account.address), position) : [];
+  const depositEntityId = depositEntityIds[0];
 
   // capacity
   let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...resourcesGet.resources]);
-  }, [resourcesGet]);
+    return getTotalResourceWeight([...inventoryResources.resources]);
+  }, [inventoryResources]);
+
+  const hasResources = resourceWeight > 0;
+
+  const isHome = position && homePosition && position.x === homePosition.x && position.y === homePosition.y;
 
   const intermediateDestinationRealmId = intermediateDestination
     ? getRealmIdByPosition(intermediateDestination)
@@ -63,7 +80,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     ? getRealmNameById(intermediateDestinationRealmId)
     : undefined;
 
-  const isTraveling = !blocked && nextBlockTimestamp && arrivalTime && arrivalTime > nextBlockTimestamp;
+  const isTraveling =
+    !blocked && nextBlockTimestamp !== undefined && arrivalTime !== undefined && arrivalTime > nextBlockTimestamp;
   const isWaitingForDeparture = blocked;
   const isIdle = !isTraveling && !isWaitingForDeparture && !resourceWeight;
   const isWaitingToOffload = !blocked && !isTraveling && resourceWeight > 0;
@@ -82,13 +100,30 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
 
   const redeemDonkeys = async () => {
     setIsLoading(true);
-    let unit_ids = getCaravanMembers(caravanId);
+    let unit_ids = getCaravanMembers(entityId);
     await disassemble_caravan_and_return_free_units({
       signer: account,
-      caravan_id: caravanId,
+      caravan_id: entityId,
       unit_ids,
     });
     return unit_ids;
+  };
+
+  const onOffload = async (receiverEntityId: bigint) => {
+    setIsLoading(true);
+    if (entityId && inventoryResources) {
+      await transfer_items({
+        sender_id: entityId,
+        receiver_id: receiverEntityId,
+        indices: inventoryResources.indices,
+        signer: account,
+      });
+    }
+    setIsLoading(false);
+  };
+
+  const onCloseTravel = () => {
+    setShowTravel(false);
   };
 
   return (
@@ -96,22 +131,16 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
       className={clsx("flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold", props.className)}
       onClick={props.onClick}
     >
+      {showTravel && <TravelEntityPopup entityId={entityId} onClose={onCloseTravel} />}
       <div className="flex items-center text-xxs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-          #{Number(caravan.caravanId)}
+          #{Number(entityId)}
         </div>
         <div className="flex items-center ml-1 -mt-2">
           {!isTraveling && (
             <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">{`Waiting ${
-                destinationType === DESTINATION_TYPE.HOME ? "" : "on"
-              }`}</span>
+              <span className="italic text-light-pink">{`Waiting`}</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
-                {destinationType === DESTINATION_TYPE.BANK
-                  ? "bank"
-                  : destinationType === DESTINATION_TYPE.HYPERSTRUCTURE
-                  ? "hyperstructure"
-                  : "home"}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
@@ -130,15 +159,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
           {/* when you are not trading (trading is round trip) it means you are either going to/coming from bank/hyperstructure */}
           {isTraveling && !isRoundTrip && (
             <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">{`Traveling ${
-                destinationType === DESTINATION_TYPE.HOME ? "" : "to"
-              }`}</span>
+              <span className="italic text-light-pink">{`Traveling`}</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
-                {destinationType === DESTINATION_TYPE.BANK
-                  ? "bank"
-                  : destinationType === DESTINATION_TYPE.HYPERSTRUCTURE
-                  ? "hyperstructure"
-                  : "home"}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
@@ -148,7 +170,6 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
               {!isIdle && hasArrivedPickupPosition ? divideByPrecision(Math.round(resourceWeight)) : 0}
               <div className="mx-0.5 italic text-light-pink">/</div>
               {`${capacity / 1000} kg`}
-              <CaretDownFill className="ml-1 fill-current" />
             </div>
           )}
         </div>
@@ -174,8 +195,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
         {!isIdle &&
           !isWaitingForDeparture &&
           hasArrivedPickupPosition &&
-          resourcesGet &&
-          resourcesGet.resources.map(
+          inventoryResources &&
+          inventoryResources.resources.map(
             (resource) =>
               resource && (
                 <ResourceCost
@@ -195,7 +216,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
               <ProgressBar containerClassName="col-span-12" rounded progress={100} />
             </div>
             <div className="flex items-center justify-between mt-[6px] text-xxs">
-              <DonkeyIcon />
+              <div className="text-xl">{entityIcon[ENTITY_TYPE.CARAVAN]}</div>
               <div className="flex items-center space-x-[6px]">
                 <div className="flex flex-col items-center">
                   <Dot colorClass="bg-green" />
@@ -219,9 +240,36 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                 </div>
               </div>
               <div className="">
-                <Button variant="success" isLoading={isLoading} disabled={!isIdle} size="xs" onClick={redeemDonkeys}>
-                  Redeem
-                </Button>
+                {isHome && (
+                  <Button
+                    variant="success"
+                    isLoading={isLoading}
+                    disabled={!isIdle}
+                    size="xs"
+                    onClick={redeemDonkeys}
+                    withoutSound
+                  >
+                    Redeem
+                  </Button>
+                )}
+                {hasResources && depositEntityId !== undefined && (
+                  <Button
+                    size="xs"
+                    className="ml-auto"
+                    isLoading={isLoading}
+                    disabled={isTraveling}
+                    onClick={() => onOffload(depositEntityId)}
+                    variant="success"
+                    withoutSound
+                  >
+                    {`Deposit Resources`}
+                  </Button>
+                )}
+                {!isTraveling && !blocked && (
+                  <Button size="xs" className="ml-auto" onClick={() => setShowTravel(true)} variant={"success"}>
+                    {"Travel"}
+                  </Button>
+                )}
               </div>
             </div>
           </div>

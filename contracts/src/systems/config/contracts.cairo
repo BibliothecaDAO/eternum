@@ -643,22 +643,6 @@ impl ProductionConfigImpl of IProductionConfig<ContractState> {
 
     #[abi(embed_v0)]
     impl BankConfigImpl of IBankConfig<ContractState> {
-        fn create_bank(
-            self: @ContractState, world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128,
-        ) -> ID {
-            let bank_entity_id: ID = world.uuid().into();
-
-            set!(
-                world,
-                (
-                    Bank { entity_id: bank_entity_id, owner_fee_scaled, exists: true },
-                    Position { entity_id: bank_entity_id, x: coord.x, y: coord.y }
-                )
-            );
-            bank_entity_id
-        }
-
-
         fn set_bank_config(
             self: @ContractState, world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128
         ) {

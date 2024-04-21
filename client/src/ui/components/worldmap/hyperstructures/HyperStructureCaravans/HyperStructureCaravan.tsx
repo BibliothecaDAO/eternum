@@ -43,7 +43,6 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
   const {
     account: { account },
     setup: {
-      systemCalls: { feed_hyperstructure_and_travel_back },
       components: { CaravanMembers, EntityOwner, ForeignKey, Position },
     },
   } = useDojo();
@@ -65,15 +64,6 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
   }, [caravan]);
 
   const transferAndReturn = async () => {
-    await feed_hyperstructure_and_travel_back({
-      signer: account,
-      entity_id: caravan.caravanId,
-      hyperstructure_id: hyperstructureData.hyperstructureId,
-      inventoryIndex: 0,
-      resources: resources.flatMap((resource) => Object.values(resource)),
-      destination_coord_x: returnPosition?.x || 0,
-      destination_coord_y: returnPosition?.y || 0,
-    });
     deleteNotification([caravan.caravanId.toString()], EventType.ArrivedAtHyperstructure);
   };
 

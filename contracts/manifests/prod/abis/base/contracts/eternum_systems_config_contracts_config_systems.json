@@ -632,26 +632,6 @@
     "items": [
       {
         "type": "function",
-        "name": "create_bank",
-        "inputs": [
-          {
-            "name": "coord",
-            "type": "eternum::models::position::Coord"
-          },
-          {
-            "name": "owner_fee_scaled",
-            "type": "core::integer::u128"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "core::integer::u128"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
         "name": "set_bank_config",
         "inputs": [
           {

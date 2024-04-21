@@ -1,7 +1,9 @@
-import { HyperStructureInterface, Position } from "@bibliothecadao/eternum";
+import { HyperStructureInterface, Position, WorldBuildingType } from "@bibliothecadao/eternum";
 import { Hexagon } from "../../types";
 
 export interface MapStore {
+  worldMapBuilding: WorldBuildingType | null;
+  setWorldMapBuilding: (building: WorldBuildingType | null) => void;
   clickedHex: { col: number; row: number; hexIndex: number } | undefined;
   setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => void;
   setClickedHyperstructure: (hyperstructure: HyperStructureInterface | undefined) => void;
@@ -22,6 +24,10 @@ export interface MapStore {
   setIsAttackMode: (isAttackMode: boolean) => void;
 }
 export const createMapStoreSlice = (set: any) => ({
+  worldMapBuilding: null,
+  setWorldMapBuilding: (building: WorldBuildingType | null) => {
+    set({ worldMapBuilding: building });
+  },
   clickedHex: undefined,
   setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => {
     set({ clickedHex: hex });

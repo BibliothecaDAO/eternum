@@ -517,57 +517,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public swap_bank_and_travel_back = async (props: SystemProps.SwapBankAndTravelBackProps) => {
-    const {
-      sender_id,
-      inventoryIndex,
-      bank_id,
-      resource_types,
-      resource_amounts,
-      indices,
-      destination_coord_x,
-      destination_coord_y,
-      signer,
-    } = props;
-
-    const tx = await this.executeMulti(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, "resource_systems"),
-        entrypoint: "transfer_item",
-        calldata: [sender_id, inventoryIndex, sender_id],
-      },
-      ...indices.map((index, i) => ({
-        contractAddress: getContractByName(this.manifest, "bank_systems"),
-        entrypoint: "swap",
-        calldata: [bank_id, index, sender_id, resource_types[i], resource_amounts[i]],
-      })),
-      {
-        contractAddress: getContractByName(this.manifest, "travel_systems"),
-        entrypoint: "travel",
-        calldata: [sender_id, destination_coord_x, destination_coord_y],
-      },
-    ]);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  };
-
-  public feed_hyperstructure_and_travel_back = async (props: SystemProps.FeedHyperstructureAndTravelBackPropos) => {
-    const { entity_id, inventoryIndex, hyperstructure_id, destination_coord_x, destination_coord_y, signer } = props;
-
-    const tx = await this.executeMulti(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, "resource_systems"),
-        entrypoint: "transfer_item",
-        calldata: [entity_id, inventoryIndex, hyperstructure_id],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, "travel_systems"),
-        entrypoint: "travel",
-        calldata: [entity_id, destination_coord_x, destination_coord_y],
-      },
-    ]);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  };
-
   public async travel(props: SystemProps.TravelProps) {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
     const tx = await this.executeMulti(signer, {
@@ -771,4 +720,81 @@ export class EternumProvider extends EnhancedDojoProvider {
       retryInterval: 500,
     });
   }
+
+  public async create_bank(props: SystemProps.CreateBankProps) {
+    const { realm_entity_id, coord, owner_fee_scaled, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "bank_systems"),
+      entrypoint: "create_bank",
+      calldata: [realm_entity_id, coord, owner_fee_scaled],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
+  public async open_account(props: SystemProps.OpenAccountProps) {
+    const { bank_entity_id, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "bank_systems"),
+      entrypoint: "open_account",
+      calldata: [bank_entity_id],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
+  public async change_bank_owner_fee(props: SystemProps.ChangeBankOwnerFeeProps) {
+    const { bank_entity_id, new_swap_fee_unscaled, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "bank_systems"),
+      entrypoint: "change_owner_fee",
+      calldata: [bank_entity_id, new_swap_fee_unscaled],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
+  public async buy_resources(props: SystemProps.BuyResourcesProps) {
+    const { bank_entity_id, resource_type, amount, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "swap_systems"),
+      entrypoint: "buy",
+      calldata: [bank_entity_id, resource_type, amount],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
+  public async sell_resources(props: SystemProps.SellResourcesProps) {
+    const { bank_entity_id, resource_type, amount, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "swap_systems"),
+      entrypoint: "sell",
+      calldata: [bank_entity_id, resource_type, amount],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
+  public add_liquidity = async (props: SystemProps.AddLiquidityProps) => {
+    const { bank_entity_id, resource_type, resource_amount, lords_amount, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "liquidity_systems"),
+      entrypoint: "add",
+      calldata: [bank_entity_id, resource_type, resource_amount, lords_amount],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  };
+
+  public remove_liquidity = async (props: SystemProps.RemoveLiquidityProps) => {
+    const { bank_entity_id, resource_type, shares, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "liquidity_systems"),
+      entrypoint: "remove",
+      calldata: [bank_entity_id, resource_type, shares, false],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  };
 }

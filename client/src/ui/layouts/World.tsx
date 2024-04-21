@@ -18,7 +18,6 @@ import { NotificationsComponent } from "../components/notifications/Notification
 import { Tooltip } from "../elements/Tooltip";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "./Onboarding";
-import { WorldPopups } from "../components/worldmap/WorldPopups";
 import { HooksComponent } from "../components/HooksComponent";
 import { Transactions } from "../modules/transactions/Transactions";
 
@@ -47,7 +46,6 @@ export const World = () => {
           <NotificationsComponent />
         </div>
       </TopContainer>
-      <WorldPopups />
       <BackgroundContainer className=" rounded-xl relative">
         <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-12 bg-gradient-to-b from-black/20 to-transparent opacity-90" />
         <div className="h-full w-full main-scene">

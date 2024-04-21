@@ -111,6 +111,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
     <OSWindow title={acceptOfferTitle} onClick={onClose} show={show} width="456px">
       <div className="flex flex-col items-center pt-2">
         <SelectCaravanPanel
+          realmEntityId={realmEntityId}
           donkeysCount={donkeysCount}
           setDonkeysCount={setDonkeysCount}
           isNewCaravan={isNewCaravan}

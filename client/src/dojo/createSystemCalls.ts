@@ -88,10 +88,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.transfer_resources(props);
   };
 
-  const feed_hyperstructure_and_travel_back = async (props: SystemProps.FeedHyperstructureAndTravelBackPropos) => {
-    await provider.feed_hyperstructure_and_travel_back(props);
-  };
-
   const send_resources_to_location = async (props: SystemProps.SendResourcesToLocationProps) => {
     await provider.send_resources_to_location(props);
   };
@@ -148,10 +144,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.heal_soldiers(props);
   };
 
-  const swap_bank_and_travel_back = async (props: SystemProps.SwapBankAndTravelBackProps) => {
-    await provider.swap_bank_and_travel_back(props);
-  };
-
   const transfer_items = async (props: SystemProps.TransferItemsProps) => {
     await provider.transfer_items(props);
   };
@@ -180,6 +172,34 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.destroy_building(props);
   };
 
+  const create_bank = async (props: SystemProps.CreateBankProps) => {
+    await provider.create_bank(props);
+  };
+
+  const open_account = async (props: SystemProps.OpenAccountProps) => {
+    await provider.open_account(props);
+  };
+
+  const change_bank_owner_fee = async (props: SystemProps.ChangeBankOwnerFeeProps) => {
+    await provider.change_bank_owner_fee(props);
+  };
+
+  const buy_resources = async (props: SystemProps.BuyResourcesProps) => {
+    await provider.buy_resources(props);
+  };
+
+  const sell_resources = async (props: SystemProps.SellResourcesProps) => {
+    await provider.sell_resources(props);
+  };
+
+  const add_liquidity = async (props: SystemProps.AddLiquidityProps) => {
+    await provider.add_liquidity(props);
+  };
+
+  const remove_liquidity = async (props: SystemProps.RemoveLiquidityProps) => {
+    await provider.remove_liquidity(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -190,13 +210,19 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const systemCalls = {
+    remove_liquidity,
+    add_liquidity,
+    sell_resources,
+    buy_resources,
+    change_bank_owner_fee,
+    open_account,
+    create_bank,
     explore,
     create_labor_building,
     destroy_labor_building,
     control_hyperstructure,
     complete_hyperstructure,
     disassemble_caravan_and_return_free_units,
-    swap_bank_and_travel_back,
     set_address_name,
     create_and_merge_soldiers,
     level_up_realm,
@@ -223,7 +249,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_road,
     transfer_resources,
     send_resources_to_location,
-    feed_hyperstructure_and_travel_back,
     travel,
     travel_hex,
     merge_soldiers,

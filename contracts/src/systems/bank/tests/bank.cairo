@@ -25,11 +25,11 @@ fn setup() -> (IWorldDispatcher, IBankConfigDispatcher, IBankSystemsDispatcher, 
 
     let owner_fee_scaled: u128 = _0_1;
 
-    let bank_entity_id = bank_config_dispatcher
-        .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
-
     let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
+
+    let (bank_entity_id, _) = bank_systems_dispatcher
+        .create_bank(1, Coord { x: 30, y: 800 }, owner_fee_scaled);
     // add some resources in the bank account
     (world, bank_config_dispatcher, bank_systems_dispatcher, bank_entity_id)
 }
@@ -39,11 +39,12 @@ fn setup() -> (IWorldDispatcher, IBankConfigDispatcher, IBankSystemsDispatcher, 
 fn test_bank_create_account() {
     let (world, _bank_config_dispatcher, bank_systems_dispatcher, bank_entity_id) = setup();
 
-    let player = starknet::get_caller_address();
+    starknet::testing::set_contract_address(contract_address_const::<'client'>());
+    let client = starknet::get_caller_address();
 
     bank_systems_dispatcher.open_account(bank_entity_id);
 
-    let account = get!(world, (bank_entity_id, player), BankAccounts);
+    let account = get!(world, (bank_entity_id, client), BankAccounts);
 
     assert(account.entity_id == 1, 'account entity id should be 1');
 }

@@ -105,6 +105,7 @@ export interface CaravanInterface {
   isMine: boolean;
   isRoundTrip: boolean;
   position: Position | undefined;
+  homePosition: Position | undefined;
   destinationType: DESTINATION_TYPE;
 }
 
@@ -120,6 +121,17 @@ export interface SelectableRealmInterface {
   addressName: string;
 }
 
+export interface SelectableLocationInterface {
+  entityId: bigint;
+  home: boolean;
+  realmId: bigint;
+  name: string;
+  order: string;
+  distance: number;
+  defence?: CombatInfo;
+  level?: number;
+  addressName: string;
+}
 export interface RealmInterface {
   realmId: bigint;
   name: string;

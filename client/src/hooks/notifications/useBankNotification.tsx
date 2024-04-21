@@ -22,7 +22,6 @@ export const useCaravanHasArrivedAtBankNotification = (
   const {
     account: { account },
     setup: {
-      systemCalls: { swap_bank_and_travel_back },
       components: { Realm },
     },
   } = useDojo();
@@ -43,18 +42,6 @@ export const useCaravanHasArrivedAtBankNotification = (
 
   const transferAndReturn = async () => {
     setIsLoading(true);
-    await swap_bank_and_travel_back({
-      signer: account,
-      sender_id: data.caravanId,
-      bank_id: data.bank.bankId,
-      inventoryIndex: 0,
-      resource_types: data.resources.map(() => 253),
-      indices: data.indices,
-      // lords amount
-      resource_amounts: data.lordsAmounts.map((amount) => Math.floor(amount * 1000)),
-      destination_coord_x: data.homePosition.x,
-      destination_coord_y: data.homePosition.y,
-    });
     deleteNotification([data.caravanId.toString()], EventType.ArrivedAtBank);
   };
 

@@ -14,8 +14,6 @@ export SOZO_WORLD=$(get_contract_address "dojo::world::world")
 
 export CONFIG_SYSTEMS=$(get_contract_address "eternum::systems::config::contracts::config_systems")
 
-export LABOR_SYSTEMS=$(get_contract_address "eternum::systems::labor::contracts::labor_systems")
-
 export TRADE_SYSTEMS=$(get_contract_address "eternum::systems::trade::contracts::trade_systems::trade_systems")
 
 export RESOURCE_SYSTEMS=$(get_contract_address "eternum::systems::resources::contracts::resource_systems")
@@ -38,7 +36,11 @@ export LEVELING_SYSTEMS=$(get_contract_address "eternum::systems::leveling::cont
 
 export NAME_SYSTEMS=$(get_contract_address "eternum::systems::name::contracts::name_systems")
 
-export BANK_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::bank_systems")
+export BANK_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::bank_systems::bank_systems")
+
+export SWAP_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::swap_systems::swap_systems")
+
+export LIQUIDITY_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems")
 
 export HYPERSTRUCTURE_SYSTEMS=$(get_contract_address "eternum::systems::hyperstructure::contracts::hyperstructure_systems")
 
@@ -50,7 +52,6 @@ export MAP_SYSTEMS=$(get_contract_address "eternum::systems::map::contracts::map
 echo "-------------------------ADDRESS----------------------------------------"
 echo world : $SOZO_WORLD
 echo config : $CONFIG_SYSTEMS
-echo labor : $LABOR_SYSTEMS
 echo trade : $TRADE_SYSTEMS
 echo resource : $RESOURCE_SYSTEMS
 echo caravan : $CARAVAN_SYSTEMS
@@ -63,6 +64,8 @@ echo combat : $COMBAT_SYSTEMS
 echo leveling : $LEVELING_SYSTEMS
 echo name : $NAME_SYSTEMS
 echo bank : $BANK_SYSTEMS
+echo swap : $SWAP_SYSTEMS
+echo liquidity : $LIQUIDITY_SYSTEMS
 echo hyperstructure : $HYPERSTRUCTURE_SYSTEMS
 echo buildings : $BUILDINGS_SYSTEMS
 echo maps : $MAP_SYSTEMS

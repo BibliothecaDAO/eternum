@@ -108,11 +108,6 @@ trait ILevelingConfig {
 
 #[dojo::interface]
 trait IBankConfig {
-    fn create_bank(
-        coord: Coord, owner_fee_scaled: u128
-    ) -> ID;
-
-
     fn set_bank_config(
         lords_cost: u128, lp_fee_scaled: u128
     );

@@ -8,7 +8,6 @@ import { useResources } from "../helpers/useResources";
 import {
   generateEmptyChestNotifications,
   generateLaborNotifications,
-  generateArrivedAtBankNotifications,
   // generateArrivedAtHyperstructureNotifications,
   generateEnemyRaidersHaveArrivedNotifications,
   generateYourRaidersHaveArrivedNotifications,
@@ -17,7 +16,6 @@ import { useRealmsPosition, useRealmsResource, createCombatNotification, createD
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCombat } from "../helpers/useCombat";
-import { useBanks } from "../helpers/useBanks";
 // import { useHyperstructure } from "../helpers/useHyperstructure";
 import { parseCombatEvent } from "../../ui/utils/combat";
 import useUIStore from "../store/useUIStore";
@@ -40,9 +38,6 @@ export const useNotifications = () => {
   const realmsResources = useRealmsResource(realmEntityIds);
   const realmPositions = useRealmsPosition(realmEntityIds);
   const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
-
-  const { getBanks } = useBanks();
-  const banks = useMemo(() => getBanks(), []);
 
   // const hyperstructure = useMemo(() => {
   //   const hyperstructureId = getHyperstructureIdByRealmEntityId(realmEntityId);
@@ -90,15 +85,6 @@ export const useNotifications = () => {
           getResourcesFromInventory,
         );
         newNotifications = newNotifications.concat(emptyChestNotifications);
-
-        let arrivedAtBankNotifications = generateArrivedAtBankNotifications(
-          BigInt(account.address),
-          components,
-          nextBlockTimestamp,
-          banks,
-          getResourcesFromInventory,
-        );
-        newNotifications = newNotifications.concat(arrivedAtBankNotifications);
 
         // if (hyperstructure) {
         //   let arrivedAtHyperstructureNotifications = generateArrivedAtHyperstructureNotifications(

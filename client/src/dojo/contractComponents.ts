@@ -69,55 +69,63 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Liquidity: (() => {
+      return defineComponent(
+        world,
+        {
+          bank_entity_id: RecsType.BigInt,
+          player: RecsType.BigInt,
+          resource_type: RecsType.BigInt,
+          shares: { mag: RecsType.BigInt, sign: RecsType.Boolean },
+        },
+        {
+          metadata: {
+            name: "Liquidity",
+            types: ["u128", "u128", "u8", "u128", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Market: (() => {
+      return defineComponent(
+        world,
+        {
+          bank_entity_id: RecsType.BigInt,
+          resource_type: RecsType.BigInt,
+          lords_amount: RecsType.BigInt,
+          resource_amount: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "Market",
+            types: ["u128", "u8", "u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    BankAccounts: (() => {
+      return defineComponent(
+        world,
+        { bank_entity_id: RecsType.BigInt, owner: RecsType.BigInt, entity_id: RecsType.BigInt },
+        {
+          metadata: {
+            name: "BankAccounts",
+            types: ["u128", "u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Bank: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.BigInt, exists: RecsType.Boolean },
+        { entity_id: RecsType.BigInt, owner_fee_scaled: RecsType.BigInt, exists: RecsType.Boolean },
         {
           metadata: {
             name: "Bank",
-            types: ["u128", "bool"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    BankAuction: (() => {
-      return defineComponent(
-        world,
-        {
-          bank_id: RecsType.BigInt,
-          bank_gives_resource_type: RecsType.Number,
-          bank_swap_resource_cost_index: RecsType.Number,
-          decay_constant_mag: RecsType.BigInt,
-          decay_constant_sign: RecsType.Boolean,
-          per_time_unit: RecsType.BigInt,
-          start_time: RecsType.Number,
-          sold: RecsType.BigInt,
-          price_update_interval: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            name: "BankAuction",
-            types: ["u128", "u8", "u32", "u128", "bool", "u128", "u64", "u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    BankSwapResourceCost: (() => {
-      return defineComponent(
-        world,
-        {
-          bank_gives_resource_type: RecsType.Number,
-          index: RecsType.Number,
-          resource_cost_id: RecsType.BigInt,
-          resource_cost_count: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: "BankSwapResourceCost",
-            types: ["u8", "u32", "u128", "u32"],
+            types: ["u128", "u128", "bool"],
             customTypes: [],
           },
         },

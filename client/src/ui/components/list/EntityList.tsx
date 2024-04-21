@@ -4,8 +4,9 @@ import Button from "@/ui/elements/Button";
 
 interface EntityListProps {
   title: string;
-  panel: (props: { entity: any }) => React.ReactElement;
+  panel: (props: { entity: any; previous?: undefined | any[] }) => React.ReactElement;
   list: any[];
+  previous?: any[];
 }
 
 export const EntityList = ({ title, panel, list }: EntityListProps) => {

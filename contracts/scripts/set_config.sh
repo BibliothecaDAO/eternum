@@ -4,6 +4,13 @@ source ./scripts/contracts.sh
 
 resource_precision=1000
 
+## set bank config
+commands+=(
+    # owner cost in lords
+    # lp fees
+    "sozo execute $CONFIG_SYSTEMS set_bank_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 100000,0"
+)
+
 ## set tick config
 commands+=(
     # max_moves_per_tick = 3
@@ -387,6 +394,9 @@ else
     # )
     commands+=(
         "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 25,1,200000,2,200000,3,200000,4,200000,5,200000,6,200000,7,200000,8,200000,9,200000,10,200000,11,200000,12,200000,13,200000,14,200000,15,200000,16,200000,17,200000,18,200000,19,200000,20,200000,21,200000,22,200000,253,200000,254,200000,255,200000"
+        # set donkey speed at highest for dev
+        # 1 sec per km
+        "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,1"
     )
 fi
 

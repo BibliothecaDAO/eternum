@@ -64,7 +64,8 @@
     "ResourceChest",
     "DetachedResource",
     "ForeignKey",
-    "Inventory"
+    "Inventory",
+    "Production"
   ],
   "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
   "COMBAT_SYSTEMS": [
@@ -90,16 +91,25 @@
   "LEVELING_SYSTEMS": ["Level", "Resource", "OwnedResourcesTracker"],
   "NAME_SYSTEMS": ["AddressName"],
   "BANK_SYSTEMS": [
-    "BankAuction",
-    "Resource",
-    "OwnedResourcesTracker",
-    "ResourceAllowance",
+    "Bank",
+    "Position",
+    "BankAccounts",
     "Owner",
-    "Weight",
-    "ResourceChest",
-    "DetachedResource",
-    "ForeignKey",
-    "Inventory"
+    "Resource",
+    "Production"
+  ],
+  "SWAP_SYSTEMS": [
+    "Market",
+    "OwnedResourcesTracker",
+    "Resource",
+    "Production"
+  ],
+  "LIQUIDITY_SYSTEMS": [
+    "Market",
+    "OwnedResourcesTracker",
+    "Production",
+    "Resource",
+    "Liquidity"
   ],
   "HYPERSTRUCTURE_SYSTEMS": ["Orders", "HyperStructure"],
   "BUILDINGS_SYSTEMS": [
