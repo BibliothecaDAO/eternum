@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import Button from "../../../elements/Button";
-import { SelectCaravanPanel } from "../../cityview/realm/trade/CreateOffer";
+import Button from "../../elements/Button";
+import { SelectCaravanPanel } from "../cityview/realm/trade/CreateOffer";
 import { getComponentValue } from "@dojoengine/recs";
-import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
-import { useDojo } from "../../../../hooks/context/DojoContext";
-import { Steps } from "../../../elements/Steps";
-import { Headline } from "../../../elements/Headline";
+import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../utils/utils";
+import { useDojo } from "../../../hooks/context/DojoContext";
+import { Steps } from "../../elements/Steps";
+import { Headline } from "../../elements/Headline";
 import { resources } from "@bibliothecadao/eternum";
-import { ResourceCost } from "../../../elements/ResourceCost";
+import { ResourceCost } from "../../elements/ResourceCost";
 import clsx from "clsx";
-import { NumberInput } from "../../../elements/NumberInput";
+import { NumberInput } from "../../elements/NumberInput";
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
-import useUIStore from "../../../../hooks/store/useUIStore";
-import { PercentageSelection } from "../../../elements/PercentageSelection";
-import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
+import useUIStore from "../../../hooks/store/useUIStore";
+import { PercentageSelection } from "../../elements/PercentageSelection";
+import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 
 export const SendResourcesPanel = ({
   senderEntityId,
