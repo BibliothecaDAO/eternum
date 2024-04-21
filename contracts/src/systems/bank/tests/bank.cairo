@@ -29,7 +29,7 @@ fn setup() -> (IWorldDispatcher, IBankConfigDispatcher, IBankSystemsDispatcher, 
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 
     let (bank_entity_id, _) = bank_systems_dispatcher
-        .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
+        .create_bank(1, Coord { x: 30, y: 800 }, owner_fee_scaled);
     // add some resources in the bank account
     (world, bank_config_dispatcher, bank_systems_dispatcher, bank_entity_id)
 }

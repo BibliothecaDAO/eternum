@@ -51,7 +51,7 @@ fn setup(
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 
     let (bank_entity_id, bank_account_entity_id) = bank_systems_dispatcher
-        .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
+        .create_bank(1, Coord { x: 30, y: 800 }, owner_fee_scaled);
 
     let liquidity_systems_address = deploy_system(world, liquidity_systems::TEST_CLASS_HASH);
     let liquidity_systems_dispatcher = ILiquiditySystemsDispatcher {
