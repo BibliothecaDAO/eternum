@@ -39,11 +39,12 @@ fn setup() -> (IWorldDispatcher, IBankConfigDispatcher, IBankSystemsDispatcher, 
 fn test_bank_create_account() {
     let (world, _bank_config_dispatcher, bank_systems_dispatcher, bank_entity_id) = setup();
 
-    let player = starknet::get_caller_address();
+    starknet::testing::set_contract_address(contract_address_const::<'client'>());
+    let client = starknet::get_caller_address();
 
     bank_systems_dispatcher.open_account(bank_entity_id);
 
-    let account = get!(world, (bank_entity_id, player), BankAccounts);
+    let account = get!(world, (bank_entity_id, client), BankAccounts);
 
     assert(account.entity_id == 1, 'account entity id should be 1');
 }
