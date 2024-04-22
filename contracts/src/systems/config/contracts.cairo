@@ -19,7 +19,6 @@ mod config_systems {
     };
 
     use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::labor_auction::LaborAuction;
     use eternum::models::position::{Position, PositionTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};

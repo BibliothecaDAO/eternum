@@ -12,7 +12,6 @@ use eternum::models::config::{
     road_config, RoadConfig
 };
 use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
-use eternum::models::labor_auction::{labor_auction, LaborAuction};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
 use eternum::models::metadata::{foreign_key, ForeignKey};
 use eternum::models::movable::{movable, Movable, arrival_time, ArrivalTime};
@@ -54,7 +53,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         labor_config::TEST_CLASS_HASH,
         weight_config::TEST_CLASS_HASH,
         road::TEST_CLASS_HASH,
-        labor_auction::TEST_CLASS_HASH,
         road_config::TEST_CLASS_HASH,
         hyper_structure::TEST_CLASS_HASH,
     ];

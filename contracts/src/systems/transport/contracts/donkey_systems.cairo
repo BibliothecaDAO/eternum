@@ -47,7 +47,7 @@ mod donkey_systems {
         ) -> ID {
             get!(world, sender_entity_id, Owner).assert_caller_owner();
 
-            let sender_entity_coord = get!(world, sender_entity_id, Position).into();
+            let sender_entity_coord = get!(world, sender_entity_id, Position);
 
             sender_entity_coord.assert_same_location(destination_coord);
 
@@ -56,7 +56,7 @@ mod donkey_systems {
                 sender_entity_id,
                 sender_entity_id,
                 array![(ResourceTypes::DONKEY, amount)].span(),
-                sender_entity_coord,
+                sender_entity_coord.into(),
                 destination_coord,
                 false
             )
@@ -71,7 +71,7 @@ mod donkey_systems {
         ) -> ID {
             get!(world, sender_entity_id, Owner).assert_caller_owner();
 
-            let sender_entity_coord = get!(world, sender_entity_id, Position).into();
+            let sender_entity_coord = get!(world, sender_entity_id, Position);
 
             sender_entity_coord.assert_same_location(destination_coord);
 
@@ -80,7 +80,7 @@ mod donkey_systems {
                 sender_entity_id,
                 sender_entity_id,
                 resources,
-                sender_entity_coord,
+                sender_entity_coord.into(),
                 destination_coord,
                 true
             )
@@ -102,8 +102,9 @@ mod donkey_systems {
             // check if resource owner is owner
             get!(world, resource_owner_entity_id, Owner).assert_caller_owner();
 
-            let donkey_entity_coord = get!(world, donkey_owner_entity_id, Position).into();
-            let resource_owner_coord = get!(world, resource_owner_entity_id, Position).into();
+            let donkey_entity_coord = get!(world, donkey_owner_entity_id, Position);
+            let resource_owner_coord: Coord = get!(world, resource_owner_entity_id, Position)
+                .into();
 
             donkey_entity_coord.assert_not_same_location(resource_owner_coord);
 
@@ -113,7 +114,7 @@ mod donkey_systems {
                 donkey_owner_entity_id,
                 resources,
                 resource_owner_coord,
-                donkey_entity_coord,
+                donkey_entity_coord.into(),
                 true
             )
         }

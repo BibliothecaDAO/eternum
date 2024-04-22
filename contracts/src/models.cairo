@@ -7,7 +7,6 @@ mod combatV2;
 mod config;
 mod hyperstructure;
 mod inventory;
-mod labor_auction;
 mod level;
 mod map;
 mod metadata;

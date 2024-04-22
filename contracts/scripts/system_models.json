@@ -36,7 +36,6 @@
     "Capacity",
     "QuantityTracker"
   ],
-  "LABOR_SYSTEMS": ["Labor", "Resource", "OwnedResourcesTracker", "LaborAuction", "LaborBuilding"],
   "TRADE_SYSTEMS": [
     "Caravan",
     "Movable",
@@ -90,27 +89,9 @@
   ],
   "LEVELING_SYSTEMS": ["Level", "Resource", "OwnedResourcesTracker"],
   "NAME_SYSTEMS": ["AddressName"],
-  "BANK_SYSTEMS": [
-    "Bank",
-    "Position",
-    "BankAccounts",
-    "Owner",
-    "Resource",
-    "Production"
-  ],
-  "SWAP_SYSTEMS": [
-    "Market",
-    "OwnedResourcesTracker",
-    "Resource",
-    "Production"
-  ],
-  "LIQUIDITY_SYSTEMS": [
-    "Market",
-    "OwnedResourcesTracker",
-    "Production",
-    "Resource",
-    "Liquidity"
-  ],
+  "BANK_SYSTEMS": ["Bank", "Position", "BankAccounts", "Owner", "Resource", "Production"],
+  "SWAP_SYSTEMS": ["Market", "OwnedResourcesTracker", "Resource", "Production"],
+  "LIQUIDITY_SYSTEMS": ["Market", "OwnedResourcesTracker", "Production", "Resource", "Liquidity"],
   "HYPERSTRUCTURE_SYSTEMS": ["Orders", "HyperStructure"],
   "BUILDINGS_SYSTEMS": [
     "Resource",
