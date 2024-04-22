@@ -4,18 +4,18 @@ mod config_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{
-        WORLD_CONFIG_ID, LABOR_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, SOLDIER_ENTITY_TYPE,
-        COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID,
-        REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID
+        WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID,
+        REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID,
+        BUILDING_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
 
     use eternum::models::combat::TownWatch;
     use eternum::models::config::{
-        LaborCostResources, LaborCostAmount, LaborConfig, CapacityConfig, RoadConfig, SpeedConfig,
-        TravelConfig, WeightConfig, WorldConfig, SoldierConfig, HealthConfig, AttackConfig,
-        DefenceConfig, CombatConfig, LevelingConfig, RealmFreeMintConfig, LaborBuildingsConfig,
-        LaborBuildingCost, MapExploreConfig, TickConfig, ProductionConfig, BankConfig
+        LaborConfig, CapacityConfig, RoadConfig, SpeedConfig, TravelConfig, WeightConfig,
+        WorldConfig, SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig,
+        LevelingConfig, RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig,
+        BankConfig
     };
 
     use eternum::models::hyperstructure::HyperStructure;
@@ -372,100 +372,6 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl LaborConfigImpl of ILaborConfig<ContractState> {
-        fn set_labor_cost_resources(
-            world: IWorldDispatcher,
-            resource_type_labor: felt252,
-            resource_types_packed: u128,
-            resource_types_count: u8
-        ) {
-            assert_caller_is_admin(world);
-
-            // set cost of creating labor for resource id 1 
-            // to only resource id 1 cost
-            set!(
-                world,
-                (LaborCostResources {
-                    resource_type_labor, resource_types_packed, resource_types_count
-                })
-            );
-        }
-
-
-        fn set_labor_cost_amount(
-            world: IWorldDispatcher,
-            resource_type_labor: felt252,
-            resource_type_cost: felt252,
-            resource_type_value: u128
-        ) {
-            assert_caller_is_admin(world);
-
-            set!(
-                world,
-                (LaborCostAmount {
-                    resource_type_labor, resource_type_cost, value: resource_type_value
-                })
-            );
-        }
-
-
-        fn set_labor_config(
-            world: IWorldDispatcher,
-            base_labor_units: u64,
-            base_resources_per_cycle: u128,
-            base_food_per_cycle: u128
-        ) {
-            assert_caller_is_admin(world);
-
-            // set labor config
-            set!(
-                world,
-                (LaborConfig {
-                    config_id: LABOR_CONFIG_ID,
-                    base_labor_units,
-                    base_resources_per_cycle,
-                    base_food_per_cycle
-                })
-            );
-        }
-
-
-        fn set_labor_auction(
-            world: IWorldDispatcher,
-            decay_constant: u128,
-            per_time_unit: u128,
-            price_update_interval: u128
-        ) {
-            assert_caller_is_admin(world);
-
-            let start_time = starknet::get_block_timestamp();
-
-            let mut zone: u8 = 1;
-
-            loop {
-                if zone > 10 {
-                    break;
-                }
-
-                set!(
-                    world,
-                    (LaborAuction {
-                        zone,
-                        decay_constant_mag: decay_constant,
-                        decay_constant_sign: false,
-                        per_time_unit,
-                        start_time,
-                        sold: 0,
-                        price_update_interval,
-                    })
-                );
-
-                zone += 1;
-            };
-        }
-    }
-
-    #[abi(embed_v0)]
     impl ProductionConfigImpl of IProductionConfig<ContractState> {
         fn set_production_config(
             world: IWorldDispatcher, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>
@@ -653,197 +559,6 @@ mod config_systems {
             self: @ContractState, world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128
         ) {
             set!(world, (BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_scaled, }));
-        }
-    }
-
-    #[abi(embed_v0)]
-    impl BuildingsConfigImpl of IBuildingsConfig<ContractState> {
-        fn set_labor_buildings_config(
-            world: IWorldDispatcher,
-            level_multiplier: u128,
-            level_discount_mag: u128,
-            resources_category_1: u128,
-            resources_category_1_count: u8,
-            resources_category_2: u128,
-            resources_category_2_count: u8,
-            resources_category_3: u128,
-            resources_category_3_count: u8,
-            resources_category_4: u128,
-            resources_category_4_count: u8,
-            building_category_1_resource_costs: Span<(u8, u128)>,
-            building_category_2_resource_costs: Span<(u8, u128)>,
-            building_category_3_resource_costs: Span<(u8, u128)>,
-            building_category_4_resource_costs: Span<(u8, u128)>,
-        ) {
-            assert_caller_is_admin(world);
-
-            // set the resources in each category
-            set!(
-                world,
-                (
-                    LaborBuildingsConfig {
-                        config_id: BUILDING_CONFIG_ID,
-                        level_multiplier,
-                        level_discount_mag,
-                        resources_category_1,
-                        resources_category_1_count,
-                        resources_category_2,
-                        resources_category_2_count,
-                        resources_category_3,
-                        resources_category_3_count,
-                        resources_category_4,
-                        resources_category_4_count,
-                    },
-                )
-            );
-
-            let mut building_costs = building_category_1_resource_costs;
-            let labor_category = 1;
-            let resource_cost_id: u128 = world.uuid().into();
-            let mut index = 0;
-
-            set!(
-                world,
-                LaborBuildingCost {
-                    config_id: BUILDING_CONFIG_ID,
-                    labor_category: labor_category,
-                    resource_cost_id: resource_cost_id,
-                    resource_cost_count: building_costs.len(),
-                }
-            );
-
-            loop {
-                match building_costs.pop_front() {
-                    Option::Some((
-                        resource_type, resource_amount
-                    )) => {
-                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-
-                        set!(
-                            world,
-                            (ResourceCost {
-                                entity_id: resource_cost_id,
-                                index,
-                                resource_type,
-                                amount: resource_amount
-                            })
-                        );
-                        index += 1;
-                    },
-                    Option::None => { break; }
-                }
-            };
-
-            let mut building_costs = building_category_2_resource_costs;
-            let labor_category = 2;
-            let resource_cost_id: u128 = world.uuid().into();
-            let mut index = 0;
-
-            set!(
-                world,
-                LaborBuildingCost {
-                    config_id: BUILDING_CONFIG_ID,
-                    labor_category: labor_category,
-                    resource_cost_id: resource_cost_id,
-                    resource_cost_count: building_costs.len(),
-                }
-            );
-
-            loop {
-                match building_costs.pop_front() {
-                    Option::Some((
-                        resource_type, resource_amount
-                    )) => {
-                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-
-                        set!(
-                            world,
-                            (ResourceCost {
-                                entity_id: resource_cost_id,
-                                index,
-                                resource_type,
-                                amount: resource_amount
-                            })
-                        );
-                        index += 1;
-                    },
-                    Option::None => { break; }
-                }
-            };
-
-            let mut building_costs = building_category_3_resource_costs;
-            let labor_category = 3;
-            let resource_cost_id: u128 = world.uuid().into();
-            let mut index = 0;
-
-            set!(
-                world,
-                LaborBuildingCost {
-                    config_id: BUILDING_CONFIG_ID,
-                    labor_category: labor_category,
-                    resource_cost_id: resource_cost_id,
-                    resource_cost_count: building_costs.len(),
-                }
-            );
-
-            loop {
-                match building_costs.pop_front() {
-                    Option::Some((
-                        resource_type, resource_amount
-                    )) => {
-                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-
-                        set!(
-                            world,
-                            (ResourceCost {
-                                entity_id: resource_cost_id,
-                                index,
-                                resource_type,
-                                amount: resource_amount
-                            })
-                        );
-                        index += 1;
-                    },
-                    Option::None => { break; }
-                }
-            };
-
-            let mut building_costs = building_category_4_resource_costs;
-            let labor_category = 4;
-            let resource_cost_id: u128 = world.uuid().into();
-            let mut index = 0;
-
-            set!(
-                world,
-                LaborBuildingCost {
-                    config_id: BUILDING_CONFIG_ID,
-                    labor_category: labor_category,
-                    resource_cost_id: resource_cost_id,
-                    resource_cost_count: building_costs.len(),
-                }
-            );
-
-            loop {
-                match building_costs.pop_front() {
-                    Option::Some((
-                        resource_type, resource_amount
-                    )) => {
-                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-
-                        set!(
-                            world,
-                            (ResourceCost {
-                                entity_id: resource_cost_id,
-                                index,
-                                resource_type,
-                                amount: resource_amount
-                            })
-                        );
-                        index += 1;
-                    },
-                    Option::None => { break; }
-                }
-            };
         }
     }
 }

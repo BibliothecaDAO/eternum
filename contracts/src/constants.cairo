@@ -9,7 +9,6 @@ const BUILDING_CONFIG_ID: u128 = 999999999999999998;
 // that are used for all labor, regardless of the resource
 // - base_labor_units
 // - base_resources_per_cycle
-const LABOR_CONFIG_ID: u128 = 999999999999999997;
 const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
 const ROAD_CONFIG_ID: u128 = 999999999999999995;
 const COMBAT_CONFIG_ID: u128 = 999999999999999994;

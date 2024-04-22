@@ -8,11 +8,10 @@ use eternum::models::caravan::{caravan_members, CaravanMembers,};
 
 use eternum::models::config::{
     world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,
-    travel_config, TravelConfig, labor_config, LaborConfig, labor_cost_amount, LaborCostAmount,
-    labor_cost_resources, LaborCostResources, weight_config, WeightConfig, road_config, RoadConfig
+    travel_config, TravelConfig, labor_config, LaborConfig, weight_config, WeightConfig,
+    road_config, RoadConfig
 };
 use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
-use eternum::models::labor::{labor, Labor};
 use eternum::models::labor_auction::{labor_auction, LaborAuction};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
 use eternum::models::metadata::{foreign_key, ForeignKey};
@@ -52,10 +51,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         resource_cost::TEST_CLASS_HASH,
         status::TEST_CLASS_HASH,
         travel_config::TEST_CLASS_HASH,
-        labor::TEST_CLASS_HASH,
         labor_config::TEST_CLASS_HASH,
-        labor_cost_amount::TEST_CLASS_HASH,
-        labor_cost_resources::TEST_CLASS_HASH,
         weight_config::TEST_CLASS_HASH,
         road::TEST_CLASS_HASH,
         labor_auction::TEST_CLASS_HASH,
