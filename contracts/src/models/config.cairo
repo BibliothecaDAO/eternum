@@ -278,31 +278,3 @@ impl BattleConfigImpl of BattleConfigTrait {
         return get!(world, WORLD_CONFIG_ID, BattleConfig);
     }
 }
-
-
-#[cfg(test)]
-mod tests {
-    use debug::PrintTrait;
-    use eternum::models::config::{LaborBuildingsConfig, LaborBuildingsConfigTrait};
-
-    #[test]
-    #[available_gas(30000000)]
-    fn test_get_building_type() {
-        let config = LaborBuildingsConfig {
-            config_id: 1,
-            level_multiplier: 10,
-            level_discount_mag: 16602069666338596454,
-            resources_category_1: 1108152355345,
-            resources_category_1_count: 6,
-            resources_category_2: 4423951127316,
-            resources_category_2_count: 6,
-            resources_category_3: 47446822418,
-            resources_category_3_count: 5,
-            resources_category_4: 21727548694,
-            resources_category_4_count: 5,
-        };
-
-        let building_type = config.get_building_type(16);
-        assert(building_type == 4, 'wrong building type')
-    }
-}
