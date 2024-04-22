@@ -8,8 +8,8 @@ mod trade_systems {
     use eternum::models::config::RoadConfig;
     use eternum::models::config::WeightConfig;
     use eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig};
-    use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::inventory::{Inventory};
+    use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::owner::Owner;
     use eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
     use eternum::models::quantity::{Quantity, QuantityTrait, QuantityTracker};
@@ -20,10 +20,6 @@ mod trade_systems {
     use eternum::models::road::{Road, RoadTrait, RoadImpl};
     use eternum::models::trade::{Trade, Status, TradeStatus};
     use eternum::models::weight::Weight;
-
-    use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
-        InternalDonkeySystemsImpl as donkey
-    };
     use eternum::systems::resources::contracts::resource_systems::{
         InternalResourceChestSystemsImpl as resource_chest,
         InternalInventorySystemsImpl as inventory
@@ -31,6 +27,10 @@ mod trade_systems {
     use eternum::systems::trade::interface::trade_systems_interface::{ITradeSystems};
     use eternum::systems::transport::contracts::caravan_systems::caravan_systems::{
         InternalCaravanSystemsImpl as caravan
+    };
+
+    use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
+        InternalDonkeySystemsImpl as donkey
     };
 
     #[derive(Drop, starknet::Event)]
@@ -122,9 +122,7 @@ mod trade_systems {
         }
 
 
-        fn accept_order(
-            world: IWorldDispatcher, taker_id: u128, trade_id: u128
-        ) {
+        fn accept_order(world: IWorldDispatcher, taker_id: u128, trade_id: u128) {
             // check that caller is taker
             let caller = starknet::get_caller_address();
             let taker_owner = get!(world, taker_id, Owner);
@@ -147,9 +145,7 @@ mod trade_systems {
             let maker_position = get!(world, trade.maker_id, Position);
 
             // burn the taker donkeys
-            let taker_resource_chest_weight = get!(
-                world, trade.taker_resource_chest_id, Weight
-            );
+            let taker_resource_chest_weight = get!(world, trade.taker_resource_chest_id, Weight);
             let donkey_amount = donkey::get_donkey_needed(world, taker_resource_chest_weight.value);
             let mut taker_donkeys: Resource = ResourceImpl::get(
                 world, (taker_id, ResourceTypes::DONKEY)
@@ -158,7 +154,9 @@ mod trade_systems {
             taker_donkeys.balance -= donkey_amount;
             taker_donkeys.save(world);
 
-            let travel_time = donkey::donkey_travel_time(world, taker_position.into(), maker_position.into(), true);
+            let travel_time = donkey::donkey_travel_time(
+                world, taker_position.into(), maker_position.into(), true
+            );
 
             ///////// Updates For Maker ///////////////
             //////////////////////////////////////////
@@ -168,7 +166,14 @@ mod trade_systems {
 
             let maker_inventory_entity_id: u128 = world.uuid().into();
             // add inventory to make transfer function work
-            set!(world, Inventory { entity_id: maker_inventory_entity_id, items_key: world.uuid().into(), items_count: 0});
+            set!(
+                world,
+                Inventory {
+                    entity_id: maker_inventory_entity_id,
+                    items_key: world.uuid().into(),
+                    items_count: 0
+                }
+            );
             inventory::add(world, maker_inventory_entity_id, trade.maker_resource_chest_id);
 
             let maker_owner = get!(world, trade.maker_id, Owner);
@@ -177,18 +182,14 @@ mod trade_systems {
                 world,
                 (
                     ArrivalTime {
-                        entity_id: maker_inventory_entity_id,
-                        arrives_at: ts.into() + travel_time
+                        entity_id: maker_inventory_entity_id, arrives_at: ts.into() + travel_time
                     },
                     Position {
                         entity_id: maker_inventory_entity_id,
                         x: maker_position.x,
                         y: maker_position.y,
                     },
-                    Owner {
-                        entity_id: maker_inventory_entity_id,
-                        address: maker_owner.address,
-                    }
+                    Owner { entity_id: maker_inventory_entity_id, address: maker_owner.address, }
                 )
             );
 
@@ -197,23 +198,28 @@ mod trade_systems {
 
             let taker_inventory_entity_id: u128 = world.uuid().into();
             // add inventory to make transfer function work
-            set!(world, Inventory { entity_id: taker_inventory_entity_id, items_key: world.uuid().into(), items_count: 0});
+            set!(
+                world,
+                Inventory {
+                    entity_id: taker_inventory_entity_id,
+                    items_key: world.uuid().into(),
+                    items_count: 0
+                }
+            );
             inventory::add(world, taker_inventory_entity_id, trade.taker_resource_chest_id);
 
             set!(
                 world,
                 (
                     ArrivalTime {
-                        entity_id: taker_inventory_entity_id,
-                        arrives_at: ts.into() + travel_time
+                        entity_id: taker_inventory_entity_id, arrives_at: ts.into() + travel_time
                     },
                     Position {
-                        entity_id: taker_inventory_entity_id, x: taker_position.x, y: taker_position.y,
-                    }, 
-                    Owner {
                         entity_id: taker_inventory_entity_id,
-                        address: taker_owner.address,
-                    }
+                        x: taker_position.x,
+                        y: taker_position.y,
+                    },
+                    Owner { entity_id: taker_inventory_entity_id, address: taker_owner.address, }
                 )
             );
 
@@ -234,7 +240,7 @@ mod trade_systems {
             assert(trade_status.value == TradeStatus::OPEN, 'trade must be open');
 
             // return donkeys to maker
-            let resource_weight = get!(world, trade.taker_resource_chest_id, Weight); 
+            let resource_weight = get!(world, trade.taker_resource_chest_id, Weight);
             let donkey_amount = donkey::get_donkey_needed(world, resource_weight.value);
             let mut maker_donkeys: Resource = ResourceImpl::get(
                 world, (trade.maker_id, ResourceTypes::DONKEY)

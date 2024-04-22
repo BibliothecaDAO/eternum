@@ -21,7 +21,7 @@ struct EntityOwner {
 
 #[generate_trait]
 impl OwnerImpl of OwnerTrait {
-    fn assert_caller_owner(self: Owner, caller: ContractAddress) {
+    fn assert_caller_owner(self: Owner) {
         assert(self.address == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
     }
 }

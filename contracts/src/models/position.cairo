@@ -210,6 +210,12 @@ impl PositionImpl of PositionTrait {
         // use highest and lowest x to divide map into 10 timezones
         1 + (self.x - LOWEST_COL) * 10 / (HIGHEST_COL - LOWEST_COL)
     }
+    fn assert_same_location(self: Position, other: Coord) {
+        assert(self.x == other.x && self.y == other.y, 'Coord: not same');
+    }
+    fn assert_not_same_location(self: Position, other: Coord) {
+        assert(self.x != other.x || self.y != other.y, 'Coord: same');
+    }
 }
 
 #[cfg(test)]

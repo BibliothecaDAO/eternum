@@ -177,7 +177,7 @@ fn test_return_free_transport_unit() {
     transport_unit_systems_dispatcher.create_free_unit(realm_entity_id, 10);
 
     // check that the number of transport units in the realm == 20 before deletion
-    let quantity_tracker_arr = array![realm_entity_id.into(), DONKEY_ENTITY_TYPE;
+    let quantity_tracker_arr = array![realm_entity_id.into(), DONKEY_ENTITY_TYPE];
     let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
     let quantity_tracker = get!(world, quantity_tracker_key, QuantityTracker);
     assert(quantity_tracker.count == 20, 'quantity tracker not updated 1');

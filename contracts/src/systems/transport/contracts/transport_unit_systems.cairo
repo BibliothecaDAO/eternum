@@ -78,9 +78,7 @@ mod transport_unit_systems {
                 (
                     EntityOwner { entity_id: id.into(), entity_owner_id: entity_id },
                     Position { entity_id: id.into(), x: position.x, y: position.y },
-                    EntityMetadata {
-                        entity_id: id.into(), entity_type: DONKEY_ENTITY_TYPE
-                    },
+                    EntityMetadata { entity_id: id.into(), entity_type: DONKEY_ENTITY_TYPE },
                     Owner { entity_id: id.into(), address: caller },
                     Quantity { entity_id: id.into(), value: quantity },
                     Movable {
