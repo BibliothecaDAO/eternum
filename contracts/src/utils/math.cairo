@@ -63,8 +63,7 @@ trait PercentageTrait<T> {
     fn get(value: T, numerator: u32) -> T;
 }
 
-impl PercentageImpl
-    <T, +Mul<T>, +Div<T>, +Into<u32,T>, +Copy<T>, +Drop<T>> of PercentageTrait<T> {
+impl PercentageImpl<T, +Mul<T>, +Div<T>, +Into<u32, T>, +Copy<T>, +Drop<T>> of PercentageTrait<T> {
     fn get(value: T, numerator: u32) -> T {
         return (value * numerator.into()) / PercentageValueImpl::_100().into();
     }
@@ -85,6 +84,6 @@ impl PercentageValueImpl of PercentageValueTrait {
     }
 
     fn _100() -> u32 {
-        10_000 
+        10_000
     }
 }

@@ -1,8 +1,8 @@
 use core::debug::PrintTrait;
-use eternum::constants::{WORLD_CONFIG_ID};
-use eternum::utils::unpack::unpack_resource_types;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::constants::{WORLD_CONFIG_ID};
+use eternum::utils::unpack::unpack_resource_types;
 
 use starknet::ContractAddress;
 
@@ -171,10 +171,9 @@ struct TickConfig {
 
 #[generate_trait]
 impl TickImpl of TickTrait {
-
     fn get(world: IWorldDispatcher) -> TickConfig {
         let tick_config: TickConfig = get!(world, WORLD_CONFIG_ID, TickConfig);
-        return tick_config;   
+        return tick_config;
     }
 
     fn interval(self: TickConfig) -> u64 {
@@ -192,7 +191,7 @@ impl TickImpl of TickTrait {
     fn at(self: TickConfig, time: u64) -> u64 {
         time / self.interval()
     }
-    
+
     fn after(self: TickConfig, time_spent: u64) -> u64 {
         (starknet::get_block_timestamp() + time_spent) / self.tick_interval_in_seconds
     }
@@ -347,11 +346,11 @@ struct ProductionConfig {
     #[key]
     resource_type: u8,
     // production amount per tick
-    amount: u128, 
+    amount: u128,
     // num materials required to produce this resource
     input_count: u128,
     // num different resources that this resource can produce
-    output_count: u128   
+    output_count: u128
 }
 
 
@@ -368,11 +367,11 @@ struct BankConfig {
 struct TroopConfig {
     #[key]
     config_id: u128,
-    knight_health: u32, 
-    paladin_health: u32, 
+    knight_health: u32,
+    paladin_health: u32,
     crossbowman_health: u32,
-    knight_strength: u32, 
-    paladin_strength: u32, 
+    knight_strength: u32,
+    paladin_strength: u32,
     crossbowman_strength: u32,
     advantage_percent: u32,
     disadvantage_percent: u32,
@@ -400,7 +399,6 @@ impl BattleConfigImpl of BattleConfigTrait {
         return get!(world, WORLD_CONFIG_ID, BattleConfig);
     }
 }
-
 
 
 #[cfg(test)]

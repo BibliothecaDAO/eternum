@@ -1,25 +1,38 @@
+use core::array::{ArrayTrait, SpanTrait};
 use core::debug::PrintTrait;
-use eternum::models::position::Position;
-use eternum::models::metadata::ForeignKey;
-use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceCost};
-use eternum::models::level::Level;
-use eternum::models::realm::Realm;
-use eternum::models::order::Orders;
+use core::traits::Into;
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
+use eternum::constants::ResourceTypes;
+use eternum::constants::{COMBAT_CONFIG_ID, SOLDIER_ENTITY_TYPE};
+use eternum::constants::{REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID};
+use eternum::models::capacity::Capacity;
+use eternum::models::combat::{Attack, Health, Defence, Duty, TownWatch};
 use eternum::models::config::{
     SpeedConfig, WeightConfig, CapacityConfig, CombatConfig, SoldierConfig, HealthConfig,
     AttackConfig, DefenceConfig, LevelingConfig
 };
-use eternum::models::movable::{Movable, ArrivalTime};
-use eternum::models::inventory::Inventory;
-use eternum::models::capacity::Capacity;
 use eternum::models::hyperstructure::HyperStructure;
-use eternum::models::weight::Weight;
+use eternum::models::inventory::Inventory;
+use eternum::models::level::Level;
+use eternum::models::metadata::ForeignKey;
+use eternum::models::movable::{Movable, ArrivalTime};
+use eternum::models::order::Orders;
 use eternum::models::owner::{Owner, EntityOwner};
+use eternum::models::position::Position;
 use eternum::models::quantity::{Quantity, QuantityTrait};
-use eternum::models::combat::{Attack, Health, Defence, Duty, TownWatch};
+use eternum::models::realm::Realm;
+use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceCost};
+use eternum::models::weight::Weight;
 
-use eternum::systems::resources::tests::internal::inventory_transfer_between_inventories::internal_transfer_between_inventories_tests::InventoryTraitForTest;
-use eternum::systems::resources::contracts::resource_systems::{InternalInventorySystemsImpl,};
+
+use eternum::systems::combat::contracts::{combat_systems};
+
+use eternum::systems::combat::interface::{
+    ISoldierSystemsDispatcher, ISoldierSystemsDispatcherTrait, ICombatSystemsDispatcher,
+    ICombatSystemsDispatcherTrait,
+};
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{
     ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher,
@@ -29,27 +42,13 @@ use eternum::systems::config::interface::{
 
 use eternum::systems::realm::contracts::realm_systems;
 use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
+use eternum::systems::resources::contracts::resource_systems::{InternalInventorySystemsImpl,};
 
-
-use eternum::systems::combat::contracts::{combat_systems};
-
-use eternum::systems::combat::interface::{
-    ISoldierSystemsDispatcher, ISoldierSystemsDispatcherTrait, ICombatSystemsDispatcher,
-    ICombatSystemsDispatcherTrait,
-};
+use eternum::systems::resources::tests::internal::inventory_transfer_between_inventories::internal_transfer_between_inventories_tests::InventoryTraitForTest;
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
-use eternum::constants::ResourceTypes;
-use eternum::constants::{COMBAT_CONFIG_ID, SOLDIER_ENTITY_TYPE};
-use eternum::constants::{REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID};
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 use starknet::contract_address_const;
-
-use core::array::{ArrayTrait, SpanTrait};
-use core::traits::Into;
 
 const ATTACKER_STOLEN_RESOURCE_COUNT: u32 = 2;
 const WHEAT_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 100;
@@ -378,7 +377,9 @@ fn test_steal_success() {
             break;
         }
         let resource_type = *stolen_resource_types.at(index);
-        let target_realm_resource = ResourceImpl::get(world, (target_realm_entity_id, resource_type));
+        let target_realm_resource = ResourceImpl::get(
+            world, (target_realm_entity_id, resource_type)
+        );
         assert(target_realm_resource.balance < INITIAL_RESOURCE_BALANCE, 'wrong target balance');
 
         index += 1;

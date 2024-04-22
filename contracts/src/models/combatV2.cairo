@@ -1,10 +1,10 @@
 use core::option::OptionTrait;
-use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
 use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
-use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
+use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 use eternum::utils::math::PercentageImpl;
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 // Gameplay
 
@@ -70,7 +70,7 @@ impl TroopsImpl of TroopsTrait {
         self.paladin_count += other.paladin_count;
         self.crossbowman_count += other.crossbowman_count;
     }
-    
+
     fn deduct(ref self: Troops, other: Troops) {
         self.knight_count -= other.knight_count;
         self.paladin_count -= other.paladin_count;
@@ -78,12 +78,12 @@ impl TroopsImpl of TroopsTrait {
     }
 
     fn deduct_percentage(ref self: Troops, num: u128, denom: u128) {
-        self.knight_count 
-            -= ((self.knight_count.into() * num) / denom).try_into().unwrap();
-        self.paladin_count 
-            -= ((self.paladin_count.into() * num) / denom).try_into().unwrap();
-        self.crossbowman_count 
-            -= ((self.crossbowman_count.into() * num) / denom).try_into().unwrap();
+        self.knight_count -= ((self.knight_count.into() * num) / denom).try_into().unwrap();
+        self.paladin_count -= ((self.paladin_count.into() * num) / denom).try_into().unwrap();
+        self
+            .crossbowman_count -= ((self.crossbowman_count.into() * num) / denom)
+            .try_into()
+            .unwrap();
     }
 
 
@@ -310,7 +310,7 @@ impl BattleImpl of BattleTrait {
         }
     }
 
-    fn has_ended(self: Battle) -> bool{
+    fn has_ended(self: Battle) -> bool {
         self.tick_duration_left == 0
     }
 

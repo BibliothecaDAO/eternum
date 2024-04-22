@@ -1,21 +1,22 @@
 use core::traits::TryInto;
-use eternum::models::resources::{Resource, ResourceFoodImpl};
-use eternum::models::owner::Owner;
-use eternum::models::owner::{EntityOwner};
-use eternum::models::quantity::Quantity;
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
+use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 use eternum::models::capacity::Capacity;
-use eternum::models::tick::TickConfig;
-use eternum::models::movable::{Movable};
 use eternum::models::combat::{Health};
-use eternum::models::position::{Position, Coord, CoordTrait, Direction};
-use eternum::models::realm::Realm;
 use eternum::models::inventory::{Inventory, InventoryTrait};
-use eternum::models::weight::Weight;
 
 use eternum::models::map::Tile;
-
-use eternum::systems::map::interface::{IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
-use eternum::systems::map::contracts::map_systems;
+use eternum::models::movable::{Movable};
+use eternum::models::owner::Owner;
+use eternum::models::owner::{EntityOwner};
+use eternum::models::position::{Position, Coord, CoordTrait, Direction};
+use eternum::models::quantity::Quantity;
+use eternum::models::realm::Realm;
+use eternum::models::resources::{Resource, ResourceFoodImpl};
+use eternum::models::tick::TickConfig;
+use eternum::models::weight::Weight;
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{
@@ -23,6 +24,9 @@ use eternum::systems::config::interface::{
     IMapConfigDispatcherTrait
 };
 use eternum::systems::config::interface::{IWeightConfigDispatcher, IWeightConfigDispatcherTrait,};
+use eternum::systems::map::contracts::map_systems;
+
+use eternum::systems::map::interface::{IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
 
 use eternum::systems::realm::contracts::realm_systems;
 use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
@@ -30,11 +34,7 @@ use eternum::systems::transport::contracts::{travel_systems::travel_systems};
 use eternum::systems::transport::interface::{
     travel_systems_interface::{ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait},
 };
-
-use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 use eternum::utils::testing::{spawn_eternum, deploy_system};
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use starknet::contract_address_const;
 
 const INITIAL_WHEAT_BALANCE: u128 = 7000;
@@ -127,12 +127,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     let army_capacity_value_per_soldier: u128 = 7;
 
     // set army health value to make it alive
-    set!(world, (
-        Health {
-            entity_id: realm_army_unit_id,
-            value: 1
-        }
-    ));
+    set!(world, (Health { entity_id: realm_army_unit_id, value: 1 }));
 
     set!(
         world,

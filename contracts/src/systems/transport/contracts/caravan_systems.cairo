@@ -1,32 +1,31 @@
 #[dojo::contract]
 mod caravan_systems {
+    use core::poseidon::poseidon_hash_span;
     use eternum::alias::ID;
-    use eternum::models::metadata::ForeignKey;
+
+    use eternum::constants::{LevelIndex};
+    use eternum::models::capacity::{Capacity, CapacityTrait};
     use eternum::models::caravan::CaravanMembers;
-    use eternum::models::realm::Realm;
     use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::inventory::Inventory;
-    use eternum::models::weight::Weight;
-    use eternum::models::quantity::{Quantity, QuantityTrait};
+    use eternum::models::metadata::ForeignKey;
+    use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
-    use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::capacity::{Capacity, CapacityTrait};
+    use eternum::models::quantity::{Quantity, QuantityTrait};
+    use eternum::models::realm::Realm;
     use eternum::models::road::RoadImpl;
-    use eternum::systems::transport::interface::caravan_systems_interface::{ICaravanSystems};
-    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
-        InternalTravelSystemsImpl
-    };
+    use eternum::models::weight::Weight;
 
     use eternum::systems::leveling::contracts::leveling_systems::{
         InternalLevelingSystemsImpl as leveling
     };
-
-    use eternum::constants::{LevelIndex};
+    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
+        InternalTravelSystemsImpl
+    };
+    use eternum::systems::transport::interface::caravan_systems_interface::{ICaravanSystems};
 
     use starknet::ContractAddress;
-
-    use core::poseidon::poseidon_hash_span;
 
 
     #[abi(embed_v0)]

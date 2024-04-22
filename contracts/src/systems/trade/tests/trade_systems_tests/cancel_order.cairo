@@ -1,18 +1,17 @@
-use eternum::models::resources::{Resource, ResourceChest};
+use core::array::{ArrayTrait, SpanTrait};
+use core::traits::Into;
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+
+use eternum::constants::ResourceTypes;
+use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::owner::Owner;
 use eternum::models::position::{Position};
-use eternum::models::weight::Weight;
-use eternum::models::movable::{Movable, ArrivalTime};
+use eternum::models::resources::{Resource, ResourceChest};
 
 use eternum::models::trade::{Trade, Status, TradeStatus};
-
-use eternum::systems::trade::contracts::trade_systems::trade_systems;
-use eternum::systems::trade::interface::{
-    trade_systems_interface::{ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait},
-};
-use eternum::systems::resources::contracts::resource_systems::{
-    InternalInventorySystemsImpl as inventory
-};
+use eternum::models::weight::Weight;
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{
@@ -22,6 +21,14 @@ use eternum::systems::config::interface::{
 
 use eternum::systems::realm::contracts::realm_systems;
 use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
+use eternum::systems::resources::contracts::resource_systems::{
+    InternalInventorySystemsImpl as inventory
+};
+
+use eternum::systems::trade::contracts::trade_systems::trade_systems;
+use eternum::systems::trade::interface::{
+    trade_systems_interface::{ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait},
+};
 
 
 use eternum::systems::transport::contracts::{
@@ -37,15 +44,7 @@ use eternum::systems::transport::interface::{
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
-use eternum::constants::ResourceTypes;
-use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 use starknet::contract_address_const;
-
-use core::array::{ArrayTrait, SpanTrait};
-use core::traits::Into;
 
 
 fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
@@ -150,7 +149,9 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
     // create two free transport unit for maker realm
-    let transport_unit_systems_address = deploy_system(world, transport_unit_systems::TEST_CLASS_HASH);
+    let transport_unit_systems_address = deploy_system(
+        world, transport_unit_systems::TEST_CLASS_HASH
+    );
     let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
         contract_address: transport_unit_systems_address
     };

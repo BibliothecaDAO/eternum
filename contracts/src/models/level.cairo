@@ -1,8 +1,8 @@
 use cubit::f128::math::ops::{pow as fixed_pow};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use eternum::models::config::{LevelingConfig};
-use eternum::constants::{LevelIndex};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::constants::{LevelIndex};
+use eternum::models::config::{LevelingConfig};
 use eternum::models::resources::{ResourceCost};
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -80,11 +80,11 @@ impl LevelImpl of LevelTrait {
 
 #[cfg(test)]
 mod tests {
-    use super::{Level, LevelTrait};
-    use eternum::models::config::{LevelingConfig};
     use eternum::constants::{
         LevelIndex, REALM_LEVELING_START_TIER, HYPERSTRUCTURE_LEVELING_START_TIER
     };
+    use eternum::models::config::{LevelingConfig};
+    use super::{Level, LevelTrait};
 
     #[test]
     #[available_gas(30000000)]

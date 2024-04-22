@@ -1,7 +1,6 @@
+use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::combat::Duty;
-
-use dojo::world::IWorldDispatcher;
 
 #[dojo::interface]
 trait ISoldierSystems {

@@ -1,26 +1,27 @@
-use eternum::models::resources::{Resource, ResourceChest};
-use eternum::models::owner::Owner;
-use eternum::models::level::{Level};
-use eternum::models::position::{Position, Coord};
-use eternum::models::order::{Orders, OrdersTrait};
-use eternum::models::weight::Weight;
-use eternum::models::metadata::ForeignKey;
-use eternum::models::hyperstructure::HyperStructure;
-use eternum::models::road::Road;
-use eternum::models::realm::Realm;
-use eternum::models::inventory::Inventory;
-use eternum::models::movable::{Movable, ArrivalTime};
+use core::array::{ArrayTrait, SpanTrait};
+use core::traits::Into;
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
+use eternum::constants::ResourceTypes;
+use eternum::constants::{
+    FREE_TRANSPORT_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID
+};
 use eternum::models::config::{LevelingConfig};
+use eternum::models::hyperstructure::HyperStructure;
+use eternum::models::inventory::Inventory;
+use eternum::models::level::{Level};
+use eternum::models::metadata::ForeignKey;
+use eternum::models::movable::{Movable, ArrivalTime};
+use eternum::models::order::{Orders, OrdersTrait};
+use eternum::models::owner::Owner;
+use eternum::models::position::{Position, Coord};
+use eternum::models::realm::Realm;
+use eternum::models::resources::{Resource, ResourceChest};
+use eternum::models::road::Road;
 
 use eternum::models::trade::{Trade, Status, TradeStatus};
-
-use eternum::systems::trade::contracts::trade_systems::trade_systems;
-use eternum::systems::trade::interface::{
-    trade_systems_interface::{ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait},
-};
-use eternum::systems::resources::contracts::resource_systems::{
-    InternalInventorySystemsImpl as inventory
-};
+use eternum::models::weight::Weight;
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{
@@ -30,6 +31,14 @@ use eternum::systems::config::interface::{
 
 use eternum::systems::realm::contracts::realm_systems;
 use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
+use eternum::systems::resources::contracts::resource_systems::{
+    InternalInventorySystemsImpl as inventory
+};
+
+use eternum::systems::trade::contracts::trade_systems::trade_systems;
+use eternum::systems::trade::interface::{
+    trade_systems_interface::{ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait},
+};
 
 
 use eternum::systems::transport::contracts::{
@@ -45,17 +54,7 @@ use eternum::systems::transport::interface::{
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
-use eternum::constants::ResourceTypes;
-use eternum::constants::{
-    FREE_TRANSPORT_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID
-};
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 use starknet::contract_address_const;
-
-use core::array::{ArrayTrait, SpanTrait};
-use core::traits::Into;
 
 
 fn setup(
@@ -75,8 +74,11 @@ fn setup(
 
     // set road config
     ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_road_config(array![// pay for each soldier with the following
-        (ResourceTypes::STONE, 9000),].span(), 2);
+        .set_road_config(
+            array![ // pay for each soldier with the following
+            (ResourceTypes::STONE, 9000),].span(),
+            2
+        );
 
     // set weight configuration for stone
     IWeightConfigDispatcher { contract_address: config_systems_address }
@@ -165,7 +167,9 @@ fn setup(
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
     // create two free transport unit for maker realm
-    let transport_unit_systems_address = deploy_system(world, transport_unit_systems::TEST_CLASS_HASH);
+    let transport_unit_systems_address = deploy_system(
+        world, transport_unit_systems::TEST_CLASS_HASH
+    );
     let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
         contract_address: transport_unit_systems_address
     };
@@ -950,7 +954,9 @@ fn test_transport_not_enough_capacity() {
         .set_capacity_config(FREE_TRANSPORT_ENTITY_TYPE, 1);
 
     // create two free transport unit for taker realm
-    let transport_unit_systems_address = deploy_system(world, transport_unit_systems::TEST_CLASS_HASH);
+    let transport_unit_systems_address = deploy_system(
+        world, transport_unit_systems::TEST_CLASS_HASH
+    );
     let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
         contract_address: transport_unit_systems_address
     };

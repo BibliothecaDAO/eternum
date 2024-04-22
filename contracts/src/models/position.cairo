@@ -1,9 +1,9 @@
-use traits::Into;
-use traits::TryInto;
-use option::OptionTrait;
 use debug::PrintTrait;
 
 use eternum::utils::number::{NumberTrait, i128Div};
+use option::OptionTrait;
+use traits::Into;
+use traits::TryInto;
 
 // todo@credence revisit zone calculation
 
@@ -214,8 +214,8 @@ impl PositionImpl of PositionTrait {
 
 #[cfg(test)]
 mod tests {
-    use super::{Position, PositionTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
     use debug::PrintTrait;
+    use super::{Position, PositionTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
     use traits::Into;
     use traits::TryInto;
 

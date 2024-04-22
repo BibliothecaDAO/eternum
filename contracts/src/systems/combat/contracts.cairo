@@ -2,26 +2,33 @@
 mod combat_systems {
     use core::debug::PrintTrait;
     use eternum::alias::ID;
+    use eternum::constants::ResourceTypes;
 
-    use eternum::models::order::{Orders, OrdersTrait};
-    use eternum::models::resources::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
-
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost, ResourceFoodImpl};
-    use eternum::models::position::{Position};
+    use eternum::constants::{
+        WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID,
+        LevelIndex, HYPERSTRUCTURE_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_START_TIER,
+        REALM_LEVELING_START_TIER
+    };
+    use eternum::models::capacity::Capacity;
+    use eternum::models::combat::{Attack, Health, Defence, Duty, TownWatch, TargetType};
     use eternum::models::config::{
         SpeedConfig, WeightConfig, CapacityConfig, CombatConfig, SoldierConfig, HealthConfig,
         AttackConfig, DefenceConfig, LevelingConfig
     };
-    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::inventory::{Inventory, InventoryTrait};
     use eternum::models::level::{Level, LevelTrait};
-    use eternum::models::capacity::Capacity;
-    use eternum::models::weight::Weight;
+    use eternum::models::movable::{Movable, ArrivalTime};
+
+    use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::realm::Realm;
-    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::position::{Position};
     use eternum::models::quantity::{Quantity, QuantityTrait};
-    use eternum::models::combat::{Attack, Health, Defence, Duty, TownWatch, TargetType};
+    use eternum::models::realm::Realm;
+    use eternum::models::resources::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
+
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost, ResourceFoodImpl};
+    use eternum::models::weight::Weight;
 
 
     use eternum::systems::combat::interface::{ISoldierSystems, ICombatSystems};
@@ -32,16 +39,9 @@ mod combat_systems {
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl
     };
-
-    use eternum::constants::{
-        WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID,
-        LevelIndex, HYPERSTRUCTURE_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_START_TIER,
-        REALM_LEVELING_START_TIER
-    };
+    use eternum::utils::math::{min};
 
     use eternum::utils::random;
-    use eternum::utils::math::{min};
-    use eternum::constants::ResourceTypes;
 
 
     #[derive(Serde, Copy, Drop)]
@@ -108,8 +108,9 @@ mod combat_systems {
                 let resource_cost = get!(
                     world, (soldier_config.resource_cost_id, index), ResourceCost
                 );
-                let mut realm_resource 
-                    = ResourceImpl::get(world, (realm_entity_id, resource_cost.resource_type));
+                let mut realm_resource = ResourceImpl::get(
+                    world, (realm_entity_id, resource_cost.resource_type)
+                );
 
                 assert(
                     realm_resource.balance >= resource_cost.amount * quantity,
@@ -456,8 +457,9 @@ mod combat_systems {
                 let resource_cost = get!(
                     world, (soldier_health_config.resource_cost_id, index), ResourceCost
                 );
-                let mut realm_resource 
-                    = ResourceImpl::get(world, (unit_realm_entity_id, resource_cost.resource_type));
+                let mut realm_resource = ResourceImpl::get(
+                    world, (unit_realm_entity_id, resource_cost.resource_type)
+                );
 
                 assert(
                     realm_resource.balance >= resource_cost.amount * health_amount,
@@ -650,17 +652,21 @@ mod combat_systems {
                 .entity_owner_id;
             emit!(
                 world,
-                (Event::CombatOutcome(CombatOutcome {
-                    attacker_realm_entity_id,
-                    target_realm_entity_id,
-                    attacking_entity_ids: attacker_ids,
-                    target_entity_id,
-                    stolen_resources: array![].span(),
-                    stolen_chests: array![].span(),
-                    winner,
-                    damage,
-                    ts,
-                }),)
+                (
+                    Event::CombatOutcome(
+                        CombatOutcome {
+                            attacker_realm_entity_id,
+                            target_realm_entity_id,
+                            attacking_entity_ids: attacker_ids,
+                            target_entity_id,
+                            stolen_resources: array![].span(),
+                            stolen_chests: array![].span(),
+                            winner,
+                            damage,
+                            ts,
+                        }
+                    ),
+                )
             );
         }
 
@@ -792,17 +798,21 @@ mod combat_systems {
                     .entity_owner_id;
                 emit!(
                     world,
-                    (Event::CombatOutcome(CombatOutcome {
-                        attacker_realm_entity_id,
-                        target_realm_entity_id,
-                        attacking_entity_ids: array![attacker_id].span(),
-                        target_entity_id,
-                        stolen_resources: stolen_resources,
-                        stolen_chests: stolen_chests,
-                        winner: Winner::Attacker,
-                        damage: 0,
-                        ts
-                    }),)
+                    (
+                        Event::CombatOutcome(
+                            CombatOutcome {
+                                attacker_realm_entity_id,
+                                target_realm_entity_id,
+                                attacking_entity_ids: array![attacker_id].span(),
+                                target_entity_id,
+                                stolen_resources: stolen_resources,
+                                stolen_chests: stolen_chests,
+                                winner: Winner::Attacker,
+                                damage: 0,
+                                ts
+                            }
+                        ),
+                    )
                 );
             } else {
                 // attack failed && target deals damage to attacker
@@ -820,17 +830,21 @@ mod combat_systems {
                     .entity_owner_id;
                 emit!(
                     world,
-                    (Event::CombatOutcome(CombatOutcome {
-                        attacker_realm_entity_id,
-                        target_realm_entity_id,
-                        attacking_entity_ids: array![attacker_id].span(),
-                        target_entity_id,
-                        stolen_resources: array![].span(),
-                        stolen_chests: array![].span(),
-                        winner: Winner::Target,
-                        damage,
-                        ts
-                    }),)
+                    (
+                        Event::CombatOutcome(
+                            CombatOutcome {
+                                attacker_realm_entity_id,
+                                target_realm_entity_id,
+                                attacking_entity_ids: array![attacker_id].span(),
+                                target_entity_id,
+                                stolen_resources: array![].span(),
+                                stolen_chests: array![].span(),
+                                winner: Winner::Target,
+                                damage,
+                                ts
+                            }
+                        ),
+                    )
                 );
             }
 
@@ -892,7 +906,8 @@ mod combat_systems {
             let mut fish_burn_amount = combat_config.fish_burn_per_soldier
                 * attacker_quantity.value;
             ResourceFoodImpl::burn(
-                world, target_realm_entity_id, wheat_burn_amount, fish_burn_amount);
+                world, target_realm_entity_id, wheat_burn_amount, fish_burn_amount
+            );
 
             // steal resources
             let mut stolen_resources: Array<(u8, u128)> = array![];
@@ -939,8 +954,9 @@ mod combat_systems {
                 let resource_weight = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig)
                     .weight_gram;
 
-                let target_resource 
-                    = ResourceImpl::get(world, (target_realm_entity_id, resource_type));
+                let target_resource = ResourceImpl::get(
+                    world, (target_realm_entity_id, resource_type)
+                );
 
                 let target_resource_weight = resource_weight * target_resource.balance;
 

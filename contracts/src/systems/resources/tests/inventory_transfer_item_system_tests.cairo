@@ -1,18 +1,25 @@
 mod inventory_transfer_system_tests {
-    use eternum::models::resources::{Resource, ResourceChest};
-    use eternum::models::owner::Owner;
-    use eternum::models::weight::Weight;
-    use eternum::models::movable::ArrivalTime;
-    use eternum::models::inventory::Inventory;
-    use eternum::models::position::Position;
-    use eternum::models::capacity::Capacity;
-    use eternum::models::metadata::ForeignKey;
+    use core::traits::Into;
+
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 
     use eternum::constants::ResourceTypes;
+    use eternum::models::capacity::Capacity;
+    use eternum::models::inventory::Inventory;
+    use eternum::models::metadata::ForeignKey;
+    use eternum::models::movable::ArrivalTime;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::Position;
+    use eternum::models::resources::{Resource, ResourceChest};
+    use eternum::models::weight::Weight;
     use eternum::systems::config::contracts::config_systems;
     use eternum::systems::config::interface::{
         IWeightConfigDispatcher, IWeightConfigDispatcherTrait,
+    };
+
+    use eternum::systems::resources::contracts::resource_systems::{
+        InternalInventorySystemsImpl, InternalResourceChestSystemsImpl
     };
 
     use eternum::systems::resources::contracts::resource_systems;
@@ -20,17 +27,9 @@ mod inventory_transfer_system_tests {
         IInventorySystemsDispatcher, IInventorySystemsDispatcherTrait
     };
 
-    use eternum::systems::resources::contracts::resource_systems::{
-        InternalInventorySystemsImpl, InternalResourceChestSystemsImpl
-    };
-
 
     use eternum::utils::testing::{spawn_eternum, deploy_system};
-
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use starknet::contract_address_const;
-
-    use core::traits::Into;
 
 
     fn setup() -> (IWorldDispatcher, u128, u128, u128, IInventorySystemsDispatcher) {

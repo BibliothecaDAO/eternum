@@ -1,8 +1,14 @@
-use eternum::models::resources::{Resource, ResourceChest};
+use core::array::{ArrayTrait, SpanTrait};
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::constants::MAX_REALMS_PER_ADDRESS;
+
+use eternum::constants::ResourceTypes;
+use eternum::models::map::Tile;
 use eternum::models::owner::Owner;
 use eternum::models::position::Position;
 use eternum::models::realm::Realm;
-use eternum::models::map::Tile;
+use eternum::models::resources::{Resource, ResourceChest};
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{
@@ -15,13 +21,7 @@ use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsD
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
-use eternum::constants::ResourceTypes;
-use eternum::constants::MAX_REALMS_PER_ADDRESS;
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 use starknet::contract_address_const;
-use core::array::{ArrayTrait, SpanTrait};
 
 const TIMESTAMP: u64 = 1000;
 

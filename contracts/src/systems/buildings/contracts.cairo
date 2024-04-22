@@ -11,8 +11,6 @@ trait IBuildingContract<TContractState> {
 
 #[dojo::contract]
 mod building_systems {
-    use super::IBuildingContract;
-
     use core::option::OptionTrait;
     use eternum::alias::ID;
     use eternum::models::{
@@ -21,6 +19,7 @@ mod building_systems {
         buildings::{BuildingCategory, Building, BuildingImpl},
         production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
     };
+    use super::IBuildingContract;
 
     #[abi(embed_v0)]
     impl BuildingContractImpl of IBuildingContract<ContractState> {

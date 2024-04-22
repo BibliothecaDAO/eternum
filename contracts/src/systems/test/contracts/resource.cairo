@@ -1,11 +1,11 @@
 #[dojo::contract]
 mod test_resource_systems {
-    use eternum::models::resources::{Resource, ResourceTrait};
-    use eternum::systems::test::interface::resource::IResourceSystems;
-    use eternum::constants::ResourceTypes;
     use eternum::alias::ID;
+    use eternum::constants::ResourceTypes;
     use eternum::constants::{WORLD_CONFIG_ID};
     use eternum::models::config::{WorldConfig};
+    use eternum::models::resources::{Resource, ResourceTrait};
+    use eternum::systems::test::interface::resource::IResourceSystems;
 
     fn assert_caller_is_admin(world: IWorldDispatcher) {
         let admin_address = get!(world, WORLD_CONFIG_ID, WorldConfig).admin_address;

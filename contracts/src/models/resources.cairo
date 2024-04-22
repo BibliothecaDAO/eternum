@@ -1,13 +1,13 @@
-use eternum::utils::math::{is_u32_bit_set, set_u32_bit};
-use eternum::constants::get_resource_probabilities;
-use eternum::constants::ResourceTypes;
-use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
-use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
 use core::integer::BoundedInt;
 use debug::PrintTrait;
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::constants::ResourceTypes;
+use eternum::constants::get_resource_probabilities;
+use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
+
+use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
+use eternum::utils::math::{is_u32_bit_set, set_u32_bit};
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -276,22 +276,22 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
 
 #[cfg(test)]
 mod tests_resource_traits {
-    use eternum::models::resources::ResourceTrait;
-    use eternum::models::production::ProductionRateTrait;
+    use core::integer::BoundedInt;
     use core::option::OptionTrait;
-    use super::{Production, ProductionOutputImpl, Resource, ResourceImpl};
     use debug::PrintTrait;
-    use traits::Into;
-    use traits::TryInto;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use eternum::models::config::{TickConfig, TickImpl, TickTrait};
-    use core::integer::BoundedInt;
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use eternum::models::production::ProductionRateTrait;
+    use eternum::models::resources::ResourceTrait;
     use eternum::systems::config::contracts::config_systems;
     use eternum::systems::config::interface::{
         IProductionConfigDispatcher, IProductionConfigDispatcherTrait
     };
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use super::{Production, ProductionOutputImpl, Resource, ResourceImpl};
+    use traits::Into;
+    use traits::TryInto;
 
     fn setup() -> (IWorldDispatcher, u128, u128, Span<(u8, u128)>) {
         let world = spawn_eternum();
@@ -410,8 +410,8 @@ mod tests_resource_traits {
 
 #[cfg(test)]
 mod owned_resources_tracker_tests {
-    use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
     use eternum::constants::ResourceTypes;
+    use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
 
 
     #[test]

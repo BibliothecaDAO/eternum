@@ -1,3 +1,8 @@
+use cubit::f128::procgen::simplex3;
+use cubit::f128::types::fixed::{FixedTrait, Fixed};
+use cubit::f128::types::vec3::{Vec3, Vec3Trait};
+
+use eternum::utils::map::constants::fixed_constants as fc;
 #[derive(Copy, Drop, Serde, Introspect)]
 enum Biome {
     DeepOcean,
@@ -40,8 +45,6 @@ impl BiomeIntoFelt252 of Into<Biome, felt252> {
         }
     }
 }
-
-use eternum::utils::map::constants::fixed_constants as fc;
 fn bdepth(biome: Biome) -> Fixed {
     match biome {
         Biome::DeepOcean => fc::_0_1(),
@@ -91,10 +94,6 @@ mod LEVEL {
         fc::_0_8()
     }
 }
-
-use cubit::f128::procgen::simplex3;
-use cubit::f128::types::fixed::{FixedTrait, Fixed};
-use cubit::f128::types::vec3::{Vec3, Vec3Trait};
 
 
 fn MAP_AMPLITUDE() -> Fixed {

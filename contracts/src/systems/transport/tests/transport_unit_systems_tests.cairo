@@ -1,19 +1,28 @@
-use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
-use eternum::models::position::Position;
-use eternum::models::movable::{Movable, ArrivalTime};
-use eternum::models::capacity::Capacity;
-use eternum::models::owner::Owner;
-use eternum::models::metadata::EntityMetadata;
-use eternum::models::quantity::{Quantity, QuantityTracker};
+use core::array::ArrayTrait;
+use core::clone::Clone;
 
-use eternum::systems::realm::contracts::realm_systems;
-use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
+use core::poseidon::poseidon_hash_span;
+use core::traits::Into;
+use core::zeroable::Zeroable;
+
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+use eternum::models::capacity::Capacity;
+use eternum::models::metadata::EntityMetadata;
+use eternum::models::movable::{Movable, ArrivalTime};
+use eternum::models::owner::Owner;
+use eternum::models::position::Position;
+use eternum::models::quantity::{Quantity, QuantityTracker};
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{
     ITransportConfigDispatcher, ITransportConfigDispatcherTrait, ICapacityConfigDispatcher,
     ICapacityConfigDispatcherTrait,
 };
+
+use eternum::systems::realm::contracts::realm_systems;
+use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
 
 use eternum::systems::transport::contracts::{transport_unit_systems::transport_unit_systems};
 use eternum::systems::transport::interface::{
@@ -24,16 +33,7 @@ use eternum::systems::transport::interface::{
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 use starknet::contract_address::contract_address_const;
-
-use core::poseidon::poseidon_hash_span;
-use core::traits::Into;
-use core::array::ArrayTrait;
-use core::clone::Clone;
-use core::zeroable::Zeroable;
 
 
 fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
@@ -85,7 +85,9 @@ fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
     ITransportConfigDispatcher { contract_address: config_systems_address }
         .set_travel_config(5); // 5 free transport per city
 
-    let transport_unit_systems_address = deploy_system(world, transport_unit_systems::TEST_CLASS_HASH);
+    let transport_unit_systems_address = deploy_system(
+        world, transport_unit_systems::TEST_CLASS_HASH
+    );
     let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
         contract_address: transport_unit_systems_address
     };

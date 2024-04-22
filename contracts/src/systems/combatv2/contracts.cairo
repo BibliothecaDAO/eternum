@@ -6,7 +6,7 @@ trait ICombatv2Contract<TContractState> {
     fn start_battle(attacking_army_id: u128, defending_army_id: u128);
     fn join_battle(battle_id: u128, battle_side: BattleSide, army_id: u128);
     fn leave_battle(battle_id: u128, army_id: u128);
-    // fn end_battle(battle_entity_id: u128, army_entity_id: u128 );
+// fn end_battle(battle_entity_id: u128, army_entity_id: u128 );
 }
 
 
@@ -14,26 +14,24 @@ trait ICombatv2Contract<TContractState> {
 mod combat_v2_systems {
     use core::option::OptionTrait;
     use eternum::alias::ID;
-    use eternum::models::{
-        combatV2::{
-            Army, 
-            Troops, TroopsImpl, TroopsTrait,
-            Healthv2, Healthv2Impl, Healthv2Trait,
-            Battle, BattleImpl, BattleTrait, BattleSide
-        },
-    };
-    use super::ICombatv2Contract;
-    use eternum::constants::{ResourceTypes, ErrorMessages};
     use eternum::constants::WORLD_CONFIG_ID;
-    use eternum::models::position::{Position, Coord};
-    use eternum::models::movable::Movable;
-    use eternum::models::realm::Realm;
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-    use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner};
+    use eternum::constants::{ResourceTypes, ErrorMessages};
+    use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
     use eternum::models::config::{TickConfig, TickImpl, TickTrait};
     use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
-    use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
+    use eternum::models::movable::Movable;
+    use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner};
+    use eternum::models::position::{Position, Coord};
+    use eternum::models::realm::Realm;
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+    use eternum::models::{
+        combatV2::{
+            Army, Troops, TroopsImpl, TroopsTrait, Healthv2, Healthv2Impl, Healthv2Trait, Battle,
+            BattleImpl, BattleTrait, BattleSide
+        },
+    };
     use eternum::utils::math::PercentageImpl;
+    use super::ICombatv2Contract;
 
     #[abi(embed_v0)]
     impl Combatv2ContractImpl of ICombatv2Contract<ContractState> {
@@ -44,17 +42,19 @@ mod combat_v2_systems {
             assert!(caller == owner_address, "caller not entity owner");
 
             // ensure owner entity is a realm
-            let realm : Realm = get!(world, owner_id, Realm);
+            let realm: Realm = get!(world, owner_id, Realm);
             assert!(realm.realm_id != 0, "owner is not a realm");
 
             // make payment for troops
             let mut knight_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::KNIGHT));
             let mut paladin_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::PALADIN));
-            let mut crossbowman_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::CROSSBOWMAN));
+            let mut crossbowman_resource = ResourceImpl::get(
+                world, (owner_id, ResourceTypes::CROSSBOWMAN)
+            );
             let mut troop_resources = (knight_resource, paladin_resource, crossbowman_resource);
             troops.purchase(owner_id, ref troop_resources);
             set!(world, (knight_resource, paladin_resource, crossbowman_resource));
-        
+
             // make troops 
             let mut army: Army = Default::default();
             army.entity_id = world.uuid().into();
@@ -70,10 +70,9 @@ mod combat_v2_systems {
 
             // set army owner entity
             let mut army_owned_by: EntityOwner = Default::default();
-            army_owned_by.entity_id = army.entity_id; 
+            army_owned_by.entity_id = army.entity_id;
             army_owned_by.entity_owner_id = owner_id;
             set!(world, (army_owned_by));
-            
 
             // set army position
             let owner_position: Position = get!(world, owner_id, Position);
@@ -81,17 +80,19 @@ mod combat_v2_systems {
             army_position.x = owner_position.x;
             army_position.y = owner_position.y;
             set!(world, (army_position));
-
         }
 
 
         fn start_battle(world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128) {
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             assert!(attacking_army.battle_id == 0, "attacking army is in a battle");
-            
-            let mut attacking_army_owned_by: EntityOwner = get!(world, attacking_army_id, EntityOwner);
-            assert!(attacking_army_owned_by.owner_address(world) == starknet::get_caller_address(), 
-                    "caller is not attacker"
+
+            let mut attacking_army_owned_by: EntityOwner = get!(
+                world, attacking_army_id, EntityOwner
+            );
+            assert!(
+                attacking_army_owned_by.owner_address(world) == starknet::get_caller_address(),
+                "caller is not attacker"
             );
 
             let mut defending_army: Army = get!(world, defending_army_id, Army);
@@ -100,17 +101,19 @@ mod combat_v2_systems {
             let attacking_army_position: Position = get!(world, attacking_army_id, Position);
             let defending_army_position: Position = get!(world, defending_army_id, Position);
             assert!(
-                Into::<Position, Coord>::into(attacking_army_position) 
-                    == Into::<Position, Coord>::into(defending_army_position),
+                Into::<
+                    Position, Coord
+                    >::into(attacking_army_position) == Into::<
+                    Position, Coord
+                >::into(defending_army_position),
                 "both troops not on same position"
             );
 
-      
             // make battle 
             let attacking_army_health: Healthv2 = get!(world, attacking_army_id, Healthv2);
             let defending_army_health: Healthv2 = get!(world, defending_army_id, Healthv2);
 
-            let tick= TickImpl::get(world);
+            let tick = TickImpl::get(world);
             let mut battle: Battle = Default::default();
             battle.entity_id = world.uuid().into();
             battle.attack_army = attacking_army;
@@ -131,36 +134,37 @@ mod combat_v2_systems {
         }
 
 
-        
-        fn join_battle(world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128) {
+        fn join_battle(
+            world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128
+        ) {
             assert!(battle_side != BattleSide::None, "choose correct battle side");
 
             let mut army_owned_by: EntityOwner = get!(world, army_id, EntityOwner);
-            assert!(army_owned_by.owner_address(world) == starknet::get_caller_address(), 
+            assert!(
+                army_owned_by.owner_address(world) == starknet::get_caller_address(),
                 "caller is not army owner"
             );
 
-
             // update battle state before any other actions
             let mut battle: Battle = get!(world, battle_id, Battle);
-            let tick= TickImpl::get(world);
+            let tick = TickImpl::get(world);
             battle.update_state(tick);
 
-            assert!(battle.tick_duration_left > 0,"Battle has ended");
-
-   
+            assert!(battle.tick_duration_left > 0, "Battle has ended");
 
             let mut caller_army: Army = get!(world, army_id, Army);
             assert!(caller_army.battle_id == 0, "army is in a battle");
-            
+
             let caller_army_position = get!(world, caller_army.entity_id, Position);
             let battle_position = get!(world, battle.entity_id, Position);
             assert!(
-                Into::<Position, Coord>::into(caller_army_position) 
-                    == Into::<Position, Coord>::into(battle_position),
+                Into::<
+                    Position, Coord
+                    >::into(caller_army_position) == Into::<
+                    Position, Coord
+                >::into(battle_position),
                 "caller army not in same position as army"
             );
-
 
             caller_army.battle_id = battle_id;
             caller_army.battle_side = battle_side;
@@ -180,7 +184,7 @@ mod combat_v2_systems {
             }
 
             battle_army.troops.add(caller_army.troops);
-            let mut caller_army_health : Healthv2 = get!(world, army_id, Healthv2);
+            let mut caller_army_health: Healthv2 = get!(world, army_id, Healthv2);
             battle_army_health.increase_by(caller_army_health.current);
 
             if battle_side == BattleSide::Defence {
@@ -195,20 +199,18 @@ mod combat_v2_systems {
             battle.restart(tick, troop_config);
             set!(world, (battle));
         }
-        
 
-                
+
         fn leave_battle(world: IWorldDispatcher, battle_id: u128, army_id: u128) {
-
             let mut army_owned_by: EntityOwner = get!(world, army_id, EntityOwner);
-            assert!(army_owned_by.owner_address(world) == starknet::get_caller_address(), 
+            assert!(
+                army_owned_by.owner_address(world) == starknet::get_caller_address(),
                 "caller is not army owner"
             );
 
-
             // update battle state before any other actions
             let mut battle: Battle = get!(world, battle_id, Battle);
-            let tick= TickImpl::get(world);
+            let tick = TickImpl::get(world);
             battle.update_state(tick);
 
             let mut caller_army: Army = get!(world, army_id, Army);
@@ -222,7 +224,7 @@ mod combat_v2_systems {
             set!(world, (caller_army_movable));
 
             if battle.has_ended() {
-                if battle.winner() != caller_army.battle_side { 
+                if battle.winner() != caller_army.battle_side {
                     panic!("Battle has ended and your team lost");
                 }
             }
@@ -233,34 +235,26 @@ mod combat_v2_systems {
             if caller_army.battle_side == BattleSide::Defence {
                 battle_army = battle.defence_army;
                 battle_army_health = battle.defence_army_health;
-
             }
 
-
-
-            let mut caller_army_health : Healthv2 = get!(world, army_id, Healthv2);            
+            let mut caller_army_health: Healthv2 = get!(world, army_id, Healthv2);
             let caller_army_original_health: u128 = caller_army_health.current;
             let caller_army_original_troops: Troops = caller_army.troops;
 
-            let caller_army_health_left: u128 
-                = (caller_army_health.current * battle_army_health.current) 
-                    / battle_army_health.lifetime;
-            
-            caller_army_health
-                .decrease_by(
-                    caller_army_health.current - caller_army_health_left);
-        
-            caller_army.troops
-                .deduct_percentage(
-                    battle_army_health.current, 
-                    battle_army_health.lifetime);
+            let caller_army_health_left: u128 = (caller_army_health.current
+                * battle_army_health.current)
+                / battle_army_health.lifetime;
+
+            caller_army_health.decrease_by(caller_army_health.current - caller_army_health_left);
+
+            caller_army
+                .troops
+                .deduct_percentage(battle_army_health.current, battle_army_health.lifetime);
 
             set!(world, (caller_army, caller_army_health));
 
-
             battle_army.troops.deduct(caller_army_original_troops);
             battle_army_health.decrease_by(caller_army_original_health);
-
 
             if caller_army.battle_side == BattleSide::Defence {
                 battle.defence_army = battle_army;
@@ -273,8 +267,6 @@ mod combat_v2_systems {
             let troop_config = TroopConfigImpl::get(world);
             battle.restart(tick, troop_config);
             set!(world, (battle));
-        } 
-        
-         
+        }
     }
 }

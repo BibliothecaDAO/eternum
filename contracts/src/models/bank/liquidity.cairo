@@ -1,14 +1,13 @@
-// Starknet imports
+// External imports
 
-use starknet::ContractAddress;
+use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 // Dojo imports
 
 use dojo::database::introspect::{Struct, Ty, Introspect, Member, serialize_member};
+// Starknet imports
 
-// External imports
-
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use starknet::ContractAddress;
 
 impl IntrospectFixed of Introspect<Fixed> {
     #[inline(always)]

@@ -1,13 +1,13 @@
 #[dojo::contract]
 mod bank_systems {
-    use eternum::models::bank::bank::{BankAccounts, Bank};
-    use eternum::models::config::{BankConfig};
-    use eternum::models::position::{Position, Coord};
-    use eternum::models::resources::{Resource, ResourceImpl};
-    use eternum::models::owner::Owner;
-    use eternum::systems::bank::interface::bank::IBankSystems;
     use eternum::alias::ID;
     use eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
+    use eternum::models::bank::bank::{BankAccounts, Bank};
+    use eternum::models::config::{BankConfig};
+    use eternum::models::owner::Owner;
+    use eternum::models::position::{Position, Coord};
+    use eternum::models::resources::{Resource, ResourceImpl};
+    use eternum::systems::bank::interface::bank::IBankSystems;
 
     use traits::Into;
 

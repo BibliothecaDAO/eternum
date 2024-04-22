@@ -1,21 +1,29 @@
 mod internal_transfer_between_inventories_tests {
-    use eternum::models::inventory::InventoryTrait;
     use core::option::OptionTrait;
+
+    use core::traits::Into;
     use core::traits::TryInto;
-    use eternum::models::resources::{Resource, ResourceChest};
-    use eternum::models::owner::Owner;
-    use eternum::models::weight::Weight;
-    use eternum::models::movable::ArrivalTime;
-    use eternum::models::inventory::Inventory;
-    use eternum::models::position::Position;
-    use eternum::models::capacity::Capacity;
-    use eternum::models::metadata::ForeignKey;
+
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 
     use eternum::constants::ResourceTypes;
+    use eternum::models::capacity::Capacity;
+    use eternum::models::inventory::Inventory;
+    use eternum::models::inventory::InventoryTrait;
+    use eternum::models::metadata::ForeignKey;
+    use eternum::models::movable::ArrivalTime;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::Position;
+    use eternum::models::resources::{Resource, ResourceChest};
+    use eternum::models::weight::Weight;
     use eternum::systems::config::contracts::config_systems;
     use eternum::systems::config::interface::{
         IWeightConfigDispatcher, IWeightConfigDispatcherTrait,
+    };
+
+    use eternum::systems::resources::contracts::resource_systems::{
+        InternalInventorySystemsImpl, InternalResourceChestSystemsImpl
     };
 
     use eternum::systems::resources::contracts::resource_systems;
@@ -23,17 +31,9 @@ mod internal_transfer_between_inventories_tests {
         IInventorySystemsDispatcher, IInventorySystemsDispatcherTrait
     };
 
-    use eternum::systems::resources::contracts::resource_systems::{
-        InternalInventorySystemsImpl, InternalResourceChestSystemsImpl
-    };
-
 
     use eternum::utils::testing::{spawn_eternum, deploy_system};
-
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use starknet::contract_address_const;
-
-    use core::traits::Into;
 
     const ITEM_WEIGHT: u128 = 200;
     const PLAYER_CAPACITY: u128 = 1_200; // 6x ITEM_WEiGHT

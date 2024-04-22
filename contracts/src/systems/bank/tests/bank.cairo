@@ -1,15 +1,14 @@
-use eternum::utils::testing::{spawn_eternum, deploy_system};
-
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::models::bank::bank::BankAccounts;
 
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
+use eternum::models::position::{Coord};
 
 use eternum::systems::bank::contracts::bank_systems::bank_systems;
 use eternum::systems::bank::interface::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait,};
 
-use eternum::models::position::{Coord};
-use eternum::models::bank::bank::BankAccounts;
+use eternum::systems::config::contracts::config_systems;
+use eternum::systems::config::interface::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
+use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use starknet::contract_address_const;
 

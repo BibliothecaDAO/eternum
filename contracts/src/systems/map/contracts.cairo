@@ -2,30 +2,30 @@
 mod map_systems {
     use core::traits::Into;
     use eternum::alias::ID;
-    use eternum::models::resources::{Resource, ResourceCost, ResourceTrait, ResourceFoodImpl};
     use eternum::constants::ResourceTypes;
-    use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::quantity::Quantity;
-    use eternum::models::combat::Health;
-    use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::inventory::Inventory;
-    use eternum::models::map::Tile;
-    use eternum::models::position::{Position};
-    use eternum::models::config::{LevelingConfig};
-    use eternum::models::realm::{Realm};
-    use eternum::models::level::{Level, LevelTrait};
-    use eternum::models::config::MapExploreConfig;
-    use eternum::systems::map::interface::IMapSystems;
-    use eternum::utils::map::biomes::{Biome, get_biome};
-    use eternum::utils::random;
-    use eternum::models::position::{Coord, CoordTrait, Direction};
     use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
+    use eternum::models::combat::Health;
+    use eternum::models::config::MapExploreConfig;
+    use eternum::models::config::{LevelingConfig};
+    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::inventory::Inventory;
+    use eternum::models::level::{Level, LevelTrait};
+    use eternum::models::map::Tile;
+    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::owner::{Owner, EntityOwner};
+    use eternum::models::position::{Coord, CoordTrait, Direction};
+    use eternum::models::position::{Position};
+    use eternum::models::quantity::Quantity;
+    use eternum::models::realm::{Realm};
+    use eternum::models::resources::{Resource, ResourceCost, ResourceTrait, ResourceFoodImpl};
+    use eternum::models::tick::{TickMove, TickMoveTrait};
+    use eternum::systems::map::interface::IMapSystems;
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl
     };
-    use eternum::models::tick::{TickMove, TickMoveTrait};
+    use eternum::utils::map::biomes::{Biome, get_biome};
+    use eternum::utils::random;
 
     use starknet::ContractAddress;
 
@@ -130,15 +130,18 @@ mod map_systems {
 
             emit!(
                 world,
-                (Event::MapExplored(
-                    MapExplored {
-                    entity_id: entity_id,
-                    entity_owner_id: entity_owned_by.entity_owner_id,
-                    col: tile.col,
-                    row: tile.row,
-                    biome: tile.biome,
-                    reward
-                }),)
+                (
+                    Event::MapExplored(
+                        MapExplored {
+                            entity_id: entity_id,
+                            entity_owner_id: entity_owned_by.entity_owner_id,
+                            col: tile.col,
+                            row: tile.row,
+                            biome: tile.biome,
+                            reward
+                        }
+                    ),
+                )
             );
 
             tile
@@ -150,8 +153,7 @@ mod map_systems {
             let explore_config: MapExploreConfig = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
             let mut wheat_pay_amount = explore_config.wheat_burn_amount;
             let mut fish_pay_amount = explore_config.fish_burn_amount;
-            ResourceFoodImpl::pay(
-                world, realm_entity_id, wheat_pay_amount, fish_pay_amount);
+            ResourceFoodImpl::pay(world, realm_entity_id, wheat_pay_amount, fish_pay_amount);
 
             let (resource_types, resources_probs) = split_resources_and_probs();
             let reward_resource_id: u8 = *random::choices(

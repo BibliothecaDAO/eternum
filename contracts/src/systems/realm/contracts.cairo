@@ -1,31 +1,30 @@
 #[dojo::contract]
 mod realm_systems {
+    use core::poseidon::poseidon_hash_span;
     use core::traits::Into;
-    use eternum::models::realm::Realm;
-    use eternum::models::movable::Movable;
-    use eternum::models::map::Tile;
-    use eternum::models::quantity::QuantityTracker;
-    use eternum::models::capacity::Capacity;
-    use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::position::Position;
-    use eternum::models::metadata::EntityMetadata;
-    use eternum::models::combat::TownWatch;
-    use eternum::models::resources::{DetachedResource, Resource, ResourceImpl, ResourceTrait};
-    use eternum::models::config::{CapacityConfig, RealmFreeMintConfig};
-    use eternum::constants::{
-        WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, SOLDIER_ENTITY_TYPE, MAX_REALMS_PER_ADDRESS
-    };
-
-    use eternum::systems::realm::interface::IRealmSystems;
-    use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
-
-    use eternum::constants::REALM_ENTITY_TYPE;
 
     use eternum::alias::ID;
 
-    use starknet::ContractAddress;
+    use eternum::constants::REALM_ENTITY_TYPE;
+    use eternum::constants::{
+        WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, SOLDIER_ENTITY_TYPE, MAX_REALMS_PER_ADDRESS
+    };
+    use eternum::models::capacity::Capacity;
+    use eternum::models::combat::TownWatch;
+    use eternum::models::config::{CapacityConfig, RealmFreeMintConfig};
+    use eternum::models::map::Tile;
+    use eternum::models::metadata::EntityMetadata;
+    use eternum::models::movable::Movable;
+    use eternum::models::owner::{Owner, EntityOwner};
+    use eternum::models::position::Position;
+    use eternum::models::quantity::QuantityTracker;
+    use eternum::models::realm::Realm;
+    use eternum::models::resources::{DetachedResource, Resource, ResourceImpl, ResourceTrait};
+    use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
-    use core::poseidon::poseidon_hash_span;
+    use eternum::systems::realm::interface::IRealmSystems;
+
+    use starknet::ContractAddress;
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of IRealmSystems<ContractState> {

@@ -1,28 +1,23 @@
 #[dojo::contract]
 mod swap_systems {
-    use eternum::models::bank::market::{Market, MarketTrait};
-    use eternum::models::bank::bank::{BankAccounts, Bank};
-    use eternum::models::owner::{Owner};
-    use eternum::models::config::{BankConfig};
-    use eternum::systems::bank::interface::swap::ISwapSystems;
-    use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
-    use eternum::models::config::{TickImpl, TickTrait};
-
-    use cubit::f128::types::fixed::{Fixed, FixedTrait};
     use cubit::f128::math::ops::{mul};
 
-    use traits::{Into, TryInto};
+    use cubit::f128::types::fixed::{Fixed, FixedTrait};
+    use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+    use eternum::models::bank::bank::{BankAccounts, Bank};
+    use eternum::models::bank::market::{Market, MarketTrait};
+    use eternum::models::config::{BankConfig};
+    use eternum::models::config::{TickImpl, TickTrait};
+    use eternum::models::owner::{Owner};
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
+    use eternum::systems::bank::interface::swap::ISwapSystems;
     use option::OptionTrait;
+
+    use traits::{Into, TryInto};
 
     #[abi(embed_v0)]
     impl SwapSystemsImpl of ISwapSystems<ContractState> {
-        fn buy(
-            world: IWorldDispatcher,
-            bank_entity_id: u128,
-            resource_type: u8,
-            amount: u128
-        ) {
+        fn buy(world: IWorldDispatcher, bank_entity_id: u128, resource_type: u8, amount: u128) {
             let player = starknet::get_caller_address();
 
             let bank = get!(world, bank_entity_id, Bank);
@@ -49,31 +44,27 @@ mod swap_systems {
             let owner_bank_account = get!(
                 world, (bank_entity_id, bank_owner.address), BankAccounts
             );
-            let mut owner_lords 
-                = ResourceImpl::get(world, (owner_bank_account.entity_id, ResourceTypes::LORDS));
+            let mut owner_lords = ResourceImpl::get(
+                world, (owner_bank_account.entity_id, ResourceTypes::LORDS)
+            );
             owner_lords.balance += owner_fees_amount;
             owner_lords.save(world);
 
             // udpate player lords
-            let mut player_lords 
-                = ResourceImpl::get(world, (bank_account_entity_id, ResourceTypes::LORDS));
+            let mut player_lords = ResourceImpl::get(
+                world, (bank_account_entity_id, ResourceTypes::LORDS)
+            );
             player_lords.balance -= cost + owner_fees_amount + lp_fees_amount;
             player_lords.save(world);
 
             // update player resources
-            let mut resource 
-                = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
+            let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
             resource.balance += amount;
             resource.save(world);
         }
 
 
-        fn sell(
-            world: IWorldDispatcher,
-            bank_entity_id: u128,
-            resource_type: u8,
-            amount: u128
-        ) {
+        fn sell(world: IWorldDispatcher, bank_entity_id: u128, resource_type: u8, amount: u128) {
             let player = starknet::get_caller_address();
 
             let bank = get!(world, bank_entity_id, Bank);
@@ -92,8 +83,9 @@ mod swap_systems {
             let owner_bank_account = get!(
                 world, (bank_entity_id, bank_owner.address), BankAccounts
             );
-            let mut owner_resource 
-                = ResourceImpl::get(world, (owner_bank_account.entity_id, resource_type));
+            let mut owner_resource = ResourceImpl::get(
+                world, (owner_bank_account.entity_id, resource_type)
+            );
             owner_resource.balance += owner_fees_amount;
             owner_resource.save(world);
 
@@ -105,14 +97,14 @@ mod swap_systems {
             set!(world, (market));
 
             // update player lords
-            let mut player_lords 
-                = ResourceImpl::get(world, (bank_account_entity_id, ResourceTypes::LORDS));
+            let mut player_lords = ResourceImpl::get(
+                world, (bank_account_entity_id, ResourceTypes::LORDS)
+            );
             player_lords.balance += payout;
             player_lords.save(world);
 
             // update player resource
-            let mut resource 
-                = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
+            let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
             resource.balance -= amount;
             resource.save(world);
         }

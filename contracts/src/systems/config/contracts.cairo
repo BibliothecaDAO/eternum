@@ -1,9 +1,16 @@
 #[dojo::contract]
 mod config_systems {
+    use debug::PrintTrait;
     use eternum::alias::ID;
 
+    use eternum::constants::{
+        WORLD_CONFIG_ID, LABOR_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, SOLDIER_ENTITY_TYPE,
+        COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID,
+        REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID
+    };
+    use eternum::models::bank::bank::{Bank};
+
     use eternum::models::combat::TownWatch;
-    use eternum::models::labor_auction::LaborAuction;
     use eternum::models::config::{
         LaborCostResources, LaborCostAmount, LaborConfig, CapacityConfig, RoadConfig, SpeedConfig,
         TravelConfig, WeightConfig, WorldConfig, SoldierConfig, HealthConfig, AttackConfig,
@@ -11,24 +18,17 @@ mod config_systems {
         LaborBuildingCost, MapExploreConfig, TickConfig, ProductionConfig, BankConfig
     };
 
+    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::labor_auction::LaborAuction;
+    use eternum::models::position::{Position, PositionTrait, Coord};
+    use eternum::models::production::{ProductionInput, ProductionOutput};
+    use eternum::models::resources::{ResourceCost, DetachedResource};
+
     use eternum::systems::config::interface::{
         IWorldConfig, IWeightConfig, ICapacityConfig, ILaborConfig, ITransportConfig,
         IHyperstructureConfig, ICombatConfig, ILevelingConfig, IBankConfig, IRealmFreeMintConfig,
         IBuildingsConfig, IMapConfig, ITickConfig, IProductionConfig
     };
-
-    use eternum::constants::{
-        WORLD_CONFIG_ID, LABOR_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, SOLDIER_ENTITY_TYPE,
-        COMBAT_CONFIG_ID, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID,
-        REALM_FREE_MINT_CONFIG_ID, BUILDING_CONFIG_ID
-    };
-
-    use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::resources::{ResourceCost, DetachedResource};
-    use eternum::models::position::{Position, PositionTrait, Coord};
-    use eternum::models::production::{ProductionInput, ProductionOutput};
-    use eternum::models::bank::bank::{Bank};
-    use debug::PrintTrait;
 
 
     fn assert_caller_is_admin(world: IWorldDispatcher) {
@@ -465,57 +465,63 @@ mod config_systems {
         }
     }
 
-#[abi(embed_v0)]
-impl ProductionConfigImpl of IProductionConfig<ContractState> {
-    fn set_production_config(
-        world: IWorldDispatcher, 
-        resource_type: u8,
-        amount: u128,
-        mut cost: Span<(u8, u128)>
-    ) {
-        assert_caller_is_admin(world);
+    #[abi(embed_v0)]
+    impl ProductionConfigImpl of IProductionConfig<ContractState> {
+        fn set_production_config(
+            world: IWorldDispatcher, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>
+        ) {
+            assert_caller_is_admin(world);
 
-        let mut resource_production_config : ProductionConfig
-            = get!(world, resource_type, ProductionConfig);
-        resource_production_config.amount = amount;
-    
-        loop {
-            match cost.pop_front() {
-                Option::Some((input_resource_type, input_resource_amount)) => {
-                    // update output resource's production input/material
-                    set!(world, (
-                        ProductionInput {
-                            output_resource_type: resource_type,
-                            index: resource_production_config.input_count.try_into().unwrap(),
-                            input_resource_type: *input_resource_type,
-                            input_resource_amount: *input_resource_amount
-                        }
-                    ));
+            let mut resource_production_config: ProductionConfig = get!(
+                world, resource_type, ProductionConfig
+            );
+            resource_production_config.amount = amount;
 
-                    resource_production_config.input_count += 1;
+            loop {
+                match cost.pop_front() {
+                    Option::Some((
+                        input_resource_type, input_resource_amount
+                    )) => {
+                        // update output resource's production input/material
+                        set!(
+                            world,
+                            (ProductionInput {
+                                output_resource_type: resource_type,
+                                index: resource_production_config.input_count.try_into().unwrap(),
+                                input_resource_type: *input_resource_type,
+                                input_resource_amount: *input_resource_amount
+                            })
+                        );
 
-                    // update input resource's production output
-                    let mut input_resource_production_config : ProductionConfig
-                        = get!(world, *input_resource_type, ProductionConfig);
-                    
-                    set!(world, (
-                        ProductionOutput {
-                            input_resource_type: *input_resource_type,
-                            index: input_resource_production_config.output_count.try_into().unwrap(),
-                            output_resource_type: resource_type,
-                        }
-                    ));
+                        resource_production_config.input_count += 1;
 
-                    input_resource_production_config.output_count += 1;
-                    set!(world, (input_resource_production_config));
-                },
-                Option::None => {break;}
-            }
-        };
+                        // update input resource's production output
+                        let mut input_resource_production_config: ProductionConfig = get!(
+                            world, *input_resource_type, ProductionConfig
+                        );
 
-        set!(world, (resource_production_config));
+                        set!(
+                            world,
+                            (ProductionOutput {
+                                input_resource_type: *input_resource_type,
+                                index: input_resource_production_config
+                                    .output_count
+                                    .try_into()
+                                    .unwrap(),
+                                output_resource_type: resource_type,
+                            })
+                        );
+
+                        input_resource_production_config.output_count += 1;
+                        set!(world, (input_resource_production_config));
+                    },
+                    Option::None => { break; }
+                }
+            };
+
+            set!(world, (resource_production_config));
+        }
     }
-}
 
 
     #[abi(embed_v0)]

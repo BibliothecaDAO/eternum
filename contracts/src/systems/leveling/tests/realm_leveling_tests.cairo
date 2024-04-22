@@ -1,17 +1,12 @@
-use eternum::constants::{ResourceTypes, REALM_LEVELING_CONFIG_ID};
-use eternum::models::resources::Resource;
-use eternum::models::level::Level;
-use eternum::models::position::Position;
-
-use eternum::utils::testing::{spawn_eternum, deploy_system};
-
-use core::traits::Into;
 use core::option::OptionTrait;
 
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use core::traits::Into;
 
-use eternum::systems::realm::contracts::realm_systems;
-use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::constants::{ResourceTypes, REALM_LEVELING_CONFIG_ID};
+use eternum::models::level::Level;
+use eternum::models::position::Position;
+use eternum::models::resources::Resource;
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{
@@ -22,6 +17,11 @@ use eternum::systems::leveling::contracts::leveling_systems;
 use eternum::systems::leveling::interface::{
     ILevelingSystemsDispatcher, ILevelingSystemsDispatcherTrait,
 };
+
+use eternum::systems::realm::contracts::realm_systems;
+use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
+
+use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use starknet::contract_address_const;
 
