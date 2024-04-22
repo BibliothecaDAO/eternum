@@ -11,18 +11,15 @@ trait IBuildingContract<TContractState> {
 
 #[dojo::contract]
 mod building_systems {
-    use core::option::OptionTrait;
-    use eternum::alias::ID;
     use eternum::models::{
         resources::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
         order::Orders, position::{Coord, Position, PositionTrait, Direction},
         buildings::{BuildingCategory, Building, BuildingImpl},
         production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
     };
-    use super::IBuildingContract;
 
     #[abi(embed_v0)]
-    impl BuildingContractImpl of IBuildingContract<ContractState> {
+    impl BuildingContractImpl of super::IBuildingContract<ContractState> {
         fn create(
             world: IWorldDispatcher,
             entity_id: u128,
