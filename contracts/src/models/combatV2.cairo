@@ -1,3 +1,4 @@
+use core::option::OptionTrait;
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
 use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
@@ -69,6 +70,22 @@ impl TroopsImpl of TroopsTrait {
         self.paladin_count += other.paladin_count;
         self.crossbowman_count += other.crossbowman_count;
     }
+    
+    fn deduct(ref self: Troops, other: Troops) {
+        self.knight_count -= other.knight_count;
+        self.paladin_count -= other.paladin_count;
+        self.crossbowman_count -= other.crossbowman_count;
+    }
+
+    fn deduct_percentage(ref self: Troops, num: u128, denom: u128) {
+        self.knight_count 
+            -= ((self.knight_count.into() * num) / denom).try_into().unwrap();
+        self.paladin_count 
+            -= ((self.paladin_count.into() * num) / denom).try_into().unwrap();
+        self.crossbowman_count 
+            -= ((self.crossbowman_count.into() * num) / denom).try_into().unwrap();
+    }
+
 
     fn full_health(self: Troops, troop_config: TroopConfig) -> u128 {
         let total_knight_health = troop_config.knight_health * self.knight_count;
@@ -291,5 +308,22 @@ impl BattleImpl of BattleTrait {
             self.tick_last_updated = current_tick;
             duration
         }
+    }
+
+    fn has_ended(self: Battle) -> bool{
+        self.tick_duration_left == 0
+    }
+
+    fn winner(self: Battle) -> BattleSide {
+        assert!(self.has_ended(), "Battle has not ended");
+        if self.attack_army_health.current > 0 {
+            return BattleSide::Attack;
+        }
+        if self.defence_army_health.current > 0 {
+            return BattleSide::Defence;
+        }
+
+        // it's possible that both killed each other soo
+        return BattleSide::None;
     }
 }
