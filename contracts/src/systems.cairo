@@ -10,13 +10,6 @@ mod realm {
     #[cfg(test)]
     mod tests;
 }
-mod labor {
-    mod contracts;
-    mod interface;
-    #[cfg(test)]
-    mod tests;
-    mod utils;
-}
 mod trade {
     mod contracts;
     mod interface;
