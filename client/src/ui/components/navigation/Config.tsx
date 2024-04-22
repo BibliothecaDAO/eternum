@@ -9,6 +9,7 @@ export type OSWindows =
   | "Entity Details"
   | "Trade"
   | "Construction"
+  | "Assistant"
   | "Create Offer"
   | "Accept Offer";
 
@@ -30,5 +31,6 @@ export const military: OSWindows = "Military";
 export const entityDetails: OSWindows = "Entity Details";
 export const trade: OSWindows = "Trade";
 export const construction: OSWindows = "Construction";
+export const assistant: OSWindows = "Assistant";
 export const createOffer: OSWindows = "Create Offer";
 export const acceptOfferTitle: OSWindows = "Accept Offer";

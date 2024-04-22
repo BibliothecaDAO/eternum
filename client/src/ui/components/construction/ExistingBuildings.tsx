@@ -5,8 +5,9 @@ import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { BuildingStringToEnum, BuildingType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
-import { useAnimations, useGLTF } from "@react-three/drei";
-import { useEffect, useMemo } from "react";
+import { useAnimations, useGLTF, useHelper } from "@react-three/drei";
+import { useEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
 
 export const ExistingBuildings = () => {
   const { hexPosition: globalHex } = useQuery();
@@ -70,7 +71,12 @@ export const ExistingBuildings = () => {
           position={{ col: building.col, row: building.row }}
         />
       ))}
-      <primitive scale={3} object={models[0].scene} position={[castlePosition.x, 2.33, -castlePosition.y]} />
+      <primitive
+        scale={3}
+        object={models[0].scene}
+        position={[castlePosition.x, 2.33, -castlePosition.y]}
+        rotation={[0, Math.PI * 1.5, 0]}
+      />
     </>
   );
 };
@@ -86,6 +92,8 @@ export const BuiltBuilding = ({
 }) => {
   const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
   const model = useMemo(() => models[buildingCategory].scene.clone(), [buildingCategory, models]);
+  const lightRef = useRef<any>();
+  useHelper(lightRef, THREE.PointLightHelper, 1, "green");
 
   const { actions } = useAnimations(models[buildingCategory].animations, model);
 
@@ -97,5 +105,12 @@ export const BuiltBuilding = ({
     }, Math.random() * 1000);
   }, [actions]);
 
-  return <primitive dropShadow scale={3} object={model} position={[x, 2.33, -y]} />;
+  return (
+    <group position={[x, 2.33, -y]}>
+      <primitive dropShadow scale={3} object={model} />
+      {buildingCategory + 1 === BuildingType.ArcheryRange && (
+        <pointLight ref={lightRef} position={[0, 2.6, 0]} intensity={0.6} power={150} color={"yellow"} decay={3.5} />
+      )}
+    </group>
+  );
 };

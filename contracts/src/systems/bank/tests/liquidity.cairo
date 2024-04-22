@@ -13,13 +13,15 @@ use eternum::systems::bank::contracts::liquidity_systems::liquidity_systems;
 use eternum::systems::bank::interface::liquidity::{
     ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,
 };
+use eternum::systems::bank::contracts::swap_systems::swap_systems;
+use eternum::systems::bank::interface::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
 
 use eternum::models::bank::liquidity::{Liquidity};
-use eternum::models::bank::market::{Market};
+use eternum::models::bank::market::{Market, MarketImpl};
 use eternum::models::bank::bank::{BankAccounts};
 use eternum::models::position::{Coord};
 use eternum::constants::{ResourceTypes};
-use eternum::models::resources::{ResourceImpl,Resource};
+use eternum::models::resources::{ResourceImpl, Resource};
 
 use starknet::contract_address_const;
 
@@ -32,6 +34,7 @@ fn setup() -> (
     IWorldDispatcher,
     u128,
     ILiquiditySystemsDispatcher,
+    ISwapSystemsDispatcher,
     IBankSystemsDispatcher,
     IBankConfigDispatcher
 ) {
@@ -42,18 +45,19 @@ fn setup() -> (
 
     let owner_fee_scaled: u128 = _0_1;
 
-    let bank_entity_id = bank_config_dispatcher
-        .create_bank(Coord { x: 30, y: 800 }, owner_fee_scaled);
-
     let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
 
-    let bank_account_entity_id = bank_systems_dispatcher.open_account(bank_entity_id);
+    let (bank_entity_id, bank_account_entity_id) = bank_systems_dispatcher
+        .create_bank(1, Coord { x: 30, y: 800 }, owner_fee_scaled);
 
     let liquidity_systems_address = deploy_system(world, liquidity_systems::TEST_CLASS_HASH);
     let liquidity_systems_dispatcher = ILiquiditySystemsDispatcher {
         contract_address: liquidity_systems_address
     };
+
+    let swap_systems_address = deploy_system(world, swap_systems::TEST_CLASS_HASH);
+    let swap_systems_dispatcher = ISwapSystemsDispatcher { contract_address: swap_systems_address };
 
     // add some resources in the bank account
     // wood
@@ -75,6 +79,7 @@ fn setup() -> (
         world,
         bank_entity_id,
         liquidity_systems_dispatcher,
+        swap_systems_dispatcher,
         bank_systems_dispatcher,
         bank_config_dispatcher
     )
@@ -86,6 +91,7 @@ fn test_liquidity_add() {
         world,
         bank_entity_id,
         liquidity_systems_dispatcher,
+        _swap_systems_dispatcher,
         _bank_systems_dispatcher,
         _bank_config_dispatcher
     ) =
@@ -116,6 +122,7 @@ fn test_liquidity_remove() {
         world,
         bank_entity_id,
         liquidity_systems_dispatcher,
+        _swap_systems_dispatcher,
         _bank_systems_dispatcher,
         _bank_config_dispatcher
     ) =

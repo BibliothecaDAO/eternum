@@ -248,6 +248,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
     setIsExploreMode,
     setSelectedEntity,
   } = useUIStore();
+  const setClickedHex = useUIStore((state) => state.setClickedHex);
   const setHighlightColor = useUIStore((state) => state.setHighlightColor);
   const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
   const setSelectedPath = useUIStore((state) => state.setSelectedPath);
@@ -368,6 +369,10 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
         const instanceId = intersect.instanceId;
         const mesh = intersect.object;
         const pos = getPositionsAtIndex(mesh, instanceId);
+        if (pos) {
+          const clickedColRow = getColRowFromUIPosition(pos.x, pos.y);
+          setClickedHex({ col: clickedColRow.col, row: clickedColRow.row, hexIndex: instanceId });
+        }
         if (pos && selectedEntityRef.current) {
           if (isTravelModeRef.current || isExploreModeRef.current) {
             const path = highlightPositionsRef.current.map((p) => {

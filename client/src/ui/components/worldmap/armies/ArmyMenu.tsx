@@ -128,14 +128,14 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const entityWeightInKg = divideByPrecision(Number(weight?.value || 0));
   const canCarryNewReward = totalCapacityInKg >= entityWeightInKg + sampleRewardResourceWeightKg;
 
-  const { getFoodResources } = useResources();
+  const { getResourcesFromInventory } = useResources();
 
   const explorationCosts = useMemo(() => {
-    const foodBalance = entityOwner ? getFoodResources(entityOwner.entity_owner_id) : [];
+    const foodBalance = entityOwner ? getResourcesFromInventory(entityOwner.entity_owner_id).resources : [];
     return EXPLORATION_COSTS.map((res) => {
       return {
         ...res,
-        hasEnough: (foodBalance.find((food) => food.resourceId === res.resourceId)?.amount || 0) >= res.amount,
+        hasEnough: (foodBalance.find((food: any) => food.resourceId === res.resourceId)?.amount || 0) >= res.amount,
       };
     });
   }, [entityOwner]);

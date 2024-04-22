@@ -1,5 +1,4 @@
 mod config;
-mod age;
 mod position;
 mod realm;
 mod resources;
@@ -26,3 +25,4 @@ mod tick;
 mod production;
 mod combatV2;
 mod bank;
+mod settlement;

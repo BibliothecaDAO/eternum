@@ -9,10 +9,11 @@ import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
+import { assistant } from "@/ui/components/navigation/Config";
 
 export const TopMiddleNavigation = () => {
   const { hexPosition } = useQuery();
-  const { highlightPositions, moveCameraToRealm } = useUIStore();
+  const { highlightPositions, moveCameraToRealm, isPopupOpen, togglePopup } = useUIStore();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const { realmId } = useRealmStore();
   const [location, setLocation] = useLocation();
@@ -50,7 +51,7 @@ export const TopMiddleNavigation = () => {
           </div>
         </div>
       </div>
-      <div className="self-center px-3">
+      <div className="self-center px-3 flex space-x-2">
         <CircleButton
           image={BuildingThumbs.worldMap}
           label="world map"
@@ -66,7 +67,14 @@ export const TopMiddleNavigation = () => {
             }
           }}
           size="xl"
-        ></CircleButton>
+        />
+        <CircleButton
+          image={BuildingThumbs.squire}
+          label={assistant}
+          active={isPopupOpen(assistant)}
+          size="xl"
+          onClick={() => togglePopup(assistant)}
+        />
       </div>
     </div>
   );

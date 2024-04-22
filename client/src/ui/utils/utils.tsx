@@ -128,14 +128,6 @@ export const getContractPositionFromRealPosition = (position: Position): Positio
   };
 };
 
-export const getUIPositionFromContractPosition = (position: Position): Position => {
-  const { x, y } = position;
-  return {
-    x: (x - 1800000) / 10000,
-    y: (y - 1800000) / 10000,
-  };
-};
-
 const PRECISION = 1000;
 
 export function multiplyByPrecision(value: number): number {

@@ -28,26 +28,6 @@ struct HyperStructureV2 {
     settlment_tax: u32,
 }
 
-// Settlement is like a Realm, but it has a cost to create and a tax to maintain
-// if tax is not paid, then the owner of the hyperstructure that the settlement is built on can claim the settlement
-#[derive(Model, Copy, Drop, Serde)]
-struct Settlement {
-    #[key]
-    entity_id: u128,
-    realm_id: u128,
-    resource_types_packed: u128,
-    resource_types_count: u8,
-    order: u8,
-    tax_paid: bool,
-    last_time_tax_paid: u32,
-}
-
-#[generate_trait]
-impl SettlementImpl of SettlementTrait {
-    fn construct(self: HyperStructureV2) {}
-    fn destruct(self: HyperStructureV2) {}
-}
-
 
 #[generate_trait]
 impl HyperStructureV2Impl of HyperStructureV2Trait {

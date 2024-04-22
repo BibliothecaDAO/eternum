@@ -1,8 +1,0 @@
-target/*
-!target/dev/manifest.json
-!target/release/manifest.json
-torii.db
-KATANA.toml
-manifests/*
-!manifests/dev/manifest.json
-!manifests/dev/manifest.toml

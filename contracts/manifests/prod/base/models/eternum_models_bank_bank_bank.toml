@@ -1,0 +1,20 @@
+kind = "DojoModel"
+class_hash = "0x38a1a07acb8a626448227016b47f7b47004bd3b5dd0599995ea0cce0ff44775"
+original_class_hash = "0x38a1a07acb8a626448227016b47f7b47004bd3b5dd0599995ea0cce0ff44775"
+abi = "manifests/prod/abis/base/models/eternum_models_bank_bank_bank.json"
+name = "eternum::models::bank::bank::bank"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "owner_fee_scaled"
+type = "u128"
+key = false
+
+[[members]]
+name = "exists"
+type = "bool"
+key = false

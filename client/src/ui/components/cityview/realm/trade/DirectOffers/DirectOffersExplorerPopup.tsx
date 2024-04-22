@@ -47,6 +47,7 @@ export const DirectOffersExplorerPopup = ({ onClose }: DirectOffersExplorerPopup
       {showCreateOffer && (
         <FastCreateOfferPopup
           isBuy={true}
+          show={showCreateOffer}
           resourceId={selectedResourceId}
           directOfferRealmId={directOfferRealmId}
           onClose={() => setShowCreateOffer(false)}

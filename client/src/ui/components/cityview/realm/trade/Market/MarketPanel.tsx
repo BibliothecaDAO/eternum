@@ -127,19 +127,19 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
 
   return (
     <>
-      {showCreateOffer && <FastCreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
+      {/* {showCreateOffer && <FastCreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />} */}
       {showDirectOffersExplorer && <DirectOffersExplorerPopup onClose={() => setShowDirectOffersExplorer(false)} />}
       {buildRoadToEntityId !== undefined && (
         <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
       )}
-      {selectedTrade && (
+      {/* {selectedTrade && (
         <AcceptOfferPopup
           onClose={() => {
             setSelectedTrade(undefined);
           }}
           selectedTrade={selectedTrade}
         />
-      )}
+      )} */}
       <div className="flex flex-col min-h-[125px] relative pb-3">
         <div className="flex justify-between">
           <FiltersPanel className="px-3 py-2">

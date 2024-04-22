@@ -2,7 +2,7 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
-import { getUIPositionFromColRow } from "../../utils/utils";
+import { getUIPositionFromColRow, pseudoRandom } from "../../utils/utils";
 import { useEffect, useMemo } from "react";
 import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
 import { useDojo } from "@/hooks/context/DojoContext";
@@ -10,6 +10,7 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingType } from "@bibliothecadao/eternum";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { placeholderMaterial } from "@/shaders/placeholderMaterial";
+import { useGLTF } from "@react-three/drei";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row) || (col === 4 && row === 4);
@@ -59,10 +60,14 @@ const GroundGrid = () => {
             {!isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) && previewBuilding && (
               <mesh
                 name="free-cell-placeholder"
-                position={[hexPosition.x, hexPosition.y, hexPosition.z + 0.02]}
+                position={[hexPosition.x, hexPosition.y, hexPosition.z + 0.1]}
                 geometry={hexagonGeometry}
                 material={placeholderMaterial}
               />
+            )}
+
+            {!isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) && (
+              <EmptyCell position={hexPosition} />
             )}
 
             <Hexagon
@@ -109,6 +114,27 @@ export const Hexagon = ({
       <mesh receiveShadow geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]} material={secondaryMaterial} />
       <mesh receiveShadow geometry={hexagonGeometry} material={mainMaterial} />
     </group>
+  );
+};
+
+const EmptyCell = ({ position }: { position: any }) => {
+  const emptyCellModel = useGLTF("/models/buildings/empty.glb");
+  const clone = useMemo(() => {
+    const clone = emptyCellModel.scene.clone();
+    clone.scale.set(3, 3, 3);
+    clone.traverse((child: THREE.Object3D) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.receiveShadow = true;
+      }
+    });
+    return clone;
+  }, [emptyCellModel]);
+  const rotation = useMemo(() => {
+    const seededRandom = pseudoRandom(position.col, position.row);
+    return (Math.PI / 3) * Math.floor(seededRandom * 6);
+  }, [position]);
+  return (
+    <primitive object={clone} position={[position.x, position.y, position.z]} rotation={[Math.PI / 2, rotation, 0]} />
   );
 };
 

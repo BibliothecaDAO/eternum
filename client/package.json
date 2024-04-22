@@ -22,6 +22,7 @@
     "@dojoengine/utils": "^0.6.122",
     "@formkit/auto-animate": "^0.8.1",
     "@headlessui/react": "^1.7.18",
+    "@langchain/anthropic": "^0.1.14",
     "@latticexyz/utils": "^2.0.0-next.12",
     "@radix-ui/react-select": "^2.0.0",
     "@react-spring/three": "^9.7.3",
@@ -30,6 +31,7 @@
     "@react-three/postprocessing": "2.16.2",
     "@svgr/rollup": "^8.1.0",
     "@types/react-resizable": "^3.0.7",
+    "@vercel/analytics": "^1.2.2",
     "@web3mq/client": "^1.0.25",
     "clsx": "^1.2.1",
     "events": "^3.3.0",
@@ -56,6 +58,7 @@
     "vite-plugin-top-level-await": "^1.4.1",
     "vite-plugin-wasm": "^3.3.0",
     "wouter": "^2.12.1",
+    "ws": "^8.16.0",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

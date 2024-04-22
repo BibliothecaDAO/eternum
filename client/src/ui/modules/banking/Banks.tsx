@@ -6,17 +6,30 @@ import { Tabs } from "@/ui/elements/tab";
 import { useMemo, useState } from "react";
 import { BankPanel } from "@/ui/components/bank/BankList";
 import { EntityList } from "@/ui/components/list/EntityList";
-
-const exampleBanks = [
-  { id: 1, name: "Iron Bank" },
-  { id: 2, name: "Bank of Loaf" },
-  { id: 3, name: "Bank of Power" },
-];
+import { useGetBanks } from "@/hooks/helpers/useBanks";
 
 export const Banks = () => {
   const { togglePopup } = useUIStore();
   const [selectedTab, setSelectedTab] = useState(0);
   const isOpen = useUIStore((state) => state.isPopupOpen(banks));
+
+  const bankEntities = useGetBanks();
+  const onlyMine = true;
+  const myBankEntities = useGetBanks(onlyMine);
+
+  const bankList = bankEntities.map((bank) => {
+    return {
+      id: bank.entityId,
+      name: `Bank ${bank.entityId}`,
+    };
+  });
+
+  const myBankList = myBankEntities.map((bank) => {
+    return {
+      id: bank.entityId,
+      name: `Bank ${bank.entityId}`,
+    };
+  });
 
   const tabs = useMemo(
     () => [
@@ -27,9 +40,7 @@ export const Banks = () => {
             <div>All Banks</div>
           </div>
         ),
-        component: (
-          <EntityList title="Banks" panel={({ entity }) => <BankPanel entity={entity} />} list={exampleBanks} />
-        ),
+        component: <EntityList title="Banks" panel={({ entity }) => <BankPanel entity={entity} />} list={bankList} />,
       },
       {
         key: "mine",
@@ -38,7 +49,7 @@ export const Banks = () => {
             <div>My Banks</div>
           </div>
         ),
-        component: <></>,
+        component: <EntityList title="Banks" panel={({ entity }) => <BankPanel entity={entity} />} list={myBankList} />,
       },
     ],
     [selectedTab],

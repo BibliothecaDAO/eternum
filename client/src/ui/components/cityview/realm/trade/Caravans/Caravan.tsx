@@ -157,11 +157,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
             Trade Bound <Pen className="ml-1 fill-gold" />
           </div>
         )}
-        {isWaitingToOffload && (
-          <div className="flex ml-auto -mt-2 italic text-gold">
-            Waiting to offload <Pen className="ml-1 fill-gold" />
-          </div>
-        )}
+        {isWaitingToOffload && <div className="flex ml-auto -mt-2 italic text-gold">Waiting to offload</div>}
         {isIdle && (
           <div className="flex ml-auto -mt-2 italic text-gold">
             Idle

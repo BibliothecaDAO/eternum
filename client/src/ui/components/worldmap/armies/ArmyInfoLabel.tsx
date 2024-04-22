@@ -6,7 +6,7 @@ import useUIStore from "../../../../hooks/store/useUIStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils";
 import { type CombatInfo, type Resource, type UIPosition } from "@bibliothecadao/eternum";
-// @ts-expect-error
+
 import { useMemo } from "react";
 import { Html } from "@react-three/drei";
 import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";

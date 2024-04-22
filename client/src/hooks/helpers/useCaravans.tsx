@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { divideByPrecision, getEntityIdFromKeys, getForeignKeyEntityId } from "../../ui/utils/utils";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { useHyperstructure } from "./useHyperstructure";
-import { useBanks } from "./useBanks";
 
 const FREE_TRANSPORT_ENTITY_TYPE = 256;
 
@@ -30,7 +29,6 @@ export function useCaravan() {
   } = useDojo();
 
   const { getHyperstructureEntityId } = useHyperstructure();
-  const { getBankEntityId } = useBanks();
 
   const getCaravanInfo = (caravanId: bigint): CaravanInterface => {
     const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([caravanId]));
@@ -50,11 +48,14 @@ export function useCaravan() {
 
     const position = getComponentValue(Position, getEntityIdFromKeys([caravanId]));
 
+    const ownerEntity = getComponentValue(EntityOwner, getEntityIdFromKeys([caravanId]))?.entity_owner_id;
+    const homePosition = ownerEntity
+      ? getComponentValue(Position, getEntityIdFromKeys([BigInt(ownerEntity)]))
+      : undefined;
+
     let destinationType: DESTINATION_TYPE | undefined;
     if (position && getHyperstructureEntityId({ x: position.x, y: position.y })) {
       destinationType = DESTINATION_TYPE.HYPERSTRUCTURE;
-    } else if (position && getBankEntityId({ x: position.x, y: position.y })) {
-      destinationType = DESTINATION_TYPE.BANK;
     } else {
       destinationType = DESTINATION_TYPE.HOME;
     }
@@ -68,6 +69,7 @@ export function useCaravan() {
       capacity: divideByPrecision(Number(capacity?.weight_gram) || 0),
       intermediateDestination,
       position: position ? { x: position.x, y: position.y } : undefined,
+      homePosition: homePosition ? { x: homePosition.x, y: homePosition.y } : undefined,
       owner: owner?.address,
       isMine: owner?.address === BigInt(account.address),
       isRoundTrip: movable?.round_trip || false,
@@ -114,10 +116,16 @@ export function useCaravan() {
     }
   }
 
-  const useGetPositionCaravans = (x: number, y: number) => {
+  const useGetPositionCaravans = (x: number, y: number, onlyMine?: boolean) => {
     const [caravans, setCaravans] = useState<CaravanInterface[]>([]);
 
-    const entityIds = useEntityQuery([HasValue(Position, { x, y }), Has(CaravanMembers)]);
+    let query: any = [HasValue(Position, { x, y }), Has(CaravanMembers)];
+
+    if (onlyMine) {
+      query.push(HasValue(Owner, { address: BigInt(account.address) }));
+    }
+
+    const entityIds = useEntityQuery(query);
 
     useMemo((): any => {
       const caravans = entityIds

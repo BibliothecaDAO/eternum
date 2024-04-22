@@ -1,0 +1,25 @@
+kind = "DojoModel"
+class_hash = "0x468945f187cadde2cd8e038e1c552f69682e8474e1928f9d8daa92ef020cb71"
+original_class_hash = "0x468945f187cadde2cd8e038e1c552f69682e8474e1928f9d8daa92ef020cb71"
+abi = "manifests/prod/abis/base/models/eternum_models_config_labor_building_cost.json"
+name = "eternum::models::config::labor_building_cost"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "labor_category"
+type = "u8"
+key = true
+
+[[members]]
+name = "resource_cost_id"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_cost_count"
+type = "u32"
+key = false
