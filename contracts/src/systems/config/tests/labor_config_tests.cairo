@@ -1,1 +1,0 @@
-mod labor_auction_config_tests;
