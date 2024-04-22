@@ -157,8 +157,8 @@ mod donkey_systems {
                 let mut donkeys: Resource = ResourceImpl::get(
                     world, (donkey_owner_entity_id, ResourceTypes::DONKEY)
                 );
-                assert(donkeys.balance >= donkey_amount, 'not enough donkeys');
-                donkeys.balance -= donkey_amount;
+
+                donkeys.burn(donkey_amount);
                 donkeys.save(world);
             }
 
@@ -167,24 +167,21 @@ mod donkey_systems {
                 resources_coord,
                 destination_coord,
                 donkey_owner_entity_id == resource_owner_entity_id
-            );
+            )
+                + starknet::get_block_timestamp();
 
-            let ts = starknet::get_block_timestamp();
-
-            let donkey_owner = get!(world, donkey_owner_entity_id, Owner);
+            let donkey_owner = get!(world, donkey_owner_entity_id, Owner).address;
 
             set!(
                 world,
                 (
-                    ArrivalTime {
-                        entity_id: receiver_entity_id, arrives_at: ts.into() + travel_time
-                    },
+                    ArrivalTime { entity_id: receiver_entity_id, arrives_at: travel_time },
                     Position {
                         entity_id: receiver_entity_id,
                         x: destination_coord.x,
                         y: destination_coord.y
                     },
-                    Owner { entity_id: receiver_entity_id, address: donkey_owner.address }
+                    Owner { entity_id: receiver_entity_id, address: donkey_owner }
                 )
             );
 
