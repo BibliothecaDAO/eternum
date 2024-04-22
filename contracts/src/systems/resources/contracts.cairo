@@ -119,7 +119,7 @@ mod resource_systems {
 
             InternalResourceSystemsImpl::transfer(
                 world, sending_entity_id, receiving_entity_id, resources
-            )
+            );
         }
 
 
@@ -182,7 +182,7 @@ mod resource_systems {
 
             InternalResourceSystemsImpl::transfer(
                 world, owner_entity_id, receiving_entity_id, resources
-            )
+            );
         }
     }
 
@@ -208,7 +208,7 @@ mod resource_systems {
 
         fn transfer(
             world: IWorldDispatcher, sender_id: ID, receiver_id: ID, resources: Span<(u8, u128)>
-        ) {
+        ) -> ID {
             // create resource chest
             let resource_chest = InternalResourceChestSystemsImpl::create_and_fill(
                 world, sender_id, resources
@@ -220,7 +220,9 @@ mod resource_systems {
             // emit transfer event
             InternalResourceSystemsImpl::emit_transfer_event(
                 world, sender_id, receiver_id, resources
-            )
+            );
+
+            resource_chest.entity_id
         }
 
         fn emit_transfer_event(

@@ -5,7 +5,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::constants::ResourceTypes;
 use eternum::constants::{
-    FREE_TRANSPORT_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID
+    DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID
 };
 use eternum::models::config::{LevelingConfig};
 use eternum::models::hyperstructure::HyperStructure;
@@ -70,7 +70,7 @@ fn setup(
 
     // set speed configuration 
     ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_speed_config(FREE_TRANSPORT_ENTITY_TYPE, 10); // 10km per sec
+        .set_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
 
     // set road config
     ITransportConfigDispatcher { contract_address: config_systems_address }
@@ -951,7 +951,7 @@ fn test_transport_not_enough_capacity() {
     // set capacity for transport to a very low amount
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(FREE_TRANSPORT_ENTITY_TYPE, 1);
+        .set_capacity_config(DONKEY_ENTITY_TYPE, 1);
 
     // create two free transport unit for taker realm
     let transport_unit_systems_address = deploy_system(

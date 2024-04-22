@@ -135,7 +135,7 @@ impl TroopsImpl of TroopsTrait {
     fn delta(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> (u32, u32) {
         let self_strength = self.strength_against(enemy_troops, troop_config);
         let enemy_strength = enemy_troops.strength_against(self, troop_config);
-        let strength_difference = self_strength - enemy_strength;
+        let _strength_difference = self_strength - enemy_strength;
 
         // should be at least one to prevent division errrors
         (1, 1)

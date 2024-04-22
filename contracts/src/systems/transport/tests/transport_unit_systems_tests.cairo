@@ -7,7 +7,7 @@ use core::zeroable::Zeroable;
 
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+use eternum::constants::DONKEY_ENTITY_TYPE;
 use eternum::models::capacity::Capacity;
 use eternum::models::metadata::EntityMetadata;
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -75,11 +75,11 @@ fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
 
     // set speed configuration 
     ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_speed_config(FREE_TRANSPORT_ENTITY_TYPE, 10); // 10km per sec
+        .set_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
 
     // set capacity configuration
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(FREE_TRANSPORT_ENTITY_TYPE, 200_000); // 200_000 grams ==  200 kg
+        .set_capacity_config(DONKEY_ENTITY_TYPE, 200_000); // 200_000 grams ==  200 kg
 
     // set travel configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }
@@ -117,7 +117,7 @@ fn test_create_free_transport_unit() {
     assert(position.x == 20, 'position not set');
     assert(position.y == 30, 'position not set');
 
-    assert(metadata.entity_type == FREE_TRANSPORT_ENTITY_TYPE.into(), 'entity type not set');
+    assert(metadata.entity_type == DONKEY_ENTITY_TYPE.into(), 'entity type not set');
 
     assert(owner.address == starknet::get_caller_address(), 'owner not set');
 
@@ -129,7 +129,7 @@ fn test_create_free_transport_unit() {
     assert(arrival_time.arrives_at == 0, 'arrival time should be 0');
 
     // check that the quantity tracker has been updated
-    let quantity_tracker_arr = array![realm_entity_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()];
+    let quantity_tracker_arr = array![realm_entity_id.into(), DONKEY_ENTITY_TYPE.into()];
     let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
     let quantity_tracker = get!(world, quantity_tracker_key, QuantityTracker);
     assert(quantity_tracker.count == 10, 'quantity tracker not updated');
@@ -177,7 +177,7 @@ fn test_return_free_transport_unit() {
     transport_unit_systems_dispatcher.create_free_unit(realm_entity_id, 10);
 
     // check that the number of transport units in the realm == 20 before deletion
-    let quantity_tracker_arr = array![realm_entity_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()];
+    let quantity_tracker_arr = array![realm_entity_id.into(), DONKEY_ENTITY_TYPE;
     let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
     let quantity_tracker = get!(world, quantity_tracker_key, QuantityTracker);
     assert(quantity_tracker.count == 20, 'quantity tracker not updated 1');

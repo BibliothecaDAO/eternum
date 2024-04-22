@@ -3,7 +3,7 @@ mod transport_unit_systems {
     use core::poseidon::poseidon_hash_span;
     use eternum::alias::ID;
     use eternum::constants::{
-        REALM_ENTITY_TYPE, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE
+        REALM_ENTITY_TYPE, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, DONKEY_ENTITY_TYPE
     };
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{TravelConfig, SpeedConfig, CapacityConfig};
@@ -45,7 +45,7 @@ mod transport_unit_systems {
 
             // TODO: Move to utils
             // Create a key for the quantity tracker
-            let quantity_tracker_arr = array![entity_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()];
+            let quantity_tracker_arr = array![entity_id.into(), DONKEY_ENTITY_TYPE.into()];
             let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
 
             // Check the existing count of free transport units
@@ -68,7 +68,7 @@ mod transport_unit_systems {
 
             // Fetch configuration values for the new transport unit
             let (speed, capacity) = get!(
-                world, (WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE), (SpeedConfig, CapacityConfig)
+                world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), (SpeedConfig, CapacityConfig)
             );
 
             // Instantiate the new transport unit
@@ -79,7 +79,7 @@ mod transport_unit_systems {
                     EntityOwner { entity_id: id.into(), entity_owner_id: entity_id },
                     Position { entity_id: id.into(), x: position.x, y: position.y },
                     EntityMetadata {
-                        entity_id: id.into(), entity_type: FREE_TRANSPORT_ENTITY_TYPE
+                        entity_id: id.into(), entity_type: DONKEY_ENTITY_TYPE
                     },
                     Owner { entity_id: id.into(), address: caller },
                     Quantity { entity_id: id.into(), value: quantity },
@@ -116,7 +116,7 @@ mod transport_unit_systems {
                         let unit_id = *unit_id;
                         let entity_meta = get!(world, unit_id, EntityMetadata);
                         assert(
-                            entity_meta.entity_type == FREE_TRANSPORT_ENTITY_TYPE,
+                            entity_meta.entity_type == DONKEY_ENTITY_TYPE,
                             'not a free transport unit'
                         );
 
@@ -136,7 +136,7 @@ mod transport_unit_systems {
                         // update quantity tracker
                         let unit_owner_id = get!(world, unit_id, EntityOwner).entity_owner_id;
                         let transport_quantity_tracker_arr = array![
-                            unit_owner_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()
+                            unit_owner_id.into(), DONKEY_ENTITY_TYPE.into()
                         ];
                         let transport_quantity_tracker_key = poseidon_hash_span(
                             transport_quantity_tracker_arr.span()

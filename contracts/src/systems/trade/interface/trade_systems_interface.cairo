@@ -24,13 +24,12 @@ trait ITradeSystems {
     fn create_order(
         maker_id: u128,
         maker_gives_resources: Span<(u8, u128)>,
-        maker_transport_id: ID,
         taker_id: u128,
         taker_gives_resources: Span<(u8, u128)>,
         expires_at: u64
     ) -> ID;
 
-    fn accept_order(taker_id: u128, taker_transport_id: u128, trade_id: u128);
+    fn accept_order(taker_id: u128, trade_id: u128);
 
     fn cancel_order(trade_id: u128);
 }
