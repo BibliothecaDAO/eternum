@@ -1,25 +1,24 @@
-use eternum::models::hyperstructure::HyperStructure;
-use eternum::models::resources::ResourceCost;
+use core::array::{ArrayTrait, SpanTrait};
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
+use eternum::constants::HYPERSTRUCTURE_LEVELING_CONFIG_ID;
+use eternum::constants::ResourceTypes;
 use eternum::models::combat::TownWatch;
-use eternum::models::position::{Position, Coord};
 use eternum::models::config::LevelingConfig;
+use eternum::models::hyperstructure::HyperStructure;
+use eternum::models::position::{Position, Coord};
+use eternum::models::resources::ResourceCost;
+use eternum::systems::config::contracts::config_systems;
 
 use eternum::systems::config::interface::{
     IHyperstructureConfigDispatcher, IHyperstructureConfigDispatcherTrait,
     ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait,
 };
-use eternum::systems::config::contracts::config_systems;
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
-use eternum::constants::HYPERSTRUCTURE_LEVELING_CONFIG_ID;
-use eternum::constants::ResourceTypes;
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 use starknet::contract_address::contract_address_const;
-
-use core::array::{ArrayTrait, SpanTrait};
 
 
 fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {

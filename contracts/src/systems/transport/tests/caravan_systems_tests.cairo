@@ -1,14 +1,19 @@
+use core::array::ArrayTrait;
+use core::clone::Clone;
+
+use core::poseidon::poseidon_hash_span;
+use core::traits::Into;
+use core::zeroable::Zeroable;
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
-use eternum::models::position::Position;
+use eternum::models::capacity::Capacity;
 use eternum::models::caravan::CaravanMembers;
+use eternum::models::inventory::Inventory;
 use eternum::models::metadata::ForeignKey;
 use eternum::models::movable::{Movable, ArrivalTime};
-use eternum::models::capacity::Capacity;
 use eternum::models::owner::{Owner, EntityOwner};
-use eternum::models::inventory::Inventory;
-
-use eternum::systems::realm::contracts::realm_systems;
-use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
+use eternum::models::position::Position;
 
 
 use eternum::systems::config::contracts::config_systems;
@@ -16,6 +21,9 @@ use eternum::systems::config::interface::{
     ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWorldConfigDispatcher,
     IWorldConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
 };
+
+use eternum::systems::realm::contracts::realm_systems;
+use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
 use eternum::systems::transport::contracts::{
     transport_unit_systems::transport_unit_systems, caravan_systems::caravan_systems
 };
@@ -30,14 +38,6 @@ use eternum::systems::transport::interface::{
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use starknet::contract_address::contract_address_const;
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
-use core::poseidon::poseidon_hash_span;
-use core::traits::Into;
-use core::array::ArrayTrait;
-use core::clone::Clone;
-use core::zeroable::Zeroable;
 
 
 fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher, u128) {
@@ -96,7 +96,9 @@ fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher, u128) {
         .set_travel_config(5); // 5 free transport per city
 
     // create two free transport unit for the realm
-    let transport_unit_systems_address = deploy_system(world, transport_unit_systems::TEST_CLASS_HASH);
+    let transport_unit_systems_address = deploy_system(
+        world, transport_unit_systems::TEST_CLASS_HASH
+    );
     let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
         contract_address: transport_unit_systems_address
     };

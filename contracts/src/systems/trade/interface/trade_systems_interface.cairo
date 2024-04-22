@@ -1,6 +1,5 @@
-use eternum::alias::ID;
-
 use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
 
 #[dojo::interface]
 trait ITradeSystems {

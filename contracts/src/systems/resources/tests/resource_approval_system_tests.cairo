@@ -1,13 +1,18 @@
 mod resource_approval_system_tests {
-    use eternum::models::resources::{Resource, ResourceAllowance};
-    use eternum::models::owner::Owner;
-    use eternum::models::position::Position;
-    use eternum::models::capacity::Capacity;
-    use eternum::models::quantity::Quantity;
-    use eternum::models::config::WeightConfig;
+    use core::integer::BoundedInt;
+
+    use core::traits::Into;
+
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     use eternum::constants::ResourceTypes;
     use eternum::constants::WORLD_CONFIG_ID;
+    use eternum::models::capacity::Capacity;
+    use eternum::models::config::WeightConfig;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::Position;
+    use eternum::models::quantity::Quantity;
+    use eternum::models::resources::{Resource, ResourceAllowance};
 
     use eternum::systems::resources::contracts::resource_systems;
     use eternum::systems::resources::interface::{
@@ -16,12 +21,7 @@ mod resource_approval_system_tests {
 
 
     use eternum::utils::testing::{spawn_eternum, deploy_system};
-
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use starknet::contract_address_const;
-
-    use core::traits::Into;
-    use core::integer::BoundedInt;
 
 
     fn setup() -> (IWorldDispatcher, IResourceSystemsDispatcher) {

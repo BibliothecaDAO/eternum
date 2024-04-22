@@ -1,17 +1,17 @@
 #[dojo::contract]
 mod leveling_systems {
     use eternum::alias::ID;
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-    use eternum::models::owner::{Owner};
-    use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::config::{LevelingConfig};
-    use eternum::models::realm::{Realm};
-    use eternum::models::level::{Level, LevelTrait};
 
     use eternum::constants::{
         REALM_LEVELING_CONFIG_ID, LevelIndex, ResourceTypes, HYPERSTRUCTURE_LEVELING_CONFIG_ID,
         REALM_LEVELING_START_TIER, HYPERSTRUCTURE_LEVELING_START_TIER
     };
+    use eternum::models::config::{LevelingConfig};
+    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::level::{Level, LevelTrait};
+    use eternum::models::owner::{Owner};
+    use eternum::models::realm::{Realm};
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 
     use eternum::systems::leveling::contracts::leveling_systems::{
         InternalLevelingSystemsImpl as leveling
@@ -111,8 +111,9 @@ mod leveling_systems {
 
                     let total_cost = (cost_multiplier * resource_cost.amount) / 100;
 
-                    let mut resource 
-                        = ResourceImpl::get(world, (entity_id, resource_cost.resource_type));
+                    let mut resource = ResourceImpl::get(
+                        world, (entity_id, resource_cost.resource_type)
+                    );
                     assert(resource.balance >= total_cost, 'not enough resource');
                     resource.balance -= total_cost;
                     set!(world, (resource));

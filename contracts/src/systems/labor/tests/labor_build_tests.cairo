@@ -21,7 +21,6 @@
 // use eternum::systems::labor::contracts::labor_systems;
 // use eternum::systems::labor::interface::{ILaborSystemsDispatcher, ILaborSystemsDispatcherTrait,};
 
-
 // fn setup() -> (IWorldDispatcher, ID, ILaborSystemsDispatcher) {
 //     let world = spawn_eternum();
 
@@ -68,7 +67,6 @@
 //     (world, realm_entity_id, labor_systems_dispatcher)
 // }
 
-
 // #[test]
 // #[available_gas(300000000000)]
 // fn test_build_labor_non_food() {
@@ -108,7 +106,6 @@
 //     let gold_resource_type = get!(world, (realm_entity_id, labor_resource_type), Resource);
 //     assert(gold_resource_type.balance == 20, 'wrong labor resource');
 // }
-
 
 // #[test]
 // #[available_gas(300000000000)]
@@ -192,7 +189,6 @@
 //     assert(wheat_labor.multiplier == 2, 'wrong wheat multiplier');
 // }
 
-
 // #[test]
 // #[available_gas(300000000000)]
 // fn test_build_labor_after_completed() {
@@ -243,4 +239,5 @@
 //     let gold_resource_type = get!(world, (realm_entity_id, labor_resource_type), Resource);
 //     assert(gold_resource_type.balance == 20, 'wrong labor resource');
 // }
+
 

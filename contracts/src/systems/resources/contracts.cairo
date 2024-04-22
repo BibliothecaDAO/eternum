@@ -1,32 +1,32 @@
 #[dojo::contract]
 mod resource_systems {
     use core::array::SpanTrait;
+
+    use core::integer::BoundedInt;
+    use core::poseidon::poseidon_hash_span;
     use eternum::alias::ID;
-    use eternum::models::resources::{Resource, ResourceImpl,ResourceTrait, ResourceAllowance};
-    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
-    use eternum::models::inventory::{Inventory, InventoryTrait};
-    use eternum::models::realm::Realm;
-    use eternum::models::metadata::ForeignKey;
-    use eternum::models::position::{Position, Coord};
-    use eternum::models::quantity::{Quantity, QuantityTrait};
+
+    use eternum::constants::{WORLD_CONFIG_ID};
     use eternum::models::capacity::{Capacity, CapacityTrait};
     use eternum::models::config::{WeightConfig, WeightConfigImpl};
-    use eternum::models::resources::{ResourceChest, DetachedResource};
+    use eternum::models::inventory::{Inventory, InventoryTrait};
+    use eternum::models::metadata::ForeignKey;
     use eternum::models::movable::{ArrivalTime};
-    use eternum::models::weight::Weight;
+    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
+    use eternum::models::position::{Position, Coord};
+    use eternum::models::quantity::{Quantity, QuantityTrait};
+    use eternum::models::realm::Realm;
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceAllowance};
+    use eternum::models::resources::{ResourceChest, DetachedResource};
     use eternum::models::road::RoadImpl;
+    use eternum::models::weight::Weight;
+
+    use eternum::systems::resources::interface::{IResourceSystems, IInventorySystems};
 
 
     use eternum::systems::transport::contracts::caravan_systems::caravan_systems::{
         InternalCaravanSystemsImpl as caravan
     };
-
-    use eternum::constants::{WORLD_CONFIG_ID};
-
-    use eternum::systems::resources::interface::{IResourceSystems, IInventorySystems};
-
-    use core::integer::BoundedInt;
-    use core::poseidon::poseidon_hash_span;
 
     #[derive(Drop, starknet::Event)]
     struct Transfer {
@@ -194,8 +194,9 @@ mod resource_systems {
                     Option::Some((
                         resource_type, resource_amount
                     )) => {
-                        let mut entity_resource 
-                            = ResourceImpl::get(world, (receiver_id, *resource_type));
+                        let mut entity_resource = ResourceImpl::get(
+                            world, (receiver_id, *resource_type)
+                        );
 
                         entity_resource.balance += *resource_amount;
                         entity_resource.save(world);
@@ -240,9 +241,13 @@ mod resource_systems {
 
             emit!(
                 world,
-                (Event::Transfer(
-                    Transfer { receiving_entity_id, sending_realm_id, sending_entity_id, resources }
-                ),)
+                (
+                    Event::Transfer(
+                        Transfer {
+                            receiving_entity_id, sending_realm_id, sending_entity_id, resources
+                        }
+                    ),
+                )
             );
         }
 
@@ -344,8 +349,9 @@ mod resource_systems {
                     break ();
                 }
                 let detached_resource = get!(world, (entity_id, index), DetachedResource);
-                let mut donor_resource 
-                    = ResourceImpl::get(world, (donor_id, detached_resource.resource_type));
+                let mut donor_resource = ResourceImpl::get(
+                    world, (donor_id, detached_resource.resource_type)
+                );
                 assert(
                     donor_resource.balance >= detached_resource.resource_amount,
                     'insufficient balance'
@@ -471,8 +477,9 @@ mod resource_systems {
                     world, (resource_chest.entity_id, index), DetachedResource
                 );
 
-                let mut receiving_entity_resource
-                    = ResourceImpl::get(world, (receiving_entity_id, resource_chest_resource.resource_type));
+                let mut receiving_entity_resource = ResourceImpl::get(
+                    world, (receiving_entity_id, resource_chest_resource.resource_type)
+                );
 
                 // update entity balance
                 receiving_entity_resource.balance += resource_chest_resource.resource_amount;

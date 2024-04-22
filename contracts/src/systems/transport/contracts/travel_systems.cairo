@@ -1,25 +1,25 @@
 #[dojo::contract]
 mod travel_systems {
     use eternum::alias::ID;
-    use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::realm::Realm;
-    use eternum::models::order::{Orders, OrdersTrait};
-    use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
-    use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::level::{Level, LevelTrait};
-    use eternum::models::road::RoadImpl;
-    use eternum::models::tick::{TickMove, TickMoveTrait};
-    use eternum::models::config::{RoadConfig, LevelingConfig};
-    use eternum::models::map::Tile;
 
     use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex};
-
-    use eternum::systems::transport::interface::travel_systems_interface::{ITravelSystems};
+    use eternum::models::config::{RoadConfig, LevelingConfig};
+    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::level::{Level, LevelTrait};
+    use eternum::models::map::Tile;
+    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::order::{Orders, OrdersTrait};
+    use eternum::models::owner::{Owner, EntityOwner};
+    use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
+    use eternum::models::realm::Realm;
+    use eternum::models::road::RoadImpl;
+    use eternum::models::tick::{TickMove, TickMoveTrait};
 
     use eternum::systems::leveling::contracts::leveling_systems::{
         InternalLevelingSystemsImpl as leveling
     };
+
+    use eternum::systems::transport::interface::travel_systems_interface::{ITravelSystems};
 
     #[derive(Drop, starknet::Event)]
     struct Travel {
@@ -195,14 +195,18 @@ mod travel_systems {
             let entity_owner = get!(world, transport_id, EntityOwner);
             emit!(
                 world,
-                (Event::Travel(Travel {
-                    destination_coord_x: to_coord.x,
-                    destination_coord_y: to_coord.y,
-                    travel_time: 0,
-                    travel_path: travel_path.span(),
-                    realm_entity_id: entity_owner.entity_owner_id,
-                    entity_id: transport_id
-                }),)
+                (
+                    Event::Travel(
+                        Travel {
+                            destination_coord_x: to_coord.x,
+                            destination_coord_y: to_coord.y,
+                            travel_time: 0,
+                            travel_path: travel_path.span(),
+                            realm_entity_id: entity_owner.entity_owner_id,
+                            entity_id: transport_id
+                        }
+                    ),
+                )
             );
         }
 
@@ -261,14 +265,18 @@ mod travel_systems {
             let entity_owner = get!(world, transport_id, EntityOwner);
             emit!(
                 world,
-                (Event::Travel(Travel {
-                    destination_coord_x: to_coord.x,
-                    destination_coord_y: to_coord.y,
-                    travel_time,
-                    travel_path: array![from_coord, to_coord].span(),
-                    realm_entity_id: entity_owner.entity_owner_id,
-                    entity_id: transport_id
-                }),)
+                (
+                    Event::Travel(
+                        Travel {
+                            destination_coord_x: to_coord.x,
+                            destination_coord_y: to_coord.y,
+                            travel_time,
+                            travel_path: array![from_coord, to_coord].span(),
+                            realm_entity_id: entity_owner.entity_owner_id,
+                            entity_id: transport_id
+                        }
+                    ),
+                )
             );
         }
     }

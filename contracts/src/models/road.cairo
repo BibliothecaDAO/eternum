@@ -1,10 +1,9 @@
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
-use eternum::models::position::Coord;
-use eternum::models::config::{RoadConfig};
 
 use eternum::constants::ROAD_CONFIG_ID;
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::models::config::{RoadConfig};
+use eternum::models::position::Coord;
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -52,15 +51,14 @@ impl RoadImpl of RoadTrait {
 
 #[cfg(test)]
 mod tests {
+    use core::array::ArrayTrait;
+    use core::serde::Serde;
+
+    use dojo::world::IWorldDispatcherTrait;
     use eternum::models::position::{Coord};
     use eternum::models::road::{Road, RoadImpl, RoadTrait};
 
     use eternum::utils::testing::spawn_eternum;
-
-    use dojo::world::IWorldDispatcherTrait;
-
-    use core::array::ArrayTrait;
-    use core::serde::Serde;
 
     #[test]
     #[available_gas(3000000000000)]

@@ -1,34 +1,33 @@
-use eternum::utils::testing::{spawn_eternum, deploy_system};
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
-use eternum::systems::bank::contracts::bank_systems::bank_systems;
-use eternum::systems::bank::interface::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
-
-use eternum::systems::bank::contracts::liquidity_systems::liquidity_systems;
-use eternum::systems::bank::interface::liquidity::{
-    ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,
-};
-use eternum::systems::bank::contracts::swap_systems::swap_systems;
-use eternum::systems::bank::interface::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::constants::{ResourceTypes};
+use eternum::models::bank::bank::{BankAccounts};
 
 use eternum::models::bank::liquidity::{Liquidity};
 use eternum::models::bank::market::{Market, MarketImpl};
-use eternum::models::bank::bank::{BankAccounts};
 use eternum::models::position::{Coord};
-use eternum::constants::{ResourceTypes};
 use eternum::models::resources::{ResourceImpl, Resource};
+use eternum::systems::bank::contracts::bank_systems::bank_systems;
+
+use eternum::systems::bank::contracts::liquidity_systems::liquidity_systems;
+use eternum::systems::bank::contracts::swap_systems::swap_systems;
+use eternum::systems::bank::interface::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
+use eternum::systems::bank::interface::liquidity::{
+    ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,
+};
+use eternum::systems::bank::interface::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
+
+use eternum::systems::config::contracts::config_systems;
+use eternum::systems::config::interface::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
+use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use starknet::contract_address_const;
 
+use traits::Into;
+
 const _0_1: u128 = 1844674407370955161; // 0.1
 const _1: u128 = 18446744073709551616; // 1
-
-use traits::Into;
 
 fn setup() -> (
     IWorldDispatcher,

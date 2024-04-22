@@ -1,8 +1,8 @@
 use cubit::f128::math::ops::ln;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use starknet::get_block_timestamp;
 
 use eternum::utils::vrgda::{LinearVRGDA, LinearVRGDATrait};
+use starknet::get_block_timestamp;
 
 #[derive(Model, Copy, Drop, Serde)]
 struct LaborAuction {
@@ -51,26 +51,25 @@ impl LaborAuctionImpl of LaborAuctionTrait {
 
 #[cfg(test)]
 mod tests {
-    use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
-    use eternum::utils::vrgda::{LinearVRGDATrait, LinearVRGDA};
-
     use cubit::f128::math::ops::{ln, abs, exp, pow};
 
-    // testing
-    use eternum::utils::testing::spawn_eternum;
+    use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
     // use dojo_defi when working with nightly
     // use dojo_defi::tests::utils::{assert_rel_approx_eq};
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
+
+    // testing
+    use eternum::utils::testing::spawn_eternum;
+    use eternum::utils::vrgda::{LinearVRGDATrait, LinearVRGDA};
 
     // constants
     const _0_9: u128 = 16602069666338596454; // 0.9
     const _0_1: u128 = 1844674407370955161; // 0.1
     const _1_1111111111: u128 = 20496382303916760194; // 1.111...
     const DELTA_0_0005: u128 = 9223372036854776;
-
-    use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
     fn assert_rel_approx_eq(a: Fixed, b: Fixed, max_percent_delta: Fixed) {
         if b == FixedTrait::ZERO() {

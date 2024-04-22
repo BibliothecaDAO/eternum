@@ -1,10 +1,9 @@
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{ILaborConfigDispatcher, ILaborConfigDispatcherTrait};
 use eternum::utils::testing::{spawn_eternum, deploy_system};
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 
 const _0_1: u128 = 1844674407370955161; // 0.1

@@ -1,34 +1,33 @@
 #[dojo::contract]
 mod trade_systems {
+    use core::poseidon::poseidon_hash_span;
     use eternum::alias::ID;
+
+    use eternum::constants::{REALM_ENTITY_TYPE, WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE};
+    use eternum::models::capacity::Capacity;
+    use eternum::models::config::RoadConfig;
+    use eternum::models::config::WeightConfig;
+    use eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig};
+    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::owner::Owner;
+    use eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
+    use eternum::models::quantity::{Quantity, QuantityTrait, QuantityTracker};
+    use eternum::models::realm::Realm;
 
     use eternum::models::resources::Resource;
     use eternum::models::resources::{ResourceChest, DetachedResource};
-    use eternum::models::owner::Owner;
-    use eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
-    use eternum::models::realm::Realm;
-    use eternum::models::weight::Weight;
-    use eternum::models::trade::{Trade, Status, TradeStatus};
-    use eternum::models::capacity::Capacity;
-    use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::road::{Road, RoadTrait, RoadImpl};
-    use eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig};
-    use eternum::models::config::WeightConfig;
-    use eternum::models::config::RoadConfig;
-    use eternum::models::quantity::{Quantity, QuantityTrait, QuantityTracker};
+    use eternum::models::trade::{Trade, Status, TradeStatus};
+    use eternum::models::weight::Weight;
 
     use eternum::systems::resources::contracts::resource_systems::{
         InternalResourceChestSystemsImpl as resource_chest,
         InternalInventorySystemsImpl as inventory
     };
+    use eternum::systems::trade::interface::trade_systems_interface::{ITradeSystems};
     use eternum::systems::transport::contracts::caravan_systems::caravan_systems::{
         InternalCaravanSystemsImpl as caravan
     };
-    use eternum::systems::trade::interface::trade_systems_interface::{ITradeSystems};
-
-    use eternum::constants::{REALM_ENTITY_TYPE, WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE};
-
-    use core::poseidon::poseidon_hash_span;
 
     #[derive(Drop, starknet::Event)]
     struct CreateOrder {
@@ -107,9 +106,17 @@ mod trade_systems {
 
             emit!(
                 world,
-                (Event::CreateOrder(CreateOrder {
-                    taker_id, maker_id, trade_id, maker_gives_resources, taker_gives_resources
-                }),)
+                (
+                    Event::CreateOrder(
+                        CreateOrder {
+                            taker_id,
+                            maker_id,
+                            trade_id,
+                            maker_gives_resources,
+                            taker_gives_resources
+                        }
+                    ),
+                )
             );
 
             trade_id

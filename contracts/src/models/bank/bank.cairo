@@ -1,5 +1,5 @@
-use starknet::ContractAddress;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use starknet::ContractAddress;
 
 // Used as helper struct throughout the world
 #[derive(Model, Copy, Drop, Serde)]

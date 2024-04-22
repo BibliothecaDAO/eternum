@@ -1,11 +1,25 @@
-use eternum::models::position::Position;
-use eternum::models::resources::{Resource};
-use eternum::models::movable::{Movable, ArrivalTime};
-use eternum::models::inventory::Inventory;
+use core::array::{ArrayTrait, SpanTrait};
+use core::traits::Into;
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
+use eternum::constants::ResourceTypes;
+use eternum::constants::SOLDIER_ENTITY_TYPE;
 use eternum::models::capacity::Capacity;
-use eternum::models::owner::{Owner, EntityOwner};
-use eternum::models::quantity::{Quantity, QuantityTrait};
 use eternum::models::combat::{Attack, Health, Defence, Duty, TownWatch};
+use eternum::models::inventory::Inventory;
+use eternum::models::movable::{Movable, ArrivalTime};
+use eternum::models::owner::{Owner, EntityOwner};
+use eternum::models::position::Position;
+use eternum::models::quantity::{Quantity, QuantityTrait};
+use eternum::models::resources::{Resource};
+
+
+use eternum::systems::combat::contracts::{combat_systems};
+
+use eternum::systems::combat::interface::{
+    ISoldierSystemsDispatcher, ISoldierSystemsDispatcherTrait
+};
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{
@@ -16,24 +30,9 @@ use eternum::systems::config::interface::{
 use eternum::systems::realm::contracts::realm_systems;
 use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
 
-
-use eternum::systems::combat::contracts::{combat_systems};
-
-use eternum::systems::combat::interface::{
-    ISoldierSystemsDispatcher, ISoldierSystemsDispatcherTrait
-};
-
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
-use eternum::constants::ResourceTypes;
-use eternum::constants::SOLDIER_ENTITY_TYPE;
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 use starknet::contract_address_const;
-
-use core::array::{ArrayTrait, SpanTrait};
-use core::traits::Into;
 
 fn setup() -> (IWorldDispatcher, u128, u128, ISoldierSystemsDispatcher) {
     let world = spawn_eternum();

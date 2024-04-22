@@ -1,7 +1,6 @@
+use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::position::Coord;
-
-use dojo::world::IWorldDispatcher;
 
 #[dojo::interface]
 trait IWorldConfig {
@@ -108,9 +107,7 @@ trait ILevelingConfig {
 
 #[dojo::interface]
 trait IBankConfig {
-    fn set_bank_config(
-        lords_cost: u128, lp_fee_scaled: u128
-    );
+    fn set_bank_config(lords_cost: u128, lp_fee_scaled: u128);
 }
 
 #[dojo::interface]
@@ -144,9 +141,5 @@ trait IMapConfig {
 
 #[dojo::interface]
 trait IProductionConfig {
-    fn set_production_config(
-        resource_type: u8,
-        amount: u128,
-        cost: Span<(u8, u128)>
-    );
+    fn set_production_config(resource_type: u8, amount: u128, cost: Span<(u8, u128)>);
 }

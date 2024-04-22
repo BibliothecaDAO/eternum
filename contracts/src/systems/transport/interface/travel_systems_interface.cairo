@@ -1,8 +1,7 @@
+use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::position::Coord;
 use eternum::models::position::Direction;
-
-use dojo::world::IWorldDispatcher;
 
 #[dojo::interface]
 trait ITravelSystems {

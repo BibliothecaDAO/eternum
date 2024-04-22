@@ -1,16 +1,9 @@
-// models
-use eternum::models::owner::{owner, Owner};
-use eternum::models::realm::{realm, Realm};
-use eternum::models::resources::{resource, Resource};
-use eternum::models::resources::{resource_cost, ResourceCost};
-use eternum::models::position::{position, Position};
+use dojo::test_utils::spawn_test_world;
+
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::capacity::{capacity, Capacity};
-use eternum::models::metadata::{entity_metadata, EntityMetadata};
-use eternum::models::labor::{labor, Labor};
-use eternum::models::metadata::{foreign_key, ForeignKey};
-use eternum::models::road::{road, Road};
-use eternum::models::labor_auction::{labor_auction, LaborAuction};
-use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
+use eternum::models::caravan::{caravan_members, CaravanMembers,};
 
 
 use eternum::models::config::{
@@ -18,14 +11,21 @@ use eternum::models::config::{
     travel_config, TravelConfig, labor_config, LaborConfig, labor_cost_amount, LaborCostAmount,
     labor_cost_resources, LaborCostResources, weight_config, WeightConfig, road_config, RoadConfig
 };
-use eternum::models::quantity::{quantity, Quantity, quantity_tracker, QuantityTracker};
+use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
+use eternum::models::labor::{labor, Labor};
+use eternum::models::labor_auction::{labor_auction, LaborAuction};
+use eternum::models::metadata::{entity_metadata, EntityMetadata};
+use eternum::models::metadata::{foreign_key, ForeignKey};
 use eternum::models::movable::{movable, Movable, arrival_time, ArrivalTime};
-use eternum::models::caravan::{caravan_members, CaravanMembers,};
+// models
+use eternum::models::owner::{owner, Owner};
+use eternum::models::position::{position, Position};
+use eternum::models::quantity::{quantity, Quantity, quantity_tracker, QuantityTracker};
+use eternum::models::realm::{realm, Realm};
+use eternum::models::resources::{resource, Resource};
+use eternum::models::resources::{resource_cost, ResourceCost};
+use eternum::models::road::{road, Road};
 use eternum::models::trade::{status, Status, trade, Trade,};
-
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use dojo::test_utils::spawn_test_world;
 
 use starknet::{syscalls::deploy_syscall, ClassHash, ContractAddress};
 

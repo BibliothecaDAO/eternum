@@ -12,7 +12,6 @@
 // use eternum::constants::{REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID};
 // use eternum::constants::LevelIndex;
 
-
 // use eternum::systems::labor::utils::get_labor_resource_type;
 
 // use eternum::utils::testing::{spawn_eternum, deploy_system};
@@ -25,13 +24,11 @@
 // use eternum::systems::realm::contracts::realm_systems;
 // use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
 
-
 // use eternum::systems::config::contracts::config_systems;
 // use eternum::systems::config::interface::{ILaborConfigDispatcher, ILaborConfigDispatcherTrait,};
 
 // use eternum::systems::labor::contracts::labor_systems;
 // use eternum::systems::labor::interface::{ILaborSystemsDispatcher, ILaborSystemsDispatcherTrait,};
-
 
 // #[test]
 // #[available_gas(3000000000)]
@@ -127,7 +124,6 @@
 //     // verify resource is right amount
 //     assert(gold_resource_after_harvest.balance == generated_resources, 'failed resource amount');
 // }
-
 
 // #[test]
 // #[available_gas(3000000000)]
@@ -260,7 +256,6 @@
 //     );
 // }
 
-
 // #[test]
 // #[available_gas(3000000000)]
 // fn test_harvest_labor_food() {
@@ -356,7 +351,6 @@
 //     // verify resource is right amount
 //     assert(wheat_resource_after_harvest.balance == generated_resources, 'failed resource amount');
 // }
-
 
 // #[test]
 // #[available_gas(3000000000)]
@@ -489,4 +483,5 @@
 //         'failed resource amount'
 //     );
 // }
+
 

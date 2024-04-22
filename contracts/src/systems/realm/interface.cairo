@@ -1,6 +1,6 @@
 use eternum::alias::ID;
-use starknet::ContractAddress;
 use eternum::models::position::Position;
+use starknet::ContractAddress;
 
 
 #[dojo::interface]

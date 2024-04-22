@@ -1,24 +1,22 @@
 #[dojo::contract]
 mod transport_unit_systems {
+    use core::poseidon::poseidon_hash_span;
     use eternum::alias::ID;
-    use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::position::Position;
-    use eternum::models::realm::Realm;
-    use eternum::models::capacity::Capacity;
-    use eternum::models::metadata::EntityMetadata;
-    use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::config::{TravelConfig, SpeedConfig, CapacityConfig};
-    use eternum::models::quantity::{Quantity, QuantityTracker};
     use eternum::constants::{
         REALM_ENTITY_TYPE, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE
     };
+    use eternum::models::capacity::Capacity;
+    use eternum::models::config::{TravelConfig, SpeedConfig, CapacityConfig};
+    use eternum::models::metadata::EntityMetadata;
+    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::owner::{Owner, EntityOwner};
+    use eternum::models::position::Position;
+    use eternum::models::quantity::{Quantity, QuantityTracker};
+    use eternum::models::realm::Realm;
 
     use eternum::systems::transport::interface::transport_unit_systems_interface::{
         ITransportUnitSystems
     };
-
-
-    use core::poseidon::poseidon_hash_span;
 
 
     #[abi(embed_v0)]

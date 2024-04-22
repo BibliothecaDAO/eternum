@@ -1,8 +1,8 @@
-use starknet::ContractAddress;
-use traits::Into;
 use array::SpanTrait;
 use eternum::alias::ID;
 use eternum::utils::unpack::unpack_resource_types;
+use starknet::ContractAddress;
+use traits::Into;
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Realm {

@@ -1,12 +1,11 @@
 #[dojo::contract]
 mod road_systems {
+    use eternum::constants::ROAD_CONFIG_ID;
+    use eternum::models::config::RoadConfig;
+    use eternum::models::owner::Owner;
     use eternum::models::position::{Coord};
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::road::{Road, RoadImpl};
-    use eternum::models::owner::Owner;
-    use eternum::models::config::RoadConfig;
-
-    use eternum::constants::ROAD_CONFIG_ID;
 
     use eternum::systems::transport::interface::road_systems_interface::{IRoadSystems};
 
@@ -51,8 +50,9 @@ mod road_systems {
                 let resource_cost = get!(
                     world, (road_config.resource_cost_id, index), ResourceCost
                 );
-                let mut realm_resource 
-                    = ResourceImpl::get(world, (entity_id, resource_cost.resource_type));
+                let mut realm_resource = ResourceImpl::get(
+                    world, (entity_id, resource_cost.resource_type)
+                );
 
                 assert(
                     realm_resource.balance >= resource_cost.amount * usage_count.into(),

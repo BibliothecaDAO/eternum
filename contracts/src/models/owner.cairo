@@ -1,8 +1,7 @@
-use starknet::ContractAddress;
-
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
+use eternum::constants::ErrorMessages;
 use eternum::models::realm::Realm;
+use starknet::ContractAddress;
 
 // contract address owning an entity
 #[derive(Model, Copy, Drop, Serde)]
@@ -13,16 +12,26 @@ struct Owner {
 }
 
 // entity owning an entity
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Model, Copy, Drop, Serde, Default)]
 struct EntityOwner {
     #[key]
     entity_id: u128,
     entity_owner_id: u128,
 }
 
+#[generate_trait]
+impl OwnerImpl of OwnerTrait {
+    fn assert_caller_owner(self: Owner, caller: ContractAddress) {
+        assert(self.address == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
+    }
+}
 
 #[generate_trait]
 impl EntityOwnerImpl of EntityOwnerTrait {
+    fn owner_address(self: EntityOwner, world: IWorldDispatcher) -> ContractAddress {
+        return get!(world, self.entity_owner_id, Owner).address;
+    }
+
     fn get_realm_id(self: EntityOwner, world: IWorldDispatcher) -> u128 {
         get!(world, (self.entity_owner_id), Realm).realm_id
     }
@@ -30,11 +39,10 @@ impl EntityOwnerImpl of EntityOwnerTrait {
 
 #[cfg(test)]
 mod tests {
-    use eternum::utils::testing::spawn_eternum;
-    use eternum::models::realm::Realm;
-    use eternum::models::owner::{EntityOwner, EntityOwnerTrait};
-
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::models::owner::{EntityOwner, EntityOwnerTrait};
+    use eternum::models::realm::Realm;
+    use eternum::utils::testing::spawn_eternum;
 
     #[test]
     #[available_gas(30000000)]

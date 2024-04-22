@@ -1,25 +1,25 @@
 mod internal_leveling_systems {
-    use eternum::constants::{ResourceTypes};
-    use eternum::models::resources::Resource;
-    use eternum::models::level::Level;
-    use eternum::models::position::Position;
-
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
-
-    use core::traits::Into;
     use core::option::OptionTrait;
 
-    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use core::traits::Into;
 
-    use eternum::systems::leveling::contracts::leveling_systems::{
-        InternalLevelingSystemsImpl as leveling
-    };
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::constants::{ResourceTypes};
+    use eternum::models::level::Level;
+    use eternum::models::position::Position;
+    use eternum::models::resources::Resource;
 
 
     use eternum::systems::config::contracts::config_systems;
     use eternum::systems::config::interface::{
         ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait,
     };
+
+    use eternum::systems::leveling::contracts::leveling_systems::{
+        InternalLevelingSystemsImpl as leveling
+    };
+
+    use eternum::utils::testing::{spawn_eternum, deploy_system};
 
     const LEVELING_CONFIG_ID: u128 = 8888;
 

@@ -1,7 +1,6 @@
+use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::position::Coord;
-
-use dojo::world::IWorldDispatcher;
 
 #[dojo::interface]
 trait IRoadSystems {

@@ -74,11 +74,17 @@ mod test {
     mod contracts;
     mod interface;
 }
-mod bank {
+mod combatv2 {
     mod contracts;
     mod interface;
     #[cfg(test)]
     mod tests;
 }
 
+mod bank {
+    mod contracts;
+    mod interface;
+    #[cfg(test)]
+    mod tests;
+}
 

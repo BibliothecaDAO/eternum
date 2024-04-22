@@ -1,10 +1,15 @@
+use core::array::ArrayTrait;
+use core::clone::Clone;
+
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
+use eternum::constants::{ROAD_CONFIG_ID, ResourceTypes};
+use eternum::models::config::RoadConfig;
+use eternum::models::owner::Owner;
 use eternum::models::position::{Coord};
 use eternum::models::resources::{Resource, ResourceCost};
 use eternum::models::road::{Road, RoadImpl};
-use eternum::models::owner::Owner;
-use eternum::models::config::RoadConfig;
-
-use eternum::constants::{ROAD_CONFIG_ID, ResourceTypes};
 use eternum::systems::transport::contracts::{road_systems::road_systems};
 use eternum::systems::transport::interface::{
     road_systems_interface::{IRoadSystemsDispatcher, IRoadSystemsDispatcherTrait},
@@ -12,13 +17,7 @@ use eternum::systems::transport::interface::{
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
-
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 use starknet::contract_address_const;
-
-use core::array::ArrayTrait;
-use core::clone::Clone;
 
 
 fn setup() -> (IWorldDispatcher, IRoadSystemsDispatcher) {
