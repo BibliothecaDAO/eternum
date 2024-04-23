@@ -42,9 +42,6 @@ mod leveling {
 }
 mod name {
     mod contracts;
-    mod interface;
-    #[cfg(test)]
-    mod tests;
 }
 mod hyperstructure {
     mod contracts;

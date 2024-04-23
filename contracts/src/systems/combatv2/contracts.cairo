@@ -14,11 +14,14 @@ trait ICombatv2Contract<TContractState> {
 mod combat_v2_systems {
     use core::option::OptionTrait;
     use eternum::alias::ID;
-    use eternum::constants::WORLD_CONFIG_ID;
+    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE};
     use eternum::constants::{ResourceTypes, ErrorMessages};
-    use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
-    use eternum::models::config::{TickConfig, TickImpl, TickTrait};
-    use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
+
+    use eternum::models::config::{
+        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
+        TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait
+    };
+
     use eternum::models::movable::Movable;
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner};
     use eternum::models::position::{Position, Coord};
@@ -80,6 +83,25 @@ mod combat_v2_systems {
             army_position.x = owner_position.x;
             army_position.y = owner_position.y;
             set!(world, (army_position));
+
+            // Make Moveable
+            // @DEV TODO: This should be moved to a pure function rather than storing in the state. If we do it like this, then we will be storing the same data in the state multiple times.
+            let individual_speed = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
+                .sec_per_km;
+
+            set!(
+                world,
+                Movable {
+                    entity_id: army.entity_id,
+                    sec_per_km: individual_speed,
+                    blocked: false,
+                    round_trip: false,
+                    start_coord_x: 0,
+                    start_coord_y: 0,
+                    intermediate_coord_x: 0,
+                    intermediate_coord_y: 0,
+                }
+            );
         }
 
 

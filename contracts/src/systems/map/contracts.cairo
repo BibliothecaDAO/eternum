@@ -12,7 +12,7 @@ mod map_systems {
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::owner::{Owner, EntityOwner};
+    use eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
     use eternum::models::position::{Coord, CoordTrait, Direction};
     use eternum::models::position::{Position};
     use eternum::models::quantity::Quantity;
@@ -54,9 +54,7 @@ mod map_systems {
     impl MapSystemsImpl of IMapSystems<ContractState> {
         fn explore(world: IWorldDispatcher, unit_id: u128, direction: Direction) {
             // check that caller owns unit
-            let caller = starknet::get_caller_address();
-            let unit_owner = get!(world, unit_id, Owner);
-            assert(unit_owner.address == caller, 'not unit owner');
+            get!(world, unit_id, Owner).assert_caller_owner();
 
             // ensure unit is alive
             let unit_health = get!(world, unit_id, Health);

@@ -129,6 +129,7 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 const DONKEY_ENTITY_TYPE: u128 = 256;
 const REALM_ENTITY_TYPE: u128 = 257;
 const SOLDIER_ENTITY_TYPE: u128 = 258;
+const ARMY_ENTITY_TYPE: u128 = 259;
 
 
 // TODO: change to consts
