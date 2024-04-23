@@ -45,6 +45,7 @@ enum BuildingCategory {
     WorkersHut,
     WatchTower,
     Walls,
+    Storehouse,
 }
 
 impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
@@ -64,6 +65,7 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
             BuildingCategory::WorkersHut => 11,
             BuildingCategory::WatchTower => 12,
             BuildingCategory::Walls => 13,
+            BuildingCategory::Storehouse => 14,
         }
     }
 }
@@ -110,6 +112,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::WorkersHut => 0,
             BuildingCategory::WatchTower => 0,
             BuildingCategory::Walls => 0,
+            BuildingCategory::Storehouse => 0,
         }
     }
 
@@ -129,6 +132,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::WorkersHut => 0,
             BuildingCategory::WatchTower => 0,
             BuildingCategory::Walls => 0,
+            BuildingCategory::Storehouse => 0,
         }
     }
 

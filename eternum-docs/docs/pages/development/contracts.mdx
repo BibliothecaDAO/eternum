@@ -15,6 +15,12 @@ entity_id: u32
 
 Where possible make traits for the models so they are stateless for unit testing.
 
+Always use generate trait where possible to minimise code.
+
+```rust
+#[generate_trait]
+```
+
 
 ### Systems
 
@@ -64,3 +70,4 @@ mod building_systems {
     }
 }
 ```
+
