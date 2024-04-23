@@ -49,7 +49,7 @@ mod donkey_systems {
 
             let sender_entity_coord = get!(world, sender_entity_id, Position);
 
-            sender_entity_coord.assert_same_location(destination_coord);
+            sender_entity_coord.assert_not_same_location(destination_coord);
 
             InternalDonkeySystemsImpl::move_resources(
                 world,
@@ -73,7 +73,7 @@ mod donkey_systems {
 
             let sender_entity_coord = get!(world, sender_entity_id, Position);
 
-            sender_entity_coord.assert_same_location(destination_coord);
+            sender_entity_coord.assert_not_same_location(destination_coord);
 
             InternalDonkeySystemsImpl::move_resources(
                 world,
