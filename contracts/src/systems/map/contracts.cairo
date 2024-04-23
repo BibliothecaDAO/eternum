@@ -82,7 +82,7 @@ mod map_systems {
             let exploration_reward = InternalMapSystemsImpl::pay_food_and_get_explore_reward(
                 world, unit_entity_owner.entity_owner_id
             );
-            InternalResourceSystemsImpl::transfer(world, 0, unit_id, exploration_reward);
+            InternalResourceSystemsImpl::transfer(world, 0, 0, unit_id, exploration_reward);
 
             let current_coord: Coord = get!(world, unit_id, Position).into();
             let next_coord = current_coord.neighbor(direction);

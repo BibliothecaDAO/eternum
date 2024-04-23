@@ -982,7 +982,7 @@ mod combat_systems {
                 // give stolen resources to attacker
 
                 InternalResourceSystemsImpl::transfer(
-                    world, target_realm_entity_id, attacker_entity_id, stolen_resources.span()
+                    world, 0, target_realm_entity_id, attacker_entity_id, stolen_resources.span()
                 );
             }
 
