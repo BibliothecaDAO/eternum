@@ -131,11 +131,8 @@ impl ResourceImpl of ResourceTrait {
         }
     }
 
-    fn add(world: IWorldDispatcher, key: (u128, u8), amount: u128) {
-        let mut resource: Resource = get!(world, key, Resource);
-        resource.harvest(world);
-        resource.balance += amount;
-        resource.save(world);
+    fn add(ref self: Resource, amount: u128) {
+        self.balance += amount;
     }
 
     fn save(ref self: Resource, world: IWorldDispatcher) {
