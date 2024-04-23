@@ -56,7 +56,6 @@ mod buildings {
 }
 mod map {
     mod contracts;
-    mod interface;
     #[cfg(test)]
     mod tests;
 }

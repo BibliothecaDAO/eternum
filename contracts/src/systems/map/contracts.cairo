@@ -1,3 +1,8 @@
+#[dojo::interface]
+trait IMapSystems {
+    fn explore(unit_id: u128, direction: eternum::models::position::Direction);
+}
+
 #[dojo::contract]
 mod map_systems {
     use core::traits::Into;
@@ -17,7 +22,6 @@ mod map_systems {
     use eternum::models::realm::{Realm};
     use eternum::models::resources::{Resource, ResourceCost, ResourceTrait, ResourceFoodImpl};
     use eternum::models::tick::{TickMove, TickMoveTrait};
-    use eternum::systems::map::interface::IMapSystems;
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl
@@ -50,7 +54,7 @@ mod map_systems {
 
     // @DEV TODO: We can generalise this more...
     #[abi(embed_v0)]
-    impl MapSystemsImpl of IMapSystems<ContractState> {
+    impl MapSystemsImpl of super::IMapSystems<ContractState> {
         fn explore(world: IWorldDispatcher, unit_id: u128, direction: Direction) {
             // check that caller owns unit
             get!(world, unit_id, Owner).assert_caller_owner();
