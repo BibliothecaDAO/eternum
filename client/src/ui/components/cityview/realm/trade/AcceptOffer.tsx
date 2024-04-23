@@ -34,38 +34,23 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
   const {
     account: { account },
     setup: {
-      optimisticSystemCalls: { optimisticAcceptOffer },
       systemCalls: { accept_order },
     },
   } = useDojo();
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const acceptOffer = async () => {
-    if (isNewCaravan) {
-      await accept_order({
-        signer: account,
-        taker_id: realmEntityId,
-        trade_id: selectedTrade.tradeId,
-        donkeys_quantity: donkeysCount,
-      });
-    } else {
-      await accept_order({
-        signer: account,
-        taker_id: realmEntityId,
-        trade_id: selectedTrade.tradeId,
-        caravan_id: selectedCaravan,
-      });
-    }
-  };
-
   const deleteTrade = useMarketStore((state) => state.deleteTrade);
   const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
 
-  const onAccept = () => {
+  const onAccept = async () => {
     setIsLoading(true);
-    optimisticAcceptOffer(selectedTrade.tradeId, realmEntityId, acceptOffer)();
     // todo: only delete if success
+    await accept_order({
+      signer: account,
+      taker_id: realmEntityId,
+      trade_id: selectedTrade.tradeId,
+    });
     deleteTrade(selectedTrade.tradeId);
     if (selectedTrade.takerId === realmEntityId) {
       deleteNotification([selectedTrade.tradeId.toString()], EventType.DirectOffer);

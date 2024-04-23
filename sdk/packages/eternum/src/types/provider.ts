@@ -60,24 +60,23 @@ export interface TravelHexProps extends SystemSigner {
   directions: num.BigNumberish[];
 }
 
-export interface CreateOrderProps {
+export interface CreateOrderProps extends SystemSigner {
   maker_id: num.BigNumberish;
   maker_gives_resource_types: num.BigNumberish[];
   maker_gives_resource_amounts: num.BigNumberish[];
   taker_id: num.BigNumberish;
   taker_gives_resource_types: num.BigNumberish[];
   taker_gives_resource_amounts: num.BigNumberish[];
-  signer: any;
   expires_at: num.BigNumberish;
 }
 
-export interface SendResources extends SystemSigner {
+export interface SendResourcesProps extends SystemSigner {
   sender_entity_id: num.BigNumberish;
   resources: num.BigNumberish[];
   destination_coord: { x: num.BigNumberish; y: num.BigNumberish };
 }
 
-export interface PickupResources extends SystemSigner {
+export interface PickupResourcesProps extends SystemSigner {
   donkey_owner_entity_id: num.BigNumberish;
   resource_owner_entity_id: num.BigNumberish;
   resources: num.BigNumberish[];
@@ -115,7 +114,7 @@ export interface AcceptOrderProps extends SystemSigner {
   trade_id: num.BigNumberish;
 }
 
-export interface CancelOrder extends SystemSigner {
+export interface CancelOrderProps extends SystemSigner {
   trade_id: num.BigNumberish;
 }
 

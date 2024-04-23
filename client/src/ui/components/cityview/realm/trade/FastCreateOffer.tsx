@@ -15,7 +15,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { ReactComponent as Danger } from "@/assets/icons/common/danger.svg";
 import { ReactComponent as Donkey } from "@/assets/icons/units/donkey-circle.svg";
-import { Caravan } from "./Caravans/Caravan";
 import { useDojo } from "../../../../../hooks/context/DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
@@ -64,7 +63,6 @@ export const FastCreateOfferPopup = ({
   const {
     account: { account },
     setup: {
-      optimisticSystemCalls: { optimisticCreateOrder },
       systemCalls: { create_order },
     },
   } = useDojo();
@@ -98,39 +96,20 @@ export const FastCreateOfferPopup = ({
     const selectedRealmEntityId = selectedRealmId ? getRealmEntityIdFromRealmId(selectedRealmId) : 0;
     setIsLoading(true);
     if (!nextBlockTimestamp) return;
-    if (isNewCaravan) {
-      await optimisticCreateOrder(create_order)({
-        signer: account,
-        maker_id: realmEntityId,
-        maker_gives_resource_types: selectedResourceIdsGive,
-        maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
-          multiplyByPrecision(selectedResourcesGiveAmounts[id]),
-        ),
-        taker_id: selectedRealmEntityId || 0,
-        taker_gives_resource_types: selectedResourceIdsGet,
-        taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
-          multiplyByPrecision(selectedResourcesGetAmounts[id]),
-        ),
-        donkeys_quantity: donkeysCount,
-        expires_at: nextBlockTimestamp + ONE_MONTH,
-      });
-    } else {
-      await optimisticCreateOrder(create_order)({
-        signer: account,
-        maker_id: realmEntityId,
-        maker_gives_resource_types: selectedResourceIdsGive,
-        maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
-          multiplyByPrecision(selectedResourcesGiveAmounts[id]),
-        ),
-        taker_id: selectedRealmEntityId || 0,
-        maker_transport_id: selectedCaravan,
-        taker_gives_resource_types: selectedResourceIdsGet,
-        taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
-          multiplyByPrecision(selectedResourcesGetAmounts[id]),
-        ),
-        expires_at: nextBlockTimestamp + ONE_MONTH,
-      });
-    }
+    create_order({
+      signer: account,
+      maker_id: realmEntityId,
+      maker_gives_resource_types: selectedResourceIdsGive,
+      maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
+        multiplyByPrecision(selectedResourcesGiveAmounts[id]),
+      ),
+      taker_id: selectedRealmEntityId || 0,
+      taker_gives_resource_types: selectedResourceIdsGet,
+      taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
+        multiplyByPrecision(selectedResourcesGetAmounts[id]),
+      ),
+      expires_at: nextBlockTimestamp + ONE_MONTH,
+    });
     onClose();
   };
 
@@ -562,28 +541,6 @@ export const SelectCaravanPanel = ({
     return caravan.capacity ? caravan.capacity >= resourceWeight : false;
   };
 
-  const myAvailableCaravans = useMemo(
-    () =>
-      realmCaravans
-        ? (realmCaravans
-            .map((caravan) => {
-              const resourcesCarried = getResourcesFromInventory(caravan.caravanId);
-              const isIdle =
-                caravan &&
-                nextBlockTimestamp &&
-                !caravan.blocked &&
-                (!caravan.arrivalTime || caravan.arrivalTime <= nextBlockTimestamp) &&
-                resourcesCarried.resources.length == 0;
-              // capacity in gr (1kg = 1000gr)
-              if (isIdle && canCarry(caravan, resourceWeight)) {
-                return caravan;
-              }
-            })
-            .filter(Boolean) as CaravanInterface[])
-        : [],
-    [realmCaravans, resourceWeight],
-  );
-
   return (
     <div className={clsx("flex flex-col items-center w-full p-2 pb-0", className)}>
       {isNewCaravan && (
@@ -645,38 +602,6 @@ export const SelectCaravanPanel = ({
           className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
         >
           <div className="text-xs text-center text-gold">+ New Caravan</div>
-        </div>
-      )}
-      {isNewCaravan && myAvailableCaravans.length > 0 && (
-        <div className="flex flex-col w-full mt-2">
-          <Headline className="mb-2">Or choose from existing Caravans</Headline>
-        </div>
-      )}
-      {isNewCaravan && myAvailableCaravans.length > 0 && (
-        <div
-          onClick={() => {
-            setIsNewCaravan(false);
-          }}
-          className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
-        >
-          <div className="text-xs text-center text-gold">{`Show ${myAvailableCaravans.length} idle Caravans`}</div>
-        </div>
-      )}
-      {!isNewCaravan && (
-        <div className="flex flex-col max-h-[350px] overflow-auto w-full">
-          {myAvailableCaravans.map((caravan) => (
-            <Caravan
-              key={caravan.caravanId}
-              caravan={caravan}
-              idleOnly={true}
-              onClick={() => {
-                setSelectedCaravan(caravan.caravanId);
-              }}
-              className={`w-full mt-2 border rounded-md ${
-                selectedCaravan === caravan.caravanId ? "border-order-brilliance" : ""
-              }`}
-            />
-          ))}
         </div>
       )}
     </div>

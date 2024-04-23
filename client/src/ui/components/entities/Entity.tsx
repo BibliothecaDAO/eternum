@@ -50,7 +50,7 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
   const {
     account: { account },
     setup: {
-      systemCalls: { disassemble_caravan_and_return_free_units, transfer_items },
+      systemCalls: { transfer_items },
     },
   } = useDojo();
 
@@ -97,17 +97,6 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
     destinationType === DESTINATION_TYPE.HOME &&
     intermediateDestinationRealmId !== undefined &&
     destinationRealmName;
-
-  const redeemDonkeys = async () => {
-    setIsLoading(true);
-    let unit_ids = getCaravanMembers(entityId);
-    await disassemble_caravan_and_return_free_units({
-      signer: account,
-      caravan_id: entityId,
-      unit_ids,
-    });
-    return unit_ids;
-  };
 
   const onOffload = async (receiverEntityId: bigint) => {
     setIsLoading(true);
@@ -240,18 +229,6 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
                 </div>
               </div>
               <div className="">
-                {isHome && (
-                  <Button
-                    variant="success"
-                    isLoading={isLoading}
-                    disabled={!isIdle}
-                    size="xs"
-                    onClick={redeemDonkeys}
-                    withoutSound
-                  >
-                    Redeem
-                  </Button>
-                )}
                 {hasResources && depositEntityId !== undefined && (
                   <Button
                     size="xs"

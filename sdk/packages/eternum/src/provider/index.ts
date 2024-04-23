@@ -129,7 +129,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async cancel_order(props: SystemProps.CancelOrder) {
+  public async cancel_order(props: SystemProps.CancelOrderProps) {
     const { trade_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "trade_systems"),
@@ -295,7 +295,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async send_resources(props: SystemProps.SendResources) {
+  public async send_resources(props: SystemProps.SendResourcesProps) {
     const {
       sender_entity_id,
       resources,
@@ -311,7 +311,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async pickup_resources(props: SystemProps.PickupResources) {
+  public async pickup_resources(props: SystemProps.PickupResourcesProps) {
     const { donkey_owner_entity_id, resource_owner_entity_id, resources, signer } = props;
 
     const tx = await this.executeMulti(signer, {

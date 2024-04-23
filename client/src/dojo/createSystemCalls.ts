@@ -29,26 +29,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.accept_order(props);
   };
 
-  const cancel_fungible_order = async (props: SystemProps.CancelFungibleOrderProps) => {
-    await provider.cancel_fungible_order(props);
-  };
-
-  const create_free_transport_unit = async (props: SystemProps.CreateFreeTransportUnitProps) => {
-    await provider.create_free_transport_unit(props);
-  };
-
-  const create_caravan = async (props: SystemProps.CreateCaravanProps) => {
-    await provider.create_caravan(props);
-  };
-
-  const disassemble_caravan_and_return_free_units = async (
-    props: SystemProps.DisassembleCaravanAndReturnFreeUnitsProps,
-  ) => {
-    await provider.disassemble_caravan_and_return_free_units(props);
-  };
-
-  const attach_caravan = async (props: SystemProps.AttachCaravanProps) => {
-    await provider.attach_caravan(props);
+  const cancel_order = async (props: SystemProps.CancelOrderProps) => {
+    await provider.cancel_order(props);
   };
 
   const create_realm = async (props: SystemProps.CreateRealmProps) => {
@@ -63,12 +45,16 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.create_road(props);
   };
 
-  const transfer_resources = async (props: SystemProps.TransferResourcesProps) => {
-    await provider.transfer_resources(props);
+  const send_resources = async (props: SystemProps.SendResourcesProps) => {
+    await provider.send_resources(props);
   };
 
-  const send_resources_to_location = async (props: SystemProps.SendResourcesToLocationProps) => {
-    await provider.send_resources_to_location(props);
+  const pickup_resources = async (props: SystemProps.PickupResourcesProps) => {
+    await provider.pickup_resources(props);
+  };
+
+  const transfer_resources = async (props: SystemProps.TransferResourcesProps) => {
+    await provider.transfer_resources(props);
   };
 
   const travel = async (props: SystemProps.TravelProps) => {
@@ -173,6 +159,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const systemCalls = {
+    send_resources,
+    pickup_resources,
     remove_liquidity,
     add_liquidity,
     sell_resources,
@@ -181,7 +169,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     open_account,
     create_bank,
     explore,
-    disassemble_caravan_and_return_free_units,
     set_address_name,
     create_and_merge_soldiers,
     level_up_realm,
@@ -192,17 +179,13 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     steal,
     create_order,
     accept_order,
-    cancel_fungible_order,
+    cancel_order,
     transfer_items,
     transfer_items_from_multiple,
-    create_free_transport_unit,
-    create_caravan,
-    attach_caravan,
     create_realm,
     create_multiple_realms,
     create_road,
     transfer_resources,
-    send_resources_to_location,
     travel,
     travel_hex,
     merge_soldiers,

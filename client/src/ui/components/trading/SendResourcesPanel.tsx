@@ -18,11 +18,11 @@ import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 export const SendResourcesPanel = ({
   senderEntityId,
   position,
-  onSendCaravan,
+  onSendResources,
 }: {
   senderEntityId: bigint;
   position: { x: number; y: number } | undefined;
-  onSendCaravan: () => void;
+  onSendResources: () => void;
 }) => {
   const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
   const [isNewCaravan, setIsNewCaravan] = useState(true);
@@ -34,7 +34,7 @@ export const SendResourcesPanel = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { send_resources_to_location },
+      systemCalls: { send_resources },
     },
   } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -45,27 +45,13 @@ export const SendResourcesPanel = ({
     const resourcesList = Object.keys(feedResourcesGiveAmounts)
       .filter((id) => feedResourcesGiveAmounts[Number(id)] > 0)
       .flatMap((id) => [Number(id), multiplyByPrecision(feedResourcesGiveAmounts[Number(id)])]);
-    if (isNewCaravan) {
-      await send_resources_to_location({
-        signer: account,
-        sending_entity_id: senderEntityId,
-        resources: resourcesList || [],
-        destination_coord_x: position.x,
-        destination_coord_y: position.y,
-        donkeys_quantity: donkeysCount,
-      });
-    } else {
-      // transfer resources to caravan
-      await send_resources_to_location({
-        signer: account,
-        sending_entity_id: senderEntityId,
-        resources: resourcesList || [],
-        destination_coord_x: position.x,
-        destination_coord_y: position.y,
-        caravan_id: selectedCaravan,
-      });
-    }
-    onSendCaravan();
+    await send_resources({
+      signer: account,
+      sender_entity_id: senderEntityId,
+      resources: resourcesList || [],
+      destination_coord: { x: position.x, y: position.y },
+    });
+    onSendResources();
   };
 
   const {

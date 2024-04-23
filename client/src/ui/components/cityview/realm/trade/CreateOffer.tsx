@@ -16,7 +16,6 @@ import {
 import { ReactComponent as ArrowSeparator } from "@/assets/icons/common/arrow-separator.svg";
 import { ReactComponent as Danger } from "@/assets/icons/common/danger.svg";
 import { ReactComponent as Donkey } from "@/assets/icons/units/donkey-circle.svg";
-import { Caravan } from "./Caravans/Caravan";
 import { Steps } from "../../../../elements/Steps";
 import { useDojo } from "../../../../../hooks/context/DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
@@ -54,7 +53,6 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const {
     account: { account },
     setup: {
-      optimisticSystemCalls: { optimisticCreateOrder },
       systemCalls: { create_order },
     },
   } = useDojo();
@@ -73,39 +71,20 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const createOrder = async () => {
     setIsLoading(true);
     if (!nextBlockTimestamp) return;
-    if (isNewCaravan) {
-      await optimisticCreateOrder(create_order)({
-        signer: account,
-        maker_id: realmEntityId,
-        maker_gives_resource_types: selectedResourceIdsGive,
-        maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
-          multiplyByPrecision(Number(selectedResourcesGiveAmounts[id])),
-        ),
-        taker_id: selectedRealmEntityId || 0,
-        taker_gives_resource_types: selectedResourceIdsGet,
-        taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
-          multiplyByPrecision(Number(selectedResourcesGetAmounts[id])),
-        ),
-        donkeys_quantity: donkeysCount,
-        expires_at: nextBlockTimestamp + ONE_MONTH,
-      });
-    } else {
-      await optimisticCreateOrder(create_order)({
-        signer: account,
-        maker_id: realmEntityId,
-        maker_gives_resource_types: selectedResourceIdsGive,
-        maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
-          multiplyByPrecision(Number(selectedResourcesGiveAmounts[id])),
-        ),
-        taker_id: selectedRealmEntityId || 0,
-        maker_transport_id: selectedCaravan,
-        taker_gives_resource_types: selectedResourceIdsGet,
-        taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
-          multiplyByPrecision(Number(selectedResourcesGetAmounts[id])),
-        ),
-        expires_at: nextBlockTimestamp + ONE_MONTH,
-      });
-    }
+    await create_order({
+      signer: account,
+      maker_id: realmEntityId,
+      maker_gives_resource_types: selectedResourceIdsGive,
+      maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
+        multiplyByPrecision(Number(selectedResourcesGiveAmounts[id])),
+      ),
+      taker_id: selectedRealmEntityId || 0,
+      taker_gives_resource_types: selectedResourceIdsGet,
+      taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
+        multiplyByPrecision(Number(selectedResourcesGetAmounts[id])),
+      ),
+      expires_at: nextBlockTimestamp + ONE_MONTH,
+    });
     onClose();
   };
 

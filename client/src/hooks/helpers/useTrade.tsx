@@ -4,7 +4,6 @@ import { MarketInterface, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
-import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
 import { calculateRatio } from "../../ui/components/cityview/realm/trade/Market/MarketOffer";
 import { SortInterface } from "../../ui/elements/SortButton";
 import useBlockchainStore from "../store/useBlockchainStore";
@@ -176,12 +175,7 @@ export function useGetMyOffers(): MarketInterface[] {
   const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { maker_id: realmEntityId })]);
 
   useMemo((): any => {
-    const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID.toString() as Entity);
-    const trades = computeTrades(
-      entityIds
-        // avoid having optimistic and real trade at the same time
-        .slice(0, optimisticTradeId === -1 ? entityIds.length + 1 : optimisticTradeId + 1),
-    );
+    const trades = computeTrades(entityIds);
     setMyOffers(trades);
     // only recompute when different number of orders
   }, [entityIds]);
