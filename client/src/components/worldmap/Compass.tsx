@@ -17,7 +17,7 @@ export const Compass = () => {
     const compassDegrees = (angleDegrees + 360) % 360;
 
     setDirection(compassDegrees);
-  }, [cameraPosition]);
+  }, [cameraPosition, cameraTarget]);
 
   return (
     <div className="w-full flex justify-center">
