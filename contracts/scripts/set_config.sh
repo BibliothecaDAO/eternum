@@ -270,7 +270,7 @@ commands+=(
 #     "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 22,255,5500"
 # )
 
-export RESOURCE_AMOUNT_PER_TICK=100
+export RESOURCE_AMOUNT_PER_TICK=1000
 export FOOD_PER_TICK=10000
 export DONKEYS_PER_TICK=10
 export KNIGHTS_PER_TICK=2
@@ -279,34 +279,34 @@ export PALADIN_PER_TICK=2
 
 commands+=(
     # resourceId: 1
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WOOD,$RESOURCE_AMOUNT_PER_TICK,1,$STONE,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STONE,$RESOURCE_AMOUNT_PER_TICK,1,$COAL,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COAL,$RESOURCE_AMOUNT_PER_TICK,1,$COPPER,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COPPER,$RESOURCE_AMOUNT_PER_TICK,1,$OBSIDIAN,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $OBSIDIAN,$RESOURCE_AMOUNT_PER_TICK,1,$SILVER,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SILVER,$RESOURCE_AMOUNT_PER_TICK,1,$IRONWOOD,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $IRONWOOD,$RESOURCE_AMOUNT_PER_TICK,1,$COLDIRON,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COLDIRON,$RESOURCE_AMOUNT_PER_TICK,1,$GOLD,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $GOLD,$RESOURCE_AMOUNT_PER_TICK,1,$HARTWOOD,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $HARTWOOD,$RESOURCE_AMOUNT_PER_TICK,1,$DIAMONDS,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DIAMONDS,$RESOURCE_AMOUNT_PER_TICK,1,$SAPPHIRE,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SAPPHIRE,$RESOURCE_AMOUNT_PER_TICK,1,$RUBY,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $RUBY,$RESOURCE_AMOUNT_PER_TICK,1,$DEEPCRYSTAL,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DEEPCRYSTAL,$RESOURCE_AMOUNT_PER_TICK,1,$IGNIUM,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $IGNIUM,$RESOURCE_AMOUNT_PER_TICK,1,$ETHEREALSILICA,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ETHEREALSILICA,$RESOURCE_AMOUNT_PER_TICK,1,$TRUEICE,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $TRUEICE,$RESOURCE_AMOUNT_PER_TICK,1,$TWILIGHTQUARTZ,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $TWILIGHTQUARTZ,$RESOURCE_AMOUNT_PER_TICK,1,$ALCHEMICALSILVER,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ALCHEMICALSILVER,$RESOURCE_AMOUNT_PER_TICK,1,$ADAMANTINE,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ADAMANTINE,$RESOURCE_AMOUNT_PER_TICK,1,$MITHRAL,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $MITHRAL,$RESOURCE_AMOUNT_PER_TICK,1,$DRAGONHIDE,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DRAGONHIDE,$RESOURCE_AMOUNT_PER_TICK,1,$MITHRAL,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WOOD,$RESOURCE_AMOUNT_PER_TICK,2,$STONE,150,$COAL,160"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STONE,$RESOURCE_AMOUNT_PER_TICK,2,$WOOD,250,$COAL,190"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COAL,$RESOURCE_AMOUNT_PER_TICK,2,$STONE,210,$COPPER,140"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COPPER,$RESOURCE_AMOUNT_PER_TICK,2,$COAL,290,$OBSIDIAN,170"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $OBSIDIAN,$RESOURCE_AMOUNT_PER_TICK,2,$COPPER,240,$SILVER,160"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SILVER,$RESOURCE_AMOUNT_PER_TICK,2,$OBSIDIAN,250,$IRONWOOD,140"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $IRONWOOD,$RESOURCE_AMOUNT_PER_TICK,2,$SILVER,300,$COLDIRON,160"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COLDIRON,$RESOURCE_AMOUNT_PER_TICK,2,$IRONWOOD,250,$GOLD,190"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $GOLD,$RESOURCE_AMOUNT_PER_TICK,2,$COLDIRON,210,$HARTWOOD,130"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $HARTWOOD,$RESOURCE_AMOUNT_PER_TICK,2,$GOLD,310,$DIAMONDS,100"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DIAMONDS,$RESOURCE_AMOUNT_PER_TICK,2,$HARTWOOD,400,$SAPPHIRE,160"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SAPPHIRE,$RESOURCE_AMOUNT_PER_TICK,2,$DIAMONDS,240,$RUBY,190"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $RUBY,$RESOURCE_AMOUNT_PER_TICK,2,$SAPPHIRE,210,$DEEPCRYSTAL,200"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DEEPCRYSTAL,$RESOURCE_AMOUNT_PER_TICK,2,$RUBY,200,$IGNIUM,140"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $IGNIUM,$RESOURCE_AMOUNT_PER_TICK,2,$DEEPCRYSTAL,280,$ETHEREALSILICA,190"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ETHEREALSILICA,$RESOURCE_AMOUNT_PER_TICK,2,$IGNIUM,210,$TRUEICE,170"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $TRUEICE,$RESOURCE_AMOUNT_PER_TICK,2,$ETHEREALSILICA,230,$TWILIGHTQUARTZ,160"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $TWILIGHTQUARTZ,$RESOURCE_AMOUNT_PER_TICK,2,$TRUEICE,250,$ALCHEMICALSILVER,170"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ALCHEMICALSILVER,$RESOURCE_AMOUNT_PER_TICK,2,$TWILIGHTQUARTZ,240,$ADAMANTINE,120"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ADAMANTINE,$RESOURCE_AMOUNT_PER_TICK,2,$ALCHEMICALSILVER,340,$MITHRAL,130"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $MITHRAL,$RESOURCE_AMOUNT_PER_TICK,2,$ADAMANTINE,300,$DRAGONHIDE,120"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DRAGONHIDE,$RESOURCE_AMOUNT_PER_TICK,2,$MITHRAL,320,$WOOD,43610"
 
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY,$DONKEYS_PER_TICK,0"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY,$DONKEYS_PER_TICK,1,$WHEAT,250"
 
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $KNIGHT,$KNIGHTS_PER_TICK,0"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $CROSSBOWMEN,$CROSSBOWMEN_PER_TICK,0"  
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $PALADIN,$PALADIN_PER_TICK,0"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $KNIGHT,$KNIGHTS_PER_TICK,3,$WHEAT,250,$SILVER,10,$IRONWOOD,25"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $CROSSBOWMEN,$CROSSBOWMEN_PER_TICK,3,$WHEAT,250,$SILVER,10,$COLDIRON,25"  
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $PALADIN,$PALADIN_PER_TICK,3,$WHEAT,250,$SILVER,10,$GOLD,25"
 
     "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WHEAT,$FOOD_PER_TICK,0"
     "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $FISH,$FOOD_PER_TICK,0"
