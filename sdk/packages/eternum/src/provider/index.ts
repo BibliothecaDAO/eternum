@@ -3,8 +3,6 @@ import * as SystemProps from "../types/provider";
 import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
 import EventEmitter from "eventemitter3";
 
-const UUID_OFFSET_CREATE_CARAVAN = 2;
-
 export const getContractByName = (manifest: any, name: string) => {
   const contract = manifest.contracts.find((contract: any) => contract.name.includes("::" + name));
   if (contract) {
@@ -68,7 +66,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_order(props: SystemProps.CreateOrderProps) {
-    const uuid = await this.uuid();
     const {
       maker_id,
       maker_gives_resource_types,
@@ -77,8 +74,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       taker_gives_resource_types,
       taker_gives_resource_amounts,
       signer,
-      maker_transport_id,
-      donkeys_quantity,
       expires_at,
     } = props;
 
@@ -90,45 +85,22 @@ export class EternumProvider extends EnhancedDojoProvider {
       return [taker_gives_resource_types[i], amount];
     });
 
-    let transactions: Call[] = [];
-
-    // If no caravan_id is provided, create a new caravan
-    let final_caravan_id = maker_transport_id || 0;
-    if (!maker_transport_id && donkeys_quantity) {
-      final_caravan_id = uuid + UUID_OFFSET_CREATE_CARAVAN;
-
-      transactions.push(
-        {
-          contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
-          entrypoint: "create_free_unit",
-          calldata: [maker_id, donkeys_quantity],
-        },
-        {
-          contractAddress: getContractByName(this.manifest, "caravan_systems"),
-          entrypoint: "create",
-          calldata: [[uuid].length, ...[uuid]],
-        },
-      );
-    }
-
-    // // Common transaction for creating an order
-    transactions.push({
-      contractAddress: getContractByName(this.manifest, "trade_systems"),
-      entrypoint: "create_order",
-      calldata: [
-        this.getWorldAddress(),
-        maker_id,
-        maker_gives_resource_types.length,
-        ...maker_gives_resource,
-        final_caravan_id,
-        taker_id,
-        taker_gives_resource_types.length,
-        ...taker_gives_resource,
-        expires_at,
-      ],
-    });
-
-    const tx = await this.executeMulti(signer, transactions);
+    const tx = await this.executeMulti(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, "trade_systems"),
+        entrypoint: "create_order",
+        calldata: [
+          this.getWorldAddress(),
+          maker_id,
+          maker_gives_resource_types.length,
+          ...maker_gives_resource,
+          taker_id,
+          taker_gives_resource_types.length,
+          ...taker_gives_resource,
+          expires_at,
+        ],
+      },
+    ]);
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
@@ -145,44 +117,19 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async accept_order(props: SystemProps.AcceptOrderProps) {
-    const { taker_id, trade_id, donkeys_quantity, caravan_id, signer } = props;
+    const { taker_id, trade_id, signer } = props;
 
-    let transactions: Call[] = [];
-    let final_caravan_id = caravan_id;
-
-    // If no caravan_id, create a new caravan
-    if (!caravan_id && donkeys_quantity) {
-      const transport_unit_ids = await this.uuid();
-      final_caravan_id = transport_unit_ids + UUID_OFFSET_CREATE_CARAVAN;
-
-      transactions.push(
-        {
-          contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
-          entrypoint: "create_free_unit",
-          calldata: [taker_id, donkeys_quantity],
-        },
-        {
-          contractAddress: getContractByName(this.manifest, "caravan_systems"),
-          entrypoint: "create",
-          calldata: [[transport_unit_ids].length, ...[transport_unit_ids]],
-        },
-      );
-    }
-
-    if (final_caravan_id) {
-      // Common transactions
-      transactions.push({
+    const tx = await this.executeMulti(signer, [
+      {
         contractAddress: getContractByName(this.manifest, "trade_systems"),
         entrypoint: "accept_order",
-        calldata: [taker_id, final_caravan_id, trade_id],
-      });
-    }
-
-    const tx = await this.executeMulti(signer, transactions);
+        calldata: [taker_id, trade_id],
+      },
+    ]);
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async cancel_fungible_order(props: SystemProps.CancelFungibleOrderProps) {
+  public async cancel_order(props: SystemProps.CancelOrder) {
     const { trade_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "trade_systems"),
@@ -235,53 +182,6 @@ export class EternumProvider extends EnhancedDojoProvider {
         batchCalldata = [];
       }
     }
-  }
-
-  public async create_free_transport_unit(props: SystemProps.CreateFreeTransportUnitProps) {
-    const { realm_id, quantity, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
-      entrypoint: "create_free_unit",
-      calldata: [realm_id, quantity],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async create_caravan(props: SystemProps.CreateCaravanProps) {
-    const { entity_ids, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "caravan_systems"),
-      entrypoint: "create",
-      calldata: [entity_ids.length, ...entity_ids],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async disassemble_caravan_and_return_free_units(props: SystemProps.DisassembleCaravanAndReturnFreeUnitsProps) {
-    const { caravan_id, unit_ids, signer } = props;
-    const tx = await this.executeMulti(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, "caravan_systems"),
-        entrypoint: "disassemble",
-        calldata: [caravan_id],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
-        entrypoint: "return_free_units",
-        calldata: [unit_ids.length, ...unit_ids],
-      },
-    ]);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async attach_caravan(props: SystemProps.AttachCaravanProps) {
-    const { realm_id, trade_id, caravan_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "trade_systems"),
-      entrypoint: "attach_caravan",
-      calldata: [realm_id, trade_id, caravan_id],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async create_realm(props: SystemProps.CreateRealmProps) {
@@ -395,56 +295,30 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async send_resources_to_location(props: SystemProps.SendResourcesToLocationProps) {
+  public async send_resources(props: SystemProps.SendResources) {
     const {
-      sending_entity_id,
+      sender_entity_id,
       resources,
-      donkeys_quantity,
-      destination_coord_x,
-      destination_coord_y,
-      caravan_id,
+      destination_coord: { x, y },
       signer,
     } = props;
 
-    let transactions: Call[] = [];
-    let final_caravan_id = caravan_id;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "donkey_systems"),
+      entrypoint: "send_resources",
+      calldata: [sender_entity_id, resources, x, y],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
 
-    // If no caravan_id, create a new caravan
-    if (!caravan_id && donkeys_quantity) {
-      const transport_unit_ids = await this.uuid();
-      final_caravan_id = transport_unit_ids + UUID_OFFSET_CREATE_CARAVAN;
+  public async pickup_resources(props: SystemProps.PickupResources) {
+    const { donkey_owner_entity_id, resource_owner_entity_id, resources, signer } = props;
 
-      transactions.push(
-        {
-          contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
-          entrypoint: "create_free_unit",
-          calldata: [sending_entity_id, donkeys_quantity],
-        },
-        {
-          contractAddress: getContractByName(this.manifest, "caravan_systems"),
-          entrypoint: "create",
-          calldata: [[transport_unit_ids].length, ...[transport_unit_ids]],
-        },
-      );
-    }
-
-    if (final_caravan_id) {
-      // Common transactions
-      transactions.push(
-        {
-          contractAddress: getContractByName(this.manifest, "resource_systems"),
-          entrypoint: "transfer",
-          calldata: [sending_entity_id, final_caravan_id, resources.length / 2, ...resources],
-        },
-        {
-          contractAddress: getContractByName(this.manifest, "travel_systems"),
-          entrypoint: "travel",
-          calldata: [final_caravan_id, destination_coord_x, destination_coord_y],
-        },
-      );
-    }
-
-    const tx = await this.executeMulti(signer, transactions);
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "donkey_systems"),
+      entrypoint: "send_resources",
+      calldata: [donkey_owner_entity_id, resource_owner_entity_id, resources],
+    });
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 

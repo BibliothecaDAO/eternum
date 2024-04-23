@@ -45,14 +45,6 @@ export interface StealProps extends SystemSigner {
   target_id: num.BigNumberish;
 }
 
-export interface ControlHyperstructureProps extends SystemSigner {
-  hyperstructure_id: num.BigNumberish;
-  order_id: num.BigNumberish;
-}
-export interface CompleteHyperstructureProps extends SystemSigner {
-  hyperstructure_id: num.BigNumberish;
-}
-
 export interface LevelUpRealmProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
 }
@@ -76,27 +68,19 @@ export interface CreateOrderProps {
   taker_gives_resource_types: num.BigNumberish[];
   taker_gives_resource_amounts: num.BigNumberish[];
   signer: any;
-  maker_transport_id?: num.BigNumberish;
-  donkeys_quantity?: num.BigNumberish;
   expires_at: num.BigNumberish;
 }
 
-export interface FeedHyperstructureAndTravelBackPropos extends SystemSigner {
-  entity_id: num.BigNumberish;
-  destination_coord_x: num.BigNumberish;
-  destination_coord_y: num.BigNumberish;
+export interface SendResources extends SystemSigner {
+  sender_entity_id: num.BigNumberish;
   resources: num.BigNumberish[];
-  inventoryIndex: num.BigNumberish;
-  hyperstructure_id: num.BigNumberish;
+  destination_coord: { x: num.BigNumberish; y: num.BigNumberish };
 }
 
-export interface SendResourcesToLocationProps extends SystemSigner {
-  sending_entity_id: num.BigNumberish;
+export interface PickupResources extends SystemSigner {
+  donkey_owner_entity_id: num.BigNumberish;
+  resource_owner_entity_id: num.BigNumberish;
   resources: num.BigNumberish[];
-  destination_coord_x: num.BigNumberish;
-  destination_coord_y: num.BigNumberish;
-  donkeys_quantity?: num.BigNumberish;
-  caravan_id?: num.BigNumberish;
 }
 
 export interface TransferResourcesProps extends SystemSigner {
@@ -105,28 +89,9 @@ export interface TransferResourcesProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
-export interface PurchaseLaborProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  resource_type: num.BigNumberish;
-  labor_units: num.BigNumberish;
-  multiplier: num.BigNumberish;
-}
-
 export interface ExploreProps extends SystemSigner {
   unit_id: num.BigNumberish;
   direction: num.BigNumberish;
-}
-
-export interface BuildLaborProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  resource_type: num.BigNumberish;
-  labor_units: num.BigNumberish;
-  multiplier: num.BigNumberish;
-}
-
-export interface HarvestLaborProps extends SystemSigner {
-  realm_id: num.BigNumberish; // TODO: this is entity id not realm id
-  resource_type: num.BigNumberish;
 }
 
 export interface SwapBankAndTravelBackProps extends SystemSigner {
@@ -140,10 +105,6 @@ export interface SwapBankAndTravelBackProps extends SystemSigner {
   destination_coord_y: num.BigNumberish;
 }
 
-export interface HarvestAllLaborProps extends SystemSigner {
-  entity_ids: num.BigNumberish[][];
-}
-
 export interface MintResourcesProps extends SystemSigner {
   receiver_id: num.BigNumberish;
   resources: num.BigNumberish[];
@@ -152,32 +113,10 @@ export interface MintResourcesProps extends SystemSigner {
 export interface AcceptOrderProps extends SystemSigner {
   taker_id: num.BigNumberish;
   trade_id: num.BigNumberish;
-  caravan_id?: num.BigNumberish; // This is optional now
-  donkeys_quantity?: num.BigNumberish; // Also optional
 }
 
-export interface CancelFungibleOrderProps extends SystemSigner {
+export interface CancelOrder extends SystemSigner {
   trade_id: num.BigNumberish;
-}
-
-export interface CreateFreeTransportUnitProps extends SystemSigner {
-  realm_id: num.BigNumberish;
-  quantity: num.BigNumberish;
-}
-
-export interface CreateCaravanProps extends SystemSigner {
-  entity_ids: num.BigNumberish[];
-}
-
-export interface DisassembleCaravanAndReturnFreeUnitsProps extends SystemSigner {
-  caravan_id: num.BigNumberish;
-  unit_ids: num.BigNumberish[];
-}
-
-export interface AttachCaravanProps extends SystemSigner {
-  realm_id: num.BigNumberish;
-  trade_id: num.BigNumberish;
-  caravan_id: num.BigNumberish;
 }
 
 export interface CreateRoadProps extends SystemSigner {
@@ -227,15 +166,6 @@ export interface TransferItemsFromMultipleProps extends SystemSigner {
     indices: num.BigNumberish[];
     receiver_id: num.BigNumberish;
   }[];
-}
-
-export interface CreateLaborBuildingProps extends SystemSigner {
-  realm_entity_id: num.BigNumberish;
-  building_type: num.BigNumberish;
-}
-
-export interface DestroyLaborBuildingProps extends SystemSigner {
-  realm_entity_id: num.BigNumberish;
 }
 
 export interface CreateBuildingProps extends SystemSigner {
