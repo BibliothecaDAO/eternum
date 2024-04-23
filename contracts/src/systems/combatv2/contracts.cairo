@@ -14,8 +14,8 @@ trait ICombatv2Contract<TContractState> {
 mod combat_v2_systems {
     use core::option::OptionTrait;
     use eternum::alias::ID;
-    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE};
     use eternum::constants::{ResourceTypes, ErrorMessages};
+    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE};
 
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,

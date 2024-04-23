@@ -1,7 +1,13 @@
 #[dojo::interface]
 trait ITravelSystems {
-    fn travel(travelling_entity_id: eternum::alias::ID, destination_coord: eternum::models::position::Coord);
-    fn travel_hex(travelling_entity_id: eternum::alias::ID, directions: Span<eternum::models::position::Direction>);
+    fn travel(
+        travelling_entity_id: eternum::alias::ID,
+        destination_coord: eternum::models::position::Coord
+    );
+    fn travel_hex(
+        travelling_entity_id: eternum::alias::ID,
+        directions: Span<eternum::models::position::Direction>
+    );
 }
 
 #[dojo::contract]

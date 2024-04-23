@@ -1,7 +1,7 @@
-use eternum::models::position::Coord;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::WORLD_CONFIG_ID;
 use eternum::models::config::{SpeedConfig};
+use eternum::models::position::Coord;
 
 // speed seconds per km
 #[derive(Model, Copy, Drop, Serde)]

@@ -36,12 +36,12 @@ mod resource_systems {
     use eternum::models::resources::{ResourceChest, DetachedResource};
     use eternum::models::road::RoadImpl;
     use eternum::models::weight::Weight;
+    use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
+        InternalDonkeySystemsImpl as donkey
+    };
 
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl as travel
-    };
-    use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
-        InternalDonkeySystemsImpl as donkey
     };
 
     #[derive(Drop, starknet::Event)]
@@ -125,15 +125,15 @@ mod resource_systems {
             sender_entity_id: ID,
             recipient_entity_id: ID,
             resources: Span<(u8, u128)>
-        ){
+        ) {
             assert(sender_entity_id != recipient_entity_id, 'transfer to self');
             assert(resources.len() != 0, 'no resource to transfer');
 
             get!(world, sender_entity_id, Owner).assert_caller_owner();
 
-
             InternalResourceSystemsImpl::transfer(
-                world, sender_entity_id, sender_entity_id, recipient_entity_id, resources);
+                world, sender_entity_id, sender_entity_id, recipient_entity_id, resources
+            );
         }
 
 
@@ -216,17 +216,20 @@ mod resource_systems {
         }
 
         fn transfer(
-            world: IWorldDispatcher, caller_id: ID, owner_id: ID, receiver_id: ID, resources: Span<(u8, u128)>
+            world: IWorldDispatcher,
+            caller_id: ID,
+            owner_id: ID,
+            receiver_id: ID,
+            resources: Span<(u8, u128)>
         ) -> ID {
-
             // entities may not have arrived at the location shown in their Position, so ..
-            
+
             // ensure owner is not moving because they provide the resources
             get!(world, owner_id, ArrivalTime).assert_not_travelling();
-            
+
             // ensure caller is not moving because they receiver the resources
             get!(world, receiver_id, ArrivalTime).assert_not_travelling();
-            
+
             // create resource chest
             let resource_chest = InternalResourceChestSystemsImpl::create_and_fill(
                 world, owner_id, resources
@@ -240,19 +243,19 @@ mod resource_systems {
 
             let owner_coord: Coord = get!(world, owner_id, Position).into();
             let receiver_coord: Coord = get!(world, receiver_id, Position).into();
-            if owner_coord != receiver_coord {    
+            if owner_coord != receiver_coord {
                 // lock resource chest
-                let travel_time 
-                    = donkey::get_donkey_travel_time(
-                        world, owner_coord, receiver_coord, owner_id != caller_id );
+                let travel_time = donkey::get_donkey_travel_time(
+                    world, owner_coord, receiver_coord, owner_id != caller_id
+                );
                 InternalResourceChestSystemsImpl::lock_until(
-                        world, resource_chest.entity_id, travel_time + starknet::get_block_timestamp());
+                    world, resource_chest.entity_id, travel_time + starknet::get_block_timestamp()
+                );
 
                 // burn donkeys according to the weight of the resources being transported
                 let resources_weight = get!(world, resource_chest.entity_id, Weight);
                 donkey::burn_donkeys(world, receiver_id, resources_weight.value);
             }
-            
 
             // emit transfer event
             InternalResourceSystemsImpl::emit_transfer_event(
@@ -391,7 +394,7 @@ mod resource_systems {
                 let mut donor_resource = ResourceImpl::get(
                     world, (donor_id, detached_resource.resource_type)
                 );
-       
+
                 // burn resources from donor's balance
                 donor_resource.burn(detached_resource.resource_amount);
                 donor_resource.save(world);

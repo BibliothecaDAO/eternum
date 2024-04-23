@@ -1,6 +1,11 @@
 #[dojo::interface]
 trait IRoadSystems {
-    fn create(entity_id: eternum::alias::ID, start_coord: eternum::models::position::Coord, end_coord: eternum::models::position::Coord, usage_count: usize);
+    fn create(
+        entity_id: eternum::alias::ID,
+        start_coord: eternum::models::position::Coord,
+        end_coord: eternum::models::position::Coord,
+        usage_count: usize
+    );
 }
 
 #[dojo::contract]

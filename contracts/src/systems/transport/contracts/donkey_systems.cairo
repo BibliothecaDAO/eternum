@@ -17,17 +17,16 @@ mod donkey_systems {
     use eternum::models::tick::{TickMove, TickMoveTrait};
     use eternum::models::weight::Weight;
 
-    use eternum::systems::resources::contracts::resource_systems::{ResourceSystemsImpl, InternalResourceSystemsImpl};
+    use eternum::systems::resources::contracts::resource_systems::{
+        ResourceSystemsImpl, InternalResourceSystemsImpl
+    };
 
 
     #[generate_trait]
     impl InternalDonkeySystemsImpl of InternalDonkeySystemsTrait {
-        
         fn burn_donkeys(world: IWorldDispatcher, entity_id: ID, weight: u128) {
             // get number of donkeys needed
-            let donkey_amount = InternalDonkeySystemsImpl::get_donkey_needed(
-                world, weight
-            );
+            let donkey_amount = InternalDonkeySystemsImpl::get_donkey_needed(world, weight);
 
             // burn amount of donkey needed
             let mut donkeys: Resource = ResourceImpl::get(
@@ -37,7 +36,7 @@ mod donkey_systems {
             donkeys.burn(donkey_amount);
             donkeys.save(world);
         }
-        
+
         fn get_donkey_needed(world: IWorldDispatcher, resources_weight: u128,) -> u128 {
             let capacity_per_donkey = get!(
                 world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), CapacityConfig
