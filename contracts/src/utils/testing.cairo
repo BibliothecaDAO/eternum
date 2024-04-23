@@ -8,8 +8,7 @@ use eternum::models::caravan::{caravan_members, CaravanMembers,};
 
 use eternum::models::config::{
     world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,
-    travel_config, TravelConfig, labor_config, LaborConfig, weight_config, WeightConfig,
-    road_config, RoadConfig
+    travel_config, TravelConfig, weight_config, WeightConfig, road_config, RoadConfig
 };
 use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};

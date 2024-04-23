@@ -12,10 +12,9 @@ mod config_systems {
 
     use eternum::models::combat::TownWatch;
     use eternum::models::config::{
-        LaborConfig, CapacityConfig, RoadConfig, SpeedConfig, TravelConfig, WeightConfig,
-        WorldConfig, SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig,
-        LevelingConfig, RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig,
-        BankConfig
+        CapacityConfig, RoadConfig, SpeedConfig, TravelConfig, WeightConfig, WorldConfig,
+        SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig, LevelingConfig,
+        RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig
     };
 
     use eternum::models::hyperstructure::HyperStructure;

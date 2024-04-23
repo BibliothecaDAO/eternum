@@ -28,15 +28,6 @@ struct RealmFreeMintConfig {
 
 
 #[derive(Model, Copy, Drop, Serde)]
-struct LaborConfig {
-    #[key]
-    config_id: u128,
-    base_labor_units: u64, // 86400 / 12    
-    base_resources_per_cycle: u128, // (252 / 12) * 10 ** 18;
-    base_food_per_cycle: u128,
-}
-
-#[derive(Model, Copy, Drop, Serde)]
 struct TravelConfig {
     #[key]
     config_id: u128,
