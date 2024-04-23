@@ -1,3 +1,9 @@
+#[dojo::interface]
+trait ITravelSystems {
+    fn travel(travelling_entity_id: eternum::alias::ID, destination_coord: eternum::models::position::Coord);
+    fn travel_hex(travelling_entity_id: eternum::alias::ID, directions: Span<eternum::models::position::Direction>);
+}
+
 #[dojo::contract]
 mod trade_systems {
     use core::poseidon::poseidon_hash_span;
@@ -25,9 +31,6 @@ mod trade_systems {
         InternalInventorySystemsImpl as inventory
     };
     use eternum::systems::trade::interface::trade_systems_interface::{ITradeSystems};
-    use eternum::systems::transport::contracts::caravan_systems::caravan_systems::{
-        InternalCaravanSystemsImpl as caravan
-    };
 
     use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
         InternalDonkeySystemsImpl as donkey
@@ -154,7 +157,7 @@ mod trade_systems {
             taker_donkeys.balance -= donkey_amount;
             taker_donkeys.save(world);
 
-            let travel_time = donkey::donkey_travel_time(
+            let travel_time = donkey::get_donkey_travel_time(
                 world, taker_position.into(), maker_position.into(), true
             );
 

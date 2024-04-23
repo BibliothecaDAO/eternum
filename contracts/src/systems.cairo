@@ -24,7 +24,6 @@ mod resources {
 }
 mod transport {
     mod contracts;
-    mod interface;
     #[cfg(test)]
     mod tests;
 }

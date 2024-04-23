@@ -24,8 +24,8 @@ mod resource_systems {
     use eternum::systems::resources::interface::{IResourceSystems, IInventorySystems};
 
 
-    use eternum::systems::transport::contracts::caravan_systems::caravan_systems::{
-        InternalCaravanSystemsImpl as caravan
+    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
+        InternalTravelSystemsImpl as travel
     };
 
     #[derive(Drop, starknet::Event)]
@@ -114,8 +114,8 @@ mod resource_systems {
             );
 
             // check that recepient and sender are at the same position
-            caravan::check_position(world, receiving_entity_id, sending_entity_id);
-            caravan::check_arrival_time(world, receiving_entity_id);
+            travel::check_position(world, receiving_entity_id, sending_entity_id);
+            travel::check_arrival_time(world, receiving_entity_id);
 
             InternalResourceSystemsImpl::transfer(
                 world, sending_entity_id, receiving_entity_id, resources
@@ -177,8 +177,8 @@ mod resource_systems {
             };
 
             // check that recepient and sender are at the same position
-            caravan::check_position(world, receiving_entity_id, owner_entity_id);
-            caravan::check_arrival_time(world, receiving_entity_id);
+            travel::check_position(world, receiving_entity_id, owner_entity_id);
+            travel::check_arrival_time(world, receiving_entity_id);
 
             InternalResourceSystemsImpl::transfer(
                 world, owner_entity_id, receiving_entity_id, resources
@@ -285,10 +285,10 @@ mod resource_systems {
     impl InventorySystemsImpl of IInventorySystems<ContractState> {
         /// Transfer item from inventory
         fn transfer_item(world: IWorldDispatcher, sender_id: ID, index: u128, receiver_id: ID) {
-            caravan::check_owner(world, sender_id, starknet::get_caller_address());
-            caravan::check_position(world, sender_id, receiver_id);
-            caravan::check_arrival_time(world, sender_id);
-            caravan::check_arrival_time(world, receiver_id);
+            travel::check_owner(world, sender_id, starknet::get_caller_address());
+            travel::check_position(world, sender_id, receiver_id);
+            travel::check_arrival_time(world, sender_id);
+            travel::check_arrival_time(world, receiver_id);
 
             // remove resource chest from sender's inventory
             let item_id = InternalInventorySystemsImpl::remove(world, sender_id, index);

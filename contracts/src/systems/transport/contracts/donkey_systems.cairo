@@ -163,7 +163,7 @@ mod donkey_systems {
                 donkeys.save(world);
             }
 
-            let travel_time = InternalDonkeySystemsImpl::donkey_travel_time(
+            let travel_time = InternalDonkeySystemsImpl::get_donkey_travel_time(
                 world,
                 resources_coord,
                 destination_coord,
@@ -196,7 +196,7 @@ mod donkey_systems {
             resources_weight / capacity_per_donkey.weight_gram
         }
 
-        fn donkey_travel_time(
+        fn get_donkey_travel_time(
             world: IWorldDispatcher,
             resources_coord: Coord,
             destination_coord: Coord,
