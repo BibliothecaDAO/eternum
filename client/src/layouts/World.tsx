@@ -20,6 +20,7 @@ import { Tooltip } from "../elements/Tooltip";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "./Onboarding";
 import { WorldPopups } from "../components/worldmap/WorldPopups";
+import { Compass } from "../components/worldmap/Compass";
 import EpochCountdown from "../components/network/EpochCountdown";
 import { HooksComponent } from "../components/HooksComponent";
 
@@ -80,6 +81,7 @@ export const World = () => {
           <NavigationModule />
           <NotificationsComponent className="" />
         </div>
+        {locationType === 'map' && <Compass />}
         <RealmResourcesComponent />
       </TopContainer>
       <ContentContainer>
