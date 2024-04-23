@@ -22,10 +22,7 @@ export enum FoodType {
 
 export function useLabor() {
   const {
-    account: { account },
     setup: {
-      optimisticSystemCalls: { optimisticBuildLabor },
-      systemCalls: { purchase_and_build_labor },
       components: { LaborCostResources, LaborCostAmount, LaborAuction, Labor },
     },
   } = useDojo();
@@ -115,39 +112,6 @@ export function useLabor() {
     return laborCoefficient;
   };
 
-  const onBuildFood = async (foodType: FoodType, realm: RealmInterface) => {
-    const position = getPosition(realm.realmId);
-    const zone = getZone(position.x);
-
-    // match multiplier by food type
-    let multiplier = undefined;
-    switch (foodType) {
-      case FoodType.Wheat:
-        multiplier = realm.rivers;
-        break;
-      case FoodType.Fish:
-        multiplier = realm.harbors;
-        break;
-    }
-
-    let coefficient = zone ? getLaborAuctionAverageCoefficient(zone, FOOD_LABOR_UNITS * multiplier) : undefined;
-
-    if (coefficient) {
-      await optimisticBuildLabor(
-        nextBlockTimestamp || 0,
-        [],
-        coefficient,
-        purchase_and_build_labor,
-      )({
-        signer: account,
-        entity_id: realmEntityId,
-        resource_type: foodType,
-        labor_units: FOOD_LABOR_UNITS,
-        multiplier: multiplier,
-      });
-    }
-  };
-
   const getLatestRealmActivity = (realmEntityId: bigint) => {
     // proxy to get latest activity through wheat balance
     const labor = getComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(254)]));
@@ -164,7 +128,6 @@ export function useLabor() {
     useLaborAuctionCoefficient,
     getLaborAuctionAverageCoefficient,
     getNextLaborAuctionCoefficient,
-    onBuildFood,
     getProductionCost,
   };
 }

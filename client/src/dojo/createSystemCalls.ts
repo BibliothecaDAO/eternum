@@ -17,25 +17,8 @@ const withErrorHandling =
   };
 
 export function createSystemCalls({ provider }: SetupNetworkResult) {
-  const purchase_labor = async (props: SystemProps.PurchaseLaborProps) => {
-    await provider.purchase_labor(props);
-  };
-
   const uuid = async () => {
     return provider.uuid();
-  };
-
-  // Refactor the functions using the interfaces
-  const build_labor = async (props: SystemProps.BuildLaborProps) => {
-    await provider.build_labor(props);
-  };
-
-  const harvest_labor = async (props: SystemProps.HarvestLaborProps) => {
-    await provider.harvest_labor(props);
-  };
-
-  const harvest_all_labor = async (props: SystemProps.HarvestAllLaborProps) => {
-    await provider.harvest_all_labor(props);
   };
 
   const create_order = async (props: SystemProps.CreateOrderProps) => {
@@ -66,10 +49,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const attach_caravan = async (props: SystemProps.AttachCaravanProps) => {
     await provider.attach_caravan(props);
-  };
-
-  const purchase_and_build_labor = async (props: SystemProps.PurchaseLaborProps & SystemProps.BuildLaborProps) => {
-    await provider.purchase_and_build_labor(props);
   };
 
   const create_realm = async (props: SystemProps.CreateRealmProps) => {
@@ -120,14 +99,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.level_up_realm(props);
   };
 
-  const control_hyperstructure = async (props: SystemProps.ControlHyperstructureProps) => {
-    await provider.control_hyperstructure(props);
-  };
-
-  const complete_hyperstructure = async (props: SystemProps.CompleteHyperstructureProps) => {
-    await provider.complete_hyperstructure(props);
-  };
-
   const set_address_name = async (props: SystemProps.SetAddressNameProps) => {
     await provider.set_address_name(props);
   };
@@ -150,14 +121,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const transfer_items_from_multiple = async (props: SystemProps.TransferItemsFromMultipleProps) => {
     await provider.transfer_items_from_multiple(props);
-  };
-
-  const create_labor_building = async (props: SystemProps.CreateLaborBuildingProps) => {
-    await provider.create_labor_building(props);
-  };
-
-  const destroy_labor_building = async (props: SystemProps.DestroyLaborBuildingProps) => {
-    await provider.destroy_labor_building(props);
   };
 
   const explore = async (props: SystemProps.ExploreProps) => {
@@ -218,10 +181,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     open_account,
     create_bank,
     explore,
-    create_labor_building,
-    destroy_labor_building,
-    control_hyperstructure,
-    complete_hyperstructure,
     disassemble_caravan_and_return_free_units,
     set_address_name,
     create_and_merge_soldiers,
@@ -231,11 +190,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     detach_soldiers,
     attack,
     steal,
-    purchase_labor,
-    build_labor,
-    purchase_and_build_labor,
-    harvest_labor,
-    harvest_all_labor,
     create_order,
     accept_order,
     cancel_fungible_order,

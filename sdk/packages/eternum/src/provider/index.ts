@@ -67,58 +67,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     return receipt;
   }
 
-  public async purchase_labor(props: SystemProps.PurchaseLaborProps): Promise<any> {
-    const { signer, entity_id, resource_type, labor_units, multiplier } = props;
-
-    return this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "labor_systems"),
-      calldata: {
-        world: this.getWorldAddress(),
-        entity_id,
-        resource_type,
-        labor_units: (labor_units as number) * (multiplier as number),
-      },
-      entrypoint: "purchase",
-    });
-  }
-
-  // Refactor the functions using the interfaces
-  public async build_labor(props: SystemProps.BuildLaborProps) {
-    const { entity_id, resource_type, labor_units, multiplier, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "labor_systems"),
-      entrypoint: "build",
-      calldata: [entity_id, resource_type, labor_units, multiplier],
-    });
-
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async harvest_labor(props: SystemProps.HarvestLaborProps) {
-    const { realm_id, resource_type, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "labor_systems"),
-      entrypoint: "harvest",
-      calldata: [realm_id, resource_type],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async harvest_all_labor(props: SystemProps.HarvestAllLaborProps) {
-    const { entity_ids, signer } = props;
-
-    const calldata = entity_ids.map((entity_id) => {
-      return {
-        contractAddress: getContractByName(this.manifest, "labor_systems"),
-        entrypoint: "harvest",
-        calldata: [...entity_id],
-      };
-    });
-
-    const tx = await this.executeMulti(signer, calldata);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
   public async create_order(props: SystemProps.CreateOrderProps) {
     const uuid = await this.uuid();
     const {
@@ -333,23 +281,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "attach_caravan",
       calldata: [realm_id, trade_id, caravan_id],
     });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async purchase_and_build_labor(props: SystemProps.PurchaseLaborProps & SystemProps.BuildLaborProps) {
-    const { entity_id, resource_type, labor_units, multiplier, signer } = props;
-    const tx = await this.executeMulti(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, "labor_systems"),
-        entrypoint: "purchase",
-        calldata: [entity_id, resource_type, (labor_units as number) * (multiplier as number)],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, "labor_systems"),
-        entrypoint: "build",
-        calldata: [entity_id, resource_type, labor_units, multiplier],
-      },
-    ]);
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
@@ -577,26 +508,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async control_hyperstructure(props: SystemProps.ControlHyperstructureProps) {
-    const { hyperstructure_id, order_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
-      entrypoint: "control",
-      calldata: [hyperstructure_id, order_id],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async complete_hyperstructure(props: SystemProps.CompleteHyperstructureProps) {
-    const { hyperstructure_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
-      entrypoint: "complete",
-      calldata: [hyperstructure_id],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
   public async level_up_realm(props: SystemProps.LevelUpRealmProps) {
     const { realm_entity_id, signer } = props;
     const tx = await this.executeMulti(signer, {
@@ -655,28 +566,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, "name_systems"),
       entrypoint: "set_address_name",
       calldata: [name],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async create_labor_building(props: SystemProps.CreateLaborBuildingProps) {
-    const { realm_entity_id, building_type } = props;
-
-    const tx = await this.executeMulti(props.signer, {
-      contractAddress: getContractByName(this.manifest, "buildings_systems"),
-      entrypoint: "create",
-      calldata: [realm_entity_id, building_type],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async destroy_labor_building(props: SystemProps.DestroyLaborBuildingProps) {
-    const { realm_entity_id } = props;
-
-    const tx = await this.executeMulti(props.signer, {
-      contractAddress: getContractByName(this.manifest, "buildings_systems"),
-      entrypoint: "destroy",
-      calldata: [realm_entity_id],
     });
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
@@ -776,7 +665,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public add_liquidity = async (props: SystemProps.AddLiquidityProps) => {
+  public async add_liquidity(props: SystemProps.AddLiquidityProps) {
     const { bank_entity_id, resource_type, resource_amount, lords_amount, signer } = props;
 
     const tx = await this.executeMulti(signer, {
@@ -785,9 +674,9 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [bank_entity_id, resource_type, resource_amount, lords_amount],
     });
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  };
+  }
 
-  public remove_liquidity = async (props: SystemProps.RemoveLiquidityProps) => {
+  public async remove_liquidity(props: SystemProps.RemoveLiquidityProps) {
     const { bank_entity_id, resource_type, shares, signer } = props;
 
     const tx = await this.executeMulti(signer, {
@@ -796,5 +685,5 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [bank_entity_id, resource_type, shares, false],
     });
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  };
+  }
 }
