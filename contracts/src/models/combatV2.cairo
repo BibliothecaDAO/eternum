@@ -28,8 +28,12 @@ struct Healthv2 {
 
 #[generate_trait]
 impl Healthv2Impl of Healthv2Trait {
-    fn is_alive(ref self: Healthv2) -> bool {
+    fn is_alive(self: Healthv2) -> bool {
         self.current > 0
+    }
+
+    fn assert_alive(self: Healthv2) {
+        assert(self.is_alive(), 'Entity is dead');
     }
 
     fn increase_by(ref self: Healthv2, value: u128) {
