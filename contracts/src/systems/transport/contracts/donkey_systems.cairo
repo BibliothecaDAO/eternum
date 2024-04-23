@@ -145,22 +145,10 @@ mod donkey_systems {
                 world, resource_owner_entity_id, receiver_entity_id, resources
             );
 
-            // get weight
-            let resources_weight = get!(world, resource_chest_entity_id, Weight);
-
             if burn_donkeys {
-                // get number of donkeys needed
-                let donkey_amount = InternalDonkeySystemsImpl::get_donkey_needed(
-                    world, resources_weight.value
-                );
-
-                // burn amount of donkey needed
-                let mut donkeys: Resource = ResourceImpl::get(
-                    world, (donkey_owner_entity_id, ResourceTypes::DONKEY)
-                );
-
-                donkeys.burn(donkey_amount);
-                donkeys.save(world);
+                // get weight
+                let resources_weight = get!(world, resource_chest_entity_id, Weight);
+                InternalDonkeySystemsImpl::burn_donkeys(world, donkey_owner_entity_id, resources_weight.value);
             }
 
             let travel_time = InternalDonkeySystemsImpl::get_donkey_travel_time(
@@ -187,6 +175,21 @@ mod donkey_systems {
             );
 
             resource_chest_entity_id
+        }
+
+        fn burn_donkeys(world: IWorldDispatcher, entity_id: ID, weight: u128) {
+            // get number of donkeys needed
+            let donkey_amount = InternalDonkeySystemsImpl::get_donkey_needed(
+                world, weight
+            );
+
+            // burn amount of donkey needed
+            let mut donkeys: Resource = ResourceImpl::get(
+                world, (entity_id, ResourceTypes::DONKEY)
+            );
+
+            donkeys.burn(donkey_amount);
+            donkeys.save(world);
         }
 
         fn get_donkey_needed(world: IWorldDispatcher, resources_weight: u128,) -> u128 {

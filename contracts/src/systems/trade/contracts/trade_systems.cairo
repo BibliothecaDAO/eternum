@@ -81,13 +81,7 @@ mod trade_systems {
             resource_chest::fill(world, taker_resource_chest.entity_id, maker_id);
 
             // burn the maker donkeys
-            let donkey_amount = donkey::get_donkey_needed(world, maker_resources_weight);
-            let mut maker_donkeys: Resource = ResourceImpl::get(
-                world, (maker_id, ResourceTypes::DONKEY)
-            );
-            assert(maker_donkeys.balance >= donkey_amount, 'not enough donkeys');
-            maker_donkeys.balance -= donkey_amount;
-            maker_donkeys.save(world);
+            donkey::burn_donkeys(world, maker_id, maker_resources_weight);
 
             // create trade entity
             let trade_id = world.uuid().into();
@@ -149,13 +143,7 @@ mod trade_systems {
 
             // burn the taker donkeys
             let taker_resource_chest_weight = get!(world, trade.taker_resource_chest_id, Weight);
-            let donkey_amount = donkey::get_donkey_needed(world, taker_resource_chest_weight.value);
-            let mut taker_donkeys: Resource = ResourceImpl::get(
-                world, (taker_id, ResourceTypes::DONKEY)
-            );
-            assert(taker_donkeys.balance >= donkey_amount, 'not enough donkeys');
-            taker_donkeys.balance -= donkey_amount;
-            taker_donkeys.save(world);
+            donkey::burn_donkeys(world, taker_id, taker_resource_chest_weight.value);
 
             let travel_time = donkey::get_donkey_travel_time(
                 world, taker_position.into(), maker_position.into(), true
@@ -248,7 +236,7 @@ mod trade_systems {
             let mut maker_donkeys: Resource = ResourceImpl::get(
                 world, (trade.maker_id, ResourceTypes::DONKEY)
             );
-            maker_donkeys.balance += donkey_amount;
+            maker_donkeys.add(donkey_amount);
             maker_donkeys.save(world);
 
             // return resources to maker
