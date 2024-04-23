@@ -216,6 +216,9 @@ impl PositionImpl of PositionTrait {
     fn assert_not_same_location(self: Position, other: Coord) {
         assert(self.x != other.x || self.y != other.y, 'Coord: same');
     }
+    fn assert_not_zero(self: Position) {
+        assert(self.x != 0 || self.y != 0, 'Coord: zero');
+    }
 }
 
 #[cfg(test)]

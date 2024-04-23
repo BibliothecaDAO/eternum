@@ -2,14 +2,12 @@ use core::poseidon::poseidon_hash_span as hash;
 use core::zeroable::Zeroable;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::ResourceTypes;
-use eternum::models::config::{ProductionConfig};
-use eternum::models::config::{TickConfig, TickImpl, TickTrait};
-use eternum::models::owner::EntityOwner;
-use eternum::models::owner::Owner;
-use eternum::models::position::CoordTrait;
-use eternum::models::position::{Coord, Position, Direction};
-use eternum::models::production::{Production, ProductionInput, ProductionRateTrait};
-use eternum::models::production::{ProductionInputImpl};
+use eternum::models::config::{TickConfig, TickImpl, TickTrait, ProductionConfig};
+use eternum::models::owner::{Owner, OwnerTrait, EntityOwner};
+use eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
+use eternum::models::production::{
+    Production, ProductionInput, ProductionRateTrait, ProductionInputImpl
+};
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 
 //todo we need to define border of innner hexes
@@ -42,6 +40,11 @@ enum BuildingCategory {
     Market,
     ArcheryRange,
     Stable,
+    DonkeyFarm,
+    TradingPost,
+    WorkersHut,
+    WatchTower,
+    Walls,
 }
 
 impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
@@ -56,6 +59,11 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
             BuildingCategory::Market => 6,
             BuildingCategory::ArcheryRange => 7,
             BuildingCategory::Stable => 8,
+            BuildingCategory::DonkeyFarm => 9,
+            BuildingCategory::TradingPost => 10,
+            BuildingCategory::WorkersHut => 11,
+            BuildingCategory::WatchTower => 12,
+            BuildingCategory::Walls => 13,
         }
     }
 }
@@ -79,13 +87,11 @@ impl BonusPercentageImpl of BonusPercentageTrait {
 #[generate_trait]
 impl BuildingProductionImpl of BuildingProductionTrait {
     fn is_resource_producer(self: Building) -> bool {
-        let produced_resource = self.produced_resource();
-        return produced_resource.is_non_zero();
+        self.produced_resource().is_non_zero()
     }
 
     fn is_adjacent_building_booster(self: Building) -> bool {
-        let multiplier = self.boost_adjacent_building_production_by();
-        return multiplier.is_non_zero();
+        self.boost_adjacent_building_production_by().is_non_zero()
     }
 
     fn produced_resource(self: Building) -> u8 {
@@ -99,6 +105,11 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::Market => 0,
             BuildingCategory::ArcheryRange => ResourceTypes::CROSSBOWMAN,
             BuildingCategory::Stable => ResourceTypes::PALADIN,
+            BuildingCategory::DonkeyFarm => ResourceTypes::DONKEY,
+            BuildingCategory::TradingPost => 0,
+            BuildingCategory::WorkersHut => 0,
+            BuildingCategory::WatchTower => 0,
+            BuildingCategory::Walls => 0,
         }
     }
 
@@ -113,6 +124,11 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::Market => 0,
             BuildingCategory::ArcheryRange => 0,
             BuildingCategory::Stable => 0,
+            BuildingCategory::DonkeyFarm => 0,
+            BuildingCategory::TradingPost => 0,
+            BuildingCategory::WorkersHut => 0,
+            BuildingCategory::WatchTower => 0,
+            BuildingCategory::Walls => 0,
         }
     }
 
@@ -283,7 +299,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         let bonus_amount: u128 = (production_config.amount * *self.bonus_percent)
             / BonusPercentageImpl::_100();
 
-        return production_config.amount + bonus_amount;
+        production_config.amount + bonus_amount
     }
 
 
@@ -361,12 +377,12 @@ impl BuildingProductionImpl of BuildingProductionTrait {
     fn get_bonus_from(
         ref self: Building, giver_inner_coord: Coord, world: IWorldDispatcher
     ) -> u128 {
-        let bonus_giver_building: Building = get!(
+        get!(
             world,
             (self.outer_col, self.outer_row, giver_inner_coord.x, giver_inner_coord.y),
             Building
-        );
-        return bonus_giver_building.boost_adjacent_building_production_by();
+        )
+            .boost_adjacent_building_production_by()
     }
 
 
@@ -433,18 +449,11 @@ impl BuildingImpl of BuildingTrait {
         produce_resource_type: Option<u8>,
         inner_coord: Coord
     ) -> Building {
-        let outer_entity_owner: Owner = get!(world, outer_entity_id, Owner);
-        assert!(
-            outer_entity_owner.address == starknet::get_caller_address(),
-            "caller not outer entity owner"
-        );
+        get!(world, outer_entity_id, Owner).assert_caller_owner();
 
         // check that the entity has a position
         let outer_entity_position = get!(world, outer_entity_id, Position);
-        assert!(
-            outer_entity_position.x != 0 || outer_entity_position.y != 0,
-            "outer entity's position is not set"
-        );
+        outer_entity_position.assert_not_zero();
 
         // todo@credence: ensure that the bounds are within the inner realm bounds
 
@@ -476,23 +485,16 @@ impl BuildingImpl of BuildingTrait {
         // start production related to building
         building.start_production(world);
 
-        return building;
+        building
     }
 
 
     fn destroy(world: IWorldDispatcher, outer_entity_id: u128, inner_coord: Coord) {
-        let outer_entity_owner = get!(world, outer_entity_id, Owner);
-        assert!(
-            outer_entity_owner.address == starknet::get_caller_address(),
-            "caller not outer entity owner"
-        );
+        get!(world, outer_entity_id, Owner).assert_caller_owner();
 
         // check that the outer entity has a position
         let outer_entity_position = get!(world, outer_entity_id, Position);
-        assert!(
-            outer_entity_position.x != 0 || outer_entity_position.y != 0,
-            "outer entity's position is not set"
-        );
+        outer_entity_position.assert_not_zero();
 
         // todo@credence: ensure that the bounds are within the inner realm bounds
 

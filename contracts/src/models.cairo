@@ -1,4 +1,8 @@
-mod bank;
+mod bank {
+    mod bank;
+    mod liquidity;
+    mod market;
+}
 mod buildings;
 mod capacity;
 mod caravan;
