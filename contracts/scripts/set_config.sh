@@ -52,63 +52,63 @@ commands+=(
 
 )
 
-### LEVELING CONFIG ###
-commands+=(
-    ## leveling cost
-    ## decay_scaled = 1844674407370955161 => 10%,
-    ## cost_percentage_scaled = 4611686018427387904 => 25%,
-    ## base_multiplier = 25 => 25%,
-    ## wheat_base_amount = 3780 => 12 hours of average prod,
-    ## fish_base_amount = 1260 => 12 hours of average prod,
-    ## resource_1_costs = 1, 132, 2, 104, 3, 101, 4, 70, 5, 58, 6, 46, 7, 31,
-    ## resource_2_costs = 8, 25, 9, 24, 10, 16, 11, 8, 12, 7, 13, 6, 14, 6, 15, 5,
-    ## resource_3_costs = 16, 4, 17, 4, 18, 3, 19, 2, 20, 1, 21, 1, 22, 1,
-    "sozo execute $CONFIG_SYSTEMS set_leveling_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 999999999999999993,604800,1000,1844674407370955161,4611686018427387904,25,11340000,3780000,7,1,756000,2,594097,3,577816,4,398426,5,334057,6,262452,7,177732,8,8,144266,9,137783,10,89544,11,45224,12,37235,13,36029,14,36029,15,25929,7,16,24421,17,20954,18,16733,19,14020,20,8291,21,5578,22,3467"
-)
+# ### LEVELING CONFIG ###
+# commands+=(
+#     ## leveling cost
+#     ## decay_scaled = 1844674407370955161 => 10%,
+#     ## cost_percentage_scaled = 4611686018427387904 => 25%,
+#     ## base_multiplier = 25 => 25%,
+#     ## wheat_base_amount = 3780 => 12 hours of average prod,
+#     ## fish_base_amount = 1260 => 12 hours of average prod,
+#     ## resource_1_costs = 1, 132, 2, 104, 3, 101, 4, 70, 5, 58, 6, 46, 7, 31,
+#     ## resource_2_costs = 8, 25, 9, 24, 10, 16, 11, 8, 12, 7, 13, 6, 14, 6, 15, 5,
+#     ## resource_3_costs = 16, 4, 17, 4, 18, 3, 19, 2, 20, 1, 21, 1, 22, 1,
+#     "sozo execute $CONFIG_SYSTEMS set_leveling_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 999999999999999993,604800,1000,1844674407370955161,4611686018427387904,25,11340000,3780000,7,1,756000,2,594097,3,577816,4,398426,5,334057,6,262452,7,177732,8,8,144266,9,137783,10,89544,11,45224,12,37235,13,36029,14,36029,15,25929,7,16,24421,17,20954,18,16733,19,14020,20,8291,21,5578,22,3467"
+# )
 
 
-### SOLDIERS CONFIG ###
-commands+=(
-    ## soldier weight 
-    ## 80 kg = 80000 gr
-    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,80000"
+# ### SOLDIERS CONFIG ###
+# commands+=(
+#     ## soldier weight 
+#     ## 80 kg = 80000 gr
+#     "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,80000"
 
-    ## soldier capacity
-    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,$((100000 * resource_precision))"
+#     ## soldier capacity
+#     "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,$((100000 * resource_precision))"
 
-    ## soldier speed
-    ## 800 sec per km = 4.5 km/h
-    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,800"
+#     ## soldier speed
+#     ## 800 sec per km = 4.5 km/h
+#     "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,800"
 
-    ## soldier cost
-    ## 7560 wheat (254)
-    ## 2520 fish (255)
+#     ## soldier cost
+#     ## 7560 wheat (254)
+#     ## 2520 fish (255)
 
-    ## soldier burning
-    ## 150 wheat per soldier
-    ## 50 fish per soldier
-    "sozo execute $CONFIG_SYSTEMS set_soldier_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,254,1512000,255,504000,150000,50000"
+#     ## soldier burning
+#     ## 150 wheat per soldier
+#     ## 50 fish per soldier
+#     "sozo execute $CONFIG_SYSTEMS set_soldier_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,254,1512000,255,504000,150000,50000"
 
-    ## soldier health
-    ## 10 
-    ## 7560/2 wheat (254)
-    ## 2520/2 fish (255)
-    "sozo execute $CONFIG_SYSTEMS set_health_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,2,254,75600,255,25200,10"
+#     ## soldier health
+#     ## 10 
+#     ## 7560/2 wheat (254)
+#     ## 2520/2 fish (255)
+#     "sozo execute $CONFIG_SYSTEMS set_health_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,2,254,75600,255,25200,10"
 
-    ## soldier attack
-    ## 10 
-    "sozo execute $CONFIG_SYSTEMS set_attack_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,10"
+#     ## soldier attack
+#     ## 10 
+#     "sozo execute $CONFIG_SYSTEMS set_attack_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,10"
 
-    ## soldier defence
-    ## 10 
-    "sozo execute $CONFIG_SYSTEMS set_defence_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,10"
+#     ## soldier defence
+#     ## 10 
+#     "sozo execute $CONFIG_SYSTEMS set_defence_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,10"
 
-    ## combat config
-    ## stealing_trial_count
-    ## 100 wheat per soldier
-    ## 30 fish per soldier
-    "sozo execute $CONFIG_SYSTEMS set_combat_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 999999999999999994,3,100000,300000"
-)
+#     ## combat config
+#     ## stealing_trial_count
+#     ## 100 wheat per soldier
+#     ## 30 fish per soldier
+#     "sozo execute $CONFIG_SYSTEMS set_combat_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 999999999999999994,3,100000,300000"
+# )
 
 ### WEIGHT ###
 # Loop for resource types 1 to 28
@@ -270,35 +270,46 @@ commands+=(
 #     "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 22,255,5500"
 # )
 
-export AMOUNT_PER_TICK=1000
+export RESOURCE_AMOUNT_PER_TICK=100
+export FOOD_PER_TICK=10000
+export DONKEYS_PER_TICK=10
+export KNIGHTS_PER_TICK=2
+export CROSSBOWMEN_PER_TICK=2
+export PALADIN_PER_TICK=2
 
 commands+=(
     # resourceId: 1
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WOOD,$AMOUNT_PER_TICK,1,$STONE,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STONE,$AMOUNT_PER_TICK,1,$COAL,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COAL,$AMOUNT_PER_TICK,1,$COPPER,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COPPER,$AMOUNT_PER_TICK,1,$OBSIDIAN,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $OBSIDIAN,$AMOUNT_PER_TICK,1,$SILVER,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SILVER,$AMOUNT_PER_TICK,1,$IRONWOOD,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $IRONWOOD,$AMOUNT_PER_TICK,1,$COLDIRON,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COLDIRON,$AMOUNT_PER_TICK,1,$GOLD,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $GOLD,$AMOUNT_PER_TICK,1,$HARTWOOD,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $HARTWOOD,$AMOUNT_PER_TICK,1,$DIAMONDS,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DIAMONDS,$AMOUNT_PER_TICK,1,$SAPPHIRE,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SAPPHIRE,$AMOUNT_PER_TICK,1,$RUBY,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $RUBY,$AMOUNT_PER_TICK,1,$DEEPCRYSTAL,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DEEPCRYSTAL,$AMOUNT_PER_TICK,1,$IGNIUM,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $IGNIUM,$AMOUNT_PER_TICK,1,$ETHEREALSILICA,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ETHEREALSILICA,$AMOUNT_PER_TICK,1,$TRUEICE,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $TRUEICE,$AMOUNT_PER_TICK,1,$TWILIGHTQUARTZ,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $TWILIGHTQUARTZ,$AMOUNT_PER_TICK,1,$ALCHEMICALSILVER,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ALCHEMICALSILVER,$AMOUNT_PER_TICK,1,$ADAMANTINE,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ADAMANTINE,$AMOUNT_PER_TICK,1,$MITHRAL,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $MITHRAL,$AMOUNT_PER_TICK,1,$DRAGONHIDE,10"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DRAGONHIDE,$AMOUNT_PER_TICK,1,$MITHRAL,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WOOD,$RESOURCE_AMOUNT_PER_TICK,1,$STONE,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STONE,$RESOURCE_AMOUNT_PER_TICK,1,$COAL,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COAL,$RESOURCE_AMOUNT_PER_TICK,1,$COPPER,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COPPER,$RESOURCE_AMOUNT_PER_TICK,1,$OBSIDIAN,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $OBSIDIAN,$RESOURCE_AMOUNT_PER_TICK,1,$SILVER,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SILVER,$RESOURCE_AMOUNT_PER_TICK,1,$IRONWOOD,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $IRONWOOD,$RESOURCE_AMOUNT_PER_TICK,1,$COLDIRON,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COLDIRON,$RESOURCE_AMOUNT_PER_TICK,1,$GOLD,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $GOLD,$RESOURCE_AMOUNT_PER_TICK,1,$HARTWOOD,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $HARTWOOD,$RESOURCE_AMOUNT_PER_TICK,1,$DIAMONDS,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DIAMONDS,$RESOURCE_AMOUNT_PER_TICK,1,$SAPPHIRE,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SAPPHIRE,$RESOURCE_AMOUNT_PER_TICK,1,$RUBY,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $RUBY,$RESOURCE_AMOUNT_PER_TICK,1,$DEEPCRYSTAL,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DEEPCRYSTAL,$RESOURCE_AMOUNT_PER_TICK,1,$IGNIUM,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $IGNIUM,$RESOURCE_AMOUNT_PER_TICK,1,$ETHEREALSILICA,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ETHEREALSILICA,$RESOURCE_AMOUNT_PER_TICK,1,$TRUEICE,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $TRUEICE,$RESOURCE_AMOUNT_PER_TICK,1,$TWILIGHTQUARTZ,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $TWILIGHTQUARTZ,$RESOURCE_AMOUNT_PER_TICK,1,$ALCHEMICALSILVER,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ALCHEMICALSILVER,$RESOURCE_AMOUNT_PER_TICK,1,$ADAMANTINE,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ADAMANTINE,$RESOURCE_AMOUNT_PER_TICK,1,$MITHRAL,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $MITHRAL,$RESOURCE_AMOUNT_PER_TICK,1,$DRAGONHIDE,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DRAGONHIDE,$RESOURCE_AMOUNT_PER_TICK,1,$MITHRAL,10"
 
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WHEAT,$AMOUNT_PER_TICK,0"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $FISH,$AMOUNT_PER_TICK,0"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY,$DONKEYS_PER_TICK,0"
+
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $KNIGHT,$KNIGHTS_PER_TICK,0"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $CROSSBOWMEN,$CROSSBOWMEN_PER_TICK,0"  
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $PALADIN,$PALADIN_PER_TICK,0"
+
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WHEAT,$FOOD_PER_TICK,0"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $FISH,$FOOD_PER_TICK,0"
 )
 
 

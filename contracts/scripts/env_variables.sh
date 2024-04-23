@@ -54,9 +54,15 @@ export ALCHEMICALSILVER=19
 export ADAMANTINE=20
 export MITHRAL=21
 export DRAGONHIDE=22
-export KNIGHT=101
-export CROSSBOWMEN=102
-export PALADIN=103
+
+# Transports
+export DONKEY=249;
+
+# Units
+export KNIGHT=250
+export CROSSBOWMEN=251
+export PALADIN=252
+
 export LORDS=253
 export WHEAT=254
 export FISH=255
