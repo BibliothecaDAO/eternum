@@ -184,11 +184,7 @@ struct WeightConfig {
     weight_gram: u128,
 }
 
-
-trait WeightConfigTrait {
-    fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128;
-}
-
+#[generate_trait]
 impl WeightConfigImpl of WeightConfigTrait {
     fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
         let resource_weight_config = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
@@ -196,7 +192,6 @@ impl WeightConfigImpl of WeightConfigTrait {
         return resource_weight_config.weight_gram * amount;
     }
 }
-
 
 #[derive(Model, Copy, Drop, Serde)]
 struct LevelingConfig {
