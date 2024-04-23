@@ -144,19 +144,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    CaravanMembers: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.BigInt, key: RecsType.BigInt, count: RecsType.Number },
-        {
-          metadata: {
-            name: "CaravanMembers",
-            types: ["u128", "u128", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Attack: (() => {
       return defineComponent(
         world,

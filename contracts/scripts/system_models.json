@@ -15,29 +15,22 @@
     "Tile",
     "Production"
   ],
-  "CARAVAN_SYSTEMS": [
+  "DONKEY_SYSTEMS": [
     "Movable",
     "Capacity",
-    "CaravanMembers",
-    "Position",
-    "Owner",
-    "EntityOwner",
     "ForeignKey",
-    "Inventory"
-  ],
-  "TRANSPORT_UNIT_SYSTEMS": [
+    "Inventory",
     "Owner",
     "Position",
     "EntityOwner",
     "EntityMetadata",
     "Quantity",
-    "Movable",
     "ArrivalTime",
-    "Capacity",
-    "QuantityTracker"
+    "QuantityTracker",
+    "Resource",
+    "Production"
   ],
   "TRADE_SYSTEMS": [
-    "Caravan",
     "Movable",
     "Trade",
     "Resource",

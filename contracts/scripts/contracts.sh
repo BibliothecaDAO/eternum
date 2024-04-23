@@ -18,11 +18,9 @@ export TRADE_SYSTEMS=$(get_contract_address "eternum::systems::trade::contracts:
 
 export RESOURCE_SYSTEMS=$(get_contract_address "eternum::systems::resources::contracts::resource_systems")
 
-export CARAVAN_SYSTEMS=$(get_contract_address "eternum::systems::transport::contracts::caravan_systems::caravan_systems")
+export DONKEY_SYSTEMS=$(get_contract_address "eternum::systems::transport::contracts::donkey_systems::donkey_systems")
 
 export ROAD_SYSTEMS=$(get_contract_address "eternum::systems::transport::contracts::road_systems::road_systems")
-
-export TRANSPORT_UNIT_SYSTEMS=$(get_contract_address "eternum::systems::transport::contracts::transport_unit_systems::transport_unit_systems")
 
 export TRAVEL_SYSTEMS=$(get_contract_address "eternum::systems::transport::contracts::travel_systems::travel_systems")
 
@@ -54,9 +52,8 @@ echo world : $SOZO_WORLD
 echo config : $CONFIG_SYSTEMS
 echo trade : $TRADE_SYSTEMS
 echo resource : $RESOURCE_SYSTEMS
-echo caravan : $CARAVAN_SYSTEMS
 echo road : $ROAD_SYSTEMS
-echo transport_unit : $TRANSPORT_UNIT_SYSTEMS
+echo donkey : $DONKEY_SYSTEMS
 echo travel : $TRAVEL_SYSTEMS
 echo realm : $REALM_SYSTEMS
 echo test_resource : $TEST_RESOURCE_SYSTEMS

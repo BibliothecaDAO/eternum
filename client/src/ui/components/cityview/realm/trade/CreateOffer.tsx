@@ -444,11 +444,10 @@ export const SelectCaravanPanel = ({
   } = useDojo();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { useRealmDonkeysCount, useGetPositionCaravans } = useCaravan();
+  const { useRealmDonkeysCount } = useCaravan();
   const { getResourcesFromInventory } = useResources();
   const { realm } = useGetRealm(realmEntityId);
   const position = getComponentValue(Position, getEntityIdFromKeys([realmEntityId]));
-  const { caravans: realmCaravans } = useGetPositionCaravans(position?.x || 0, position?.y || 0, true);
 
   const [donkeysLeft, setDonkeysLeft] = useState<number>(0);
   const realmDonkeysCount = useRealmDonkeysCount(realmEntityId);
@@ -465,28 +464,6 @@ export const SelectCaravanPanel = ({
   const canCarry = (caravan: CaravanInterface, resourceWeight: number) => {
     return caravan.capacity ? caravan.capacity >= resourceWeight : false;
   };
-
-  const myAvailableCaravans = useMemo(
-    () =>
-      realmCaravans
-        ? (realmCaravans
-            .map((caravan) => {
-              const resourcesCarried = getResourcesFromInventory(caravan.caravanId);
-              const isIdle =
-                caravan &&
-                nextBlockTimestamp &&
-                !caravan.blocked &&
-                (!caravan.arrivalTime || caravan.arrivalTime <= nextBlockTimestamp) &&
-                resourcesCarried.resources.length == 0;
-              // capacity in gr (1kg = 1000gr)
-              if (isIdle && canCarry(caravan, resourceWeight)) {
-                return caravan;
-              }
-            })
-            .filter(Boolean) as CaravanInterface[])
-        : [],
-    [realmCaravans, resourceWeight],
-  );
 
   return (
     <div className={clsx("flex flex-col items-center w-full p-2", className)}>
@@ -616,38 +593,6 @@ export const SelectCaravanPanel = ({
           className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
         >
           <div className="text-xs text-center text-gold">+ New Caravan</div>
-        </div>
-      )}
-      {isNewCaravan && myAvailableCaravans.length > 0 && (
-        <div className="flex flex-col w-full mt-2">
-          <Headline className="mb-2">Or choose from existing Caravans</Headline>
-        </div>
-      )}
-      {isNewCaravan && myAvailableCaravans.length > 0 && (
-        <div
-          onClick={() => {
-            setIsNewCaravan(false);
-          }}
-          className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
-        >
-          <div className="text-xs text-center text-gold">{`Show ${myAvailableCaravans.length} idle Caravans`}</div>
-        </div>
-      )}
-      {!isNewCaravan && (
-        <div className="flex flex-col max-h-[350px] overflow-auto w-full">
-          {myAvailableCaravans.map((caravan) => (
-            <Entity
-              key={caravan.caravanId}
-              entity={caravan}
-              idleOnly={true}
-              onClick={() => {
-                setSelectedCaravan(caravan.caravanId);
-              }}
-              className={`w-full mt-2 border rounded-md ${
-                selectedCaravan === caravan.caravanId ? "border-order-brilliance" : ""
-              }`}
-            />
-          ))}
         </div>
       )}
     </div>

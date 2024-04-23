@@ -3,8 +3,6 @@ use dojo::test_utils::spawn_test_world;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::capacity::{capacity, Capacity};
-use eternum::models::caravan::{caravan_members, CaravanMembers,};
-
 
 use eternum::models::config::{
     world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,

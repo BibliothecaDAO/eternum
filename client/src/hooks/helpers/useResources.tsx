@@ -20,7 +20,6 @@ export function useResources() {
         ResourceChest,
         DetachedResource,
         Resource,
-        CaravanMembers,
         Position,
         ResourceCost,
         Realm,
@@ -160,7 +159,6 @@ export function useResources() {
     const realmPosition = getComponentValue(Position, getEntityIdFromKeys([realmEntityId]));
 
     const caravansAtPositionWithInventory = useEntityQuery([
-      Has(CaravanMembers),
       NotValue(Inventory, {
         items_count: 0n,
       }),
@@ -171,8 +169,8 @@ export function useResources() {
     ]);
 
     return caravansAtPositionWithInventory.map((id) => {
-      const caravanMembers = getComponentValue(CaravanMembers, id);
-      return caravanMembers!.entity_id;
+      const position = getComponentValue(Position, id);
+      return position!.entity_id;
     });
   };
 

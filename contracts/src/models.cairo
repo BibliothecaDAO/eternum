@@ -5,7 +5,6 @@ mod bank {
 }
 mod buildings;
 mod capacity;
-mod caravan;
 mod combat;
 mod combatV2;
 mod config;

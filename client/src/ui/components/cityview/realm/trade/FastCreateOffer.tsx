@@ -520,10 +520,9 @@ export const SelectCaravanPanel = ({
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { useRealmDonkeysCount, useGetPositionCaravans } = useCaravan();
+  const { useRealmDonkeysCount } = useCaravan();
   const { getResourcesFromInventory } = useResources();
   const { realm } = useGetRealm(realmEntityId);
-  const { caravans: realmCaravans } = useGetPositionCaravans(realm?.position.x || 0, realm?.position.y || 0);
 
   const [donkeysLeft, setDonkeysLeft] = useState<number>(0);
   const realmDonkeysCount = useRealmDonkeysCount(realmEntityId);

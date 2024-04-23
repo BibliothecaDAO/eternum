@@ -58,7 +58,6 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
   const [showTravel, setShowTravel] = React.useState(false);
 
   const { getResourcesFromInventory } = useResources();
-  const { getCaravanMembers } = useCaravan();
 
   const inventoryResources = getResourcesFromInventory(entityId);
   const depositEntityIds = position ? useGetBankAccountOnPosition(BigInt(account.address), position) : [];
