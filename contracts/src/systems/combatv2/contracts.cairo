@@ -47,13 +47,11 @@ mod combat_v2_systems {
             assert!(realm.realm_id != 0, "owner is not a realm");
 
             // make payment for troops
-            let mut knight_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::KNIGHT));
-            let mut paladin_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::PALADIN));
-            let mut crossbowman_resource = ResourceImpl::get(
-                world, (owner_id, ResourceTypes::CROSSBOWMAN)
-            );
-            let mut troop_resources = (knight_resource, paladin_resource, crossbowman_resource);
-            troops.purchase(owner_id, ref troop_resources);
+            let knight_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::KNIGHT));
+            let paladin_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::PALADIN));
+            let crossbowman_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::CROSSBOWMAN));
+            let (knight_resource, paladin_resource, crossbowman_resource) 
+                = troops.purchase(owner_id, (knight_resource, paladin_resource, crossbowman_resource));
             set!(world, (knight_resource, paladin_resource, crossbowman_resource));
 
             // make troops 

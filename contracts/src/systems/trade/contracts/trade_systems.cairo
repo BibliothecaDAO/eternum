@@ -87,7 +87,7 @@ mod trade_systems {
             resource_chest::fill(world, taker_resource_chest.entity_id, maker_id);
 
             // burn the maker donkeys
-            donkey::burn_donkeys(world, maker_id, maker_resources_weight);
+            // donkey::burn_donkeys(world, maker_id, maker_resources_weight);
 
             // create trade entity
             let trade_id = world.uuid().into();
@@ -149,11 +149,11 @@ mod trade_systems {
 
             // burn the taker donkeys
             let taker_resource_chest_weight = get!(world, trade.taker_resource_chest_id, Weight);
-            donkey::burn_donkeys(world, taker_id, taker_resource_chest_weight.value);
-
-            let travel_time = donkey::get_donkey_travel_time(
-                world, taker_position.into(), maker_position.into(), true
-            );
+            // donkey::burn_donkeys(world, taker_id, taker_resource_chest_weight.value);
+            let travel_time = 0;
+            // let travel_time = donkey::get_donkey_travel_time(
+            //     world, taker_position.into(), maker_position.into(), true
+            // );
 
             ///////// Updates For Maker ///////////////
             //////////////////////////////////////////

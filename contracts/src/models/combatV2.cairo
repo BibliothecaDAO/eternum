@@ -100,8 +100,8 @@ impl TroopsImpl of TroopsTrait {
     }
 
     fn purchase(
-        self: Troops, purchaser_id: u128, ref troops_resources: (Resource, Resource, Resource),
-    ) {
+        self: Troops, purchaser_id: u128, troops_resources: (Resource, Resource, Resource),
+    ) -> (Resource, Resource, Resource) {
         let (mut knight_resource, mut paladin_resoure, mut crossbowman_resoure) = troops_resources;
 
         // pay for knights using KNIGHT resource
@@ -134,6 +134,8 @@ impl TroopsImpl of TroopsTrait {
             );
             crossbowman_resoure.balance -= self.crossbowman_count.into();
         }
+
+        return (knight_resource, paladin_resoure, crossbowman_resoure);
     }
 
     fn delta(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> (u32, u32) {
