@@ -16,10 +16,10 @@ mod combat_v2_systems {
     use eternum::alias::ID;
     use eternum::constants::{ResourceTypes, ErrorMessages};
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE};
-
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
-        TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait
+        TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait,
+        CapacityConfig
     };
 
     use eternum::models::movable::Movable;
@@ -34,6 +34,9 @@ mod combat_v2_systems {
             BattleImpl, BattleTrait, BattleSide
         },
     };
+    use eternum::models::quantity::{Quantity, QuantityTrait};
+    use eternum::models::capacity::Capacity;
+
     use eternum::utils::math::PercentageImpl;
     use super::ICombatv2Contract;
 
@@ -101,6 +104,21 @@ mod combat_v2_systems {
                     intermediate_coord_y: 0,
                 }
             );
+
+            // set troop capacity and quantity
+       
+            let troop_capacity : CapacityConfig = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), CapacityConfig);
+            set!(world, (
+                Capacity { 
+                    entity_id: army.entity_id, 
+                    weight_gram: troop_capacity.weight_gram 
+                },
+                Quantity { 
+                    entity_id: army.entity_id, 
+                    value: army.troops.count().into() 
+                }
+            ));
+
 
             // add inventory 
             set!(world, (

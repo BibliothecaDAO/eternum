@@ -204,6 +204,12 @@ impl TroopsImpl of TroopsTrait {
 
         self_knight_strength + self_paladin_strength + self_crossbowman_strength
     }
+
+    fn count(ref self: Troops) -> u32{
+        self.knight_count +
+        self.paladin_count +
+        self.crossbowman_count
+    }
 }
 
 
