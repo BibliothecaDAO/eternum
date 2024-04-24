@@ -29,8 +29,9 @@ const EXPLORATION_COSTS: Resource[] = [
 
 export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const {
+    account: { account },
     setup: {
-      components: { TickMove, ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Position, Health, Realm },
+      components: { TickMove, ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Owner, Position, Health, Realm },
     },
   } = useDojo();
 
@@ -44,6 +45,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
   const isAttackMode = useUIStore((state) => state.isAttackMode);
   const [playerOwnsSelectedEntity, setPlayerOwnsSelectedEntity] = useState(false);
+  console.log({ playerOwnsSelectedEntity });
   const [playerRaidersOnPosition, setPlayerRaidersOnPosition] = useState<CombatInfo[]>([]);
   const [selectedEntityIsDead, setSelectedEntityIsDead] = useState(true);
   const [selectedEntityIsRealm, setSelectedEntityIsRealm] = useState(false);
@@ -58,14 +60,8 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     if (!selectedEntity) return;
     const checkPlayerOwnsSelectedEntity = () => {
       if (selectedEntity?.id) {
-        const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntity.id])) || undefined;
-        const realmEntityIdsFlat = realmEntityIds.map((realmEntityId) => realmEntityId.realmEntityId);
-        if (
-          realmEntityIdsFlat.includes(entityOwner?.entity_owner_id!) ||
-          realmEntityIdsFlat.includes(selectedEntity.id)
-        ) {
-          return true;
-        }
+        const owner = getComponentValue(Owner, getEntityIdFromKeys([selectedEntity.id])) || undefined;
+        return owner?.address === BigInt(account.address) ? true : false;
       }
       return false;
     };
@@ -126,7 +122,8 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   };
   const sampleRewardResourceWeightKg = getTotalResourceWeight([sampleRewardResource]);
   const entityWeightInKg = divideByPrecision(Number(weight?.value || 0));
-  const canCarryNewReward = totalCapacityInKg >= entityWeightInKg + sampleRewardResourceWeightKg;
+  // const canCarryNewReward = totalCapacityInKg >= entityWeightInKg + sampleRewardResourceWeightKg;
+  const canCarryNewReward = true;
 
   const { getResourcesFromInventory } = useResources();
 
@@ -140,7 +137,8 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     });
   }, [entityOwner]);
 
-  const hasEnoughResourcesToExplore = explorationCosts.every((res) => res.hasEnough);
+  // const hasEnoughResourcesToExplore = explorationCosts.every((res) => res.hasEnough);
+  const hasEnoughResourcesToExplore = true;
 
   useEffect(() => {
     setTimeout(() => {

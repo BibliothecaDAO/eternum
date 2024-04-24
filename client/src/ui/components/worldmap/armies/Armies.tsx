@@ -19,18 +19,15 @@ export const Armies = ({}: ArmiesProps) => {
   const {
     account: { account },
     setup: {
-      components: { Position, Health, Owner, Healthv2 },
+      components: { Position, Owner, Healthv2 },
     },
   } = useDojo();
 
   const realms = useRealmStore((state) => state.realmEntityIds);
 
-  const { useOwnerRaiders, useEnemeyRaiders, useOwnerArmies } = useCombat();
+  const { useOwnerArmies } = useCombat();
 
-  const myArmies = useOwnerRaiders(BigInt(account.address));
-  const enemyArmies = useEnemeyRaiders(BigInt(account.address));
-
-  const ownerArmies = useOwnerArmies(BigInt(account.address));
+  const myArmies = useOwnerArmies(BigInt(account.address));
 
   useUpdateAnimationPaths();
 
@@ -40,23 +37,22 @@ export const Armies = ({}: ArmiesProps) => {
     return orderName.charAt(0).toUpperCase() + orderName.slice(1);
   }, []);
 
-  console.log("ownerArmies", ownerArmies);
+  console.log("ownerArmies", myArmies);
   const armyInfo = useMemo(
     () =>
-      [...ownerArmies]
+      [...myArmies]
         .map((armyId) => {
           const position = getComponentValue(Position, getEntityIdFromKeys([armyId?.entity_id || 0n]));
           const health = getComponentValue(Healthv2, getEntityIdFromKeys([armyId?.entity_id || 0n]));
-          const isDead = health?.current ? false : true;
+          // const isDead = health?.current ? false : true;
+          const isDead = false;
           const owner = getComponentValue(Owner, getEntityIdFromKeys([armyId?.entity_id || 0n]));
           const isMine = owner?.address === BigInt(account.address);
 
-          console.log("armyId", armyId?.entity_id, position, health, isDead, owner, isMine);
           // // if animated army dont display
           if (!position) return;
           let z = 0.32;
 
-          console.log("position", position);
           return {
             contractPos: { x: position.x, y: position.y },
             uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
@@ -72,8 +68,10 @@ export const Armies = ({}: ArmiesProps) => {
         isDead: boolean;
         isMine: boolean;
       }[],
-    [myArmies, enemyArmies],
+    [myArmies],
   );
+
+  console.log({ armyInfo });
 
   return (
     <group>
