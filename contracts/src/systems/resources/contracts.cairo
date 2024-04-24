@@ -235,21 +235,25 @@ mod resource_systems {
                 world, sender_id, resources
             );
 
-            // give resource chest to receiver
-            InternalInventorySystemsImpl::add(world, receiver_id, resource_chest.entity_id);
 
             // lock resource chest for travel duration and burn donkeys
             // if recipient and owner arent at the same location
 
             let owner_coord: Coord = get!(world, sender_id, Position).into();
             let receiver_coord: Coord = get!(world, receiver_id, Position).into();
-            if owner_coord != receiver_coord {
+            if owner_coord == receiver_coord {
+                // give resource chest to receiver
+                InternalInventorySystemsImpl::add(world, receiver_id, resource_chest.entity_id);
+            } else {
 
-                // create transport that can carry Weight
+                // create donkey that can carry Weight
                 let resources_weight = get!(world, resource_chest.entity_id, Weight);
                 let donkey_id: ID = donkey::create_donkey(
                     world, caller_id, receiver_id,  resources_weight.value, owner_coord, receiver_coord);
                 
+                // give resource chest to donkey
+                InternalInventorySystemsImpl::add(world, donkey_id, resource_chest.entity_id);
+
                 // lock resource chest till it is in possession of the owner
                 let donkey_arrival_time : ArrivalTime = get!(world, donkey_id, ArrivalTime);
                 let is_round_trip: bool = caller_id == receiver_id;
