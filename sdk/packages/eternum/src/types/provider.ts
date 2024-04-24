@@ -72,8 +72,8 @@ export interface CreateOrderProps extends SystemSigner {
 
 export interface SendResourcesProps extends SystemSigner {
   sender_entity_id: num.BigNumberish;
+  recipient_entity_id: num.BigNumberish;
   resources: num.BigNumberish[];
-  destination_coord: { x: num.BigNumberish; y: num.BigNumberish };
 }
 
 export interface PickupResourcesProps extends SystemSigner {

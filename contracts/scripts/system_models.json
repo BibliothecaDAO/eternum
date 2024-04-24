@@ -16,19 +16,6 @@
     "Production"
   ],
   "DONKEY_SYSTEMS": [
-    "Movable",
-    "Capacity",
-    "ForeignKey",
-    "Inventory",
-    "Owner",
-    "Position",
-    "EntityOwner",
-    "EntityMetadata",
-    "Quantity",
-    "ArrivalTime",
-    "QuantityTracker",
-    "Resource",
-    "Production"
   ],
   "TRADE_SYSTEMS": [
     "Movable",
@@ -57,7 +44,16 @@
     "DetachedResource",
     "ForeignKey",
     "Inventory",
-    "Production"
+    "Production",
+    "Movable",
+    "Capacity",
+    "Position",
+    "EntityOwner",
+    "EntityMetadata",
+    "Quantity",
+    "ArrivalTime",
+    "QuantityTracker",
+    "Road"
   ],
   "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
   "COMBAT_SYSTEMS": [

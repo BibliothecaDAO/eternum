@@ -39,8 +39,9 @@ export const SendResourcesPanel = ({
     await send_resources({
       signer: account,
       sender_entity_id: senderEntityId,
+      // todo: change that
+      recipient_entity_id: 0,
       resources: resourcesList || [],
-      destination_coord: { x: position.x, y: position.y },
     });
     onSendResources();
   };

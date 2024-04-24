@@ -296,17 +296,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async send_resources(props: SystemProps.SendResourcesProps) {
-    const {
-      sender_entity_id,
-      resources,
-      destination_coord: { x, y },
-      signer,
-    } = props;
+    const { sender_entity_id, recipient_entity_id, resources, signer } = props;
 
     const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "donkey_systems"),
-      entrypoint: "send_resources",
-      calldata: [sender_entity_id, resources, x, y],
+      contractAddress: getContractByName(this.manifest, "resource_systems"),
+      entrypoint: "send",
+      calldata: [sender_entity_id, recipient_entity_id, resources.length / 2, ...resources],
     });
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
@@ -315,8 +310,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { donkey_owner_entity_id, resource_owner_entity_id, resources, signer } = props;
 
     const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "donkey_systems"),
-      entrypoint: "send_resources",
+      contractAddress: getContractByName(this.manifest, "resource_systems"),
+      entrypoint: "pickup",
       calldata: [donkey_owner_entity_id, resource_owner_entity_id, resources],
     });
     return await this.waitForTransactionWithCheck(tx.transaction_hash);

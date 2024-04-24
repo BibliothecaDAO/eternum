@@ -5,11 +5,12 @@ import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { divideByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { ResourceWeightsInfo } from "../resources/ResourceWeight";
+import { useDojo } from "@/hooks/context/DojoContext";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -129,9 +130,17 @@ const SelectResources = ({
   setSelectedResourceAmounts: any;
   entity_id: bigint;
 }) => {
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { send_resources },
+    },
+  } = useDojo();
+
   const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
 
+  const [isLoading, setIsLoading] = useState(false);
   const [canCarry, setCanCarry] = useState(true);
 
   const unselectedResources = useMemo(
@@ -146,6 +155,22 @@ const SelectResources = ({
       [unselectedResources[0].id]: 1,
     });
     playResourceSound(unselectedResources[0].id);
+  };
+
+  const onSendResources = async () => {
+    setIsLoading(true);
+    const resourcesList = selectedResourceIds.flatMap((id: number) => [
+      Number(id),
+      multiplyByPrecision(selectedResourceAmounts[Number(id)]),
+    ]);
+    console.log({ resourcesList, selectedResourceAmounts });
+    await send_resources({
+      signer: account,
+      sender_entity_id: entity_id,
+      // todo: change that
+      recipient_entity_id: 0n,
+      resources: resourcesList || [],
+    });
   };
 
   return (
@@ -231,7 +256,7 @@ const SelectResources = ({
         }))}
         setCanCarry={setCanCarry}
       />
-      <Button disabled={!canCarry} variant="primary" size="md" onClick={() => {}}>
+      <Button isLoading={isLoading} disabled={!canCarry} variant="primary" size="md" onClick={onSendResources}>
         Confirm
       </Button>
     </div>
