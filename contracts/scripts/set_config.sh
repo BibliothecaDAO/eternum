@@ -100,7 +100,7 @@ commands+=(
     # crossbowman_strength: 7,
     # advantage_percent: 1000, // 10%
     # disadvantage_percent: 1000, // 10% 
-    "sozo execute $CONFIG_SYSTEMS set_troop_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,10,10,10,7,7,7,10000,10000"
+    "sozo execute $CONFIG_SYSTEMS set_troop_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,10,10,10,7,7,7,1000,1000"
 )
 
 commands+=(
