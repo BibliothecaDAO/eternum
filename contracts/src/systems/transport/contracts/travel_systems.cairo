@@ -1,19 +1,21 @@
 #[dojo::interface]
 trait ITravelSystems {
-    fn travel(travelling_entity_id: eternum::alias::ID, destination_coord: eternum::models::position::Coord);
-    fn travel_hex(travelling_entity_id: eternum::alias::ID, directions: Span<eternum::models::position::Direction>);
+    fn travel(
+        travelling_entity_id: eternum::alias::ID,
+        destination_coord: eternum::models::position::Coord
+    );
+    fn travel_hex(
+        travelling_entity_id: eternum::alias::ID,
+        directions: Span<eternum::models::position::Direction>
+    );
 }
 
 #[dojo::contract]
 mod travel_systems {
-    use starknet::ContractAddress;
-
     use eternum::alias::ID;
 
     use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex};
     use eternum::models::capacity::{Capacity, CapacityTrait};
-    use eternum::models::quantity::{Quantity, QuantityTrait};
-    use eternum::models::weight::Weight;
     use eternum::models::config::{RoadConfig, LevelingConfig};
     use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::level::{Level, LevelTrait};
@@ -22,13 +24,16 @@ mod travel_systems {
     use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
+    use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
     use eternum::models::road::RoadImpl;
     use eternum::models::tick::{TickMove, TickMoveTrait};
+    use eternum::models::weight::Weight;
 
     use eternum::systems::leveling::contracts::leveling_systems::{
         InternalLevelingSystemsImpl as leveling
     };
+    use starknet::ContractAddress;
 
     #[derive(Drop, starknet::Event)]
     struct Travel {

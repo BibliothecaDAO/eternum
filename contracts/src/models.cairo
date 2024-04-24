@@ -1,8 +1,3 @@
-mod bank {
-    mod bank;
-    mod liquidity;
-    mod market;
-}
 mod buildings;
 mod capacity;
 mod combat;
@@ -27,3 +22,8 @@ mod settlement;
 mod tick;
 mod trade;
 mod weight;
+mod bank {
+    mod bank;
+    mod liquidity;
+    mod market;
+}

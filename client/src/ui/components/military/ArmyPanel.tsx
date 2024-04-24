@@ -16,7 +16,7 @@ export const ArmyPanel = ({ entity }: any) => {
             <div>Armies</div>
           </div>
         ),
-        component: <ArmyList />,
+        component: <ArmyList entity={entity} />,
       },
       {
         key: "Create",
@@ -25,10 +25,10 @@ export const ArmyPanel = ({ entity }: any) => {
             <div>New Army</div>
           </div>
         ),
-        component: <TroopSelect />,
+        component: <TroopSelect entity={entity} />,
       },
     ],
-    [selectedTab],
+    [selectedTab, entity],
   );
 
   return (

@@ -149,6 +149,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.remove_liquidity(props);
   };
 
+  const create_army = async (props: SystemProps.CreateArmyProps) => {
+    await provider.create_army(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -192,6 +196,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     heal_soldiers,
     destroy_building,
     create_building,
+    create_army,
     uuid,
   };
 

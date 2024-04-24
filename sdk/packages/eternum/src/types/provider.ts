@@ -227,3 +227,30 @@ export interface RemoveLiquidityProps extends SystemSigner {
   resource_type: num.BigNumberish;
   shares: num.BigNumberish;
 }
+
+export interface Troops {
+  knight_count: num.BigNumberish;
+  paladin_count: num.BigNumberish;
+  crossbowman_count: num.BigNumberish;
+}
+
+export interface CreateArmyProps extends SystemSigner {
+  owner_id: num.BigNumberish;
+  troops: Troops;
+}
+
+export interface StartBattleProps extends SystemSigner {
+  attacker_id: num.BigNumberish;
+  defender_id: num.BigNumberish;
+}
+
+export interface JoinBattleProps extends SystemSigner {
+  battle_id: num.BigNumberish;
+  battle_side: num.BigNumberish;
+  army_id: num.BigNumberish;
+}
+
+export interface LeaveBattleProps extends SystemSigner {
+  battle_id: num.BigNumberish;
+  army_id: num.BigNumberish;
+}

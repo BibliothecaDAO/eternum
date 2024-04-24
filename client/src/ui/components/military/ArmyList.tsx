@@ -1,32 +1,21 @@
 import Button from "@/ui/elements/Button";
 import { EntityList } from "../list/EntityList";
 
-const exampleArmies = [
-  { id: 1, name: "Army 1" },
-  { id: 2, name: "Army 2" },
-  { id: 3, name: "Army 3" },
-];
+import { useArmies } from "@/hooks/helpers/useArmies";
 
-export const ArmyList = () => {
-  return <EntityList list={exampleArmies} title="armies" panel={({ entity }) => <ArmyCard entity={entity} />} />;
+export const ArmyList = ({ entity }: any) => {
+  const { entityArmies } = useArmies({ entity_id: entity?.entity_id });
+
+  return <EntityList list={entityArmies()} title="armies" panel={({ entity }) => <ArmyCard entity={entity} />} />;
 };
 
+// TODO: Position, Combine Armies, Travel to on Map
 export const ArmyCard = ({ entity }: any) => {
   return (
     <div>
-      <div className="text-2xl">{entity.name}</div>
-      <ArmyStatistics />
-      <TroopCard />
-      <div>Resources</div>
-
-      <div className="mt-8">
-        <Button onClick={() => console.log("")} variant="outline">
-          Add
-        </Button>
-        <Button onClick={() => console.log("")} variant="outline">
-          Combine
-        </Button>
-      </div>
+      <div>Knights: {entity.troops.knight_count}</div>
+      <div>Paladins: {entity.troops.knight_count}</div>
+      <div>Crossbowman: {entity.troops.knight_count}</div>
     </div>
   );
 };

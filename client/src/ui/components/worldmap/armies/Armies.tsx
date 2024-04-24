@@ -19,38 +19,44 @@ export const Armies = ({}: ArmiesProps) => {
   const {
     account: { account },
     setup: {
-      components: { Position, Health, Owner },
+      components: { Position, Health, Owner, Healthv2 },
     },
   } = useDojo();
 
   const realms = useRealmStore((state) => state.realmEntityIds);
 
-  const { useOwnerRaiders, useEnemeyRaiders } = useCombat();
+  const { useOwnerRaiders, useEnemeyRaiders, useOwnerArmies } = useCombat();
 
   const myArmies = useOwnerRaiders(BigInt(account.address));
   const enemyArmies = useEnemeyRaiders(BigInt(account.address));
 
+  const ownerArmies = useOwnerArmies(BigInt(account.address));
+
   useUpdateAnimationPaths();
 
   const realmOrder = useMemo(() => {
-    const realmId = realms[0].realmId || BigInt(0);
+    const realmId = realms[0]?.realmId || BigInt(0);
     const orderName = getRealmOrderNameById(realmId);
     return orderName.charAt(0).toUpperCase() + orderName.slice(1);
   }, []);
 
+  console.log("ownerArmies", ownerArmies);
   const armyInfo = useMemo(
     () =>
-      [...myArmies, ...enemyArmies]
+      [...ownerArmies]
         .map((armyId) => {
-          const position = getComponentValue(Position, getEntityIdFromKeys([armyId]));
-          const health = getComponentValue(Health, getEntityIdFromKeys([armyId]));
-          const isDead = health?.value ? false : true;
-          const owner = getComponentValue(Owner, getEntityIdFromKeys([armyId]));
+          const position = getComponentValue(Position, getEntityIdFromKeys([armyId?.entity_id || 0n]));
+          const health = getComponentValue(Healthv2, getEntityIdFromKeys([armyId?.entity_id || 0n]));
+          const isDead = health?.current ? false : true;
+          const owner = getComponentValue(Owner, getEntityIdFromKeys([armyId?.entity_id || 0n]));
           const isMine = owner?.address === BigInt(account.address);
 
+          console.log("armyId", armyId?.entity_id, position, health, isDead, owner, isMine);
           // // if animated army dont display
           if (!position) return;
           let z = 0.32;
+
+          console.log("position", position);
           return {
             contractPos: { x: position.x, y: position.y },
             uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },

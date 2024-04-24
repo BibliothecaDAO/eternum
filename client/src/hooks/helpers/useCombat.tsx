@@ -28,6 +28,7 @@ export function useCombat() {
         TownWatch,
         Realm,
         Inventory,
+        Army,
       },
     },
   } = useDojo();
@@ -85,6 +86,17 @@ export function useCombat() {
     return entityIds.map((id) => {
       const attack = getComponentValue(Attack, id);
       return attack!.entity_id;
+    });
+  };
+
+  const useOwnerArmies = (owner: bigint) => {
+    let entityIds = useEntityQuery([Has(Army)]);
+
+    console.log("entityIds", entityIds);
+
+    return entityIds.map((id) => {
+      const army = getComponentValue(Army, id);
+      return { ...army };
     });
   };
 
@@ -305,5 +317,6 @@ export function useCombat() {
     useEnemyRaidersOnPosition,
     useOwnerRaidersOnPosition,
     getEntitiesCombatInfo,
+    useOwnerArmies,
   };
 }
