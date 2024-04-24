@@ -2,6 +2,10 @@
 
 echo "Migrating World and Indexing"
 cd contracts
+
+# Build contracts using sozo
+sozo build
+
 sozo migrate apply --name eternum
 
 

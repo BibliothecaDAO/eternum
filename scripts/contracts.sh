@@ -7,8 +7,5 @@ echo "Building Contracts"
 # Change directory to contracts
 cd contracts
 
-# Build contracts using sozo
-sozo build
-
 # Run katana with the disable-fee option
 katana --disable-fee --invoke-max-steps 30000000

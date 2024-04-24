@@ -115,5 +115,15 @@
     "ArrivalTime",
     "TickMove"
   ],
-  "COMBAT_V2_SYSTEMS": ["Healthv2", "Army", "Battle", "EntityOwner", "Position", "Movable", "Resource", "Production"]
+  "COMBAT_V2_SYSTEMS": [
+    "Healthv2",
+    "Army",
+    "Battle",
+    "EntityOwner",
+    "Position",
+    "Movable",
+    "Resource",
+    "Production",
+    "Owner"
+  ]
 }

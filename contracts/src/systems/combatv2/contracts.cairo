@@ -23,7 +23,7 @@ mod combat_v2_systems {
     };
 
     use eternum::models::movable::Movable;
-    use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner};
+    use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use eternum::models::position::{Position, Coord};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
@@ -40,9 +40,7 @@ mod combat_v2_systems {
     impl Combatv2ContractImpl of ICombatv2Contract<ContractState> {
         fn create_army(world: IWorldDispatcher, owner_id: u128, troops: Troops) {
             // ensure caller is entity owner 
-            let owner_address = get!(world, owner_id, Owner).address;
-            let caller = starknet::get_caller_address();
-            assert!(caller == owner_address, "caller not entity owner");
+            get!(world, owner_id, Owner).assert_caller_owner();
 
             // ensure owner entity is a realm
             let realm: Realm = get!(world, owner_id, Realm);
@@ -75,14 +73,16 @@ mod combat_v2_systems {
             let mut army_owned_by: EntityOwner = Default::default();
             army_owned_by.entity_id = army.entity_id;
             army_owned_by.entity_owner_id = owner_id;
-            set!(world, (army_owned_by));
+
+
+            set!(world, (army_owned_by, Owner { entity_id: owner_id, address: starknet::get_caller_address() }));
 
             // set army position
             let owner_position: Position = get!(world, owner_id, Position);
-            let mut army_position: Position = Default::default();
-            army_position.x = owner_position.x;
-            army_position.y = owner_position.y;
-            set!(world, (army_position));
+            set!(
+                world,
+                (Position { entity_id: army.entity_id, x: owner_position.x, y: owner_position.y })
+            );
 
             // Make Moveable
             // @DEV TODO: This should be moved to a pure function rather than storing in the state. If we do it like this, then we will be storing the same data in the state multiple times.
@@ -96,8 +96,8 @@ mod combat_v2_systems {
                     sec_per_km: individual_speed,
                     blocked: false,
                     round_trip: false,
-                    start_coord_x: 0,
-                    start_coord_y: 0,
+                    start_coord_x: owner_position.x,
+                    start_coord_y: owner_position.y,
                     intermediate_coord_x: 0,
                     intermediate_coord_y: 0,
                 }
