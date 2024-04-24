@@ -45,17 +45,18 @@ export const Armies = ({}: ArmiesProps) => {
     () =>
       [...ownerArmies]
         .map((armyId) => {
-          console.log("armyId", armyId?.entity_id);
-          const position = getComponentValue(Position, getEntityIdFromKeys([20n]));
-          const health = getComponentValue(Healthv2, getEntityIdFromKeys([armyId?.entity_id]));
+          const position = getComponentValue(Position, getEntityIdFromKeys([armyId?.entity_id || 0n]));
+          const health = getComponentValue(Healthv2, getEntityIdFromKeys([armyId?.entity_id || 0n]));
           const isDead = health?.current ? false : true;
-          const owner = getComponentValue(Owner, getEntityIdFromKeys([armyId?.entity_id]));
+          const owner = getComponentValue(Owner, getEntityIdFromKeys([armyId?.entity_id || 0n]));
           const isMine = owner?.address === BigInt(account.address);
 
           console.log("armyId", armyId?.entity_id, position, health, isDead, owner, isMine);
           // // if animated army dont display
           if (!position) return;
           let z = 0.32;
+
+          console.log("position", position);
           return {
             contractPos: { x: position.x, y: position.y },
             uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },

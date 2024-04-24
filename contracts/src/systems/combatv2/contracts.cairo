@@ -75,7 +75,7 @@ mod combat_v2_systems {
             army_owned_by.entity_owner_id = owner_id;
 
 
-            set!(world, (army_owned_by, Owner { entity_id: owner_id, address: starknet::get_caller_address() }));
+            set!(world, (army_owned_by, Owner { entity_id: army.entity_id, address: starknet::get_caller_address() }));
 
             // set army position
             let owner_position: Position = get!(world, owner_id, Position);
