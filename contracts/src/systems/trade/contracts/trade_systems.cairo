@@ -1,13 +1,17 @@
+use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
+
 #[dojo::interface]
-trait ITravelSystems {
-    fn travel(
-        travelling_entity_id: eternum::alias::ID,
-        destination_coord: eternum::models::position::Coord
-    );
-    fn travel_hex(
-        travelling_entity_id: eternum::alias::ID,
-        directions: Span<eternum::models::position::Direction>
-    );
+trait ITradeSystems {
+    fn create_order(
+        maker_id: u128,
+        maker_gives_resources: Span<(u8, u128)>,
+        taker_id: u128,
+        taker_gives_resources: Span<(u8, u128)>,
+        expires_at: u64
+    ) -> ID;
+    fn accept_order(taker_id: u128, trade_id: u128);
+    fn cancel_order(trade_id: u128);
 }
 
 #[dojo::contract]
@@ -36,7 +40,6 @@ mod trade_systems {
         InternalResourceChestSystemsImpl as resource_chest,
         InternalInventorySystemsImpl as inventory
     };
-    use eternum::systems::trade::interface::trade_systems_interface::{ITradeSystems};
 
     use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
         InternalDonkeySystemsImpl as donkey
@@ -61,7 +64,7 @@ mod trade_systems {
 
 
     #[abi(embed_v0)]
-    impl TradeSystemsImpl of ITradeSystems<ContractState> {
+    impl TradeSystemsImpl of super::ITradeSystems<ContractState> {
         fn create_order(
             world: IWorldDispatcher,
             maker_id: u128,
@@ -87,7 +90,10 @@ mod trade_systems {
             resource_chest::fill(world, taker_resource_chest.entity_id, maker_id);
 
             // burn the maker donkeys
-            // donkey::burn_donkeys(world, maker_id, maker_resources_weight);
+            let mut maker_donkeys = ResourceImpl::get(world, (maker_id, ResourceTypes::DONKEY));
+            let maker_donkey_amount = donkey::get_donkey_needed(world, maker_resources_weight);
+            maker_donkeys.burn(maker_donkey_amount);
+            maker_donkeys.save(world);
 
             // create trade entity
             let trade_id = world.uuid().into();
@@ -149,11 +155,18 @@ mod trade_systems {
 
             // burn the taker donkeys
             let taker_resource_chest_weight = get!(world, trade.taker_resource_chest_id, Weight);
-            // donkey::burn_donkeys(world, taker_id, taker_resource_chest_weight.value);
+            let mut taker_donkeys = ResourceImpl::get(world, (taker_id, ResourceTypes::DONKEY));
+            let taker_donkey_amount = donkey::get_donkey_needed(world, taker_resource_chest_weight.value);
+            taker_donkeys.burn(taker_donkey_amount);
+            taker_donkeys.save(world);
+
+            // get travel time
+            let donkey_speed_config 
+                = get!(world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), SpeedConfig);
             let travel_time = 0;
-            // let travel_time = donkey::get_donkey_travel_time(
-            //     world, taker_position.into(), maker_position.into(), true
-            // );
+            let travel_time = donkey::get_donkey_travel_time(
+                world, taker_position.into(), maker_position.into(), donkey_speed_config.sec_per_km, true
+            );
 
             ///////// Updates For Maker ///////////////
             //////////////////////////////////////////
