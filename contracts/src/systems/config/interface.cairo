@@ -1,6 +1,7 @@
 use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::position::Coord;
+use eternum::models::config::TroopConfig;
 
 #[dojo::interface]
 trait IWorldConfig {
@@ -142,4 +143,9 @@ trait IMapConfig {
 #[dojo::interface]
 trait IProductionConfig {
     fn set_production_config(resource_type: u8, amount: u128, cost: Span<(u8, u128)>);
+}
+
+#[dojo::interface]
+trait ITroopConfig {
+    fn set_troop_config(troop_config: TroopConfig);
 }

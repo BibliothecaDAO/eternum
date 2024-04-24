@@ -163,7 +163,6 @@ mod trade_systems {
             // get travel time
             let donkey_speed_config 
                 = get!(world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), SpeedConfig);
-            let travel_time = 0;
             let travel_time = donkey::get_donkey_travel_time(
                 world, taker_position.into(), maker_position.into(), donkey_speed_config.sec_per_km, true
             );

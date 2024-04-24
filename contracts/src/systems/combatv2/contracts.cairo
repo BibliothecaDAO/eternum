@@ -26,6 +26,7 @@ mod combat_v2_systems {
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use eternum::models::position::{Position, Coord};
     use eternum::models::realm::Realm;
+    use eternum::models::inventory::Inventory;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::{
         combatV2::{
@@ -41,7 +42,7 @@ mod combat_v2_systems {
         fn create_army(world: IWorldDispatcher, owner_id: u128, troops: Troops) {
             // ensure caller is entity owner 
             get!(world, owner_id, Owner).assert_caller_owner();
-
+ 
             // ensure owner entity is a realm
             let realm: Realm = get!(world, owner_id, Realm);
             assert!(realm.realm_id != 0, "owner is not a realm");
@@ -59,7 +60,7 @@ mod combat_v2_systems {
             army.entity_id = world.uuid().into();
             army.troops.add(troops);
             set!(world, (army));
-
+            
             // set army health
             let mut army_health: Healthv2 = Default::default();
             let troop_config: TroopConfig = TroopConfigImpl::get(world);
@@ -100,6 +101,16 @@ mod combat_v2_systems {
                     intermediate_coord_y: 0,
                 }
             );
+
+            // add inventory 
+            set!(world, (
+                Inventory {
+                    entity_id: army.entity_id, 
+                    items_key: world.uuid().into(),
+                    items_count: 0
+                }
+            ));
+
         }
 
 
