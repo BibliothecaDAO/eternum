@@ -218,21 +218,21 @@ mod resource_systems {
         fn transfer(
             world: IWorldDispatcher,
             caller_id: ID,
-            owner_id: ID,
+            sender_id: ID,
             receiver_id: ID,
             resources: Span<(u8, u128)>
         ) -> ID {
             // entities may not have arrived at the location shown in their Position, so ..
 
             // ensure owner is not moving because they provide the resources
-            get!(world, owner_id, ArrivalTime).assert_not_travelling();
+            get!(world, sender_id, ArrivalTime).assert_not_travelling();
 
             // ensure caller is not moving because they receiver the resources
             get!(world, receiver_id, ArrivalTime).assert_not_travelling();
 
             // create resource chest
             let resource_chest = InternalResourceChestSystemsImpl::create_and_fill(
-                world, owner_id, resources
+                world, sender_id, resources
             );
 
             // give resource chest to receiver
@@ -241,25 +241,28 @@ mod resource_systems {
             // lock resource chest for travel duration and burn donkeys
             // if recipient and owner arent at the same location
 
-            let owner_coord: Coord = get!(world, owner_id, Position).into();
+            let owner_coord: Coord = get!(world, sender_id, Position).into();
             let receiver_coord: Coord = get!(world, receiver_id, Position).into();
             if owner_coord != receiver_coord {
-                // lock resource chest
-                let travel_time = donkey::get_donkey_travel_time(
-                    world, owner_coord, receiver_coord, owner_id != caller_id
-                );
-                InternalResourceChestSystemsImpl::lock_until(
-                    world, resource_chest.entity_id, travel_time + starknet::get_block_timestamp()
-                );
 
-                // burn donkeys according to the weight of the resources being transported
+                // create transport that can carry Weight
                 let resources_weight = get!(world, resource_chest.entity_id, Weight);
-                donkey::burn_donkeys(world, receiver_id, resources_weight.value);
+                let donkey_id: ID = donkey::create_donkey(
+                    world, caller_id, receiver_id,  resources_weight.value, owner_coord, receiver_coord);
+                
+                // lock resource chest till it is in possession of the owner
+                let donkey_arrival_time : ArrivalTime = get!(world, donkey_id, ArrivalTime);
+                let is_round_trip: bool = caller_id == receiver_id;
+                if is_round_trip {
+                    InternalResourceChestSystemsImpl::lock_until(
+                        world, resource_chest.entity_id, donkey_arrival_time.arrives_at / 2
+                    );
+                }
             }
 
             // emit transfer event
             InternalResourceSystemsImpl::emit_transfer_event(
-                world, owner_id, receiver_id, resources
+                world, sender_id, receiver_id, resources
             );
 
             resource_chest.entity_id
@@ -560,8 +563,11 @@ mod resource_systems {
         }
 
         fn add(world: IWorldDispatcher, entity_id: ID, item_id: ID) {
-            let mut inventory = get!(world, entity_id, Inventory);
-            assert(inventory.items_key != 0, 'entity has no inventory');
+            let mut inventory: Inventory = get!(world, entity_id, Inventory);
+            if inventory.items_key == 0 {
+                inventory.items_key = world.uuid().into();
+                set!(world, (inventory));
+            }
 
             let item_weight = get!(world, item_id, Weight);
             assert(item_weight.value > 0, 'no item weight');
