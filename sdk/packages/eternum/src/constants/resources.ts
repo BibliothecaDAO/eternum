@@ -11,6 +11,15 @@ export const findResourceIdByTrait = (trait: string) => {
 
 export const resources: Array<Resources> = [
   {
+    trait: "Donkeys",
+    value: 249,
+    colour: "#ec4899",
+    colourClass: "",
+    id: 249,
+    description: "Donkeys.",
+    img: "",
+  },
+  {
     trait: "Lords",
     value: 253,
     colour: "#ec4899",
@@ -449,4 +458,5 @@ export const RESOURCE_TIERS = {
   rare: [8, 9, 10, 11, 12, 13, 14, 15],
   elite: [16, 17, 18, 19, 20, 21, 22],
   // military: [101, 102, 103],
+  transport: [249],
 };
