@@ -1,18 +1,19 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const nameMapping: { [key: number]: string } = {
-  1: "Knight",
-  2: "Paladin",
-  3: "Crossbowman",
+  250: "Knight",
+  251: "Crossbowman",
+  252: "Paladin",
 };
 
 const troops = [
-  { name: 1, cost: 10, attack: 10, defense: 10, strong: "Cavalry", weak: "Archers" },
-  { name: 2, cost: 10, attack: 15, defense: 5, strong: "Swordsmen", weak: "Cavalry" },
-  { name: 3, cost: 10, attack: 20, defense: 0, strong: "Archers", weak: "Swordsmen" },
+  { name: 250, cost: 10, attack: 10, defense: 10, strong: "Cavalry", weak: "Archers" },
+  { name: 251, cost: 10, attack: 15, defense: 5, strong: "Swordsmen", weak: "Cavalry" },
+  { name: 252, cost: 10, attack: 20, defense: 0, strong: "Archers", weak: "Swordsmen" },
 ];
 
 export const TroopSelect = ({ entity }: any) => {
@@ -23,10 +24,12 @@ export const TroopSelect = ({ entity }: any) => {
     },
   } = useDojo();
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [canCreate, setCanCreate] = useState(false);
   const [troopCounts, setTroopCounts] = useState<{ [key: number]: number }>({
-    1: 1,
-    2: 1,
-    3: 1,
+    250: 1,
+    251: 1,
+    252: 1,
   });
 
   const handleTroopCountChange = (troopName: number, count: number) => {
@@ -42,16 +45,31 @@ export const TroopSelect = ({ entity }: any) => {
   console.log(entity.entity_id);
 
   const handleCreateArmy = () => {
+    setIsLoading(true);
     create_army({
       signer: account,
       owner_id: entity.entity_id,
       troops: {
-        knight_count: troopCounts[1] || 0,
-        paladin_count: troopCounts[2] || 0,
-        crossbowman_count: troopCounts[3] || 0,
+        knight_count: troopCounts[250] || 0,
+        paladin_count: troopCounts[251] || 0,
+        crossbowman_count: troopCounts[252] || 0,
       },
-    });
+    }).finally(() => setIsLoading(false));
   };
+
+  const { getBalance } = useResourceBalance();
+
+  useEffect(() => {
+    let canCreate = true;
+    Object.keys(troopCounts).forEach((troopId) => {
+      const count = troopCounts[Number(troopId)];
+      const balance = getBalance(entity.entity_id, Number(troopId)).balance;
+      if (count > balance) {
+        canCreate = false;
+      }
+    });
+    setCanCreate(canCreate);
+  }, [troopCounts]);
 
   return (
     <div>
@@ -71,14 +89,15 @@ export const TroopSelect = ({ entity }: any) => {
               value={troopCounts[troop.name].toString()}
               onChange={(amount) => handleTroopCountChange(troop.name, parseInt(amount))}
             />
+            <div>Balance: {getBalance(entity.entity_id, troop.name).balance}</div>
           </div>
         ))}
       </div>
-      <div>
+      {/* <div>
         <div>Total Cost</div>
         <div>{calculateTotalCost()}</div>
-      </div>
-      <Button variant="outline" onClick={handleCreateArmy}>
+      </div> */}
+      <Button disabled={!canCreate} variant="outline" isLoading={isLoading} onClick={handleCreateArmy}>
         Create Army
       </Button>
     </div>

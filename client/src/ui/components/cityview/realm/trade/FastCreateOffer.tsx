@@ -15,6 +15,7 @@ import { usePlayResourceSound } from "../../../../../hooks/useUISound";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { createOffer } from "@/ui/components/navigation/Config";
 import { ResourceWeightsInfo } from "@/ui/components/resources/ResourceWeight";
+import { useDojo } from "@/hooks/context/DojoContext";
 
 interface FastCreateOfferPopupProps {
   resourceId?: number;
