@@ -183,3 +183,19 @@ export function keysSnakeToCamel(obj: any): any {
 function snakeToCamel(s: string): string {
   return s.replace(/(_\w)/g, (m) => m[1].toUpperCase());
 }
+
+export function getNpcImagePath(npc: Npc): string {
+  const role_path = npc.characteristics.role.toLowerCase() + "/";
+  const sex_path = npc.characteristics.sex + "/";
+  const age_path = getAgeRange(npc.characteristics.age);
+
+  return "/images/npc/" + role_path + sex_path + age_path + ".png";
+}
+
+function getAgeRange(age: number): string {
+  if (age < 26) return "15-25";
+  else if (age < 36) return "26-35";
+  else if (age < 46) return "36-45";
+  else if (age < 56) return "46-55";
+  else return "56-65";
+}

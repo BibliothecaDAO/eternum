@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { Npc } from "../../components/cityview/realm/villagers/types";
 
 const callLoreMachineJsonRpcMethod = async (method: string, params: any) => {
   const response = await fetch(import.meta.env.VITE_OVERLORE_RPC_URL, {
@@ -20,24 +21,20 @@ const callLoreMachineJsonRpcMethod = async (method: string, params: any) => {
 
 interface NpcState {
   loreMachineJsonRpcCall: (method: string, params: any) => Promise<any>;
-  isTownHallLoading: boolean;
-  setIsTownHallLoading: (val: boolean) => void;
-  selectedTownhall: number | null;
-  setSelectedTownhall: (newIndex: number | null) => void;
-  lastMessageDisplayedIndex: number;
-  setLastMessageDisplayedIndex: (newIndex: number) => void;
+  isDiscussionLoading: boolean;
+  setIsDiscussionLoading: (val: boolean) => void;
+  initializedRealms: bigint[];
+  setInitialisedRealms: (val: bigint[]) => void;
 }
 
 const useNpcStore = create<NpcState>((set) => ({
   loreMachineJsonRpcCall: async (method: string, params: any): Promise<any> => {
     return await callLoreMachineJsonRpcMethod(method, params);
   },
-  isTownHallLoading: false,
-  setIsTownHallLoading: (val: boolean) => set({ isTownHallLoading: val }),
-  selectedTownhall: null,
-  setSelectedTownhall: (val: number | null) => set({ selectedTownhall: val }),
-  lastMessageDisplayedIndex: 0,
-  setLastMessageDisplayedIndex: (val: number) => set({ lastMessageDisplayedIndex: val }),
+  isDiscussionLoading: false,
+  setIsDiscussionLoading: (val: boolean) => set({ isDiscussionLoading: val }),
+  initializedRealms: [],
+  setInitialisedRealms: (val: bigint[]) => set({ initializedRealms: val }),
 }));
 
 export default useNpcStore;

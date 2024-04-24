@@ -22,24 +22,18 @@ Our development journey is dynamic, but here are our current objectives (+ some 
 
 ## NPC parameters
 
-1. [x] Sex
-2. [x] Role (Its job)
-   - [x] Farmer
-   - [x] Miner
-   - [ ] Fisherman
-   - [ ] Merchant
-   - [ ] Trader
-   - [ ] Soldier
-         (- [ ] Adventurer)
-3. [x] Mood
-   - [x] Hunger
-   - [x] Happiness
-   - [x] Belligerent
-   - [ ] Motivation
-   - [ ] Stress
-4. [ ] Political affiliation (Could be a whole extension in and of itself !)
-5. [ ] Religious affiliation (Ditto)
-6. [ ] Stats (Adventurer mod anyone ?)
+1. [x] Characteristics
+   - [x] Age
+   - [x] Sex
+   - [x] Role (Its job)
+     - [x] Farmer
+     - [x] Miner
+     - [x] Fisherman
+     - [x] Merchant
+     - [x] Soldier
+2. [ ] Political affiliation (Could be a whole extension in and of itself !)
+3. [ ] Religious affiliation (Ditto)
+4. [ ] Stats (Adventurer mod anyone ?)
 
 ## Client & Contracts
 
@@ -50,20 +44,10 @@ Our development journey is dynamic, but here are our current objectives (+ some 
    - [x] Randomize its characteristics
    - [x] Greet your villagers (Subject to change)
    - [x] Villagers chat room
-3. [x] OpenAI prompt generator for specific instances:
-   - [x] Harvest
-   - [x] Build
-   - [x] Visit
-   - [ ] Trading resources
-   - [ ] Army stuff
-4. [ ] Integrate villagers chat into the existing chat component
-5. [ ] Hook NPC AI generated prompts to specific actions:
-   - [ ] Harvest
-   - [ ] Build
-   - [ ] Visit When viewing specific realm location (farms, fishery, market, ...)
-   - [ ] Trading resources
-   - [ ] Army stuff
-6. [ ] Allow NPCS to travel to other realms (Suggested by loaf1337)
-7. [ ] Implement Townhall
-       (8. [ ] Politics tab)
-       (9. [ ] Religion tab)
+3. [x] Villagers have knowledge of these events:
+   - [x] Trading resources
+   - [x] Army stuff
+4. [x] Allow NPCS to travel to other realms (Suggested by loaf1337)
+5. [x] Implement Discussion
+6. [ ] Politics tab
+7. [ ] Religion tab

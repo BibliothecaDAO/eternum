@@ -27,23 +27,26 @@ export type AtGates = {
   native: boolean;
 }[];
 
-export type NpcTownhallMessage = {
-  fullName: string;
-  dialogueSegment: string;
+export type DiscussionSegment = {
+  npcEntityId: number;
+  segment: string;
 };
 
-export type StorageTownhall = {
+export type StorageDiscussion = {
   viewed: boolean;
-  dialogue: NpcTownhallMessage[];
+  dialogue: DiscussionSegment[];
 };
 
-export type StorageTownhalls = {
-  [key: number]: StorageTownhall;
+export type StorageDiscussions = {
+  [key: number]: StorageDiscussion;
 };
 
-export type TownhallResponse = {
-  townhallId: number;
-  dialogue: NpcTownhallMessage[];
+export type DiscussionRpcResponse = {
+  dialogue: DiscussionSegment[];
+  inputScore: number;
+  realmId: number;
+  timestamp: number;
+  userInput: string;
 };
 
 export type NpcSpawnResponse = {
@@ -55,18 +58,3 @@ export type NpcSpawnResponse = {
   };
   signature: BigInt[];
 };
-
-export type ErrorResponse = {
-  reason: string;
-};
-
-export type WsResponse = {
-  msgType: WsMsgType;
-  data: NpcSpawnResponse | TownhallResponse | ErrorResponse;
-};
-
-export enum WsMsgType {
-  TOWNHALL = 0,
-  SPAWN_NPC = 1,
-  ERROR = 255,
-}
