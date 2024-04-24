@@ -9,6 +9,7 @@ import { divideByPrecision } from "@/ui/utils/utils";
 import { resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
+import { ResourceWeightsInfo } from "../resources/ResourceWeight";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -29,11 +30,11 @@ export const TransferBetweenEntities = () => {
   const [selectedEntityIdFrom, setSelectedEntityIdFrom] = useState<bigint | null>(null);
   const [selectedEntityIdTo, setSelectedEntityIdTo] = useState<bigint | null>(null);
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
-  const [selectedResourceAmounts, setSelectedResourceAmounts] = useState({});
+  const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
   const [selectedStepId, setSelectedStepId] = useState(STEP_ID.SELECT_ENTITIES);
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
-  const { playerRealms } = useEntities();
+  const { playerRealms, playerAccounts } = useEntities();
 
   return (
     <div className="p-2">
@@ -48,12 +49,12 @@ export const TransferBetweenEntities = () => {
             <SelectEntityFromList
               onSelect={setSelectedEntityIdFrom}
               selectedEntityId={selectedEntityIdFrom}
-              entities={playerRealms()}
+              entities={[...playerRealms(), ...playerAccounts()]}
             />
             <SelectEntityFromList
               onSelect={setSelectedEntityIdTo}
               selectedEntityId={selectedEntityIdTo}
-              entities={playerRealms()}
+              entities={[...playerRealms(), ...playerAccounts()]}
             />
           </div>
           <Button
@@ -70,7 +71,7 @@ export const TransferBetweenEntities = () => {
         </div>
       )}
       {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
-        <SelectResoruces
+        <SelectResources
           selectedResourceIds={selectedResourceIds}
           setSelectedResourceIds={setSelectedResourceIds}
           selectedResourceAmounts={selectedResourceAmounts}
@@ -93,21 +94,21 @@ const SelectEntityFromList = ({
 }) => {
   return (
     <div>
-      {entities.map((realm) => (
+      {entities.map((entity) => (
         <div
           className={clsx(
             "flex w-[200px] justify-between rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-2 text-lightest text-xs",
-            selectedEntityId === realm.realm_id && "border-order-brilliance",
+            selectedEntityId === entity.entity_id && "border-order-brilliance",
           )}
         >
-          <div>{realm.name}</div>
+          <div>{entity.name}</div>
           <Button
-            disabled={selectedEntityId === realm.realm_id}
+            disabled={selectedEntityId === entity.entity_id}
             size="xs"
             variant={"outline"}
-            onClick={() => onSelect(realm.realm_id!)}
+            onClick={() => onSelect(entity.entity_id!)}
           >
-            {selectedEntityId === realm.realm_id ? "Selected" : "Select"}
+            {selectedEntityId === entity.entity_id ? "Selected" : "Select"}
           </Button>
         </div>
       ))}
@@ -115,7 +116,7 @@ const SelectEntityFromList = ({
   );
 };
 
-const SelectResoruces = ({
+const SelectResources = ({
   selectedResourceIds,
   setSelectedResourceIds,
   selectedResourceAmounts,
@@ -130,6 +131,8 @@ const SelectResoruces = ({
 }) => {
   const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
+
+  const [canCarry, setCanCarry] = useState(true);
 
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -220,7 +223,15 @@ const SelectResoruces = ({
       >
         Add Resource
       </Button>
-      <Button variant="primary" size="md" onClick={() => {}}>
+      <ResourceWeightsInfo
+        entityId={entity_id}
+        resources={selectedResourceIds.map((resourceId) => ({
+          resourceId,
+          amount: selectedResourceAmounts[resourceId],
+        }))}
+        setCanCarry={setCanCarry}
+      />
+      <Button disabled={!canCarry} variant="primary" size="md" onClick={() => {}}>
         Confirm
       </Button>
     </div>

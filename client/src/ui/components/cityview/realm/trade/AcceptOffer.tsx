@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
 import Button from "../../../../elements/Button";
-import { SelectCaravanPanel } from "./CreateOffer";
 import { useDojo } from "../../../../../hooks/context/DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
-import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
-import { WEIGHT_PER_DONKEY_KG, MarketInterface } from "@bibliothecadao/eternum";
-import { getTotalResourceWeight } from "./utils";
+import { divideByPrecision } from "../../../../utils/utils";
+import { MarketInterface } from "@bibliothecadao/eternum";
 import useMarketStore from "../../../../../hooks/store/useMarketStore";
 import { EventType, useNotificationsStore } from "../../../../../hooks/store/useNotificationsStore";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { acceptOfferTitle } from "@/ui/components/navigation/Config";
+import { ResourceWeightsInfo } from "@/ui/components/resources/ResourceWeight";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -20,11 +18,7 @@ type AcceptOfferPopupProps = {
 };
 
 export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPopupProps) => {
-  const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
-  const [isNewCaravan, setIsNewCaravan] = useState(true);
-  const [donkeysCount, setDonkeysCount] = useState(1);
-  const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
-
+  const [canCarry, setCanCarry] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -62,20 +56,6 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
 
   let { resourcesGive, resourcesGet } = getTradeResourcesFromEntityViewpoint(realmEntityId, selectedTrade.tradeId);
 
-  let resourceWeight = getTotalResourceWeight(resourcesGet);
-
-  const canAcceptOffer = useMemo(() => {
-    return selectedCaravan !== 0n || (isNewCaravan && hasEnoughDonkeys);
-  }, [selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
-
-  useEffect(() => {
-    if (multiplyByPrecision(donkeysCount * WEIGHT_PER_DONKEY_KG) >= resourceWeight) {
-      setHasEnoughDonkeys(true);
-    } else {
-      setHasEnoughDonkeys(false);
-    }
-  }, [donkeysCount, resourceWeight]);
-
   const selectedResourcesGetAmounts = useMemo(() => {
     let selectedResourcesGetAmounts: { [resourceId: number]: number } = {};
     resourcesGet.forEach((resource) => {
@@ -94,32 +74,16 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
 
   return (
     <OSWindow title={acceptOfferTitle} onClick={onClose} show={show} width="456px">
-      <div className="flex flex-col items-center pt-2">
-        <SelectCaravanPanel
-          realmEntityId={realmEntityId}
-          donkeysCount={donkeysCount}
-          setDonkeysCount={setDonkeysCount}
-          isNewCaravan={isNewCaravan}
-          setIsNewCaravan={setIsNewCaravan}
-          selectedCaravan={selectedCaravan}
-          setSelectedCaravan={setSelectedCaravan}
-          selectedResourceIdsGet={resourcesGet.map((resource) => resource.resourceId) || []}
-          selectedResourcesGetAmounts={selectedResourcesGetAmounts}
-          selectedResourceIdsGive={resourcesGive.map((resource) => resource.resourceId) || []}
-          selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
-          resourceWeight={resourceWeight}
-          hasEnoughDonkeys={hasEnoughDonkeys}
-        />
-      </div>
       <div className="flex justify-between m-2 text-xxs">
+        <ResourceWeightsInfo entityId={realmEntityId} resources={resourcesGet} setCanCarry={setCanCarry} />
         <Button className="!px-[6px] !py-[2px] text-xxs" onClick={onClose} variant="outline">
           Cancel
         </Button>
         <Button
-          disabled={!canAcceptOffer}
+          disabled={!canCarry}
           className="!px-[6px] !py-[2px] text-xxs"
           onClick={onAccept}
-          variant={canAcceptOffer ? "success" : "danger"}
+          variant={canCarry ? "success" : "danger"}
           isLoading={isLoading}
         >
           Accept Offer
