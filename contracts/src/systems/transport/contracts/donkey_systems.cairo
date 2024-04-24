@@ -54,10 +54,6 @@ mod donkey_systems {
             
 
             set!(world, (
-                Weight {
-                    entity_id: donkey_id,
-                    value: weight
-                },
                 EntityOwner {
                     entity_id: donkey_id,
                     entity_owner_id: receiver_id,
@@ -66,16 +62,6 @@ mod donkey_systems {
                     entity_id: donkey_id, 
                     items_key: world.uuid().into(),
                     items_count: 0
-                },
-                Movable {
-                    entity_id: donkey_id,
-                    sec_per_km: donkey_speed_config.sec_per_km,
-                    blocked: true,
-                    round_trip: is_round_trip,
-                    start_coord_x: start_coord.x,
-                    start_coord_y: start_coord.y,
-                    intermediate_coord_x: intermediate_coord.x,
-                    intermediate_coord_y: intermediate_coord.y
                 },
                 ArrivalTime {
                     entity_id: donkey_id,
