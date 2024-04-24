@@ -9,7 +9,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: bigint | undefined
 
   const resourceElements = () => {
     return Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
-      const resources = resourceIds.map((resourceId) => {
+      const resources = resourceIds.map((resourceId: any) => {
         return <ResourceChip key={resourceId} resourceId={resourceId} entityId={entityId} />;
       });
 
