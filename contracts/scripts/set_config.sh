@@ -90,6 +90,18 @@ commands+=(
 )
 
 
+commands+=(
+    # config_id: 0
+    # knight_health: 10,
+    # paladin_health: 10,
+    # crossbowman_health: 10,
+    # knight_strength: 7,
+    # paladin_strength: 7,
+    # crossbowman_strength: 7,
+    # advantage_percent: 1000, // 10%
+    # disadvantage_percent: 1000, // 10% 
+    "sozo execute $CONFIG_SYSTEMS set_troop_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,10,10,10,7,7,7,10000,10000"
+)
 
 commands+=(
     # resourceId: 1
