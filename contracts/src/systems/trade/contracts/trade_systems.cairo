@@ -1,13 +1,17 @@
+use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
+
 #[dojo::interface]
-trait ITravelSystems {
-    fn travel(
-        travelling_entity_id: eternum::alias::ID,
-        destination_coord: eternum::models::position::Coord
-    );
-    fn travel_hex(
-        travelling_entity_id: eternum::alias::ID,
-        directions: Span<eternum::models::position::Direction>
-    );
+trait ITradeSystems {
+    fn create_order(
+        maker_id: u128,
+        maker_gives_resources: Span<(u8, u128)>,
+        taker_id: u128,
+        taker_gives_resources: Span<(u8, u128)>,
+        expires_at: u64
+    ) -> ID;
+    fn accept_order(taker_id: u128, trade_id: u128);
+    fn cancel_order(trade_id: u128);
 }
 
 #[dojo::contract]
@@ -36,7 +40,6 @@ mod trade_systems {
         InternalResourceChestSystemsImpl as resource_chest,
         InternalInventorySystemsImpl as inventory
     };
-    use eternum::systems::trade::interface::trade_systems_interface::{ITradeSystems};
 
     use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
         InternalDonkeySystemsImpl as donkey
@@ -61,7 +64,7 @@ mod trade_systems {
 
 
     #[abi(embed_v0)]
-    impl TradeSystemsImpl of ITradeSystems<ContractState> {
+    impl TradeSystemsImpl of super::ITradeSystems<ContractState> {
         fn create_order(
             world: IWorldDispatcher,
             maker_id: u128,
