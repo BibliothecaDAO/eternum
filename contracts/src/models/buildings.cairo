@@ -4,6 +4,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::ResourceTypes;
 use eternum::models::config::{TickConfig, TickImpl, TickTrait, ProductionConfig};
 use eternum::models::owner::{Owner, OwnerTrait, EntityOwner};
+use eternum::models::quantity::{QuantityTracker};
 use eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
 use eternum::models::production::{
     Production, ProductionInput, ProductionRateTrait, ProductionInputImpl
@@ -67,6 +68,24 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
             BuildingCategory::Walls => 13,
             BuildingCategory::Storehouse => 14,
         }
+    }
+}
+
+
+#[generate_trait]
+impl BuildingQuantityTrackerImpl of  BuildingQuantityTrackerTrait{
+    fn salt() -> felt252 {
+        'building_quantity'
+    }
+    fn key(entity_id: u128, category: felt252, resource_type: u8) -> felt252 {
+        let q: Array<felt252> 
+            = array![
+                entity_id.into(),
+                BuildingQuantityTrackerImpl::salt(), 
+                category, 
+                resource_type.into()
+            ];
+        hash(q.span())
     }
 }
 
@@ -477,17 +496,36 @@ impl BuildingImpl of BuildingTrait {
         match produce_resource_type {
             Option::Some(resource_type) => {
                 assert!(
-                    building.category == BuildingCategory::Resource, "wrong produced resource type"
+                    building.category == BuildingCategory::Resource
+                    || building.category == BuildingCategory::Storehouse, 
+                        "resource type should not be specified"
                 );
                 building.produced_resource_type = resource_type;
             },
-            Option::None => { building.produced_resource_type = building.produced_resource(); }
+            Option::None => { 
+                assert!(
+                    building.category != BuildingCategory::Resource
+                    && building.category != BuildingCategory::Storehouse, 
+                        "resource type must be specified"
+                );
+                building.produced_resource_type = building.produced_resource(); 
+            }
         }
 
         set!(world, (building));
 
         // start production related to building
         building.start_production(world);
+
+        // increase building type count for realm
+        let building_quantity_key 
+            = BuildingQuantityTrackerImpl::key(
+                outer_entity_id, building.category.into(), building.produced_resource_type);
+        let mut building_quantity_tracker: QuantityTracker 
+            =get!(world, building_quantity_key, QuantityTracker);
+        building_quantity_tracker.count += 1;
+        set!(world, (building_quantity_tracker));
+
 
         building
     }
@@ -512,6 +550,16 @@ impl BuildingImpl of BuildingTrait {
 
         // stop production related to building
         building.stop_production(world);
+
+        // decrease building type count for realm
+        let building_quantity_key 
+            = BuildingQuantityTrackerImpl::key(
+                outer_entity_id, building.category.into(), building.produced_resource_type);
+        let mut building_quantity_tracker: QuantityTracker 
+            =get!(world, building_quantity_key, QuantityTracker);
+        building_quantity_tracker.count -= 1;
+        set!(world, (building_quantity_tracker));
+
 
         // remove building 
         building.entity_id = 0;
