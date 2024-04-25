@@ -7,7 +7,6 @@ trait INameSystems {
 mod name_systems {
     use eternum::models::name::{AddressName, EntityName};
     use eternum::models::owner::{Owner};
-    use eternum::systems::name::interface::{INameSystems};
 
     use traits::Into;
 
