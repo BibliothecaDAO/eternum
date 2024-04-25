@@ -7,7 +7,7 @@ trait INameSystems {
 #[dojo::contract]
 mod name_systems {
     use eternum::models::name::{AddressName, EntityName};
-    use eternum::models::owner::{Owner};
+    use eternum::models::owner::{Owner, OwnerTrait};
 
     #[abi(embed_v0)]
     impl NameSystemsImpl of super::INameSystems<ContractState> {
@@ -23,9 +23,8 @@ mod name_systems {
         }
 
         fn set_entity_name(world: IWorldDispatcher, entity_id: u128, name: felt252) {
-            let mut owner: Owner = get!(world, entity_id, Owner);
-            assert(owner.address == starknet::get_caller_address(), 'caller is not entity owner');
-
+            get!(world, entity_id, Owner).assert_caller_owner();
+            
             set!(world, (EntityName { entity_id, name }));
         }
     }
