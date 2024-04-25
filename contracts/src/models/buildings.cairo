@@ -2,12 +2,15 @@ use core::poseidon::poseidon_hash_span as hash;
 use core::zeroable::Zeroable;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::ResourceTypes;
-use eternum::models::config::{TickConfig, TickImpl, TickTrait, ProductionConfig};
+use eternum::models::config::{
+    TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigImpl
+};
 use eternum::models::owner::{Owner, OwnerTrait, EntityOwner};
 use eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
 use eternum::models::production::{
     Production, ProductionInput, ProductionRateTrait, ProductionInputImpl
 };
+use eternum::models::resources::ResourceTrait;
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 
 //todo we need to define border of innner hexes
@@ -470,6 +473,9 @@ impl BuildingImpl of BuildingTrait {
 
         assert!(!building.is_active(), "space is occupied");
 
+        // make payment for building
+        BuildingImpl::make_payment(world, outer_entity_id);
+
         // set building 
         building.entity_id = world.uuid().into();
         building.category = category;
@@ -519,6 +525,24 @@ impl BuildingImpl of BuildingTrait {
         building.outer_entity_id = 0;
 
         set!(world, (building));
+    }
+
+    fn make_payment(world: IWorldDispatcher, entity_id: u128) {
+        let building_config: BuildingConfig = BuildingConfigImpl::get(world);
+        let mut index = 0;
+        loop {
+            if index == building_config.resource_cost_count {
+                break;
+            }
+
+            let resource_cost: ResourceCost = get!(
+                world, (building_config.resource_cost_id, index), ResourceCost
+            );
+            let mut resource = ResourceImpl::get(world, (entity_id, resource_cost.resource_type));
+            resource.burn(resource_cost.amount);
+            resource.save(world);
+            index += 1;
+        };
     }
 
     fn is_active(self: Building) -> bool {

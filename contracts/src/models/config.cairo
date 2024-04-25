@@ -227,6 +227,20 @@ struct BankConfig {
     lp_fee_scaled: u128,
 }
 
+#[derive(Model, Copy, Drop, Serde)]
+struct BuildingConfig {
+    #[key]
+    config_id: u128,
+    resource_cost_id: u128,
+    resource_cost_count: u32,
+}
+
+#[generate_trait]
+impl BuildingConfigImpl of BuildingConfigTrait {
+    fn get(world: IWorldDispatcher) -> BuildingConfig {
+        return get!(world, WORLD_CONFIG_ID, BuildingConfig);
+    }
+}
 
 #[derive(Model, Copy, Drop, Serde)]
 struct TroopConfig {

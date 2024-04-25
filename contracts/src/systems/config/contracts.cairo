@@ -14,7 +14,8 @@ mod config_systems {
     use eternum::models::config::{
         CapacityConfig, RoadConfig, SpeedConfig, TravelConfig, WeightConfig, WorldConfig,
         SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig, LevelingConfig,
-        RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig
+        RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
+        TroopConfig, BuildingConfig
     };
 
     use eternum::models::hyperstructure::HyperStructure;
@@ -23,9 +24,9 @@ mod config_systems {
     use eternum::models::resources::{ResourceCost, DetachedResource};
 
     use eternum::systems::config::interface::{
-        IWorldConfig, IWeightConfig, ICapacityConfig, ILaborConfig, ITransportConfig,
-        IHyperstructureConfig, ICombatConfig, ILevelingConfig, IBankConfig, IRealmFreeMintConfig,
-        IBuildingsConfig, IMapConfig, ITickConfig, IProductionConfig, ITroopConfig
+        IWorldConfig, IWeightConfig, ICapacityConfig, ITransportConfig, IHyperstructureConfig,
+        ICombatConfig, ILevelingConfig, IBankConfig, IRealmFreeMintConfig, IMapConfig, ITickConfig,
+        IProductionConfig, ITroopConfig, IBuildingConfig
     };
 
 
@@ -554,7 +555,6 @@ mod config_systems {
     #[abi(embed_v0)]
     impl BankConfigImpl of IBankConfig<ContractState> {
         fn set_bank_config(world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128) {
-
             assert_caller_is_admin(world);
 
             set!(world, (BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_scaled, }));
@@ -564,7 +564,6 @@ mod config_systems {
     #[abi(embed_v0)]
     impl TroopConfigImpl of ITroopConfig<ContractState> {
         fn set_troop_config(world: IWorldDispatcher, mut troop_config: TroopConfig) {
-
             assert_caller_is_admin(world);
 
             troop_config.config_id = WORLD_CONFIG_ID;
@@ -572,4 +571,35 @@ mod config_systems {
         }
     }
 
+    #[abi(embed_v0)]
+    impl BuildingConfigImpl of IBuildingConfig<ContractState> {
+        fn set_building_config(world: IWorldDispatcher, resource_costs: Span<(u8, u128)>,) {
+            assert_caller_is_admin(world);
+
+            let resource_cost_id = world.uuid().into();
+            let mut index = 0;
+            loop {
+                if index == resource_costs.len() {
+                    break;
+                }
+                let (resource_type, resource_amount) = *resource_costs.at(index);
+                set!(
+                    world,
+                    (ResourceCost {
+                        entity_id: resource_cost_id, index, resource_type, amount: resource_amount
+                    })
+                );
+
+                index += 1;
+            };
+            set!(
+                world,
+                (BuildingConfig {
+                    config_id: WORLD_CONFIG_ID,
+                    resource_cost_id,
+                    resource_cost_count: resource_costs.len()
+                })
+            );
+        }
+    }
 }
