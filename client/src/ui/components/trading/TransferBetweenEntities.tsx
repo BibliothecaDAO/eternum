@@ -33,9 +33,35 @@ export const TransferBetweenEntities = () => {
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
   const [selectedStepId, setSelectedStepId] = useState(STEP_ID.SELECT_ENTITIES);
+  const [isLoading, setIsLoading] = useState(false);
+  const [canCarry, setCanCarry] = useState(true);
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
   const { playerRealms, playerAccounts } = useEntities();
+
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { send_resources },
+    },
+  } = useDojo();
+
+  const onSendResources = () => {
+    setIsLoading(true);
+    const resourcesList = selectedResourceIds.flatMap((id: number) => [
+      Number(id),
+      multiplyByPrecision(selectedResourceAmounts[Number(id)]),
+    ]);
+    send_resources({
+      signer: account,
+      sender_entity_id: selectedEntityIdFrom!,
+      // todo: change that
+      recipient_entity_id: selectedEntityIdTo!,
+      resources: resourcesList || [],
+    }).finally(() => {
+      setIsLoading(false);
+    });
+  };
 
   return (
     <div className="p-2">
@@ -72,13 +98,26 @@ export const TransferBetweenEntities = () => {
         </div>
       )}
       {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
-        <SelectResources
-          selectedResourceIds={selectedResourceIds}
-          setSelectedResourceIds={setSelectedResourceIds}
-          selectedResourceAmounts={selectedResourceAmounts}
-          setSelectedResourceAmounts={setSelectedResourceAmounts}
-          entity_id={selectedEntityIdFrom!}
-        />
+        <>
+          <SelectResources
+            selectedResourceIds={selectedResourceIds}
+            setSelectedResourceIds={setSelectedResourceIds}
+            selectedResourceAmounts={selectedResourceAmounts}
+            setSelectedResourceAmounts={setSelectedResourceAmounts}
+            entity_id={selectedEntityIdFrom!}
+            setCanCarry={setCanCarry}
+          />
+          <Button
+            className="w-full mt-2"
+            isLoading={isLoading}
+            disabled={!canCarry || selectedResourceIds.length === 0}
+            variant="primary"
+            size="md"
+            onClick={onSendResources}
+          >
+            Confirm
+          </Button>
+        </>
       )}
     </div>
   );
@@ -123,25 +162,17 @@ const SelectResources = ({
   selectedResourceAmounts,
   setSelectedResourceAmounts,
   entity_id,
+  setCanCarry,
 }: {
   selectedResourceIds: any;
   setSelectedResourceIds: any;
   selectedResourceAmounts: any;
   setSelectedResourceAmounts: any;
+  setCanCarry: any;
   entity_id: bigint;
 }) => {
-  const {
-    account: { account },
-    setup: {
-      systemCalls: { send_resources },
-    },
-  } = useDojo();
-
   const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [canCarry, setCanCarry] = useState(true);
 
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -155,22 +186,6 @@ const SelectResources = ({
       [unselectedResources[0].id]: 1,
     });
     playResourceSound(unselectedResources[0].id);
-  };
-
-  const onSendResources = async () => {
-    setIsLoading(true);
-    const resourcesList = selectedResourceIds.flatMap((id: number) => [
-      Number(id),
-      multiplyByPrecision(selectedResourceAmounts[Number(id)]),
-    ]);
-    console.log({ resourcesList, selectedResourceAmounts });
-    await send_resources({
-      signer: account,
-      sender_entity_id: entity_id,
-      // todo: change that
-      recipient_entity_id: 0n,
-      resources: resourcesList || [],
-    });
   };
 
   return (
@@ -256,9 +271,6 @@ const SelectResources = ({
         }))}
         setCanCarry={setCanCarry}
       />
-      <Button isLoading={isLoading} disabled={!canCarry} variant="primary" size="md" onClick={onSendResources}>
-        Confirm
-      </Button>
     </div>
   );
 };
