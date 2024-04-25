@@ -14,9 +14,9 @@ export const RealmsListPanel = ({}: RealmsListPanelProps) => {
   } = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const { useOwnerRaiders } = useCombat();
+  const { useOwnerArmies } = useCombat();
 
-  const ownerRaiders = useOwnerRaiders(BigInt(account.address));
+  const ownerRaiders = useOwnerArmies(BigInt(account.address));
 
   const tabs = useMemo(
     () => [
@@ -84,7 +84,7 @@ export const RealmsListPanel = ({}: RealmsListPanelProps) => {
             <div>My Raiders</div>
           </div>
         ),
-        component: <RaidsPanel raiderIds={ownerRaiders} showCreateButton={false} />,
+        component: <></>,
       },
     ],
     [selectedTab, ownerRaiders],

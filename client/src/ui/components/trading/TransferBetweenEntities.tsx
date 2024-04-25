@@ -250,7 +250,7 @@ const SelectResources = ({
       </Button>
       <ResourceWeightsInfo
         entityId={entity_id}
-        resources={selectedResourceIds.map((resourceId) => ({
+        resources={selectedResourceIds.map((resourceId: number) => ({
           resourceId,
           amount: selectedResourceAmounts[resourceId],
         }))}
