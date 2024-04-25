@@ -29,30 +29,3 @@ export const ArmyCard = ({ entity }: any) => {
     </div>
   );
 };
-
-export const TroopCard = ({}) => {
-  const troops = [
-    { id: 1, name: "Knights", quantity: 10 },
-    { id: 2, name: "Crossbowmen", quantity: 10 },
-    { id: 3, name: "Paladin", quantity: 10 },
-  ];
-  return (
-    <div className="grid grid-cols-3 gap-4">
-      {troops.map((troop) => (
-        <div className="border p-3">
-          {troop.name} - {troop.quantity}
-        </div>
-      ))}
-    </div>
-  );
-};
-
-export const ArmyStatistics = ({}) => {
-  return (
-    <div className="flex space-x-4 ">
-      <div>Atk: 30</div>
-      <div>Def: 30</div>
-      <div>HP: 30</div>
-    </div>
-  );
-};
