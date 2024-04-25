@@ -499,3 +499,9 @@ export const RESOURCE_TIERS = {
   mythic: [20, 21, 22],
   military: [250, 251, 252],
 };
+
+export const TROOP_COSTS = {
+  [ResourcesIds.Knight]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+  [ResourcesIds.Crossbowmen]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+  [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+};

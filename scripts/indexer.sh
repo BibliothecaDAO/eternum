@@ -4,7 +4,7 @@
 cd contracts
 
 echo "----- Building World -----"
-# sozo build
+sozo build
 
 echo "----- Migrating World -----"
 sozo migrate apply --name eternum

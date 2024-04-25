@@ -2,6 +2,7 @@ import Button from "@/ui/elements/Button";
 import { EntityList } from "../list/EntityList";
 
 import { useArmies } from "@/hooks/helpers/useArmies";
+import { currencyFormat } from "@/ui/utils/utils";
 
 export const ArmyList = ({ entity }: any) => {
   const { entityArmies } = useArmies({ entity_id: entity?.entity_id });
@@ -12,10 +13,19 @@ export const ArmyList = ({ entity }: any) => {
 // TODO: Position, Combine Armies, Travel to on Map
 export const ArmyCard = ({ entity }: any) => {
   return (
-    <div>
-      <div>Knights: {entity.troops.knight_count}</div>
-      <div>Paladins: {entity.troops.knight_count}</div>
-      <div>Crossbowman: {entity.troops.knight_count}</div>
+    <div className="flex">
+      <img className="w-1/3" src="/images/units/troop.png" alt="" />
+      <div className="p-3 space-y-2">
+        <div className="flex">
+          <h4>Knights: {currencyFormat(entity.troops.knight_count, 2)}</h4>
+        </div>
+        <div>
+          <h4>Paladins: {currencyFormat(entity.troops.paladin_count, 2)}</h4>
+        </div>
+        <div>
+          <h4>Crossbowman: {currencyFormat(entity.troops.crossbowman_count, 2)}</h4>
+        </div>
+      </div>
     </div>
   );
 };
