@@ -132,6 +132,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.set_address_name(props);
   };
 
+  const set_entity_name = async (props: SystemProps.SetAddressNameProps) => {
+    await provider.set_entity_name(props);
+  };
+
   const merge_soldiers = async (props: SystemProps.MergeSoldiersProps) => {
     await provider.merge_soldiers(props);
   };
@@ -224,6 +228,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     complete_hyperstructure,
     disassemble_caravan_and_return_free_units,
     set_address_name,
+    set_entity_name,
     create_and_merge_soldiers,
     level_up_realm,
     isLive,

@@ -24,6 +24,11 @@ export interface SetAddressNameProps extends SystemSigner {
   name: string;
 }
 
+export interface SetEntityNameProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  name: string;
+}
+
 export interface AttackProps extends SystemSigner {
   attacker_ids: num.BigNumberish[];
   target_id: num.BigNumberish;

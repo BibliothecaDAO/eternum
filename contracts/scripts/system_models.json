@@ -89,7 +89,7 @@
     "Inventory"
   ],
   "LEVELING_SYSTEMS": ["Level", "Resource", "OwnedResourcesTracker"],
-  "NAME_SYSTEMS": ["AddressName"],
+  "NAME_SYSTEMS": ["AddressName", "EntityName"],
   "BANK_SYSTEMS": [
     "Bank",
     "Position",

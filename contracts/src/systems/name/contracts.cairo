@@ -1,6 +1,7 @@
 #[dojo::contract]
 mod name_systems {
-    use eternum::models::name::{AddressName};
+    use eternum::models::name::{AddressName, EntityName};
+    use eternum::models::owner::{Owner};
     use eternum::systems::name::interface::{INameSystems};
 
     use traits::Into;
@@ -17,6 +18,13 @@ mod name_systems {
             address_name.name = name;
 
             set!(world, (address_name));
+        }
+
+        fn set_entity_name(world: IWorldDispatcher, entity_id: u128, name: felt252) {
+            let mut owner: Owner = get!(world, entity_id, Owner);
+            assert(owner.address == starknet::get_caller_address(), 'caller is not entity owner');
+
+            set!(world, (EntityName { entity_id, name }));
         }
     }
 }

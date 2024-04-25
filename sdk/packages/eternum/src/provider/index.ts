@@ -659,6 +659,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
+  public async set_entity_name(props: SystemProps.SetEntityNameProps) {
+    const { entity_id, name, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "name_systems"),
+      entrypoint: "set_entity_name",
+      calldata: [entity_id, name],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
   public async create_labor_building(props: SystemProps.CreateLaborBuildingProps) {
     const { realm_entity_id, building_type } = props;
 

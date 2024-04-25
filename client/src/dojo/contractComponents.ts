@@ -680,6 +680,19 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    EntityName: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.BigInt, name: RecsType.BigInt },
+        {
+          metadata: {
+            name: "EntityName",
+            types: ["u128","felt252"],
+            customTypes: [],
+          },
+        }
+      );
+    })(),
     EntityOwner: (() => {
       return defineComponent(
         world,
