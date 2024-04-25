@@ -45,6 +45,8 @@ export const Armies = ({}: ArmiesProps) => {
           const position = getComponentValue(Position, getEntityIdFromKeys([armyId?.entity_id || 0n]));
           const health = getComponentValue(Healthv2, getEntityIdFromKeys([armyId?.entity_id || 0n]));
           // const isDead = health?.current ? false : true;
+
+          console.log({ health });
           const isDead = false;
           const owner = getComponentValue(Owner, getEntityIdFromKeys([armyId?.entity_id || 0n]));
           const isMine = owner?.address === BigInt(account.address);

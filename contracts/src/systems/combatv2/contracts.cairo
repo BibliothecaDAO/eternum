@@ -18,8 +18,7 @@ mod combat_v2_systems {
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE};
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
-        TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait,
-        CapacityConfig
+        TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig
     };
 
     use eternum::models::movable::Movable;
@@ -45,7 +44,7 @@ mod combat_v2_systems {
         fn create_army(world: IWorldDispatcher, owner_id: u128, troops: Troops) {
             // ensure caller is entity owner 
             get!(world, owner_id, Owner).assert_caller_owner();
- 
+
             // ensure owner entity is a realm
             let realm: Realm = get!(world, owner_id, Realm);
             assert!(realm.realm_id != 0, "owner is not a realm");
@@ -53,9 +52,11 @@ mod combat_v2_systems {
             // make payment for troops
             let knight_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::KNIGHT));
             let paladin_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::PALADIN));
-            let crossbowman_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::CROSSBOWMAN));
-            let (knight_resource, paladin_resource, crossbowman_resource) 
-                = troops.purchase(owner_id, (knight_resource, paladin_resource, crossbowman_resource));
+            let crossbowman_resource = ResourceImpl::get(
+                world, (owner_id, ResourceTypes::CROSSBOWMAN)
+            );
+            let (knight_resource, paladin_resource, crossbowman_resource) = troops
+                .purchase(owner_id, (knight_resource, paladin_resource, crossbowman_resource));
             set!(world, (knight_resource, paladin_resource, crossbowman_resource));
 
             // make troops 
@@ -63,12 +64,11 @@ mod combat_v2_systems {
             army.entity_id = world.uuid().into();
             army.troops.add(troops);
             set!(world, (army));
-            
+
             // set army health
             let mut army_health: Healthv2 = Default::default();
-            let troop_config: TroopConfig = TroopConfigImpl::get(world);
             army_health.entity_id = army.entity_id;
-            army_health.increase_by(army.troops.full_health(troop_config));
+            army_health.increase_by(army.troops.full_health(TroopConfigImpl::get(world)));
             set!(world, (army_health));
 
             // set army owner entity
@@ -76,8 +76,13 @@ mod combat_v2_systems {
             army_owned_by.entity_id = army.entity_id;
             army_owned_by.entity_owner_id = owner_id;
 
-
-            set!(world, (army_owned_by, Owner { entity_id: army.entity_id, address: starknet::get_caller_address() }));
+            set!(
+                world,
+                (
+                    army_owned_by,
+                    Owner { entity_id: army.entity_id, address: starknet::get_caller_address() }
+                )
+            );
 
             // set army position
             let owner_position: Position = get!(world, owner_id, Position);
@@ -106,29 +111,20 @@ mod combat_v2_systems {
             );
 
             // set troop capacity and quantity
-       
-            let troop_capacity : CapacityConfig = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), CapacityConfig);
-            set!(world, (
-                Capacity { 
-                    entity_id: army.entity_id, 
-                    weight_gram: troop_capacity.weight_gram 
-                },
-                Quantity { 
-                    entity_id: army.entity_id, 
-                    value: army.troops.count().into() 
-                }
-            ));
 
-
-            // add inventory 
-            set!(world, (
-                Inventory {
-                    entity_id: army.entity_id, 
-                    items_key: world.uuid().into(),
-                    items_count: 0
-                }
-            ));
-
+            let troop_capacity: CapacityConfig = get!(
+                world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), CapacityConfig
+            );
+            set!(
+                world,
+                (
+                    Capacity { entity_id: army.entity_id, weight_gram: troop_capacity.weight_gram },
+                    Quantity { entity_id: army.entity_id, value: army.troops.count().into() },
+                    Inventory {
+                        entity_id: army.entity_id, items_key: world.uuid().into(), items_count: 0
+                    }
+                )
+            );
         }
 
 

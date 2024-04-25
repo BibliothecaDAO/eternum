@@ -106,6 +106,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
   });
 
   const onClick = useCallback(() => {
+    console.log(info);
     if (!info.isDead && !isRunning && info.isMine) {
       playBuildMilitary();
     }

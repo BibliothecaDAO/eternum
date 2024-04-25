@@ -14,32 +14,21 @@ export PALADIN_PER_TICK=2
 export MAX_MOVE_PER_TICK=3
 export TICK_INTERVAL_IN_SECONDS=900
 
-export EXPLORATION_WHEAT_BURN_AMOUNT=300000
-export EXPLORATION_FISH_BURN_AMOUNT=150000
+export EXPLORATION_WHEAT_BURN_AMOUNT=30000
+export EXPLORATION_FISH_BURN_AMOUNT=15000
 export EXPLORATION_REWARD_RESOURCE_AMOUNT=20000
 
 
-## set bank config
-commands+=(
-    # owner cost in lords
-    # lp fees
-    "sozo execute $CONFIG_SYSTEMS set_bank_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 100000,0"
-)
+## BANK CONFIG
+# owner cost in lords
+# lp fees
+commands+=("sozo execute $CONFIG_SYSTEMS set_bank_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 100000,0")
 
-## set tick config
-commands+=(
-    # max_moves_per_tick = 3
-    # tick_interval_in_seconds = 900
-    "sozo execute $CONFIG_SYSTEMS set_tick_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $MAX_MOVE_PER_TICK,$TICK_INTERVAL_IN_SECONDS"
-)
+## TICK CONFIG
+commands+=("sozo execute $CONFIG_SYSTEMS set_tick_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $MAX_MOVE_PER_TICK,$TICK_INTERVAL_IN_SECONDS")
 
-## set exploration config
-commands+=(
-    # wheat_burn_amount = 300000
-    # fish_burn_amount = 150000
-    # reward_resource_amount = 20000
-    "sozo execute $CONFIG_SYSTEMS set_exploration_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $EXPLORATION_WHEAT_BURN_AMOUNT,$EXPLORATION_FISH_BURN_AMOUNT,$EXPLORATION_REWARD_RESOURCE_AMOUNT"
-)
+## EXPLORATION CONFIG
+commands+=("sozo execute $CONFIG_SYSTEMS set_exploration_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $EXPLORATION_WHEAT_BURN_AMOUNT$EXPLORATION_FISH_BURN_AMOUNT,$EXPLORATION_REWARD_RESOURCE_AMOUNT")
 
 commands+=(
     ### WORLD ###
@@ -49,7 +38,8 @@ commands+=(
     # ### SPEED ###
     # # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
     # # 360 sec per km = 10km/h
-    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,360"
+    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY_ENTITY_TYPE,360"
+    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ARMY_ENTITY_TYPE,360"
 
     # ### TRAVEL ###
     # # free transport per city = 10 (for testing);

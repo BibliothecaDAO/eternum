@@ -45,7 +45,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
   const isAttackMode = useUIStore((state) => state.isAttackMode);
   const [playerOwnsSelectedEntity, setPlayerOwnsSelectedEntity] = useState(false);
-  console.log({ playerOwnsSelectedEntity });
+  console.log({ selectedEntity });
   const [playerRaidersOnPosition, setPlayerRaidersOnPosition] = useState<CombatInfo[]>([]);
   const [selectedEntityIsDead, setSelectedEntityIsDead] = useState(true);
   const [selectedEntityIsRealm, setSelectedEntityIsRealm] = useState(false);

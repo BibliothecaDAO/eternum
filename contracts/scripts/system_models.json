@@ -15,8 +15,7 @@
     "Tile",
     "Production"
   ],
-  "DONKEY_SYSTEMS": [
-  ],
+  "DONKEY_SYSTEMS": [],
   "TRADE_SYSTEMS": [
     "Movable",
     "Trade",
@@ -33,7 +32,6 @@
     "Weight",
     "Owner"
   ],
-  "ROAD_SYSTEMS": ["Road", "Resource", "OwnedResourcesTracker"],
   "RESOURCE_SYSTEMS": [
     "Resource",
     "OwnedResourcesTracker",
@@ -56,27 +54,6 @@
     "Road"
   ],
   "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
-  "COMBAT_SYSTEMS": [
-    "Resource",
-    "OwnedResourcesTracker",
-    "Owner",
-    "EntityOwner",
-    "Health",
-    "Attack",
-    "Defence",
-    "Quantity",
-    "Position",
-    "Inventory",
-    "Movable",
-    "Capacity",
-    "ArrivalTime",
-    "Weight",
-    "ResourceChest",
-    "DetachedResource",
-    "ForeignKey",
-    "Inventory"
-  ],
-  "LEVELING_SYSTEMS": ["Level", "Resource", "OwnedResourcesTracker"],
   "NAME_SYSTEMS": ["AddressName"],
   "BANK_SYSTEMS": ["Bank", "Position", "BankAccounts", "Owner", "Resource", "Production"],
   "SWAP_SYSTEMS": ["Market", "OwnedResourcesTracker", "Resource", "Production"],
@@ -85,12 +62,10 @@
   "BUILDINGS_SYSTEMS": [
     "Resource",
     "OwnedResourcesTracker",
-    "LaborBuilding",
     "Building",
     "ProductionConfig",
     "ProductionInput",
     "TickConfig",
-    "Coord",
     "Position",
     "Direction",
     "Production"
@@ -109,7 +84,17 @@
     "Movable",
     "Position",
     "ArrivalTime",
-    "TickMove"
+    "TickMove",
+    "Resource",
+    "Quantity",
+    "Production",
+    "Healthv2",
+    "Army",
+    "Battle",
+    "EntityOwner",
+    "Position",
+    "Owner",
+    "Capacity"
   ],
   "COMBAT_V2_SYSTEMS": [
     "Healthv2",
@@ -120,6 +105,9 @@
     "Movable",
     "Resource",
     "Production",
-    "Owner"
+    "Owner",
+    "Capacity",
+    "Quantity",
+    "Inventory"
   ]
 }
