@@ -16,6 +16,7 @@ mod combat_v2_systems {
     use eternum::alias::ID;
     use eternum::constants::{ResourceTypes, ErrorMessages};
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE};
+    use eternum::models::capacity::Capacity;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
         TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig
@@ -24,6 +25,7 @@ mod combat_v2_systems {
     use eternum::models::movable::Movable;
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use eternum::models::position::{Position, Coord};
+    use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::{
@@ -32,8 +34,6 @@ mod combat_v2_systems {
             BattleImpl, BattleTrait, BattleSide
         },
     };
-    use eternum::models::quantity::{Quantity, QuantityTrait};
-    use eternum::models::capacity::Capacity;
 
     use eternum::utils::math::PercentageImpl;
     use super::ICombatv2Contract;

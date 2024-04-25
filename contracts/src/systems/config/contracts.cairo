@@ -554,7 +554,6 @@ mod config_systems {
     #[abi(embed_v0)]
     impl BankConfigImpl of IBankConfig<ContractState> {
         fn set_bank_config(world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128) {
-
             assert_caller_is_admin(world);
 
             set!(world, (BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_scaled, }));
@@ -564,12 +563,10 @@ mod config_systems {
     #[abi(embed_v0)]
     impl TroopConfigImpl of ITroopConfig<ContractState> {
         fn set_troop_config(world: IWorldDispatcher, mut troop_config: TroopConfig) {
-
             assert_caller_is_admin(world);
 
             troop_config.config_id = WORLD_CONFIG_ID;
             set!(world, (troop_config));
         }
     }
-
 }

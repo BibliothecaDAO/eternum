@@ -10,7 +10,9 @@ struct Weight {
 #[generate_trait]
 impl WeightImpl of WeightTrait {
     fn deduct(ref self: Weight, capacity: Capacity, amount: u128) {
-        if self.entity_id == 0 {return;};
+        if self.entity_id == 0 {
+            return;
+        };
         if capacity.is_capped() {
             assert(self.value >= amount, 'not enough weight');
             if amount > self.value {
@@ -22,9 +24,11 @@ impl WeightImpl of WeightTrait {
     }
 
     fn add(ref self: Weight, capacity: Capacity, quantity: Quantity, amount: u128) {
-        if self.entity_id == 0 {return;};
+        if self.entity_id == 0 {
+            return;
+        };
         if capacity.is_capped() {
-            self.value += amount; 
+            self.value += amount;
             capacity.assert_can_carry(quantity, self);
         };
     }

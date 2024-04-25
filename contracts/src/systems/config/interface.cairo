@@ -1,7 +1,7 @@
 use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
-use eternum::models::position::Coord;
 use eternum::models::config::TroopConfig;
+use eternum::models::position::Coord;
 
 #[dojo::interface]
 trait IWorldConfig {

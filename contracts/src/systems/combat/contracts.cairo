@@ -31,9 +31,7 @@ mod combat_systems {
 
 
     use eternum::systems::combat::interface::{ISoldierSystems, ICombatSystems};
-    use eternum::systems::resources::contracts::resource_systems::{
-        InternalResourceSystemsImpl
-    };
+    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
 
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl

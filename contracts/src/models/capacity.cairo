@@ -12,9 +12,9 @@ struct Capacity {
 #[generate_trait]
 impl CapacityImpl of CapacityTrait {
     fn assert_can_carry(self: Capacity, quantity: Quantity, weight: Weight) {
-        assert!(self.can_carry(quantity, weight), "entity {} capacity not enough", self.entity_id); 
+        assert!(self.can_carry(quantity, weight), "entity {} capacity not enough", self.entity_id);
     }
-    
+
     fn can_carry(self: Capacity, quantity: Quantity, weight: Weight) -> bool {
         if self.is_capped() {
             let entity_total_weight_capacity = self.weight_gram * quantity.get_value();

@@ -12,8 +12,7 @@ trait ITravelSystems {
 
 #[dojo::contract]
 mod travel_systems {
-    use eternum::models::owner::EntityOwnerTrait;
-use eternum::alias::ID;
+    use eternum::alias::ID;
 
     use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex};
     use eternum::models::capacity::{Capacity, CapacityTrait};
@@ -23,6 +22,7 @@ use eternum::alias::ID;
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::order::{Orders, OrdersTrait};
+    use eternum::models::owner::EntityOwnerTrait;
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
     use eternum::models::quantity::{Quantity, QuantityTrait};
@@ -298,7 +298,7 @@ use eternum::alias::ID;
         fn check_owner(world: IWorldDispatcher, transport_id: ID, addr: ContractAddress) {
             let transport_owner_addr: Owner = get!(world, transport_id, Owner);
             if (transport_owner_addr.address != addr) {
-                let transport_owner_entity : EntityOwner = get!(world, transport_id, EntityOwner);
+                let transport_owner_entity: EntityOwner = get!(world, transport_id, EntityOwner);
                 assert(transport_owner_entity.owner_address(world) == addr, 'not caravan owner');
             }
         }

@@ -74,7 +74,7 @@ impl ResourceLockImpl of LockTrait {
     }
     fn is_open(self: ResourceLock) -> bool {
         let now = starknet::get_block_timestamp();
-        now > self.release_at 
+        now > self.release_at
     }
 }
 
@@ -131,14 +131,18 @@ impl ResourceFoodImpl of ResourceFoodTrait {
 impl ResourceImpl of ResourceTrait {
     fn get(world: IWorldDispatcher, key: (u128, u8)) -> Resource {
         let mut resource: Resource = get!(world, key, Resource);
-        if resource.entity_id == 0 {return resource;};
+        if resource.entity_id == 0 {
+            return resource;
+        };
 
         resource.harvest(world);
         return resource;
     }
 
     fn burn(ref self: Resource, amount: u128) {
-        if self.entity_id == 0 {return;};
+        if self.entity_id == 0 {
+            return;
+        };
 
         assert(self.balance >= amount, 'not enough resources');
         if amount > self.balance {
@@ -149,12 +153,16 @@ impl ResourceImpl of ResourceTrait {
     }
 
     fn add(ref self: Resource, amount: u128) {
-        if self.entity_id == 0 {return;};
+        if self.entity_id == 0 {
+            return;
+        };
         self.balance += amount;
     }
 
     fn save(ref self: Resource, world: IWorldDispatcher) {
-        if self.entity_id == 0 {return;};
+        if self.entity_id == 0 {
+            return;
+        };
         // save the updated resource
         set!(world, (self));
 
@@ -473,5 +481,4 @@ mod owned_resources_tracker_tests {
         assert!(ort.owns_resource_type(ResourceTypes::DEMONHIDE) == false, "should be false");
     }
 }
-
 

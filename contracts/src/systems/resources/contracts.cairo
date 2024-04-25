@@ -10,9 +10,7 @@ trait IResourceSystems {
 
 #[dojo::contract]
 mod resource_systems {
-    use eternum::models::resources::LockTrait;
-use core::array::ArrayTrait;
-    use eternum::models::weight::WeightTrait;
+    use core::array::ArrayTrait;
     use core::array::SpanTrait;
 
     use core::integer::BoundedInt;
@@ -28,10 +26,14 @@ use core::array::ArrayTrait;
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceLock};
+    use eternum::models::resources::LockTrait;
     use eternum::models::resources::{DetachedResource};
+    use eternum::models::resources::{
+        Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceLock
+    };
     use eternum::models::road::RoadImpl;
     use eternum::models::weight::Weight;
+    use eternum::models::weight::WeightTrait;
     use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
         InternalDonkeySystemsImpl as donkey
     };
@@ -190,7 +192,6 @@ use core::array::ArrayTrait;
 
     #[generate_trait]
     impl InternalResourceSystemsImpl of InternalResourceSystemsTrait {
-     
         fn transfer(
             world: IWorldDispatcher,
             caller_id: ID,
@@ -198,69 +199,73 @@ use core::array::ArrayTrait;
             recipient_id: ID,
             mut resources: Span<(u8, u128)>
         ) -> (ID, felt252, u128) {
-
             get!(world, sender_id, ArrivalTime).assert_not_travelling();
             get!(world, recipient_id, ArrivalTime).assert_not_travelling();
 
             let mut mint_resources: bool = false;
-            if caller_id == 0 {mint_resources = true};
+            if caller_id == 0 {
+                mint_resources = true
+            };
 
             let sender_coord: Coord = get!(world, sender_id, Position).into();
             let recipient_coord: Coord = get!(world, recipient_id, Position).into();
-            
+
             let mut transport_id: ID = recipient_id;
             let transport_is_needed: bool = !mint_resources && sender_coord != recipient_coord;
-            if transport_is_needed {transport_id = world.uuid().into()}; 
-            
-     
+            if transport_is_needed {
+                transport_id = world.uuid().into()
+            };
+
             // transfer resources from sender to recipient
             let mut total_resources_weight = 0;
-            let mut resources_felt_arr : Array<felt252> = array![];
+            let mut resources_felt_arr: Array<felt252> = array![];
             let mut resources_clone = resources.clone();
             loop {
                 match resources_clone.pop_front() {
-                    Option::Some((resource_type, resource_amount)) => {
+                    Option::Some((
+                        resource_type, resource_amount
+                    )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
                         if !mint_resources {
-
                             // ensure resource balance is not locked 
                             let resource_lock: ResourceLock = get!(world, sender_id, ResourceLock);
                             resource_lock.assert_not_locked();
 
                             // burn resources from sender's balance
-                            let mut sender_resource 
-                            = ResourceImpl::get(world, (sender_id, resource_type));
+                            let mut sender_resource = ResourceImpl::get(
+                                world, (sender_id, resource_type)
+                            );
                             sender_resource.burn(resource_amount);
                             sender_resource.save(world);
                         }
-                        
-                        
+
                         // add resources to recipient's balance
-                        let mut recipient_resource 
-                            = ResourceImpl::get(world, (transport_id, resource_type));
+                        let mut recipient_resource = ResourceImpl::get(
+                            world, (transport_id, resource_type)
+                        );
                         recipient_resource.add(resource_amount);
                         recipient_resource.save(world);
 
                         // update total weight
-                        let resource_weight: WeightConfig 
-                            = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
+                        let resource_weight: WeightConfig = get!(
+                            world, (WORLD_CONFIG_ID, resource_type), WeightConfig
+                        );
                         total_resources_weight += resource_weight.weight_gram * resource_amount;
 
                         // update resources hash
                         resources_felt_arr.append(resource_type.into());
                         resources_felt_arr.append(resource_amount.into());
                     },
-                    Option::None => {break;}
+                    Option::None => { break; }
                 }
             };
 
             // increase recipient weight
             let mut recipient_weight: Weight = get!(world, transport_id, Weight);
             let recipient_capacity: Capacity = get!(world, transport_id, Capacity);
-            let recipient_quantity: Quantity = get!(world, transport_id, Quantity);  
-            recipient_weight.add(
-                recipient_capacity, recipient_quantity, total_resources_weight);
+            let recipient_quantity: Quantity = get!(world, transport_id, Quantity);
+            recipient_weight.add(recipient_capacity, recipient_quantity, total_resources_weight);
             set!(world, (recipient_weight));
 
             if !mint_resources {
@@ -271,26 +276,31 @@ use core::array::ArrayTrait;
                 set!(world, (sender_weight));
             }
 
-            
-            if transport_is_needed { 
+            if transport_is_needed {
                 // create donkey that can carry weight
                 donkey::create_donkey(
-                    world, transport_id, caller_id, recipient_id, total_resources_weight, sender_coord, recipient_coord);
+                    world,
+                    transport_id,
+                    caller_id,
+                    recipient_id,
+                    total_resources_weight,
+                    sender_coord,
+                    recipient_coord
+                );
 
                 // lock resource balance until it is in possession of the recipient
-                let transport_arrival_time : ArrivalTime = get!(world, transport_id, ArrivalTime);
+                let transport_arrival_time: ArrivalTime = get!(world, transport_id, ArrivalTime);
                 let is_round_trip: bool = caller_id == recipient_id;
                 if is_round_trip {
                     let resources_collected_at: u64 = transport_arrival_time.arrives_at / 2;
-                    set!(world, (
-                        ResourceLock {
-                            entity_id: transport_id,
-                            release_at: resources_collected_at
-                        }
-                    ));
+                    set!(
+                        world,
+                        (ResourceLock {
+                            entity_id: transport_id, release_at: resources_collected_at
+                        })
+                    );
                 }
             }
-            
 
             // emit transfer event
             InternalResourceSystemsImpl::emit_transfer_event(
