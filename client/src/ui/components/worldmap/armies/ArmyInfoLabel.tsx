@@ -4,11 +4,10 @@ import { useCombat } from "../../../../hooks/helpers/useCombat";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils";
+import { getEntityIdFromKeys } from "../../../utils/utils";
 import { type CombatInfo, type Resource, type UIPosition } from "@bibliothecadao/eternum";
 
 import { useMemo } from "react";
-import { Html } from "@react-three/drei";
 import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
 import clsx from "clsx";
 import { OrderIcon } from "../../../elements/OrderIcon";
@@ -16,7 +15,8 @@ import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUt
 import ProgressBar from "../../../elements/ProgressBar";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { useResources } from "../../../../hooks/helpers/useResources";
-import { ResourceCost } from "../../../elements/ResourceCost";
+import { HoveringContainer } from "../HoveringContainer";
+import { InventoryResources } from "../../resources/InventoryResources";
 
 interface ArmyInfoLabelProps {
   position: UIPosition;
@@ -47,7 +47,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   const isActiveTravel = tickMove !== undefined ? tickMove.tick >= currentTick : false;
 
   return (
-    <Html scale={1} position={[position.x, position.z, -position.y]}>
+    <HoveringContainer position={[position.x, position.z, -position.y]}>
       <RaiderInfo
         key={raider.entityId}
         raider={raider}
@@ -57,7 +57,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
         isPassiveTravel={isPassiveTravel}
         isActiveTravel={isActiveTravel}
       />
-    </Html>
+    </HoveringContainer>
   );
 };
 
@@ -82,8 +82,6 @@ const RaiderInfo = ({
   const attackerAddressName = entityOwnerId ? getRealmAddressName(entityOwnerId) : "";
 
   const originRealmName = originRealmId ? getRealmNameById(originRealmId) : "";
-
-  const inventoryResources = raider.entityId ? getResourcesFromInventory(raider.entityId) : undefined;
 
   const isTraveling = isPassiveTravel || isActiveTravel;
 
@@ -193,7 +191,6 @@ const RaiderInfo = ({
             <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP
           </div>
         </div>
-
         <div className="grid grid-cols-12 gap-0.5">
           <ProgressBar
             containerClassName="col-span-12 !bg-order-giants"
@@ -201,25 +198,8 @@ const RaiderInfo = ({
             progress={(health / (10 * quantity)) * 100}
           />
         </div>
-
-        <div className="flex items-center justify-between mt-[8px] text-xxs">
-          {inventoryResources && (
-            <div className="flex justify-center items-center space-x-1 flex-wrap">
-              {inventoryResources.resources.map(
-                (resource) =>
-                  resource && (
-                    <ResourceCost
-                      key={resource.resourceId}
-                      type="vertical"
-                      color="text-order-brilliance"
-                      resourceId={resource.resourceId}
-                      amount={divideByPrecision(Number(resource.amount))}
-                    />
-                  ),
-              )}
-            </div>
-          )}
-        </div>
+        {/* // getting error: The `useDojo` hook must be used within a `DojoProvider`
+        <InventoryResources entityId={raider.entityId} /> */}
       </div>
     </div>
   );
