@@ -96,7 +96,7 @@ enum Direction {
     SouthEast: (),
 }
 
-#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect, Debug)]
+#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect, Debug, Zeroable)]
 struct Coord {
     x: u128,
     y: u128
