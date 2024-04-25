@@ -8,8 +8,6 @@ mod name_systems {
     use eternum::models::name::{AddressName, EntityName};
     use eternum::models::owner::{Owner};
 
-    use traits::Into;
-
     #[abi(embed_v0)]
     impl NameSystemsImpl of super::INameSystems<ContractState> {
         fn set_address_name(world: IWorldDispatcher, name: felt252) {
