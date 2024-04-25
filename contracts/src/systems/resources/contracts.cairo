@@ -241,7 +241,7 @@ mod resource_systems {
 
             let owner_coord: Coord = get!(world, sender_id, Position).into();
             let receiver_coord: Coord = get!(world, receiver_id, Position).into();
-            if owner_coord == receiver_coord {
+            if owner_coord.is_zero() || owner_coord == receiver_coord {
                 // give resource chest to receiver
                 InternalInventorySystemsImpl::add(world, receiver_id, resource_chest.entity_id);
             } else {
