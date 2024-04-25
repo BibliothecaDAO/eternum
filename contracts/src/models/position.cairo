@@ -96,7 +96,7 @@ enum Direction {
     SouthEast: (),
 }
 
-#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect, Debug)]
+#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect, Debug, Zeroable)]
 struct Coord {
     x: u128,
     y: u128
@@ -209,6 +209,15 @@ impl PositionImpl of PositionTrait {
     fn get_zone(self: Position) -> u128 {
         // use highest and lowest x to divide map into 10 timezones
         1 + (self.x - LOWEST_COL) * 10 / (HIGHEST_COL - LOWEST_COL)
+    }
+    fn assert_same_location(self: Position, other: Coord) {
+        assert(self.x == other.x && self.y == other.y, 'Coord: not same');
+    }
+    fn assert_not_same_location(self: Position, other: Coord) {
+        assert(self.x != other.x || self.y != other.y, 'Coord: same');
+    }
+    fn assert_not_zero(self: Position) {
+        assert(self.x != 0 || self.y != 0, 'Coord: zero');
     }
 }
 

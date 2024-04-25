@@ -1,25 +1,27 @@
+#[dojo::interface]
+trait IMapSystems {
+    fn explore(unit_id: u128, direction: eternum::models::position::Direction);
+}
+
 #[dojo::contract]
 mod map_systems {
     use core::traits::Into;
     use eternum::alias::ID;
     use eternum::constants::ResourceTypes;
     use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
-    use eternum::models::combat::Health;
-    use eternum::models::config::MapExploreConfig;
-    use eternum::models::config::{LevelingConfig};
+    use eternum::models::combatV2::{Healthv2, Healthv2Trait};
+    use eternum::models::config::{MapExploreConfig, LevelingConfig};
     use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::inventory::Inventory;
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::map::Tile;
-    use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::position::{Coord, CoordTrait, Direction};
-    use eternum::models::position::{Position};
+    use eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
+    use eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
+    use eternum::models::position::{Coord, CoordTrait, Direction, Position};
     use eternum::models::quantity::Quantity;
     use eternum::models::realm::{Realm};
     use eternum::models::resources::{Resource, ResourceCost, ResourceTrait, ResourceFoodImpl};
     use eternum::models::tick::{TickMove, TickMoveTrait};
-    use eternum::systems::map::interface::IMapSystems;
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl
@@ -50,36 +52,27 @@ mod map_systems {
     }
 
 
+    // @DEV TODO: We can generalise this more...
     #[abi(embed_v0)]
-    impl MapSystemsImpl of IMapSystems<ContractState> {
+    impl MapSystemsImpl of super::IMapSystems<ContractState> {
         fn explore(world: IWorldDispatcher, unit_id: u128, direction: Direction) {
             // check that caller owns unit
-            let caller = starknet::get_caller_address();
-            let unit_owner = get!(world, unit_id, Owner);
-            assert(unit_owner.address == caller, 'not unit owner');
+            get!(world, unit_id, Owner).assert_caller_owner();
 
             // ensure unit is alive
-            let unit_health = get!(world, unit_id, Health);
-            assert(unit_health.value != 0, 'entity is dead');
+            get!(world, unit_id, Healthv2).assert_alive();
 
             // check that entity owner is a realm
+            // TODO: Do we need this?
             let unit_entity_owner = get!(world, unit_id, EntityOwner);
             let unit_realm = get!(world, unit_entity_owner.entity_owner_id, Realm);
             assert(unit_realm.realm_id != 0, 'not owned by realm');
 
-            // check that there is more than one entity in unit
-            let mut unit_quantity = get!(world, unit_id, Quantity);
-            assert(unit_quantity.value > 0, 'not enough quantity');
-
             // ensure unit can move
-            let unit_movable = get!(world, unit_id, Movable);
-            assert(unit_movable.sec_per_km != 0, 'entity cant move');
-            assert(unit_movable.blocked == false, 'entity is blocked');
+            get!(world, unit_id, Movable).assert_moveable();
 
             // ensure unit is not in transit
-            let unit_arrival_time = get!(world, unit_id, ArrivalTime);
-            let ts = starknet::get_block_timestamp();
-            assert(unit_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
+            get!(world, unit_id, ArrivalTime).assert_not_travelling();
 
             // // check that unit isn't carrying anything
             // let unit_inventory = get!(world, unit_id, Inventory);
@@ -89,7 +82,9 @@ mod map_systems {
             let exploration_reward = InternalMapSystemsImpl::pay_food_and_get_explore_reward(
                 world, unit_entity_owner.entity_owner_id
             );
-            InternalResourceSystemsImpl::transfer(world, 0, unit_id, exploration_reward);
+
+            // TODO: Fix this
+            InternalResourceSystemsImpl::transfer(world, 0, 0, unit_id, exploration_reward);
 
             let current_coord: Coord = get!(world, unit_id, Position).into();
             let next_coord = current_coord.neighbor(direction);

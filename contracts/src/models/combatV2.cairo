@@ -28,8 +28,12 @@ struct Healthv2 {
 
 #[generate_trait]
 impl Healthv2Impl of Healthv2Trait {
-    fn is_alive(ref self: Healthv2) -> bool {
+    fn is_alive(self: Healthv2) -> bool {
         self.current > 0
+    }
+
+    fn assert_alive(self: Healthv2) {
+        assert(self.is_alive(), 'Entity is dead');
     }
 
     fn increase_by(ref self: Healthv2, value: u128) {
@@ -96,8 +100,8 @@ impl TroopsImpl of TroopsTrait {
     }
 
     fn purchase(
-        self: Troops, purchaser_id: u128, ref troops_resources: (Resource, Resource, Resource),
-    ) {
+        self: Troops, purchaser_id: u128, troops_resources: (Resource, Resource, Resource),
+    ) -> (Resource, Resource, Resource) {
         let (mut knight_resource, mut paladin_resoure, mut crossbowman_resoure) = troops_resources;
 
         // pay for knights using KNIGHT resource
@@ -130,12 +134,14 @@ impl TroopsImpl of TroopsTrait {
             );
             crossbowman_resoure.balance -= self.crossbowman_count.into();
         }
+
+        return (knight_resource, paladin_resoure, crossbowman_resoure);
     }
 
     fn delta(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> (u32, u32) {
         let self_strength = self.strength_against(enemy_troops, troop_config);
         let enemy_strength = enemy_troops.strength_against(self, troop_config);
-        let strength_difference = self_strength - enemy_strength;
+        let _strength_difference = self_strength - enemy_strength;
 
         // should be at least one to prevent division errrors
         (1, 1)
@@ -197,6 +203,12 @@ impl TroopsImpl of TroopsTrait {
             - enemy_knight_strength.into();
 
         self_knight_strength + self_paladin_strength + self_crossbowman_strength
+    }
+
+    fn count(ref self: Troops) -> u32{
+        self.knight_count +
+        self.paladin_count +
+        self.crossbowman_count
     }
 }
 

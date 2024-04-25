@@ -1,13 +1,10 @@
-mod bank;
 mod buildings;
 mod capacity;
-mod caravan;
 mod combat;
 mod combatV2;
 mod config;
 mod hyperstructure;
 mod inventory;
-mod labor_auction;
 mod level;
 mod map;
 mod metadata;
@@ -25,3 +22,8 @@ mod settlement;
 mod tick;
 mod trade;
 mod weight;
+mod bank {
+    mod bank;
+    mod liquidity;
+    mod market;
+}

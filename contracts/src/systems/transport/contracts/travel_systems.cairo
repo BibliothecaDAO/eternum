@@ -1,8 +1,22 @@
+#[dojo::interface]
+trait ITravelSystems {
+    fn travel(
+        travelling_entity_id: eternum::alias::ID,
+        destination_coord: eternum::models::position::Coord
+    );
+    fn travel_hex(
+        travelling_entity_id: eternum::alias::ID,
+        directions: Span<eternum::models::position::Direction>
+    );
+}
+
 #[dojo::contract]
 mod travel_systems {
-    use eternum::alias::ID;
+    use eternum::models::owner::EntityOwnerTrait;
+use eternum::alias::ID;
 
     use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex};
+    use eternum::models::capacity::{Capacity, CapacityTrait};
     use eternum::models::config::{RoadConfig, LevelingConfig};
     use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::level::{Level, LevelTrait};
@@ -11,15 +25,16 @@ mod travel_systems {
     use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
+    use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
     use eternum::models::road::RoadImpl;
     use eternum::models::tick::{TickMove, TickMoveTrait};
+    use eternum::models::weight::Weight;
 
     use eternum::systems::leveling::contracts::leveling_systems::{
         InternalLevelingSystemsImpl as leveling
     };
-
-    use eternum::systems::transport::interface::travel_systems_interface::{ITravelSystems};
+    use starknet::ContractAddress;
 
     #[derive(Drop, starknet::Event)]
     struct Travel {
@@ -41,7 +56,7 @@ mod travel_systems {
     }
 
     #[abi(embed_v0)]
-    impl TravelSystemsImpl of ITravelSystems<ContractState> {
+    impl TravelSystemsImpl of super::ITravelSystems<ContractState> {
         /// Travel to a destination
         ///
         /// This system can be called to move an entity from
@@ -278,6 +293,78 @@ mod travel_systems {
                     ),
                 )
             );
+        }
+
+        fn check_owner(world: IWorldDispatcher, transport_id: ID, addr: ContractAddress) {
+            let transport_owner_addr: Owner = get!(world, transport_id, Owner);
+            if (transport_owner_addr.address != addr) {
+                let transport_owner_entity : EntityOwner = get!(world, transport_id, EntityOwner);
+                assert(transport_owner_entity.owner_address(world) == addr, 'not caravan owner');
+            }
+        }
+
+
+        fn check_position(world: IWorldDispatcher, transport_id: ID, owner_id: ID) {
+            let transport_position = get!(world, transport_id, Position);
+            let owner_position = get!(world, owner_id, Position);
+            assert(transport_position.x == owner_position.x, 'mismatched positions');
+            assert(transport_position.y == owner_position.y, 'mismatched positions');
+        }
+
+
+        fn check_arrival_time(world: IWorldDispatcher, transport_id: ID) {
+            let transport_arrival_time = get!(world, transport_id, ArrivalTime);
+            assert(
+                transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(),
+                'transport has not arrived'
+            );
+        }
+
+
+        fn check_capacity(world: IWorldDispatcher, transport_id: ID, weight: u128) {
+            let transport_weight = get!(world, transport_id, Weight);
+
+            let transport_capacity = get!(world, transport_id, Capacity);
+            let transport_quantity = get!(world, transport_id, Quantity);
+
+            assert(
+                transport_capacity
+                    .can_carry_weight(
+                        transport_quantity.get_value(), transport_weight.value + weight
+                    ),
+                'not enough capacity'
+            );
+        }
+
+        fn get_travel_time(
+            world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position
+        ) -> (u64, u64) {
+            let (caravan_movable, caravan_position) = get!(
+                world, transport_id, (Movable, Position)
+            );
+            let mut one_way_trip_time = from_pos
+                .calculate_travel_time(to_pos, caravan_movable.sec_per_km);
+
+            // check if entity owner is a realm and apply bonuses if it is
+            let entity_owner = get!(world, (transport_id), EntityOwner);
+            let realm = get!(world, entity_owner.entity_owner_id, Realm);
+
+            if realm.cities > 0 {
+                one_way_trip_time =
+                    InternalTravelSystemsImpl::use_travel_bonus(
+                        world, @realm, @entity_owner, one_way_trip_time
+                    );
+            }
+
+            let round_trip_time: u64 = 2 * one_way_trip_time;
+            // reduce round trip time if there is a road
+            let round_trip_time = RoadImpl::use_road(
+                world, round_trip_time, caravan_position.into(), to_pos.into()
+            );
+            // update one way trip time incase round_trip_time was reduced
+            one_way_trip_time = round_trip_time / 2;
+
+            (round_trip_time, one_way_trip_time)
         }
     }
 }

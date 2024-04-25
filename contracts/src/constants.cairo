@@ -58,6 +58,9 @@ mod ResourceTypes {
     const SUNKEN_SHEKEL: u8 = 27;
     const DEMONHIDE: u8 = 28;
 
+    // TRANSPORT
+    const DONKEY: u8 = 249;
+
     // TROOPS // @dev: troops are not resources, but they are stored in the same data structure
     const KNIGHT: u8 = 250;
     const CROSSBOWMAN: u8 = 251;
@@ -122,10 +125,11 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
 // DISCUSS: register each new entity_type to the system by creating an entity containing the config components
-// Using FREE_TRANSPORT_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
-const FREE_TRANSPORT_ENTITY_TYPE: u128 = 256;
+// Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
+const DONKEY_ENTITY_TYPE: u128 = 256;
 const REALM_ENTITY_TYPE: u128 = 257;
 const SOLDIER_ENTITY_TYPE: u128 = 258;
+const ARMY_ENTITY_TYPE: u128 = 259;
 
 
 // TODO: change to consts

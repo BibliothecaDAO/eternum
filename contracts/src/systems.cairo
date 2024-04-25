@@ -12,7 +12,6 @@ mod realm {
 }
 mod trade {
     mod contracts;
-    mod interface;
     #[cfg(test)]
     mod tests;
 }
@@ -24,7 +23,6 @@ mod resources {
 }
 mod transport {
     mod contracts;
-    mod interface;
     #[cfg(test)]
     mod tests;
 }
@@ -42,9 +40,6 @@ mod leveling {
 }
 mod name {
     mod contracts;
-    mod interface;
-    #[cfg(test)]
-    mod tests;
 }
 mod hyperstructure {
     mod contracts;
@@ -59,7 +54,6 @@ mod buildings {
 }
 mod map {
     mod contracts;
-    mod interface;
     #[cfg(test)]
     mod tests;
 }

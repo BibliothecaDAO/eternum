@@ -160,13 +160,12 @@ export const generateEmptyChestNotifications = (
 
     for (const id of entitiesAtPositionWithInventory) {
       const arrivalTime = getComponentValue(components.ArrivalTime, id) as { arrives_at: number } | undefined;
-      const caravanMembers = getComponentValue(components.CaravanMembers, id);
 
       // get key
       const entityId = getComponentValue(components.Position, id)!.entity_id;
       const { resources, indices } = getResourcesFromInventory(entityId);
 
-      const carrierType = caravanMembers ? CarrierType.Caravan : CarrierType.Raiders;
+      const carrierType = CarrierType.Raiders;
 
       if (arrivalTime?.arrives_at && arrivalTime.arrives_at <= nextBlockTimestamp) {
         notifications.push({
@@ -199,13 +198,7 @@ export const generateArrivedAtHyperstructureNotifications = (
   },
 ): NotificationType[] => {
   const notifications: NotificationType[] = [];
-  const entityIds = Array.from(
-    runQuery([
-      Has(components.ArrivalTime),
-      Has(components.CaravanMembers),
-      HasValue(components.Owner, { address: owner }),
-    ]),
-  );
+  const entityIds = Array.from(runQuery([Has(components.ArrivalTime), HasValue(components.Owner, { address: owner })]));
 
   for (const id of entityIds) {
     const arrivalTime = getComponentValue(components.ArrivalTime, id) as { arrives_at: number } | undefined;

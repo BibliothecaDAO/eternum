@@ -32,7 +32,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
   const {
     account: { account },
     setup: {
-      systemCalls: { harvest_all_labor, transfer_items_from_multiple },
+      systemCalls: { transfer_items_from_multiple },
     },
   } = useDojo();
 
@@ -60,10 +60,6 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
         .filter(Boolean);
 
       if (harvestKeys.length > 0) {
-        await harvest_all_labor({
-          signer: account,
-          entity_ids: harvestKeys,
-        });
       }
 
       // Remove processed notifications

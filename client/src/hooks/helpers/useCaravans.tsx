@@ -23,7 +23,6 @@ export function useCaravan() {
         Inventory,
         ForeignKey,
         ResourceChest,
-        CaravanMembers,
       },
     },
   } = useDojo();
@@ -85,20 +84,6 @@ export function useCaravan() {
     return foreignKey?.entity_id;
   };
 
-  const getCaravanMembers = (caravanId: bigint): bigint[] => {
-    const caravanMembers = getComponentValue(CaravanMembers, getEntityIdFromKeys([caravanId]));
-    let unitIds: bigint[] = [];
-    if (!caravanMembers) return unitIds;
-    for (let i = 0; i < caravanMembers.count; i++) {
-      let entityId = getForeignKeyEntityId(caravanId, caravanMembers.key, BigInt(i));
-      let foreignKey = getComponentValue(ForeignKey, entityId);
-      if (foreignKey) {
-        unitIds.push(foreignKey.entity_id);
-      }
-    }
-    return unitIds;
-  };
-
   function calculateDistance(startId: bigint, destinationId: bigint): number | undefined {
     // d = √((x2-x1)² + (y2-y1)²)
     let start = getComponentValue(Position, getEntityIdFromKeys([startId]));
@@ -116,72 +101,6 @@ export function useCaravan() {
     }
   }
 
-  const useGetPositionCaravans = (x: number, y: number, onlyMine?: boolean) => {
-    const [caravans, setCaravans] = useState<CaravanInterface[]>([]);
-
-    let query: any = [HasValue(Position, { x, y }), Has(CaravanMembers)];
-
-    if (onlyMine) {
-      query.push(HasValue(Owner, { address: BigInt(account.address) }));
-    }
-
-    const entityIds = useEntityQuery(query);
-
-    useMemo((): any => {
-      const caravans = entityIds
-        .map((id) => {
-          const position = getComponentValue(Position, id);
-          return getCaravanInfo(position!.entity_id);
-        })
-        .filter(Boolean)
-        .sort((a, b) => Number(b!.caravanId - a!.caravanId)) as CaravanInterface[];
-      // DISCUSS: can add sorting logic here
-      setCaravans([...caravans]);
-      // only recompute when different number of orders
-    }, [entityIds.length]);
-
-    return {
-      caravans,
-    };
-  };
-
-  const useGetEntityCaravans = (entityId: bigint) => {
-    const [caravans, setCaravans] = useState<CaravanInterface[]>([]);
-
-    const entityIds = useEntityQuery([Has(CaravanMembers), HasValue(EntityOwner, { entity_owner_id: entityId })]);
-
-    useMemo((): any => {
-      const caravans = entityIds
-        .map((id) => {
-          const position = getComponentValue(Position, id);
-          return getCaravanInfo(position!.entity_id);
-        })
-        .filter(Boolean)
-        .sort((a, b) => Number(b!.caravanId - a!.caravanId)) as CaravanInterface[];
-      // DISCUSS: can add sorting logic here
-      setCaravans([...caravans]);
-      // only recompute when different number of orders
-    }, [entityIds.length]);
-
-    return {
-      caravans,
-    };
-  };
-
-  const useGetPositionCaravansIds = (x: number, y: number) => {
-    const entityIds = useEntityQuery([HasValue(Position, { x, y }), Has(CaravanMembers)]);
-
-    return Array.from(entityIds).map((id) => {
-      const owner = getComponentValue(Owner, id);
-      const position = getComponentValue(Position, id);
-      return {
-        owner: owner?.address,
-        isMine: owner?.address === BigInt(account.address),
-        caravanId: position!.entity_id,
-      };
-    });
-  };
-
   function useRealmDonkeysCount(realmEntityId: bigint) {
     let hashedKeys = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(FREE_TRANSPORT_ENTITY_TYPE)]);
     return useComponentValue(QuantityTracker, getEntityIdFromKeys([BigInt(hashedKeys)]));
@@ -194,10 +113,6 @@ export function useCaravan() {
     return Number(donkeysQuantity?.count) || 0;
   }
   return {
-    getCaravanMembers,
-    useGetPositionCaravansIds,
-    useGetPositionCaravans,
-    useGetEntityCaravans,
     getCaravanInfo,
     calculateDistance,
     getRealmDonkeysCount,

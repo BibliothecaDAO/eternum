@@ -20,13 +20,11 @@ export function useResources() {
         ResourceChest,
         DetachedResource,
         Resource,
-        CaravanMembers,
         Position,
         ResourceCost,
         Realm,
         Production,
       },
-      optimisticSystemCalls: { optimisticOffloadResources },
       systemCalls: { transfer_items },
     },
   } = useDojo();
@@ -161,7 +159,6 @@ export function useResources() {
     const realmPosition = getComponentValue(Position, getEntityIdFromKeys([realmEntityId]));
 
     const caravansAtPositionWithInventory = useEntityQuery([
-      Has(CaravanMembers),
       NotValue(Inventory, {
         items_count: 0n,
       }),
@@ -172,8 +169,8 @@ export function useResources() {
     ]);
 
     return caravansAtPositionWithInventory.map((id) => {
-      const caravanMembers = getComponentValue(CaravanMembers, id);
-      return caravanMembers!.entity_id;
+      const position = getComponentValue(Position, id);
+      return position!.entity_id;
     });
   };
 
@@ -186,29 +183,16 @@ export function useResources() {
    */
   const offloadChests = async (
     receiving_entity_id: BigNumberish,
-    transport_id: BigNumberish,
+    sender_id: BigNumberish,
     entity_index_in_inventory: BigNumberish[],
-    optimisticResourcesGet?: Resource[],
   ) => {
-    if (optimisticResourcesGet) {
-      await optimisticOffloadResources(
-        optimisticResourcesGet,
-        transfer_items,
-      )({
-        signer: account,
-        receiver_id: receiving_entity_id,
-        sender_id: transport_id,
-        indices: entity_index_in_inventory,
-      });
-    } else {
-      await transfer_items({
-        signer: account,
-        sender_id: transport_id,
-        receiver_id: receiving_entity_id,
-        indices: entity_index_in_inventory,
-      });
-    }
-    deleteNotification([transport_id.toString()], EventType.EmptyChest);
+    transfer_items({
+      signer: account,
+      receiver_id: receiving_entity_id,
+      sender_id: sender_id,
+      indices: entity_index_in_inventory,
+    });
+    // deleteNotification([transport_id.toString()], EventType.EmptyChest);
   };
 
   return {

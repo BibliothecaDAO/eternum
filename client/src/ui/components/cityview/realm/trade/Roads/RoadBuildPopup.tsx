@@ -22,7 +22,6 @@ export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => 
     setup: {
       components: { Resource },
       systemCalls: { create_road },
-      optimisticSystemCalls: { optimisticBuildRoad },
     },
     account: { account },
   } = useDojo();
@@ -46,10 +45,7 @@ export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => 
     if (realm && toRealm) {
       const start_position = realm.position;
       const end_position = toRealm.position;
-      optimisticBuildRoad(
-        costResources,
-        create_road,
-      )({
+      create_road({
         signer: account,
         creator_id: realmEntityId,
         start_coord: start_position,

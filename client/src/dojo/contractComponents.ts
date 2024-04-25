@@ -131,6 +131,102 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Army: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.BigInt,
+          troops: { knight_count: RecsType.Number, paladin_count: RecsType.Number, crossbowman_count: RecsType.Number },
+          battle_id: RecsType.BigInt,
+          battle_side: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "Army",
+            types: ["u128", "u32", "u32", "u32", "u128", "enum"],
+            customTypes: ["Troops", "BattleSide"],
+          },
+        },
+      );
+    })(),
+    Battle: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.BigInt,
+          attack_army: {
+            entity_id: RecsType.BigInt,
+            troops: {
+              knight_count: RecsType.Number,
+              paladin_count: RecsType.Number,
+              crossbowman_count: RecsType.Number,
+            },
+            battle_id: RecsType.BigInt,
+            battle_side: RecsType.Number,
+          },
+          defence_army: {
+            entity_id: RecsType.BigInt,
+            troops: {
+              knight_count: RecsType.Number,
+              paladin_count: RecsType.Number,
+              crossbowman_count: RecsType.Number,
+            },
+            battle_id: RecsType.BigInt,
+            battle_side: RecsType.Number,
+          },
+          attack_army_health: { entity_id: RecsType.BigInt, current: RecsType.BigInt, lifetime: RecsType.BigInt },
+          defence_army_health: { entity_id: RecsType.BigInt, current: RecsType.BigInt, lifetime: RecsType.BigInt },
+          attack_delta: RecsType.Number,
+          defence_delta: RecsType.Number,
+          tick_last_updated: RecsType.BigInt,
+          tick_duration_left: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "Battle",
+            types: [
+              "u128",
+              "u128",
+              "u32",
+              "u32",
+              "u32",
+              "u128",
+              "enum",
+              "u128",
+              "u32",
+              "u32",
+              "u32",
+              "u128",
+              "enum",
+              "u128",
+              "u128",
+              "u128",
+              "u128",
+              "u128",
+              "u128",
+              "u32",
+              "u32",
+              "u64",
+              "u64",
+            ],
+            customTypes: ["Army", "Troops", "BattleSide", "Army", "Troops", "BattleSide", "Healthv2", "Healthv2"],
+          },
+        },
+      );
+    })(),
+    Healthv2: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.BigInt, current: RecsType.BigInt, lifetime: RecsType.BigInt },
+        {
+          metadata: {
+            name: "Healthv2",
+            types: ["u128", "u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Capacity: (() => {
       return defineComponent(
         world,
@@ -139,19 +235,6 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: "Capacity",
             types: ["u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    CaravanMembers: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.BigInt, key: RecsType.BigInt, count: RecsType.Number },
-        {
-          metadata: {
-            name: "CaravanMembers",
-            types: ["u128", "u128", "u32"],
             customTypes: [],
           },
         },

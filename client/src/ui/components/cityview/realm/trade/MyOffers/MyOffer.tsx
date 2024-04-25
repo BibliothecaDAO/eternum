@@ -46,8 +46,7 @@ export const MyOffer = ({ myOffer, roads, onBuildRoad }: TradeOfferProps) => {
 
   const {
     setup: {
-      systemCalls: { cancel_fungible_order },
-      optimisticSystemCalls: { optimisticCancelOffer },
+      systemCalls: { cancel_order },
     },
     account: { account },
   } = useDojo();
@@ -55,10 +54,7 @@ export const MyOffer = ({ myOffer, roads, onBuildRoad }: TradeOfferProps) => {
   const onCancel = async () => {
     // status 2 = cancel
     setIsLoading(true);
-    optimisticCancelOffer(cancel_fungible_order)({
-      signer: account,
-      trade_id: myOffer.tradeId,
-    });
+    cancel_order({ signer: account, trade_id: myOffer.tradeId });
   };
 
   let { realm: takerRealm } = useGetRealm(takerId);

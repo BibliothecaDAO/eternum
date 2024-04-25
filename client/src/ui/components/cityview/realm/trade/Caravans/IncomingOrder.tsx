@@ -28,7 +28,7 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
 
   const offload = async () => {
     setIsLoading(true);
-    await offloadChests(realmEntityId, caravanId, resourcesGet.indices, resourcesGet.resources);
+    await offloadChests(realmEntityId, caravanId, resourcesGet.indices);
   };
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);

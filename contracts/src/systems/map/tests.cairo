@@ -26,7 +26,7 @@ use eternum::systems::config::interface::{
 use eternum::systems::config::interface::{IWeightConfigDispatcher, IWeightConfigDispatcherTrait,};
 use eternum::systems::map::contracts::map_systems;
 
-use eternum::systems::map::interface::{IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
+use eternum::systems::map::contracts::{IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
 
 use eternum::systems::realm::contracts::realm_systems;
 use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};

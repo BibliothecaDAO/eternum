@@ -1,3 +1,19 @@
+use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
+
+#[dojo::interface]
+trait IResourceSystems {
+    fn approve(entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>);
+    fn send(sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>);
+    fn pickup(recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>);
+}
+
+#[dojo::interface]
+trait IInventorySystems {
+    fn transfer_item(sender_id: ID, index: u128, receiver_id: ID);
+}
+
+
 #[dojo::contract]
 mod resource_systems {
     use core::array::SpanTrait;
@@ -11,8 +27,8 @@ mod resource_systems {
     use eternum::models::config::{WeightConfig, WeightConfigImpl};
     use eternum::models::inventory::{Inventory, InventoryTrait};
     use eternum::models::metadata::ForeignKey;
-    use eternum::models::movable::{ArrivalTime};
-    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
+    use eternum::models::movable::{ArrivalTime, ArrivalTimeTrait};
+    use eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
@@ -20,21 +36,21 @@ mod resource_systems {
     use eternum::models::resources::{ResourceChest, DetachedResource};
     use eternum::models::road::RoadImpl;
     use eternum::models::weight::Weight;
+    use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
+        InternalDonkeySystemsImpl as donkey
+    };
 
-    use eternum::systems::resources::interface::{IResourceSystems, IInventorySystems};
-
-
-    use eternum::systems::transport::contracts::caravan_systems::caravan_systems::{
-        InternalCaravanSystemsImpl as caravan
+    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
+        InternalTravelSystemsImpl as travel
     };
 
     #[derive(Drop, starknet::Event)]
     struct Transfer {
         #[key]
-        receiving_entity_id: u128,
+        recipient_entity_id: u128,
         #[key]
         sending_realm_id: u128,
-        sending_entity_id: u128,
+        sender_entity_id: u128,
         resources: Span<(u8, u128)>
     }
 
@@ -45,22 +61,22 @@ mod resource_systems {
     }
 
     #[abi(embed_v0)]
-    impl ResourceSystemsImpl of IResourceSystems<ContractState> {
-        /// Approve an entity to spend resources.
+    impl ResourceSystemsImpl of super::IResourceSystems<ContractState> {
+        /// Approve an entity to spend or pickup resources.
         ///
         /// # Arguments
         ///
         /// * `entity_id` - The id of the entity approving the resources.
-        /// * `approved_entity_id` - The id of the entity being approved.
+        /// * `recipient_entity_id` - The id of the entity being approved.
         /// * `resources` - The resources to approve.  
         ///      
         fn approve(
             world: IWorldDispatcher,
             entity_id: ID,
-            approved_entity_id: ID,
+            recipient_entity_id: ID,
             resources: Span<(u8, u128)>
         ) {
-            assert(entity_id != approved_entity_id, 'self approval');
+            assert(entity_id != recipient_entity_id, 'self approval');
             assert(resources.len() != 0, 'no resource to approve');
 
             let entity_owner = get!(world, entity_id, Owner);
@@ -79,7 +95,7 @@ mod resource_systems {
                             world,
                             (ResourceAllowance {
                                 owner_entity_id: entity_id,
-                                approved_entity_id: approved_entity_id,
+                                approved_entity_id: recipient_entity_id,
                                 resource_type: resource_type,
                                 amount: resource_amount
                             })
@@ -90,65 +106,62 @@ mod resource_systems {
             };
         }
 
-        /// Transfer resources from one entity to another.
+        /// Send a resource from an entity to another. This involves
+        /// one way transportation of resources from one entity's location 
+        /// to another. This would be useful to gift out resources or for other 
+        /// similar purposes
         ///
         /// # Arguments
         ///
-        /// * `sending_entity_id` - The id of the entity sending the resources.
-        /// * `receiving_entity_id` - The id of the entity receiving the resources.
+        /// * `sender_entity_id` - The id of the entity sending the resources.
+        /// * `recipient_entity_id` - The id of the entity receiving the resources.
         /// * `resources` - The resources to transfer.  
         ///
-        fn transfer(
+        /// # Returns
+        ///     the resource chest id
+        ///
+        fn send(
             world: IWorldDispatcher,
-            sending_entity_id: ID,
-            receiving_entity_id: ID,
+            sender_entity_id: ID,
+            recipient_entity_id: ID,
             resources: Span<(u8, u128)>
         ) {
-            assert(sending_entity_id != receiving_entity_id, 'transfer to self');
+            assert(sender_entity_id != recipient_entity_id, 'transfer to self');
             assert(resources.len() != 0, 'no resource to transfer');
 
-            let sending_entity_owner = get!(world, sending_entity_id, Owner);
-            assert(
-                sending_entity_owner.address == starknet::get_caller_address(),
-                'not owner of entity id'
-            );
-
-            // check that recepient and sender are at the same position
-            caravan::check_position(world, receiving_entity_id, sending_entity_id);
-            caravan::check_arrival_time(world, receiving_entity_id);
+            get!(world, sender_entity_id, Owner).assert_caller_owner();
 
             InternalResourceSystemsImpl::transfer(
-                world, sending_entity_id, receiving_entity_id, resources
-            )
+                world, sender_entity_id, sender_entity_id, recipient_entity_id, resources
+            );
         }
 
 
-        /// Transfer approved resources from one entity to another.
+        /// Pick up a resource from another entity which has previously approved
+        /// you to collect or spend the resources you want to pick up
         ///
         /// # Arguments
         ///
-        /// * `approved_entity_id` - The id of the entity approved.
         /// * `owner_entity_id` - The id of the entity resource owner
-        /// * `receiving_entity_id` - The id of the entity receiving resources.
+        /// * `recipient_entity_id` - The id of the entity receiving resources.
         /// * `resources` - The resources to transfer.  
         ///      
-        fn transfer_from(
+        /// # Returns
+        ///    the resource chest id
+        ///
+        fn pickup(
             world: IWorldDispatcher,
-            approved_entity_id: ID,
+            recipient_entity_id: ID,
             owner_entity_id: ID,
-            receiving_entity_id: ID,
             resources: Span<(u8, u128)>
         ) {
-            assert(owner_entity_id != receiving_entity_id, 'transfer to owner');
+            assert(owner_entity_id != recipient_entity_id, 'transfer to owner');
             assert(resources.len() != 0, 'no resource to transfer');
 
-            let approved_entity_owner = get!(world, approved_entity_id, Owner);
-            assert(
-                approved_entity_owner.address == starknet::get_caller_address(),
-                'not owner of entity'
-            );
+            get!(world, recipient_entity_id, Owner).assert_caller_owner();
 
-            // update allowance
+            // check and update allowance
+
             let mut resources_clone = resources.clone();
             loop {
                 match resources_clone.pop_front() {
@@ -158,7 +171,7 @@ mod resource_systems {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
                         let mut approved_allowance = get!(
                             world,
-                            (owner_entity_id, approved_entity_id, resource_type),
+                            (owner_entity_id, recipient_entity_id, resource_type),
                             ResourceAllowance
                         );
 
@@ -176,13 +189,9 @@ mod resource_systems {
                 };
             };
 
-            // check that recepient and sender are at the same position
-            caravan::check_position(world, receiving_entity_id, owner_entity_id);
-            caravan::check_arrival_time(world, receiving_entity_id);
-
             InternalResourceSystemsImpl::transfer(
-                world, owner_entity_id, receiving_entity_id, resources
-            )
+                world, recipient_entity_id, owner_entity_id, recipient_entity_id, resources
+            );
         }
     }
 
@@ -207,35 +216,75 @@ mod resource_systems {
         }
 
         fn transfer(
-            world: IWorldDispatcher, sender_id: ID, receiver_id: ID, resources: Span<(u8, u128)>
-        ) {
+            world: IWorldDispatcher,
+            caller_id: ID,
+            sender_id: ID,
+            receiver_id: ID,
+            resources: Span<(u8, u128)>
+        ) -> ID {
+            // entities may not have arrived at the location shown in their Position, so ..
+
+            // ensure owner is not moving because they provide the resources
+            get!(world, sender_id, ArrivalTime).assert_not_travelling();
+
+            // ensure caller is not moving because they receiver the resources
+            get!(world, receiver_id, ArrivalTime).assert_not_travelling();
+
             // create resource chest
             let resource_chest = InternalResourceChestSystemsImpl::create_and_fill(
                 world, sender_id, resources
             );
 
-            // give resource chest to receiver
-            InternalInventorySystemsImpl::add(world, receiver_id, resource_chest.entity_id);
+
+            // lock resource chest for travel duration and burn donkeys
+            // if recipient and owner arent at the same location
+
+            let owner_coord: Coord = get!(world, sender_id, Position).into();
+            let receiver_coord: Coord = get!(world, receiver_id, Position).into();
+            if owner_coord.is_zero() || owner_coord == receiver_coord {
+                // give resource chest to receiver
+                InternalInventorySystemsImpl::add(world, receiver_id, resource_chest.entity_id);
+            } else {
+
+                // create donkey that can carry Weight
+                let resources_weight = get!(world, resource_chest.entity_id, Weight);
+                let donkey_id: ID = donkey::create_donkey(
+                    world, caller_id, receiver_id,  resources_weight.value, owner_coord, receiver_coord);
+                
+                // give resource chest to donkey
+                InternalInventorySystemsImpl::add(world, donkey_id, resource_chest.entity_id);
+
+                // lock resource chest till it is in possession of the owner
+                let donkey_arrival_time : ArrivalTime = get!(world, donkey_id, ArrivalTime);
+                let is_round_trip: bool = caller_id == receiver_id;
+                if is_round_trip {
+                    InternalResourceChestSystemsImpl::lock_until(
+                        world, resource_chest.entity_id, donkey_arrival_time.arrives_at / 2
+                    );
+                }
+            }
 
             // emit transfer event
             InternalResourceSystemsImpl::emit_transfer_event(
                 world, sender_id, receiver_id, resources
-            )
+            );
+
+            resource_chest.entity_id
         }
 
         fn emit_transfer_event(
             world: IWorldDispatcher,
-            sending_entity_id: ID,
-            receiving_entity_id: ID,
+            sender_entity_id: ID,
+            recipient_entity_id: ID,
             resources: Span<(u8, u128)>
         ) {
             let mut sending_realm_id = 0;
 
-            let sending_realm = get!(world, sending_entity_id, Realm);
+            let sending_realm = get!(world, sender_entity_id, Realm);
             if sending_realm.realm_id != 0 {
                 sending_realm_id = sending_realm.realm_id;
             } else {
-                let sending_entity_owner = get!(world, sending_entity_id, EntityOwner);
+                let sending_entity_owner = get!(world, sender_entity_id, EntityOwner);
                 sending_realm_id = sending_entity_owner.get_realm_id(world);
             }
 
@@ -244,7 +293,7 @@ mod resource_systems {
                 (
                     Event::Transfer(
                         Transfer {
-                            receiving_entity_id, sending_realm_id, sending_entity_id, resources
+                            recipient_entity_id, sending_realm_id, sender_entity_id, resources
                         }
                     ),
                 )
@@ -280,13 +329,13 @@ mod resource_systems {
 
 
     #[abi(embed_v0)]
-    impl InventorySystemsImpl of IInventorySystems<ContractState> {
+    impl InventorySystemsImpl of super::IInventorySystems<ContractState> {
         /// Transfer item from inventory
         fn transfer_item(world: IWorldDispatcher, sender_id: ID, index: u128, receiver_id: ID) {
-            caravan::check_owner(world, sender_id, starknet::get_caller_address());
-            caravan::check_position(world, sender_id, receiver_id);
-            caravan::check_arrival_time(world, sender_id);
-            caravan::check_arrival_time(world, receiver_id);
+            travel::check_owner(world, sender_id, starknet::get_caller_address());
+            travel::check_position(world, sender_id, receiver_id);
+            travel::check_arrival_time(world, sender_id);
+            travel::check_arrival_time(world, receiver_id);
 
             // remove resource chest from sender's inventory
             let item_id = InternalInventorySystemsImpl::remove(world, sender_id, index);
@@ -352,13 +401,9 @@ mod resource_systems {
                 let mut donor_resource = ResourceImpl::get(
                     world, (donor_id, detached_resource.resource_type)
                 );
-                assert(
-                    donor_resource.balance >= detached_resource.resource_amount,
-                    'insufficient balance'
-                );
 
-                // remove resources from donor's balance
-                donor_resource.balance -= detached_resource.resource_amount;
+                // burn resources from donor's balance
+                donor_resource.burn(detached_resource.resource_amount);
                 donor_resource.save(world);
 
                 // update resources total weight
@@ -438,7 +483,7 @@ mod resource_systems {
 
 
         fn offload(
-            world: IWorldDispatcher, sending_entity_id: ID, chest_id: ID, receiving_entity_id: ID
+            world: IWorldDispatcher, sender_entity_id: ID, chest_id: ID, recipient_entity_id: ID
         ) {
             let mut resource_chest = get!(world, chest_id, ResourceChest);
             assert(
@@ -449,10 +494,10 @@ mod resource_systems {
             assert(resource_chest_weight.value != 0, 'chest is empty');
 
             // ensure that receiver has enough weight capacity
-            let receiver_capacity = get!(world, receiving_entity_id, Capacity);
+            let receiver_capacity = get!(world, recipient_entity_id, Capacity);
             if receiver_capacity.is_capped() {
-                let receiver_quantity = get!(world, receiving_entity_id, Quantity);
-                let mut receiver_weight = get!(world, receiving_entity_id, Weight);
+                let receiver_quantity = get!(world, recipient_entity_id, Quantity);
+                let mut receiver_weight = get!(world, recipient_entity_id, Weight);
                 receiver_weight.value += resource_chest_weight.value;
 
                 assert(
@@ -478,7 +523,7 @@ mod resource_systems {
                 );
 
                 let mut receiving_entity_resource = ResourceImpl::get(
-                    world, (receiving_entity_id, resource_chest_resource.resource_type)
+                    world, (recipient_entity_id, resource_chest_resource.resource_type)
                 );
 
                 // update entity balance
@@ -506,7 +551,7 @@ mod resource_systems {
             set!(world, (resource_chest_weight));
 
             InternalResourceSystemsImpl::emit_transfer_event(
-                world, sending_entity_id, receiving_entity_id, resources.span()
+                world, sender_entity_id, recipient_entity_id, resources.span()
             );
         }
     }
@@ -522,8 +567,11 @@ mod resource_systems {
         }
 
         fn add(world: IWorldDispatcher, entity_id: ID, item_id: ID) {
-            let mut inventory = get!(world, entity_id, Inventory);
-            assert(inventory.items_key != 0, 'entity has no inventory');
+            let mut inventory: Inventory = get!(world, entity_id, Inventory);
+            if inventory.items_key == 0 {
+                inventory.items_key = world.uuid().into();
+                set!(world, (inventory));
+            }
 
             let item_weight = get!(world, item_id, Weight);
             assert(item_weight.value > 0, 'no item weight');

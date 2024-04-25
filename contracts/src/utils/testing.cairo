@@ -3,16 +3,12 @@ use dojo::test_utils::spawn_test_world;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::capacity::{capacity, Capacity};
-use eternum::models::caravan::{caravan_members, CaravanMembers,};
-
 
 use eternum::models::config::{
     world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,
-    travel_config, TravelConfig, labor_config, LaborConfig, weight_config, WeightConfig,
-    road_config, RoadConfig
+    travel_config, TravelConfig, weight_config, WeightConfig, road_config, RoadConfig
 };
 use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
-use eternum::models::labor_auction::{labor_auction, LaborAuction};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
 use eternum::models::metadata::{foreign_key, ForeignKey};
 use eternum::models::movable::{movable, Movable, arrival_time, ArrivalTime};
@@ -54,7 +50,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         labor_config::TEST_CLASS_HASH,
         weight_config::TEST_CLASS_HASH,
         road::TEST_CLASS_HASH,
-        labor_auction::TEST_CLASS_HASH,
         road_config::TEST_CLASS_HASH,
         hyper_structure::TEST_CLASS_HASH,
     ];

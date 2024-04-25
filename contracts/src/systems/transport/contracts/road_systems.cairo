@@ -1,3 +1,13 @@
+#[dojo::interface]
+trait IRoadSystems {
+    fn create(
+        entity_id: eternum::alias::ID,
+        start_coord: eternum::models::position::Coord,
+        end_coord: eternum::models::position::Coord,
+        usage_count: usize
+    );
+}
+
 #[dojo::contract]
 mod road_systems {
     use eternum::constants::ROAD_CONFIG_ID;
@@ -7,11 +17,8 @@ mod road_systems {
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::road::{Road, RoadImpl};
 
-    use eternum::systems::transport::interface::road_systems_interface::{IRoadSystems};
-
-
     #[abi(embed_v0)]
-    impl RoadSystemsImpl of IRoadSystems<ContractState> {
+    impl RoadSystemsImpl of super::IRoadSystems<ContractState> {
         /// Create a road between two coordinates on the map.
         ///
         /// Note: when you creat a road from A -> B, 

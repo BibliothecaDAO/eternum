@@ -9,7 +9,7 @@ export const useEntities = () => {
   const {
     account: { account },
     setup: {
-      components: { Realm, Owner, EntityName },
+      components: { Realm, Owner, BankAccounts, EntityName },
     },
   } = useDojo();
 
@@ -20,11 +20,19 @@ export const useEntities = () => {
     return entityName ? hexToAscii(numberToHex(Number(entityName.name))) : undefined;
   };
 
+  const playerAccounts = useEntityQuery([HasValue(BankAccounts, { owner: BigInt(account.address) })]);
+
   return {
     playerRealms: () => {
       return playerRealms.map((id) => {
         const realm = getComponentValue(Realm, id);
         return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
+      });
+    },
+    playerAccounts: () => {
+      return playerAccounts.map((id) => {
+        const account = getComponentValue(BankAccounts, id);
+        return { entity_id: account?.entity_id, name: `Bank ${account?.bank_entity_id.toString()}` };
       });
     },
     getEntityName
