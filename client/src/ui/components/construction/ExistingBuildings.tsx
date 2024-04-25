@@ -28,6 +28,8 @@ export const ExistingBuildings = () => {
     "/models/buildings/market.glb",
     "/models/buildings/archer_range.glb",
     "/models/buildings/stable.glb",
+    "/models/buildings/forge.glb",
+    "/models/buildings/lumber_mill.glb",
   ]);
   useEffect(() => {
     models.forEach((model) => {
@@ -50,16 +52,15 @@ export const ExistingBuildings = () => {
       const type = productionModelValue?.category
         ? BuildingStringToEnum[productionModelValue.category as keyof typeof BuildingStringToEnum]
         : BuildingType.None;
+
       return {
         col: Number(productionModelValue?.inner_col),
         row: Number(productionModelValue?.inner_row),
-        type: type - 1,
+        type: type,
       };
     });
     setExistingBuildings(_tmp);
   }, [builtBuildings]);
-
-  const castlePosition = useMemo(() => getUIPositionFromColRow(4, 4, true), []);
 
   return (
     <>
@@ -71,11 +72,11 @@ export const ExistingBuildings = () => {
           position={{ col: building.col, row: building.row }}
         />
       ))}
-      <primitive
-        scale={3}
-        object={models[0].scene}
-        position={[castlePosition.x, 2.33, -castlePosition.y]}
-        rotation={[0, Math.PI * 1.5, 0]}
+      <BuiltBuilding
+        models={models}
+        buildingCategory={BuildingType.Castle}
+        position={{ col: 4, row: 4 }}
+        rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
       />
     </>
   );
@@ -85,30 +86,35 @@ export const BuiltBuilding = ({
   position,
   models,
   buildingCategory,
+  rotation,
 }: {
   position: any;
   models: any;
   buildingCategory: number;
+  rotation?: THREE.Euler;
 }) => {
   const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
-  const model = useMemo(() => models[buildingCategory].scene.clone(), [buildingCategory, models]);
+  const modelIndex = useMemo(() => buildingCategory - 1, [buildingCategory]);
+  const model = useMemo(() => {
+    return models[modelIndex].scene.clone();
+  }, [modelIndex, models]);
   const lightRef = useRef<any>();
   useHelper(lightRef, THREE.PointLightHelper, 1, "green");
 
-  const { actions } = useAnimations(models[buildingCategory].animations, model);
+  const { actions } = useAnimations(models[modelIndex].animations, model);
 
   useEffect(() => {
     setTimeout(() => {
-      if (actions["windmill_fan_rotation"]) {
-        actions["windmill_fan_rotation"].play();
+      for (const action in actions) {
+        actions[action]?.play();
       }
     }, Math.random() * 1000);
   }, [actions]);
 
   return (
-    <group position={[x, 2.33, -y]}>
+    <group position={[x, 2.33, -y]} rotation={rotation}>
       <primitive dropShadow scale={3} object={model} />
-      {buildingCategory + 1 === BuildingType.ArcheryRange && (
+      {buildingCategory === BuildingType.ArcheryRange && (
         <pointLight ref={lightRef} position={[0, 2.6, 0]} intensity={0.6} power={150} color={"yellow"} decay={3.5} />
       )}
     </group>
