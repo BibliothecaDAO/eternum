@@ -42,7 +42,7 @@ source = "git+https://github.com/ponderingdemocritus/cubit#82be92f4c296143bbb572
 [[package]]
 name = "dojo"
 version = "0.6.0"
-source = "git+https://github.com/dojoengine/dojo?tag=v0.6.0#fc5ad790c1993713e59f3fc65739160f132f29f0"
+source = "git+https://github.com/dojoengine/dojo?tag=0.6.1-alpha.4#fc5ad790c1993713e59f3fc65739160f132f29f0"
 dependencies = [
  "dojo_plugin",
 ]

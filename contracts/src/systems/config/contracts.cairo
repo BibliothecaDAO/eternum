@@ -12,14 +12,12 @@ mod config_systems {
 
     use eternum::models::combat::TownWatch;
     use eternum::models::config::{
-        LaborConfig, CapacityConfig, RoadConfig, SpeedConfig, TravelConfig, WeightConfig,
-        WorldConfig, SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig,
-        LevelingConfig, RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig,
-        BankConfig
+        CapacityConfig, RoadConfig, SpeedConfig, TravelConfig, WeightConfig, WorldConfig,
+        SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig, LevelingConfig,
+        RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig
     };
 
     use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::labor_auction::LaborAuction;
     use eternum::models::position::{Position, PositionTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
@@ -27,7 +25,7 @@ mod config_systems {
     use eternum::systems::config::interface::{
         IWorldConfig, IWeightConfig, ICapacityConfig, ILaborConfig, ITransportConfig,
         IHyperstructureConfig, ICombatConfig, ILevelingConfig, IBankConfig, IRealmFreeMintConfig,
-        IBuildingsConfig, IMapConfig, ITickConfig, IProductionConfig
+        IBuildingsConfig, IMapConfig, ITickConfig, IProductionConfig, ITroopConfig
     };
 
 
@@ -555,10 +553,23 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl BankConfigImpl of IBankConfig<ContractState> {
-        fn set_bank_config(
-            self: @ContractState, world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128
-        ) {
+        fn set_bank_config(world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128) {
+
+            assert_caller_is_admin(world);
+
             set!(world, (BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_scaled, }));
         }
     }
+
+    #[abi(embed_v0)]
+    impl TroopConfigImpl of ITroopConfig<ContractState> {
+        fn set_troop_config(world: IWorldDispatcher, mut troop_config: TroopConfig) {
+
+            assert_caller_is_admin(world);
+
+            troop_config.config_id = WORLD_CONFIG_ID;
+            set!(world, (troop_config));
+        }
+    }
+
 }

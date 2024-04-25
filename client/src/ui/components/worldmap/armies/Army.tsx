@@ -106,6 +106,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
   });
 
   const onClick = useCallback(() => {
+    console.log(info);
     if (!info.isDead && !isRunning && info.isMine) {
       playBuildMilitary();
     }
@@ -124,7 +125,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
   return (
     <>
       {hovered && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />}
-      {!info.isDead && info.isMine && <Flag angle={rotationY} order={info.order} position={position}></Flag>}
+      {/* {!info.isDead && info.isMine && <Flag angle={rotationY} order={info.order} position={position}></Flag>} */}
       <group position={position}>
         {selectedEntity && selectedEntity.id == info.id && <ArmyMenu entityId={info.id} />}
         <WarriorModel

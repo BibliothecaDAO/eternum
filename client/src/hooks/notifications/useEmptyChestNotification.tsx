@@ -36,7 +36,7 @@ export const useEmptyChestNotification = (
   const emptyChest = async () => {
     setIsLoading(true);
     if (claimableResources && realmEntityId && entityId) {
-      await offloadChests(realmEntityId, entityId, claimableResources.indices, claimableResources.resources);
+      await offloadChests(realmEntityId, entityId, claimableResources.indices);
       setIsLoading(false);
     }
   };

@@ -5,10 +5,12 @@ import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { divideByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
+import { ResourceWeightsInfo } from "../resources/ResourceWeight";
+import { useDojo } from "@/hooks/context/DojoContext";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -29,11 +31,11 @@ export const TransferBetweenEntities = () => {
   const [selectedEntityIdFrom, setSelectedEntityIdFrom] = useState<bigint | null>(null);
   const [selectedEntityIdTo, setSelectedEntityIdTo] = useState<bigint | null>(null);
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
-  const [selectedResourceAmounts, setSelectedResourceAmounts] = useState({});
+  const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
   const [selectedStepId, setSelectedStepId] = useState(STEP_ID.SELECT_ENTITIES);
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
-  const { playerRealms } = useEntities();
+  const { playerRealms, playerAccounts } = useEntities();
 
   return (
     <div className="p-2">
@@ -48,12 +50,12 @@ export const TransferBetweenEntities = () => {
             <SelectEntityFromList
               onSelect={setSelectedEntityIdFrom}
               selectedEntityId={selectedEntityIdFrom}
-              entities={playerRealms()}
+              entities={[...playerRealms(), ...playerAccounts()]}
             />
             <SelectEntityFromList
               onSelect={setSelectedEntityIdTo}
               selectedEntityId={selectedEntityIdTo}
-              entities={playerRealms()}
+              entities={[...playerRealms(), ...playerAccounts()]}
             />
           </div>
           <Button
@@ -70,7 +72,7 @@ export const TransferBetweenEntities = () => {
         </div>
       )}
       {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
-        <SelectResoruces
+        <SelectResources
           selectedResourceIds={selectedResourceIds}
           setSelectedResourceIds={setSelectedResourceIds}
           selectedResourceAmounts={selectedResourceAmounts}
@@ -93,21 +95,21 @@ const SelectEntityFromList = ({
 }) => {
   return (
     <div>
-      {entities.map((realm) => (
+      {entities.map((entity) => (
         <div
           className={clsx(
             "flex w-[200px] justify-between rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-2 text-lightest text-xs",
-            selectedEntityId === realm.realm_id && "border-order-brilliance",
+            selectedEntityId === entity.entity_id && "border-order-brilliance",
           )}
         >
-          <div>{realm.name}</div>
+          <div>{entity.name}</div>
           <Button
-            disabled={selectedEntityId === realm.realm_id}
+            disabled={selectedEntityId === entity.entity_id}
             size="xs"
             variant={"outline"}
-            onClick={() => onSelect(realm.realm_id!)}
+            onClick={() => onSelect(entity.entity_id!)}
           >
-            {selectedEntityId === realm.realm_id ? "Selected" : "Select"}
+            {selectedEntityId === entity.entity_id ? "Selected" : "Select"}
           </Button>
         </div>
       ))}
@@ -115,7 +117,7 @@ const SelectEntityFromList = ({
   );
 };
 
-const SelectResoruces = ({
+const SelectResources = ({
   selectedResourceIds,
   setSelectedResourceIds,
   selectedResourceAmounts,
@@ -128,8 +130,18 @@ const SelectResoruces = ({
   setSelectedResourceAmounts: any;
   entity_id: bigint;
 }) => {
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { send_resources },
+    },
+  } = useDojo();
+
   const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [canCarry, setCanCarry] = useState(true);
 
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -143,6 +155,22 @@ const SelectResoruces = ({
       [unselectedResources[0].id]: 1,
     });
     playResourceSound(unselectedResources[0].id);
+  };
+
+  const onSendResources = async () => {
+    setIsLoading(true);
+    const resourcesList = selectedResourceIds.flatMap((id: number) => [
+      Number(id),
+      multiplyByPrecision(selectedResourceAmounts[Number(id)]),
+    ]);
+    console.log({ resourcesList, selectedResourceAmounts });
+    await send_resources({
+      signer: account,
+      sender_entity_id: entity_id,
+      // todo: change that
+      recipient_entity_id: 0n,
+      resources: resourcesList || [],
+    });
   };
 
   return (
@@ -220,7 +248,15 @@ const SelectResoruces = ({
       >
         Add Resource
       </Button>
-      <Button variant="primary" size="md" onClick={() => {}}>
+      <ResourceWeightsInfo
+        entityId={entity_id}
+        resources={selectedResourceIds.map((resourceId: number) => ({
+          resourceId,
+          amount: selectedResourceAmounts[resourceId],
+        }))}
+        setCanCarry={setCanCarry}
+      />
+      <Button isLoading={isLoading} disabled={!canCarry} variant="primary" size="md" onClick={onSendResources}>
         Confirm
       </Button>
     </div>

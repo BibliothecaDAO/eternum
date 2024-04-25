@@ -28,17 +28,17 @@ export const Military = () => {
           <EntityList list={playerRealms()} title="armies" panel={({ entity }) => <ArmyPanel entity={entity} />} />
         ),
       },
-      {
-        key: "mine",
-        label: (
-          <div className="flex relative group flex-col items-center">
-            <div>All Armies</div>
-          </div>
-        ),
-        component: <ArmyList />,
-      },
+      // {
+      //   key: "mine",
+      //   label: (
+      //     <div className="flex relative group flex-col items-center">
+      //       <div>All Armies</div>
+      //     </div>
+      //   ),
+      //   component: <ArmyList />,
+      // },
     ],
-    [selectedTab],
+    [selectedTab, playerRealms()],
   );
 
   return (

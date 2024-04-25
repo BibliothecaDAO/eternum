@@ -6,7 +6,7 @@ use core::traits::Into;
 use core::zeroable::Zeroable;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+use eternum::constants::DONKEY_ENTITY_TYPE;
 use eternum::models::capacity::Capacity;
 use eternum::models::caravan::CaravanMembers;
 use eternum::models::inventory::Inventory;
@@ -79,7 +79,7 @@ fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher, u128) {
 
     // set speed configuration 
     ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_speed_config(FREE_TRANSPORT_ENTITY_TYPE, 10); // 10km per sec
+        .set_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
 
     // set world config
     IWorldConfigDispatcher { contract_address: config_systems_address }
@@ -89,7 +89,7 @@ fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher, u128) {
 
     // set capacity configuration
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(FREE_TRANSPORT_ENTITY_TYPE, 200_000); // 200_000 grams ==  200 kg
+        .set_capacity_config(DONKEY_ENTITY_TYPE, 200_000); // 200_000 grams ==  200 kg
 
     // set travel configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }

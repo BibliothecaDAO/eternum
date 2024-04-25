@@ -1,7 +1,7 @@
 use core::array::{ArrayTrait, SpanTrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+use eternum::constants::DONKEY_ENTITY_TYPE;
 
 use eternum::constants::ResourceTypes;
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -315,7 +315,7 @@ fn test_transport_not_enough_capacity() {
     // set capacity for transport to a very low amount
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(FREE_TRANSPORT_ENTITY_TYPE, 1);
+        .set_capacity_config(DONKEY_ENTITY_TYPE, 1);
 
     // create two free transport unit for maker realm
     let transport_unit_systems_address = deploy_system(

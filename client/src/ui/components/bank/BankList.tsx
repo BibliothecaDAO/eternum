@@ -92,7 +92,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
               <SendResourcesPanel
                 senderEntityId={entity.entity_id}
                 position={position}
-                onSendCaravan={() => setSelectedTab(5)}
+                onSendResources={() => setSelectedTab(5)}
               />
             )}
           />
@@ -114,7 +114,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
               <SendResourcesPanel
                 senderEntityId={myBankAccountEntityId!}
                 position={getComponentValue(Position, getEntityIdFromKeys([entity.entity_id]))}
-                onSendCaravan={() => setSelectedTab(5)}
+                onSendResources={() => setSelectedTab(5)}
               />
             )}
           />

@@ -19,6 +19,53 @@ struct Resource {
     balance: u128,
 }
 
+#[derive(Model, Copy, Drop, Serde)]
+struct ResourceAllowance {
+    #[key]
+    owner_entity_id: u128,
+    #[key]
+    approved_entity_id: u128,
+    #[key]
+    resource_type: u8,
+    amount: u128,
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct ResourceCost {
+    #[key]
+    entity_id: u128,
+    #[key]
+    index: u32,
+    resource_type: u8,
+    amount: u128
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct ResourceChest {
+    #[key]
+    entity_id: u128,
+    locked_until: u64,
+    resources_count: u32,
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct DetachedResource {
+    #[key]
+    entity_id: u128,
+    #[key]
+    index: u32,
+    resource_type: u8,
+    resource_amount: u128
+}
+
+
+#[derive(Model, Copy, Drop, Serde)]
+struct OwnedResourcesTracker {
+    #[key]
+    entity_id: u128,
+    resource_types: u32
+}
+
 #[generate_trait]
 impl ResourceFoodImpl of ResourceFoodTrait {
     fn get(world: IWorldDispatcher, entity_id: u128) -> (Resource, Resource) {
@@ -67,7 +114,6 @@ impl ResourceFoodImpl of ResourceFoodTrait {
     }
 }
 
-
 #[generate_trait]
 impl ResourceImpl of ResourceTrait {
     fn get(world: IWorldDispatcher, key: (u128, u8)) -> Resource {
@@ -76,6 +122,18 @@ impl ResourceImpl of ResourceTrait {
         return resource;
     }
 
+    fn burn(ref self: Resource, amount: u128) {
+        assert(self.balance >= amount, 'not enough resources');
+        if amount > self.balance {
+            self.balance = 0;
+        } else {
+            self.balance -= amount;
+        }
+    }
+
+    fn add(ref self: Resource, amount: u128) {
+        self.balance += amount;
+    }
 
     fn save(ref self: Resource, world: IWorldDispatcher) {
         // save the updated resource
@@ -128,53 +186,6 @@ impl ResourceImpl of ResourceTrait {
 
         return position <= 28;
     }
-}
-
-#[derive(Model, Copy, Drop, Serde)]
-struct ResourceAllowance {
-    #[key]
-    owner_entity_id: u128,
-    #[key]
-    approved_entity_id: u128,
-    #[key]
-    resource_type: u8,
-    amount: u128,
-}
-
-#[derive(Model, Copy, Drop, Serde)]
-struct ResourceCost {
-    #[key]
-    entity_id: u128,
-    #[key]
-    index: u32,
-    resource_type: u8,
-    amount: u128
-}
-
-#[derive(Model, Copy, Drop, Serde)]
-struct ResourceChest {
-    #[key]
-    entity_id: u128,
-    locked_until: u64,
-    resources_count: u32,
-}
-
-#[derive(Model, Copy, Drop, Serde)]
-struct DetachedResource {
-    #[key]
-    entity_id: u128,
-    #[key]
-    index: u32,
-    resource_type: u8,
-    resource_amount: u128
-}
-
-
-#[derive(Model, Copy, Drop, Serde)]
-struct OwnedResourcesTracker {
-    #[key]
-    entity_id: u128,
-    resource_types: u32
 }
 
 

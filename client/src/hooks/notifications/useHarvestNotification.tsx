@@ -24,8 +24,6 @@ export const useHarvestNotification = (
   const {
     setup: {
       components: { Realm },
-      systemCalls: { harvest_labor },
-      optimisticSystemCalls: { optimisticHarvestLabor },
     },
     account: { account },
   } = useDojo();
@@ -60,16 +58,6 @@ export const useHarvestNotification = (
     setIsLoading(true);
     if (!realmEntityId || !resourceType) return;
     if (levelBonus && resourceType) {
-      await optimisticHarvestLabor(
-        nextBlockTimestamp || 0,
-        levelBonus,
-        hyperstructureLevelBonus,
-        harvest_labor,
-      )({
-        signer: account,
-        realm_id: realmEntityId,
-        resource_type: resourceType,
-      });
       deleteNotification(notification.keys, notification.eventType);
       playHarvest();
       setIsLoading(false);

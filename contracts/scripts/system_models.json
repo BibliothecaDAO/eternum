@@ -15,30 +15,8 @@
     "Tile",
     "Production"
   ],
-  "CARAVAN_SYSTEMS": [
-    "Movable",
-    "Capacity",
-    "CaravanMembers",
-    "Position",
-    "Owner",
-    "EntityOwner",
-    "ForeignKey",
-    "Inventory"
-  ],
-  "TRANSPORT_UNIT_SYSTEMS": [
-    "Owner",
-    "Position",
-    "EntityOwner",
-    "EntityMetadata",
-    "Quantity",
-    "Movable",
-    "ArrivalTime",
-    "Capacity",
-    "QuantityTracker"
-  ],
-  "LABOR_SYSTEMS": ["Labor", "Resource", "OwnedResourcesTracker", "LaborAuction", "LaborBuilding"],
+  "DONKEY_SYSTEMS": [],
   "TRADE_SYSTEMS": [
-    "Caravan",
     "Movable",
     "Trade",
     "Resource",
@@ -54,7 +32,6 @@
     "Weight",
     "Owner"
   ],
-  "ROAD_SYSTEMS": ["Road", "Resource", "OwnedResourcesTracker"],
   "RESOURCE_SYSTEMS": [
     "Resource",
     "OwnedResourcesTracker",
@@ -65,62 +42,30 @@
     "DetachedResource",
     "ForeignKey",
     "Inventory",
-    "Production"
-  ],
-  "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
-  "COMBAT_SYSTEMS": [
-    "Resource",
-    "OwnedResourcesTracker",
-    "Owner",
-    "EntityOwner",
-    "Health",
-    "Attack",
-    "Defence",
-    "Quantity",
-    "Position",
-    "Inventory",
+    "Production",
     "Movable",
     "Capacity",
-    "ArrivalTime",
-    "Weight",
-    "ResourceChest",
-    "DetachedResource",
-    "ForeignKey",
-    "Inventory"
-  ],
-  "LEVELING_SYSTEMS": ["Level", "Resource", "OwnedResourcesTracker"],
-  "NAME_SYSTEMS": ["AddressName"],
-  "BANK_SYSTEMS": [
-    "Bank",
     "Position",
-    "BankAccounts",
-    "Owner",
-    "Resource",
-    "Production"
+    "EntityOwner",
+    "EntityMetadata",
+    "Quantity",
+    "ArrivalTime",
+    "QuantityTracker",
+    "Road"
   ],
-  "SWAP_SYSTEMS": [
-    "Market",
-    "OwnedResourcesTracker",
-    "Resource",
-    "Production"
-  ],
-  "LIQUIDITY_SYSTEMS": [
-    "Market",
-    "OwnedResourcesTracker",
-    "Production",
-    "Resource",
-    "Liquidity"
-  ],
+  "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
+  "NAME_SYSTEMS": ["AddressName"],
+  "BANK_SYSTEMS": ["Bank", "Position", "BankAccounts", "Owner", "Resource", "Production"],
+  "SWAP_SYSTEMS": ["Market", "OwnedResourcesTracker", "Resource", "Production"],
+  "LIQUIDITY_SYSTEMS": ["Market", "OwnedResourcesTracker", "Production", "Resource", "Liquidity"],
   "HYPERSTRUCTURE_SYSTEMS": ["Orders", "HyperStructure"],
   "BUILDINGS_SYSTEMS": [
     "Resource",
     "OwnedResourcesTracker",
-    "LaborBuilding",
     "Building",
     "ProductionConfig",
     "ProductionInput",
     "TickConfig",
-    "Coord",
     "Position",
     "Direction",
     "Production"
@@ -139,6 +84,30 @@
     "Movable",
     "Position",
     "ArrivalTime",
-    "TickMove"
+    "TickMove",
+    "Resource",
+    "Quantity",
+    "Production",
+    "Healthv2",
+    "Army",
+    "Battle",
+    "EntityOwner",
+    "Position",
+    "Owner",
+    "Capacity"
+  ],
+  "COMBAT_V2_SYSTEMS": [
+    "Healthv2",
+    "Army",
+    "Battle",
+    "EntityOwner",
+    "Position",
+    "Movable",
+    "Resource",
+    "Production",
+    "Owner",
+    "Capacity",
+    "Quantity",
+    "Inventory"
   ]
 }

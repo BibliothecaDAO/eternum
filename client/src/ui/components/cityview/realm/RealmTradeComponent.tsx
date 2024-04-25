@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
-import { CaravansPanel } from "./trade/Caravans/CaravansPanel";
 import { MarketPanel } from "./trade/Market/MarketPanel";
 import { MyOffersPanel } from "./trade/MyOffers/MyOffersPanel";
 import useUIStore from "../../../../hooks/store/useUIStore";
@@ -135,7 +134,7 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
             <div>Caravans</div>
           </div>
         ),
-        component: <CaravansPanel />,
+        component: <></>,
       },
       {
         key: "roads",

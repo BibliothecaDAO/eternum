@@ -2,7 +2,7 @@ use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+use eternum::constants::DONKEY_ENTITY_TYPE;
 
 use eternum::constants::ResourceTypes;
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -58,7 +58,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 
     // set speed configuration 
     ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_speed_config(FREE_TRANSPORT_ENTITY_TYPE, 10); // 10km per sec
+        .set_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
 
     // set weight configuration for stone
     IWeightConfigDispatcher { contract_address: config_systems_address }
