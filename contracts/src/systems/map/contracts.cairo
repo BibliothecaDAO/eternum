@@ -84,7 +84,7 @@ mod map_systems {
             );
 
             // TODO: Fix this
-            // InternalResourceSystemsImpl::transfer(world, 0, 0, unit_id, exploration_reward);
+            InternalResourceSystemsImpl::transfer(world, 0, 0, unit_id, exploration_reward);
 
             let current_coord: Coord = get!(world, unit_id, Position).into();
             let next_coord = current_coord.neighbor(direction);

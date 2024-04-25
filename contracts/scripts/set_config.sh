@@ -28,7 +28,7 @@ commands+=("sozo execute $CONFIG_SYSTEMS set_bank_config --account-address $DOJO
 commands+=("sozo execute $CONFIG_SYSTEMS set_tick_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $MAX_MOVE_PER_TICK,$TICK_INTERVAL_IN_SECONDS")
 
 ## EXPLORATION CONFIG
-commands+=("sozo execute $CONFIG_SYSTEMS set_exploration_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $EXPLORATION_WHEAT_BURN_AMOUNT$EXPLORATION_FISH_BURN_AMOUNT,$EXPLORATION_REWARD_RESOURCE_AMOUNT")
+commands+=("sozo execute $CONFIG_SYSTEMS set_exploration_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $EXPLORATION_WHEAT_BURN_AMOUNT,$EXPLORATION_FISH_BURN_AMOUNT,$EXPLORATION_REWARD_RESOURCE_AMOUNT")
 
 commands+=(
     ### WORLD ###
