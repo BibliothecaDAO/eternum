@@ -89,7 +89,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.set_address_name(props);
   };
 
-  const set_entity_name = async (props: SystemProps.SetAddressNameProps) => {
+  const set_entity_name = async (props: SystemProps.SetEntityNameProps) => {
     await provider.set_entity_name(props);
   };
 

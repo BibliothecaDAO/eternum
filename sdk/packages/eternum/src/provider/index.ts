@@ -447,28 +447,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async create_labor_building(props: SystemProps.CreateLaborBuildingProps) {
-    const { realm_entity_id, building_type } = props;
-
-    const tx = await this.executeMulti(props.signer, {
-      contractAddress: getContractByName(this.manifest, "buildings_systems"),
-      entrypoint: "create",
-      calldata: [realm_entity_id, building_type],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async destroy_labor_building(props: SystemProps.DestroyLaborBuildingProps) {
-    const { realm_entity_id } = props;
-
-    const tx = await this.executeMulti(props.signer, {
-      contractAddress: getContractByName(this.manifest, "buildings_systems"),
-      entrypoint: "destroy",
-      calldata: [realm_entity_id],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
   public async explore(props: SystemProps.ExploreProps) {
     const { unit_id, direction, signer } = props;
 
