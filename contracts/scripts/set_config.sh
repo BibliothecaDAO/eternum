@@ -94,9 +94,15 @@ commands+=(
 )
 
 commands+=(
-    # Resource Cost
+    ######## Building Category
+    # BuildingCategory::Resource = 2
+
+    ######## Resource Type
+    # WOOD = 1
+
+    ######## Resource Cost
     # 3 wheat, 3 fish
-    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,254,$((3 * $RESOURCE_PRECSION)),255,$((3* $RESOURCE_PRECSION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,1,2,254,$((3 * $RESOURCE_PRECSION)),255,$((3* $RESOURCE_PRECSION))"
 )
 commands+=(
     # resourceId: 1

@@ -9,6 +9,7 @@ mod config_systems {
         BUILDING_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
+    use eternum::models::buildings::{BuildingCategory};
 
     use eternum::models::combat::TownWatch;
     use eternum::models::config::{
@@ -573,16 +574,21 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl BuildingConfigImpl of IBuildingConfig<ContractState> {
-        fn set_building_config(world: IWorldDispatcher, resource_costs: Span<(u8, u128)>,) {
+        fn set_building_config(
+            world: IWorldDispatcher,
+            building_category: BuildingCategory,
+            building_resource_type: u8,
+            cost_of_building: Span<(u8, u128)>
+        ) {
             assert_caller_is_admin(world);
 
             let resource_cost_id = world.uuid().into();
             let mut index = 0;
             loop {
-                if index == resource_costs.len() {
+                if index == cost_of_building.len() {
                     break;
                 }
-                let (resource_type, resource_amount) = *resource_costs.at(index);
+                let (resource_type, resource_amount) = *cost_of_building.at(index);
                 set!(
                     world,
                     (ResourceCost {
@@ -596,8 +602,10 @@ mod config_systems {
                 world,
                 (BuildingConfig {
                     config_id: WORLD_CONFIG_ID,
+                    category: building_category,
+                    resource_type: building_resource_type,
                     resource_cost_id,
-                    resource_cost_count: resource_costs.len()
+                    resource_cost_count: cost_of_building.len()
                 })
             );
         }

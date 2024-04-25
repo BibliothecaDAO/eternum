@@ -2,6 +2,7 @@ use core::debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{WORLD_CONFIG_ID};
+use eternum::models::buildings::BuildingCategory;
 use eternum::utils::unpack::unpack_resource_types;
 
 use starknet::ContractAddress;
@@ -231,14 +232,28 @@ struct BankConfig {
 struct BuildingConfig {
     #[key]
     config_id: u128,
+    #[key]
+    category: BuildingCategory,
+    #[key]
+    resource_type: u8,
     resource_cost_id: u128,
     resource_cost_count: u32,
 }
 
 #[generate_trait]
 impl BuildingConfigImpl of BuildingConfigTrait {
-    fn get(world: IWorldDispatcher) -> BuildingConfig {
-        return get!(world, WORLD_CONFIG_ID, BuildingConfig);
+    fn get(
+        world: IWorldDispatcher, category: BuildingCategory, resource_type: u8
+    ) -> BuildingConfig {
+        return get!(
+            world,
+            (
+                WORLD_CONFIG_ID,
+                Into::<BuildingCategory, felt252>::into(category),
+                Into::<u8, felt252>::into(resource_type)
+            ),
+            BuildingConfig
+        );
     }
 }
 

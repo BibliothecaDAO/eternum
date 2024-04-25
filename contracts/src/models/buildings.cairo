@@ -473,9 +473,6 @@ impl BuildingImpl of BuildingTrait {
 
         assert!(!building.is_active(), "space is occupied");
 
-        // make payment for building
-        BuildingImpl::make_payment(world, outer_entity_id);
-
         // set building 
         building.entity_id = world.uuid().into();
         building.category = category;
@@ -491,6 +488,11 @@ impl BuildingImpl of BuildingTrait {
         }
 
         set!(world, (building));
+
+        // make payment for building
+        BuildingImpl::make_payment(
+            world, building.outer_entity_id, building.category, building.produced_resource_type
+        );
 
         // start production related to building
         building.start_production(world);
@@ -527,8 +529,12 @@ impl BuildingImpl of BuildingTrait {
         set!(world, (building));
     }
 
-    fn make_payment(world: IWorldDispatcher, entity_id: u128) {
-        let building_config: BuildingConfig = BuildingConfigImpl::get(world);
+    fn make_payment(
+        world: IWorldDispatcher, entity_id: u128, category: BuildingCategory, resource_type: u8
+    ) {
+        let building_config: BuildingConfig = BuildingConfigImpl::get(
+            world, category, resource_type
+        );
         let mut index = 0;
         loop {
             if index == building_config.resource_cost_count {

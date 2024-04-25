@@ -1,5 +1,6 @@
 use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
+use eternum::models::buildings::BuildingCategory;
 use eternum::models::config::TroopConfig;
 use eternum::models::position::Coord;
 
@@ -114,5 +115,9 @@ trait ITroopConfig {
 }
 #[dojo::interface]
 trait IBuildingConfig {
-    fn set_building_config(resource_costs: Span<(u8, u128)>);
+    fn set_building_config(
+        building_category: BuildingCategory,
+        building_resource_type: u8,
+        cost_of_building: Span<(u8, u128)>
+    );
 }
