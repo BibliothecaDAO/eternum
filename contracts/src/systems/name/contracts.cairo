@@ -24,7 +24,7 @@ mod name_systems {
 
         fn set_entity_name(world: IWorldDispatcher, entity_id: u128, name: felt252) {
             get!(world, entity_id, Owner).assert_caller_owner();
-            
+
             set!(world, (EntityName { entity_id, name }));
         }
     }
