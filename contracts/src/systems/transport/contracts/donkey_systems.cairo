@@ -4,7 +4,6 @@ mod donkey_systems {
 
     use eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
     use eternum::models::config::{SpeedConfig, CapacityConfig};
-    use eternum::models::inventory::{Inventory};
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
@@ -25,7 +24,8 @@ mod donkey_systems {
     #[generate_trait]
     impl InternalDonkeySystemsImpl of InternalDonkeySystemsTrait {
         fn create_donkey(
-            world: IWorldDispatcher, 
+            world: IWorldDispatcher,
+            donkey_id: ID, 
             payer_id: ID, 
             receiver_id: ID, 
             weight: u128,
@@ -45,7 +45,7 @@ mod donkey_systems {
             let donkey_speed_config = get!(
                 world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), SpeedConfig
             );
-            let donkey_id: ID = world.uuid().into();
+
             let is_round_trip : bool = payer_id == receiver_id;
             let arrives_at: u64 = starknet::get_block_timestamp() 
                 + InternalDonkeySystemsImpl::get_donkey_travel_time(
@@ -57,11 +57,6 @@ mod donkey_systems {
                 EntityOwner {
                     entity_id: donkey_id,
                     entity_owner_id: receiver_id,
-                },
-                Inventory {
-                    entity_id: donkey_id, 
-                    items_key: world.uuid().into(),
-                    items_count: 0
                 },
                 ArrivalTime {
                     entity_id: donkey_id,

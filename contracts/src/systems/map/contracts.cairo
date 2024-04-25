@@ -12,7 +12,6 @@ mod map_systems {
     use eternum::models::combatV2::{Healthv2, Healthv2Trait};
     use eternum::models::config::{MapExploreConfig, LevelingConfig};
     use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::inventory::Inventory;
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
@@ -73,10 +72,6 @@ mod map_systems {
 
             // ensure unit is not in transit
             get!(world, unit_id, ArrivalTime).assert_not_travelling();
-
-            // // check that unit isn't carrying anything
-            // let unit_inventory = get!(world, unit_id, Inventory);
-            // assert(unit_inventory.items_count == 0, 'unit inventory not empty');
 
             // explore coordinate, pay food and mint reward
             let exploration_reward = InternalMapSystemsImpl::pay_food_and_get_explore_reward(

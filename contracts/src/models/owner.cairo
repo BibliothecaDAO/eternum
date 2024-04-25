@@ -28,6 +28,11 @@ impl OwnerImpl of OwnerTrait {
 
 #[generate_trait]
 impl EntityOwnerImpl of EntityOwnerTrait {
+    fn assert_caller_owner(self: EntityOwner, world: IWorldDispatcher) {
+        let owner: Owner = get!(world, self.entity_owner_id, Owner);
+        owner.assert_caller_owner();
+    }
+
     fn owner_address(self: EntityOwner, world: IWorldDispatcher) -> ContractAddress {
         return get!(world, self.entity_owner_id, Owner).address;
     }

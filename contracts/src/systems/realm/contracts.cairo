@@ -63,6 +63,7 @@ mod realm_systems {
                 world,
                 (
                     Owner { entity_id: entity_id.into(), address: caller },
+                    EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() },
                     Realm {
                         entity_id: entity_id.into(),
                         realm_id,

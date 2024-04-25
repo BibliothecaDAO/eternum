@@ -4,7 +4,6 @@ mod combat;
 mod combatV2;
 mod config;
 mod hyperstructure;
-mod inventory;
 mod level;
 mod map;
 mod metadata;

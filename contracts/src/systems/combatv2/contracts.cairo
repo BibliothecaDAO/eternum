@@ -25,7 +25,6 @@ mod combat_v2_systems {
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use eternum::models::position::{Position, Coord};
     use eternum::models::realm::Realm;
-    use eternum::models::inventory::Inventory;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::{
         combatV2::{
@@ -120,9 +119,6 @@ mod combat_v2_systems {
                 (
                     Capacity { entity_id: army.entity_id, weight_gram: troop_capacity.weight_gram },
                     Quantity { entity_id: army.entity_id, value: army.troops.count().into() },
-                    Inventory {
-                        entity_id: army.entity_id, items_key: world.uuid().into(), items_count: 0
-                    }
                 )
             );
         }

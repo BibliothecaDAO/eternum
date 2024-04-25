@@ -1,3 +1,6 @@
+use eternum::models::quantity::{Quantity, QuantityTrait};
+use eternum::models::weight::{Weight};
+
 #[derive(Model, Copy, Drop, Serde)]
 struct Capacity {
     #[key]
@@ -8,10 +11,14 @@ struct Capacity {
 
 #[generate_trait]
 impl CapacityImpl of CapacityTrait {
-    fn can_carry_weight(self: Capacity, quantity: u128, weight: u128) -> bool {
+    fn assert_can_carry(self: Capacity, quantity: Quantity, weight: Weight) {
+        assert!(self.can_carry(quantity, weight), "entity {} capacity not enough", self.entity_id); 
+    }
+    
+    fn can_carry(self: Capacity, quantity: Quantity, weight: Weight) -> bool {
         if self.is_capped() {
-            let entity_total_weight_capacity = self.weight_gram * quantity;
-            if entity_total_weight_capacity < weight {
+            let entity_total_weight_capacity = self.weight_gram * quantity.get_value();
+            if entity_total_weight_capacity < weight.value {
                 return false;
             };
         };
