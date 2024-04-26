@@ -49,9 +49,15 @@ for system in $(echo $system_models_json | jq -r 'keys[]'); do
         system_var="${system}"
         contract_address="${!system_var}"
         # make the system a writer of the component
-        commands+=("sozo auth grant writer $model,$contract_address")
+        if [[ "$1" == "prod" ]]; then
+            commands+=("sozo --profile prod auth grant writer $model,$contract_address")
+        else
+            commands+=("sozo auth grant writer $model,$contract_address")
+        fi
     done
 done
+
+
 
 # Ask for delay if not provided
 if [ -z "$delay" ]; then
