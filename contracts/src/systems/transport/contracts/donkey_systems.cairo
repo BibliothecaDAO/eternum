@@ -23,24 +23,34 @@ mod donkey_systems {
 
     #[generate_trait]
     impl InternalDonkeySystemsImpl of InternalDonkeySystemsTrait {
-        fn create_donkey(
-            world: IWorldDispatcher,
-            donkey_id: ID,
-            payer_id: ID,
-            receiver_id: ID,
-            weight: u128,
-            start_coord: Coord,
-            intermediate_coord: Coord
-        ) -> ID {
+        fn burn_donkey(world: IWorldDispatcher, payer_id: ID, weight: u128) {
             // get number of donkeys needed
             let donkey_amount = InternalDonkeySystemsImpl::get_donkey_needed(world, weight);
-
 
             // burn amount of donkey needed
             let mut donkeys: Resource = ResourceImpl::get(world, (payer_id, ResourceTypes::DONKEY));
             donkeys.burn(donkey_amount);
             donkeys.save(world);
+        }
 
+        fn return_donkey(world: IWorldDispatcher, payer_id: ID, weight: u128) {
+            // get number of donkeys needed
+            let donkey_amount = InternalDonkeySystemsImpl::get_donkey_needed(world, weight);
+
+            // return amount of donkey needed
+            let mut donkeys: Resource = ResourceImpl::get(world, (payer_id, ResourceTypes::DONKEY));
+            donkeys.add(donkey_amount);
+            donkeys.save(world);
+        }
+
+        fn create_donkey(
+            world: IWorldDispatcher,
+            donkey_id: ID,
+            payer_id: ID,
+            receiver_id: ID,
+            start_coord: Coord,
+            intermediate_coord: Coord
+        ) -> ID {
             let donkey_speed_config = get!(
                 world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), SpeedConfig
             );
@@ -75,7 +85,8 @@ mod donkey_systems {
         fn get_donkey_needed(world: IWorldDispatcher, resources_weight: u128,) -> u128 {
             let capacity_per_donkey = get!(
                 world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), CapacityConfig
-            ).weight_gram;
+            )
+                .weight_gram;
             let reminder = resources_weight % capacity_per_donkey;
             let donkeys = if reminder == 0 {
                 resources_weight / capacity_per_donkey

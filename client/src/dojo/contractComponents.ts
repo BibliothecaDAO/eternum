@@ -842,15 +842,17 @@ export function defineContractComponents(world: World) {
           maker_id: RecsType.BigInt,
           maker_gives_resources_id: RecsType.BigInt,
           maker_gives_resources_hash: RecsType.BigInt,
+          maker_gives_resources_weight: RecsType.BigInt,
           taker_id: RecsType.BigInt,
           taker_gives_resources_id: RecsType.BigInt,
           taker_gives_resources_hash: RecsType.BigInt,
+          taker_gives_resources_weight: RecsType.BigInt,
           expires_at: RecsType.Number,
         },
         {
           metadata: {
             name: "Trade",
-            types: ["u128", "u128", "u128", "felt252", "u128", "u128", "felt252", "u64"],
+            types: ["u128", "u128", "u128", "felt252", "u128", "u128", "u128", "felt252", "u128", "u64"],
             customTypes: [],
           },
         },

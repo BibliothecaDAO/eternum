@@ -84,7 +84,7 @@ mod trade_systems {
             let maker_gives_resources_id: ID = world.uuid().into();
             let mut maker_gives_resources_count: u32 = 0;
             let mut maker_gives_resources_felt_arr: Array<felt252> = array![];
-            let mut maker_resources_weight = 0;
+            let mut maker_gives_resources_weight = 0;
             loop {
                 match maker_gives_resources.pop_front() {
                     Option::Some((
@@ -114,7 +114,8 @@ mod trade_systems {
                         let resource_weight: WeightConfig = get!(
                             world, (WORLD_CONFIG_ID, *resource_type), WeightConfig
                         );
-                        maker_resources_weight += resource_weight.weight_gram * *resource_amount;
+                        maker_gives_resources_weight += resource_weight.weight_gram
+                            * *resource_amount;
 
                         maker_gives_resources_felt_arr.append((*resource_type).into());
                         maker_gives_resources_felt_arr.append((*resource_amount).into());
@@ -123,23 +124,16 @@ mod trade_systems {
                 }
             };
 
-            // burn the maker donkeys
-            let mut maker_donkey_resource = ResourceImpl::get(
-                world, (maker_id, ResourceTypes::DONKEY)
-            );
-            let maker_donkey_amount = donkey::get_donkey_needed(world, maker_resources_weight);
-            maker_donkey_resource.burn(maker_donkey_amount);
-            maker_donkey_resource.save(world);
-
             // deduct weight from maker
             let mut maker_weight: Weight = get!(world, maker_id, Weight);
             let mut maker_capacity: Capacity = get!(world, maker_id, Capacity);
-            maker_weight.deduct(maker_capacity, maker_resources_weight);
+            maker_weight.deduct(maker_capacity, maker_gives_resources_weight);
             set!(world, (maker_weight));
 
             let taker_gives_resources_id: ID = world.uuid().into();
             let mut taker_gives_resources_count: u32 = 0;
             let mut taker_gives_resources_felt_arr: Array<felt252> = array![];
+            let mut taker_gives_resources_weight = 0;
             loop {
                 match taker_gives_resources.pop_front() {
                     Option::Some((
@@ -158,12 +152,22 @@ mod trade_systems {
 
                         taker_gives_resources_count += 1;
 
+                        // update taker resources weight
+                        let resource_weight: WeightConfig = get!(
+                            world, (WORLD_CONFIG_ID, *resource_type), WeightConfig
+                        );
+                        taker_gives_resources_weight += resource_weight.weight_gram
+                            * *resource_amount;
+
                         taker_gives_resources_felt_arr.append((*resource_type).into());
                         taker_gives_resources_felt_arr.append((*resource_amount).into());
                     },
                     Option::None => { break; }
                 }
             };
+
+            // burn enough maker donkeys to carry resources given by taker
+            donkey::burn_donkey(world, maker_id, taker_gives_resources_weight);
 
             // create trade entity
             let trade_id = world.uuid().into();
@@ -175,9 +179,11 @@ mod trade_systems {
                         maker_id,
                         maker_gives_resources_id,
                         maker_gives_resources_hash: hash(maker_gives_resources_felt_arr.span()),
+                        maker_gives_resources_weight,
                         taker_id,
                         taker_gives_resources_id,
                         taker_gives_resources_hash: hash(taker_gives_resources_felt_arr.span()),
+                        taker_gives_resources_weight,
                         expires_at,
                     },
                     Status { trade_id: trade_id, value: TradeStatus::OPEN }
@@ -263,7 +269,7 @@ mod trade_systems {
             assert(owner.address == starknet::get_caller_address(), 'caller must be trade maker');
             assert(trade_status.value == TradeStatus::OPEN, 'trade must be open');
 
-            let (_, maker_receives_resources_hash, resources_weight) = internal_resources::transfer(
+            let (_, maker_receives_resources_hash, _) = internal_resources::transfer(
                 world, 0, 0, trade.maker_id, return_resources
             );
 
@@ -273,12 +279,7 @@ mod trade_systems {
             );
 
             // return donkeys to maker
-            let donkey_amount = donkey::get_donkey_needed(world, resources_weight);
-            let mut maker_donkey_resource: Resource = ResourceImpl::get(
-                world, (trade.maker_id, ResourceTypes::DONKEY)
-            );
-            maker_donkey_resource.add(donkey_amount);
-            maker_donkey_resource.save(world);
+            donkey::return_donkey(world, trade.maker_id, trade.taker_gives_resources_weight);
 
             set!(world, (Status { trade_id, value: TradeStatus::CANCELLED }));
         }
