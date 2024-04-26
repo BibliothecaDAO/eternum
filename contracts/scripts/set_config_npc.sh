@@ -8,13 +8,15 @@ NPC_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.nam
 
 LORE_MACHINE_PUB_KEY=0x175436af24aa0b0c720ebd341dd6c396fa03a02dd8379041191c773f5460e0b
 
+# NPC_SPAWN_DELAY=100
+NPC_SPAWN_DELAY=24*60*60
 MAX_NUM_RESIDENT_NPCS=5
 MAX_NUM_NATIVE_NPCS=5
 NPC_ENTITY_TYPE=259
 SEC_PER_KM=800 # => 4.5 km/h
 
 commands=(
-	"sozo execute ${CONFIG_SYSTEMS} set_npc_config --account-address ${DOJO_ACCOUNT_ADDRESS} --calldata ${SOZO_WORLD},100,${LORE_MACHINE_PUB_KEY},${MAX_NUM_RESIDENT_NPCS},${MAX_NUM_NATIVE_NPCS}"
+	"sozo execute ${CONFIG_SYSTEMS} set_npc_config --account-address ${DOJO_ACCOUNT_ADDRESS} --calldata ${SOZO_WORLD},${NPC_SPAWN_DELAY},${LORE_MACHINE_PUB_KEY},${MAX_NUM_RESIDENT_NPCS},${MAX_NUM_NATIVE_NPCS}"
 	# NPC speed
 	# 800 sec per km = 4.5 km/h
 	"sozo execute ${CONFIG_SYSTEMS} set_speed_config --account-address ${DOJO_ACCOUNT_ADDRESS} --calldata ${SOZO_WORLD},${NPC_ENTITY_TYPE},${SEC_PER_KM}"

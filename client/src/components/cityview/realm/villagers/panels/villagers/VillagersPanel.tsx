@@ -24,9 +24,11 @@ import { ReactComponent as Plus } from "../../../../../../assets/icons/npc/plus.
 import { NpcSortButton } from "../../NpcSortButton";
 import { NpcPopup } from "../../NpcPopup";
 import { Npc } from "../../types";
+import { formatSecondsLeftInDaysHours } from "../../../labor/laborUtils";
 
 export const VillagersPanel = () => {
   const [selectedNpc, setSelectedNpc] = useState<Npc | undefined>(undefined);
+  const [npcIsSpawning, setNpcIsSpawning] = useState(false);
 
   const {
     setup: {
@@ -84,10 +86,48 @@ export const VillagersPanel = () => {
           <p>{npc_count}</p>
           <div className="flex">
             <p className="ml-1">{title}</p>
-            {title == "Residents" && <Plus onClick={spawnNpc} className="ml-1 rounded-sm bg-gold" />}
           </div>
         </div>
       </Headline>
+    );
+  };
+
+  const realmIsFull = () => {
+    const realmRegistry = getComponentValue(RealmRegistry, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    if ((realmRegistry?.num_native_npcs ?? 0) >= 5 || (realmRegistry?.num_resident_npcs ?? 0) >= 5) {
+      console.log("Realm is full");
+      return true;
+    }
+    return false;
+  };
+
+  const getSpawnElement = () => {
+    const npcConfig = getComponentValue(
+      NpcConfig,
+      getEntityIdFromKeys([BigInt("0x" + NPC_CONFIG_ID.toString(16))]) as Entity,
+    );
+    const last_spawned = getComponentValue(LastSpawned, getEntityIdFromKeys([BigInt(realmEntityId)]));
+
+    const spawnDelay: bigint = npcConfig!.spawn_delay;
+    const lastSpawnedTimestamp: bigint = BigInt(last_spawned?.last_spawned_ts ?? 0);
+    const nextBlockTimestampBigint: bigint = BigInt(nextBlockTimestamp!);
+
+    if (nextBlockTimestampBigint > spawnDelay + lastSpawnedTimestamp) {
+      return (
+        <>
+          <p>Ready to spawn</p>
+          <Plus onClick={spawnNpc} className="ml-2 rounded-sm bg-gold" />
+        </>
+      );
+    }
+    return (
+      <>
+        <p>Spawn available in: </p>
+        <div className="ml-1 text-gold">
+          {formatSecondsLeftInDaysHours(Number(spawnDelay - (nextBlockTimestampBigint - lastSpawnedTimestamp)))}
+        </div>
+        <Plus onClick={spawnNpc} className="ml-2 rounded-sm bg-dark" />
+      </>
     );
   };
 
@@ -107,12 +147,12 @@ export const VillagersPanel = () => {
       return;
     }
 
-    const realmRegistry = getComponentValue(RealmRegistry, getEntityIdFromKeys([BigInt(realmEntityId)]));
-    if ((realmRegistry?.num_native_npcs ?? 0) >= 5 || (realmRegistry?.num_resident_npcs ?? 0) >= 5) {
+    if (realmIsFull()) {
       console.log("Can't spawn: too many NPCs");
       return;
     }
     try {
+      setNpcIsSpawning(true);
       let response = await loreMachineJsonRpcCall("spawnNpc", {
         realm_entity_id: Number(realmEntityId),
       });
@@ -127,6 +167,9 @@ export const VillagersPanel = () => {
       });
     } catch (e) {
       console.log(e);
+    }
+    finally {
+      setNpcIsSpawning(false);
     }
   };
 
@@ -178,6 +221,21 @@ export const VillagersPanel = () => {
           <div className="flex items-center">
             {getHeadline(residents.natives.length + residents.foreigners.length, "Residents")}
           </div>
+
+          {!realmIsFull() &&
+            (npcIsSpawning ? (
+              <div className="text-white text-center flex justify-center">
+                <div className="flex justify-center">
+                  <img src="/images/eternum-logo_animated.png" className="invert w-1/6" />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-row items-center justify-center text-xxs italic text-light-pink mb-1">
+                  {getSpawnElement()}
+                </div>
+              </>
+            ))}
 
           {residents.natives.map((npc) => (
             <div className="flex flex-col p-2" key={npc.entityId}>
