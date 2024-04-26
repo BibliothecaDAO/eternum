@@ -48,7 +48,7 @@ export const useNotifications = () => {
   // }, [hyperstructureId]);
 
   const { getEntityLevel, getHyperstructureLevelBonus, getRealmLevelBonus } = useLevel();
-  const { getResourcesFromInventory, getResourcesFromResourceChestIds } = useResources();
+  const { getResourcesFromBalance, getResourcesFromResourceChestIds } = useResources();
   const { getEntitiesCombatInfo } = useCombat();
 
   const { notifications, addUniqueNotifications } = useNotificationsStore();
@@ -82,7 +82,7 @@ export const useNotifications = () => {
           realmPositions,
           components,
           nextBlockTimestamp,
-          getResourcesFromInventory,
+          getResourcesFromBalance,
         );
         newNotifications = newNotifications.concat(emptyChestNotifications);
 
@@ -92,7 +92,7 @@ export const useNotifications = () => {
         //     nextBlockTimestamp,
         //     components,
         //     hyperstructure,
-        //     getResourcesFromInventory,
+        //     getResourcesFromBalance,
         //   );
         //   newNotifications = newNotifications.concat(arrivedAtHyperstructureNotifications);
         // }
@@ -258,7 +258,7 @@ export const useNotifications = () => {
   useEffect(() => {
     const updateNotifications = () => {
       const newNotifications = nextBlockTimestamp
-        ? generateEmptyChestNotifications(realmPositions, components, nextBlockTimestamp, getResourcesFromInventory)
+        ? generateEmptyChestNotifications(realmPositions, components, nextBlockTimestamp, getResourcesFromBalance)
         : [];
 
       // add only add if not already in there

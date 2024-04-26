@@ -125,10 +125,10 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   // const canCarryNewReward = totalCapacityInKg >= entityWeightInKg + sampleRewardResourceWeightKg;
   const canCarryNewReward = true;
 
-  const { getResourcesFromInventory } = useResources();
+  const { getResourcesFromBalance } = useResources();
 
   const explorationCosts = useMemo(() => {
-    const foodBalance = entityOwner ? getResourcesFromInventory(entityOwner.entity_owner_id).resources : [];
+    const foodBalance = entityOwner ? getResourcesFromBalance(entityOwner.entity_owner_id).resources : [];
     return EXPLORATION_COSTS.map((res) => {
       return {
         ...res,

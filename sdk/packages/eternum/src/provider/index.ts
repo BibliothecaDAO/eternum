@@ -137,51 +137,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async transfer_items_from_multiple(props: SystemProps.TransferItemsFromMultipleProps) {
-    const { senders, signer } = props;
-
-    let calldata = senders.flatMap((sender) => {
-      return sender.indices.map((index) => {
-        return {
-          contractAddress: getContractByName(this.manifest, "resource_systems"),
-          entrypoint: "transfer_item",
-          calldata: [sender.sender_id, index, sender.receiver_id],
-        };
-      });
-    });
-
-    const tx = await this.executeMulti(signer, calldata);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async transfer_items(props: SystemProps.TransferItemsProps) {
-    const { sender_id, indices, receiver_id, signer } = props;
-
-    let calldata = indices.map((index) => {
-      return {
-        contractAddress: getContractByName(this.manifest, "resource_systems"),
-        entrypoint: "transfer_item",
-        calldata: [sender_id, index, receiver_id],
-      };
-    });
-
-    // send request to transfer items in batches of `BATCH_SIZE`
-
-    const BATCH_SIZE = 3;
-    let batchCalldata = [];
-
-    for (let i = 1; i <= calldata.length; i++) {
-      batchCalldata.push(calldata[i - 1]);
-      if (i % BATCH_SIZE == 0 || i == calldata.length) {
-        const tx = await this.executeMulti(signer, batchCalldata);
-        await this.waitForTransactionWithCheck(tx.transaction_hash);
-
-        // reset batchCalldata
-        batchCalldata = [];
-      }
-    }
-  }
-
   public async create_realm(props: SystemProps.CreateRealmProps) {
     const {
       realm_id,

@@ -282,7 +282,7 @@ const StealResultPanel = ({
     },
   } = useDojo();
 
-  const { getResourcesFromInventory } = useResources();
+  const { getResourcesFromBalance } = useResources();
   const { getFoodResources } = useResourceBalance();
   const attackerHealth = selectedRaiders[0].entityId
     ? useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]))
@@ -303,7 +303,7 @@ const StealResultPanel = ({
   const [step, setStep] = useState(initialStep);
 
   const inventoryResources = useMemo(() => {
-    return selectedRaiders[0].entityId ? getResourcesFromInventory(selectedRaiders[0].entityId) : undefined;
+    return selectedRaiders[0].entityId ? getResourcesFromBalance(selectedRaiders[0].entityId) : undefined;
   }, [step === 3]);
   const success = attackerHealth ? attackerHealth.value === BigInt(selectedRaiders[0].health) : undefined;
 
@@ -495,7 +495,7 @@ const SelectRaidersPanel = ({
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
   const { getConqueredHyperstructures } = useHyperstructure();
-  const { getResourcesFromInventory } = useResources();
+  const { getResourcesFromBalance } = useResources();
   const { getBalance } = useResourceBalance();
 
   const [attackerTotalAttack, attackerTotalHealth] = useMemo(() => {
@@ -599,7 +599,7 @@ const SelectRaidersPanel = ({
         }
       }
       if (defence?.entityId) {
-        const resources = getResourcesFromInventory(defence.entityId).resources;
+        const resources = getResourcesFromBalance(defence.entityId).resources;
         for (const resource of resources) {
           if (resource.amount > 0) {
             hasResources = true;
@@ -608,7 +608,7 @@ const SelectRaidersPanel = ({
         }
       }
     } else {
-      const inventoryResources = getResourcesFromInventory(defence!.entityId);
+      const inventoryResources = getResourcesFromBalance(defence!.entityId);
       resourceBalances = inventoryResources.resources.map(({ amount, resourceId }) => {
         return { balance: amount, resourceId };
       });

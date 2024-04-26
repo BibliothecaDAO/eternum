@@ -32,7 +32,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
     },
   } = useDojo();
 
-  const { getResourcesFromInventory } = useResources();
+  const { getResourcesFromBalance } = useResources();
   const { getRealmAddressName } = useRealm();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const currentTick = useBlockchainStore((state) => state.currentTick);
@@ -52,7 +52,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
         key={raider.entityId}
         raider={raider}
         getRealmAddressName={getRealmAddressName}
-        getResourcesFromInventory={getResourcesFromInventory}
+        getResourcesFromBalance={getResourcesFromBalance}
         nextBlockTimestamp={nextBlockTimestamp}
         isPassiveTravel={isPassiveTravel}
         isActiveTravel={isActiveTravel}
@@ -64,14 +64,14 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
 const RaiderInfo = ({
   raider,
   getRealmAddressName,
-  getResourcesFromInventory,
+  getResourcesFromBalance,
   nextBlockTimestamp,
   isPassiveTravel,
   isActiveTravel,
 }: {
   raider: CombatInfo;
   getRealmAddressName: (name: bigint) => string;
-  getResourcesFromInventory: (entityId: bigint) => { resources: Resource[]; indices: number[] };
+  getResourcesFromBalance: (entityId: bigint) => { resources: Resource[]; indices: number[] };
   nextBlockTimestamp: number | undefined;
   isPassiveTravel: boolean;
   isActiveTravel: boolean;

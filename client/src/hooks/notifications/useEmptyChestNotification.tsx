@@ -17,7 +17,7 @@ export const useEmptyChestNotification = (
   title: React.ReactElement;
   content: (onClose: any) => React.ReactElement;
 } => {
-  const { getResourcesFromInventory, offloadChests } = useResources();
+  const { getResourcesFromBalance, offloadChests } = useResources();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,7 +31,7 @@ export const useEmptyChestNotification = (
   const realmName = realmId ? getRealmNameById(realmId) : "";
   const realmOrderName = realmId ? getRealmOrderNameById(realmId) : "";
 
-  let claimableResources = entityId ? getResourcesFromInventory(entityId) : undefined;
+  let claimableResources = entityId ? getResourcesFromBalance(entityId) : undefined;
 
   const emptyChest = async () => {
     setIsLoading(true);

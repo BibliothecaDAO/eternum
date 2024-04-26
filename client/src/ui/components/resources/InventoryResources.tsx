@@ -3,9 +3,9 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 
 export const InventoryResources = ({ entityId }: { entityId: bigint }) => {
-  const { getResourcesFromInventory } = useResources();
+  const { getResourcesFromBalance } = useResources();
 
-  const inventoryResources = getResourcesFromInventory(entityId);
+  const inventoryResources = getResourcesFromBalance(entityId);
 
   return (
     <div className="flex items-center justify-between mt-[8px] text-xxs">

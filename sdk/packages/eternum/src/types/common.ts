@@ -94,11 +94,9 @@ export interface RoadInterface {
 }
 
 export interface CaravanInterface {
-  caravanId: bigint;
-  resourcesChestId: bigint | undefined;
+  entityId: bigint;
   blocked: boolean | undefined;
   arrivalTime: number | undefined;
-  pickupArrivalTime: number | undefined;
   capacity: number | undefined;
   intermediateDestination: Position | undefined;
   owner: bigint | undefined;
@@ -106,7 +104,7 @@ export interface CaravanInterface {
   isRoundTrip: boolean;
   position: Position | undefined;
   homePosition: Position | undefined;
-  destinationType: DESTINATION_TYPE;
+  resources: Resource[];
 }
 
 /// REALMS

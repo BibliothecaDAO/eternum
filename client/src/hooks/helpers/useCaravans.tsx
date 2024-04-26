@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { divideByPrecision, getEntityIdFromKeys, getForeignKeyEntityId } from "../../ui/utils/utils";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { useHyperstructure } from "./useHyperstructure";
+import { useResources } from "./useResources";
 
 const FREE_TRANSPORT_ENTITY_TYPE = 256;
 
@@ -17,27 +18,25 @@ export function useCaravan() {
         EntityOwner,
         Movable,
         Capacity,
+        OwnedResourcesTracker,
         Position,
         Owner,
         QuantityTracker,
-        Inventory,
         ForeignKey,
-        ResourceChest,
       },
     },
   } = useDojo();
 
-  const { getHyperstructureEntityId } = useHyperstructure();
+  const { getResourcesFromBalance } = useResources();
 
-  const getCaravanInfo = (caravanId: bigint): CaravanInterface => {
-    const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([caravanId]));
-    const movable = getComponentValue(Movable, getEntityIdFromKeys([caravanId]));
-    const capacity = getComponentValue(Capacity, getEntityIdFromKeys([caravanId]));
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([caravanId]));
-    const resourcesChestId = getInventoryResourcesChestId(caravanId);
-    const resourceChest = resourcesChestId
-      ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(resourcesChestId)]))
-      : undefined;
+  const getEntityInfo = (entityId: bigint): CaravanInterface => {
+    const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([entityId]));
+    const movable = getComponentValue(Movable, getEntityIdFromKeys([entityId]));
+    const capacity = getComponentValue(Capacity, getEntityIdFromKeys([entityId]));
+    const owner = getComponentValue(Owner, getEntityIdFromKeys([entityId]));
+    const track = getComponentValue(OwnedResourcesTracker, getEntityIdFromKeys([entityId]));
+    console.log({ track });
+    const resources = getResourcesFromBalance(entityId);
     const rawIntermediateDestination = movable
       ? { x: movable.intermediate_coord_x, y: movable.intermediate_coord_y }
       : undefined;
@@ -45,25 +44,16 @@ export function useCaravan() {
       ? { x: rawIntermediateDestination.x, y: rawIntermediateDestination.y }
       : undefined;
 
-    const position = getComponentValue(Position, getEntityIdFromKeys([caravanId]));
+    const position = getComponentValue(Position, getEntityIdFromKeys([entityId]));
 
-    const ownerEntity = getComponentValue(EntityOwner, getEntityIdFromKeys([caravanId]))?.entity_owner_id;
+    const ownerEntity = getComponentValue(EntityOwner, getEntityIdFromKeys([entityId]))?.entity_owner_id;
     const homePosition = ownerEntity
       ? getComponentValue(Position, getEntityIdFromKeys([BigInt(ownerEntity)]))
       : undefined;
 
-    let destinationType: DESTINATION_TYPE | undefined;
-    if (position && getHyperstructureEntityId({ x: position.x, y: position.y })) {
-      destinationType = DESTINATION_TYPE.HYPERSTRUCTURE;
-    } else {
-      destinationType = DESTINATION_TYPE.HOME;
-    }
-
     return {
-      caravanId,
+      entityId,
       arrivalTime: arrivalTime?.arrives_at,
-      pickupArrivalTime: resourceChest?.locked_until,
-      resourcesChestId,
       blocked: Boolean(movable?.blocked),
       capacity: divideByPrecision(Number(capacity?.weight_gram) || 0),
       intermediateDestination,
@@ -72,7 +62,7 @@ export function useCaravan() {
       owner: owner?.address,
       isMine: owner?.address === BigInt(account.address),
       isRoundTrip: movable?.round_trip || false,
-      destinationType,
+      resources,
     };
   };
 
@@ -113,7 +103,7 @@ export function useCaravan() {
     return Number(donkeysQuantity?.count) || 0;
   }
   return {
-    getCaravanInfo,
+    getCaravanInfo: getEntityInfo,
     calculateDistance,
     getRealmDonkeysCount,
     useRealmDonkeysCount,

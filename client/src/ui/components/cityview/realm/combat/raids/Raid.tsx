@@ -47,12 +47,12 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const { realmId, realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getResourcesFromInventory, offloadChests } = useResources();
+  const { getResourcesFromBalance, offloadChests } = useResources();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const inventoryResources = raider.entityId ? getResourcesFromInventory(raider.entityId) : undefined;
+  const inventoryResources = raider.entityId ? getResourcesFromBalance(raider.entityId) : undefined;
 
   // capacity
   let resourceWeight = useMemo(() => {

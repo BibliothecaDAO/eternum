@@ -34,96 +34,53 @@ type EntityProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Entity = ({ entityId, ...props }: EntityProps) => {
-  // const {
-  //   caravanId: entityId,
-  //   position,
-  //   homePosition,
-  //   arrivalTime,
-  //   isRoundTrip,
-  //   intermediateDestination,
-  //   blocked,
-  //   capacity,
-  //   pickupArrivalTime,
-  //   destinationType,
-  // } = entity;
-
   const { getCaravanInfo } = useCaravan();
   const entityInfo = getCaravanInfo(entityId);
-  console.log({ entityInfo });
-  const {
-    position,
-    homePosition,
-    arrivalTime,
-    isRoundTrip,
-    intermediateDestination,
-    blocked,
-    capacity,
-    pickupArrivalTime,
-    destinationType,
-  } = entityInfo;
+  const { position, arrivalTime, blocked, capacity, resources } = entityInfo;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const {
     account: { account },
     setup: {
-      systemCalls: { transfer_items },
+      systemCalls: { send_resources },
     },
   } = useDojo();
 
   const [isLoading, setIsLoading] = React.useState(false);
   const [showTravel, setShowTravel] = React.useState(false);
 
-  const { getResourcesFromInventory } = useResources();
+  const { getResourcesFromBalance } = useResources();
 
-  const inventoryResources = getResourcesFromInventory(entityId);
+  const entityResources = getResourcesFromBalance(entityId);
   const depositEntityIds = position ? useGetOwnedEntityOnPosition(BigInt(account.address), position) : [];
   const depositEntityId = depositEntityIds[0];
 
   // capacity
   let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...inventoryResources.resources]);
-  }, [inventoryResources]);
+    return getTotalResourceWeight([...entityResources]);
+  }, [entityResources]);
 
-  const hasResources = resourceWeight > 0;
-
-  const isHome = position && homePosition && position.x === homePosition.x && position.y === homePosition.y;
-
-  const intermediateDestinationRealmId = intermediateDestination
-    ? getRealmIdByPosition(intermediateDestination)
-    : undefined;
-  const destinationRealmName = intermediateDestinationRealmId
-    ? getRealmNameById(intermediateDestinationRealmId)
-    : undefined;
+  const hasResources = entityResources.length > 0;
 
   const isTraveling =
     !blocked && nextBlockTimestamp !== undefined && arrivalTime !== undefined && arrivalTime > nextBlockTimestamp;
   const isWaitingForDeparture = blocked;
   const isIdle = !isTraveling && !isWaitingForDeparture && !resourceWeight;
   const isWaitingToOffload = !blocked && !isTraveling && resourceWeight > 0;
-  const hasArrivedPickupPosition =
-    pickupArrivalTime !== undefined && nextBlockTimestamp !== undefined && pickupArrivalTime <= nextBlockTimestamp;
-
   if ((blocked || isTraveling) && props.idleOnly) {
     return null;
   }
 
-  const isTrading =
-    isTraveling &&
-    destinationType === DESTINATION_TYPE.HOME &&
-    intermediateDestinationRealmId !== undefined &&
-    destinationRealmName;
-
   const onOffload = async (receiverEntityId: bigint) => {
     setIsLoading(true);
-    if (entityId && inventoryResources) {
-      await transfer_items({
-        sender_id: entityId,
-        receiver_id: receiverEntityId,
-        indices: inventoryResources.indices,
+    if (entityId && hasResources) {
+      await send_resources({
+        sender_entity_id: entityId,
+        recipient_entity_id: receiverEntityId,
+        resources: entityResources.flatMap((resource) => [resource.resourceId, resource.amount]),
         signer: account,
-      });
+      }).finally(() => setIsLoading(false));
     }
-    setIsLoading(false);
   };
 
   const onCloseTravel = () => {
@@ -149,19 +106,8 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
               </div>
             </div>
           )}
-          {/* when you are trading */}
-          {isTrading && (
-            <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
-              <div className="flex items-center ml-1 mr-1 text-gold">
-                <OrderIcon order={getRealmOrderNameById(intermediateDestinationRealmId)} className="mr-1" size="xxs" />
-                {destinationRealmName}
-                <span className="italic text-light-pink ml-1">with</span>
-              </div>
-            </div>
-          )}
           {/* when you are not trading (trading is round trip) it means you are either going to/coming from bank/hyperstructure */}
-          {isTraveling && !isRoundTrip && (
+          {isTraveling && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">{`Traveling`}</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
@@ -171,7 +117,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
           )}
           {capacity && resourceWeight !== undefined && (
             <div className="flex items-center ml-1 text-gold">
-              {!isIdle && hasArrivedPickupPosition ? divideByPrecision(Math.round(resourceWeight)) : 0}
+              {!isIdle ? divideByPrecision(Math.round(resourceWeight)) : 0}
               <div className="mx-0.5 italic text-light-pink">/</div>
               {`${capacity / 1000} kg`}
             </div>
@@ -198,9 +144,8 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
       <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
         {!isIdle &&
           !isWaitingForDeparture &&
-          hasArrivedPickupPosition &&
-          inventoryResources &&
-          inventoryResources.resources.map(
+          resources &&
+          resources.map(
             (resource) =>
               resource && (
                 <ResourceCost

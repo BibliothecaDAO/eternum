@@ -19,12 +19,12 @@ type IncomingOrderProps = {
 export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [isLoading, setIsLoading] = useState(false);
-  const { getResourcesFromInventory, offloadChests } = useResources();
+  const { getResourcesFromBalance } = useResources();
   const { getCaravanInfo } = useCaravan();
 
   const { intermediateDestination, arrivalTime } = getCaravanInfo(caravanId);
 
-  const resourcesGet = getResourcesFromInventory(caravanId);
+  const resourcesGet = getResourcesFromBalance(caravanId);
 
   const offload = async () => {
     setIsLoading(true);

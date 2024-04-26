@@ -733,6 +733,13 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    OwnedResourcesTracker: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.BigInt, resource_types: RecsType.BigInt },
+        { metadata: { name: "OwnedResourcesTracker", types: ["u128", "felt252"], customTypes: [] } },
+      );
+    })(),
     DetachedResource: (() => {
       return defineComponent(
         world,
