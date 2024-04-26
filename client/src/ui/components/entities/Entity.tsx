@@ -1,30 +1,22 @@
 import React, { useMemo } from "react";
-import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import ProgressBar from "@/ui/elements/ProgressBar";
-import { Dot } from "@/ui/elements/Dot";
 import clsx from "clsx";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
-import { CaravanInterface, DESTINATION_TYPE, CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "@/ui/utils/realms";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { useGetBankAccountOnPosition, useGetOwnedEntityOnPosition, useResources } from "@/hooks/helpers/useResources";
+import { useGetOwnedEntityOnPosition, useResources } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useCaravan } from "@/hooks/helpers/useCaravans";
 import { TravelEntityPopup } from "./TravelEntityPopup";
+import { useEntities } from "@/hooks/helpers/useEntities";
+import { ENTITY_TYPE } from "@bibliothecadao/eternum";
 
-enum ENTITY_TYPE {
-  CARAVAN,
-  TROOP,
-}
-
-const entityIcon = {
-  [ENTITY_TYPE.CARAVAN]: "🫏",
+const entityIcon: Record<ENTITY_TYPE, string> = {
+  [ENTITY_TYPE.DONKEY]: "🫏",
   [ENTITY_TYPE.TROOP]: "🥷",
+  [ENTITY_TYPE.UNKNOWN]: "❓", // Add a default or placeholder icon for UNKNOWN
 };
 
 type EntityProps = {
@@ -34,9 +26,9 @@ type EntityProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Entity = ({ entityId, ...props }: EntityProps) => {
-  const { getCaravanInfo } = useCaravan();
-  const entityInfo = getCaravanInfo(entityId);
-  const { position, arrivalTime, blocked, capacity, resources } = entityInfo;
+  const { getEntityInfo } = useEntities();
+  const entityInfo = getEntityInfo(entityId);
+  const { position, arrivalTime, blocked, capacity, resources, entityType } = entityInfo;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const {
@@ -162,7 +154,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
         <div className="grid w-full grid-cols-1 gap-5">
           <div className="flex flex-col">
             <div className="flex items-center justify-between mt-[6px] text-xxs">
-              <div className="text-xl">{entityIcon[ENTITY_TYPE.CARAVAN]}</div>
+              <div className="text-xl">{entityIcon[entityType]}</div>
               <div className="">
                 {hasResources && depositEntityId !== undefined && (
                   <Button

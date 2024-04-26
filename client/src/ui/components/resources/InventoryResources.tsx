@@ -11,7 +11,7 @@ export const InventoryResources = ({ entityId }: { entityId: bigint }) => {
     <div className="flex items-center justify-between mt-[8px] text-xxs">
       {inventoryResources && (
         <div className="flex justify-center items-center space-x-1 flex-wrap">
-          {inventoryResources.resources.map(
+          {inventoryResources.map(
             (resource) =>
               resource && (
                 <ResourceCost

@@ -27,7 +27,7 @@ const STEPS = [
   },
 ];
 
-export const TransferBetweenEntities = () => {
+export const TransferBetweenEntities = ({ entities }: { entities: any[] }) => {
   const [selectedEntityIdFrom, setSelectedEntityIdFrom] = useState<bigint | null>(null);
   const [selectedEntityIdTo, setSelectedEntityIdTo] = useState<bigint | null>(null);
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
@@ -37,7 +37,6 @@ export const TransferBetweenEntities = () => {
   const [canCarry, setCanCarry] = useState(true);
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
-  const { playerRealms, playerAccounts } = useEntities();
 
   const {
     account: { account },
@@ -76,12 +75,12 @@ export const TransferBetweenEntities = () => {
             <SelectEntityFromList
               onSelect={setSelectedEntityIdFrom}
               selectedEntityId={selectedEntityIdFrom}
-              entities={[...playerRealms(), ...playerAccounts()]}
+              entities={entities}
             />
             <SelectEntityFromList
               onSelect={setSelectedEntityIdTo}
               selectedEntityId={selectedEntityIdTo}
-              entities={[...playerRealms(), ...playerAccounts()]}
+              entities={entities}
             />
           </div>
           <Button

@@ -5,7 +5,6 @@ export const ResourceArrivals = ({ entityId }: { entityId: bigint }) => {
   const { getArrivalsWithResources } = useResources();
 
   const entityIds = getArrivalsWithResources(entityId);
-  console.log({ entityIds });
 
   return (
     <div>

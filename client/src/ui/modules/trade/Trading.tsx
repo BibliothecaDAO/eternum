@@ -47,7 +47,7 @@ export const Trading = () => {
             <div>Transfer</div>
           </div>
         ),
-        component: <TransferBetweenEntities />,
+        component: <TransferBetweenEntities entities={[...playerRealms(), ...playerAccounts()]} />,
       },
       {
         key: "arrivals",
