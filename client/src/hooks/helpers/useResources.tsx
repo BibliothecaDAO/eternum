@@ -187,7 +187,13 @@ export const useGetOwnedEntityOnPosition = (address: bigint, position: Position)
     },
   } = useDojo();
 
-  const entities = runQuery([HasValue(Owner, { address }), Not(Movable), HasValue(Position, { ...position })]);
+  const entities = runQuery([
+    HasValue(Owner, { address }),
+    Not(Movable),
+    // don't want bank but bank accounts
+    Not(Bank),
+    HasValue(Position, { ...position }),
+  ]);
 
   return Array.from(entities)
     .map((entityId) => {
