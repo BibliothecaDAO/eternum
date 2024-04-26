@@ -92,8 +92,8 @@ export interface SendResourcesProps extends SystemSigner {
 }
 
 export interface PickupResourcesProps extends SystemSigner {
-  donkey_owner_entity_id: num.BigNumberish;
-  resource_owner_entity_id: num.BigNumberish;
+  recipient_entity_id: num.BigNumberish;
+  owner_entity_id: num.BigNumberish;
   resources: num.BigNumberish[];
 }
 

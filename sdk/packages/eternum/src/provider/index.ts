@@ -260,13 +260,20 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async pickup_resources(props: SystemProps.PickupResourcesProps) {
-    const { donkey_owner_entity_id, resource_owner_entity_id, resources, signer } = props;
+    const { recipient_entity_id, owner_entity_id, resources, signer } = props;
 
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "resource_systems"),
-      entrypoint: "pickup",
-      calldata: [donkey_owner_entity_id, resource_owner_entity_id, resources],
-    });
+    const tx = await this.executeMulti(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, "resource_systems"),
+        entrypoint: "approve",
+        calldata: [owner_entity_id, recipient_entity_id, resources.length / 2, ...resources],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, "resource_systems"),
+        entrypoint: "pickup",
+        calldata: [recipient_entity_id, owner_entity_id, resources.length / 2, ...resources],
+      },
+    ]);
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
