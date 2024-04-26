@@ -1,7 +1,5 @@
 #!/bin/bash
 
-KATANA_TOML_PATH="./manifests/dev/manifest.toml"
-
 get_contract_address() {
     local contract_name="$1"
     awk -v name="$contract_name" '
