@@ -1,5 +1,6 @@
 use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
+use eternum::models::buildings::BuildingCategory;
 use eternum::models::config::TroopConfig;
 use eternum::models::position::Coord;
 
@@ -56,23 +57,6 @@ trait ICombatConfig {
 
 
 #[dojo::interface]
-trait ILaborConfig {
-    fn set_labor_cost_resources(
-        resource_type_labor: felt252, resource_types_packed: u128, resource_types_count: u8
-    );
-
-    fn set_labor_cost_amount(
-        resource_type_labor: felt252, resource_type_cost: felt252, resource_type_value: u128
-    );
-
-    fn set_labor_config(
-        base_labor_units: u64, base_resources_per_cycle: u128, base_food_per_cycle: u128
-    );
-
-    fn set_labor_auction(decay_constant: u128, per_time_unit: u128, price_update_interval: u128);
-}
-
-#[dojo::interface]
 trait ITransportConfig {
     fn set_road_config(resource_costs: Span<(u8, u128)>, speed_up_by: u64);
 
@@ -111,26 +95,6 @@ trait IBankConfig {
     fn set_bank_config(lords_cost: u128, lp_fee_scaled: u128);
 }
 
-#[dojo::interface]
-trait IBuildingsConfig {
-    fn set_labor_buildings_config(
-        level_multiplier: u128,
-        level_discount_mag: u128,
-        resources_category_1: u128,
-        resources_category_1_count: u8,
-        resources_category_2: u128,
-        resources_category_2_count: u8,
-        resources_category_3: u128,
-        resources_category_3_count: u8,
-        resources_category_4: u128,
-        resources_category_4_count: u8,
-        building_category_1_resource_costs: Span<(u8, u128)>,
-        building_category_2_resource_costs: Span<(u8, u128)>,
-        building_category_3_resource_costs: Span<(u8, u128)>,
-        building_category_4_resource_costs: Span<(u8, u128)>,
-    );
-}
-
 
 #[dojo::interface]
 trait IMapConfig {
@@ -148,4 +112,12 @@ trait IProductionConfig {
 #[dojo::interface]
 trait ITroopConfig {
     fn set_troop_config(troop_config: TroopConfig);
+}
+#[dojo::interface]
+trait IBuildingConfig {
+    fn set_building_config(
+        building_category: BuildingCategory,
+        building_resource_type: u8,
+        cost_of_building: Span<(u8, u128)>
+    );
 }

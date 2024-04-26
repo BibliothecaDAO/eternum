@@ -2,12 +2,15 @@ use core::poseidon::poseidon_hash_span as hash;
 use core::zeroable::Zeroable;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::ResourceTypes;
-use eternum::models::config::{TickConfig, TickImpl, TickTrait, ProductionConfig};
+use eternum::models::config::{
+    TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigImpl
+};
 use eternum::models::owner::{Owner, OwnerTrait, EntityOwner};
 use eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
 use eternum::models::production::{
     Production, ProductionInput, ProductionRateTrait, ProductionInputImpl
 };
+use eternum::models::resources::ResourceTrait;
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 
 //todo we need to define border of innner hexes
@@ -486,6 +489,11 @@ impl BuildingImpl of BuildingTrait {
 
         set!(world, (building));
 
+        // make payment for building
+        BuildingImpl::make_payment(
+            world, building.outer_entity_id, building.category, building.produced_resource_type
+        );
+
         // start production related to building
         building.start_production(world);
 
@@ -519,6 +527,28 @@ impl BuildingImpl of BuildingTrait {
         building.outer_entity_id = 0;
 
         set!(world, (building));
+    }
+
+    fn make_payment(
+        world: IWorldDispatcher, entity_id: u128, category: BuildingCategory, resource_type: u8
+    ) {
+        let building_config: BuildingConfig = BuildingConfigImpl::get(
+            world, category, resource_type
+        );
+        let mut index = 0;
+        loop {
+            if index == building_config.resource_cost_count {
+                break;
+            }
+
+            let resource_cost: ResourceCost = get!(
+                world, (building_config.resource_cost_id, index), ResourceCost
+            );
+            let mut resource = ResourceImpl::get(world, (entity_id, resource_cost.resource_type));
+            resource.burn(resource_cost.amount);
+            resource.save(world);
+            index += 1;
+        };
     }
 
     fn is_active(self: Building) -> bool {
