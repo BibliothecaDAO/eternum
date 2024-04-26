@@ -75,7 +75,7 @@ export const FastCreateOfferPopup = ({
     }
   }, [directOfferRealmId]);
 
-  const createOrder = async () => {
+  const createOrder = () => {
     const selectedRealmEntityId = selectedRealmId ? getRealmEntityIdFromRealmId(selectedRealmId) : 0;
     setIsLoading(true);
     if (!nextBlockTimestamp) return;
@@ -92,8 +92,10 @@ export const FastCreateOfferPopup = ({
         multiplyByPrecision(selectedResourcesGetAmounts[id]),
       ]),
       expires_at: nextBlockTimestamp + ONE_MONTH,
+    }).finally(() => {
+      setIsLoading(false);
+      onClose();
     });
-    onClose();
   };
 
   return (

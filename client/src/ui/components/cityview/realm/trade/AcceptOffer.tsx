@@ -47,11 +47,8 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
       signer: account,
       taker_id: realmEntityId,
       trade_id: selectedTrade.tradeId,
-      maker_gives_resources: selectedResourceIdsGive.flatMap((id) => [
-        id,
-        multiplyByPrecision(selectedResourcesGiveAmounts[id]),
-      ]),
-      taker_gives_resources: selectedResourceIdsGet.flatMap((id) => [id, selectedResourcesGetAmounts[id]]),
+      maker_gives_resources: selectedResourceIdsGet.flatMap((id) => [id, selectedResourcesGetAmounts[id]]),
+      taker_gives_resources: selectedResourceIdsGive.flatMap((id) => [id, selectedResourcesGiveAmounts[id]]),
     });
     deleteTrade(selectedTrade.tradeId);
     if (selectedTrade.takerId === realmEntityId) {
@@ -67,7 +64,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
   const selectedResourcesGetAmounts = useMemo(() => {
     let selectedResourcesGetAmounts: { [resourceId: number]: number } = {};
     resourcesGet.forEach((resource) => {
-      selectedResourcesGetAmounts[resource.resourceId] = divideByPrecision(resource.amount);
+      selectedResourcesGetAmounts[resource.resourceId] = resource.amount;
     });
     return selectedResourcesGetAmounts;
   }, [selectedTrade]);
@@ -75,18 +72,19 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
   const selectedResourcesGiveAmounts = useMemo(() => {
     let selectedResourcesGiveAmounts: { [resourceId: number]: number } = {};
     resourcesGive.forEach((resource) => {
-      selectedResourcesGiveAmounts[resource.resourceId] = divideByPrecision(resource.amount);
+      selectedResourcesGiveAmounts[resource.resourceId] = resource.amount;
     });
     return selectedResourcesGiveAmounts;
   }, [selectedTrade]);
 
   return (
     <OSWindow title={acceptOfferTitle} onClick={onClose} show={show} width="456px">
-      <div className="flex justify-between m-2 text-xxs">
-        <ResourceWeightsInfo entityId={realmEntityId} resources={resourcesGet} setCanCarry={setCanCarry} />
-        <Button className="!px-[6px] !py-[2px] text-xxs" onClick={onClose} variant="outline">
-          Cancel
-        </Button>
+      <div className="flex flex-col items-center m-2 text-xxs">
+        <ResourceWeightsInfo
+          entityId={realmEntityId}
+          resources={resourcesGet.map(({ resourceId, amount }) => ({ resourceId, amount: divideByPrecision(amount) }))}
+          setCanCarry={setCanCarry}
+        />
         <Button
           disabled={!canCarry}
           className="!px-[6px] !py-[2px] text-xxs"
@@ -95,6 +93,9 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
           isLoading={isLoading}
         >
           Accept Offer
+        </Button>
+        <Button className="!px-[6px] !py-[2px] text-xxs" onClick={onClose} variant="outline">
+          Cancel
         </Button>
       </div>
     </OSWindow>
