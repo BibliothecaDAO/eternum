@@ -1,3 +1,4 @@
+use core::fmt::{Display, Formatter, Error};
 use core::integer::BoundedInt;
 use debug::PrintTrait;
 
@@ -8,7 +9,6 @@ use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait}
 
 use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
 use eternum::utils::math::{is_u256_bit_set, set_u256_bit};
-use core::fmt::{Display, Formatter, Error};
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -22,7 +22,9 @@ struct Resource {
 
 impl ResourceDisplay of Display<Resource> {
     fn fmt(self: @Resource, ref f: Formatter) -> Result<(), Error> {
-        let str: ByteArray = format!("Resource ({}, {}, {})", *self.entity_id, *self.resource_type, *self.balance);
+        let str: ByteArray = format!(
+            "Resource ({}, {}, {})", *self.entity_id, *self.resource_type, *self.balance
+        );
         f.buffer.append(@str);
         Result::Ok(())
     }
@@ -155,7 +157,7 @@ impl ResourceImpl of ResourceTrait {
         };
 
         assert!(self.balance >= amount, "not enough resources, {}", self);
-        
+
         if amount > self.balance {
             self.balance = 0;
         } else {
@@ -195,7 +197,6 @@ impl ResourceImpl of ResourceTrait {
                 set!(world, (entity_owned_resources));
             }
         }
-        
     }
 
     fn harvest(ref self: Resource, world: IWorldDispatcher) {
@@ -209,7 +210,6 @@ impl ResourceImpl of ResourceTrait {
             set!(world, (production));
         }
     }
-
 }
 
 
@@ -226,7 +226,7 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
     /// * `bool` - Whether the entity owns the resource
     ///
     fn owns_resource_type(self: @OwnedResourcesTracker, resource_type: u8) -> bool {
-        let pos =resource_type - 1;
+        let pos = resource_type - 1;
         is_u256_bit_set((*self).resource_types, pos.into())
     }
 
@@ -272,7 +272,6 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
 
         return (owned_resource_types.span(), owned_resource_probabilities.span());
     }
-
 }
 
 #[cfg(test)]
