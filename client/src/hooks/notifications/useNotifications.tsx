@@ -48,7 +48,7 @@ export const useNotifications = () => {
   // }, [hyperstructureId]);
 
   const { getEntityLevel, getHyperstructureLevelBonus, getRealmLevelBonus } = useLevel();
-  const { getResourcesFromBalance, getResourcesFromResourceChestIds } = useResources();
+  const { getResourcesFromBalance } = useResources();
   const { getEntitiesCombatInfo } = useCombat();
 
   const { notifications, addUniqueNotifications } = useNotificationsStore();
@@ -78,13 +78,14 @@ export const useNotifications = () => {
         );
         newNotifications = newNotifications.concat(laborNotifications);
 
-        let emptyChestNotifications = generateEmptyChestNotifications(
-          realmPositions,
-          components,
-          nextBlockTimestamp,
-          getResourcesFromBalance,
-        );
-        newNotifications = newNotifications.concat(emptyChestNotifications);
+        // let emptyChestNotifications =
+        // generateEmptyChestNotifications(
+        //   realmPositions,
+        //   components,
+        //   nextBlockTimestamp,
+        //   getResourcesFromBalance,
+        // );
+        // newNotifications = newNotifications.concat(emptyChestNotifications);
 
         // if (hyperstructure) {
         //   let arrivedAtHyperstructureNotifications = generateArrivedAtHyperstructureNotifications(
@@ -171,9 +172,10 @@ export const useNotifications = () => {
         const subscription = observable.subscribe((event) => {
           if (event) {
             let parsedEvent = parseCombatEvent(event);
-            parsedEvent.stolenResources = parsedEvent.stolenResources.concat(
-              getResourcesFromResourceChestIds(parsedEvent.stolenChestsIds),
-            );
+            parsedEvent.stolenResources = parsedEvent.stolenResources
+              .concat
+              // getResourcesFromResourceChestIds(parsedEvent.stolenChestsIds),
+              ();
             const newNotification = createCombatNotification(parsedEvent);
             addUniqueNotifications([newNotification]);
           }

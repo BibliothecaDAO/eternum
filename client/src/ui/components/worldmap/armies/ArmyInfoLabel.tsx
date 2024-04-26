@@ -52,7 +52,6 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
         key={raider.entityId}
         raider={raider}
         getRealmAddressName={getRealmAddressName}
-        getResourcesFromBalance={getResourcesFromBalance}
         nextBlockTimestamp={nextBlockTimestamp}
         isPassiveTravel={isPassiveTravel}
         isActiveTravel={isActiveTravel}
@@ -64,14 +63,12 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
 const RaiderInfo = ({
   raider,
   getRealmAddressName,
-  getResourcesFromBalance,
   nextBlockTimestamp,
   isPassiveTravel,
   isActiveTravel,
 }: {
   raider: CombatInfo;
   getRealmAddressName: (name: bigint) => string;
-  getResourcesFromBalance: (entityId: bigint) => { resources: Resource[]; indices: number[] };
   nextBlockTimestamp: number | undefined;
   isPassiveTravel: boolean;
   isActiveTravel: boolean;

@@ -47,7 +47,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const { realmId, realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getResourcesFromBalance, offloadChests } = useResources();
+  const { getResourcesFromBalance } = useResources();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -56,7 +56,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
 
   // capacity
   let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...(inventoryResources?.resources || [])]);
+    return getTotalResourceWeight([...(inventoryResources || [])]);
   }, [inventoryResources]);
 
   const watchTowerId = useMemo(() => {
@@ -69,7 +69,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
     setIsLoading(true);
     if (raider?.entityId && inventoryResources) {
       // await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices, inventoryResources.resources);
-      await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices);
+      // await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices);
     }
     setIsLoading(false);
   };
@@ -103,7 +103,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   };
 
   const isYours = raider.owner === BigInt(account.address);
-  const hasResources = inventoryResources && inventoryResources.resources.length > 0;
+  const hasResources = inventoryResources && inventoryResources.length > 0;
   const isTraveling = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
   const isOnWatchTower = watchTowerId !== undefined;
   const hasMaxHealth = health === 10 * quantity;
@@ -273,7 +273,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
         <div className="flex items-center justify-between mt-[8px] text-xxs">
           {inventoryResources && (
             <div className="flex justify-center items-center space-x-1 flex-wrap">
-              {inventoryResources.resources.map(
+              {inventoryResources.map(
                 (resource) =>
                   resource && (
                     <ResourceCost

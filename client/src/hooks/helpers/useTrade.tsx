@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { calculateRatio } from "../../ui/components/cityview/realm/trade/Market/MarketOffer";
+import { SortInterface } from "../../ui/elements/SortButton";
 import useBlockchainStore from "../store/useBlockchainStore";
 import useMarketStore, { isLordsMarket } from "../store/useMarketStore";
 import { useEntityQuery } from "@dojoengine/react";
@@ -194,4 +195,52 @@ export function useSetDirectOffers() {
     const trades = computeTrades(entityIds);
     setDirectOffers(trades);
   }, [entityIds, nextBlockTimestamp]);
+}
+
+/**
+ * sort trades based on active filters
+ */
+export function sortTrades(trades: MarketInterface[], _activeSort: SortInterface): MarketInterface[] {
+  // todo: find a way to sort even though not in marketinterface anymore
+
+  // if (activeSort.sort !== "none") {
+  //   if (activeSort.sortKey === "ratio") {
+  //     return trades.sort((a, b) => {
+  //       if (activeSort.sort === "asc") {
+  //         return a.ratio - b.ratio;
+  //       } else {
+  //         return b.ratio - a.ratio;
+  //       }
+  //     });
+  //   } else if (activeSort.sortKey === "time") {
+  //     return trades.sort((a, b) => {
+  //       if (activeSort.sort === "asc") {
+  //         return a.expiresAt - b.expiresAt;
+  //       } else {
+  //         return b.expiresAt - a.expiresAt;
+  //       }
+  //     });
+  //   } else if (activeSort.sortKey === "distance") {
+  //     return trades.sort((a, b) => {
+  //       if (activeSort.sort === "asc") {
+  //         return a.distance - b.distance;
+  //       } else {
+  //         return b.distance - a.distance;
+  //       }
+  //     });
+  //   } else if (activeSort.sortKey === "realm") {
+  //     return trades.sort((a, b) => {
+  //       if (activeSort.sort === "asc") {
+  //         return Number(a.makerId - b.makerId);
+  //       } else {
+  //         return Number(b.makerId - a.makerId);
+  //       }
+  //     });
+  //   } else {
+  //     return trades;
+  //   }
+  // } else {
+  //   return trades.sort((a, b) => Number(b!.tradeId - a!.tradeId));
+  // }
+  return trades;
 }

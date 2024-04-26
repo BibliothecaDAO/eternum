@@ -27,7 +27,6 @@ export function useCombat() {
         ArrivalTime,
         TownWatch,
         Realm,
-        Inventory,
         Army,
       },
     },
@@ -122,7 +121,6 @@ export function useCombat() {
       Has(Movable),
       NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
       HasValue(Health, { value: 0n }),
-      NotValue(Inventory, { items_count: 0n }),
       NotValue(Owner, { address: owner }),
     ]);
 

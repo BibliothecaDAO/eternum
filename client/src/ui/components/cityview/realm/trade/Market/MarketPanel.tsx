@@ -7,7 +7,6 @@ import { ResourceFilter } from "./ResourceFilter";
 import { OrdersFilter } from "./OrdersFilter";
 import Button from "../../../../../elements/Button";
 import { MarketOffer } from "./MarketOffer";
-import { AcceptOfferPopup } from "../AcceptOffer";
 import { sortTrades, useTrade } from "../../../../../../hooks/helpers/useTrade";
 import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
 import { MarketInterface } from "@bibliothecadao/eternum";
@@ -80,20 +79,20 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
     return (
       <div className="flex flex-col p-2 space-y-2">
         {sortTrades(market, activeSort)
-          .filter((offer) => {
+          .filter((offer: any) => {
             return canAcceptFilterActive ? canAcceptOffer({ realmEntityId, resourcesGive: offer.makerGets }) : true;
           })
-          .filter((offer) => {
+          .filter((offer: any) => {
             return hasResources(offer.takerGets, selectedBuyResources);
           })
-          .filter((offer) => {
+          .filter((offer: any) => {
             return hasResources(offer.makerGets, selectedSellResources);
           })
-          .filter((offer) => {
+          .filter((offer: any) => {
             return selectedOrders.length === 0 || selectedOrders.includes(offer.makerOrder);
           })
           .slice(0, visibleOffersCount) // modify this line to control the number of displayed offers
-          .map((trade) => (
+          .map((trade: any) => (
             <MarketOffer
               key={trade.tradeId}
               marketOffer={trade}

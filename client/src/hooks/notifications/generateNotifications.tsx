@@ -138,10 +138,7 @@ export const generateEmptyChestNotifications = (
   realmPositions: realmsPosition,
   components: Components,
   nextBlockTimestamp: number,
-  getResourcesFromBalance: (entityId: bigint) => {
-    resources: Resource[];
-    indices: number[];
-  },
+  getResourcesFromBalance: (entityId: bigint) => Resource[],
 ) => {
   const notifications: NotificationType[] = [];
   for (const { realmId, position: realmPosition } of realmPositions) {
@@ -163,23 +160,23 @@ export const generateEmptyChestNotifications = (
 
       // get key
       const entityId = getComponentValue(components.Position, id)!.entity_id;
-      const { resources, indices } = getResourcesFromBalance(entityId);
+      const resources = getResourcesFromBalance(entityId);
 
       const carrierType = CarrierType.Raiders;
 
       if (arrivalTime?.arrives_at && arrivalTime.arrives_at <= nextBlockTimestamp) {
-        notifications.push({
-          eventType: EventType.EmptyChest,
-          keys: [entityId.toString()],
-          data: {
-            destinationRealmId: realmId,
-            carrierType,
-            realmEntityId,
-            entityId: BigInt(entityId),
-            resources,
-            indices,
-          },
-        });
+        // notifications.push({
+        //   eventType: EventType.EmptyChest,
+        //   keys: [entityId.toString()],
+        //   data: {
+        //     destinationRealmId: realmId,
+        //     carrierType,
+        //     realmEntityId,
+        //     entityId: BigInt(entityId),
+        //     resources,
+        //     indices,
+        //   },
+        // });
       }
     }
   }
