@@ -35,6 +35,7 @@ mod donkey_systems {
             // get number of donkeys needed
             let donkey_amount = InternalDonkeySystemsImpl::get_donkey_needed(world, weight);
 
+
             // burn amount of donkey needed
             let mut donkeys: Resource = ResourceImpl::get(world, (payer_id, ResourceTypes::DONKEY));
             donkeys.burn(donkey_amount);
@@ -74,8 +75,14 @@ mod donkey_systems {
         fn get_donkey_needed(world: IWorldDispatcher, resources_weight: u128,) -> u128 {
             let capacity_per_donkey = get!(
                 world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), CapacityConfig
-            );
-            resources_weight / capacity_per_donkey.weight_gram
+            ).weight_gram;
+            let reminder = resources_weight % capacity_per_donkey;
+            let donkeys = if reminder == 0 {
+                resources_weight / capacity_per_donkey
+            } else {
+                resources_weight / capacity_per_donkey + 1
+            };
+            donkeys * 1000
         }
 
         fn get_donkey_travel_time(
