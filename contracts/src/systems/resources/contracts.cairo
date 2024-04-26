@@ -28,7 +28,7 @@ mod resource_systems {
     use eternum::models::realm::Realm;
     use eternum::models::resources::LockTrait;
     use eternum::models::resources::{
-        Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceLock
+        Resource, ResourceImpl, ResourceTrait, ResourceAllowance
     };
     use eternum::models::resources::{DetachedResource};
     use eternum::models::road::RoadImpl;
@@ -228,9 +228,9 @@ mod resource_systems {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
                         if !mint_resources {
-                            // ensure resource balance is not locked 
-                            let resource_lock: ResourceLock = get!(world, sender_id, ResourceLock);
-                            resource_lock.assert_not_locked();
+                            // // ensure resource balance is not locked 
+                            // let resource_lock: ResourceLock = get!(world, sender_id, ResourceLock);
+                            // resource_lock.assert_not_locked();
 
                             // burn resources from sender's balance
                             let mut sender_resource = ResourceImpl::get(
@@ -289,17 +289,17 @@ mod resource_systems {
                 );
 
                 // lock resource balance until it is in possession of the recipient
-                let transport_arrival_time: ArrivalTime = get!(world, transport_id, ArrivalTime);
-                let is_round_trip: bool = caller_id == recipient_id;
-                if is_round_trip {
-                    let resources_collected_at: u64 = transport_arrival_time.arrives_at / 2;
-                    set!(
-                        world,
-                        (ResourceLock {
-                            entity_id: transport_id, release_at: resources_collected_at
-                        })
-                    );
-                }
+                // let transport_arrival_time: ArrivalTime = get!(world, transport_id, ArrivalTime);
+                // let is_round_trip: bool = caller_id == recipient_id;
+                // if is_round_trip {
+                //     let resources_collected_at: u64 = transport_arrival_time.arrives_at / 2;
+                //     set!(
+                //         world,
+                //         (ResourceLock {
+                //             entity_id: transport_id, release_at: resources_collected_at
+                //         })
+                //     );
+                // }
             }
 
             // emit transfer event
