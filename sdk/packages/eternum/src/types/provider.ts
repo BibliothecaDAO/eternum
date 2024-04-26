@@ -67,12 +67,22 @@ export interface TravelHexProps extends SystemSigner {
 
 export interface CreateOrderProps extends SystemSigner {
   maker_id: num.BigNumberish;
-  maker_gives_resource_types: num.BigNumberish[];
-  maker_gives_resource_amounts: num.BigNumberish[];
+  maker_gives_resources: num.BigNumberish[];
   taker_id: num.BigNumberish;
-  taker_gives_resource_types: num.BigNumberish[];
-  taker_gives_resource_amounts: num.BigNumberish[];
+  taker_gives_resources: num.BigNumberish[];
   expires_at: num.BigNumberish;
+}
+
+export interface AcceptOrderProps extends SystemSigner {
+  taker_id: num.BigNumberish;
+  trade_id: num.BigNumberish;
+  maker_gives_resources: num.BigNumberish[];
+  taker_gives_resources: num.BigNumberish[];
+}
+
+export interface CancelOrderProps extends SystemSigner {
+  trade_id: num.BigNumberish;
+  return_resources: num.BigNumberish[];
 }
 
 export interface SendResourcesProps extends SystemSigner {
@@ -112,15 +122,6 @@ export interface SwapBankAndTravelBackProps extends SystemSigner {
 export interface MintResourcesProps extends SystemSigner {
   receiver_id: num.BigNumberish;
   resources: num.BigNumberish[];
-}
-
-export interface AcceptOrderProps extends SystemSigner {
-  taker_id: num.BigNumberish;
-  trade_id: num.BigNumberish;
-}
-
-export interface CancelOrderProps extends SystemSigner {
-  trade_id: num.BigNumberish;
 }
 
 export interface CreateRoadProps extends SystemSigner {

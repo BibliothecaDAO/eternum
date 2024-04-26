@@ -5,7 +5,7 @@ import { getEntityIdFromKeys, getForeignKeyEntityId } from "../../ui/utils/utils
 import { useEntityQuery } from "@dojoengine/react";
 import { type BigNumberish } from "starknet";
 import { Position, type Resource } from "@bibliothecadao/eternum";
-import { EventType, useNotificationsStore } from "../store/useNotificationsStore";
+import { useNotificationsStore } from "../store/useNotificationsStore";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
 import { useEffect, useMemo, useState } from "react";
 import useBlockchainStore from "../store/useBlockchainStore";
@@ -14,35 +14,15 @@ export function useResources() {
   const {
     account: { account },
     setup: {
-      components: {
-        Inventory,
-        ForeignKey,
-        ResourceChest,
-        DetachedResource,
-        Resource,
-        Position,
-        ResourceCost,
-        Realm,
-        Production,
-        EntityOwner,
-        ArrivalTime,
-      },
+      components: { ForeignKey, DetachedResource, Resource, Position, ResourceCost, Realm, EntityOwner, ArrivalTime },
       systemCalls: { transfer_items },
     },
   } = useDojo();
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
-
   // for any entity that has a resourceChest in its inventory,
-  const getResourcesFromInventory = (entityId: bigint): { resources: Resource[]; indices: number[] } => {
+  const getResourcesFromBalance = (entityId: bigint): { resources: Resource[]; indices: number[] } => {
     const indices: number[] = [];
     const resources: Record<number, number> = {};
-    const inventory = getComponentValue(Inventory, getEntityIdFromKeys([entityId]));
-
-    if (!inventory) {
-      return { resources: [], indices: [] };
-    }
 
     // todo: switch back to items_count when working
     for (let i = 0; i < inventory.items_count; i++) {
@@ -201,7 +181,7 @@ export function useResources() {
 
   return {
     getRealmsWithSpecificResource,
-    getResourcesFromInventory,
+    getResourcesFromInventory: getResourcesFromBalance,
     getResourcesFromResourceChestIds,
     offloadChests,
     getResourceChestIdFromInventoryIndex,
@@ -304,11 +284,7 @@ export const useGetOwnedEntityOnPosition = (address: bigint, position: Position)
     },
   } = useDojo();
 
-  const entities = runQuery([
-    HasValue(Owner, { address }),
-    Not(Movable),
-    HasValue(Position, { ...position }),
-  ]);
+  const entities = runQuery([HasValue(Owner, { address }), Not(Movable), HasValue(Position, { ...position })]);
 
   return Array.from(entities)
     .map((entityId) => {

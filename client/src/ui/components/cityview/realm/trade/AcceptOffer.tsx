@@ -3,7 +3,7 @@ import Button from "../../../../elements/Button";
 import { useDojo } from "../../../../../hooks/context/DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
-import { divideByPrecision } from "../../../../utils/utils";
+import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 import { MarketInterface } from "@bibliothecadao/eternum";
 import useMarketStore from "../../../../../hooks/store/useMarketStore";
 import { EventType, useNotificationsStore } from "../../../../../hooks/store/useNotificationsStore";
@@ -37,6 +37,9 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
   const deleteTrade = useMarketStore((state) => state.deleteTrade);
   const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
 
+  const selectedResourceIdsGet = selectedTrade.takerGets.map((resource) => resource.resourceId);
+  const selectedResourceIdsGive = selectedTrade.makerGets.map((resource) => resource.resourceId);
+
   const onAccept = async () => {
     setIsLoading(true);
     // todo: only delete if success
@@ -44,6 +47,11 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
       signer: account,
       taker_id: realmEntityId,
       trade_id: selectedTrade.tradeId,
+      maker_gives_resources: selectedResourceIdsGive.flatMap((id) => [
+        id,
+        multiplyByPrecision(selectedResourcesGiveAmounts[id]),
+      ]),
+      taker_gives_resources: selectedResourceIdsGet.flatMap((id) => [id, selectedResourcesGetAmounts[id]]),
     });
     deleteTrade(selectedTrade.tradeId);
     if (selectedTrade.takerId === realmEntityId) {

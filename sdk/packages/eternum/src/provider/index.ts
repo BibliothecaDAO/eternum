@@ -66,41 +66,62 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_order(props: SystemProps.CreateOrderProps) {
-    const {
-      maker_id,
-      maker_gives_resource_types,
-      maker_gives_resource_amounts,
-      taker_id,
-      taker_gives_resource_types,
-      taker_gives_resource_amounts,
-      signer,
-      expires_at,
-    } = props;
+    const { maker_id, maker_gives_resources, taker_id, taker_gives_resources, signer, expires_at } = props;
 
-    let maker_gives_resource = maker_gives_resource_amounts.flatMap((amount, i) => {
-      return [maker_gives_resource_types[i], amount];
-    });
+    // implement that in ui instead
+    // let maker_gives_resource = maker_gives_resource_amounts.flatMap((amount, i) => {
+    //   return [maker_gives_resource_types[i], amount];
+    // });
 
-    let taker_gives_resource = taker_gives_resource_amounts.flatMap((amount, i) => {
-      return [taker_gives_resource_types[i], amount];
-    });
+    // let taker_gives_resource = taker_gives_resource_amounts.flatMap((amount, i) => {
+    //   return [taker_gives_resource_types[i], amount];
+    // });
 
     const tx = await this.executeMulti(signer, [
       {
         contractAddress: getContractByName(this.manifest, "trade_systems"),
         entrypoint: "create_order",
         calldata: [
-          this.getWorldAddress(),
           maker_id,
-          maker_gives_resource_types.length,
-          ...maker_gives_resource,
+          maker_gives_resources.length / 2,
+          ...maker_gives_resources,
           taker_id,
-          taker_gives_resource_types.length,
-          ...taker_gives_resource,
+          taker_gives_resources.length / 2,
+          ...taker_gives_resources,
           expires_at,
         ],
       },
     ]);
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
+  public async accept_order(props: SystemProps.AcceptOrderProps) {
+    const { taker_id, trade_id, maker_gives_resources, taker_gives_resources, signer } = props;
+
+    const tx = await this.executeMulti(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, "trade_systems"),
+        entrypoint: "accept_order",
+        calldata: [
+          taker_id,
+          trade_id,
+          maker_gives_resources.length / 2,
+          ...maker_gives_resources,
+          taker_gives_resources.length / 2,
+          ...taker_gives_resources,
+        ],
+      },
+    ]);
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
+  public async cancel_order(props: SystemProps.CancelOrderProps) {
+    const { trade_id, return_resources, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "trade_systems"),
+      entrypoint: "cancel_order",
+      calldata: [trade_id, return_resources.length / 2, ...return_resources],
+    });
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
@@ -113,29 +134,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [receiver_id, resources.length / 2, ...resources],
     });
 
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async accept_order(props: SystemProps.AcceptOrderProps) {
-    const { taker_id, trade_id, signer } = props;
-
-    const tx = await this.executeMulti(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, "trade_systems"),
-        entrypoint: "accept_order",
-        calldata: [taker_id, trade_id],
-      },
-    ]);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async cancel_order(props: SystemProps.CancelOrderProps) {
-    const { trade_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "trade_systems"),
-      entrypoint: "cancel_order",
-      calldata: [trade_id],
-    });
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
