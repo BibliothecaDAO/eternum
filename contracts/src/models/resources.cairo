@@ -8,6 +8,7 @@ use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait}
 
 use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
 use eternum::utils::math::{is_u256_bit_set, set_u256_bit};
+use core::fmt::{Display, Formatter, Error};
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -18,6 +19,15 @@ struct Resource {
     resource_type: u8,
     balance: u128,
 }
+
+impl ResourceDisplay of Display<Resource> {
+    fn fmt(self: @Resource, ref f: Formatter) -> Result<(), Error> {
+        let str: ByteArray = format!("Resource ({}, {}, {})", *self.entity_id, *self.resource_type, *self.balance);
+        f.buffer.append(@str);
+        Result::Ok(())
+    }
+}
+
 
 #[derive(Model, Copy, Drop, Serde)]
 struct ResourceAllowance {
@@ -144,7 +154,8 @@ impl ResourceImpl of ResourceTrait {
             return;
         };
 
-        assert(self.balance >= amount, 'not enough resources');
+        assert!(self.balance >= amount, "not enough resources, {}", self);
+        
         if amount > self.balance {
             self.balance = 0;
         } else {
