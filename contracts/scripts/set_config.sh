@@ -2,10 +2,10 @@
 
 source ./scripts/contracts.sh
 
-export RESOURCE_PRECSION=1000
+export RESOURCE_PRECISION=1000
 
 export RESOURCE_AMOUNT_PER_TICK=10000
-export FOOD_PER_TICK=100000
+export FOOD_PER_TICK=30000
 export DONKEYS_PER_TICK=1000
 export KNIGHTS_PER_TICK=2000
 export CROSSBOWMEN_PER_TICK=2000
@@ -17,6 +17,9 @@ export TICK_INTERVAL_IN_SECONDS=900
 export EXPLORATION_WHEAT_BURN_AMOUNT=30000
 export EXPLORATION_FISH_BURN_AMOUNT=15000
 export EXPLORATION_REWARD_RESOURCE_AMOUNT=20000
+
+export RESOURCE_BUILDING_COST=100
+export MILITARY_BUILDING_COST=2000
 
 
 ## BANK CONFIG
@@ -48,7 +51,7 @@ commands+=(
     # ### CAPACITY ###
     # # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
     # # 100000 gr = 100 kg
-    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,$((100000 * $RESOURCE_PRECSION))"
+    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,$((100000 * $RESOURCE_PRECISION))"
 
     # ### ROAD ###
     # # 10 wheat, fish, stone and wood per road usage
@@ -92,6 +95,51 @@ commands+=(
     # disadvantage_percent: 1000, // 10% 
     "sozo execute $CONFIG_SYSTEMS set_troop_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,10,10,10,7,7,7,1000,1000"
 )
+
+
+
+commands+=(
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FARM,$WHEAT,1,$WHEAT,$(($RESOURCE_BUILDING_COST * $RESOURCE_PRECISION))"
+
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FISHING_VILLAGE,$FISH,1,$WHEAT,$(($RESOURCE_BUILDING_COST * $RESOURCE_PRECISION))"
+
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_BARRACKS,$KNIGHT,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
+
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_ARCHERY_RANGE,$CROSSBOWMEN,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
+
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_STABLE,$PALADIN,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
+)
+
+# Resource Buildings - All the same for now.
+declare -A resources=(
+    [WOOD]=1
+    [STONE]=2
+    [COAL]=3
+    [COPPER]=4
+    [OBSIDIAN]=5
+    [SILVER]=6
+    [IRONWOOD]=7
+    [COLDIRON]=8
+    [GOLD]=9
+    [HARTWOOD]=10
+    [DIAMONDS]=11
+    [SAPPHIRE]=12
+    [RUBY]=13
+    [DEEPCRYSTAL]=14
+    [IGNIUM]=15
+    [ETHEREALSILICA]=16
+    [TRUEICE]=17
+    [TWILIGHTQUARTZ]=18
+    [ALCHEMICALSILVER]=19
+    [ADAMANTINE]=20
+    [MITHRAL]=21
+    [DRAGONHIDE]=22
+)
+
+for resource in "${!resources[@]}"; do
+    resource_id=${resources[$resource]}
+    commands+=("sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_RESOURCE,$resource_id,1,$WHEAT,$(($RESOURCE_BUILDING_COST * $RESOURCE_PRECISION))")
+done
 
 commands+=(
     # resourceId: 1
@@ -182,14 +230,14 @@ fi
 # Initialize commands based on mode
 if [[ "$mode" == "prod" ]]; then
     commands+=(
-        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 25,1,378000,2,297049,3,288908,4,199213,5,167029,6,131226,7,88866,8,72133,9,68892,10,44772,11,22612,12,18618,13,18015,14,18015,15,12965,16,12211,17,10477,18,8367,19,7010,20,4146,21,2789,22,1734,249,200000,254,12474000,255,4158000"
+        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 29,1,20000,2,20000,3,20000,4,20000,5,20000,6,20000,7,20000,8,20000,9,20000,10,20000,11,20000,12,20000,13,20000,14,20000,15,20000,16,20000,17,20000,18,20000,19,20000,20,20000,21,20000,22,20000,249,2000,250,2000,251,2000,252,2000,253,200000,254,200000,255,200000"
     )
 else
     # commands+=(
     #     "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 25,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,253,0,254,0,255,0"
     # )
     commands+=(
-        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 29,1,200000,2,200000,3,200000,4,200000,5,200000,6,200000,7,200000,8,200000,9,200000,10,200000,11,200000,12,200000,13,200000,14,200000,15,200000,16,200000,17,200000,18,200000,19,200000,20,200000,21,200000,22,200000,249,200000,250,200000,251,200000,252,200000,253,200000,254,200000,255,200000"
+        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 29,1,20000,2,20000,3,20000,4,20000,5,20000,6,20000,7,20000,8,20000,9,20000,10,20000,11,20000,12,20000,13,20000,14,20000,15,20000,16,20000,17,20000,18,20000,19,20000,20,20000,21,20000,22,20000,249,2000,250,2000,251,2000,252,2000,253,200000,254,200000,255,200000"
         # set donkey speed at highest for dev
         # 1 sec per km
         "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,1"

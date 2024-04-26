@@ -27,10 +27,10 @@ mod resource_systems {
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
     use eternum::models::resources::LockTrait;
-    use eternum::models::resources::{DetachedResource};
     use eternum::models::resources::{
         Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceLock
     };
+    use eternum::models::resources::{DetachedResource};
     use eternum::models::road::RoadImpl;
     use eternum::models::weight::Weight;
     use eternum::models::weight::WeightTrait;

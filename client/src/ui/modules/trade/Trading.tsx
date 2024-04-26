@@ -8,6 +8,9 @@ import { Marketplace } from "@/ui/components/trading/Marketplace";
 import { AcceptOfferPopup } from "@/ui/components/cityview/realm/trade/AcceptOffer";
 import { MarketInterface } from "@bibliothecadao/eternum";
 import { TransferBetweenEntities } from "@/ui/components/trading/TransferBetweenEntities";
+import { ResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
+import { EntityList } from "@/ui/components/list/EntityList";
+import { useEntities } from "@/hooks/helpers/useEntities";
 
 export const Trading = () => {
   const { togglePopup } = useUIStore();
@@ -23,6 +26,8 @@ export const Trading = () => {
     setSelectedResource(resourceId);
     setShowCreateOffer(true);
   }, []);
+
+  const { playerRealms, playerAccounts } = useEntities();
 
   const tabs = useMemo(
     () => [
@@ -43,6 +48,21 @@ export const Trading = () => {
           </div>
         ),
         component: <TransferBetweenEntities />,
+      },
+      {
+        key: "arrivals",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Arrivals</div>
+          </div>
+        ),
+        component: (
+          <EntityList
+            list={[...playerRealms(), ...playerAccounts()]}
+            title="Entities"
+            panel={({ entity }) => <ResourceArrivals entityId={entity.entity_id} />}
+          />
+        ),
       },
     ],
     [selectedTab],

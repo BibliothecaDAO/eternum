@@ -54,7 +54,7 @@
     "Road"
   ],
   "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
-  "NAME_SYSTEMS": ["AddressName"],
+  "NAME_SYSTEMS": ["AddressName", "EntityName"],
   "BANK_SYSTEMS": ["Bank", "Position", "BankAccounts", "Owner", "Resource", "Production"],
   "SWAP_SYSTEMS": ["Market", "OwnedResourcesTracker", "Resource", "Production"],
   "LIQUIDITY_SYSTEMS": ["Market", "OwnedResourcesTracker", "Production", "Resource", "Liquidity"],

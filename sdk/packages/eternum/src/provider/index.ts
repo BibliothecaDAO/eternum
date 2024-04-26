@@ -437,6 +437,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_entity_name(props: SystemProps.SetEntityNameProps) {
+    const { entity_id, name, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "name_systems"),
+      entrypoint: "set_entity_name",
+      calldata: [entity_id, name],
+    });
+  }
+
   public async explore(props: SystemProps.ExploreProps) {
     const { unit_id, direction, signer } = props;
 

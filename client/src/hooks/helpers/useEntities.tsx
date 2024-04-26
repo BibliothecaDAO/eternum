@@ -1,18 +1,24 @@
 import { useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../context/DojoContext";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
-import { getPosition } from "@/ui/utils/utils";
+import { getEntityIdFromKeys, getPosition, numberToHex } from "@/ui/utils/utils";
 import { getRealmNameById } from "@/ui/utils/realms";
+import { hexToAscii } from "@dojoengine/utils";
 
 export const useEntities = () => {
   const {
     account: { account },
     setup: {
-      components: { Realm, Owner, BankAccounts },
+      components: { Realm, Owner, BankAccounts, EntityName },
     },
   } = useDojo();
 
   const playerRealms = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
+
+  const getEntityName = (entityId: bigint) => {
+    const entityName = getComponentValue(EntityName, getEntityIdFromKeys([entityId]));
+    return entityName ? hexToAscii(numberToHex(Number(entityName.name))) : undefined;
+  };
 
   const playerAccounts = useEntityQuery([HasValue(BankAccounts, { owner: BigInt(account.address) })]);
 
@@ -29,5 +35,6 @@ export const useEntities = () => {
         return { entity_id: account?.entity_id, name: `Bank ${account?.bank_entity_id.toString()}` };
       });
     },
+    getEntityName
   };
 };

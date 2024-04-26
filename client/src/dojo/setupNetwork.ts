@@ -8,6 +8,7 @@ import * as torii from "@dojoengine/torii-client";
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 
 export async function setupNetwork({ ...config }: DojoConfig) {
+  console.log(config.manifest);
   const provider = new EternumProvider(config.manifest, config.rpcUrl);
 
   const toriiClient = await torii.createClient([], {

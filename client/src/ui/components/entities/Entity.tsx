@@ -11,7 +11,7 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "@/ui/utils/realms";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { useGetBankAccountOnPosition, useResources } from "@/hooks/helpers/useResources";
+import { useGetBankAccountOnPosition, useGetOwnedEntityOnPosition, useResources } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useCaravan } from "@/hooks/helpers/useCaravans";
@@ -28,14 +28,29 @@ const entityIcon = {
 };
 
 type EntityProps = {
-  entity: CaravanInterface;
+  entityId: bigint;
   idleOnly?: boolean;
   selectedCaravan?: number;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Entity = ({ entity, ...props }: EntityProps) => {
+export const Entity = ({ entityId, ...props }: EntityProps) => {
+  // const {
+  //   caravanId: entityId,
+  //   position,
+  //   homePosition,
+  //   arrivalTime,
+  //   isRoundTrip,
+  //   intermediateDestination,
+  //   blocked,
+  //   capacity,
+  //   pickupArrivalTime,
+  //   destinationType,
+  // } = entity;
+
+  const { getCaravanInfo } = useCaravan();
+  const entityInfo = getCaravanInfo(entityId);
+  console.log({ entityInfo });
   const {
-    caravanId: entityId,
     position,
     homePosition,
     arrivalTime,
@@ -45,7 +60,8 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
     capacity,
     pickupArrivalTime,
     destinationType,
-  } = entity;
+  } = entityInfo;
+
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const {
     account: { account },
@@ -60,7 +76,7 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
   const { getResourcesFromInventory } = useResources();
 
   const inventoryResources = getResourcesFromInventory(entityId);
-  const depositEntityIds = position ? useGetBankAccountOnPosition(BigInt(account.address), position) : [];
+  const depositEntityIds = position ? useGetOwnedEntityOnPosition(BigInt(account.address), position) : [];
   const depositEntityId = depositEntityIds[0];
 
   // capacity
@@ -200,33 +216,8 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
       <div className="flex w-full mt-2">
         <div className="grid w-full grid-cols-1 gap-5">
           <div className="flex flex-col">
-            <div className="grid grid-cols-12 gap-0.5">
-              <ProgressBar containerClassName="col-span-12" rounded progress={100} />
-            </div>
             <div className="flex items-center justify-between mt-[6px] text-xxs">
               <div className="text-xl">{entityIcon[ENTITY_TYPE.CARAVAN]}</div>
-              <div className="flex items-center space-x-[6px]">
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-green" />
-                  <div className="mt-1 text-green">{(capacity || 0) / CAPACITY_PER_DONKEY}</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-yellow" />
-                  <div className="mt-1 text-dark">{0}</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-orange" />
-                  <div className="mt-1 text-orange">{0}</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-red" />
-                  <div className="mt-1 text-red">{0}</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-light-pink" />
-                  <div className="mt-1 text-dark">{0}</div>
-                </div>
-              </div>
               <div className="">
                 {hasResources && depositEntityId !== undefined && (
                   <Button
@@ -241,11 +232,11 @@ export const Entity = ({ entity, ...props }: EntityProps) => {
                     {`Deposit Resources`}
                   </Button>
                 )}
-                {!isTraveling && !blocked && (
+                {/* {!isTraveling && !blocked && (
                   <Button size="xs" className="ml-auto" onClick={() => setShowTravel(true)} variant={"success"}>
                     {"Travel"}
                   </Button>
-                )}
+                )} */}
               </div>
             </div>
           </div>

@@ -24,6 +24,8 @@ export function useResources() {
         ResourceCost,
         Realm,
         Production,
+        EntityOwner,
+        ArrivalTime,
       },
       systemCalls: { transfer_items },
     },
@@ -155,20 +157,22 @@ export function useResources() {
   };
 
   //  caravans coming your way with a resource chest in their inventory
-  const getCaravansWithResourcesChest = () => {
-    const realmPosition = getComponentValue(Position, getEntityIdFromKeys([realmEntityId]));
+  const getArrivalsWithResourcesChest = (entityId: bigint) => {
+    const entityPosition = getComponentValue(Position, getEntityIdFromKeys([entityId]));
 
-    const caravansAtPositionWithInventory = useEntityQuery([
+    const entititsAtPositionWithInventory = useEntityQuery([
+      Has(EntityOwner),
       NotValue(Inventory, {
         items_count: 0n,
       }),
       HasValue(Position, {
-        x: realmPosition?.x,
-        y: realmPosition?.y,
+        x: entityPosition?.x,
+        y: entityPosition?.y,
       }),
+      Has(ArrivalTime),
     ]);
 
-    return caravansAtPositionWithInventory.map((id) => {
+    return entititsAtPositionWithInventory.map((id) => {
       const position = getComponentValue(Position, id);
       return position!.entity_id;
     });
@@ -201,7 +205,7 @@ export function useResources() {
     getResourcesFromResourceChestIds,
     offloadChests,
     getResourceChestIdFromInventoryIndex,
-    getCaravansWithResourcesChest,
+    getArrivalsWithResourcesChest,
     getResourceCosts,
   };
 }
@@ -281,6 +285,28 @@ export const useGetBankAccountOnPosition = (address: bigint, position: Position)
     Not(Movable),
     Not(Bank),
     Not(Realm),
+    HasValue(Position, { ...position }),
+  ]);
+
+  return Array.from(entities)
+    .map((entityId) => {
+      const position = getComponentValue(Position, entityId);
+      if (!position) return;
+      return position?.entity_id;
+    })
+    .filter(Boolean) as bigint[];
+};
+
+export const useGetOwnedEntityOnPosition = (address: bigint, position: Position) => {
+  const {
+    setup: {
+      components: { Owner, Position, Movable, Bank, Realm },
+    },
+  } = useDojo();
+
+  const entities = runQuery([
+    HasValue(Owner, { address }),
+    Not(Movable),
     HasValue(Position, { ...position }),
   ]);
 

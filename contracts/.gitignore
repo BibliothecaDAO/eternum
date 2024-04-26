@@ -1,11 +1,9 @@
-
 target/*
 !target/dev/manifest.json
 !target/release/manifest.json
 torii.db
 KATANA.toml
-manifests/*
-!manifests/dev/manifest.json
-!manifests/dev/manifest.toml
-!manifests/prod/manifest.json
-!manifests/prod/manifest.toml
+manifests/dev/abis/*
+manifests/dev/base/*
+manifests/prod/abis/*
+manifests/prod/base/*
