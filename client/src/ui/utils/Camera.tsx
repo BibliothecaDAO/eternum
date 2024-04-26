@@ -105,8 +105,8 @@ const CameraControls = ({ position, target }: Props) => {
       _v.sub(e?.target.target);
       camera.position.sub(_v);
 
-      setCameraPosition(camera.position.clone());
-      setCameraTarget(ref.current.target.clone());
+      // setCameraPosition(camera.position.clone());
+      // setCameraTarget(ref.current.target.clone());
     },
     [camera],
   );
