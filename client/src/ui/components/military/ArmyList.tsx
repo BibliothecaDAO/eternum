@@ -3,11 +3,23 @@ import { EntityList } from "../list/EntityList";
 
 import { useArmies } from "@/hooks/helpers/useArmies";
 import { currencyFormat } from "@/ui/utils/utils";
+import { InventoryResources } from "../resources/InventoryResources";
 
 export const ArmyList = ({ entity }: any) => {
   const { entityArmies } = useArmies({ entity_id: entity?.entity_id });
 
-  return <EntityList list={entityArmies()} title="armies" panel={({ entity }) => <ArmyCard entity={entity} />} />;
+  return (
+    <EntityList
+      list={entityArmies()}
+      title="armies"
+      panel={({ entity }) => (
+        <>
+          <ArmyCard entity={entity} />
+          <InventoryResources entityId={entity.entity_id} />
+        </>
+      )}
+    />
+  );
 };
 
 // TODO: Position, Combine Armies, Travel to on Map

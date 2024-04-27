@@ -1,4 +1,3 @@
-import { useEntities } from "@/hooks/helpers/useEntities";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
@@ -27,15 +26,54 @@ const STEPS = [
   },
 ];
 
-export const TransferBetweenEntities = () => {
+export const TransferBetweenEntities = ({ entities }: { entities: any[] }) => {
   const [selectedEntityIdFrom, setSelectedEntityIdFrom] = useState<bigint | null>(null);
   const [selectedEntityIdTo, setSelectedEntityIdTo] = useState<bigint | null>(null);
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
   const [selectedStepId, setSelectedStepId] = useState(STEP_ID.SELECT_ENTITIES);
+  const [isLoading, setIsLoading] = useState(false);
+  const [canCarry, setCanCarry] = useState(true);
+  const [isOriginDonkeys, setIsOriginDonkeys] = useState(true);
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
-  const { playerRealms, playerAccounts } = useEntities();
+
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { send_resources, pickup_resources },
+    },
+  } = useDojo();
+
+  const onSendResources = () => {
+    setIsLoading(true);
+    const resourcesList = selectedResourceIds.flatMap((id: number) => [
+      Number(id),
+      multiplyByPrecision(selectedResourceAmounts[Number(id)]),
+    ]);
+    const systemCall = !isOriginDonkeys
+      ? pickup_resources({
+          signer: account,
+          owner_entity_id: selectedEntityIdFrom!,
+          recipient_entity_id: selectedEntityIdTo!,
+          resources: resourcesList || [],
+        })
+      : send_resources({
+          // pickup_resources is not defined in the snippet
+          signer: account,
+          sender_entity_id: selectedEntityIdFrom!,
+          recipient_entity_id: selectedEntityIdTo!,
+          resources: resourcesList || [],
+        });
+
+    systemCall.finally(() => {
+      setIsLoading(false);
+    });
+  };
+
+  const toggleDonkeyOrigin = () => {
+    setIsOriginDonkeys(!isOriginDonkeys);
+  };
 
   return (
     <div className="p-2">
@@ -49,13 +87,15 @@ export const TransferBetweenEntities = () => {
           <div className="flex justify-around">
             <SelectEntityFromList
               onSelect={setSelectedEntityIdFrom}
+              selectedCounterpartyId={selectedEntityIdTo}
               selectedEntityId={selectedEntityIdFrom}
-              entities={[...playerRealms(), ...playerAccounts()]}
+              entities={entities}
             />
             <SelectEntityFromList
               onSelect={setSelectedEntityIdTo}
+              selectedCounterpartyId={selectedEntityIdFrom}
               selectedEntityId={selectedEntityIdTo}
-              entities={[...playerRealms(), ...playerAccounts()]}
+              entities={entities}
             />
           </div>
           <Button
@@ -72,13 +112,38 @@ export const TransferBetweenEntities = () => {
         </div>
       )}
       {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
-        <SelectResources
-          selectedResourceIds={selectedResourceIds}
-          setSelectedResourceIds={setSelectedResourceIds}
-          selectedResourceAmounts={selectedResourceAmounts}
-          setSelectedResourceAmounts={setSelectedResourceAmounts}
-          entity_id={selectedEntityIdFrom!}
-        />
+        <>
+          <SelectResources
+            selectedResourceIds={selectedResourceIds}
+            setSelectedResourceIds={setSelectedResourceIds}
+            selectedResourceAmounts={selectedResourceAmounts}
+            setSelectedResourceAmounts={setSelectedResourceAmounts}
+            entity_id={selectedEntityIdFrom!}
+          />
+          <div className="flex flex-col w-full items-center">
+            <Button className="m-2" variant="outline" size="md" onClick={toggleDonkeyOrigin}>
+              Toggle Donkey Origin: {isOriginDonkeys ? "Origin" : "Destination"}
+            </Button>
+            <ResourceWeightsInfo
+              entityId={isOriginDonkeys ? selectedEntityIdFrom! : selectedEntityIdTo!}
+              resources={selectedResourceIds.map((resourceId: number) => ({
+                resourceId,
+                amount: selectedResourceAmounts[resourceId],
+              }))}
+              setCanCarry={setCanCarry}
+            />
+          </div>
+          <Button
+            className="w-full mt-2"
+            isLoading={isLoading}
+            disabled={!canCarry || selectedResourceIds.length === 0}
+            variant="primary"
+            size="md"
+            onClick={onSendResources}
+          >
+            Confirm
+          </Button>
+        </>
       )}
     </div>
   );
@@ -87,10 +152,12 @@ export const TransferBetweenEntities = () => {
 const SelectEntityFromList = ({
   onSelect,
   selectedEntityId,
+  selectedCounterpartyId,
   entities,
 }: {
   onSelect: (entityId: bigint) => void;
   selectedEntityId: bigint | null;
+  selectedCounterpartyId: bigint | null;
   entities: any[];
 }) => {
   return (
@@ -104,7 +171,7 @@ const SelectEntityFromList = ({
         >
           <div>{entity.name}</div>
           <Button
-            disabled={selectedEntityId === entity.entity_id}
+            disabled={selectedEntityId === entity.entity_id || selectedCounterpartyId === entity.entity_id}
             size="xs"
             variant={"outline"}
             onClick={() => onSelect(entity.entity_id!)}
@@ -130,18 +197,8 @@ const SelectResources = ({
   setSelectedResourceAmounts: any;
   entity_id: bigint;
 }) => {
-  const {
-    account: { account },
-    setup: {
-      systemCalls: { send_resources },
-    },
-  } = useDojo();
-
   const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [canCarry, setCanCarry] = useState(true);
 
   const unselectedResources = useMemo(
     () => resources.filter((res) => !selectedResourceIds.includes(res.id)),
@@ -155,22 +212,6 @@ const SelectResources = ({
       [unselectedResources[0].id]: 1,
     });
     playResourceSound(unselectedResources[0].id);
-  };
-
-  const onSendResources = async () => {
-    setIsLoading(true);
-    const resourcesList = selectedResourceIds.flatMap((id: number) => [
-      Number(id),
-      multiplyByPrecision(selectedResourceAmounts[Number(id)]),
-    ]);
-    console.log({ resourcesList, selectedResourceAmounts });
-    await send_resources({
-      signer: account,
-      sender_entity_id: entity_id,
-      // todo: change that
-      recipient_entity_id: 0n,
-      resources: resourcesList || [],
-    });
   };
 
   return (
@@ -247,17 +288,6 @@ const SelectResources = ({
         }}
       >
         Add Resource
-      </Button>
-      <ResourceWeightsInfo
-        entityId={entity_id}
-        resources={selectedResourceIds.map((resourceId: number) => ({
-          resourceId,
-          amount: selectedResourceAmounts[resourceId],
-        }))}
-        setCanCarry={setCanCarry}
-      />
-      <Button isLoading={isLoading} disabled={!canCarry} variant="primary" size="md" onClick={onSendResources}>
-        Confirm
       </Button>
     </div>
   );

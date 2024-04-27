@@ -23,7 +23,6 @@ import {
 } from "../../../../../utils/utils";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { OnlineStatus } from "../../../../../elements/OnlineStatus";
-import { useLabor } from "../../../../../../hooks/helpers/useLabor";
 import { useResources } from "../../../../../../hooks/helpers/useResources";
 import { getRealm } from "../../../../../utils/realms";
 import useUIStore from "../../../../../../hooks/store/useUIStore";
@@ -222,11 +221,9 @@ const RealmResourceRow = ({
   distance,
   onCreateDirectOffer,
 }: RealmResourceRowProps) => {
-  const { getLatestRealmActivity } = useLabor();
-
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const latestActivity = getLatestRealmActivity(realmEntityId);
+  const latestActivity = undefined;
 
   let status: "online" | "recently" | "offline" = "offline";
 

@@ -53,10 +53,11 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
       .filter(Boolean) as Castle[];
   }, []);
 
-  const onClick = (e: any, castle: Castle) => {
-    e.stopPropagation();
-    setSelectedEntity({ id: castle.id, position: castle.contractPos });
-  };
+  // don't make castles clickable for now
+  // const onClick = (e: any, castle: Castle) => {
+  //   e.stopPropagation();
+  //   setSelectedEntity({ id: castle.id, position: castle.contractPos });
+  // };
 
   return (
     <group>
@@ -72,7 +73,7 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
               scale={3}
               name="castle"
               castShadow
-              onClick={(e: any) => onClick(e, castle)}
+              // onClick={(e: any) => onClick(e, castle)}
               onPointerEnter={() => {
                 setHoveredCastleId(castle.id);
               }}

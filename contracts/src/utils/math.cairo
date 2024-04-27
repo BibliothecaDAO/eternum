@@ -1,3 +1,4 @@
+use alexandria_math::U256BitShift;
 use alexandria_math::U32BitShift;
 
 // Raise a number to a power.
@@ -57,6 +58,28 @@ fn set_u32_bit(number: u32, position: u8, value: bool) -> u32 {
     };
     let mask = U32BitShift::shl(1, position.into());
     return (number & ~mask) | ((U32BitShift::shl(value, position.into())) & mask);
+}
+
+
+///////// U256 Bit Manipulation /////////
+
+/// Check whether a bit is set in a u256 number
+fn is_u256_bit_set(number: u256, position: u8) -> bool {
+    if (number & U256BitShift::shl(1, position.into())) > 0 {
+        return true;
+    }
+    return false;
+}
+
+/// Set a bit to a value in a u256 number
+fn set_u256_bit(number: u256, position: u8, value: bool) -> u256 {
+    let value = if (value == true) {
+        1
+    } else {
+        0
+    };
+    let mask = U256BitShift::shl(1, position.into());
+    return (number & ~mask) | ((U256BitShift::shl(value, position.into())) & mask);
 }
 
 trait PercentageTrait<T> {

@@ -89,6 +89,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.set_address_name(props);
   };
 
+  const set_entity_name = async (props: SystemProps.SetEntityNameProps) => {
+    await provider.set_entity_name(props);
+  };
+
   const merge_soldiers = async (props: SystemProps.MergeSoldiersProps) => {
     await provider.merge_soldiers(props);
   };
@@ -99,14 +103,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const heal_soldiers = async (props: SystemProps.HealSoldiersProps) => {
     await provider.heal_soldiers(props);
-  };
-
-  const transfer_items = async (props: SystemProps.TransferItemsProps) => {
-    await provider.transfer_items(props);
-  };
-
-  const transfer_items_from_multiple = async (props: SystemProps.TransferItemsFromMultipleProps) => {
-    await provider.transfer_items_from_multiple(props);
   };
 
   const explore = async (props: SystemProps.ExploreProps) => {
@@ -174,6 +170,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_bank,
     explore,
     set_address_name,
+    set_entity_name,
     create_and_merge_soldiers,
     level_up_realm,
     isLive,
@@ -184,8 +181,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_order,
     accept_order,
     cancel_order,
-    transfer_items,
-    transfer_items_from_multiple,
     create_realm,
     create_multiple_realms,
     create_road,

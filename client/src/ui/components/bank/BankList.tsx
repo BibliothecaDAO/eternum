@@ -14,6 +14,8 @@ import { EntitiesOnPositionList } from "../entities/EntitiesOnPositionList";
 import { LiquidityTable } from "./LiquidityTable";
 import AddLiquidity from "./AddLiquidity";
 import { hexToAscii, numberToHex } from "@/ui/utils/utils";
+import { ResourceArrivals } from "../trading/ResourceArrivals";
+import { TransferBetweenEntities } from "../trading/TransferBetweenEntities";
 
 type BankListProps = {
   entity: any;
@@ -29,7 +31,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const { useMyAccountsInBank } = useBanks();
 
-  const { playerRealms } = useEntities();
+  const { playerRealms, playerAccounts } = useEntities();
 
   const myBankAccountsEntityIds = useMyAccountsInBank(entity.id);
   const myBankAccountEntityId = myBankAccountsEntityIds.length === 1 ? myBankAccountsEntityIds[0] : undefined;
@@ -78,56 +80,22 @@ export const BankPanel = ({ entity }: BankListProps) => {
         ),
       },
       {
-        key: "all",
+        key: "transfer",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Send Resources</div>
+            <div>Transfer</div>
           </div>
         ),
-        component: (
-          <EntityList
-            list={playerRealms()}
-            title="Send"
-            panel={({ entity }) => (
-              <SendResourcesPanel
-                senderEntityId={entity.entity_id}
-                position={position}
-                onSendResources={() => setSelectedTab(5)}
-              />
-            )}
-          />
-        ),
-      },
-
-      {
-        key: "all",
-        label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Withdraw Resources</div>
-          </div>
-        ),
-        component: (
-          <EntityList
-            list={playerRealms()}
-            title="Witdraw"
-            panel={({ entity }) => (
-              <SendResourcesPanel
-                senderEntityId={myBankAccountEntityId!}
-                position={getComponentValue(Position, getEntityIdFromKeys([entity.entity_id]))}
-                onSendResources={() => setSelectedTab(5)}
-              />
-            )}
-          />
-        ),
+        component: <TransferBetweenEntities entities={[...playerRealms(), ...playerAccounts()]} />,
       },
       {
         key: "all",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Entities</div>
+            <div>Arrivals</div>
           </div>
         ),
-        component: <EntitiesOnPositionList position={position} />,
+        component: <ResourceArrivals entityId={myBankAccountEntityId!} />,
       },
     ],
     [myBankAccountsEntityIds, position],

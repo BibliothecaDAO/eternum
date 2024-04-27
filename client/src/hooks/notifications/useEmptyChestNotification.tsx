@@ -17,7 +17,7 @@ export const useEmptyChestNotification = (
   title: React.ReactElement;
   content: (onClose: any) => React.ReactElement;
 } => {
-  const { getResourcesFromInventory, offloadChests } = useResources();
+  const { getResourcesFromBalance } = useResources();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,12 +31,12 @@ export const useEmptyChestNotification = (
   const realmName = realmId ? getRealmNameById(realmId) : "";
   const realmOrderName = realmId ? getRealmOrderNameById(realmId) : "";
 
-  let claimableResources = entityId ? getResourcesFromInventory(entityId) : undefined;
+  let claimableResources = entityId ? getResourcesFromBalance(entityId) : undefined;
 
   const emptyChest = async () => {
     setIsLoading(true);
     if (claimableResources && realmEntityId && entityId) {
-      await offloadChests(realmEntityId, entityId, claimableResources.indices);
+      // await offloadChests(realmEntityId, entityId, claimableResources.indices);
       setIsLoading(false);
     }
   };
@@ -62,7 +62,7 @@ export const useEmptyChestNotification = (
       <div className="flex flex-col">
         <div className="flex mt-2 w-full items-center justify-start flex-wrap space-x-2 space-y-1">
           {claimableResources &&
-            claimableResources.resources.map(({ resourceId, amount }) => (
+            claimableResources.map(({ resourceId, amount }) => (
               <ResourceCost
                 // type="vertical"
                 withTooltip

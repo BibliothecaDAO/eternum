@@ -54,7 +54,11 @@ export const MyOffer = ({ myOffer, roads, onBuildRoad }: TradeOfferProps) => {
   const onCancel = async () => {
     // status 2 = cancel
     setIsLoading(true);
-    cancel_order({ signer: account, trade_id: myOffer.tradeId });
+    cancel_order({
+      signer: account,
+      trade_id: myOffer.tradeId,
+      return_resources: resourcesGive.flatMap(({ resourceId, amount }) => [resourceId, amount]),
+    });
   };
 
   let { realm: takerRealm } = useGetRealm(takerId);

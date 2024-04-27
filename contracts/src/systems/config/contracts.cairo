@@ -9,12 +9,14 @@ mod config_systems {
         BUILDING_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
+    use eternum::models::buildings::{BuildingCategory};
 
     use eternum::models::combat::TownWatch;
     use eternum::models::config::{
         CapacityConfig, RoadConfig, SpeedConfig, TravelConfig, WeightConfig, WorldConfig,
         SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig, LevelingConfig,
-        RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig, TroopConfig
+        RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
+        TroopConfig, BuildingConfig
     };
 
     use eternum::models::hyperstructure::HyperStructure;
@@ -23,9 +25,9 @@ mod config_systems {
     use eternum::models::resources::{ResourceCost, DetachedResource};
 
     use eternum::systems::config::interface::{
-        IWorldConfig, IWeightConfig, ICapacityConfig, ILaborConfig, ITransportConfig,
-        IHyperstructureConfig, ICombatConfig, ILevelingConfig, IBankConfig, IRealmFreeMintConfig,
-        IBuildingsConfig, IMapConfig, ITickConfig, IProductionConfig, ITroopConfig
+        IWorldConfig, IWeightConfig, ICapacityConfig, ITransportConfig, IHyperstructureConfig,
+        ICombatConfig, ILevelingConfig, IBankConfig, IRealmFreeMintConfig, IMapConfig, ITickConfig,
+        IProductionConfig, ITroopConfig, IBuildingConfig
     };
 
 
@@ -567,6 +569,45 @@ mod config_systems {
 
             troop_config.config_id = WORLD_CONFIG_ID;
             set!(world, (troop_config));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl BuildingConfigImpl of IBuildingConfig<ContractState> {
+        fn set_building_config(
+            world: IWorldDispatcher,
+            building_category: BuildingCategory,
+            building_resource_type: u8,
+            cost_of_building: Span<(u8, u128)>
+        ) {
+            assert_caller_is_admin(world);
+
+            let resource_cost_id = world.uuid().into();
+            let mut index = 0;
+            loop {
+                if index == cost_of_building.len() {
+                    break;
+                }
+                let (resource_type, resource_amount) = *cost_of_building.at(index);
+                set!(
+                    world,
+                    (ResourceCost {
+                        entity_id: resource_cost_id, index, resource_type, amount: resource_amount
+                    })
+                );
+
+                index += 1;
+            };
+            set!(
+                world,
+                (BuildingConfig {
+                    config_id: WORLD_CONFIG_ID,
+                    category: building_category,
+                    resource_type: building_resource_type,
+                    resource_cost_id,
+                    resource_cost_count: cost_of_building.len()
+                })
+            );
         }
     }
 }

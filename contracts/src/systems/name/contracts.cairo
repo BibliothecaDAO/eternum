@@ -1,11 +1,13 @@
 #[dojo::interface]
 trait INameSystems {
     fn set_address_name(name: felt252);
+    fn set_entity_name(entity_id: u128, name: felt252);
 }
 
 #[dojo::contract]
 mod name_systems {
-    use eternum::models::name::{AddressName};
+    use eternum::models::name::{AddressName, EntityName};
+    use eternum::models::owner::{Owner, OwnerTrait};
 
     #[abi(embed_v0)]
     impl NameSystemsImpl of super::INameSystems<ContractState> {
@@ -18,6 +20,12 @@ mod name_systems {
             address_name.name = name;
 
             set!(world, (address_name));
+        }
+
+        fn set_entity_name(world: IWorldDispatcher, entity_id: u128, name: felt252) {
+            get!(world, entity_id, Owner).assert_caller_owner();
+
+            set!(world, (EntityName { entity_id, name }));
         }
     }
 }

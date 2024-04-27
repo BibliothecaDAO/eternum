@@ -65,12 +65,12 @@ export const MergeExistingSoldiersPanel = ({ isDefence, selectedRaider, onClose 
   }, [selectedRaiders]);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const { getResourcesFromInventory } = useResources();
+  const { getResourcesFromBalance } = useResources();
 
   const realmRaiderIds = selectedRaider.position
     ? getRealmRaidersOnPosition(realmEntityId, selectedRaider.position).filter((id) => {
-        const inventoryResources = getResourcesFromInventory(BigInt(id));
-        return BigInt(id) !== selectedRaider.entityId && inventoryResources.resources.length === 0;
+        const inventoryResources = getResourcesFromBalance(BigInt(id));
+        return BigInt(id) !== selectedRaider.entityId && inventoryResources.length === 0;
       })
     : [];
   const realmDefence = useMemo(() => {

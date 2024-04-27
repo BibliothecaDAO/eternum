@@ -282,7 +282,7 @@ const StealResultPanel = ({
     },
   } = useDojo();
 
-  const { getResourcesFromInventory } = useResources();
+  const { getResourcesFromBalance } = useResources();
   const { getFoodResources } = useResourceBalance();
   const attackerHealth = selectedRaiders[0].entityId
     ? useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]))
@@ -303,7 +303,7 @@ const StealResultPanel = ({
   const [step, setStep] = useState(initialStep);
 
   const inventoryResources = useMemo(() => {
-    return selectedRaiders[0].entityId ? getResourcesFromInventory(selectedRaiders[0].entityId) : undefined;
+    return selectedRaiders[0].entityId ? getResourcesFromBalance(selectedRaiders[0].entityId) : undefined;
   }, [step === 3]);
   const success = attackerHealth ? attackerHealth.value === BigInt(selectedRaiders[0].health) : undefined;
 
@@ -378,7 +378,7 @@ const StealResultPanel = ({
               {inventoryResources && (
                 <div className="flex justify-center items-center space-x-1 flex-wrap p-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                   <div className="text-light-pink text-lg w-full mb-2 text-center italic">You won!</div>
-                  {inventoryResources.resources.map(
+                  {inventoryResources.map(
                     (resource) =>
                       resource && (
                         <div key={resource.resourceId} className="flex flex-col items-center justify-center">
@@ -495,7 +495,7 @@ const SelectRaidersPanel = ({
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
   const { getConqueredHyperstructures } = useHyperstructure();
-  const { getResourcesFromInventory } = useResources();
+  const { getResourcesFromBalance } = useResources();
   const { getBalance } = useResourceBalance();
 
   const [attackerTotalAttack, attackerTotalHealth] = useMemo(() => {
@@ -599,7 +599,7 @@ const SelectRaidersPanel = ({
         }
       }
       if (defence?.entityId) {
-        const resources = getResourcesFromInventory(defence.entityId).resources;
+        const resources = getResourcesFromBalance(defence.entityId);
         for (const resource of resources) {
           if (resource.amount > 0) {
             hasResources = true;
@@ -608,8 +608,8 @@ const SelectRaidersPanel = ({
         }
       }
     } else {
-      const inventoryResources = getResourcesFromInventory(defence!.entityId);
-      resourceBalances = inventoryResources.resources.map(({ amount, resourceId }) => {
+      const inventoryResources = getResourcesFromBalance(defence!.entityId);
+      resourceBalances = inventoryResources.map(({ amount, resourceId }) => {
         return { balance: amount, resourceId };
       });
       if (resourceBalances.length > 0) hasResources = true;

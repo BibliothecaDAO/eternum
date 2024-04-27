@@ -15,6 +15,7 @@ mod resource_systems {
 
     use core::integer::BoundedInt;
     use core::poseidon::poseidon_hash_span as hash;
+    use core::zeroable::Zeroable;
     use eternum::alias::ID;
 
     use eternum::constants::{WORLD_CONFIG_ID};
@@ -28,9 +29,7 @@ mod resource_systems {
     use eternum::models::realm::Realm;
     use eternum::models::resources::LockTrait;
     use eternum::models::resources::{DetachedResource};
-    use eternum::models::resources::{
-        Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceLock
-    };
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceAllowance};
     use eternum::models::road::RoadImpl;
     use eternum::models::weight::Weight;
     use eternum::models::weight::WeightTrait;
@@ -202,16 +201,12 @@ mod resource_systems {
             get!(world, sender_id, ArrivalTime).assert_not_travelling();
             get!(world, recipient_id, ArrivalTime).assert_not_travelling();
 
-            let mut mint_resources: bool = false;
-            if caller_id == 0 {
-                mint_resources = true
-            };
-
             let sender_coord: Coord = get!(world, sender_id, Position).into();
             let recipient_coord: Coord = get!(world, recipient_id, Position).into();
 
             let mut transport_id: ID = recipient_id;
-            let transport_is_needed: bool = !mint_resources && sender_coord != recipient_coord;
+            let transport_is_needed: bool = sender_coord.is_non_zero()
+                && sender_coord != recipient_coord;
             if transport_is_needed {
                 transport_id = world.uuid().into()
             };
@@ -227,10 +222,10 @@ mod resource_systems {
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
-                        if !mint_resources {
-                            // ensure resource balance is not locked 
-                            let resource_lock: ResourceLock = get!(world, sender_id, ResourceLock);
-                            resource_lock.assert_not_locked();
+                        if caller_id.is_non_zero() {
+                            // // ensure resource balance is not locked 
+                            // let resource_lock: ResourceLock = get!(world, sender_id, ResourceLock);
+                            // resource_lock.assert_not_locked();
 
                             // burn resources from sender's balance
                             let mut sender_resource = ResourceImpl::get(
@@ -268,7 +263,7 @@ mod resource_systems {
             recipient_weight.add(recipient_capacity, recipient_quantity, total_resources_weight);
             set!(world, (recipient_weight));
 
-            if !mint_resources {
+            if caller_id.is_non_zero() {
                 // decrease sender weight
                 let mut sender_weight: Weight = get!(world, sender_id, Weight);
                 let sender_capacity: Capacity = get!(world, sender_id, Capacity);
@@ -279,27 +274,25 @@ mod resource_systems {
             if transport_is_needed {
                 // create donkey that can carry weight
                 donkey::create_donkey(
-                    world,
-                    transport_id,
-                    caller_id,
-                    recipient_id,
-                    total_resources_weight,
-                    sender_coord,
-                    recipient_coord
+                    world, transport_id, caller_id, recipient_id, sender_coord, recipient_coord
                 );
 
-                // lock resource balance until it is in possession of the recipient
-                let transport_arrival_time: ArrivalTime = get!(world, transport_id, ArrivalTime);
-                let is_round_trip: bool = caller_id == recipient_id;
-                if is_round_trip {
-                    let resources_collected_at: u64 = transport_arrival_time.arrives_at / 2;
-                    set!(
-                        world,
-                        (ResourceLock {
-                            entity_id: transport_id, release_at: resources_collected_at
-                        })
-                    );
+                if caller_id.is_non_zero() {
+                    // make payment for donkey
+                    donkey::burn_donkey(world, caller_id, total_resources_weight);
                 }
+            // lock resource balance until it is in possession of the recipient
+            // let transport_arrival_time: ArrivalTime = get!(world, transport_id, ArrivalTime);
+            // let is_round_trip: bool = caller_id == recipient_id;
+            // if is_round_trip {
+            //     let resources_collected_at: u64 = transport_arrival_time.arrives_at / 2;
+            //     set!(
+            //         world,
+            //         (ResourceLock {
+            //             entity_id: transport_id, release_at: resources_collected_at
+            //         })
+            //     );
+            // }
             }
 
             // emit transfer event

@@ -24,6 +24,11 @@ export interface SetAddressNameProps extends SystemSigner {
   name: string;
 }
 
+export interface SetEntityNameProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  name: string;
+}
+
 export interface AttackProps extends SystemSigner {
   attacker_ids: num.BigNumberish[];
   target_id: num.BigNumberish;
@@ -62,12 +67,22 @@ export interface TravelHexProps extends SystemSigner {
 
 export interface CreateOrderProps extends SystemSigner {
   maker_id: num.BigNumberish;
-  maker_gives_resource_types: num.BigNumberish[];
-  maker_gives_resource_amounts: num.BigNumberish[];
+  maker_gives_resources: num.BigNumberish[];
   taker_id: num.BigNumberish;
-  taker_gives_resource_types: num.BigNumberish[];
-  taker_gives_resource_amounts: num.BigNumberish[];
+  taker_gives_resources: num.BigNumberish[];
   expires_at: num.BigNumberish;
+}
+
+export interface AcceptOrderProps extends SystemSigner {
+  taker_id: num.BigNumberish;
+  trade_id: num.BigNumberish;
+  maker_gives_resources: num.BigNumberish[];
+  taker_gives_resources: num.BigNumberish[];
+}
+
+export interface CancelOrderProps extends SystemSigner {
+  trade_id: num.BigNumberish;
+  return_resources: num.BigNumberish[];
 }
 
 export interface SendResourcesProps extends SystemSigner {
@@ -77,8 +92,8 @@ export interface SendResourcesProps extends SystemSigner {
 }
 
 export interface PickupResourcesProps extends SystemSigner {
-  donkey_owner_entity_id: num.BigNumberish;
-  resource_owner_entity_id: num.BigNumberish;
+  recipient_entity_id: num.BigNumberish;
+  owner_entity_id: num.BigNumberish;
   resources: num.BigNumberish[];
 }
 
@@ -107,15 +122,6 @@ export interface SwapBankAndTravelBackProps extends SystemSigner {
 export interface MintResourcesProps extends SystemSigner {
   receiver_id: num.BigNumberish;
   resources: num.BigNumberish[];
-}
-
-export interface AcceptOrderProps extends SystemSigner {
-  taker_id: num.BigNumberish;
-  trade_id: num.BigNumberish;
-}
-
-export interface CancelOrderProps extends SystemSigner {
-  trade_id: num.BigNumberish;
 }
 
 export interface CreateRoadProps extends SystemSigner {
