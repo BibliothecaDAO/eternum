@@ -15,12 +15,14 @@ interface Props {
     y: number;
     z: number;
     transitionDuration?: number;
+    muteSound?: boolean;
   };
   target: {
     x: number;
     y: number;
     z: number;
     transitionDuration?: number;
+    muteSound?: boolean;
   };
 }
 
@@ -95,7 +97,9 @@ const CameraControls = ({ position, target }: Props) => {
 
   useEffect(() => {
     cameraAnimate();
-    playFly();
+    if (!position.muteSound && !target.muteSound) {
+      playFly();
+    }
   }, [target, position]);
 
   const clampPan = useCallback(
@@ -105,8 +109,8 @@ const CameraControls = ({ position, target }: Props) => {
       _v.sub(e?.target.target);
       camera.position.sub(_v);
 
-      // setCameraPosition(camera.position.clone());
-      // setCameraTarget(ref.current.target.clone());
+      setCameraPosition({ ...camera.position.clone(), muteSound: true });
+      setCameraTarget({ ...ref.current.target.clone(), muteSound: true });
     },
     [camera],
   );
