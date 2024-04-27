@@ -20,11 +20,11 @@ export const ResourceChip = ({
 
   const production = useMemo(() => {
     return productionManager.getProduction();
-  }, [productionManager]);
+  }, []);
 
   const balance = useMemo(() => {
     return productionManager.balance(currentTick);
-  }, [productionManager, production]);
+  }, [productionManager, production, currentTick]);
 
   const netRate = useMemo(() => {
     return productionManager.netRate()[1];

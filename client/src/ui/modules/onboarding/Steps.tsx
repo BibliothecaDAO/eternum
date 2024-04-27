@@ -161,8 +161,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     <StepContainer>
       <div className="flex flex-col items-center p-3">
         <h3>Select Account</h3>
-        {/* <Avatar src={`/images/avatars/${addressToNumber(account.address)}.png`} size="xxl" /> */}
-        <div className="flex space-x-6 pt-4">
+        <div className="flex space-x-6 pt-4 w-full justify-center">
           <div>
             <div className=" border-gold border p-2 w-full">
               {loading ? (
@@ -170,7 +169,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
               ) : addressName ? (
                 <span>{addressName}</span>
               ) : (
-                <div className="flex w-full">
+                <div className="flex w-full h-full">
                   <TextInput placeholder="Your Name..." maxLength={12} value={inputName} onChange={setInputName} />
                   <Button
                     isLoading={loading}

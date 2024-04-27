@@ -268,9 +268,7 @@ export const useProductionManager = (entityId: bigint, resourceId: number) => {
     },
   } = useDojo();
 
-  return useMemo(() => {
-    return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
-  }, [entityId, resourceId]);
+  return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
 };
 
 export const useGetBankAccountOnPosition = (address: bigint, position: Position) => {
@@ -304,11 +302,7 @@ export const useGetOwnedEntityOnPosition = (address: bigint, position: Position)
     },
   } = useDojo();
 
-  const entities = runQuery([
-    HasValue(Owner, { address }),
-    Not(Movable),
-    HasValue(Position, { ...position }),
-  ]);
+  const entities = runQuery([HasValue(Owner, { address }), Not(Movable), HasValue(Position, { ...position })]);
 
   return Array.from(entities)
     .map((entityId) => {
