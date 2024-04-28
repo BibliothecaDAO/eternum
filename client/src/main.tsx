@@ -15,17 +15,17 @@ async function init() {
 
   const setupResult = await setup(dojoConfig);
 
-  if (!setupResult) {
-    return <LoadingScreen />;
-  }
-
   inject();
 
   root.render(
     <React.StrictMode>
-      <DojoProvider value={setupResult}>
-        <App />
-      </DojoProvider>
+      {!setupResult ? (
+        <LoadingScreen />
+      ) : (
+        <DojoProvider value={setupResult}>
+          <App />
+        </DojoProvider>
+      )}
     </React.StrictMode>,
   );
 }

@@ -14,8 +14,8 @@ export const EntityResourceTable = ({ entityId }: { entityId: bigint | undefined
       });
 
       return (
-        <div className="my-3 px-3" key={tier}>
-          <h5 className="text-center capitalize">{tier}</h5>
+        <div className="my-2 px-3" key={tier}>
+          <h5 className="text-left capitalize text-xs">{tier}</h5>
 
           <div className="grid grid-cols-2 gap-2 flex-wrap mt-2">{resources}</div>
         </div>

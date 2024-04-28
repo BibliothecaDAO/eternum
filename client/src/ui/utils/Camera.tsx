@@ -7,6 +7,7 @@ import { useControls, button } from "leva";
 import { useRoute } from "wouter";
 import { soundSelector, useUiSounds } from "../../hooks/useUISound";
 import * as THREE from "three";
+import useUIStore from "@/hooks/store/useUIStore";
 
 interface Props {
   position: {
@@ -34,6 +35,9 @@ const minPan = new THREE.Vector3(0, -Infinity, -1400);
 const maxPan = new THREE.Vector3(2700, Infinity, 0);
 
 const CameraControls = ({ position, target }: Props) => {
+  const setCameraPosition = useUIStore((state) => state.setCameraPosition);
+  const setCameraTarget = useUIStore((state) => state.setCameraTarget);
+
   const {
     camera,
     gl: { domElement },
@@ -100,6 +104,9 @@ const CameraControls = ({ position, target }: Props) => {
       e?.target.target.clamp(minPan, maxPan);
       _v.sub(e?.target.target);
       camera.position.sub(_v);
+
+      // setCameraPosition(camera.position.clone());
+      // setCameraTarget(ref.current.target.clone());
     },
     [camera],
   );

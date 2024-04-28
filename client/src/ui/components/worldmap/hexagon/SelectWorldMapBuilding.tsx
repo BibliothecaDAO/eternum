@@ -28,6 +28,12 @@ const BUILDING_UNBLOCKED = {
   [WorldBuildingType.Hyperstructure]: false,
 };
 
+const BUILDING_DESCRIPTION = {
+  [WorldBuildingType.Bank]: "Build an AMM",
+  [WorldBuildingType.Settlement]: "Expands your Base, and allows leasing of land to other players",
+  [WorldBuildingType.Hyperstructure]: "Allows the creation of new lands",
+};
+
 export const SelectWorldMapBuilding = ({ entityId }: any) => {
   const buildingTypes = Object.keys(WorldBuildingType).filter((type) => isNaN(Number(type)) && type !== "None");
 
@@ -72,14 +78,14 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
 
   return (
     <div className="flex flex-col overflow-hidden">
-      <div className="grid grid-cols-3 gap-2 p-2">
+      <div className="grid grid-cols-2 gap-2">
         {buildingTypes.map((buildingType, index) => {
           const building = WorldBuildingType[buildingType as keyof typeof WorldBuildingType];
           return (
             <div
               key={index}
               className={clsx(
-                "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis p-2 cursor-pointer h-16 relative",
+                "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis p-2 cursor-pointer h-24 relative",
                 {
                   "!border-lightest !text-lightest": worldMapBuilding === building,
                 },
@@ -107,7 +113,12 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
               <InfoIcon
                 onMouseEnter={() => {
                   setTooltip({
-                    content: <CostInfo cost={BUILDING_COST[building]} lordsBalance={lordsBalance} />,
+                    content: (
+                      <div>
+                        <CostInfo cost={BUILDING_COST[building]} lordsBalance={lordsBalance} />
+                        <div className="text-xs p-2 w-12">{BUILDING_DESCRIPTION[building]}</div>
+                      </div>
+                    ),
                     position: "right",
                   });
                 }}
@@ -121,7 +132,7 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
         })}
       </div>
       <div>
-        <Button isLoading={isLoading} onClick={onBuild}>
+        <Button variant="primary" className="w-full mt-2" isLoading={isLoading} onClick={onBuild}>
           Build
         </Button>
       </div>
