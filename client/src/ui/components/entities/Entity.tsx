@@ -93,25 +93,12 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
           {!isTraveling && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">{`Waiting`}</span>
-              <div className="flex items-center ml-1 mr-1 text-gold">
-                <span className="italic text-light-pink ml-1">with</span>
-              </div>
             </div>
           )}
           {/* when you are not trading (trading is round trip) it means you are either going to/coming from bank/hyperstructure */}
           {isTraveling && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">{`Traveling`}</span>
-              <div className="flex items-center ml-1 mr-1 text-gold">
-                <span className="italic text-light-pink ml-1">with</span>
-              </div>
-            </div>
-          )}
-          {capacity && resourceWeight !== undefined && (
-            <div className="flex items-center ml-1 text-gold">
-              {!isIdle ? divideByPrecision(Math.round(resourceWeight)) : 0}
-              <div className="mx-0.5 italic text-light-pink">/</div>
-              {`${capacity / 1000} kg`}
             </div>
           )}
         </div>
