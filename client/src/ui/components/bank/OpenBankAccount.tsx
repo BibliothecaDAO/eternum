@@ -1,4 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import useRealmStore from "@/hooks/store/useRealmStore";
 import Button from "@/ui/elements/Button";
 import { useState } from "react";
 
@@ -11,10 +12,13 @@ export const OpenBankAccount = ({ bank_entity_id }: { bank_entity_id: bigint }) 
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const onClick = () => {
     setIsLoading(true);
-    open_account({ bank_entity_id, signer: account }).finally(() => setIsLoading(false));
+    open_account({ realm_entity_id: realmEntityId, bank_entity_id, signer: account }).finally(() =>
+      setIsLoading(false),
+    );
   };
 
   return (

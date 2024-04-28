@@ -454,12 +454,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async open_account(props: SystemProps.OpenAccountProps) {
-    const { bank_entity_id, signer } = props;
+    const { realm_entity_id, bank_entity_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "bank_systems"),
       entrypoint: "open_account",
-      calldata: [bank_entity_id],
+      calldata: [realm_entity_id, bank_entity_id],
     });
   }
 
