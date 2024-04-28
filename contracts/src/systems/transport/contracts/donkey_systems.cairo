@@ -64,13 +64,8 @@ mod donkey_systems {
                     donkey_speed_config.sec_per_km,
                     is_round_trip
                 );
-            // let delivery_coord: Coord = if is_round_trip {
-            //     start_coord
-            // } else {
-            //     intermediate_coord
-            // };
-            let delivery_coord: Coord = intermediate_coord;
 
+            let delivery_coord: Coord = intermediate_coord;
             set!(
                 world,
                 (
