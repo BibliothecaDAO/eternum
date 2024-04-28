@@ -321,21 +321,6 @@ mod travel_systems {
         }
 
 
-        fn check_capacity(world: IWorldDispatcher, transport_id: ID, weight: u128) {
-            let transport_weight = get!(world, transport_id, Weight);
-
-            let transport_capacity = get!(world, transport_id, Capacity);
-            let transport_quantity = get!(world, transport_id, Quantity);
-
-            assert(
-                transport_capacity
-                    .can_carry_weight(
-                        transport_quantity.get_value(), transport_weight.value + weight
-                    ),
-                'not enough capacity'
-            );
-        }
-
         fn get_travel_time(
             world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position
         ) -> (u64, u64) {

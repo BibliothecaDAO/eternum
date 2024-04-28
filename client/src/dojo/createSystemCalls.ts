@@ -105,14 +105,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.heal_soldiers(props);
   };
 
-  const transfer_items = async (props: SystemProps.TransferItemsProps) => {
-    await provider.transfer_items(props);
-  };
-
-  const transfer_items_from_multiple = async (props: SystemProps.TransferItemsFromMultipleProps) => {
-    await provider.transfer_items_from_multiple(props);
-  };
-
   const explore = async (props: SystemProps.ExploreProps) => {
     await provider.explore(props);
   };
@@ -189,8 +181,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_order,
     accept_order,
     cancel_order,
-    transfer_items,
-    transfer_items_from_multiple,
     create_realm,
     create_multiple_realms,
     create_road,

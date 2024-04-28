@@ -2,9 +2,9 @@ import { useResources } from "@/hooks/helpers/useResources";
 import { Entity } from "../entities/Entity";
 
 export const ResourceArrivals = ({ entityId }: { entityId: bigint }) => {
-  const { getArrivalsWithResourcesChest } = useResources();
+  const { getArrivalsWithResources } = useResources();
 
-  const entityIds = getArrivalsWithResourcesChest(entityId);
+  const entityIds = getArrivalsWithResources(entityId);
 
   return (
     <div>

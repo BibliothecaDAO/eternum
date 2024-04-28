@@ -29,13 +29,6 @@ type NotificationsComponentProps = {
 } & React.ComponentPropsWithRef<"div">;
 
 export const NotificationsComponent = ({ className }: NotificationsComponentProps) => {
-  const {
-    account: { account },
-    setup: {
-      systemCalls: { transfer_items_from_multiple },
-    },
-  } = useDojo();
-
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) || 0;
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -99,10 +92,10 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
         .filter(Boolean) as sender[];
 
       if (senders.length > 0) {
-        await transfer_items_from_multiple({
-          signer: account,
-          senders,
-        });
+        // await transfer_items_from_multiple({
+        //   signer: account,
+        //   senders,
+        // });
       }
 
       // Delete the processed notifications and update the notifications array

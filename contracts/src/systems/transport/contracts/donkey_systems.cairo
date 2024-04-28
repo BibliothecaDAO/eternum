@@ -4,7 +4,6 @@ mod donkey_systems {
 
     use eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
     use eternum::models::config::{SpeedConfig, CapacityConfig};
-    use eternum::models::inventory::{Inventory};
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
@@ -24,14 +23,7 @@ mod donkey_systems {
 
     #[generate_trait]
     impl InternalDonkeySystemsImpl of InternalDonkeySystemsTrait {
-        fn create_donkey(
-            world: IWorldDispatcher,
-            payer_id: ID,
-            receiver_id: ID,
-            weight: u128,
-            start_coord: Coord,
-            intermediate_coord: Coord
-        ) -> ID {
+        fn burn_donkey(world: IWorldDispatcher, payer_id: ID, weight: u128) {
             // get number of donkeys needed
             let donkey_amount = InternalDonkeySystemsImpl::get_donkey_needed(world, weight);
 
@@ -39,11 +31,30 @@ mod donkey_systems {
             let mut donkeys: Resource = ResourceImpl::get(world, (payer_id, ResourceTypes::DONKEY));
             donkeys.burn(donkey_amount);
             donkeys.save(world);
+        }
 
+        fn return_donkey(world: IWorldDispatcher, payer_id: ID, weight: u128) {
+            // get number of donkeys needed
+            let donkey_amount = InternalDonkeySystemsImpl::get_donkey_needed(world, weight);
+
+            // return amount of donkey needed
+            let mut donkeys: Resource = ResourceImpl::get(world, (payer_id, ResourceTypes::DONKEY));
+            donkeys.add(donkey_amount);
+            donkeys.save(world);
+        }
+
+        fn create_donkey(
+            world: IWorldDispatcher,
+            donkey_id: ID,
+            payer_id: ID,
+            receiver_id: ID,
+            start_coord: Coord,
+            intermediate_coord: Coord
+        ) -> ID {
             let donkey_speed_config = get!(
                 world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), SpeedConfig
             );
-            let donkey_id: ID = world.uuid().into();
+
             let is_round_trip: bool = payer_id == receiver_id;
             let arrives_at: u64 = starknet::get_block_timestamp()
                 + InternalDonkeySystemsImpl::get_donkey_travel_time(
@@ -53,19 +64,12 @@ mod donkey_systems {
                     donkey_speed_config.sec_per_km,
                     is_round_trip
                 );
-            let delivery_coord: Coord = if is_round_trip {
-                start_coord
-            } else {
-                intermediate_coord
-            };
 
+            let delivery_coord: Coord = intermediate_coord;
             set!(
                 world,
                 (
                     EntityOwner { entity_id: donkey_id, entity_owner_id: receiver_id, },
-                    Inventory {
-                        entity_id: donkey_id, items_key: world.uuid().into(), items_count: 0
-                    },
                     ArrivalTime { entity_id: donkey_id, arrives_at: arrives_at, },
                     Position { entity_id: donkey_id, x: delivery_coord.x, y: delivery_coord.y }
                 )
@@ -77,8 +81,15 @@ mod donkey_systems {
         fn get_donkey_needed(world: IWorldDispatcher, resources_weight: u128,) -> u128 {
             let capacity_per_donkey = get!(
                 world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), CapacityConfig
-            );
-            resources_weight / capacity_per_donkey.weight_gram
+            )
+                .weight_gram;
+            let reminder = resources_weight % capacity_per_donkey;
+            let donkeys = if reminder == 0 {
+                resources_weight / capacity_per_donkey
+            } else {
+                resources_weight / capacity_per_donkey + 1
+            };
+            donkeys * 1000
         }
 
         fn get_donkey_travel_time(

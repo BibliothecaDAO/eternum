@@ -20,16 +20,24 @@ export const ResourceWeightsInfo = ({
   const { getBalance } = useResourceBalance();
 
   useEffect(() => {
-    // set resource weight in kg
-    setResourceWeight(multiplyByPrecision(getTotalResourceWeight(resources)));
-    setDonkeyBalance(
-      divideByPrecision(getBalance(entityId, 249).balance) - (resources.find((r) => r.resourceId === 249)?.amount || 0),
-    );
+    const updateResourceWeight = async () => {
+      const totalWeight = getTotalResourceWeight(resources);
+      const multipliedWeight = multiplyByPrecision(totalWeight);
+      setResourceWeight(multipliedWeight);
 
-    if (setCanCarry) {
-      setCanCarry(donkeyBalance >= neededDonkeys);
-    }
-  }, [resources]);
+      const { balance } = await getBalance(entityId, 249);
+      const currentDonkeyAmount = resources.find((r) => r.resourceId === 249)?.amount || 0;
+      const calculatedDonkeyBalance = divideByPrecision(balance) - currentDonkeyAmount;
+      setDonkeyBalance(calculatedDonkeyBalance);
+
+      if (setCanCarry) {
+        console.log({ donkeyBalance, neededDonkeys });
+        setCanCarry(calculatedDonkeyBalance >= neededDonkeys);
+      }
+    };
+
+    updateResourceWeight();
+  }, [resources, entityId, resourceWeight, donkeyBalance, setCanCarry]);
 
   return (
     <>

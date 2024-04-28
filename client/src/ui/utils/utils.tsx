@@ -15,14 +15,6 @@ export const getForeignKeyEntityId = (entityId: bigint, key: bigint, index: bigi
   return getEntityIdFromKeys([BigInt(keyHash)]);
 };
 
-export const formatEntityId = (entityId: bigint): Entity => {
-  return ("0x" + entityId.toString(16)) as Entity;
-};
-
-const isRef = (ref: any) => !!ref.current;
-
-export const resolveRef = (ref: any) => (isRef(ref) ? ref.current : ref);
-
 export const currencyFormat = (num: any, decimals: number) => {
   return divideByPrecision(num)
     .toFixed(decimals)
@@ -34,35 +26,6 @@ export function currencyIntlFormat(num: any, decimals: number = 2) {
     notation: "compact",
     maximumFractionDigits: decimals,
   }).format(num || 0);
-}
-
-export const wrapEffect = (effectImpl: any, defaultBlendMode = BlendFunction.ALPHA) =>
-  forwardRef(function Wrap({ blendFunction, opacity, ...props }: any, ref) {
-    const invalidate = useThree((state) => state.invalidate);
-    const effect = useMemo(() => new effectImpl(props), [props]);
-
-    useLayoutEffect(() => {
-      effect.blendMode.blendFunction = !blendFunction && blendFunction !== 0 ? defaultBlendMode : blendFunction;
-      if (opacity !== undefined) effect.blendMode.opacity.value = opacity;
-      invalidate();
-    }, [blendFunction, effect.blendMode, opacity]);
-    return <primitive ref={ref} object={effect} dispose={null} />;
-  });
-
-export const useVector2 = (props: any, key: any) => {
-  const vec = props[key];
-  return useMemo(() => {
-    if (vec instanceof Vector2) {
-      return new Vector2().set(vec.x, vec.y);
-    } else if (Array.isArray(vec)) {
-      const [x, y] = vec;
-      return new Vector2().set(x, y);
-    }
-  }, [vec]);
-};
-
-export function isValidArray(input: any): input is any[] {
-  return Array.isArray(input) && input != null;
 }
 
 // note: temp change because waiting for torii fix
@@ -118,14 +81,6 @@ export const formatTimeLeftDaysHoursMinutes = (seconds: number) => {
   const minutes = Math.floor((seconds % 3600) / 60);
 
   return `${days} days ${hours}h:${minutes}m`;
-};
-
-export const getContractPositionFromRealPosition = (position: Position): Position => {
-  const { x, y } = position;
-  return {
-    x: Math.floor(x * 10000 + 1800000),
-    y: Math.floor(y * 10000 + 1800000),
-  };
 };
 
 const PRECISION = 1000;
@@ -248,3 +203,17 @@ export const pseudoRandom = (x: number, y: number) => {
   let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
 };
+
+export function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
+  const resourceIds: number[] = [];
+  const totalBits = 256; // Assuming u256, hence 256 bits
+
+  for (let position = 0; position < totalBits; position++) {
+    // Shift 1 to the left by 'position' places and perform bitwise AND
+    if ((packedNumber & (1n << BigInt(position))) !== 0n) {
+      resourceIds.push(position + 1);
+    }
+  }
+
+  return resourceIds;
+}

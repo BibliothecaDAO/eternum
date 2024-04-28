@@ -250,7 +250,7 @@ const MarketplaceOverviewPanel = ({
   const sortingParams = useMemo(() => {
     return [
       { label: "Resource", sortKey: "resource", className: "w-[120px]" },
-      { label: "Balance", sortKey: "balance", className: "w-[50px]" },
+      { label: "Balance", sortKey: "balance", className: "w-[30px]" },
       { label: "Best Ask price", sortKey: "ask-price", className: "w-[100px] ml-auto !justify-end" },
       { label: "Ask Total Vol.", sortKey: "ask-vol", className: "ml-4 w-[100px] !justify-end" },
       { label: "Best Bid price", sortKey: "bid-price", className: "ml-4 w-[100px] !justify-end" },

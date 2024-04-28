@@ -16,7 +16,6 @@ mod combat_systems {
         AttackConfig, DefenceConfig, LevelingConfig
     };
     use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::inventory::{Inventory, InventoryTrait};
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::movable::{Movable, ArrivalTime};
 
@@ -32,9 +31,7 @@ mod combat_systems {
 
 
     use eternum::systems::combat::interface::{ISoldierSystems, ICombatSystems};
-    use eternum::systems::resources::contracts::resource_systems::{
-        InternalResourceSystemsImpl, InternalInventorySystemsImpl
-    };
+    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
 
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl
@@ -156,9 +153,6 @@ mod combat_systems {
                     },
                     Quantity { entity_id: new_unit_id, value: quantity },
                     Position { entity_id: new_unit_id, x: realm_position.x, y: realm_position.y },
-                    Inventory {
-                        entity_id: new_unit_id, items_key: world.uuid().into(), items_count: 0
-                    },
                     Capacity { entity_id: new_unit_id, weight_gram: individual_capacity },
                     Movable {
                         entity_id: new_unit_id,
@@ -210,9 +204,9 @@ mod combat_systems {
             let mut unit_quantity = get!(world, unit_id, Quantity);
             assert(unit_quantity.value > 1, 'not enough quantity');
 
-            // check that unit isn't carrying anything
-            let unit_inventory = get!(world, unit_id, Inventory);
-            assert(unit_inventory.items_count == 0, 'unit inventory not empty');
+            // // check that unit isn't carrying anything
+            // let unit_inventory = get!(world, unit_id, Inventory);
+            // assert(unit_inventory.items_count == 0, 'unit inventory not empty');
 
             let unit_movable = get!(world, unit_id, Movable);
             assert(unit_movable.blocked == false, 'unit is blocked');
@@ -252,9 +246,6 @@ mod combat_systems {
                     Defence { entity_id: new_unit_id, value: new_unit_defence },
                     Quantity { entity_id: new_unit_id, value: detached_quantity },
                     Position { entity_id: new_unit_id, x: unit_position.x, y: unit_position.y },
-                    Inventory {
-                        entity_id: new_unit_id, items_key: world.uuid().into(), items_count: 0
-                    },
                     Capacity { entity_id: new_unit_id, weight_gram: unit_capacity.weight_gram },
                     Movable {
                         entity_id: new_unit_id,
@@ -358,8 +349,8 @@ mod combat_systems {
                 let mut unit_quantity = get!(world, unit_id, Quantity);
                 assert(unit_quantity.value >= amount, 'not enough quantity');
 
-                let mut unit_inventory = get!(world, unit_id, Inventory);
-                assert(unit_inventory.items_count == 0, 'inventory not empty');
+                // let mut unit_inventory = get!(world, unit_id, Inventory);
+                // assert(unit_inventory.items_count == 0, 'inventory not empty');
 
                 // ensure units is not blocked 
                 let unit_movable = get!(world, unit_id, Movable);
@@ -878,18 +869,19 @@ mod combat_systems {
         fn steal_from_army(
             world: IWorldDispatcher, attacker_entity_id: u128, target_entity_id: u128
         ) -> Span<u128> {
-            // steal resources from army 
+            // // steal resources from army 
 
-            // @security-note: target can make stealing impossible by having too many
-            //          items causing call to exceed katana step limit
-            let attacker_inventory: Inventory = get!(world, attacker_entity_id, Inventory);
-            let target_inventory: Inventory = get!(world, target_entity_id, Inventory);
-            target_inventory.items_count.print();
+            // // @security-note: target can make stealing impossible by having too many
+            // //          items causing call to exceed katana step limit
+            // let attacker_inventory: Inventory = get!(world, attacker_entity_id, Inventory);
+            // let target_inventory: Inventory = get!(world, target_entity_id, Inventory);
+            // target_inventory.items_count.print();
 
-            let stolen_chests = InternalInventorySystemsImpl::transfer_max_between_inventories(
-                world, target_inventory, attacker_inventory
-            );
-            return stolen_chests;
+            // let stolen_chests = InternalInventorySystemsImpl::transfer_max_between_inventories(
+            //     world, target_inventory, attacker_inventory
+            // );
+            // return stolen_chests;
+            return array![].span();
         }
 
         fn steal_from_realm(

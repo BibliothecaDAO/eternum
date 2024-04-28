@@ -138,10 +138,7 @@ export const generateEmptyChestNotifications = (
   realmPositions: realmsPosition,
   components: Components,
   nextBlockTimestamp: number,
-  getResourcesFromInventory: (entityId: bigint) => {
-    resources: Resource[];
-    indices: number[];
-  },
+  getResourcesFromBalance: (entityId: bigint) => Resource[],
 ) => {
   const notifications: NotificationType[] = [];
   for (const { realmId, position: realmPosition } of realmPositions) {
@@ -163,23 +160,23 @@ export const generateEmptyChestNotifications = (
 
       // get key
       const entityId = getComponentValue(components.Position, id)!.entity_id;
-      const { resources, indices } = getResourcesFromInventory(entityId);
+      const resources = getResourcesFromBalance(entityId);
 
       const carrierType = CarrierType.Raiders;
 
       if (arrivalTime?.arrives_at && arrivalTime.arrives_at <= nextBlockTimestamp) {
-        notifications.push({
-          eventType: EventType.EmptyChest,
-          keys: [entityId.toString()],
-          data: {
-            destinationRealmId: realmId,
-            carrierType,
-            realmEntityId,
-            entityId: BigInt(entityId),
-            resources,
-            indices,
-          },
-        });
+        // notifications.push({
+        //   eventType: EventType.EmptyChest,
+        //   keys: [entityId.toString()],
+        //   data: {
+        //     destinationRealmId: realmId,
+        //     carrierType,
+        //     realmEntityId,
+        //     entityId: BigInt(entityId),
+        //     resources,
+        //     indices,
+        //   },
+        // });
       }
     }
   }
@@ -192,7 +189,7 @@ export const generateArrivedAtHyperstructureNotifications = (
   nextBlockTimestamp: number,
   components: Components,
   hyperstructure: { position: Position; hyperstructureId: bigint },
-  getResourcesFromInventory: (entityId: bigint) => {
+  getResourcesFromBalance: (entityId: bigint) => {
     resources: Resource[];
     indices: number[];
   },
@@ -225,7 +222,7 @@ export const generateArrivedAtHyperstructureNotifications = (
       arrivalTime.arrives_at > timestamps.lastLoginBlockTimestamp &&
       arrivalTime.arrives_at < nextBlockTimestamp;
     if (hyperstructureId && hasArrivedAndNotSeen && homePosition && entityOwner) {
-      const { resources, indices } = getResourcesFromInventory(entityOwner.entity_id);
+      const { resources, indices } = getResourcesFromBalance(entityOwner.entity_id);
       notifications.push({
         eventType: EventType.ArrivedAtHyperstructure,
         keys: [entityOwner.entity_id.toString()],

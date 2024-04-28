@@ -22,9 +22,9 @@ const EXPLORATION_REWARD_RESOURCE_AMOUNT: number = 20;
 const EXPLORATION_COSTS: Resource[] = [
   {
     resourceId: 254,
-    amount: 300000,
+    amount: 30000,
   },
-  { resourceId: 255, amount: 150000 },
+  { resourceId: 255, amount: 15000 },
 ];
 
 export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
@@ -125,10 +125,10 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   // const canCarryNewReward = totalCapacityInKg >= entityWeightInKg + sampleRewardResourceWeightKg;
   const canCarryNewReward = true;
 
-  const { getResourcesFromInventory } = useResources();
+  const { getResourcesFromBalance } = useResources();
 
   const explorationCosts = useMemo(() => {
-    const foodBalance = entityOwner ? getResourcesFromInventory(entityOwner.entity_owner_id).resources : [];
+    const foodBalance = entityOwner ? getResourcesFromBalance(entityOwner.entity_owner_id) : [];
     return EXPLORATION_COSTS.map((res) => {
       return {
         ...res,

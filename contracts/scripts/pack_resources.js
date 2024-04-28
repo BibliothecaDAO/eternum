@@ -47,8 +47,26 @@ module.exports = {
 };
 
 // Example usage
-const numbers = [5, 15, 16, 21, 22];
-const packedResult = packResources(numbers);
-const unpackedResult = unpackResources(packedResult, numbers.length);
-console.log({ packedResult });
-console.log({ unpackedResult });
+// const numbers = [5, 15, 16, 21, 22];
+// const packedResult = packResources(numbers);
+// const unpackedResult = unpackResources(packedResult, numbers.length);
+// console.log({ packedResult });
+// console.log({ unpackedResult });
+
+function getResourceIdsFromPackedNumber(packedNumber) {
+  const resourceIds = [];
+  const totalBits = 256; // Assuming u256, hence 256 bits
+
+  for (let position = 0; position < totalBits; position++) {
+    // Shift 1 to the left by 'position' places and perform bitwise AND
+    if ((packedNumber & (1n << BigInt(position))) !== 0n) {
+      resourceIds.push(position + 1);
+    }
+  }
+
+  return resourceIds;
+}
+
+const res =
+  getResourceIdsFromPackedNumber(57443731770074831323412168344153766786583156455220123566449660816425658351615n);
+console.log({ res });

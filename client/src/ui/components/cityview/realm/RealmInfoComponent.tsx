@@ -6,7 +6,6 @@ import clsx from "clsx";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { LevelingBonusIcons } from "./leveling/Leveling";
-import { LaborAuction } from "./labor/LaborAuction";
 import { LevelingPopup } from "./leveling/LevelingPopup";
 import { useEffect, useMemo, useState } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
@@ -139,7 +138,6 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
               />
             </div>
           </div>
-          <LaborAuction className="!absolute top-2 r right-2 !-mt-1" />
           {showRealmLevelUp && <LevelingPopup onClose={() => setShowRealmLevelUp(false)}></LevelingPopup>}
         </div>
       )}

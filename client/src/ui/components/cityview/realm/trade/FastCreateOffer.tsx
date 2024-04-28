@@ -75,25 +75,27 @@ export const FastCreateOfferPopup = ({
     }
   }, [directOfferRealmId]);
 
-  const createOrder = async () => {
+  const createOrder = () => {
     const selectedRealmEntityId = selectedRealmId ? getRealmEntityIdFromRealmId(selectedRealmId) : 0;
     setIsLoading(true);
     if (!nextBlockTimestamp) return;
     create_order({
       signer: account,
       maker_id: realmEntityId,
-      maker_gives_resource_types: selectedResourceIdsGive,
-      maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
+      maker_gives_resources: selectedResourceIdsGive.flatMap((id) => [
+        id,
         multiplyByPrecision(selectedResourcesGiveAmounts[id]),
-      ),
+      ]),
       taker_id: selectedRealmEntityId || 0,
-      taker_gives_resource_types: selectedResourceIdsGet,
-      taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
+      taker_gives_resources: selectedResourceIdsGet.flatMap((id) => [
+        id,
         multiplyByPrecision(selectedResourcesGetAmounts[id]),
-      ),
+      ]),
       expires_at: nextBlockTimestamp + ONE_MONTH,
+    }).finally(() => {
+      setIsLoading(false);
+      onClose();
     });
-    onClose();
   };
 
   return (

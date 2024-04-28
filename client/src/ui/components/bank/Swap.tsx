@@ -75,7 +75,11 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
     (disableInput: boolean, isLords: boolean) => (
       <ResourceBar
         entityId={entityId}
-        resources={isLords ? [resources[0]] : resources.slice(1)}
+        resources={
+          isLords
+            ? resources.filter((r) => r.id === Number(LORDS_RESOURCE_ID))
+            : resources.filter((r) => r.id !== Number(LORDS_RESOURCE_ID))
+        }
         amount={isLords ? lordsAmount : resourceAmount}
         setAmount={isLords ? setLordsAmount : setResourceAmount}
         resourceId={isLords ? LORDS_RESOURCE_ID : resourceId}

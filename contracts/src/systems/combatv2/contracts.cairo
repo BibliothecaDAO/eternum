@@ -21,7 +21,6 @@ mod combat_v2_systems {
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
         TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig
     };
-    use eternum::models::inventory::Inventory;
 
     use eternum::models::movable::Movable;
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
@@ -120,9 +119,6 @@ mod combat_v2_systems {
                 (
                     Capacity { entity_id: army.entity_id, weight_gram: troop_capacity.weight_gram },
                     Quantity { entity_id: army.entity_id, value: army.troops.count().into() },
-                    Inventory {
-                        entity_id: army.entity_id, items_key: world.uuid().into(), items_count: 0
-                    }
                 )
             );
         }

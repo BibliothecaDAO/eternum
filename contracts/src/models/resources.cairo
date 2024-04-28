@@ -1,3 +1,4 @@
+use core::fmt::{Display, Formatter, Error};
 use core::integer::BoundedInt;
 use debug::PrintTrait;
 
@@ -7,7 +8,7 @@ use eternum::constants::get_resource_probabilities;
 use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
 
 use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
-use eternum::utils::math::{is_u32_bit_set, set_u32_bit};
+use eternum::utils::math::{is_u256_bit_set, set_u256_bit};
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -18,6 +19,17 @@ struct Resource {
     resource_type: u8,
     balance: u128,
 }
+
+impl ResourceDisplay of Display<Resource> {
+    fn fmt(self: @Resource, ref f: Formatter) -> Result<(), Error> {
+        let str: ByteArray = format!(
+            "Resource ({}, {}, {})", *self.entity_id, *self.resource_type, *self.balance
+        );
+        f.buffer.append(@str);
+        Result::Ok(())
+    }
+}
+
 
 #[derive(Model, Copy, Drop, Serde)]
 struct ResourceAllowance {
@@ -40,13 +52,6 @@ struct ResourceCost {
     amount: u128
 }
 
-#[derive(Model, Copy, Drop, Serde)]
-struct ResourceChest {
-    #[key]
-    entity_id: u128,
-    locked_until: u64,
-    resources_count: u32,
-}
 
 #[derive(Model, Copy, Drop, Serde)]
 struct DetachedResource {
@@ -63,8 +68,28 @@ struct DetachedResource {
 struct OwnedResourcesTracker {
     #[key]
     entity_id: u128,
-    resource_types: u32
+    resource_types: u256
 }
+
+#[derive(Model, Copy, Drop, Serde)]
+struct ResourceLock {
+    #[key]
+    entity_id: u128,
+    release_at: u64,
+}
+
+
+#[generate_trait]
+impl ResourceLockImpl of LockTrait {
+    fn assert_not_locked(self: ResourceLock) {
+        assert!(self.is_open(), "resource locked for entity {}", self.entity_id);
+    }
+    fn is_open(self: ResourceLock) -> bool {
+        let now = starknet::get_block_timestamp();
+        now > self.release_at
+    }
+}
+
 
 #[generate_trait]
 impl ResourceFoodImpl of ResourceFoodTrait {
@@ -118,12 +143,21 @@ impl ResourceFoodImpl of ResourceFoodTrait {
 impl ResourceImpl of ResourceTrait {
     fn get(world: IWorldDispatcher, key: (u128, u8)) -> Resource {
         let mut resource: Resource = get!(world, key, Resource);
+        if resource.entity_id == 0 {
+            return resource;
+        };
+
         resource.harvest(world);
         return resource;
     }
 
     fn burn(ref self: Resource, amount: u128) {
-        assert(self.balance >= amount, 'not enough resources');
+        if self.entity_id == 0 {
+            return;
+        };
+
+        assert!(self.balance >= amount, "not enough resources, {}", self);
+
         if amount > self.balance {
             self.balance = 0;
         } else {
@@ -132,10 +166,16 @@ impl ResourceImpl of ResourceTrait {
     }
 
     fn add(ref self: Resource, amount: u128) {
+        if self.entity_id == 0 {
+            return;
+        };
         self.balance += amount;
     }
 
     fn save(ref self: Resource, world: IWorldDispatcher) {
+        if self.entity_id == 0 {
+            return;
+        };
         // save the updated resource
         set!(world, (self));
 
@@ -146,17 +186,15 @@ impl ResourceImpl of ResourceTrait {
 
         let mut entity_owned_resources = get!(world, self.entity_id, OwnedResourcesTracker);
 
-        if self._is_regular_resource(self.resource_type) {
-            if self.balance == 0 {
-                if entity_owned_resources.owns_resource_type(self.resource_type) {
-                    entity_owned_resources.set_resource_ownership(self.resource_type, false);
-                    set!(world, (entity_owned_resources));
-                }
-            } else {
-                if !entity_owned_resources.owns_resource_type(self.resource_type) {
-                    entity_owned_resources.set_resource_ownership(self.resource_type, true);
-                    set!(world, (entity_owned_resources));
-                }
+        if self.balance == 0 {
+            if entity_owned_resources.owns_resource_type(self.resource_type) {
+                entity_owned_resources.set_resource_ownership(self.resource_type, false);
+                set!(world, (entity_owned_resources));
+            }
+        } else {
+            if !entity_owned_resources.owns_resource_type(self.resource_type) {
+                entity_owned_resources.set_resource_ownership(self.resource_type, true);
+                set!(world, (entity_owned_resources));
             }
         }
     }
@@ -171,20 +209,6 @@ impl ResourceImpl of ResourceTrait {
             set!(world, (self));
             set!(world, (production));
         }
-    }
-
-
-    fn _is_regular_resource(self: @Resource, _type: u8) -> bool {
-        let mut position = _type;
-        if position == 255 {
-            return true;
-        } else if position == 254 {
-            return true;
-        } else if position == 253 {
-            return true;
-        }
-
-        return position <= 28;
     }
 }
 
@@ -202,8 +226,8 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
     /// * `bool` - Whether the entity owns the resource
     ///
     fn owns_resource_type(self: @OwnedResourcesTracker, resource_type: u8) -> bool {
-        let pos = self._resource_type_to_position(resource_type);
-        is_u32_bit_set((*self).resource_types, pos.into())
+        let pos = resource_type - 1;
+        is_u256_bit_set((*self).resource_types, pos.into())
     }
 
     /// Set whether an entity owns a resource
@@ -214,9 +238,8 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
     /// * `value` - Whether the entity owns the resource
     ///
     fn set_resource_ownership(ref self: OwnedResourcesTracker, resource_type: u8, value: bool) {
-        let pos = self._resource_type_to_position(resource_type);
-
-        self.resource_types = set_u32_bit(self.resource_types, pos.into(), value);
+        let pos = resource_type - 1;
+        self.resource_types = set_u256_bit(self.resource_types, pos.into(), value);
     }
 
 
@@ -248,40 +271,6 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
         };
 
         return (owned_resource_types.span(), owned_resource_probabilities.span());
-    }
-
-
-    fn _resource_type_to_position(self: @OwnedResourcesTracker, _type: u8) -> u8 {
-        // custom mapping for special cases of position 
-        // i.e for LORDS = 253, WHEAT = 254, and FISH = 255
-        let mut position = _type;
-        if position == 255 {
-            position = 32 - 1;
-        } else if position == 254 {
-            position = 32 - 2;
-        } else if position == 253 {
-            position = 32 - 3;
-        } else if position == 252 {
-            position = 32 - 4;
-        } else if position == 251 {
-            position = 32 - 5;
-        } else if position == 250 {
-            position = 32 - 6;
-        } else {
-            position -= 1;
-        }
-
-        // the mapping would be done like this
-        // WOOD (resource type 1) == position 0
-        // STONE (resource type 2) == position 2
-        // ...
-        // DEMONHIDE (resource type 28) == position 27
-        // ==> 28th bit is unalloted. to be used for new resource type <==
-        // LORDS (resource type 253) == position 29
-        // WHEAT (resource type 254) == position 30
-        // FISH (resource type 255) == position 31
-
-        return position; // since resource types start from 1
     }
 }
 
@@ -454,3 +443,4 @@ mod owned_resources_tracker_tests {
         assert!(ort.owns_resource_type(ResourceTypes::DEMONHIDE) == false, "should be false");
     }
 }
+
