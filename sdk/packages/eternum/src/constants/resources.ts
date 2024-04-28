@@ -490,6 +490,7 @@ export const WEIGHTS: WeightMap = {
 
 export const RESOURCE_TIERS = {
   lords: [253],
+  military: [250, 251, 252],
   transport: [249],
   food: [255, 254],
   common: [1, 2, 3, 4, 5],
@@ -497,7 +498,6 @@ export const RESOURCE_TIERS = {
   rare: [10, 11, 12, 13],
   unique: [14, 15, 16, 17, 18, 19],
   mythic: [20, 21, 22],
-  military: [250, 251, 252],
 };
 
 export const TROOP_COSTS = {

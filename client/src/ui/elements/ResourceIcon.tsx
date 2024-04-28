@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import clsx from "clsx";
-
+import { ReactComponent as Donkey } from "@/assets/icons/units/donkey-circle.svg";
 import { ReactComponent as Cloth } from "@/assets/icons/resources/Cloth.svg";
 import { ReactComponent as DemonHide } from "@/assets/icons/resources/DemonHide.svg";
 import { ReactComponent as DesertGlass } from "@/assets/icons/resources/DesertGlass.svg";
@@ -62,6 +62,10 @@ const Components: { [key: string]: Resource } = Object.freeze({
   Lords: { component: <img src={`/images/resources/coin.png`} />, name: "Lords" },
   Fish: { component: <img src={`/images/resources/255.png`} />, name: "Fish" },
   Wheat: { component: <img src={`/images/resources/254.png`} />, name: "Wheat" },
+  Donkeys: { component: <Donkey className="w-6 fill-current" />, name: "Donkeys" },
+  Knight: { component: <img src={`/images/icons/troop.png`} />, name: "Knight" },
+  Crossbowmen: { component: <img src={`/images/icons/troop.png`} />, name: "Crossbowmen" },
+  Paladin: { component: <img src={`/images/icons/troop.png`} />, name: "Paladin" },
 });
 
 const STYLES = {
