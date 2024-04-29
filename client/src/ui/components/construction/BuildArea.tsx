@@ -8,6 +8,7 @@ import { ExistingBuildings } from "./ExistingBuildings";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
 import { BuildingEnumToString, BuildingType } from "@bibliothecadao/eternum";
+import { BuildingInfo } from "./SelectPreviewBuilding";
 
 const BuildArea = () => {
   return (
@@ -79,17 +80,12 @@ const BuildingPreview = () => {
 
 const BuildingCostThree = ({ building }: { building: BuildingType }) => {
   return (
-    <BaseThreeTooltip distanceFactor={40}>
-      <div className="flex flex-col text-white text-sm p-1 space-y-1">
+    <BaseThreeTooltip distanceFactor={30}>
+      <div className="flex flex-col  text-sm p-1 space-y-1">
         <div className="font-bold text-center">
-          {BuildingEnumToString[building as keyof typeof BuildingEnumToString]} Cost
+          {BuildingEnumToString[building as keyof typeof BuildingEnumToString]}
         </div>
-        <div className="flex">
-          <ResourceCost resourceId={1} amount={100} />
-          <ResourceCost resourceId={2} amount={100} />
-          <ResourceCost resourceId={3} amount={100} />
-          <ResourceCost resourceId={4} amount={100} />
-        </div>
+        {/* <BuildingInfo buildingId={building} /> */}
       </div>
     </BaseThreeTooltip>
   );

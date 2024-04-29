@@ -69,7 +69,8 @@
     "Position",
     "Direction",
     "Production",
-    "Population"
+    "Population",
+    "QuantityTracker"
   ],
   "MAP_SYSTEMS": [
     "Tile",

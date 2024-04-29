@@ -1,7 +1,7 @@
 import clsx from "clsx";
 
 import useUIStore from "@/hooks/store/useUIStore";
-import { BuildingType, findResourceById } from "@bibliothecadao/eternum";
+import { BUILDING_INFORMATION, BuildingType, RESOURCE_INPUTS, findResourceById } from "@bibliothecadao/eternum";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
@@ -11,6 +11,7 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { BUILDING_COSTS } from "@bibliothecadao/eternum";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -98,7 +99,7 @@ export const SelectPreviewBuilding = () => {
               <InfoIcon
                 onMouseEnter={() => {
                   setTooltip({
-                    content: <BuildingCost />,
+                    content: <BuildingInfo buildingId={building} />,
                     position: "right",
                   });
                 }}
@@ -142,7 +143,7 @@ export const SelectPreviewBuilding = () => {
                     <InfoIcon
                       onMouseEnter={() => {
                         setTooltip({
-                          content: <MineInfo />,
+                          content: <ResourceInfo resourceId={resourceId} />,
                           position: "right",
                         });
                       }}
@@ -184,14 +185,43 @@ const MineInfo = () => {
   );
 };
 
-const BuildingCost = () => {
+export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
+  const cost = RESOURCE_INPUTS[resourceId];
+
   return (
     <div className="flex flex-col text-white text-sm p-1 space-y-1">
-      <div className="font-bold text-center">Cost</div>
+      <h5 className="text-center">+10 per day</h5>
+      <div className="font-bold text-center">Input Costs</div>
       <div className="grid grid-cols-2 gap-2">
-        <ResourceCost resourceId={1} amount={100} />
-        <ResourceCost resourceId={2} amount={100} />
-        <ResourceCost resourceId={3} amount={100} />
+        {Object.keys(cost).map((resourceId) => {
+          return (
+            <ResourceCost
+              resourceId={cost[Number(resourceId)].resource}
+              amount={cost[Number(resourceId)].amount / 1000}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
+  const cost = BUILDING_COSTS[buildingId];
+
+  const information = BUILDING_INFORMATION[buildingId];
+  return (
+    <div>
+      <div className="p-2 text-xs w-32">{information}</div>
+      <div className="grid grid-cols-2 gap-2">
+        {Object.keys(cost).map((resourceId) => {
+          return (
+            <ResourceCost
+              resourceId={cost[Number(resourceId)].resource}
+              amount={cost[Number(resourceId)].amount / 1000}
+            />
+          );
+        })}
       </div>
     </div>
   );

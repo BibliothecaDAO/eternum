@@ -138,9 +138,9 @@ commands+=(
 
 
 commands+=(
-    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FARM,$WHEAT,1,$WHEAT,$(($RESOURCE_BUILDING_COST * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FARM,$WHEAT,1,$WHEAT,$(($FARM_BUILDING_COST * $RESOURCE_PRECISION))"
 
-    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FISHING_VILLAGE,$FISH,1,$WHEAT,$(($RESOURCE_BUILDING_COST * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FISHING_VILLAGE,$FISH,1,$WHEAT,$(($FARM_BUILDING_COST * $RESOURCE_PRECISION))"
 
     "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_BARRACKS,$KNIGHT,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
 
@@ -209,9 +209,9 @@ commands+=(
 
     "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY,$DONKEYS_PER_TICK,1,$WHEAT,2500"
 
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $KNIGHT,$(($KNIGHTS_PER_TICK * $RESOURCE_PRECISION)),3,$WHEAT,2500,$SILVER,100,$IRONWOOD,250"
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $CROSSBOWMEN,$(($CROSSBOWMEN_PER_TICK * $RESOURCE_PRECISION)),3,$WHEAT,2500,$SILVER,100,$COLDIRON,250"  
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $PALADIN,$(($PALADIN_PER_TICK * $RESOURCE_PRECISION)),3,$WHEAT,2500,$SILVER,100,$GOLD,250"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $KNIGHT,$(($KNIGHTS_PER_TICK * $RESOURCE_PRECISION)),3,$WHEAT,2500,$SILVER,1000,$IRONWOOD,2500"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $CROSSBOWMEN,$(($CROSSBOWMEN_PER_TICK * $RESOURCE_PRECISION)),3,$WHEAT,2500,$SILVER,1000,$COLDIRON,2500"  
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $PALADIN,$(($PALADIN_PER_TICK * $RESOURCE_PRECISION)),3,$WHEAT,2500,$SILVER,1000,$GOLD,2500"
 
     "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WHEAT,$(($FOOD_PER_TICK * $RESOURCE_PRECISION)),0"
     "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $FISH,$(($FOOD_PER_TICK * $RESOURCE_PRECISION)),0"

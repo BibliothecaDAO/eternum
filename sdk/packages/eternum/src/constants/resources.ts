@@ -1,4 +1,5 @@
 import { Resources } from "../types";
+import { BuildingType } from "../utils";
 
 export const findResourceById = (value: number) => {
   return resources.find((e) => e.id === value);
@@ -504,4 +505,133 @@ export const TROOP_COSTS = {
   [ResourcesIds.Knight]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
   [ResourcesIds.Crossbowmen]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
   [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+};
+
+interface ResourceInputs {
+  [key: number]: { resource: ResourcesIds; amount: number }[];
+}
+
+export const RESOURCE_INPUTS: ResourceInputs = {
+  [ResourcesIds.Wood]: [
+    { resource: ResourcesIds.Stone, amount: 1500 },
+    { resource: ResourcesIds.Coal, amount: 1600 },
+  ],
+  [ResourcesIds.Stone]: [
+    { resource: ResourcesIds.Wood, amount: 2500 },
+    { resource: ResourcesIds.Coal, amount: 1900 },
+  ],
+  [ResourcesIds.Coal]: [
+    { resource: ResourcesIds.Stone, amount: 2100 },
+    { resource: ResourcesIds.Copper, amount: 1400 },
+  ],
+  [ResourcesIds.Copper]: [
+    { resource: ResourcesIds.Coal, amount: 2900 },
+    { resource: ResourcesIds.Obsidian, amount: 1700 },
+  ],
+  [ResourcesIds.Obsidian]: [
+    { resource: ResourcesIds.Copper, amount: 2400 },
+    { resource: ResourcesIds.Silver, amount: 1600 },
+  ],
+  [ResourcesIds.Silver]: [
+    { resource: ResourcesIds.Obsidian, amount: 2500 },
+    { resource: ResourcesIds.Ironwood, amount: 1400 },
+  ],
+  [ResourcesIds.Ironwood]: [
+    { resource: ResourcesIds.Silver, amount: 3000 },
+    { resource: ResourcesIds.ColdIron, amount: 1600 },
+  ],
+  [ResourcesIds.ColdIron]: [
+    { resource: ResourcesIds.Ironwood, amount: 2500 },
+    { resource: ResourcesIds.Gold, amount: 1900 },
+  ],
+  [ResourcesIds.Gold]: [
+    { resource: ResourcesIds.ColdIron, amount: 2100 },
+    { resource: ResourcesIds.Hartwood, amount: 1300 },
+  ],
+  [ResourcesIds.Hartwood]: [
+    { resource: ResourcesIds.Gold, amount: 3100 },
+    { resource: ResourcesIds.Diamonds, amount: 1000 },
+  ],
+  [ResourcesIds.Diamonds]: [
+    { resource: ResourcesIds.Hartwood, amount: 4000 },
+    { resource: ResourcesIds.Sapphire, amount: 1600 },
+  ],
+  [ResourcesIds.Sapphire]: [
+    { resource: ResourcesIds.Diamonds, amount: 2400 },
+    { resource: ResourcesIds.Ruby, amount: 1900 },
+  ],
+  [ResourcesIds.Ruby]: [
+    { resource: ResourcesIds.Sapphire, amount: 2100 },
+    { resource: ResourcesIds.DeepCrystal, amount: 2000 },
+  ],
+  [ResourcesIds.DeepCrystal]: [
+    { resource: ResourcesIds.Ruby, amount: 2000 },
+    { resource: ResourcesIds.Ignium, amount: 1400 },
+  ],
+  [ResourcesIds.Ignium]: [
+    { resource: ResourcesIds.DeepCrystal, amount: 2800 },
+    { resource: ResourcesIds.EtherealSilica, amount: 1900 },
+  ],
+  [ResourcesIds.EtherealSilica]: [
+    { resource: ResourcesIds.Ignium, amount: 2100 },
+    { resource: ResourcesIds.TrueIce, amount: 1700 },
+  ],
+  [ResourcesIds.TrueIce]: [
+    { resource: ResourcesIds.EtherealSilica, amount: 2300 },
+    { resource: ResourcesIds.TwilightQuartz, amount: 1600 },
+  ],
+  [ResourcesIds.TwilightQuartz]: [
+    { resource: ResourcesIds.TrueIce, amount: 2500 },
+    { resource: ResourcesIds.AlchemicalSilver, amount: 1700 },
+  ],
+  [ResourcesIds.AlchemicalSilver]: [
+    { resource: ResourcesIds.TwilightQuartz, amount: 2400 },
+    { resource: ResourcesIds.Adamantine, amount: 1200 },
+  ],
+  [ResourcesIds.Adamantine]: [
+    { resource: ResourcesIds.AlchemicalSilver, amount: 3400 },
+    { resource: ResourcesIds.Mithral, amount: 1300 },
+  ],
+  [ResourcesIds.Mithral]: [
+    { resource: ResourcesIds.Adamantine, amount: 3000 },
+    { resource: ResourcesIds.Dragonhide, amount: 1200 },
+  ],
+  [ResourcesIds.Dragonhide]: [
+    { resource: ResourcesIds.Mithral, amount: 3200 },
+    { resource: ResourcesIds.Wood, amount: 436100 },
+  ],
+  [ResourcesIds.Donkey]: [{ resource: ResourcesIds.Wheat, amount: 2500 }],
+  [ResourcesIds.Knight]: [
+    { resource: ResourcesIds.Wheat, amount: 2500 },
+    { resource: ResourcesIds.Silver, amount: 100 },
+    { resource: ResourcesIds.Ironwood, amount: 250 },
+  ],
+  [ResourcesIds.Crossbowmen]: [
+    { resource: ResourcesIds.Wheat, amount: 2500 },
+    { resource: ResourcesIds.Silver, amount: 100 },
+    { resource: ResourcesIds.ColdIron, amount: 250 },
+  ],
+  [ResourcesIds.Paladin]: [
+    { resource: ResourcesIds.Wheat, amount: 2500 },
+    { resource: ResourcesIds.Silver, amount: 100 },
+    { resource: ResourcesIds.Gold, amount: 250 },
+  ],
+  [ResourcesIds.Wheat]: [],
+  [ResourcesIds.Fish]: [],
+};
+
+export const BUILDING_COSTS: ResourceInputs = {
+  [BuildingType.Resource]: [{ resource: ResourcesIds.Wheat, amount: 500000 }],
+  [BuildingType.Farm]: [{ resource: ResourcesIds.Wheat, amount: 900000 }],
+  [BuildingType.FishingVillage]: [{ resource: ResourcesIds.Wheat, amount: 900000 }],
+  [BuildingType.Barracks]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
+  [BuildingType.Market]: [{ resource: ResourcesIds.Wheat, amount: 1500000 }],
+  [BuildingType.ArcheryRange]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
+  [BuildingType.Stable]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
+  [BuildingType.DonkeyFarm]: [{ resource: ResourcesIds.Wheat, amount: 0 }],
+  [BuildingType.TradingPost]: [{ resource: ResourcesIds.Wheat, amount: 0 }],
+  [BuildingType.WorkersHut]: [{ resource: ResourcesIds.Wheat, amount: 500000 }],
+  [BuildingType.WatchTower]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
+  [BuildingType.Walls]: [{ resource: ResourcesIds.Wheat, amount: 3000000 }],
+  [BuildingType.Storehouse]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
 };

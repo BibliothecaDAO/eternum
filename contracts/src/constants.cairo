@@ -24,12 +24,14 @@ const REALM_LEVELING_START_TIER: u64 = 1;
 const MAX_REALMS_PER_ADDRESS: u8 = 5;
 
 // base population
+// TODO: Move to Onchain config
 const BASE_POPULATION: u32 = 6;
 
 // resource precision
 const RESOURCE_PRECISION: u128 = 10_000;
 
 // base storehouse capacity
+// TODO: Move to Onchain config
 const BASE_STOREHOUSE_CAPACITY: u128 = 10_000;
 
 mod ResourceTypes {
