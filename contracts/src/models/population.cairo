@@ -1,7 +1,6 @@
+use eternum::constants::{BASE_POPULATION};
 use eternum::models::buildings::{BuildingCategory};
 use eternum::models::config::{PopulationConfig, PopulationConfigTrait};
-
-use eternum::constants::{BASE_POPULATION};
 
 
 #[derive(Model, Copy, Drop, Serde)]

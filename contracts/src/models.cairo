@@ -11,6 +11,7 @@ mod movable;
 mod name;
 mod order;
 mod owner;
+mod population;
 mod position;
 mod production;
 mod quantity;
@@ -26,4 +27,3 @@ mod bank {
     mod liquidity;
     mod market;
 }
-mod population;

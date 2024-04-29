@@ -101,7 +101,6 @@ trait IPopulationConfig {
 }
 
 
-
 #[dojo::contract]
 mod config_systems {
     use debug::PrintTrait;
@@ -472,7 +471,6 @@ mod config_systems {
                 })
             );
         }
-
     }
 
 
