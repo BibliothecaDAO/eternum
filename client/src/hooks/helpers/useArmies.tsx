@@ -1,8 +1,9 @@
 import { useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../context/DojoContext";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { Position } from "@bibliothecadao/eternum";
 
-export const useArmies = ({ entity_id }: { entity_id: bigint }) => {
+export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
   const {
     setup: {
       components: { Army, EntityOwner },
@@ -15,8 +16,29 @@ export const useArmies = ({ entity_id }: { entity_id: bigint }) => {
     entityArmies: () => {
       return armies.map((id) => {
         const army = getComponentValue(Army, id);
-        return { ...army, name: "Army" };
+        return { ...army, name: `Army ${army?.entity_id}` };
       });
     },
   };
+};
+
+export const usePositionArmies = ({ position }: { position: Position }) => {
+  {
+    const {
+      setup: {
+        components: { Army, Position },
+      },
+    } = useDojo();
+
+    const armies = useEntityQuery([Has(Army), HasValue(Position, position)]);
+
+    return {
+      positionArmies: () => {
+        return armies.map((id) => {
+          const army = getComponentValue(Army, id);
+          return { ...army, name: "Army" };
+        });
+      },
+    };
+  }
 };

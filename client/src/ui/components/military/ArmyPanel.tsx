@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Tabs } from "@/ui/elements/tab";
 
 import { TroopSelect } from "../military/TroopSelect";
-import { ArmyList } from "./ArmyList";
+import { EntityArmyList } from "./ArmyList";
 
 export const ArmyPanel = ({ entity }: any) => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -16,7 +16,7 @@ export const ArmyPanel = ({ entity }: any) => {
             <div>Armies</div>
           </div>
         ),
-        component: <ArmyList entity={entity} />,
+        component: <EntityArmyList entity={entity} />,
       },
       {
         key: "Create",

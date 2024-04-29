@@ -1,17 +1,35 @@
 import Button from "@/ui/elements/Button";
 import { EntityList } from "../list/EntityList";
 
-import { useArmies } from "@/hooks/helpers/useArmies";
+import { useEntityArmies, usePositionArmies } from "@/hooks/helpers/useArmies";
 import { currencyFormat } from "@/ui/utils/utils";
 import { InventoryResources } from "../resources/InventoryResources";
+import { Position } from "@bibliothecadao/eternum";
 
-export const ArmyList = ({ entity }: any) => {
-  const { entityArmies } = useArmies({ entity_id: entity?.entity_id });
+export const EntityArmyList = ({ entity }: any) => {
+  const { entityArmies } = useEntityArmies({ entity_id: entity?.entity_id });
 
   return (
     <EntityList
       list={entityArmies()}
       title="armies"
+      panel={({ entity }) => (
+        <>
+          <ArmyCard entity={entity} />
+          <InventoryResources entityId={entity.entity_id} />
+        </>
+      )}
+    />
+  );
+};
+
+export const PositionArmyList = ({ position }: { position: Position }) => {
+  const { positionArmies } = usePositionArmies({ position });
+
+  return (
+    <EntityList
+      list={positionArmies()}
+      title="armies at position"
       panel={({ entity }) => (
         <>
           <ArmyCard entity={entity} />
