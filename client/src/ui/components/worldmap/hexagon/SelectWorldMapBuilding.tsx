@@ -69,7 +69,7 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
       setIsLoading(true);
       create_bank({
         realm_entity_id: entityId,
-        coord: { x: clickedHex.col, y: clickedHex.row },
+        coord: { x: clickedHex.contractPos.col, y: clickedHex.contractPos.row },
         owner_fee_scaled: 0,
         signer: account,
       }).finally(() => setIsLoading(false));
