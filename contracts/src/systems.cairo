@@ -53,7 +53,7 @@ mod map {
 mod dev {
     mod contracts;
 }
-mod combatv2 {
+mod combat {
     mod contracts;
     #[cfg(test)]
     mod tests;

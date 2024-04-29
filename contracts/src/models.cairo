@@ -1,7 +1,6 @@
 mod buildings;
 mod capacity;
 mod combat;
-mod combatV2;
 mod config;
 mod hyperstructure;
 mod level;

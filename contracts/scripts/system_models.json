@@ -89,7 +89,7 @@
     "Resource",
     "Quantity",
     "Production",
-    "Healthv2",
+    "Health",
     "Army",
     "Battle",
     "EntityOwner",
@@ -97,8 +97,8 @@
     "Owner",
     "Capacity"
   ],
-  "COMBAT_V2_SYSTEMS": [
-    "Healthv2",
+  "COMBAT__SYSTEMS": [
+    "Health",
     "Army",
     "Battle",
     "EntityOwner",

@@ -44,7 +44,7 @@ export BUILDINGS_SYSTEMS=$(get_contract_address "eternum::systems::buildings::co
 
 export MAP_SYSTEMS=$(get_contract_address "eternum::systems::map::contracts::map_systems")
 
-export COMBAT_V2_SYSTEMS=$(get_contract_address "eternum::systems::combatv2::contracts::combat_v2_systems")
+export COMBAT__SYSTEMS=$(get_contract_address "eternum::systems::combat::contracts::combat_systems")
 
 # Display the addresses
 echo "-------------------------ADDRESS----------------------------------------"
@@ -66,4 +66,4 @@ echo liquidity : $LIQUIDITY_SYSTEMS
 echo hyperstructure : $HYPERSTRUCTURE_SYSTEMS
 echo buildings : $BUILDINGS_SYSTEMS
 echo maps : $MAP_SYSTEMS
-echo combat_v2 : $COMBAT_V2_SYSTEMS
+echo combat : $COMBAT__SYSTEMS

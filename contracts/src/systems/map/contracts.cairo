@@ -9,7 +9,7 @@ mod map_systems {
     use eternum::alias::ID;
     use eternum::constants::ResourceTypes;
     use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
-    use eternum::models::combatV2::{Healthv2, Healthv2Trait};
+    use eternum::models::combat::{Health, HealthTrait};
     use eternum::models::config::{MapExploreConfig, LevelingConfig};
     use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::level::{Level, LevelTrait};
@@ -59,7 +59,7 @@ mod map_systems {
             get!(world, unit_id, Owner).assert_caller_owner();
 
             // ensure unit is alive
-            get!(world, unit_id, Healthv2).assert_alive();
+            get!(world, unit_id, Health).assert_alive();
 
             // check that entity owner is a realm
             // TODO: Do we need this?

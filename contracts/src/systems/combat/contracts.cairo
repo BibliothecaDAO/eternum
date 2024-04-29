@@ -1,7 +1,7 @@
-use eternum::models::{combatV2::{Troops, Battle, BattleSide}};
+use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
 #[dojo::interface]
-trait ICombatv2Contract<TContractState> {
+trait ICombatContract<TContractState> {
     fn create_army(owner_id: u128, troops: Troops);
     fn start_battle(attacking_army_id: u128, defending_army_id: u128);
     fn join_battle(battle_id: u128, battle_side: BattleSide, army_id: u128);
@@ -11,7 +11,7 @@ trait ICombatv2Contract<TContractState> {
 
 
 #[dojo::contract]
-mod combat_v2_systems {
+mod combat_systems {
     use core::option::OptionTrait;
     use eternum::alias::ID;
     use eternum::constants::{ResourceTypes, ErrorMessages};
@@ -29,17 +29,17 @@ mod combat_v2_systems {
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::{
-        combatV2::{
-            Army, Troops, TroopsImpl, TroopsTrait, Healthv2, Healthv2Impl, Healthv2Trait, Battle,
+        combat::{
+            Army, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle,
             BattleImpl, BattleTrait, BattleSide
         },
     };
 
     use eternum::utils::math::PercentageImpl;
-    use super::ICombatv2Contract;
+    use super::ICombatContract;
 
     #[abi(embed_v0)]
-    impl Combatv2ContractImpl of ICombatv2Contract<ContractState> {
+    impl CombatContractImpl of ICombatContract<ContractState> {
         fn create_army(world: IWorldDispatcher, owner_id: u128, troops: Troops) {
             // ensure caller is entity owner 
             get!(world, owner_id, Owner).assert_caller_owner();
@@ -65,7 +65,7 @@ mod combat_v2_systems {
             set!(world, (army));
 
             // set army health
-            let mut army_health: Healthv2 = Default::default();
+            let mut army_health: Health = Default::default();
             army_health.entity_id = army.entity_id;
             army_health.increase_by(army.troops.full_health(TroopConfigImpl::get(world)));
             set!(world, (army_health));
@@ -151,8 +151,8 @@ mod combat_v2_systems {
             );
 
             // make battle 
-            let attacking_army_health: Healthv2 = get!(world, attacking_army_id, Healthv2);
-            let defending_army_health: Healthv2 = get!(world, defending_army_id, Healthv2);
+            let attacking_army_health: Health = get!(world, attacking_army_id, Health);
+            let defending_army_health: Health = get!(world, defending_army_id, Health);
 
             let tick = TickImpl::get(world);
             let mut battle: Battle = Default::default();
@@ -225,7 +225,7 @@ mod combat_v2_systems {
             }
 
             battle_army.troops.add(caller_army.troops);
-            let mut caller_army_health: Healthv2 = get!(world, army_id, Healthv2);
+            let mut caller_army_health: Health = get!(world, army_id, Health);
             battle_army_health.increase_by(caller_army_health.current);
 
             if battle_side == BattleSide::Defence {
@@ -278,7 +278,7 @@ mod combat_v2_systems {
                 battle_army_health = battle.defence_army_health;
             }
 
-            let mut caller_army_health: Healthv2 = get!(world, army_id, Healthv2);
+            let mut caller_army_health: Health = get!(world, army_id, Health);
             let caller_army_original_health: u128 = caller_army_health.current;
             let caller_army_original_troops: Troops = caller_army.troops;
 

@@ -114,7 +114,6 @@ mod config_systems {
     use eternum::models::bank::bank::{Bank};
     use eternum::models::buildings::{BuildingCategory};
 
-    use eternum::models::combat::TownWatch;
     use eternum::models::config::{
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig,
         RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
@@ -485,7 +484,6 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             let hyperstructure_id: ID = world.uuid().into();
-            let hyperstructure_town_watch_id = world.uuid().into();
 
             let completion_cost_id: ID = world.uuid().into();
             let completion_resource_count = completion_cost.len();
@@ -526,10 +524,6 @@ mod config_systems {
                         completion_resource_count
                     },
                     Position { entity_id: hyperstructure_id, x: coord.x, y: coord.y },
-                    TownWatch {
-                        entity_id: hyperstructure_id, town_watch_id: hyperstructure_town_watch_id,
-                    },
-                    Position { entity_id: hyperstructure_town_watch_id, x: coord.x, y: coord.y },
                 )
             );
 
