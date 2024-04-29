@@ -53,6 +53,13 @@ struct CapacityConfig {
     weight_gram: u128,
 }
 
+#[generate_trait]
+impl CapacityConfigImpl of CapacityConfigTrait {
+    fn get(world: IWorldDispatcher, entity_type: u128) -> CapacityConfig {
+        get!(world, (WORLD_CONFIG_ID, entity_type), CapacityConfig)
+    }
+}
+
 // speed
 #[derive(Model, Copy, Drop, Serde)]
 struct SpeedConfig {

@@ -19,7 +19,8 @@ mod combat_systems {
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
-        TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig
+        TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig,
+        CapacityConfigImpl
     };
 
     use eternum::models::movable::Movable;
@@ -111,9 +112,7 @@ mod combat_systems {
 
             // set troop capacity and quantity
 
-            let troop_capacity: CapacityConfig = get!(
-                world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), CapacityConfig
-            );
+            let troop_capacity = CapacityConfigImpl::get(world, ARMY_ENTITY_TYPE);
             set!(
                 world,
                 (
