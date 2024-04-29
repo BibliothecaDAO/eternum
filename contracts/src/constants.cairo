@@ -125,8 +125,7 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 // Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
 const DONKEY_ENTITY_TYPE: u128 = 256;
 const REALM_ENTITY_TYPE: u128 = 257;
-const SOLDIER_ENTITY_TYPE: u128 = 258;
-const ARMY_ENTITY_TYPE: u128 = 259;
+const ARMY_ENTITY_TYPE: u128 = 258;
 
 
 // TODO: change to consts
