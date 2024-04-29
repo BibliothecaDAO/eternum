@@ -1,21 +1,22 @@
+use dojo::world::IWorldDispatcher;
+
+#[dojo::interface]
+trait IResourceSystems {
+    fn mint(entity_id: u128, resources: Span<(u8, u128)>,);
+}
+
 #[dojo::contract]
-mod test_resource_systems {
+mod dev_resource_systems {
     use eternum::alias::ID;
     use eternum::constants::ResourceTypes;
     use eternum::constants::{WORLD_CONFIG_ID};
     use eternum::models::config::{WorldConfig};
     use eternum::models::resources::{Resource, ResourceTrait};
-    use eternum::systems::test::interface::resource::IResourceSystems;
+    use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
 
-    fn assert_caller_is_admin(world: IWorldDispatcher) {
-        let admin_address = get!(world, WORLD_CONFIG_ID, WorldConfig).admin_address;
-        if admin_address != Zeroable::zero() {
-            assert(starknet::get_caller_address() == admin_address, 'caller not admin');
-        }
-    }
 
     #[abi(embed_v0)]
-    impl ResourceSystemsImpl of IResourceSystems<ContractState> {
+    impl ResourceSystemsImpl of super::IResourceSystems<ContractState> {
         fn mint(world: IWorldDispatcher, entity_id: u128, resources: Span<(u8, u128)>,) {
             assert_caller_is_admin(world);
 

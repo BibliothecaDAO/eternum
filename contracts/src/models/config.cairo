@@ -29,14 +29,6 @@ struct RealmFreeMintConfig {
 
 
 #[derive(Model, Copy, Drop, Serde)]
-struct TravelConfig {
-    #[key]
-    config_id: u128,
-    free_transport_per_city: u128
-}
-
-
-#[derive(Model, Copy, Drop, Serde)]
 struct RoadConfig {
     #[key]
     config_id: u128,
@@ -49,7 +41,7 @@ struct RoadConfig {
 // capacity
 // TODO: should rename into something that shows
 // that it's a config for one specific entity type?
-// and not the same as world config or labor config
+// and not the same as world config 
 // e.g. EntityTypeCapacityConfig?
 #[derive(Model, Copy, Drop, Serde)]
 struct CapacityConfig {
@@ -70,50 +62,6 @@ struct SpeedConfig {
     speed_config_id: u128,
     entity_type: u128,
     sec_per_km: u16,
-}
-
-#[derive(Model, Copy, Drop, Serde)]
-struct CombatConfig {
-    #[key]
-    config_id: u128,
-    stealing_trial_count: u32,
-    wheat_burn_per_soldier: u128,
-    fish_burn_per_soldier: u128,
-}
-
-#[derive(Model, Copy, Drop, Serde)]
-struct SoldierConfig {
-    #[key]
-    config_id: u128,
-    resource_cost_id: u128,
-    resource_cost_count: u32,
-    wheat_burn_per_soldier: u128,
-    fish_burn_per_soldier: u128,
-}
-
-#[derive(Model, Copy, Drop, Serde)]
-struct HealthConfig {
-    #[key]
-    entity_type: u128,
-    resource_cost_id: u128,
-    resource_cost_count: u32,
-    max_value: u128, // max value for a single unit
-}
-
-
-#[derive(Model, Copy, Drop, Serde)]
-struct AttackConfig {
-    #[key]
-    entity_type: u128,
-    max_value: u128, // max value for a single unit
-}
-
-
-#[derive(Model, Copy, Drop, Serde)]
-struct DefenceConfig {
-    #[key]
-    entity_type: u128,
-    max_value: u128, // max value for a single unit
 }
 
 

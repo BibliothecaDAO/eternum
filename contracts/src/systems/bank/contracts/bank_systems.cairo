@@ -1,3 +1,14 @@
+use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
+use eternum::models::position::{Coord};
+
+#[dojo::interface]
+trait IBankSystems {
+    fn create_bank(realm_entity_id: ID, coord: Coord, owner_fee_scaled: u128) -> (ID, ID);
+    fn open_account(realm_entity_id: u128, bank_entity_id: u128) -> ID;
+    fn change_owner_fee(bank_entity_id: u128, new_swap_fee_unscaled: u128);
+}
+
 #[dojo::contract]
 mod bank_systems {
     use eternum::alias::ID;
@@ -7,12 +18,11 @@ mod bank_systems {
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceImpl};
-    use eternum::systems::bank::interface::bank::IBankSystems;
 
     use traits::Into;
 
     #[abi(embed_v0)]
-    impl BankSystemsImpl of IBankSystems<ContractState> {
+    impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_bank(
             self: @ContractState,
             world: IWorldDispatcher,
