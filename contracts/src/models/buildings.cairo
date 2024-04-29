@@ -3,7 +3,8 @@ use core::zeroable::Zeroable;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::ResourceTypes;
 use eternum::models::config::{
-    TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigImpl
+    TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigImpl,
+    PopulationConfigTrait
 };
 use eternum::models::owner::{Owner, OwnerTrait, EntityOwner};
 use eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
@@ -12,6 +13,7 @@ use eternum::models::production::{
 };
 use eternum::models::resources::ResourceTrait;
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+use eternum::models::population::{Population, PopulationTrait};
 
 //todo we need to define border of innner hexes
 
@@ -107,10 +109,10 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::Farm => ResourceTypes::WHEAT,
             BuildingCategory::FishingVillage => ResourceTypes::FISH,
             BuildingCategory::Barracks => ResourceTypes::KNIGHT,
-            BuildingCategory::Market => 0,
+            BuildingCategory::Market => ResourceTypes::DONKEY,
             BuildingCategory::ArcheryRange => ResourceTypes::CROSSBOWMAN,
             BuildingCategory::Stable => ResourceTypes::PALADIN,
-            BuildingCategory::DonkeyFarm => ResourceTypes::DONKEY,
+            BuildingCategory::DonkeyFarm => 0,
             BuildingCategory::TradingPost => 0,
             BuildingCategory::WorkersHut => 0,
             BuildingCategory::WatchTower => 0,
@@ -497,6 +499,24 @@ impl BuildingImpl of BuildingTrait {
         // start production related to building
         building.start_production(world);
 
+        let mut population = get!(world, outer_entity_id, Population);
+        let population_config = PopulationConfigTrait::get(world, building.category);
+
+        // [check] If Workers hut
+
+        // [check] Population
+        population.assert_within_capacity();
+
+        // increase population
+        population.increase_population(population_config.population);
+
+        // increase capacity
+        // Only worker huts do this right now.
+        population.increase_capacity(population_config.capacity);
+
+        // set population
+        set!(world, (population));
+
         building
     }
 
@@ -527,6 +547,24 @@ impl BuildingImpl of BuildingTrait {
         building.outer_entity_id = 0;
 
         set!(world, (building));
+
+        // decrease population
+        let mut population = get!(world, outer_entity_id, Population);
+        let population_config = PopulationConfigTrait::get(world, building.category);
+
+        // [check] If Workers hut
+        // You cannot delete a workers hut unless you have capacity
+        // Otherwise there is an exploit where you can delete a workers hut and increase capacity
+        if (building.category == BuildingCategory::WorkersHut) {
+            population.decrease_capacity(population_config.capacity);
+            population.assert_within_capacity();
+        }
+
+        // decrease population
+        population.decrease_population(population_config.population);
+
+        // set population
+        set!(world, (population));
     }
 
     fn make_payment(

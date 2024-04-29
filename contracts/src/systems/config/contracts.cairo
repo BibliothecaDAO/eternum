@@ -6,7 +6,7 @@ mod config_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID,
         REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID,
-        BUILDING_CONFIG_ID
+        BUILDING_CONFIG_ID, POPULATION_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
     use eternum::models::buildings::{BuildingCategory};
@@ -16,7 +16,7 @@ mod config_systems {
         CapacityConfig, RoadConfig, SpeedConfig, TravelConfig, WeightConfig, WorldConfig,
         SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig, LevelingConfig,
         RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
-        TroopConfig, BuildingConfig
+        TroopConfig, BuildingConfig, PopulationConfig
     };
 
     use eternum::models::hyperstructure::HyperStructure;
@@ -27,7 +27,7 @@ mod config_systems {
     use eternum::systems::config::interface::{
         IWorldConfig, IWeightConfig, ICapacityConfig, ITransportConfig, IHyperstructureConfig,
         ICombatConfig, ILevelingConfig, IBankConfig, IRealmFreeMintConfig, IMapConfig, ITickConfig,
-        IProductionConfig, ITroopConfig, IBuildingConfig
+        IProductionConfig, ITroopConfig, IBuildingConfig, IPopulationConfig
     };
 
 
@@ -569,6 +569,25 @@ mod config_systems {
 
             troop_config.config_id = WORLD_CONFIG_ID;
             set!(world, (troop_config));
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl PopulationConfigImpl of IPopulationConfig<ContractState> {
+        fn set_population_config(
+            world: IWorldDispatcher,
+            building_category: BuildingCategory,
+            population: u32,
+            capacity: u32
+        ) {
+            assert_caller_is_admin(world);
+
+            set!(
+                world,
+                PopulationConfig {
+                    config_id: POPULATION_CONFIG_ID, building_category, population, capacity
+                }
+            )
         }
     }
 

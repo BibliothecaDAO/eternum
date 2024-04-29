@@ -1,1 +1,7 @@
 node_modules
+contracts/target/*
+!contracts/target/dev/manifest.json
+!contracts/target/release/manifest.json
+contracts/torii.db
+contracts/KATANA.toml
+contracts/manifests/*

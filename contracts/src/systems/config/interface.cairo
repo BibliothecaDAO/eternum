@@ -121,3 +121,8 @@ trait IBuildingConfig {
         cost_of_building: Span<(u8, u128)>
     );
 }
+
+#[dojo::interface]
+trait IPopulationConfig {
+    fn set_population_config(building_category: BuildingCategory, population: u32, capacity: u32);
+}

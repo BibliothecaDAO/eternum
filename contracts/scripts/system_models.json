@@ -68,7 +68,8 @@
     "TickConfig",
     "Position",
     "Direction",
-    "Production"
+    "Production",
+    "Population"
   ],
   "MAP_SYSTEMS": [
     "Tile",

@@ -44,7 +44,6 @@ export const SelectPreviewBuilding = () => {
       key !== "None" &&
       key !== "DonkeyFarm" &&
       key !== "TradingPost" &&
-      key !== "WorkersHut" &&
       key !== "WatchTower" &&
       key !== "Walls" &&
       key !== "Storehouse",
