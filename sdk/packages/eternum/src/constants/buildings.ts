@@ -1,0 +1,1 @@
+export const BASE_POPULATION_CAPACITY = 5;

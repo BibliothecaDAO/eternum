@@ -40,11 +40,15 @@ const BuildingPreview = () => {
     "/models/buildings/market.glb",
     "/models/buildings/archer_range.glb",
     "/models/buildings/stable.glb",
+    "/models/buildings/workers_hut.glb",
+    "/models/buildings/workers_hut.glb",
+    "/models/buildings/workers_hut.glb",
   ]);
 
   // Clone all models for manipulation
   const models = useMemo(() => originalModels.map((model) => model.scene.clone()), [originalModels]);
 
+  console.log(previewBuilding);
   useEffect(() => {
     if (!previewBuilding || !hoveredBuildHex) return;
     const newColor = isHexOccupied(hoveredBuildHex.col, hoveredBuildHex.row, existingBuildings) ? "red" : "green";
