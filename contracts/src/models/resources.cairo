@@ -178,21 +178,25 @@ impl ResourceImpl of ResourceTrait {
         if self.entity_id == 0 {
             return;
         };
+
+        // ensure realm has enough store houses to keep resource balance
+        let entity_realm: Realm = get!(world, self.entity_id, Realm);
+        let entity_is_realm = entity_realm.realm_id != 0;
+        if entity_is_realm {
+
+            let realm_building_quantity_key 
+                = BuildingQuantityTrackerImpl::key(
+                    self.entity_id, BuildingCategory::Storehouse.into(), self.resource_type);
+            let mut realm_building_quantity_tracker: QuantityTracker 
+                = get!(world, realm_building_quantity_key, QuantityTracker);
+            let max_resource_balance 
+                = 2_000 * RESOURCE_PRECISION 
+                    + (realm_building_quantity_tracker.count * 2_000 * RESOURCE_PRECISION);
+            self.balance = min(self.balance, max_resource_balance);
+        }
+
         // save the updated resource
         set!(world, (self));
-
-        // let entity_realm = get!(world, self.entity_id, Realm);
-        // let entity_is_realm = entity_realm.realm_id != 0;
-        // if entity_is_realm {
-        //     let realm_building_quantity_key 
-        //         = BuildingQuantityTrackerImpl::key(
-        //             self.entity_id, BuildingCategory::Storehouse.into(), self.resource_type);
-        //     let mut realm_building_quantity_tracker: QuantityTracker 
-        //         = get!(world, realm_building_quantity_key, QuantityTracker);
-
-        //     // let max_resource_balance 
-
-        // }
 
         // sync end ticks of resources that depend on this one
         ProductionOutputImpl::sync_all_inputs_exhaustion_ticks_for(@self, world);
