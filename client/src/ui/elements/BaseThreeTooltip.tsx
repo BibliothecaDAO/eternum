@@ -3,12 +3,13 @@ import { Html } from "@react-three/drei";
 
 type BaseThreeTooltipProps = {
   children?: React.ReactNode;
+  distanceFactor?: number;
 };
 
-export const BaseThreeTooltip = ({ children }: BaseThreeTooltipProps) => {
+export const BaseThreeTooltip = ({ children, distanceFactor = 50 }: BaseThreeTooltipProps) => {
   return (
-    <Html distanceFactor={50}>
-      <div className="border min-w-[215px] relative border-gold p-2 rounded-xl bg-gray text-white pointer-events-none -ml-[107px] -mt-[135px]">
+    <Html distanceFactor={distanceFactor}>
+      <div className="border min-w-[215px] relative border-gold p-2 rounded-xl bg-gray text-white pointer-events-none -left-1/2 -mt-[150px]">
         {children}
         <svg
           className="absolute bottom-[1px] translate-y-full left-1/2 -translate-x-1/2"
