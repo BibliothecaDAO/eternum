@@ -80,8 +80,6 @@ mod realm_systems {
                 )
             );
 
-
-
             // mint intial resources to realm
             let realm_free_mint_config = get!(
                 world, REALM_FREE_MINT_CONFIG_ID, RealmFreeMintConfig

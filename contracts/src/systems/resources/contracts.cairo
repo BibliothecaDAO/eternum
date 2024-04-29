@@ -243,8 +243,8 @@ mod resource_systems {
                         recipient_resource.save(world);
 
                         // update total weight
-                        total_resources_weight 
-                            += WeightConfigImpl::get_weight(world, resource_type, resource_amount);
+                        total_resources_weight +=
+                            WeightConfigImpl::get_weight(world, resource_type, resource_amount);
 
                         // update resources hash
                         resources_felt_arr.append(resource_type.into());
