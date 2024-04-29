@@ -129,7 +129,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { receiver_id, resources } = props;
 
     const tx = await this.executeMulti(props.signer, {
-      contractAddress: getContractByName(this.manifest, "test_resource_systems"),
+      contractAddress: getContractByName(this.manifest, "dev_resource_systems"),
       entrypoint: "mint",
       calldata: [receiver_id, resources.length / 2, ...resources],
     });
@@ -297,46 +297,6 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
-  public async create_soldiers(props: SystemProps.CreateSoldiersProps) {
-    const { realm_entity_id, quantity, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
-      entrypoint: "create_soldiers",
-      calldata: [realm_entity_id, quantity],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async detach_soldiers(props: SystemProps.DetachSoldiersProps) {
-    const { unit_id, detached_quantity, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
-      entrypoint: "detach_soldiers",
-      calldata: [unit_id, detached_quantity],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async attack(props: SystemProps.AttackProps) {
-    const { attacker_ids, target_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
-      entrypoint: "attack",
-      calldata: [attacker_ids.length, ...attacker_ids, target_id],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async steal(props: SystemProps.StealProps) {
-    const { attacker_id, target_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
-      entrypoint: "steal",
-      calldata: [attacker_id, target_id],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
   public async level_up_realm(props: SystemProps.LevelUpRealmProps) {
     const { realm_entity_id, signer } = props;
 
@@ -344,46 +304,6 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, "leveling_systems"),
       entrypoint: "level_up_realm",
       calldata: [realm_entity_id],
-    });
-  }
-
-  public async merge_soldiers(props: SystemProps.MergeSoldiersProps) {
-    const { merge_into_unit_id, units, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
-      entrypoint: "merge_soldiers",
-      calldata: [merge_into_unit_id, units.length / 2, ...units],
-    });
-  }
-
-  public async create_and_merge_soldiers(props: SystemProps.CreateAndMergeSoldiersProps) {
-    const { realm_entity_id, quantity, merge_into_unit_id, signer } = props;
-    const uuid = await this.uuid();
-
-    const units = [uuid, quantity];
-
-    return await this.executeAndCheckTransaction(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, "combat_systems"),
-        entrypoint: "create_soldiers",
-        calldata: [realm_entity_id, quantity],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, "combat_systems"),
-        entrypoint: "merge_soldiers",
-        calldata: [merge_into_unit_id, units.length / 2, ...units],
-      },
-    ]);
-  }
-
-  public async heal_soldiers(props: SystemProps.HealSoldiersProps) {
-    const { unit_id, health_amount, signer } = props;
-
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
-      entrypoint: "heal_soldiers",
-      calldata: [unit_id, health_amount],
     });
   }
 
