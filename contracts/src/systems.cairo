@@ -1,6 +1,5 @@
 mod config {
     mod contracts;
-    mod interface;
     #[cfg(test)]
     mod tests;
 }
@@ -25,12 +24,7 @@ mod transport {
     #[cfg(test)]
     mod tests;
 }
-mod combat {
-    mod contracts;
-    mod interface;
-    #[cfg(test)]
-    mod tests;
-}
+
 mod leveling {
     mod contracts;
     mod interface;
@@ -56,20 +50,17 @@ mod map {
     #[cfg(test)]
     mod tests;
 }
-mod test {
+mod dev {
     mod contracts;
-    mod interface;
 }
-mod combatv2 {
+mod combat {
     mod contracts;
-    mod interface;
     #[cfg(test)]
     mod tests;
 }
 
 mod bank {
     mod contracts;
-    mod interface;
     #[cfg(test)]
     mod tests;
 }

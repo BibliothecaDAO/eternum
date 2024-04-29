@@ -71,7 +71,6 @@ mod travel_systems {
         ///
         fn travel(world: IWorldDispatcher, travelling_entity_id: ID, destination_coord: Coord) {
             // todo@security prevent free transport units from travelling
-            // only caravans should be able to travel
 
             let travelling_entity_owner = get!(world, travelling_entity_id, Owner);
             assert(
@@ -299,7 +298,7 @@ mod travel_systems {
             let transport_owner_addr: Owner = get!(world, transport_id, Owner);
             if (transport_owner_addr.address != addr) {
                 let transport_owner_entity: EntityOwner = get!(world, transport_id, EntityOwner);
-                assert(transport_owner_entity.owner_address(world) == addr, 'not caravan owner');
+                assert(transport_owner_entity.owner_address(world) == addr, 'not transport owner');
             }
         }
 
@@ -324,11 +323,11 @@ mod travel_systems {
         fn get_travel_time(
             world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position
         ) -> (u64, u64) {
-            let (caravan_movable, caravan_position) = get!(
+            let (transport_movable, transport_position) = get!(
                 world, transport_id, (Movable, Position)
             );
             let mut one_way_trip_time = from_pos
-                .calculate_travel_time(to_pos, caravan_movable.sec_per_km);
+                .calculate_travel_time(to_pos, transport_movable.sec_per_km);
 
             // check if entity owner is a realm and apply bonuses if it is
             let entity_owner = get!(world, (transport_id), EntityOwner);
@@ -344,7 +343,7 @@ mod travel_systems {
             let round_trip_time: u64 = 2 * one_way_trip_time;
             // reduce round trip time if there is a road
             let round_trip_time = RoadImpl::use_road(
-                world, round_trip_time, caravan_position.into(), to_pos.into()
+                world, round_trip_time, transport_position.into(), to_pos.into()
             );
             // update one way trip time incase round_trip_time was reduced
             one_way_trip_time = round_trip_time / 2;

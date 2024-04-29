@@ -7,13 +7,13 @@ use eternum::models::config::{
     PopulationConfigTrait
 };
 use eternum::models::owner::{Owner, OwnerTrait, EntityOwner};
+use eternum::models::population::{Population, PopulationTrait};
 use eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
 use eternum::models::production::{
     Production, ProductionInput, ProductionRateTrait, ProductionInputImpl
 };
 use eternum::models::resources::ResourceTrait;
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-use eternum::models::population::{Population, PopulationTrait};
 
 //todo we need to define border of innner hexes
 

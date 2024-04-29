@@ -1,3 +1,11 @@
+use dojo::world::IWorldDispatcher;
+
+#[dojo::interface]
+trait ISwapSystems {
+    fn buy(bank_entity_id: u128, resource_type: u8, amount: u128);
+    fn sell(bank_entity_id: u128, resource_type: u8, amount: u128);
+}
+
 #[dojo::contract]
 mod swap_systems {
     use cubit::f128::math::ops::{mul};
@@ -10,13 +18,12 @@ mod swap_systems {
     use eternum::models::config::{TickImpl, TickTrait};
     use eternum::models::owner::{Owner};
     use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
-    use eternum::systems::bank::interface::swap::ISwapSystems;
     use option::OptionTrait;
 
     use traits::{Into, TryInto};
 
     #[abi(embed_v0)]
-    impl SwapSystemsImpl of ISwapSystems<ContractState> {
+    impl SwapSystemsImpl of super::ISwapSystems<ContractState> {
         fn buy(world: IWorldDispatcher, bank_entity_id: u128, resource_type: u8, amount: u128) {
             let player = starknet::get_caller_address();
 

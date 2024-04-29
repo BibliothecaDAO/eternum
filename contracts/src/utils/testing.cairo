@@ -6,7 +6,7 @@ use eternum::models::capacity::{capacity, Capacity};
 
 use eternum::models::config::{
     world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,
-    travel_config, TravelConfig, weight_config, WeightConfig, road_config, RoadConfig
+    weight_config, WeightConfig, road_config, RoadConfig
 };
 use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
@@ -40,14 +40,11 @@ fn spawn_eternum() -> IWorldDispatcher {
         position::TEST_CLASS_HASH,
         capacity::TEST_CLASS_HASH,
         arrival_time::TEST_CLASS_HASH,
-        caravan_members::TEST_CLASS_HASH,
         foreign_key::TEST_CLASS_HASH,
         trade::TEST_CLASS_HASH,
         resource::TEST_CLASS_HASH,
         resource_cost::TEST_CLASS_HASH,
         status::TEST_CLASS_HASH,
-        travel_config::TEST_CLASS_HASH,
-        labor_config::TEST_CLASS_HASH,
         weight_config::TEST_CLASS_HASH,
         road::TEST_CLASS_HASH,
         road_config::TEST_CLASS_HASH,

@@ -3,12 +3,6 @@ use eternum::alias::ID;
 // Config ID to fetch global configs
 const WORLD_CONFIG_ID: u128 = 999999999999999999;
 const BUILDING_CONFIG_ID: u128 = 999999999999999998;
-// DISCUSS: these config IDs are used to query a global config for a set of systems (like labor systems)
-// and are not linked to a specific entity_type, 
-// e.g. LaborConfig holds a set of configuration values 
-// that are used for all labor, regardless of the resource
-// - base_labor_units
-// - base_resources_per_cycle
 const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
 const ROAD_CONFIG_ID: u128 = 999999999999999995;
 const COMBAT_CONFIG_ID: u128 = 999999999999999994;

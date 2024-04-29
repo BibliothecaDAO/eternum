@@ -1,5 +1,5 @@
 {
-  "TEST_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
+  "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
   "REALM_SYSTEMS": [
     "Owner",
     "Realm",
@@ -89,7 +89,7 @@
     "Resource",
     "Quantity",
     "Production",
-    "Healthv2",
+    "Health",
     "Army",
     "Battle",
     "EntityOwner",
@@ -97,8 +97,8 @@
     "Owner",
     "Capacity"
   ],
-  "COMBAT_V2_SYSTEMS": [
-    "Healthv2",
+  "COMBAT_SYSTEMS": [
+    "Health",
     "Army",
     "Battle",
     "EntityOwner",
