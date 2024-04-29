@@ -7,7 +7,7 @@ mod realm_systems {
 
     use eternum::constants::REALM_ENTITY_TYPE;
     use eternum::constants::{
-        WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, SOLDIER_ENTITY_TYPE, MAX_REALMS_PER_ADDRESS
+        WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, MAX_REALMS_PER_ADDRESS
     };
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{CapacityConfig, RealmFreeMintConfig};
