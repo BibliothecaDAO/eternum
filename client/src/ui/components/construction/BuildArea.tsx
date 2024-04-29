@@ -3,11 +3,11 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import GroundGrid, { isHexOccupied } from "./GroundGrid";
 import * as THREE from "three";
 import { getUIPositionFromColRow } from "../../utils/utils";
-import { useEffect, useMemo, useState } from "react";
-import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
-import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
+import { useEffect, useMemo } from "react";
 import { ExistingBuildings } from "./ExistingBuildings";
-import { ShaderMaterial, Vector3 } from "three";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
+import { BuildingEnumToString, BuildingType } from "@bibliothecadao/eternum";
 
 const BuildArea = () => {
   return (
@@ -67,7 +67,26 @@ const BuildingPreview = () => {
     <>
       <group position={[previewCoords.x, 2.33, -previewCoords.y]}>
         <primitive position={[0, 0, 0]} scale={3} object={previewModel} />
+        {previewBuilding && <BuildingCostThree building={previewBuilding} />}
       </group>
     </>
   ) : null;
+};
+
+const BuildingCostThree = ({ building }: { building: BuildingType }) => {
+  return (
+    <BaseThreeTooltip distanceFactor={40}>
+      <div className="flex flex-col text-white text-sm p-1 space-y-1">
+        <div className="font-bold text-center">
+          {BuildingEnumToString[building as keyof typeof BuildingEnumToString]} Cost
+        </div>
+        <div className="flex">
+          <ResourceCost resourceId={1} amount={100} />
+          <ResourceCost resourceId={2} amount={100} />
+          <ResourceCost resourceId={3} amount={100} />
+          <ResourceCost resourceId={4} amount={100} />
+        </div>
+      </div>
+    </BaseThreeTooltip>
+  );
 };

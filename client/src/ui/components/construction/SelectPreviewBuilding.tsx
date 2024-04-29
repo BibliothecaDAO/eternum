@@ -1,7 +1,7 @@
 import clsx from "clsx";
 
 import useUIStore from "@/hooks/store/useUIStore";
-import { BuildingType, ResourceBuildingType, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
+import { BuildingType, findResourceById } from "@bibliothecadao/eternum";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
@@ -10,6 +10,7 @@ import { unpackResources } from "@/ui/utils/packedData";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
 import { usePlayResourceSound } from "@/hooks/useUISound";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -95,6 +96,18 @@ export const SelectPreviewBuilding = () => {
               <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50">
                 {buildingType}
               </div>
+              <InfoIcon
+                onMouseEnter={() => {
+                  setTooltip({
+                    content: <BuildingCost />,
+                    position: "right",
+                  });
+                }}
+                onMouseLeave={() => {
+                  setTooltip(null);
+                }}
+                className="w-4 h-4 absolute top-2 right-2"
+              />
             </div>
           );
         })}
@@ -167,6 +180,19 @@ const MineInfo = () => {
       <div className="font-bold flex space-x-2">
         <div className="text-order-giants">-50</div> <ResourceIcon resource={"Coal"} size="xs" />
         /tick
+      </div>
+    </div>
+  );
+};
+
+const BuildingCost = () => {
+  return (
+    <div className="flex flex-col text-white text-sm p-1 space-y-1">
+      <div className="font-bold text-center">Cost</div>
+      <div className="grid grid-cols-2 gap-2">
+        <ResourceCost resourceId={1} amount={100} />
+        <ResourceCost resourceId={2} amount={100} />
+        <ResourceCost resourceId={3} amount={100} />
       </div>
     </div>
   );
