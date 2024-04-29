@@ -57,11 +57,11 @@ mod liquidity_systems {
                 })
             );
 
-            player_lords.balance -= cost_lords;
+            player_lords.burn(cost_lords);
             player_lords.save(world);
 
             // update player resource
-            resource.balance -= cost_resource_amount;
+            resource.burn(cost_resource_amount);
             resource.save(world);
 
             // update player liquidity
@@ -106,12 +106,12 @@ mod liquidity_systems {
             let mut player_lords = ResourceImpl::get(
                 world, (bank_account_entity_id, ResourceTypes::LORDS)
             );
-            player_lords.balance += payout_lords;
+            player_lords.add(payout_lords);
             player_lords.save(world);
 
             // update player resource
             let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
-            resource.balance += payout_resource_amount;
+            resource.add(payout_resource_amount);
             resource.save(world);
 
             // update player liquidity

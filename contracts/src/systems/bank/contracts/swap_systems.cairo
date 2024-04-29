@@ -54,19 +54,19 @@ mod swap_systems {
             let mut owner_lords = ResourceImpl::get(
                 world, (owner_bank_account.entity_id, ResourceTypes::LORDS)
             );
-            owner_lords.balance += owner_fees_amount;
+            owner_lords.add(owner_fees_amount);
             owner_lords.save(world);
 
             // udpate player lords
             let mut player_lords = ResourceImpl::get(
                 world, (bank_account_entity_id, ResourceTypes::LORDS)
             );
-            player_lords.balance -= cost + owner_fees_amount + lp_fees_amount;
+            player_lords.burn(cost + owner_fees_amount + lp_fees_amount);
             player_lords.save(world);
 
             // update player resources
             let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
-            resource.balance += amount;
+            resource.add(amount);
             resource.save(world);
         }
 
@@ -93,7 +93,7 @@ mod swap_systems {
             let mut owner_resource = ResourceImpl::get(
                 world, (owner_bank_account.entity_id, resource_type)
             );
-            owner_resource.balance += owner_fees_amount;
+            owner_resource.add(owner_fees_amount);
             owner_resource.save(world);
 
             // update market
@@ -107,12 +107,12 @@ mod swap_systems {
             let mut player_lords = ResourceImpl::get(
                 world, (bank_account_entity_id, ResourceTypes::LORDS)
             );
-            player_lords.balance += payout;
+            player_lords.add(payout);
             player_lords.save(world);
 
             // update player resource
             let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
-            resource.balance -= amount;
+            resource.burn(amount);
             resource.save(world);
         }
     }

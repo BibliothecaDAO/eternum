@@ -105,35 +105,9 @@ impl TroopsImpl of TroopsTrait {
         let (mut knight_resource, mut paladin_resoure, mut crossbowman_resoure) = troops_resources;
 
         // pay for knights using KNIGHT resource
-
-        if self.knight_count > 0 {
-            assert!(
-                knight_resource.balance >= self.knight_count.into(),
-                "insufficient resources to purchase knights"
-            );
-
-            knight_resource.balance -= self.knight_count.into();
-        }
-
-        // pay for paladin using PALADIN resource
-
-        if self.paladin_count > 0 {
-            assert!(
-                paladin_resoure.balance >= self.paladin_count.into(),
-                "insufficient resources to purchase paladins"
-            );
-            paladin_resoure.balance -= self.paladin_count.into();
-        }
-
-        // pay for crossbowman using CROSSBOWMAN resource
-
-        if self.crossbowman_count > 0 {
-            assert!(
-                crossbowman_resoure.balance >= self.crossbowman_count.into(),
-                "insufficient resources to purchase crossbowmen"
-            );
-            crossbowman_resoure.balance -= self.crossbowman_count.into();
-        }
+        knight_resource.burn(self.knight_count.into());
+        paladin_resoure.burn(self.paladin_count.into());
+        crossbowman_resoure.burn(self.crossbowman_count.into());
 
         return (knight_resource, paladin_resoure, crossbowman_resoure);
     }

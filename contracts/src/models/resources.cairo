@@ -4,13 +4,14 @@ use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::ResourceTypes;
-use eternum::constants::get_resource_probabilities;
+use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION};
 use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
 
 use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
 use eternum::models::quantity::{QuantityTracker};
+use eternum::models::realm::Realm;
 use eternum::models::buildings::{Building, BuildingTrait, BuildingQuantityTrackerImpl, BuildingCategory};
-use eternum::utils::math::{is_u256_bit_set, set_u256_bit};
+use eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -110,13 +111,13 @@ impl ResourceFoodImpl of ResourceFoodTrait {
         if wheat_amount > wheat.balance {
             panic!("Insufficient wheat balance");
         }
-        wheat.balance -= wheat_amount;
+        wheat.burn(wheat_amount);
         wheat.save(world);
 
         if fish_amount > fish.balance {
             panic!("Insufficient fish balance");
         }
-        fish.balance -= fish_amount;
+        fish.burn(fish_amount);
         fish.save(world);
     }
 
@@ -130,13 +131,13 @@ impl ResourceFoodImpl of ResourceFoodTrait {
         if wheat_amount > wheat.balance {
             wheat_amount = wheat.balance
         }
-        wheat.balance -= wheat_amount;
+        wheat.burn(wheat_amount);
         wheat.save(world);
 
         if fish_amount > fish.balance {
             fish_amount = fish.balance
         }
-        fish.balance -= fish_amount;
+        fish.burn(fish_amount);
         fish.save(world);
     }
 }

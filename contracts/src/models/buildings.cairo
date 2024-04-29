@@ -7,12 +7,12 @@ use eternum::models::config::{
     PopulationConfigTrait
 };
 use eternum::models::owner::{Owner, OwnerTrait, EntityOwner};
-use eternum::models::quantity::{QuantityTracker};
 use eternum::models::population::{Population, PopulationTrait};
 use eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
 use eternum::models::production::{
     Production, ProductionInput, ProductionRateTrait, ProductionInputImpl
 };
+use eternum::models::quantity::{QuantityTracker};
 use eternum::models::resources::ResourceTrait;
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 
@@ -78,18 +78,14 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
 
 
 #[generate_trait]
-impl BuildingQuantityTrackerImpl of  BuildingQuantityTrackerTrait{
+impl BuildingQuantityTrackerImpl of BuildingQuantityTrackerTrait {
     fn salt() -> felt252 {
         'building_quantity'
     }
     fn key(entity_id: u128, category: felt252, resource_type: u8) -> felt252 {
-        let q: Array<felt252> 
-            = array![
-                entity_id.into(),
-                BuildingQuantityTrackerImpl::salt(), 
-                category, 
-                resource_type.into()
-            ];
+        let q: Array<felt252> = array![
+            entity_id.into(), BuildingQuantityTrackerImpl::salt(), category, resource_type.into()
+        ];
         hash(q.span())
     }
 }
@@ -214,9 +210,10 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 input_production
                     .increase_consumption_rate(ref input_resource, @tick, input_resource_amount);
 
-                count += 1;
+                input_resource.save(world);
+                set!(world, (input_production));
 
-                set!(world, (input_production, input_resource));
+                count += 1;
             };
 
             // reset the time that materials used for production will finish
@@ -225,8 +222,9 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             );
             resource_production
                 .set_input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
+            produced_resource.save(world);
 
-            set!(world, (resource_production, produced_resource));
+            set!(world, (resource_production));
         }
 
         if self.is_adjacent_building_booster() {
@@ -292,8 +290,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                     .decrease_consumption_rate(ref input_resource, @tick, input_resource_amount);
 
                 count += 1;
-
-                set!(world, (input_production, input_resource));
+                input_resource.save(world);
+                set!(world, (input_production));
             };
 
             // reset the time that materials used for production will finish
@@ -302,8 +300,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             );
             resource_production
                 .set_input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
-
-            set!(world, (resource_production, produced_resource));
+            produced_resource.save(world);
+            set!(world, (resource_production));
         }
 
         if self.is_adjacent_building_booster() {
@@ -462,8 +460,8 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                     @tick_config,
                     bonus_receiver_new_production_amount
                 );
-
-            set!(world, (bonus_receiver_resource_production, bonus_receiver_produced_resource));
+            bonus_receiver_produced_resource.save(world);
+            set!(world, (bonus_receiver_resource_production));
         }
     }
 }
@@ -501,19 +499,17 @@ impl BuildingImpl of BuildingTrait {
         match produce_resource_type {
             Option::Some(resource_type) => {
                 assert!(
-                    building.category == BuildingCategory::Resource
-                    || building.category == BuildingCategory::Storehouse, 
-                        "resource type should not be specified"
+                    building.category == BuildingCategory::Resource,
+                    "resource type should not be specified"
                 );
                 building.produced_resource_type = resource_type;
             },
-            Option::None => { 
+            Option::None => {
                 assert!(
-                    building.category != BuildingCategory::Resource
-                    && building.category != BuildingCategory::Storehouse, 
-                        "resource type must be specified"
+                    building.category != BuildingCategory::Resource,
+                    "resource type must be specified"
                 );
-                building.produced_resource_type = building.produced_resource(); 
+                building.produced_resource_type = building.produced_resource();
             }
         }
 
@@ -528,11 +524,12 @@ impl BuildingImpl of BuildingTrait {
         building.start_production(world);
 
         // increase building type count for realm
-        let building_quantity_key 
-            = BuildingQuantityTrackerImpl::key(
-                outer_entity_id, building.category.into(), building.produced_resource_type);
-        let mut building_quantity_tracker: QuantityTracker 
-            =get!(world, building_quantity_key, QuantityTracker);
+        let building_quantity_key = BuildingQuantityTrackerImpl::key(
+            outer_entity_id, building.category.into(), building.produced_resource_type
+        );
+        let mut building_quantity_tracker: QuantityTracker = get!(
+            world, building_quantity_key, QuantityTracker
+        );
         building_quantity_tracker.count += 1;
         set!(world, (building_quantity_tracker));
 
@@ -579,14 +576,14 @@ impl BuildingImpl of BuildingTrait {
         building.stop_production(world);
 
         // decrease building type count for realm
-        let building_quantity_key 
-            = BuildingQuantityTrackerImpl::key(
-                outer_entity_id, building.category.into(), building.produced_resource_type);
-        let mut building_quantity_tracker: QuantityTracker 
-            =get!(world, building_quantity_key, QuantityTracker);
+        let building_quantity_key = BuildingQuantityTrackerImpl::key(
+            outer_entity_id, building.category.into(), building.produced_resource_type
+        );
+        let mut building_quantity_tracker: QuantityTracker = get!(
+            world, building_quantity_key, QuantityTracker
+        );
         building_quantity_tracker.count -= 1;
         set!(world, (building_quantity_tracker));
-
 
         // remove building 
         building.entity_id = 0;

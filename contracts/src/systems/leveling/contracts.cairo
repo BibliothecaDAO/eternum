@@ -11,6 +11,7 @@ mod leveling_systems {
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::owner::{Owner};
     use eternum::models::realm::{Realm};
+    use eternum::models::resources::ResourceTrait;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 
     use eternum::systems::leveling::contracts::leveling_systems::{
@@ -77,15 +78,13 @@ mod leveling_systems {
             if (next_index == LevelIndex::FOOD) {
                 let wheat_cost = (cost_multiplier * leveling_config.wheat_base_amount) / 100;
                 let mut wheat = ResourceImpl::get(world, (entity_id, ResourceTypes::WHEAT));
-                assert(wheat.balance >= wheat_cost, 'not enough wheat');
-                wheat.balance -= wheat_cost;
-                set!(world, (wheat));
+                wheat.burn(wheat_cost);
+                wheat.save(world);
 
                 let fish_cost = (cost_multiplier * leveling_config.fish_base_amount) / 100;
                 let mut fish = ResourceImpl::get(world, (entity_id, ResourceTypes::FISH));
-                assert(fish.balance >= fish_cost, 'not enough fish');
-                fish.balance -= fish_cost;
-                set!(world, (fish));
+                fish.burn(fish_cost);
+                fish.save(world);
             } else {
                 let mut resource_cost_id: u128 = 0;
                 let mut resource_cost_len: u32 = 0;
@@ -115,8 +114,8 @@ mod leveling_systems {
                         world, (entity_id, resource_cost.resource_type)
                     );
                     assert(resource.balance >= total_cost, 'not enough resource');
-                    resource.balance -= total_cost;
-                    set!(world, (resource));
+                    resource.burn(total_cost);
+                    resource.save(world);
 
                     index += 1;
                 }
