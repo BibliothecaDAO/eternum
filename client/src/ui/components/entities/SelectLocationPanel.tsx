@@ -13,7 +13,6 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import TextInput from "@/ui/elements/TextInput";
 import { SortPanel } from "@/ui/elements/SortPanel";
 import { OrderIcon } from "@/ui/elements/OrderIcon";
-// import { useCombat } from "@/hooks/helpers/useCombat";
 import { useLevel } from "@/hooks/helpers/useLevel";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
