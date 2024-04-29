@@ -24,7 +24,7 @@ export TRAVEL_SYSTEMS=$(get_contract_address "eternum::systems::transport::contr
 
 export REALM_SYSTEMS=$(get_contract_address "eternum::systems::realm::contracts::realm_systems")
 
-export TEST_RESOURCE_SYSTEMS=$(get_contract_address "eternum::systems::test::contracts::resource::test_resource_systems")
+export DEV_RESOURCE_SYSTEMS=$(get_contract_address "eternum::systems::test::contracts::resource::dev_resource_systems")
 
 export COMBAT_SYSTEMS=$(get_contract_address "eternum::systems::combat::contracts::combat_systems")
 
@@ -44,8 +44,6 @@ export BUILDINGS_SYSTEMS=$(get_contract_address "eternum::systems::buildings::co
 
 export MAP_SYSTEMS=$(get_contract_address "eternum::systems::map::contracts::map_systems")
 
-export COMBAT_V2_SYSTEMS=$(get_contract_address "eternum::systems::combatv2::contracts::combat_v2_systems")
-
 # Display the addresses
 echo "-------------------------ADDRESS----------------------------------------"
 echo world : $SOZO_WORLD
@@ -56,7 +54,7 @@ echo road : $ROAD_SYSTEMS
 echo donkey : $DONKEY_SYSTEMS
 echo travel : $TRAVEL_SYSTEMS
 echo realm : $REALM_SYSTEMS
-echo test_resource : $TEST_RESOURCE_SYSTEMS
+echo test_resource : $DEV_RESOURCE_SYSTEMS
 echo combat : $COMBAT_SYSTEMS
 echo leveling : $LEVELING_SYSTEMS
 echo name : $NAME_SYSTEMS
@@ -66,4 +64,3 @@ echo liquidity : $LIQUIDITY_SYSTEMS
 echo hyperstructure : $HYPERSTRUCTURE_SYSTEMS
 echo buildings : $BUILDINGS_SYSTEMS
 echo maps : $MAP_SYSTEMS
-echo combat_v2 : $COMBAT_V2_SYSTEMS

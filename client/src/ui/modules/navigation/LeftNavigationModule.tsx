@@ -223,7 +223,7 @@ export const LeftNavigationModule = () => {
       <Military />
       <EntityDetails />
       <Trading />
-      <Construction />
+      <Construction entityId={realmEntityId} />
       <Assistant />
     </>
   );

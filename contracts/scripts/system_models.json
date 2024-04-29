@@ -1,5 +1,5 @@
 {
-  "TEST_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
+  "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
   "REALM_SYSTEMS": [
     "Owner",
     "Realm",
@@ -55,7 +55,7 @@
   ],
   "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
   "NAME_SYSTEMS": ["AddressName", "EntityName"],
-  "BANK_SYSTEMS": ["Bank", "Position", "BankAccounts", "Owner", "Resource", "Production"],
+  "BANK_SYSTEMS": ["Bank", "Position", "BankAccounts", "Owner", "Resource", "Production", "EntityOwner"],
   "SWAP_SYSTEMS": ["Market", "OwnedResourcesTracker", "Resource", "Production"],
   "LIQUIDITY_SYSTEMS": ["Market", "OwnedResourcesTracker", "Production", "Resource", "Liquidity"],
   "HYPERSTRUCTURE_SYSTEMS": ["Orders", "HyperStructure"],
@@ -68,7 +68,8 @@
     "TickConfig",
     "Position",
     "Direction",
-    "Production"
+    "Production",
+    "Population"
   ],
   "MAP_SYSTEMS": [
     "Tile",
@@ -88,7 +89,7 @@
     "Resource",
     "Quantity",
     "Production",
-    "Healthv2",
+    "Health",
     "Army",
     "Battle",
     "EntityOwner",
@@ -96,8 +97,8 @@
     "Owner",
     "Capacity"
   ],
-  "COMBAT_V2_SYSTEMS": [
-    "Healthv2",
+  "COMBAT_SYSTEMS": [
+    "Health",
     "Army",
     "Battle",
     "EntityOwner",

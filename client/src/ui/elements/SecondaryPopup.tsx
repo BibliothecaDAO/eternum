@@ -61,7 +61,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
       }
     }
     setLoaded(true);
-  }, []);
+  }, [name]);
 
   useEffect(() => {
     moveToTopZIndex();

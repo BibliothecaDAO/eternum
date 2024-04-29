@@ -3,18 +3,13 @@ use eternum::alias::ID;
 // Config ID to fetch global configs
 const WORLD_CONFIG_ID: u128 = 999999999999999999;
 const BUILDING_CONFIG_ID: u128 = 999999999999999998;
-// DISCUSS: these config IDs are used to query a global config for a set of systems (like labor systems)
-// and are not linked to a specific entity_type, 
-// e.g. LaborConfig holds a set of configuration values 
-// that are used for all labor, regardless of the resource
-// - base_labor_units
-// - base_resources_per_cycle
 const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
 const ROAD_CONFIG_ID: u128 = 999999999999999995;
 const COMBAT_CONFIG_ID: u128 = 999999999999999994;
 const REALM_LEVELING_CONFIG_ID: u128 = 999999999999999993;
 const HYPERSTRUCTURE_LEVELING_CONFIG_ID: u128 = 999999999999999992;
 const REALM_FREE_MINT_CONFIG_ID: u128 = 999999999999999991;
+const POPULATION_CONFIG_ID: u128 = 999999999999999990;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
@@ -27,6 +22,8 @@ const REALM_LEVELING_START_TIER: u64 = 1;
 // max realms per user
 const MAX_REALMS_PER_ADDRESS: u8 = 5;
 
+// base population
+const BASE_POPULATION: u32 = 6;
 
 mod ResourceTypes {
     const WOOD: u8 = 1;
@@ -128,8 +125,7 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 // Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
 const DONKEY_ENTITY_TYPE: u128 = 256;
 const REALM_ENTITY_TYPE: u128 = 257;
-const SOLDIER_ENTITY_TYPE: u128 = 258;
-const ARMY_ENTITY_TYPE: u128 = 259;
+const ARMY_ENTITY_TYPE: u128 = 258;
 
 
 // TODO: change to consts

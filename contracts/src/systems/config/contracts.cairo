@@ -1,34 +1,129 @@
+use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
+use eternum::models::buildings::BuildingCategory;
+use eternum::models::config::TroopConfig;
+use eternum::models::position::Coord;
+
+#[dojo::interface]
+trait IWorldConfig {
+    fn set_world_config(
+        admin_address: starknet::ContractAddress, realm_l2_contract: starknet::ContractAddress
+    );
+}
+
+
+#[dojo::interface]
+trait IRealmFreeMintConfig {
+    fn set_mint_config(resources: Span<(u8, u128)>);
+}
+
+
+#[dojo::interface]
+trait IWeightConfig {
+    fn set_weight_config(entity_type: u128, weight_gram: u128);
+}
+
+#[dojo::interface]
+trait ICapacityConfig {
+    fn set_capacity_config(entity_type: u128, weight_gram: u128);
+}
+
+#[dojo::interface]
+trait ITickConfig {
+    fn set_tick_config(max_moves_per_tick: u8, tick_interval_in_seconds: u64);
+}
+
+#[dojo::interface]
+trait ITransportConfig {
+    fn set_road_config(resource_costs: Span<(u8, u128)>, speed_up_by: u64);
+    fn set_speed_config(entity_type: u128, sec_per_km: u16);
+}
+
+#[dojo::interface]
+trait IHyperstructureConfig {
+    fn create_hyperstructure(
+        hyperstructure_type: u8, coord: Coord, completion_cost: Span<(u8, u128)>
+    ) -> ID;
+}
+
+#[dojo::interface]
+trait ILevelingConfig {
+    fn set_leveling_config(
+        config_id: u128,
+        decay_interval: u64,
+        max_level: u64,
+        decay_scaled: u128,
+        cost_percentage_scaled: u128,
+        base_multiplier: u128,
+        wheat_base_amount: u128,
+        fish_base_amount: u128,
+        resource_1_costs: Span<(u8, u128)>,
+        resource_2_costs: Span<(u8, u128)>,
+        resource_3_costs: Span<(u8, u128)>,
+    );
+}
+
+#[dojo::interface]
+trait IBankConfig {
+    fn set_bank_config(lords_cost: u128, lp_fee_scaled: u128);
+}
+
+
+#[dojo::interface]
+trait IMapConfig {
+    fn set_exploration_config(
+        wheat_burn_amount: u128, fish_burn_amount: u128, reward_resource_amount: u128
+    );
+}
+
+
+#[dojo::interface]
+trait IProductionConfig {
+    fn set_production_config(resource_type: u8, amount: u128, cost: Span<(u8, u128)>);
+}
+
+#[dojo::interface]
+trait ITroopConfig {
+    fn set_troop_config(troop_config: TroopConfig);
+}
+#[dojo::interface]
+trait IBuildingConfig {
+    fn set_building_config(
+        building_category: BuildingCategory,
+        building_resource_type: u8,
+        cost_of_building: Span<(u8, u128)>
+    );
+}
+
+#[dojo::interface]
+trait IPopulationConfig {
+    fn set_population_config(building_category: BuildingCategory, population: u32, capacity: u32);
+}
+
+
 #[dojo::contract]
 mod config_systems {
     use debug::PrintTrait;
     use eternum::alias::ID;
 
     use eternum::constants::{
-        WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID,
+        WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, COMBAT_CONFIG_ID,
         REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID,
-        BUILDING_CONFIG_ID
+        BUILDING_CONFIG_ID, POPULATION_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
     use eternum::models::buildings::{BuildingCategory};
 
-    use eternum::models::combat::TownWatch;
     use eternum::models::config::{
-        CapacityConfig, RoadConfig, SpeedConfig, TravelConfig, WeightConfig, WorldConfig,
-        SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig, LevelingConfig,
+        CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig,
         RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
-        TroopConfig, BuildingConfig
+        TroopConfig, BuildingConfig, PopulationConfig
     };
 
     use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::position::{Position, PositionTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
-
-    use eternum::systems::config::interface::{
-        IWorldConfig, IWeightConfig, ICapacityConfig, ITransportConfig, IHyperstructureConfig,
-        ICombatConfig, ILevelingConfig, IBankConfig, IRealmFreeMintConfig, IMapConfig, ITickConfig,
-        IProductionConfig, ITroopConfig, IBuildingConfig
-    };
 
 
     fn assert_caller_is_admin(world: IWorldDispatcher) {
@@ -39,7 +134,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl WorldConfigImpl of IWorldConfig<ContractState> {
+    impl WorldConfigImpl of super::IWorldConfig<ContractState> {
         fn set_world_config(
             world: IWorldDispatcher,
             admin_address: starknet::ContractAddress,
@@ -55,7 +150,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl RealmFreeMintConfigImpl of IRealmFreeMintConfig<ContractState> {
+    impl RealmFreeMintConfigImpl of super::IRealmFreeMintConfig<ContractState> {
         fn set_mint_config(world: IWorldDispatcher, resources: Span<(u8, u128)>) {
             assert_caller_is_admin(world);
 
@@ -102,7 +197,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl MapConfigImpl of IMapConfig<ContractState> {
+    impl MapConfigImpl of super::IMapConfig<ContractState> {
         fn set_exploration_config(
             world: IWorldDispatcher,
             wheat_burn_amount: u128,
@@ -125,7 +220,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl CapacityConfigImpl of ICapacityConfig<ContractState> {
+    impl CapacityConfigImpl of super::ICapacityConfig<ContractState> {
         fn set_capacity_config(world: IWorldDispatcher, entity_type: u128, weight_gram: u128) {
             assert_caller_is_admin(world);
 
@@ -142,7 +237,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl WeightConfigImpl of IWeightConfig<ContractState> {
+    impl WeightConfigImpl of super::IWeightConfig<ContractState> {
         fn set_weight_config(world: IWorldDispatcher, entity_type: u128, weight_gram: u128) {
             assert_caller_is_admin(world);
 
@@ -159,7 +254,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl TickConfigImpl of ITickConfig<ContractState> {
+    impl TickConfigImpl of super::ITickConfig<ContractState> {
         fn set_tick_config(
             world: IWorldDispatcher, max_moves_per_tick: u8, tick_interval_in_seconds: u64
         ) {
@@ -176,111 +271,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl CombatConfigImpl of ICombatConfig<ContractState> {
-        fn set_combat_config(
-            world: IWorldDispatcher,
-            config_id: u128,
-            stealing_trial_count: u32,
-            wheat_burn_per_soldier: u128,
-            fish_burn_per_soldier: u128,
-        ) {
-            assert_caller_is_admin(world);
-
-            set!(
-                world,
-                (CombatConfig {
-                    config_id, stealing_trial_count, wheat_burn_per_soldier, fish_burn_per_soldier,
-                })
-            );
-        }
-
-
-        fn set_soldier_config(
-            world: IWorldDispatcher,
-            resource_costs: Span<(u8, u128)>,
-            wheat_burn_per_soldier: u128,
-            fish_burn_per_soldier: u128
-        ) {
-            assert_caller_is_admin(world);
-
-            let resource_cost_id = world.uuid().into();
-            let mut index = 0;
-            loop {
-                if index == resource_costs.len() {
-                    break;
-                }
-                let (resource_type, resource_amount) = *resource_costs.at(index);
-                set!(
-                    world,
-                    (ResourceCost {
-                        entity_id: resource_cost_id, index, resource_type, amount: resource_amount
-                    })
-                );
-
-                index += 1;
-            };
-            set!(
-                world,
-                (SoldierConfig {
-                    config_id: SOLDIER_ENTITY_TYPE,
-                    resource_cost_id,
-                    resource_cost_count: resource_costs.len(),
-                    wheat_burn_per_soldier,
-                    fish_burn_per_soldier
-                })
-            );
-        }
-
-        fn set_health_config(
-            world: IWorldDispatcher,
-            entity_type: u128,
-            resource_costs: Span<(u8, u128)>,
-            max_value: u128
-        ) {
-            let resource_cost_id = world.uuid().into();
-            let mut index = 0;
-            loop {
-                if index == resource_costs.len() {
-                    break;
-                }
-                let (resource_type, resource_amount) = *resource_costs.at(index);
-                set!(
-                    world,
-                    (ResourceCost {
-                        entity_id: resource_cost_id, index, resource_type, amount: resource_amount
-                    })
-                );
-
-                index += 1;
-            };
-
-            set!(
-                world,
-                (HealthConfig {
-                    entity_type,
-                    resource_cost_id,
-                    resource_cost_count: resource_costs.len(),
-                    max_value
-                })
-            );
-        }
-
-        fn set_attack_config(world: IWorldDispatcher, entity_type: u128, max_value: u128) {
-            assert_caller_is_admin(world);
-
-            set!(world, (AttackConfig { entity_type, max_value }));
-        }
-
-
-        fn set_defence_config(world: IWorldDispatcher, entity_type: u128, max_value: u128) {
-            assert_caller_is_admin(world);
-
-            set!(world, (DefenceConfig { entity_type, max_value }));
-        }
-    }
-
-    #[abi(embed_v0)]
-    impl LevelingConfigImpl of ILevelingConfig<ContractState> {
+    impl LevelingConfigImpl of super::ILevelingConfig<ContractState> {
         fn set_leveling_config(
             world: IWorldDispatcher,
             config_id: u128,
@@ -372,7 +363,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl ProductionConfigImpl of IProductionConfig<ContractState> {
+    impl ProductionConfigImpl of super::IProductionConfig<ContractState> {
         fn set_production_config(
             world: IWorldDispatcher, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>
         ) {
@@ -431,7 +422,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl TransportConfigImpl of ITransportConfig<ContractState> {
+    impl TransportConfigImpl of super::ITransportConfig<ContractState> {
         fn set_road_config(
             world: IWorldDispatcher, resource_costs: Span<(u8, u128)>, speed_up_by: u64
         ) {
@@ -479,18 +470,11 @@ mod config_systems {
                 })
             );
         }
-
-
-        fn set_travel_config(world: IWorldDispatcher, free_transport_per_city: u128) {
-            assert_caller_is_admin(world);
-
-            set!(world, (TravelConfig { config_id: TRANSPORT_CONFIG_ID, free_transport_per_city }));
-        }
     }
 
 
     #[abi(embed_v0)]
-    impl HyperstructureConfigImpl of IHyperstructureConfig<ContractState> {
+    impl HyperstructureConfigImpl of super::IHyperstructureConfig<ContractState> {
         fn create_hyperstructure(
             world: IWorldDispatcher,
             hyperstructure_type: u8,
@@ -500,7 +484,6 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             let hyperstructure_id: ID = world.uuid().into();
-            let hyperstructure_town_watch_id = world.uuid().into();
 
             let completion_cost_id: ID = world.uuid().into();
             let completion_resource_count = completion_cost.len();
@@ -541,10 +524,6 @@ mod config_systems {
                         completion_resource_count
                     },
                     Position { entity_id: hyperstructure_id, x: coord.x, y: coord.y },
-                    TownWatch {
-                        entity_id: hyperstructure_id, town_watch_id: hyperstructure_town_watch_id,
-                    },
-                    Position { entity_id: hyperstructure_town_watch_id, x: coord.x, y: coord.y },
                 )
             );
 
@@ -554,7 +533,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl BankConfigImpl of IBankConfig<ContractState> {
+    impl BankConfigImpl of super::IBankConfig<ContractState> {
         fn set_bank_config(world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128) {
             assert_caller_is_admin(world);
 
@@ -563,7 +542,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl TroopConfigImpl of ITroopConfig<ContractState> {
+    impl TroopConfigImpl of super::ITroopConfig<ContractState> {
         fn set_troop_config(world: IWorldDispatcher, mut troop_config: TroopConfig) {
             assert_caller_is_admin(world);
 
@@ -573,7 +552,26 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BuildingConfigImpl of IBuildingConfig<ContractState> {
+    impl PopulationConfigImpl of super::IPopulationConfig<ContractState> {
+        fn set_population_config(
+            world: IWorldDispatcher,
+            building_category: BuildingCategory,
+            population: u32,
+            capacity: u32
+        ) {
+            assert_caller_is_admin(world);
+
+            set!(
+                world,
+                PopulationConfig {
+                    config_id: POPULATION_CONFIG_ID, building_category, population, capacity
+                }
+            )
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl BuildingConfigImpl of super::IBuildingConfig<ContractState> {
         fn set_building_config(
             world: IWorldDispatcher,
             building_category: BuildingCategory,

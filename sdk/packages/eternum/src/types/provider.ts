@@ -201,6 +201,7 @@ export interface CreateBankProps extends SystemSigner {
 }
 
 export interface OpenAccountProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
   bank_entity_id: num.BigNumberish;
 }
 

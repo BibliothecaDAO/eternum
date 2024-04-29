@@ -15,7 +15,7 @@ import {
 import { useRealmsPosition, useRealmsResource, createCombatNotification, createDirectOfferNotification } from "./utils";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useCombat } from "../helpers/useCombat";
+// import { useCombat } from "../helpers/useCombat";
 // import { useHyperstructure } from "../helpers/useHyperstructure";
 import { parseCombatEvent } from "../../ui/utils/combat";
 import useUIStore from "../store/useUIStore";
@@ -49,7 +49,7 @@ export const useNotifications = () => {
 
   const { getEntityLevel, getHyperstructureLevelBonus, getRealmLevelBonus } = useLevel();
   const { getResourcesFromBalance } = useResources();
-  const { getEntitiesCombatInfo } = useCombat();
+  // const { getEntitiesCombatInfo } = useCombat();
 
   const { notifications, addUniqueNotifications } = useNotificationsStore();
 
@@ -98,22 +98,22 @@ export const useNotifications = () => {
         //   newNotifications = newNotifications.concat(arrivedAtHyperstructureNotifications);
         // }
 
-        let enemyRaidersHaveArrivedNotifications = generateEnemyRaidersHaveArrivedNotifications(
-          BigInt(account.address),
-          nextBlockTimestamp,
-          realmPositions,
-          components,
-          getEntitiesCombatInfo,
-        );
-        newNotifications = newNotifications.concat(enemyRaidersHaveArrivedNotifications);
+        // let enemyRaidersHaveArrivedNotifications = generateEnemyRaidersHaveArrivedNotifications(
+        //   BigInt(account.address),
+        //   nextBlockTimestamp,
+        //   realmPositions,
+        //   components,
+        //   getEntitiesCombatInfo,
+        // );
+        // newNotifications = newNotifications.concat(enemyRaidersHaveArrivedNotifications);
 
-        let yourRaidersHaveArrivedNotifications = generateYourRaidersHaveArrivedNotifications(
-          nextBlockTimestamp,
-          realmPositions,
-          components,
-          getEntitiesCombatInfo,
-        );
-        newNotifications = newNotifications.concat(yourRaidersHaveArrivedNotifications);
+        // let yourRaidersHaveArrivedNotifications = generateYourRaidersHaveArrivedNotifications(
+        //   nextBlockTimestamp,
+        //   realmPositions,
+        //   components,
+        //   getEntitiesCombatInfo,
+        // );
+        // newNotifications = newNotifications.concat(yourRaidersHaveArrivedNotifications);
       }
       // add only add if not already in there
       addUniqueNotifications(newNotifications);
@@ -200,42 +200,42 @@ export const useNotifications = () => {
   useEffect(() => {
     const subscriptions: Subscription[] = [];
 
-    const subscribeToCombatEvents = async () => {
-      for (const { realmEntityId } of realmEntityIds) {
-        let position = getComponentValue(components.Position, getEntityIdFromKeys([realmEntityId]));
-        if (position) {
-          const observable = await createTravelEvents(position.x, position.y);
-          const subscription = observable.subscribe((event) => {
-            if (event) {
-              let entityId = parseInt(event.data[0]);
+    // const subscribeToCombatEvents = async () => {
+    //   for (const { realmEntityId } of realmEntityIds) {
+    //     let position = getComponentValue(components.Position, getEntityIdFromKeys([realmEntityId]));
+    //     if (position) {
+    //       const observable = await createTravelEvents(position.x, position.y);
+    //       const subscription = observable.subscribe((event) => {
+    //         if (event) {
+    //           let entityId = parseInt(event.data[0]);
 
-              let raidersList = getEntitiesCombatInfo([BigInt(entityId)]);
-              let raiders = raidersList.length === 1 ? raidersList[0] : undefined;
+    //           let raidersList = getEntitiesCombatInfo([BigInt(entityId)]);
+    //           let raiders = raidersList.length === 1 ? raidersList[0] : undefined;
 
-              if (
-                raiders?.arrivalTime &&
-                nextBlockTimestamp &&
-                raiders.arrivalTime > nextBlockTimestamp &&
-                raiders.entityOwnerId &&
-                !realmEntityIds.map(({ realmEntityId }) => realmEntityId).includes(raiders.entityOwnerId)
-              ) {
-                const newNotification = {
-                  eventType: EventType.EnemyRaidersArriving,
-                  keys: [entityId.toString()],
-                  data: {
-                    raiders,
-                  },
-                };
-                addUniqueNotifications([newNotification]);
-              }
-            }
-          });
-          subscriptions.push(subscription);
-        }
-      }
-    };
+    //           if (
+    //             raiders?.arrivalTime &&
+    //             nextBlockTimestamp &&
+    //             raiders.arrivalTime > nextBlockTimestamp &&
+    //             raiders.entityOwnerId &&
+    //             !realmEntityIds.map(({ realmEntityId }) => realmEntityId).includes(raiders.entityOwnerId)
+    //           ) {
+    //             const newNotification = {
+    //               eventType: EventType.EnemyRaidersArriving,
+    //               keys: [entityId.toString()],
+    //               data: {
+    //                 raiders,
+    //               },
+    //             };
+    //             addUniqueNotifications([newNotification]);
+    //           }
+    //         }
+    //       });
+    //       subscriptions.push(subscription);
+    //     }
+    //   }
+    // };
 
-    subscribeToCombatEvents();
+    // subscribeToCombatEvents();
 
     // Cleanup function
     return () => {

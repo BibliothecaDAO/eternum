@@ -19,7 +19,7 @@ export const Armies = ({}: ArmiesProps) => {
   const {
     account: { account },
     setup: {
-      components: { Position, Owner, Healthv2 },
+      components: { Position, Owner, Health },
     },
   } = useDojo();
 
@@ -43,7 +43,7 @@ export const Armies = ({}: ArmiesProps) => {
       [...myArmies]
         .map((armyId) => {
           const position = getComponentValue(Position, getEntityIdFromKeys([armyId?.entity_id || 0n]));
-          const health = getComponentValue(Healthv2, getEntityIdFromKeys([armyId?.entity_id || 0n]));
+          const health = getComponentValue(Health, getEntityIdFromKeys([armyId?.entity_id || 0n]));
           // const isDead = health?.current ? false : true;
 
           console.log({ health });

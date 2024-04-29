@@ -3,8 +3,8 @@ mod donkey_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
-    use eternum::models::config::{SpeedConfig, CapacityConfig};
-    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::config::{SpeedConfig, CapacityConfig, CapacityConfigImpl};
+    use eternum::models::movable::{Movable, MovableImpl, ArrivalTime};
     use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
     use eternum::models::position::{
@@ -51,25 +51,17 @@ mod donkey_systems {
             start_coord: Coord,
             intermediate_coord: Coord
         ) -> ID {
-            let donkey_speed_config = get!(
-                world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), SpeedConfig
-            );
-
             let is_round_trip: bool = payer_id == receiver_id;
             let arrives_at: u64 = starknet::get_block_timestamp()
                 + InternalDonkeySystemsImpl::get_donkey_travel_time(
                     world,
                     start_coord,
                     intermediate_coord,
-                    donkey_speed_config.sec_per_km,
+                    MovableImpl::sec_per_km(world, DONKEY_ENTITY_TYPE),
                     is_round_trip
                 );
-            let delivery_coord: Coord = if is_round_trip {
-                start_coord
-            } else {
-                intermediate_coord
-            };
 
+            let delivery_coord: Coord = intermediate_coord;
             set!(
                 world,
                 (
@@ -83,15 +75,12 @@ mod donkey_systems {
         }
 
         fn get_donkey_needed(world: IWorldDispatcher, resources_weight: u128,) -> u128 {
-            let capacity_per_donkey = get!(
-                world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), CapacityConfig
-            )
-                .weight_gram;
-            let reminder = resources_weight % capacity_per_donkey;
+            let donkey_capacity = CapacityConfigImpl::get(world, DONKEY_ENTITY_TYPE);
+            let reminder = resources_weight % donkey_capacity.weight_gram;
             let donkeys = if reminder == 0 {
-                resources_weight / capacity_per_donkey
+                resources_weight / donkey_capacity.weight_gram
             } else {
-                resources_weight / capacity_per_donkey + 1
+                resources_weight / donkey_capacity.weight_gram + 1
             };
             donkeys * 1000
         }

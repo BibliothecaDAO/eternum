@@ -1,7 +1,6 @@
 mod buildings;
 mod capacity;
 mod combat;
-mod combatV2;
 mod config;
 mod hyperstructure;
 mod level;
@@ -11,6 +10,7 @@ mod movable;
 mod name;
 mod order;
 mod owner;
+mod population;
 mod position;
 mod production;
 mod quantity;

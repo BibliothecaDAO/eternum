@@ -17,6 +17,12 @@ export enum BuildingType {
   Market = 6,
   ArcheryRange = 7,
   Stable = 8,
+  DonkeyFarm = 9,
+  TradingPost = 10,
+  WorkersHut = 11,
+  WatchTower = 12,
+  Walls = 13,
+  Storehouse = 14,
 }
 
 export enum ResourceBuildingType {
@@ -49,6 +55,22 @@ export const CombinedBuildingTypes = {
   ...ResourceBuildingType,
 };
 
+// export BUILDING_NONE=0
+// export BUILDING_CASTLE=1
+// export BUILDING_RESOURCE=2
+// export BUILDING_FARM=3
+// export BUILDING_FISHING_VILLAGE=4
+// export BUILDING_BARRACKS=5
+// export BUILDING_MARKET=6
+// export BUILDING_ARCHERY_RANGE=7
+// export BUILDING_STABLE=8
+// export BUILDING_DONKEY_FARM=9
+// export BUILDING_TRADING_POST=10
+// export BUILDING_WORKERS_HUT=11
+// export BUILDING_WATCH_TOWER=12
+// export BUILDING_WALLS=13
+// export BUILDING_STOREHOUSE=14
+
 export const BuildingEnumToString = {
   0: "None",
   1: "Castle",
@@ -59,6 +81,12 @@ export const BuildingEnumToString = {
   6: "Market",
   7: "ArcheryRange",
   8: "Stable",
+  9: "DonkeyFarm",
+  10: "TradingPost",
+  11: "WorkersHut",
+  12: "WatchTower",
+  13: "Walls",
+  14: "Storehouse",
 };
 
 export const BuildingStringToEnum = {
@@ -71,6 +99,12 @@ export const BuildingStringToEnum = {
   Market: 6,
   ArcheryRange: 7,
   Stable: 8,
+  DonkeyFarm: 9,
+  TradingPost: 10,
+  WorkersHut: 11,
+  WatchTower: 12,
+  Walls: 13,
+  Storehouse: 14,
 };
 
 export function getBuildingType(name: BuildingType): CairoCustomEnum {
@@ -91,6 +125,18 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ ArcheryRange: {} });
     case BuildingType.Stable:
       return new CairoCustomEnum({ Stable: {} });
+    case BuildingType.DonkeyFarm:
+      return new CairoCustomEnum({ DonkeyFarm: {} });
+    case BuildingType.TradingPost:
+      return new CairoCustomEnum({ TradingPost: {} });
+    case BuildingType.WorkersHut:
+      return new CairoCustomEnum({ WorkersHut: {} });
+    case BuildingType.WatchTower:
+      return new CairoCustomEnum({ WatchTower: {} });
+    case BuildingType.Walls:
+      return new CairoCustomEnum({ Walls: {} });
+    case BuildingType.Storehouse:
+      return new CairoCustomEnum({ Storehouse: {} });
     case BuildingType.None:
       return new CairoCustomEnum({ None: {} });
   }
@@ -114,6 +160,18 @@ export function getProducedResource(name: BuildingType): number {
       return ResourcesIds.Crossbowmen;
     case BuildingType.Stable:
       return ResourcesIds.Paladin;
+    case BuildingType.DonkeyFarm:
+      return ResourcesIds.Donkey;
+    case BuildingType.TradingPost:
+      return 0;
+    case BuildingType.WorkersHut:
+      return 0;
+    case BuildingType.WatchTower:
+      return 0;
+    case BuildingType.Walls:
+      return 0;
+    case BuildingType.Storehouse:
+      return 0;
     case BuildingType.None:
       return 0;
   }

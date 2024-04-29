@@ -151,9 +151,7 @@ export const useProductionManager = (entityId: bigint, resourceId: number) => {
     },
   } = useDojo();
 
-  return useMemo(() => {
-    return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
-  }, [entityId, resourceId]);
+  return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
 };
 
 export const useGetBankAccountOnPosition = (address: bigint, position: Position) => {

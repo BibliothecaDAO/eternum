@@ -65,22 +65,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.travel_hex(props);
   };
 
-  const create_soldiers = async (props: SystemProps.CreateSoldiersProps) => {
-    await provider.create_soldiers(props);
-  };
-
-  const attack = async (props: SystemProps.AttackProps) => {
-    await provider.attack(props);
-  };
-
-  const steal = async (props: SystemProps.StealProps) => {
-    await provider.steal(props);
-  };
-
-  const detach_soldiers = async (props: SystemProps.DetachSoldiersProps) => {
-    await provider.detach_soldiers(props);
-  };
-
   const level_up_realm = async (props: SystemProps.LevelUpRealmProps) => {
     await provider.level_up_realm(props);
   };
@@ -91,18 +75,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const set_entity_name = async (props: SystemProps.SetEntityNameProps) => {
     await provider.set_entity_name(props);
-  };
-
-  const merge_soldiers = async (props: SystemProps.MergeSoldiersProps) => {
-    await provider.merge_soldiers(props);
-  };
-
-  const create_and_merge_soldiers = async (props: SystemProps.CreateAndMergeSoldiersProps) => {
-    await provider.create_and_merge_soldiers(props);
-  };
-
-  const heal_soldiers = async (props: SystemProps.HealSoldiersProps) => {
-    await provider.heal_soldiers(props);
   };
 
   const explore = async (props: SystemProps.ExploreProps) => {
@@ -171,13 +143,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     explore,
     set_address_name,
     set_entity_name,
-    create_and_merge_soldiers,
     level_up_realm,
     isLive,
-    create_soldiers,
-    detach_soldiers,
-    attack,
-    steal,
     create_order,
     accept_order,
     cancel_order,
@@ -187,8 +154,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     transfer_resources,
     travel,
     travel_hex,
-    merge_soldiers,
-    heal_soldiers,
     destroy_building,
     create_building,
     create_army,

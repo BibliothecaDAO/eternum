@@ -24,6 +24,12 @@ const BUILDING_IMAGES_PATH = {
   [BuildingType.Stable]: BUILD_IMAGES_PREFIX + "stable.png",
   [BuildingType.Market]: BUILD_IMAGES_PREFIX + "market.png",
   [BuildingType.ArcheryRange]: BUILD_IMAGES_PREFIX + "archery.png",
+  [BuildingType.DonkeyFarm]: BUILD_IMAGES_PREFIX + "donkey_farm.png",
+  [BuildingType.TradingPost]: BUILD_IMAGES_PREFIX + "trading_post.png",
+  [BuildingType.WorkersHut]: BUILD_IMAGES_PREFIX + "workers_hut.png",
+  [BuildingType.WatchTower]: BUILD_IMAGES_PREFIX + "watch_tower.png",
+  [BuildingType.Walls]: BUILD_IMAGES_PREFIX + "walls.png",
+  [BuildingType.Storehouse]: BUILD_IMAGES_PREFIX + "storehouse.png",
 };
 
 export const SelectPreviewBuilding = () => {
@@ -32,7 +38,15 @@ export const SelectPreviewBuilding = () => {
   const { playResourceSound } = usePlayResourceSound();
 
   const buildingTypes = Object.keys(BuildingType).filter(
-    (key) => isNaN(Number(key)) && key !== "Castle" && key !== "None",
+    (key) =>
+      isNaN(Number(key)) &&
+      key !== "Castle" &&
+      key !== "None" &&
+      key !== "DonkeyFarm" &&
+      key !== "TradingPost" &&
+      key !== "WatchTower" &&
+      key !== "Walls" &&
+      key !== "Storehouse",
   );
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
@@ -52,14 +66,14 @@ export const SelectPreviewBuilding = () => {
 
   return (
     <div className="flex flex-col overflow-hidden" ref={parent}>
-      <div className="grid grid-cols-3 gap-2 p-2">
+      <div className="grid grid-cols-2 gap-2 p-2">
         {buildingTypes.map((buildingType, index) => {
           const building = BuildingType[buildingType as keyof typeof BuildingType];
           return (
             <div
               key={index}
               className={clsx(
-                "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis p-2 cursor-pointer h-16 relative",
+                "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis p-2 cursor-pointer h-24 relative",
                 {
                   "!border-lightest !text-lightest": previewBuilding === building,
                 },

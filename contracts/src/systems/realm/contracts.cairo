@@ -7,10 +7,9 @@ mod realm_systems {
 
     use eternum::constants::REALM_ENTITY_TYPE;
     use eternum::constants::{
-        WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, SOLDIER_ENTITY_TYPE, MAX_REALMS_PER_ADDRESS
+        WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, MAX_REALMS_PER_ADDRESS
     };
     use eternum::models::capacity::Capacity;
-    use eternum::models::combat::TownWatch;
     use eternum::models::config::{CapacityConfig, RealmFreeMintConfig};
     use eternum::models::map::Tile;
     use eternum::models::metadata::EntityMetadata;
@@ -78,36 +77,6 @@ mod realm_systems {
                     },
                     Position { entity_id: entity_id.into(), x: position.x, y: position.y, },
                     EntityMetadata { entity_id: entity_id.into(), entity_type: REALM_ENTITY_TYPE, }
-                )
-            );
-
-            // setup realm's town watch 
-            let combat_town_watch_id = world.uuid().into();
-            let combat_unit_capacity = get!(
-                world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig
-            )
-                .weight_gram;
-
-            set!(
-                world,
-                (
-                    TownWatch { entity_id: entity_id.into(), town_watch_id: combat_town_watch_id, },
-                    Owner { entity_id: combat_town_watch_id, address: caller },
-                    EntityOwner {
-                        entity_id: combat_town_watch_id, entity_owner_id: entity_id.into()
-                    },
-                    Position { entity_id: combat_town_watch_id, x: position.x, y: position.y },
-                    Capacity { entity_id: combat_town_watch_id, weight_gram: combat_unit_capacity },
-                    Movable {
-                        entity_id: combat_town_watch_id,
-                        sec_per_km: 0,
-                        blocked: false,
-                        round_trip: false,
-                        start_coord_x: 0,
-                        start_coord_y: 0,
-                        intermediate_coord_x: 0,
-                        intermediate_coord_y: 0,
-                    },
                 )
             );
 

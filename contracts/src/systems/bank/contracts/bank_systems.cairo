@@ -1,18 +1,28 @@
+use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
+use eternum::models::position::{Coord};
+
+#[dojo::interface]
+trait IBankSystems {
+    fn create_bank(realm_entity_id: ID, coord: Coord, owner_fee_scaled: u128) -> (ID, ID);
+    fn open_account(realm_entity_id: u128, bank_entity_id: u128) -> ID;
+    fn change_owner_fee(bank_entity_id: u128, new_swap_fee_unscaled: u128);
+}
+
 #[dojo::contract]
 mod bank_systems {
     use eternum::alias::ID;
     use eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
     use eternum::models::bank::bank::{BankAccounts, Bank};
     use eternum::models::config::{BankConfig};
-    use eternum::models::owner::Owner;
+    use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceImpl};
-    use eternum::systems::bank::interface::bank::IBankSystems;
 
     use traits::Into;
 
     #[abi(embed_v0)]
-    impl BankSystemsImpl of IBankSystems<ContractState> {
+    impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_bank(
             self: @ContractState,
             world: IWorldDispatcher,
@@ -48,13 +58,15 @@ mod bank_systems {
             );
 
             let bank_account_entity_id = InternalBankSystemsImpl::open_bank_account(
-                world, bank_entity_id, starknet::get_caller_address()
+                world, realm_entity_id, bank_entity_id, starknet::get_caller_address()
             );
 
             (bank_entity_id, bank_account_entity_id)
         }
 
-        fn open_account(world: IWorldDispatcher, bank_entity_id: u128) -> ID {
+        fn open_account(
+            world: IWorldDispatcher, realm_entity_id: u128, bank_entity_id: u128
+        ) -> ID {
             let player = starknet::get_caller_address();
 
             // check if the bank exists
@@ -65,7 +77,9 @@ mod bank_systems {
             let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
             assert(bank_account.entity_id == 0, 'Bank account already opened');
 
-            InternalBankSystemsImpl::open_bank_account(world, bank_entity_id, player)
+            InternalBankSystemsImpl::open_bank_account(
+                world, realm_entity_id, bank_entity_id, player
+            )
         }
 
         fn change_owner_fee(
@@ -86,7 +100,10 @@ mod bank_systems {
     #[generate_trait]
     impl InternalBankSystemsImpl of InternalBankSystemsTrait {
         fn open_bank_account(
-            world: IWorldDispatcher, bank_entity_id: u128, player: starknet::ContractAddress
+            world: IWorldDispatcher,
+            realm_entity_id: u128,
+            bank_entity_id: u128,
+            player: starknet::ContractAddress
         ) -> ID {
             // get bank position
             let bank_position = get!(world, bank_entity_id, Position);
@@ -95,16 +112,18 @@ mod bank_systems {
             let entity_id = world.uuid();
             set!(
                 world,
-                (BankAccounts {
-                    bank_entity_id: bank_entity_id, owner: player, entity_id: entity_id.into()
-                })
+                (
+                    BankAccounts {
+                        bank_entity_id: bank_entity_id, owner: player, entity_id: entity_id.into()
+                    },
+                    Position {
+                        entity_id: entity_id.into(), x: bank_position.x, y: bank_position.y
+                    },
+                    // todo: let's decide between owner and entity owner
+                    Owner { entity_id: entity_id.into(), address: player },
+                    EntityOwner { entity_id: entity_id.into(), entity_owner_id: realm_entity_id }
+                )
             );
-            set!(
-                world,
-                (Position { entity_id: entity_id.into(), x: bank_position.x, y: bank_position.y })
-            );
-
-            set!(world, (Owner { entity_id: entity_id.into(), address: player }));
 
             entity_id.into()
         }

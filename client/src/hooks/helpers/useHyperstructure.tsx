@@ -4,7 +4,7 @@ import { Position } from "@bibliothecadao/eternum";
 import { calculateDistance, getEntityIdFromKeys, getUIPositionFromColRow } from "../../ui/utils/utils";
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
 import hyperstructuresHexPositions from "../../data/geodata/hex/hyperstructuresHexPositions.json";
-import { useCombat } from "./useCombat";
+// import { useCombat } from "./useCombat";
 import { resources } from "@bibliothecadao/eternum";
 import useRealmStore from "../store/useRealmStore";
 import { useResources } from "./useResources";
@@ -12,17 +12,17 @@ import { useResources } from "./useResources";
 export const useHyperstructure = () => {
   const {
     setup: {
-      components: { HyperStructure, Resource, Position, TownWatch },
+      components: { HyperStructure, Resource, Position },
     },
   } = useDojo();
 
-  const { getEntityWatchTowerId, getEntitiesCombatInfo } = useCombat();
+  // const { getEntityWatchTowerId, getEntitiesCombatInfo } = useCombat();
   const { getResourceCosts } = useResources();
 
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const getHyperstructure = (x: number, y: number): HyperStructureInterface | undefined => {
-    const entityIds = runQuery([Has(HyperStructure), Has(TownWatch), HasValue(Position, { x, y })]);
+    const entityIds = runQuery([Has(HyperStructure), HasValue(Position, { x, y })]);
 
     if (entityIds.size > 0) {
       let id = Array.from(entityIds)[0];
@@ -54,20 +54,20 @@ export const useHyperstructure = () => {
         });
         let progress = (totCurrentAmount / totCompleteAmount) * 100;
 
-        let watchTowerId = getEntityWatchTowerId(hyperstructureId);
-        let combatInfo = watchTowerId ? getEntitiesCombatInfo([watchTowerId]) : undefined;
+        // let watchTowerId = getEntityWatchTowerId(hyperstructureId);
+        // let combatInfo = watchTowerId ? getEntitiesCombatInfo([watchTowerId]) : undefined;
 
         let defence = 0;
         let attack = 0;
         let health = 0;
         let watchTowerQuantity = 0;
 
-        if (combatInfo?.length === 1) {
-          defence = combatInfo[0].defence;
-          attack = combatInfo[0].attack;
-          health = combatInfo[0].health;
-          watchTowerQuantity = combatInfo[0].quantity;
-        }
+        // if (combatInfo?.length === 1) {
+        //   defence = combatInfo[0].defence;
+        //   attack = combatInfo[0].attack;
+        //   health = combatInfo[0].health;
+        //   watchTowerQuantity = combatInfo[0].quantity;
+        // }
 
         const name = hyperstructureResources
           .filter((resourceCost) => ![254, 255].includes(resourceCost.resourceId))
@@ -108,16 +108,14 @@ export const useHyperstructure = () => {
   };
 
   const getHyperstructureIds = (): bigint[] => {
-    const entityIds = Array.from(runQuery([Has(HyperStructure), Has(TownWatch), Has(Position)]));
+    const entityIds = Array.from(runQuery([Has(HyperStructure), Has(Position)]));
     return entityIds.map((id) => {
       return getComponentValue(HyperStructure, id)!.entity_id;
     });
   };
 
   const getHyperstructureEntityId = (hyperstructruePosition: Position): bigint | undefined => {
-    const entityIds = Array.from(
-      runQuery([Has(HyperStructure), Has(TownWatch), HasValue(Position, hyperstructruePosition)]),
-    );
+    const entityIds = Array.from(runQuery([Has(HyperStructure), HasValue(Position, hyperstructruePosition)]));
     if (entityIds.length === 1) {
       let bank = getComponentValue(HyperStructure, entityIds[0]);
       return bank?.entity_id;

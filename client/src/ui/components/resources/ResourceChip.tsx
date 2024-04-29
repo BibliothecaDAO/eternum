@@ -20,11 +20,11 @@ export const ResourceChip = ({
 
   const production = useMemo(() => {
     return productionManager.getProduction();
-  }, [productionManager]);
+  }, []);
 
   const balance = useMemo(() => {
     return productionManager.balance(currentTick);
-  }, [productionManager, production]);
+  }, [productionManager, production, currentTick]);
 
   const netRate = useMemo(() => {
     return productionManager.netRate()[1];
@@ -32,7 +32,7 @@ export const ResourceChip = ({
 
   return (
     <div
-      className={`flex relative group items-center text-sm border border-gold/50 rounded px-2 p-1 hover:bg-gold/20 `}
+      className={`flex relative group items-center text-xs border border-gold/50 rounded px-2 p-1 hover:bg-gold/20 `}
     >
       <ResourceIcon
         isLabor={isLabor}
@@ -42,9 +42,8 @@ export const ResourceChip = ({
         className="mr-3 self-center"
       />
       <div className="flex flex-wrap  ">
-        <div className="text-xs font-bold w-full">{findResourceById(resourceId)?.trait}</div>
         <div className="flex">
-          <div className=" text-lg self-center">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
+          <div className=" self-center text-sm">{currencyFormat(balance ? Number(balance) : 0, 2)}</div>
           {netRate ? (
             <div className={`${Number(netRate) < 0 ? "text-light-red" : "text-green"} self-center pl-2`}>
               {parseFloat(netRate.toString()) < 0 ? "" : "+"}
@@ -54,6 +53,7 @@ export const ResourceChip = ({
             <div className="self-center ml-2"></div>
           )}
         </div>
+        <div className="text-xs font-bold w-full">{findResourceById(resourceId)?.trait}</div>
       </div>
     </div>
   );
