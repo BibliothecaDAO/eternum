@@ -5,12 +5,14 @@ use debug::PrintTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::ResourceTypes;
 use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION};
+use eternum::models::buildings::{
+    Building, BuildingTrait, BuildingQuantityTrackerImpl, BuildingCategory
+};
 use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
 
 use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
 use eternum::models::quantity::{QuantityTracker};
 use eternum::models::realm::Realm;
-use eternum::models::buildings::{Building, BuildingTrait, BuildingQuantityTrackerImpl, BuildingCategory};
 use eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
 
 
@@ -184,15 +186,14 @@ impl ResourceImpl of ResourceTrait {
         let entity_realm: Realm = get!(world, self.entity_id, Realm);
         let entity_is_realm = entity_realm.realm_id != 0;
         if entity_is_realm {
-
-            let realm_building_quantity_key 
-                = BuildingQuantityTrackerImpl::key(
-                    self.entity_id, BuildingCategory::Storehouse.into(), self.resource_type);
-            let mut realm_building_quantity_tracker: QuantityTracker 
-                = get!(world, realm_building_quantity_key, QuantityTracker);
-            let max_resource_balance 
-                = 2_000 * RESOURCE_PRECISION 
-                    + (realm_building_quantity_tracker.count * 2_000 * RESOURCE_PRECISION);
+            let realm_building_quantity_key = BuildingQuantityTrackerImpl::key(
+                self.entity_id, BuildingCategory::Storehouse.into(), self.resource_type
+            );
+            let mut realm_building_quantity_tracker: QuantityTracker = get!(
+                world, realm_building_quantity_key, QuantityTracker
+            );
+            let max_resource_balance = 2_000 * RESOURCE_PRECISION
+                + (realm_building_quantity_tracker.count * 2_000 * RESOURCE_PRECISION);
             self.balance = min(self.balance, max_resource_balance);
         }
 
