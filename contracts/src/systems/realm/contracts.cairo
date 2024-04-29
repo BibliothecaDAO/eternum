@@ -6,9 +6,7 @@ mod realm_systems {
     use eternum::alias::ID;
 
     use eternum::constants::REALM_ENTITY_TYPE;
-    use eternum::constants::{
-        WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, MAX_REALMS_PER_ADDRESS
-    };
+    use eternum::constants::{WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, MAX_REALMS_PER_ADDRESS};
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{CapacityConfig, RealmFreeMintConfig};
     use eternum::models::map::Tile;
@@ -97,7 +95,7 @@ mod realm_systems {
                     world, (entity_id.into(), detached_resource.resource_type)
                 );
 
-                realm_resource.balance += detached_resource.resource_amount;
+                realm_resource.add(detached_resource.resource_amount);
                 realm_resource.save(world);
 
                 index += 1;

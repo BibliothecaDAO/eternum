@@ -61,13 +61,8 @@ mod road_systems {
                     world, (entity_id, resource_cost.resource_type)
                 );
 
-                assert(
-                    realm_resource.balance >= resource_cost.amount * usage_count.into(),
-                    'insufficient resources'
-                );
-
-                realm_resource.balance -= resource_cost.amount * usage_count.into();
-                set!(world, (realm_resource));
+                realm_resource.burn(resource_cost.amount * usage_count.into());
+                realm_resource.save(world);
 
                 index += 1;
             };

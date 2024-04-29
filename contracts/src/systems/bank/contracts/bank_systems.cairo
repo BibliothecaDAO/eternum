@@ -43,9 +43,7 @@ mod bank_systems {
                 world, (realm_entity_id, ResourceTypes::LORDS)
             );
 
-            assert(realm_resource.balance >= bank_config.lords_cost, 'insufficient resources');
-
-            realm_resource.balance -= bank_config.lords_cost;
+            realm_resource.burn(bank_config.lords_cost);
             realm_resource.save(world);
 
             set!(

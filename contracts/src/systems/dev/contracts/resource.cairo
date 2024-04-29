@@ -11,7 +11,7 @@ mod dev_resource_systems {
     use eternum::constants::ResourceTypes;
     use eternum::constants::{WORLD_CONFIG_ID};
     use eternum::models::config::{WorldConfig};
-    use eternum::models::resources::{Resource, ResourceTrait};
+    use eternum::models::resources::{Resource, ResourceTrait, ResourceImpl};
     use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
 
 
@@ -29,8 +29,8 @@ mod dev_resource_systems {
                         let (resource_type, amount) = (*resource_type, *amount);
                         assert(amount > 0, 'amount must not be 0');
 
-                        let mut resource = get!(world, (entity_id, resource_type), Resource);
-                        resource.balance += amount;
+                        let mut resource = ResourceImpl::get(world, (entity_id, resource_type));
+                        resource.add(amount);
                         resource.save(world);
                     },
                     Option::None => { break; }

@@ -2,7 +2,9 @@
 mod donkey_systems {
     use eternum::alias::ID;
 
-    use eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
+    use eternum::constants::{
+        WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes, RESOURCE_PRECISION
+    };
     use eternum::models::config::{SpeedConfig, CapacityConfig, CapacityConfigImpl};
     use eternum::models::movable::{Movable, MovableImpl, ArrivalTime};
     use eternum::models::order::{Orders, OrdersTrait};
@@ -82,7 +84,7 @@ mod donkey_systems {
             } else {
                 resources_weight / donkey_capacity.weight_gram + 1
             };
-            donkeys * 1000
+            donkeys * RESOURCE_PRECISION
         }
 
         fn get_donkey_travel_time(

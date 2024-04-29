@@ -1,5 +1,6 @@
 use eternum::alias::ID;
 
+
 // Config ID to fetch global configs
 const WORLD_CONFIG_ID: u128 = 999999999999999999;
 const BUILDING_CONFIG_ID: u128 = 999999999999999998;
@@ -24,6 +25,9 @@ const MAX_REALMS_PER_ADDRESS: u8 = 5;
 
 // base population
 const BASE_POPULATION: u32 = 6;
+
+// resource precision
+const RESOURCE_PRECISION: u128 = 1_000;
 
 mod ResourceTypes {
     const WOOD: u8 = 1;

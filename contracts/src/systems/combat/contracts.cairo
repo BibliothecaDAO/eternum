@@ -55,9 +55,11 @@ mod combat_systems {
             let crossbowman_resource = ResourceImpl::get(
                 world, (owner_id, ResourceTypes::CROSSBOWMAN)
             );
-            let (knight_resource, paladin_resource, crossbowman_resource) = troops
+            let (mut knight_resource, mut paladin_resource, mut crossbowman_resource) = troops
                 .purchase(owner_id, (knight_resource, paladin_resource, crossbowman_resource));
-            set!(world, (knight_resource, paladin_resource, crossbowman_resource));
+            knight_resource.save(world);
+            paladin_resource.save(world);
+            crossbowman_resource.save(world);
 
             // make troops 
             let mut army: Army = Default::default();

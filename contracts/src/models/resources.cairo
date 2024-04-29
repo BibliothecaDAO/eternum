@@ -4,11 +4,16 @@ use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::ResourceTypes;
-use eternum::constants::get_resource_probabilities;
+use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION};
+use eternum::models::buildings::{
+    Building, BuildingTrait, BuildingQuantityTrackerImpl, BuildingCategory
+};
 use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
 
 use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
-use eternum::utils::math::{is_u256_bit_set, set_u256_bit};
+use eternum::models::quantity::{QuantityTracker};
+use eternum::models::realm::Realm;
+use eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -108,13 +113,13 @@ impl ResourceFoodImpl of ResourceFoodTrait {
         if wheat_amount > wheat.balance {
             panic!("Insufficient wheat balance");
         }
-        wheat.balance -= wheat_amount;
+        wheat.burn(wheat_amount);
         wheat.save(world);
 
         if fish_amount > fish.balance {
             panic!("Insufficient fish balance");
         }
-        fish.balance -= fish_amount;
+        fish.burn(fish_amount);
         fish.save(world);
     }
 
@@ -128,13 +133,13 @@ impl ResourceFoodImpl of ResourceFoodTrait {
         if wheat_amount > wheat.balance {
             wheat_amount = wheat.balance
         }
-        wheat.balance -= wheat_amount;
+        wheat.burn(wheat_amount);
         wheat.save(world);
 
         if fish_amount > fish.balance {
             fish_amount = fish.balance
         }
-        fish.balance -= fish_amount;
+        fish.burn(fish_amount);
         fish.save(world);
     }
 }
@@ -176,6 +181,22 @@ impl ResourceImpl of ResourceTrait {
         if self.entity_id == 0 {
             return;
         };
+
+        // ensure realm has enough store houses to keep resource balance
+        let entity_realm: Realm = get!(world, self.entity_id, Realm);
+        let entity_is_realm = entity_realm.realm_id != 0;
+        if entity_is_realm {
+            let realm_building_quantity_key = BuildingQuantityTrackerImpl::key(
+                self.entity_id, BuildingCategory::Storehouse.into(), self.resource_type
+            );
+            let mut realm_building_quantity_tracker: QuantityTracker = get!(
+                world, realm_building_quantity_key, QuantityTracker
+            );
+            let max_resource_balance = 2_000 * RESOURCE_PRECISION
+                + (realm_building_quantity_tracker.count * 2_000 * RESOURCE_PRECISION);
+            self.balance = min(self.balance, max_resource_balance);
+        }
+
         // save the updated resource
         set!(world, (self));
 
