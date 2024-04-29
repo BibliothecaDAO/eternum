@@ -388,13 +388,14 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
         const instanceId = intersect.instanceId;
         const mesh = intersect.object;
         const pos = getPositionsAtIndex(mesh, instanceId);
-        if (pos) {
+        if (pos && !selectedEntityRef.current) {
           const clickedColRow = getColRowFromUIPosition(pos.x, pos.y);
           setClickedHex({
             contractPos: { col: clickedColRow.col, row: clickedColRow.row },
             uiPos: [pos.x, -pos.y, pos.z],
             hexIndex: instanceId,
           });
+          setHighlightPositions([{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }]);
         }
         if (pos && selectedEntityRef.current) {
           if (isTravelModeRef.current || isExploreModeRef.current) {

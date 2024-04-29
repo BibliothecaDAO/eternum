@@ -124,7 +124,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
 
   return (
     <>
-      {hovered && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />}
+      {/* {hovered && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />} */}
       {/* {!info.isDead && info.isMine && <Flag angle={rotationY} order={info.order} position={position}></Flag>} */}
       <group position={position}>
         {selectedEntity && selectedEntity.id == info.id && <ArmyMenu entityId={info.id} />}
