@@ -27,7 +27,10 @@ const MAX_REALMS_PER_ADDRESS: u8 = 5;
 const BASE_POPULATION: u32 = 6;
 
 // resource precision
-const RESOURCE_PRECISION: u128 = 1_000;
+const RESOURCE_PRECISION: u128 = 10_000;
+
+// base storehouse capacity
+const BASE_STOREHOUSE_CAPACITY: u128 = 10_000;
 
 mod ResourceTypes {
     const WOOD: u8 = 1;

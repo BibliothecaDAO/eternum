@@ -4,7 +4,7 @@ use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::ResourceTypes;
-use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION};
+use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION, BASE_STOREHOUSE_CAPACITY};
 use eternum::models::buildings::{
     Building, BuildingTrait, BuildingQuantityTrackerImpl, BuildingCategory
 };
@@ -192,8 +192,10 @@ impl ResourceImpl of ResourceTrait {
             let mut realm_building_quantity_tracker: QuantityTracker = get!(
                 world, realm_building_quantity_key, QuantityTracker
             );
-            let max_resource_balance = 2_000 * RESOURCE_PRECISION
-                + (realm_building_quantity_tracker.count * 2_000 * RESOURCE_PRECISION);
+            let max_resource_balance = BASE_STOREHOUSE_CAPACITY * RESOURCE_PRECISION
+                + (realm_building_quantity_tracker.count
+                    * BASE_STOREHOUSE_CAPACITY
+                    * RESOURCE_PRECISION);
             self.balance = min(self.balance, max_resource_balance);
         }
 
