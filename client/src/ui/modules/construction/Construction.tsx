@@ -4,7 +4,8 @@ import { construction, trade } from "@/ui/components/navigation/Config";
 import { Tabs } from "@/ui/elements/tab";
 import { useMemo, useState } from "react";
 import { SelectPreviewBuilding } from "@/ui/components/construction/SelectPreviewBuilding";
-export const Construction = () => {
+import { EntityPopulation } from "@/ui/components/entities/EntityPopulation";
+export const Construction = ({ entityId }: { entityId: bigint | undefined }) => {
   const { togglePopup } = useUIStore();
   const [selectedTab, setSelectedTab] = useState(0);
   const isOpen = useUIStore((state) => state.isPopupOpen(construction));
@@ -22,21 +23,11 @@ export const Construction = () => {
   //   ],
   //   [selectedTab],
   // );
+
   return (
     <OSWindow onClick={() => togglePopup(construction)} show={isOpen} title={construction}>
+      <EntityPopulation entityId={entityId} />
       <SelectPreviewBuilding />
-      {/* <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
-        <Tabs.List>
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-          ))}
-        </Tabs.Panels>
-      </Tabs> */}
     </OSWindow>
   );
 };

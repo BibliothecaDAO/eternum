@@ -709,6 +709,19 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Population: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.BigInt, population: RecsType.Number, capacity: RecsType.Number },
+        {
+          metadata: {
+            name: "Population",
+            types: ["u128", "u32", "u32"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Realm: (() => {
       return defineComponent(
         world,

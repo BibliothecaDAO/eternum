@@ -20,6 +20,7 @@ enum ModelsIndexes {
   Stable = 7,
   Forge = 8,
   LumberMill = 9,
+  WorkersHut = 10,
 }
 
 const ResourceIdToModelIndex: Partial<Record<ResourcesIds, ModelsIndexes>> = {
@@ -68,6 +69,7 @@ export const ExistingBuildings = () => {
     "/models/buildings/stable.glb",
     "/models/buildings/forge.glb",
     "/models/buildings/lumber_mill.glb",
+    "/models/buildings/workers_hut.glb",
   ]);
   useEffect(() => {
     models.forEach((model) => {
@@ -137,16 +139,20 @@ export const BuiltBuilding = ({
   resource?: ResourcesIds;
 }) => {
   const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
+
   const modelIndex = useMemo(() => {
     if (buildingCategory === BuildingType.Resource && resource) {
       return ResourceIdToModelIndex[resource] || ModelsIndexes.Mine;
     }
     return buildingCategory - 1;
   }, [buildingCategory, resource]);
+
   const model = useMemo(() => {
     return models[modelIndex].scene.clone();
   }, [modelIndex, models]);
+
   const lightRef = useRef<any>();
+
   useHelper(lightRef, THREE.PointLightHelper, 1, "green");
 
   const { actions } = useAnimations(models[modelIndex].animations, model);
