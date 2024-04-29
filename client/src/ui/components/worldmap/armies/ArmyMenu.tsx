@@ -52,7 +52,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const [selectedEntityRealmId, setSelectedEntityRealmId] = useState(0n);
   const [enemyRaidersOnPosition, setEnemyRaidersOnPosition] = useState<CombatInfo[]>([]);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-  const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getEntityWatchTowerId } = useCombat();
+  const { getEntitiesCombatInfo, getOwnerRaidersOnPosition } = useCombat();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const currentTick = useBlockchainStore((state) => state.currentTick);
 
@@ -90,7 +90,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     }
 
     const entityHealth = getComponentValue(Health, getEntityIdFromKeys([selectedEntity?.id]));
-    const selectedEntityIsDead = !entityHealth?.value;
+    const selectedEntityIsDead = !entityHealth?.current;
     setSelectedEntityIsDead(selectedEntityIsDead);
   }, [selectedEntity]);
 

@@ -2,31 +2,55 @@
 
 import { defineComponent, Type as RecsType, World } from "@dojoengine/recs";
 
-export type ContractComponents = Awaited<ReturnType<typeof defineContractComponents>>;
-
 export function defineContractComponents(world: World) {
   return {
-    Bank: (() => {
+    Production: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.BigInt, owner_fee_scaled: RecsType.BigInt, exists: RecsType.Boolean },
+        {
+          entity_id: RecsType.BigInt,
+          resource_type: RecsType.Number,
+          building_count: RecsType.BigInt,
+          production_rate: RecsType.BigInt,
+          consumption_rate: RecsType.BigInt,
+          last_updated_tick: RecsType.BigInt,
+          input_finish_tick: RecsType.BigInt,
+        },
         {
           metadata: {
-            name: "Bank",
-            types: ["u128", "u128", "bool"],
+            name: "Production",
+            types: ["u128", "u8", "u128", "u128", "u128", "u128", "u64", "u64"],
             customTypes: [],
           },
         },
       );
     })(),
-    BankAccounts: (() => {
+    ProductionInput: (() => {
       return defineComponent(
         world,
-        { bank_entity_id: RecsType.BigInt, owner: RecsType.BigInt, entity_id: RecsType.BigInt },
+        {
+          output_resource_type: RecsType.Number,
+          index: RecsType.Number,
+          input_resource_type: RecsType.Number,
+          input_resource_amount: RecsType.BigInt,
+        },
         {
           metadata: {
-            name: "BankAccounts",
-            types: ["u128", "contractaddress", "u128"],
+            name: "ProductionInput",
+            types: ["u8", "u8", "u8", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    ProductionOutput: (() => {
+      return defineComponent(
+        world,
+        { input_resource_type: RecsType.Number, index: RecsType.Number, output_resource_type: RecsType.Number },
+        {
+          metadata: {
+            name: "ProductionOutput",
+            types: ["u8", "u8", "u8"],
             customTypes: [],
           },
         },
@@ -38,14 +62,14 @@ export function defineContractComponents(world: World) {
         {
           bank_entity_id: RecsType.BigInt,
           player: RecsType.BigInt,
-          resource_type: RecsType.Number,
+          resource_type: RecsType.BigInt,
           shares: { mag: RecsType.BigInt, sign: RecsType.Boolean },
         },
         {
           metadata: {
             name: "Liquidity",
-            types: ["u128", "contractaddress", "u8", "u128", "bool"],
-            customTypes: ["Fixed"],
+            types: ["u128", "u128", "u8", "u128", "bool"],
+            customTypes: [],
           },
         },
       );
@@ -55,7 +79,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           bank_entity_id: RecsType.BigInt,
-          resource_type: RecsType.Number,
+          resource_type: RecsType.BigInt,
           lords_amount: RecsType.BigInt,
           resource_amount: RecsType.BigInt,
         },
@@ -68,37 +92,27 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Building: (() => {
+    BankAccounts: (() => {
       return defineComponent(
         world,
-        {
-          outer_col: RecsType.BigInt,
-          outer_row: RecsType.BigInt,
-          inner_col: RecsType.BigInt,
-          inner_row: RecsType.BigInt,
-          category: RecsType.Number,
-          produced_resource_type: RecsType.Number,
-          bonus_percent: RecsType.BigInt,
-          entity_id: RecsType.BigInt,
-          outer_entity_id: RecsType.BigInt,
-        },
+        { bank_entity_id: RecsType.BigInt, owner: RecsType.BigInt, entity_id: RecsType.BigInt },
         {
           metadata: {
-            name: "Building",
-            types: ["u128", "u128", "u128", "u128", "enum", "u8", "u128", "u128", "u128"],
-            customTypes: ["BuildingCategory"],
+            name: "BankAccounts",
+            types: ["u128", "u128", "u128"],
+            customTypes: [],
           },
         },
       );
     })(),
-    Capacity: (() => {
+    Bank: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.BigInt, weight_gram: RecsType.BigInt },
+        { entity_id: RecsType.BigInt, owner_fee_scaled: RecsType.BigInt, exists: RecsType.Boolean },
         {
           metadata: {
-            name: "Capacity",
-            types: ["u128", "u128"],
+            name: "Bank",
+            types: ["u128", "u128", "bool"],
             customTypes: [],
           },
         },
@@ -200,46 +214,37 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    BankConfig: (() => {
+    Capacity: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.BigInt, lords_cost: RecsType.BigInt, lp_fee_scaled: RecsType.BigInt },
+        { entity_id: RecsType.BigInt, weight_gram: RecsType.BigInt },
         {
           metadata: {
-            name: "BankConfig",
-            types: ["u128", "u128", "u128"],
+            name: "Capacity",
+            types: ["u128", "u128"],
             customTypes: [],
           },
         },
       );
     })(),
-    BattleConfig: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.BigInt, max_tick_duration: RecsType.BigInt },
-        {
-          metadata: {
-            name: "BattleConfig",
-            types: ["u128", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    BuildingConfig: (() => {
+    Building: (() => {
       return defineComponent(
         world,
         {
-          config_id: RecsType.BigInt,
-          category: RecsType.Number,
-          resource_type: RecsType.Number,
-          resource_cost_id: RecsType.BigInt,
-          resource_cost_count: RecsType.Number,
+          outer_col: RecsType.BigInt,
+          outer_row: RecsType.BigInt,
+          inner_col: RecsType.BigInt,
+          inner_row: RecsType.BigInt,
+          category: RecsType.String,
+          produced_resource_type: RecsType.Number,
+          bonus_percent: RecsType.BigInt,
+          entity_id: RecsType.BigInt,
+          outer_entity_id: RecsType.BigInt,
         },
         {
           metadata: {
-            name: "BuildingConfig",
-            types: ["u128", "enum", "u8", "u128", "u32"],
+            name: "Building",
+            types: ["u128", "u128", "u128", "u128", "enum", "u8", "u128", "u128"],
             customTypes: ["BuildingCategory"],
           },
         },
@@ -268,8 +273,8 @@ export function defineContractComponents(world: World) {
         world,
         {
           config_id: RecsType.BigInt,
-          decay_interval: RecsType.BigInt,
-          max_level: RecsType.BigInt,
+          decay_interval: RecsType.Number,
+          max_level: RecsType.Number,
           decay_scaled: RecsType.BigInt,
           cost_percentage_scaled: RecsType.BigInt,
           base_multiplier: RecsType.BigInt,
@@ -306,86 +311,38 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    MapExploreConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.BigInt,
-          wheat_burn_amount: RecsType.BigInt,
-          fish_burn_amount: RecsType.BigInt,
-          reward_resource_amount: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            name: "MapExploreConfig",
-            types: ["u128", "u128", "u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    PopulationConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.BigInt,
-          building_category: RecsType.Number,
-          population: RecsType.Number,
-          capacity: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: "PopulationConfig",
-            types: ["u128", "enum", "u32", "u32"],
-            customTypes: ["BuildingCategory"],
-          },
-        },
-      );
-    })(),
-    ProductionConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          resource_type: RecsType.Number,
-          amount: RecsType.BigInt,
-          input_count: RecsType.BigInt,
-          output_count: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            name: "ProductionConfig",
-            types: ["u8", "u128", "u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    RealmFreeMintConfig: (() => {
-      return defineComponent(
-        world,
-        { config_id: RecsType.BigInt, detached_resource_id: RecsType.BigInt, detached_resource_count: RecsType.Number },
-        {
-          metadata: {
-            name: "RealmFreeMintConfig",
-            types: ["u128", "u128", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     RoadConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.BigInt,
+          fee_resource_type: RecsType.Number,
+          fee_amount: RecsType.BigInt,
+          speed_up_by: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "RoadConfig",
+            types: ["u128", "u8", "u128", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    SoldierConfig: (() => {
       return defineComponent(
         world,
         {
           config_id: RecsType.BigInt,
           resource_cost_id: RecsType.BigInt,
           resource_cost_count: RecsType.Number,
-          speed_up_by: RecsType.BigInt,
+          wheat_burn_per_soldier: RecsType.BigInt,
+          fish_burn_per_soldier: RecsType.BigInt,
         },
         {
           metadata: {
-            name: "RoadConfig",
-            types: ["u128", "u128", "u32", "u64"],
+            name: "SoldierConfig",
+            types: ["u128", "u128", "u32", "u128", "u128"],
             customTypes: [],
           },
         },
@@ -409,37 +366,14 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    TickConfig: (() => {
+    TravelConfig: (() => {
       return defineComponent(
         world,
-        { config_id: RecsType.BigInt, max_moves_per_tick: RecsType.Number, tick_interval_in_seconds: RecsType.BigInt },
+        { config_id: RecsType.BigInt, free_transport_per_city: RecsType.BigInt },
         {
           metadata: {
-            name: "TickConfig",
-            types: ["u128", "u8", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    TroopConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.BigInt,
-          knight_health: RecsType.Number,
-          paladin_health: RecsType.Number,
-          crossbowman_health: RecsType.Number,
-          knight_strength: RecsType.Number,
-          paladin_strength: RecsType.Number,
-          crossbowman_strength: RecsType.Number,
-          advantage_percent: RecsType.Number,
-          disadvantage_percent: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: "TroopConfig",
-            types: ["u128", "u32", "u32", "u32", "u32", "u32", "u32", "u32", "u32"],
+            name: "TravelConfig",
+            types: ["u128", "u128"],
             customTypes: [],
           },
         },
@@ -496,20 +430,14 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    HyperStructureV2: (() => {
+    EntityName: (() => {
       return defineComponent(
         world,
-        {
-          entity_id: RecsType.BigInt,
-          owner: RecsType.BigInt,
-          completed: RecsType.Boolean,
-          settlement_cost: RecsType.Number,
-          settlment_tax: RecsType.Number,
-        },
+        { entity_id: RecsType.BigInt, name: RecsType.BigInt },
         {
           metadata: {
-            name: "HyperStructureV2",
-            types: ["u128", "u128", "bool", "u32", "u32"],
+            name: "EntityName",
+            types: ["u128", "felt252"],
             customTypes: [],
           },
         },
@@ -518,33 +446,12 @@ export function defineContractComponents(world: World) {
     Level: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.BigInt, level: RecsType.BigInt, valid_until: RecsType.BigInt },
+        { entity_id: RecsType.BigInt, level: RecsType.Number, valid_until: RecsType.Number },
         {
           metadata: {
             name: "Level",
             types: ["u128", "u64", "u64"],
             customTypes: [],
-          },
-        },
-      );
-    })(),
-    Tile: (() => {
-      return defineComponent(
-        world,
-        {
-          _col: RecsType.BigInt,
-          _row: RecsType.BigInt,
-          col: RecsType.BigInt,
-          row: RecsType.BigInt,
-          explored_by_id: RecsType.BigInt,
-          explored_at: RecsType.BigInt,
-          biome: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: "Tile",
-            types: ["u128", "u128", "u128", "u128", "u128", "u64", "enum"],
-            customTypes: ["Biome"],
           },
         },
       );
@@ -578,7 +485,7 @@ export function defineContractComponents(world: World) {
     ArrivalTime: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.BigInt, arrives_at: RecsType.BigInt },
+        { entity_id: RecsType.BigInt, arrives_at: RecsType.Number },
         {
           metadata: {
             name: "ArrivalTime",
@@ -596,15 +503,15 @@ export function defineContractComponents(world: World) {
           sec_per_km: RecsType.Number,
           blocked: RecsType.Boolean,
           round_trip: RecsType.Boolean,
-          start_coord_x: RecsType.BigInt,
-          start_coord_y: RecsType.BigInt,
-          intermediate_coord_x: RecsType.BigInt,
-          intermediate_coord_y: RecsType.BigInt,
+          start_coord_x: RecsType.Number,
+          start_coord_y: RecsType.Number,
+          intermediate_coord_x: RecsType.Number,
+          intermediate_coord_y: RecsType.Number,
         },
         {
           metadata: {
             name: "Movable",
-            types: ["u128", "u16", "bool", "bool", "u128", "u128", "u128", "u128"],
+            types: ["u128", "u16", "bool", "bool", "u32", "u32"],
             customTypes: [],
           },
         },
@@ -618,32 +525,6 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: "AddressName",
             types: ["felt252", "felt252"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    EntityName: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.BigInt, name: RecsType.BigInt },
-        {
-          metadata: {
-            name: "EntityName",
-            types: ["u128", "felt252"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    Orders: (() => {
-      return defineComponent(
-        world,
-        { order_id: RecsType.BigInt, hyperstructure_count: RecsType.BigInt },
-        {
-          metadata: {
-            name: "Orders",
-            types: ["u128", "u128"],
             customTypes: [],
           },
         },
@@ -675,79 +556,14 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Population: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.BigInt, population: RecsType.Number, capacity: RecsType.Number },
-        {
-          metadata: {
-            name: "Population",
-            types: ["u128", "u32", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     Position: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.BigInt, x: RecsType.BigInt, y: RecsType.BigInt },
+        { entity_id: RecsType.BigInt, x: RecsType.Number, y: RecsType.Number },
         {
           metadata: {
             name: "Position",
-            types: ["u128", "u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    Production: (() => {
-      return defineComponent(
-        world,
-        {
-          entity_id: RecsType.BigInt,
-          resource_type: RecsType.Number,
-          building_count: RecsType.BigInt,
-          production_rate: RecsType.BigInt,
-          consumption_rate: RecsType.BigInt,
-          last_updated_tick: RecsType.BigInt,
-          input_finish_tick: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            name: "Production",
-            types: ["u128", "u8", "u128", "u128", "u128", "u64", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    ProductionInput: (() => {
-      return defineComponent(
-        world,
-        {
-          output_resource_type: RecsType.Number,
-          index: RecsType.Number,
-          input_resource_type: RecsType.Number,
-          input_resource_amount: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            name: "ProductionInput",
-            types: ["u8", "u8", "u8", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    ProductionOutput: (() => {
-      return defineComponent(
-        world,
-        { input_resource_type: RecsType.Number, index: RecsType.Number, output_resource_type: RecsType.Number },
-        {
-          metadata: {
-            name: "ProductionOutput",
-            types: ["u8", "u8", "u8"],
+            types: ["u128", "u32", "u32"],
             customTypes: [],
           },
         },
@@ -779,6 +595,19 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Population: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.BigInt, population: RecsType.Number, capacity: RecsType.Number },
+        {
+          metadata: {
+            name: "Population",
+            types: ["u128", "u32", "u32"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Realm: (() => {
       return defineComponent(
         world,
@@ -803,6 +632,13 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    OwnedResourcesTracker: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.BigInt, resource_types: RecsType.BigInt },
+        { metadata: { name: "OwnedResourcesTracker", types: ["u128", "felt252"], customTypes: [] } },
+      );
+    })(),
     DetachedResource: (() => {
       return defineComponent(
         world,
@@ -816,19 +652,6 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: "DetachedResource",
             types: ["u128", "u32", "u8", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    OwnedResourcesTracker: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.BigInt, resource_types: RecsType.BigInt },
-        {
-          metadata: {
-            name: "OwnedResourcesTracker",
-            types: ["u128", "u256"],
             customTypes: [],
           },
         },
@@ -895,29 +718,16 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          start_coord_x: RecsType.BigInt,
-          start_coord_y: RecsType.BigInt,
-          end_coord_x: RecsType.BigInt,
-          end_coord_y: RecsType.BigInt,
+          start_coord_x: RecsType.Number,
+          start_coord_y: RecsType.Number,
+          end_coord_x: RecsType.Number,
+          end_coord_y: RecsType.Number,
           usage_count: RecsType.Number,
         },
         {
           metadata: {
             name: "Road",
-            types: ["u128", "u128", "u128", "u128", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    TickMove: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.BigInt, tick: RecsType.BigInt, count: RecsType.Number },
-        {
-          metadata: {
-            name: "TickMove",
-            types: ["u128", "u64", "u8"],
+            types: ["u32", "u32", "u32", "u32", "u32"],
             customTypes: [],
           },
         },
@@ -949,7 +759,7 @@ export function defineContractComponents(world: World) {
           taker_gives_resources_id: RecsType.BigInt,
           taker_gives_resources_hash: RecsType.BigInt,
           taker_gives_resources_weight: RecsType.BigInt,
-          expires_at: RecsType.BigInt,
+          expires_at: RecsType.Number,
         },
         {
           metadata: {
@@ -968,6 +778,57 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: "Weight",
             types: ["u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Orders: (() => {
+      return defineComponent(
+        world,
+        { order_id: RecsType.BigInt, hyperstructure_count: RecsType.BigInt },
+        {
+          metadata: {
+            name: "Orders",
+            types: ["u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Tile: (() => {
+      return defineComponent(
+        world,
+        {
+          _col: RecsType.BigInt,
+          _row: RecsType.BigInt,
+          col: RecsType.BigInt,
+          row: RecsType.BigInt,
+          explored_by_id: RecsType.BigInt,
+          explored_at: RecsType.Number,
+          biome: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "Tile",
+            types: ["u128", "u128", "u128", "u128", "u128", "u64", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    TickMove: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.BigInt,
+          tick: RecsType.Number,
+          count: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "TickMove",
+            types: ["u128", "u64", "u8"],
             customTypes: [],
           },
         },

@@ -13,7 +13,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import TextInput from "@/ui/elements/TextInput";
 import { SortPanel } from "@/ui/elements/SortPanel";
 import { OrderIcon } from "@/ui/elements/OrderIcon";
-import { useCombat } from "@/hooks/helpers/useCombat";
+// import { useCombat } from "@/hooks/helpers/useCombat";
 import { useLevel } from "@/hooks/helpers/useLevel";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -40,7 +40,7 @@ export const SelectLocationPanel = ({
     },
   } = useDojo();
 
-  const { getDefenceOnRealm } = useCombat();
+  // const { getDefenceOnRealm } = useCombat();
 
   const { getEntityLevel } = useLevel();
   const { getRealmAddressName } = useRealm();
@@ -87,7 +87,7 @@ export const SelectLocationPanel = ({
           }
           const entityId = realm?.entity_id || bank?.entity_id;
           const distance = entityId ? calculateDistance(travelingEntityId, BigInt(entityId)) ?? 0 : 0;
-          const defence = entityId ? getDefenceOnRealm(BigInt(entityId)) : undefined;
+          // const defence = entityId ? getDefenceOnRealm(BigInt(entityId)) : undefined;
           const level = entityId ? getEntityLevel(BigInt(entityId)) : undefined;
           const addressName = entityId ? getRealmAddressName(entityId) : "";
           return {
@@ -97,7 +97,7 @@ export const SelectLocationPanel = ({
             name,
             order: order ? getOrderName(order) : "",
             distance,
-            defence,
+            undefined, // defence,
             level: level?.level,
             addressName,
           };
