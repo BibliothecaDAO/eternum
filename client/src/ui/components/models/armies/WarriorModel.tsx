@@ -101,20 +101,24 @@ export function WarriorModel({
   }, [deterministicRotation, rotationY, nodes.Root, isDead]);
 
   // add actions to onClick
-  const onClickAction = useCallback(() => {
-    if (!isDead && isFriendly) {
-      const action = actions["Sword_Attack"];
-      if (action) {
-        action.reset();
-        action.setLoop(THREE.LoopOnce, 1);
-        action.clampWhenFinished = true;
-        action.play();
+  const onClickAction = useCallback(
+    (e: any) => {
+      e.stopPropagation();
+      if (!isDead && isFriendly) {
+        const action = actions["Sword_Attack"];
+        if (action) {
+          action.reset();
+          action.setLoop(THREE.LoopOnce, 1);
+          action.clampWhenFinished = true;
+          action.play();
+        }
       }
-    }
-    if (onClick) {
-      onClick();
-    }
-  }, [isDead, onClick]);
+      if (onClick) {
+        onClick();
+      }
+    },
+    [isDead, onClick],
+  );
 
   useEffect(() => {
     const runAction = actions["Run"];

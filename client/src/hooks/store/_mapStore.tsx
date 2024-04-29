@@ -1,11 +1,11 @@
 import { HyperStructureInterface, Position, WorldBuildingType } from "@bibliothecadao/eternum";
-import { Hexagon } from "../../types";
+import { ClickedHex, Hexagon, HighlightPosition } from "../../types";
 
 export interface MapStore {
   worldMapBuilding: WorldBuildingType | null;
   setWorldMapBuilding: (building: WorldBuildingType | null) => void;
-  clickedHex: { col: number; row: number; hexIndex: number } | undefined;
-  setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => void;
+  clickedHex: ClickedHex | undefined;
+  setClickedHex: (hex: ClickedHex | undefined) => void;
   setClickedHyperstructure: (hyperstructure: HyperStructureInterface | undefined) => void;
   clickedHyperstructure: HyperStructureInterface | undefined;
   hexData: Hexagon[] | undefined;
@@ -22,6 +22,8 @@ export interface MapStore {
   setIsExploreMode: (isExploreMode: boolean) => void;
   isAttackMode: boolean;
   setIsAttackMode: (isAttackMode: boolean) => void;
+  highlightPositions: HighlightPosition[];
+  setHighlightPositions: (positions: HighlightPosition[]) => void;
 }
 export const createMapStoreSlice = (set: any) => ({
   worldMapBuilding: null,
@@ -29,7 +31,7 @@ export const createMapStoreSlice = (set: any) => ({
     set({ worldMapBuilding: building });
   },
   clickedHex: undefined,
-  setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => {
+  setClickedHex: (hex: ClickedHex | undefined) => {
     set({ clickedHex: hex });
   },
   setClickedHyperstructure: (hyperstructure: HyperStructureInterface | undefined) =>
@@ -51,4 +53,6 @@ export const createMapStoreSlice = (set: any) => ({
   setIsExploreMode: (isExploreMode: boolean) => set({ isExploreMode }),
   isAttackMode: false,
   setIsAttackMode: (isAttackMode: boolean) => set({ isAttackMode }),
+  highlightPositions: [],
+  setHighlightPositions: (positions: HighlightPosition[]) => set({ highlightPositions: positions }),
 });

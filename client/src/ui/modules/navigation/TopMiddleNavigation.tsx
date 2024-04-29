@@ -29,14 +29,18 @@ export const TopMiddleNavigation = () => {
 
   const progress = (timeLeftBeforeNextTick / TIME_PER_TICK) * 100;
 
-  const colRow = getColRowFromUIPosition(highlightPositions[0]?.[0], -highlightPositions[0]?.[1]);
+  const colRow = getColRowFromUIPosition(highlightPositions[0]?.pos[0], -highlightPositions[0]?.pos[1]);
   const radius = 20; // radius of the circle
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (progress / 100) * circumference;
 
   return (
     <div className="flex">
-      {location === '/map' && <div className="flex mr-4"><Compass /></div>}
+      {location === "/map" && (
+        <div className="flex mr-4">
+          <Compass />
+        </div>
+      )}
       <div className="self-center text-center text-4xl px-4 text-gold">{progress.toFixed()}%</div>
       <div className="flex bg-brown/70 rounded-b border-gradient  p-3 w-[600px] text-gold px-4 justify-between border-gold/50 border-b-2">
         <div>

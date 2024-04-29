@@ -195,8 +195,7 @@ const RaiderInfo = ({
             progress={(health / (10 * quantity)) * 100}
           />
         </div>
-        {/* // getting error: The `useDojo` hook must be used within a `DojoProvider`
-        <InventoryResources entityId={raider.entityId} /> */}
+        <InventoryResources entityId={raider.entityId} />
       </div>
     </div>
   );

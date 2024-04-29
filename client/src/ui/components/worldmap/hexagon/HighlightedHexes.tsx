@@ -19,7 +19,6 @@ const HighlightedHexes = () => {
   );
 
   const highlightPositions = useUIStore((state) => state.highlightPositions);
-  const highlightColor = useUIStore((state) => state.highlightColor);
 
   const meshRef = useRef<any>();
 
@@ -33,7 +32,7 @@ const HighlightedHexes = () => {
 
   return (
     <>
-      {highlightPositions.map((highlightPosition, index) => {
+      {highlightPositions.map(({ pos: highlightPosition, color: highlightColor }, index) => {
         return (
           <mesh
             key={index}

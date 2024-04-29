@@ -48,10 +48,6 @@ interface UIStore {
   moveCameraToRealmView: () => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
-  highlightPositions: [number, number, number][];
-  setHighlightPositions: (positions: [number, number, number][]) => void;
-  highlightColor: number;
-  setHighlightColor: (color: number) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore & BuildModeStore>((set, get) => ({
@@ -209,10 +205,6 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore & BuildMo
   },
   isLoadingScreenEnabled: true,
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
-  highlightPositions: [],
-  setHighlightPositions: (positions) => set({ highlightPositions: positions }),
-  highlightColor: 0xffff00,
-  setHighlightColor: (color) => set({ highlightColor: color }),
   ...createPopupsSlice(set, get),
   ...createDataStoreSlice(set),
   ...createMapStoreSlice(set),

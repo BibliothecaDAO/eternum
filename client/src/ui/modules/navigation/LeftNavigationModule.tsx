@@ -66,17 +66,17 @@ export const LeftNavigationModule = () => {
   const { realm } = useHexPosition();
 
   const navigation = [
-    {
-      button: (
-        <CircleButton
-          image={BuildingThumbs.hex}
-          label={entityDetails}
-          active={isPopupOpen(entityDetails)}
-          size="xl"
-          onClick={() => togglePopup(entityDetails)}
-        ></CircleButton>
-      ),
-    },
+    // {
+    //   button: (
+    //     <CircleButton
+    //       image={BuildingThumbs.hex}
+    //       label={entityDetails}
+    //       active={isPopupOpen(entityDetails)}
+    //       size="xl"
+    //       onClick={() => togglePopup(entityDetails)}
+    //     ></CircleButton>
+    //   ),
+    // },
     {
       button: (
         <CircleButton

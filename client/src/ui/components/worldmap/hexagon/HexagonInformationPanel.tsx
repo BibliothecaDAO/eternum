@@ -4,6 +4,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { EntityList } from "../../list/EntityList";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { Battle } from "../../military/Battle";
+import { PositionArmyList } from "../../military/ArmyList";
 
 const CommercePanel = () => <div className="p-2">Commerce</div>;
 
@@ -21,7 +22,10 @@ export const HexagonInformationPanel = () => {
 
   const { playerRealms } = useEntities();
 
+  const { col: x, row: y } = clickedHex!.contractPos;
+
   const panels = [
+    { key: "entities", title: "Armies at Location", content: <PositionArmyList position={{ x, y }} /> },
     { key: "build", title: "Improve Location", content: <BuildPanel playerRealms={playerRealms} /> },
     { key: "combat", title: "Battles at Location", content: <Battle /> },
     // { key: "entities", title: "Commerce", content: <CommercePanel /> },
