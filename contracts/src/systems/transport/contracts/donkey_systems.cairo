@@ -4,7 +4,7 @@ mod donkey_systems {
 
     use eternum::constants::{WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
     use eternum::models::config::{SpeedConfig, CapacityConfig};
-    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::movable::{Movable, MovableImpl, ArrivalTime};
     use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
     use eternum::models::position::{
@@ -51,9 +51,6 @@ mod donkey_systems {
             start_coord: Coord,
             intermediate_coord: Coord
         ) -> ID {
-            let donkey_speed_config = get!(
-                world, (WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE), SpeedConfig
-            );
 
             let is_round_trip: bool = payer_id == receiver_id;
             let arrives_at: u64 = starknet::get_block_timestamp()
@@ -61,7 +58,7 @@ mod donkey_systems {
                     world,
                     start_coord,
                     intermediate_coord,
-                    donkey_speed_config.sec_per_km,
+                    MovableImpl::sec_per_km(world, DONKEY_ENTITY_TYPE),
                     is_round_trip
                 );
 

@@ -27,7 +27,7 @@ mod trade_systems {
     use eternum::constants::{REALM_ENTITY_TYPE, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
     use eternum::models::capacity::{Capacity, CapacityTrait};
     use eternum::models::config::RoadConfig;
-    use eternum::models::config::WeightConfig;
+    use eternum::models::config::{WeightConfig, WeightConfigImpl};
     use eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig};
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::owner::Owner;
@@ -111,11 +111,8 @@ mod trade_systems {
                         maker_gives_resources_count += 1;
 
                         // update maker resources weight
-                        let resource_weight: WeightConfig = get!(
-                            world, (WORLD_CONFIG_ID, *resource_type), WeightConfig
-                        );
-                        maker_gives_resources_weight += resource_weight.weight_gram
-                            * *resource_amount;
+                        maker_gives_resources_weight 
+                            += WeightConfigImpl::get_weight(world, *resource_type, *resource_amount);
 
                         maker_gives_resources_felt_arr.append((*resource_type).into());
                         maker_gives_resources_felt_arr.append((*resource_amount).into());
@@ -153,11 +150,8 @@ mod trade_systems {
                         taker_gives_resources_count += 1;
 
                         // update taker resources weight
-                        let resource_weight: WeightConfig = get!(
-                            world, (WORLD_CONFIG_ID, *resource_type), WeightConfig
-                        );
-                        taker_gives_resources_weight += resource_weight.weight_gram
-                            * *resource_amount;
+                        taker_gives_resources_weight 
+                            += WeightConfigImpl::get_weight(world, *resource_type, *resource_amount);
 
                         taker_gives_resources_felt_arr.append((*resource_type).into());
                         taker_gives_resources_felt_arr.append((*resource_amount).into());
