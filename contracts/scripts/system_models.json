@@ -1,5 +1,5 @@
 {
-  "TEST_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
+  "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
   "REALM_SYSTEMS": [
     "Owner",
     "Realm",
@@ -97,7 +97,7 @@
     "Owner",
     "Capacity"
   ],
-  "COMBAT__SYSTEMS": [
+  "COMBAT_SYSTEMS": [
     "Health",
     "Army",
     "Battle",
