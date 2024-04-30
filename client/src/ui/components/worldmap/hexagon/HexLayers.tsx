@@ -461,6 +461,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
     await exploreHex({
       explorerId: id,
       direction,
+      path,
     });
     clearSelection();
   }

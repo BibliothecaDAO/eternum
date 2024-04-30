@@ -123,6 +123,7 @@ const calculateOffset = (index: number, total: number) => {
 
 const useUpdateAnimationPaths = () => {
   const {
+    account: { account },
     setup: {
       updates: {
         eventUpdates: { createTravelHexEvents },
@@ -137,14 +138,13 @@ const useUpdateAnimationPaths = () => {
   useEffect(() => {
     let subscription: Subscription | undefined;
 
-    const subscribeToExploreEvents = async () => {
+    const subscribeToTravelEvents = async () => {
       const observable = await createTravelHexEvents();
       const sub = observable.subscribe((event) => {
         if (event) {
           const path = [];
-          const realmEntityId = BigInt(event.keys[3]);
-          const myArmy = realmEntityIds.find((realm) => realm.realmEntityId === realmEntityId);
-          const enemy = myArmy ? false : true;
+          const owner = BigInt(event.keys[3]);
+          const enemy = owner !== BigInt(account.address);
           // if my army, then set animation directly when firing tx
           if (!enemy) return;
           const id = BigInt(event.data[0]);
@@ -158,7 +158,7 @@ const useUpdateAnimationPaths = () => {
       });
       subscription = sub;
     };
-    subscribeToExploreEvents();
+    subscribeToTravelEvents();
 
     return () => {
       subscription?.unsubscribe();
