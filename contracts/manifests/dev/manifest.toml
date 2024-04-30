@@ -166,8 +166,8 @@ name = "eternum::systems::name::contracts::name_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x78954c3172d81b184a548c25b9ac6831881f2a1bf0eda25a7576529fe70811e"
-class_hash = "0x37138e3ca174434e603c01b529591844fe0851e05309682ca468085b7f3ea62"
-original_class_hash = "0x37138e3ca174434e603c01b529591844fe0851e05309682ca468085b7f3ea62"
+class_hash = "0x718fcc17739c4c6bfd04fa7e63a073bb703f1bdb163ea12f87a3d2c435a43ca"
+original_class_hash = "0x718fcc17739c4c6bfd04fa7e63a073bb703f1bdb163ea12f87a3d2c435a43ca"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_realm_contracts_realm_systems.json"
 reads = []
@@ -870,6 +870,23 @@ key = true
 [[models.members]]
 name = "max_value"
 type = "u128"
+key = false
+
+[[models]]
+kind = "DojoModel"
+class_hash = "0x36d6da44faf2b642606700c9e2ffcec5e6972dde90a6fa4310d1ed482c96b29"
+original_class_hash = "0x36d6da44faf2b642606700c9e2ffcec5e6972dde90a6fa4310d1ed482c96b29"
+abi = "abis/deployments/models/eternum_models_config_has_claimed_starting_resources.json"
+name = "eternum::models::config::has_claimed_starting_resources"
+
+[[models.members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "claimed"
+type = "bool"
 key = false
 
 [[models]]

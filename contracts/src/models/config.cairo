@@ -266,3 +266,11 @@ impl PopulationConfigImpl of PopulationConfigTrait {
         get!(world, (POPULATION_CONFIG_ID, building_id), PopulationConfig)
     }
 }
+
+
+#[derive(Model, Copy, Drop, Serde)]
+struct HasClaimedStartingResources {
+    #[key]
+    entity_id: u128,
+    claimed: bool,
+}

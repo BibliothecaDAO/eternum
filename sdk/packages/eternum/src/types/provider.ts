@@ -261,3 +261,7 @@ export interface LeaveBattleProps extends SystemSigner {
   battle_id: num.BigNumberish;
   army_id: num.BigNumberish;
 }
+
+export interface CreateStartingResources extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
+}
