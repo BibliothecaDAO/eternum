@@ -14,7 +14,7 @@ import { Compass } from "@/ui/components/worldmap/Compass";
 
 export const TopMiddleNavigation = () => {
   const { hexPosition } = useQuery();
-  const { highlightPositions, moveCameraToRealm, isPopupOpen, togglePopup } = useUIStore();
+  const { highlightPositions, moveCameraToColRow, isPopupOpen, togglePopup } = useUIStore();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const { realmId } = useRealmStore();
   const [location, setLocation] = useLocation();
@@ -67,10 +67,14 @@ export const TopMiddleNavigation = () => {
               setIsLoadingScreenEnabled(true);
               setTimeout(() => {
                 setLocation("/map");
-                moveCameraToRealm(Number(realm?.realmId), 0.01);
+                if (hexPosition.col !== 0 && hexPosition.row !== 0) {
+                  moveCameraToColRow(hexPosition.col, hexPosition.row, 0.01);
+                }
               }, 100);
             } else {
-              moveCameraToRealm(Number(realm?.realmId));
+              if (hexPosition.col !== 0 && hexPosition.row !== 0) {
+                moveCameraToColRow(hexPosition.col, hexPosition.row);
+              }
             }
           }}
           size="xl"
