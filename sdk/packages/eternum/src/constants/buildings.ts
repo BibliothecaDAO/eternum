@@ -8,6 +8,7 @@ interface ResourceDescription {
 }
 
 export const BUILDING_INFORMATION: ResourceDescription = {
+  [BuildingType.Castle]: "Where the heart of your realm beats, the Castle is the foundation of your kingdom.",
   [BuildingType.Resource]: "Resource buildings, harnessing the land's magic, produce essential resources.",
   [BuildingType.Farm]: "Enchanted Farms, blessed by Gaia, yield golden wheat.",
   [BuildingType.FishingVillage]: "Mystical Fishing Villages, guided by the Moon, harvest the bounty of the seas.",
@@ -25,6 +26,7 @@ export const BUILDING_INFORMATION: ResourceDescription = {
 };
 
 export const BUILDING_CAPACITY: { [key: number]: number } = {
+  [BuildingType.Castle]: 5,
   [BuildingType.Resource]: 0,
   [BuildingType.Farm]: 0,
   [BuildingType.FishingVillage]: 0,
@@ -41,6 +43,7 @@ export const BUILDING_CAPACITY: { [key: number]: number } = {
 };
 
 export const BUILDING_POPULATION: { [key: number]: number } = {
+  [BuildingType.Castle]: 0,
   [BuildingType.Resource]: 2,
   [BuildingType.Farm]: 1,
   [BuildingType.FishingVillage]: 1,
@@ -73,6 +76,7 @@ export const BUILDING_PRODUCTION_PER_TICK: { [key: number]: number } = {
 };
 
 export const BUILDING_RESOURCE_PRODUCED: { [key: number]: number } = {
+  [BuildingType.Castle]: 0,
   [BuildingType.Resource]: 0,
   [BuildingType.Farm]: ResourcesIds.Wheat,
   [BuildingType.FishingVillage]: ResourcesIds.Fish,

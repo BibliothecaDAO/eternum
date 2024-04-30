@@ -9,6 +9,7 @@ import {
   BUILDING_RESOURCE_PRODUCED,
   BuildingType,
   RESOURCE_INPUTS,
+  ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
@@ -21,6 +22,7 @@ import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { BUILDING_COSTS } from "@bibliothecadao/eternum";
+import { useProductionManager, useResourceBalance } from "@/hooks/helpers/useResources";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -74,19 +76,38 @@ export const SelectPreviewBuilding = () => {
     setPreviewBuilding(buildingType);
   };
 
+  const { getBalance } = useResourceBalance();
+
   return (
     <div className="flex flex-col overflow-hidden" ref={parent}>
       <div className="grid grid-cols-2 gap-2 p-2">
         {buildingTypes.map((buildingType, index) => {
           const building = BuildingType[buildingType as keyof typeof BuildingType];
+
+          const cost = BUILDING_COSTS[building];
+
+          const hasBalance = Object.keys(cost).every((resourceId) => {
+            const resourceCost = cost[Number(resourceId)];
+            const balance = getBalance(realmEntityId, resourceCost.resource);
+
+            console.log("balance", balance, resourceCost.amount);
+            return balance.balance >= resourceCost.amount;
+          });
+
+          console.log("hasBalance", hasBalance);
+
           return (
             <div
               key={index}
               className={clsx(
-                "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis p-2 cursor-pointer h-24 relative",
+                "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis p-2 cursor-pointer h-24 relative  ",
                 {
                   "!border-lightest !text-lightest": previewBuilding === building,
                 },
+                {
+                  "opacity-50 cursor-not-allowed": (previewBuilding && previewBuilding !== building) || !hasBalance,
+                },
+                {},
               )}
               style={{
                 backgroundImage: `url(${BUILDING_IMAGES_PATH[building]})`,
@@ -94,6 +115,9 @@ export const SelectPreviewBuilding = () => {
                 backgroundPosition: "center",
               }}
               onClick={() => {
+                if ((previewBuilding && previewBuilding !== building) || !hasBalance) {
+                  return;
+                }
                 if (previewBuilding === building) {
                   setPreviewBuilding(null);
                 } else {
@@ -226,9 +250,10 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
       )}
       <h6>Cost</h6>
       <div className="grid grid-cols-2 gap-2 text-sm">
-        {Object.keys(cost).map((resourceId) => {
+        {Object.keys(cost).map((resourceId, index) => {
           return (
             <ResourceCost
+              key={index}
               resourceId={cost[Number(resourceId)].resource}
               amount={cost[Number(resourceId)].amount / 1000}
             />

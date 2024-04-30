@@ -621,6 +621,7 @@ export const RESOURCE_INPUTS: ResourceInputs = {
 };
 
 export const BUILDING_COSTS: ResourceInputs = {
+  [BuildingType.Castle]: [],
   [BuildingType.Resource]: [{ resource: ResourcesIds.Wheat, amount: 500000 }],
   [BuildingType.Farm]: [{ resource: ResourcesIds.Wheat, amount: 900000 }],
   [BuildingType.FishingVillage]: [{ resource: ResourcesIds.Wheat, amount: 900000 }],
