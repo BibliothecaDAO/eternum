@@ -32,6 +32,8 @@ interface UIStore {
   cameraPosition: any;
   setCameraPosition: (position: any) => void;
   cameraTarget: any;
+  compassDirection: number;
+  setCompassDirection: (direction: number) => void;
   tooltip: {
     content: React.ReactNode;
     position: "top" | "left" | "right" | "bottom";
@@ -89,6 +91,8 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore & BuildMo
   setCameraPosition: (position) => set({ cameraPosition: position }),
   cameraTarget: { x: 0, y: 0, z: 0 },
   setCameraTarget: (target) => set({ cameraTarget: target }),
+  compassDirection: 0,
+  setCompassDirection: (direction) => set({ compassDirection: direction }),
   tooltip: null,
   setTooltip: (tooltip) => set({ tooltip }),
   mouseCoords: { x: 0, y: 0 },
