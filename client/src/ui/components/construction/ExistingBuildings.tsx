@@ -13,9 +13,11 @@ import {
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useAnimations, useGLTF, useHelper } from "@react-three/drei";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { BuildingInfo } from "./SelectPreviewBuilding";
+import { useBuildings } from "@/hooks/helpers/useBuildings";
+import useRealmStore from "@/hooks/store/useRealmStore";
 
 enum ModelsIndexes {
   Castle = BuildingType.Castle,
@@ -57,6 +59,8 @@ const ResourceIdToModelIndex: Partial<Record<ResourcesIds, ModelsIndexes>> = {
   [ResourcesIds.AlchemicalSilver]: ModelsIndexes.Forge,
   [ResourcesIds.Adamantine]: ModelsIndexes.Forge,
 };
+
+const redColor = new THREE.Color("red");
 
 export const ExistingBuildings = () => {
   const { hexPosition: globalHex } = useQuery();
@@ -145,6 +149,9 @@ export const BuiltBuilding = ({
   resource?: ResourcesIds;
 }) => {
   const lightRef = useRef<any>();
+  const { isDestroyMode } = useUIStore();
+  const { destroyBuilding } = useBuildings();
+  const { realmEntityId } = useRealmStore();
 
   useHelper(lightRef, THREE.PointLightHelper, 1, "green");
 
@@ -159,7 +166,7 @@ export const BuiltBuilding = ({
 
   const model = useMemo(() => {
     let model = models[modelIndex];
-
+    if (!model) return new THREE.Mesh();
     model.scene.traverse((child: any) => {
       if (child.isMesh) {
         child.castShadow = true;
@@ -172,7 +179,22 @@ export const BuiltBuilding = ({
     return model.scene.clone();
   }, [modelIndex, models]);
 
-  const { actions } = useAnimations(models[modelIndex].animations, model);
+  const redModel = useMemo(() => {
+    let model = models[modelIndex];
+    if (!model) return new THREE.Mesh();
+    const newModel = model.scene.clone();
+    newModel.traverse((node: any) => {
+      if (node instanceof THREE.Mesh) {
+        node.material = node.material.clone();
+        node.material.color.set(redColor);
+        node.material.transparent = true;
+        node.material.opacity = 0.3;
+      }
+    });
+    return newModel;
+  }, [modelIndex, models]);
+
+  const { actions } = useAnimations(model?.animations, model);
 
   useEffect(() => {
     setTimeout(() => {
@@ -184,14 +206,25 @@ export const BuiltBuilding = ({
 
   const [hover, setHover] = useState(false);
 
+  const handleClick = useCallback(() => {
+    if (isDestroyable) {
+      destroyBuilding(realmEntityId, position.col, position.row);
+    }
+  }, [destroyBuilding, position.col, position.row]);
+
+  const isDestroyable = useMemo(() => {
+    return buildingCategory !== BuildingType.Castle && isDestroyMode && hover;
+  }, [buildingCategory, isDestroyMode, hover]);
+
   return (
     <group
       onPointerEnter={() => setHover(true)}
       onPointerLeave={() => setHover(false)}
+      onClick={handleClick}
       position={[x, 2.33, -y]}
       rotation={rotation}
     >
-      <primitive dropShadow scale={3} object={model} />
+      <primitive dropShadow scale={3} object={isDestroyable ? redModel : model} />
       {hover && <HoverBuilding building={buildingCategory} />}
     </group>
   );

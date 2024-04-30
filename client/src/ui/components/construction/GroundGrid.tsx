@@ -11,6 +11,7 @@ import { BuildingType } from "@bibliothecadao/eternum";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { placeholderMaterial } from "@/shaders/placeholderMaterial";
 import { useGLTF } from "@react-three/drei";
+import { useBuildings } from "@/hooks/helpers/useBuildings";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row) || (col === 4 && row === 4);
@@ -24,28 +25,10 @@ const GroundGrid = () => {
     (state) => state,
   );
   const { realmEntityId } = useRealmStore();
-
-  const {
-    account: { account },
-    setup: {
-      systemCalls: { create_building },
-    },
-  } = useDojo();
+  const { placeBuilding } = useBuildings();
 
   const handlePlacement = async (col: number, row: number, previewBuilding: BuildingType) => {
-    await create_building({
-      signer: account,
-      entity_id: realmEntityId as bigint,
-      building_coord: {
-        x: col.toString(),
-        y: row.toString(),
-      },
-      building_category: previewBuilding,
-      produce_resource_type:
-        previewBuilding == BuildingType.Resource && selectedResource
-          ? new CairoOption<Number>(CairoOptionVariant.Some, selectedResource)
-          : new CairoOption<Number>(CairoOptionVariant.None, 0),
-    });
+    await placeBuilding(realmEntityId, col, row, previewBuilding, selectedResource ?? 0);
   };
 
   useEffect(() => {

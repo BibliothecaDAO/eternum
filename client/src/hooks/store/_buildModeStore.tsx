@@ -2,6 +2,8 @@ import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { Entity } from "@dojoengine/recs";
 
 export interface BuildModeStore {
+  isDestroyMode: boolean;
+  setIsDestroyMode: (isDestroyMode: boolean) => void;
   previewBuilding: BuildingType | null;
   setPreviewBuilding: (previewBuilding: BuildingType | null) => void;
   hoveredBuildHex: { col: number; row: number } | null;
@@ -14,6 +16,8 @@ export interface BuildModeStore {
   selectedResource: ResourcesIds | null;
 }
 export const createBuildModeStoreSlice = (set: any) => ({
+  isDestroyMode: false,
+  setIsDestroyMode: (isDestroyMode: boolean) => set({ isDestroyMode }),
   previewBuilding: null,
   setPreviewBuilding: (previewBuilding: BuildingType | null) => {
     set({ previewBuilding });
