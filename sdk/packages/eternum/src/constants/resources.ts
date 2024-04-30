@@ -618,6 +618,7 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   ],
   [ResourcesIds.Wheat]: [],
   [ResourcesIds.Fish]: [],
+  [ResourcesIds.Lords]: [],
 };
 
 export const BUILDING_COSTS: ResourceInputs = {

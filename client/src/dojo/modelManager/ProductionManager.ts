@@ -1,6 +1,7 @@
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ProductionType, ResourceType } from "./types";
+import { RESOURCE_INPUTS } from "@bibliothecadao/eternum";
 
 export class ProductionManager {
   productionModel: Component<ProductionType> | OverridableComponent<ProductionType>;
@@ -22,47 +23,65 @@ export class ProductionManager {
 
   // Retrieves the production data for the current entity
   public getProduction() {
-    return getComponentValue(this.productionModel, getEntityIdFromKeys([this.entityId, this.resourceId]));
+    return this._getProduction(this.resourceId);
   }
 
   public getResource() {
-    return getComponentValue(this.resourceModel, getEntityIdFromKeys([this.entityId, this.resourceId]));
+    return this._getResource(this.resourceId);
   }
 
   public isActive(): boolean {
-    const production = this.getProduction();
+    const production = this._getProduction(this.resourceId);
     return production !== undefined && (production.building_count > 0 || production.consumption_rate > 0);
   }
 
-  public netRate(): [boolean, number] {
-    const production = this.getProduction();
-    if (!production) return [false, 0];
-    const difference = Number(production.production_rate) - Number(production.consumption_rate);
-    return [difference > 0, difference];
+  public netRate(currentTick: number): [boolean, number] {
+    if (!this._inputs_available(currentTick, this.resourceId)) return [false, 0];
+    return this._netRate(this.resourceId);
   }
 
   public balanceExhaustionTick(currentTick: number): number {
-    const production = this.getProduction();
-    const resource = this.getResource();
-
-    if (!production || !resource) return currentTick; // Handling undefined values
-
-    const [sign, value] = this.netRate();
-    if (value > BigInt(0)) {
-      if (!sign) {
-        const lossPerTick = value;
-        const numTicksLeft = Number(resource.balance) / lossPerTick;
-        return currentTick + Number(numTicksLeft); // Assuming conversion is safe
-      } else {
-        return Number.MAX_SAFE_INTEGER;
-      }
-    } else {
-      return Number.MAX_SAFE_INTEGER;
-    }
+    return this._balanceExhaustionTick(currentTick, this.resourceId);
   }
 
   public productionDuration(currentTick: number): number {
-    const production = this.getProduction();
+    return this._productionDuration(currentTick, this.resourceId);
+  }
+
+  public depletionDuration(currentTick: number): number {
+    return this._depletionDuration(currentTick, this.resourceId);
+  }
+
+  public balance(currentTick: number): number {
+    return this._balance(currentTick, this.resourceId);
+  }
+
+  private _balance(currentTick: number, resourceId: bigint): number {
+    const resource = this._getResource(resourceId);
+
+    const [sign, rate] = this._netRate(resourceId);
+
+    if (rate !== 0) {
+      if (sign) {
+        // Positive net rate, increase balance
+        return Number(resource?.balance || 0n) + this._productionDuration(currentTick, resourceId) * rate;
+      } else {
+        // Negative net rate, decrease balance but not below zero
+        let balance = Number(resource?.balance || 0n) - -this._depletionDuration(currentTick, resourceId) * rate;
+        if (balance < 0) {
+          return 0;
+        } else {
+          return balance;
+        }
+      }
+    } else {
+      // No net rate change, return current balance
+      return Number(resource?.balance || 0n);
+    }
+  }
+
+  private _productionDuration(currentTick: number, resourceId: bigint): number {
+    const production = this._getProduction(resourceId);
 
     if (!production) return 0;
 
@@ -77,33 +96,61 @@ export class ProductionManager {
     }
   }
 
-  public depletionDuration(currentTick: number): number {
-    const production = this.getProduction();
+  private _depletionDuration(currentTick: number, resourceId: bigint): number {
+    const production = this._getProduction(resourceId);
     return Number(currentTick) - Number(production?.last_updated_tick);
   }
 
-  public balance(currentTick: number): number {
-    const resource = this.getResource();
+  private _netRate(resourceId: bigint): [boolean, number] {
+    const production = this._getProduction(resourceId);
+    if (!production) return [false, 0];
+    const difference = Number(production.production_rate) - Number(production.consumption_rate);
+    return [difference > 0, difference];
+  }
 
-    const [sign, rate] = this.netRate();
+  private _balanceExhaustionTick(currentTick: number, resourceId: bigint): number {
+    const production = this._getProduction(resourceId);
+    const resource = this._getResource(resourceId);
 
-    console.log(sign, rate);
-    if (rate !== 0) {
-      if (sign) {
-        // Positive net rate, increase balance
-        return Number(resource?.balance || 0n) + this.productionDuration(currentTick) * rate;
+    // If there is no production or resource, return current tick
+    if (!production || !resource) return currentTick;
+
+    const [sign, value] = this.netRate(currentTick);
+    if (value > BigInt(0)) {
+      if (!sign) {
+        const lossPerTick = value;
+        const numTicksLeft = Number(resource.balance) / lossPerTick;
+        return currentTick + Number(numTicksLeft);
       } else {
-        // Negative net rate, decrease balance but not below zero
-        let balance = Number(resource?.balance || 0n) - -this.depletionDuration(currentTick) * rate;
-        if (balance < 0) {
-          return 0;
-        } else {
-          return balance;
-        }
+        return Number.MAX_SAFE_INTEGER;
       }
     } else {
-      // No net rate change, return current balance
-      return Number(resource?.balance || 0n);
+      return Number.MAX_SAFE_INTEGER;
     }
+  }
+
+  private _inputs_available(currentTick: number, resourceId: bigint): boolean {
+    const inputs = RESOURCE_INPUTS[Number(resourceId.toString())];
+
+    // Ensure inputs is an array before proceeding
+    if (inputs.length == 0) {
+      return true;
+    }
+
+    for (const input of inputs) {
+      const balance = this._balance(currentTick, BigInt(input.resource));
+      if (balance === undefined || balance <= 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private _getProduction(resourceId: bigint) {
+    return getComponentValue(this.productionModel, getEntityIdFromKeys([this.entityId, resourceId]));
+  }
+
+  private _getResource(resourceId: bigint) {
+    return getComponentValue(this.resourceModel, getEntityIdFromKeys([this.entityId, resourceId]));
   }
 }

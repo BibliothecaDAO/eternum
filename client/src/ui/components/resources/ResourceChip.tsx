@@ -27,7 +27,7 @@ export const ResourceChip = ({
   }, [productionManager, production, currentTick]);
 
   const netRate = useMemo(() => {
-    return productionManager.netRate()[1];
+    return productionManager.netRate(currentTick)[1];
   }, [productionManager, production]);
 
   return (
