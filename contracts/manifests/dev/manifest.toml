@@ -142,8 +142,8 @@ name = "eternum::systems::leveling::contracts::leveling_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0xe41bb92d0734340f4d6ad423426f5bf2f611fa13b3c94d325c5f3b64c7ddea"
-class_hash = "0x18148f0255c62a0f1289e6f7d19ccb41f6956f5f90b171faade641348480bf4"
-original_class_hash = "0x18148f0255c62a0f1289e6f7d19ccb41f6956f5f90b171faade641348480bf4"
+class_hash = "0x46e48012a0f37f9802ee94bf9e02cba27e5f241b8762cc0d5051b1db51b09d4"
+original_class_hash = "0x46e48012a0f37f9802ee94bf9e02cba27e5f241b8762cc0d5051b1db51b09d4"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_map_contracts_map_systems.json"
 reads = []
@@ -213,18 +213,6 @@ name = "eternum::systems::trade::contracts::trade_systems::trade_systems"
 
 [[contracts]]
 kind = "DojoContract"
-address = "0x52c56d9abe99f6da1802f0f1bb850bd27336cd05fda5575c21fb20a9c87b116"
-class_hash = "0x7e9f091fbdd74a82bc19eb1c92aa72e545ca41ae09a800c0b63cbcef0fb18fd"
-original_class_hash = "0x7e9f091fbdd74a82bc19eb1c92aa72e545ca41ae09a800c0b63cbcef0fb18fd"
-base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
-abi = "abis/deployments/contracts/eternum_systems_transport_contracts_caravan_systems_caravan_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::transport::contracts::caravan_systems::caravan_systems"
-
-[[contracts]]
-kind = "DojoContract"
 address = "0x390665298c3fd9c43ea46dfc0e0bb66a7eb9778be2c74e21e4380620118e054"
 class_hash = "0x18cc49caf5cc1f0e5ca90d5facdc8423eff0b6d6e1b1f8fac301217589831eb"
 original_class_hash = "0x18cc49caf5cc1f0e5ca90d5facdc8423eff0b6d6e1b1f8fac301217589831eb"
@@ -249,21 +237,9 @@ name = "eternum::systems::transport::contracts::road_systems::road_systems"
 
 [[contracts]]
 kind = "DojoContract"
-address = "0x7f88d8bb58c91950a32c2ddb554466a75f05034d5c2f950046755e8945dcf1f"
-class_hash = "0x35cd40aa3dcd0b7af2cd1c7f792f843130b8c9237cbf096137fb9bc5e27fa2d"
-original_class_hash = "0x35cd40aa3dcd0b7af2cd1c7f792f843130b8c9237cbf096137fb9bc5e27fa2d"
-base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
-abi = "abis/deployments/contracts/eternum_systems_transport_contracts_transport_unit_systems_transport_unit_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::transport::contracts::transport_unit_systems::transport_unit_systems"
-
-[[contracts]]
-kind = "DojoContract"
 address = "0xe1f49815a807210be14ca3310a70cadcea3b4093c48b7303494adcffcf2715"
-class_hash = "0x2e1f4cceb1ffa31529f580d9114a461fe5c42bfe265ae4f0a8c803a7389b24b"
-original_class_hash = "0x2e1f4cceb1ffa31529f580d9114a461fe5c42bfe265ae4f0a8c803a7389b24b"
+class_hash = "0x539b436087ab52d9d74a1ef716db60ee069943b9b891609c70dbb57c68092fb"
+original_class_hash = "0x539b436087ab52d9d74a1ef716db60ee069943b9b891609c70dbb57c68092fb"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_transport_contracts_travel_systems_travel_systems.json"
 reads = []
@@ -436,28 +412,6 @@ key = true
 [[models.members]]
 name = "weight_gram"
 type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x504ed6ae73d71dc09633dc6593771e3948147598a1d8bf00475d02db3ff9f3d"
-original_class_hash = "0x504ed6ae73d71dc09633dc6593771e3948147598a1d8bf00475d02db3ff9f3d"
-abi = "abis/deployments/models/eternum_models_caravan_caravan_members.json"
-name = "eternum::models::caravan::caravan_members"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "key"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "count"
-type = "u32"
 key = false
 
 [[models]]
@@ -896,33 +850,6 @@ key = false
 
 [[models.members]]
 name = "max_value"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x4b5601b84471530a377d4943a1cc910acfdadb13048d1295e1b5d396eab386b"
-original_class_hash = "0x4b5601b84471530a377d4943a1cc910acfdadb13048d1295e1b5d396eab386b"
-abi = "abis/deployments/models/eternum_models_config_labor_config.json"
-name = "eternum::models::config::labor_config"
-
-[[models.members]]
-name = "config_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "base_labor_units"
-type = "u64"
-key = false
-
-[[models.members]]
-name = "base_resources_per_cycle"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "base_food_per_cycle"
 type = "u128"
 key = false
 
@@ -1420,48 +1347,6 @@ key = false
 
 [[models.members]]
 name = "items_count"
-type = "u128"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x3aaa3fa0c0ecb800ac7ba14a3f9318917b2cf26e339b5716453c23a75bda750"
-original_class_hash = "0x3aaa3fa0c0ecb800ac7ba14a3f9318917b2cf26e339b5716453c23a75bda750"
-abi = "abis/deployments/models/eternum_models_labor_auction_labor_auction.json"
-name = "eternum::models::labor_auction::labor_auction"
-
-[[models.members]]
-name = "zone"
-type = "u8"
-key = true
-
-[[models.members]]
-name = "decay_constant_mag"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "decay_constant_sign"
-type = "bool"
-key = false
-
-[[models.members]]
-name = "per_time_unit"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "start_time"
-type = "u64"
-key = false
-
-[[models.members]]
-name = "sold"
-type = "u128"
-key = false
-
-[[models.members]]
-name = "price_update_interval"
 type = "u128"
 key = false
 

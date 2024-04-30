@@ -43,7 +43,7 @@ mod travel_systems {
         #[key]
         destination_coord_y: u128,
         #[key]
-        realm_entity_id: u128,
+        owner: ContractAddress,
         entity_id: u128,
         travel_time: u64,
         travel_path: Span<Coord>,
@@ -206,7 +206,7 @@ mod travel_systems {
             );
 
             // emit travel event 
-            let entity_owner = get!(world, transport_id, EntityOwner);
+            let owner = get!(world, transport_id, Owner);
             emit!(
                 world,
                 (
@@ -216,7 +216,7 @@ mod travel_systems {
                             destination_coord_y: to_coord.y,
                             travel_time: 0,
                             travel_path: travel_path.span(),
-                            realm_entity_id: entity_owner.entity_owner_id,
+                            owner: owner.address,
                             entity_id: transport_id
                         }
                     ),
@@ -276,7 +276,7 @@ mod travel_systems {
             );
 
             // emit travel event 
-            let entity_owner = get!(world, transport_id, EntityOwner);
+            let owner = get!(world, transport_id, Owner);
             emit!(
                 world,
                 (
@@ -286,7 +286,7 @@ mod travel_systems {
                             destination_coord_y: to_coord.y,
                             travel_time,
                             travel_path: array![from_coord, to_coord].span(),
-                            realm_entity_id: entity_owner.entity_owner_id,
+                            owner: owner.address,
                             entity_id: transport_id
                         }
                     ),
