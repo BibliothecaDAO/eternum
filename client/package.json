@@ -29,6 +29,7 @@
     "@react-three/drei": "^9.101.0",
     "@react-three/fiber": "^8.16.1",
     "@react-three/postprocessing": "2.16.2",
+    "@reactour/tour": "^3.6.1",
     "@svgr/rollup": "^8.1.0",
     "@types/react-resizable": "^3.0.7",
     "@vercel/analytics": "^1.2.2",

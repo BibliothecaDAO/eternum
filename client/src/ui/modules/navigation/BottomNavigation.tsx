@@ -26,6 +26,7 @@ export const BottomNavigation = () => {
         <CircleButton
           image="/images/buildings/thumb/realm.png"
           label="Realms"
+          className="forth-step"
           active={activeBar === "R"}
           size="xl"
           onClick={() => toggleBar("R")}

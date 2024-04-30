@@ -41,7 +41,7 @@ export const TopMiddleNavigation = () => {
           <Compass />
         </div>
       )}
-      <div className="self-center text-center text-4xl px-4 text-gold">{progress.toFixed()}%</div>
+      <div className="self-center text-center text-4xl px-4 text-gold second-step">{progress.toFixed()}%</div>
       <div className="flex bg-brown/70 rounded-b border-gradient  p-3 w-[600px] text-gold px-4 justify-between border-gold/50 border-b-2">
         <div>
           <h3 className="self-center">{realmId ? getRealmNameById(realmId as any | "") : ""}</h3>
@@ -59,6 +59,7 @@ export const TopMiddleNavigation = () => {
       </div>
       <div className="self-center px-3 flex space-x-2">
         <CircleButton
+          className="third-step"
           image={BuildingThumbs.worldMap}
           label="world map"
           onClick={() => {

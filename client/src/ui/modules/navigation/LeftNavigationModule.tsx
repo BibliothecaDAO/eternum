@@ -10,6 +10,7 @@ import { ReactComponent as PickAxe } from "@/assets/icons/common/pick-axe.svg";
 import { ReactComponent as LeaderBoard } from "@/assets/icons/common/leaderboard.svg";
 import { ReactComponent as Donkey } from "@/assets/icons/units/donkey-circle.svg";
 import { ReactComponent as City } from "@/assets/icons/common/city.svg";
+import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import {
   banks,
   entityDetails,
@@ -40,6 +41,7 @@ import { Trading } from "../trade/Trading";
 import { Construction } from "../construction/Construction";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
 import { Assistant } from "../assistant/Assistant";
+import { useTour } from "@reactour/tour";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -61,7 +63,7 @@ export const LeftNavigationModule = () => {
   const { moveCameraToRealm } = useUIStore();
 
   const { realmEntityId } = useRealmStore();
-
+  const { setIsOpen } = useTour();
   const navigation = [
     {
       button: (
@@ -182,6 +184,13 @@ export const LeftNavigationModule = () => {
         </CircleButton>
       ),
     },
+    {
+      button: (
+        <CircleButton active={isPopupOpen(settings)} label={"walkthrough"} size="sm" onClick={() => setIsOpen(true)}>
+          <Refresh className="w-4" />
+        </CircleButton>
+      ),
+    },
   ];
 
   if (realmEntityId === undefined) {
@@ -190,7 +199,7 @@ export const LeftNavigationModule = () => {
 
   return (
     <>
-      <div className="flex flex-col py-2">
+      <div className="flex flex-col py-2 first-step">
         {navigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
