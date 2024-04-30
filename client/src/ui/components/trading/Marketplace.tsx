@@ -275,7 +275,7 @@ const MarketplaceOverviewPanel = ({
     <div className="flex flex-col p-3">
       <div className="flex items-center justify-between">
         <TextInput
-          className="border border-gold !w-auto !text-light-pink !w-34 !flex-grow-0 text-xs"
+          className="border border-gold !w-auto !w-34 !flex-grow-0 text-xs"
           value={search}
           onChange={setSearch}
           placeholder="Search resource..."
