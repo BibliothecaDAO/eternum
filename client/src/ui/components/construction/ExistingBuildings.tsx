@@ -28,6 +28,7 @@ enum ModelsIndexes {
   Stable = BuildingType.Stable,
   Forge = 22,
   LumberMill = 23,
+  Dragonhide = 24,
   WorkersHut = BuildingType.WorkersHut,
   Storehouse = BuildingType.Storehouse,
 }
@@ -52,7 +53,7 @@ const ResourceIdToModelIndex: Partial<Record<ResourcesIds, ModelsIndexes>> = {
   [ResourcesIds.Hartwood]: ModelsIndexes.LumberMill,
   [ResourcesIds.Ironwood]: ModelsIndexes.LumberMill,
   [ResourcesIds.Mithral]: ModelsIndexes.Forge,
-  [ResourcesIds.Dragonhide]: ModelsIndexes.Forge,
+  [ResourcesIds.Dragonhide]: ModelsIndexes.Dragonhide,
   [ResourcesIds.AlchemicalSilver]: ModelsIndexes.Forge,
   [ResourcesIds.Adamantine]: ModelsIndexes.Forge,
 };
@@ -81,6 +82,7 @@ export const ExistingBuildings = () => {
       [ModelsIndexes.Storehouse]: useGLTF("/models/buildings/storehouse.glb"),
       [ModelsIndexes.Forge]: useGLTF("/models/buildings/forge.glb"),
       [ModelsIndexes.LumberMill]: useGLTF("/models/buildings/lumber_mill.glb"),
+      [ModelsIndexes.Dragonhide]: useGLTF("/models/buildings/dragonhide.glb"),
     }),
     [],
   );
