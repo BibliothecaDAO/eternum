@@ -122,7 +122,10 @@ export const SelectPreviewBuilding = () => {
                 }
               }}
             >
-              <div className="absolute w-full h-full bg-black/50 text-white p-4 text-xs">not enough resources</div>
+              {!hasBalance && (
+                <div className="absolute w-full h-full bg-black/50 text-white p-4 text-xs">not enough resources</div>
+              )}
+
               <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50">
                 {BuildingEnumToString[building]}
               </div>
