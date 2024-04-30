@@ -37,6 +37,9 @@ export function useBuildings() {
         inner_row: BigInt(row),
         category,
         produced_resource_type: resourceType ? resourceType : 0,
+        bonus_percent: 0n,
+        entity_id: realmEntityId,
+        outer_entity_id: realmEntityId,
       },
     });
 
@@ -52,13 +55,32 @@ export function useBuildings() {
         buildingType == BuildingType.Resource && resourceType
           ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
           : new CairoOption<Number>(CairoOptionVariant.None, 0),
-    }).catch(() => {
+    }).finally(() => {
       Building.removeOverride(overrideId);
     });
   };
 
   const destroyBuilding = async (realmEntityId: bigint, col: number, row: number) => {
     // add optimisitc rendering
+    const realmPosition = getComponentValue(Position, getEntityIdFromKeys([realmEntityId]));
+    if (!realmPosition) return;
+    const { x: outercol, y: outerrow } = realmPosition;
+    const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
+    const overrideId = uuid();
+    Building.addOverride(overrideId, {
+      entity,
+      value: {
+        outer_col: BigInt(outercol),
+        outer_row: BigInt(outerrow),
+        inner_col: BigInt(col),
+        inner_row: BigInt(row),
+        category: "None",
+        produced_resource_type: 0,
+        bonus_percent: 0n,
+        entity_id: 0n,
+        outer_entity_id: 0n,
+      },
+    });
     await destroy_building({
       signer: account,
       entity_id: realmEntityId as bigint,
@@ -66,6 +88,8 @@ export function useBuildings() {
         x: col.toString(),
         y: row.toString(),
       },
+    }).finally(() => {
+      Building.removeOverride(overrideId);
     });
   };
 
