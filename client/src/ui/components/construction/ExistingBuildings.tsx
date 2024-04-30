@@ -18,6 +18,7 @@ import * as THREE from "three";
 import { BuildingInfo } from "./SelectPreviewBuilding";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
 import useRealmStore from "@/hooks/store/useRealmStore";
+import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 
 enum ModelsIndexes {
   Castle = BuildingType.Castle,
@@ -33,6 +34,7 @@ enum ModelsIndexes {
   Dragonhide = 24,
   WorkersHut = BuildingType.WorkersHut,
   Storehouse = BuildingType.Storehouse,
+  Bank = 25,
 }
 
 const ResourceIdToModelIndex: Partial<Record<ResourcesIds, ModelsIndexes>> = {
@@ -65,6 +67,7 @@ const redColor = new THREE.Color("red");
 export const ExistingBuildings = () => {
   const { hexPosition: globalHex } = useQuery();
   const { existingBuildings, setExistingBuildings } = useUIStore((state) => state);
+  const { hexType } = useHexPosition();
 
   const {
     setup: {
@@ -87,6 +90,7 @@ export const ExistingBuildings = () => {
       [ModelsIndexes.Forge]: useGLTF("/models/buildings/forge.glb"),
       [ModelsIndexes.LumberMill]: useGLTF("/models/buildings/lumber_mill.glb"),
       [ModelsIndexes.Dragonhide]: useGLTF("/models/buildings/dragonhide.glb"),
+      [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb"),
     }),
     [],
   );
@@ -127,7 +131,7 @@ export const ExistingBuildings = () => {
       ))}
       <BuiltBuilding
         models={models}
-        buildingCategory={BuildingType.Castle}
+        buildingCategory={hexType === HexType.BANK ? ModelsIndexes.Bank : BuildingType.Castle}
         position={{ col: 4, row: 4 }}
         rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
       />
