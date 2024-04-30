@@ -15,6 +15,7 @@ struct Population {
 impl PopulationImpl of PopulationTrait {
     fn increase_population(ref self: Population, amount: u32) -> u32 {
         self.population += amount;
+        self.assert_within_capacity();
         self.population
     }
     fn decrease_population(ref self: Population, amount: u32) -> u32 {

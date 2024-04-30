@@ -5,10 +5,12 @@ import * as THREE from "three";
 import { getUIPositionFromColRow } from "../../utils/utils";
 import { useEffect, useMemo } from "react";
 import { ExistingBuildings } from "./ExistingBuildings";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
 import { BuildingEnumToString, BuildingType } from "@bibliothecadao/eternum";
-import { BuildingInfo } from "./SelectPreviewBuilding";
+
+export interface OriginalModels {
+  [key: number]: THREE.Group;
+}
 
 const BuildArea = () => {
   return (
@@ -32,41 +34,39 @@ const BuildingPreview = () => {
     return getUIPositionFromColRow(hoveredBuildHex.col, hoveredBuildHex.row, true);
   }, [hoveredBuildHex]);
 
-  const originalModels = useGLTF([
-    "/models/buildings/castle.glb",
-    "/models/buildings/mine.glb",
-    "/models/buildings/farm.glb",
-    "/models/buildings/fishery.glb",
-    "/models/buildings/barracks.glb",
-    "/models/buildings/market.glb",
-    "/models/buildings/archer_range.glb",
-    "/models/buildings/stable.glb",
-    "/models/buildings/workers_hut.glb",
-    "/models/buildings/workers_hut.glb",
-    "/models/buildings/workers_hut.glb",
-  ]);
+  const originalModels: OriginalModels = useMemo(
+    () => ({
+      [BuildingType.Castle]: useGLTF("/models/buildings/castle.glb").scene.clone(),
+      [BuildingType.Resource]: useGLTF("/models/buildings/mine.glb").scene.clone(),
+      [BuildingType.Farm]: useGLTF("/models/buildings/farm.glb").scene.clone(),
+      [BuildingType.FishingVillage]: useGLTF("/models/buildings/fishery.glb").scene.clone(),
+      [BuildingType.Barracks]: useGLTF("/models/buildings/barracks.glb").scene.clone(),
+      [BuildingType.Market]: useGLTF("/models/buildings/market.glb").scene.clone(),
+      [BuildingType.ArcheryRange]: useGLTF("/models/buildings/archer_range.glb").scene.clone(),
+      [BuildingType.Stable]: useGLTF("/models/buildings/stable.glb").scene.clone(),
+      [BuildingType.WorkersHut]: useGLTF("/models/buildings/workers_hut.glb").scene.clone(),
+      [BuildingType.Storehouse]: useGLTF("/models/buildings/storehouse.glb").scene.clone(),
+    }),
+    [],
+  );
 
-  // Clone all models for manipulation
-  const models = useMemo(() => originalModels.map((model) => model.scene.clone()), [originalModels]);
-
-  console.log(previewBuilding);
   useEffect(() => {
     if (!previewBuilding || !hoveredBuildHex) return;
     const newColor = isHexOccupied(hoveredBuildHex.col, hoveredBuildHex.row, existingBuildings) ? "red" : "green";
-    models[previewBuilding - 1].traverse((node) => {
+    originalModels[Number(previewBuilding)].traverse((node) => {
       if (node instanceof THREE.Mesh) {
         node.material = node.material.clone();
         node.material.color.set(newColor);
         node.material.transparent = true;
-        node.material.opacity = 0.5;
+        node.material.opacity = 0.8;
       }
     });
-  }, [previewBuilding, hoveredBuildHex, existingBuildings, models]);
+  }, [previewBuilding, hoveredBuildHex, existingBuildings, originalModels]);
 
   const previewModel = useMemo(() => {
     if (!previewBuilding) return null;
-    return models[previewBuilding - 1];
-  }, [previewBuilding, models]);
+    return originalModels[previewBuilding];
+  }, [previewBuilding, originalModels]);
 
   return previewModel && previewCoords ? (
     <>

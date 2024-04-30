@@ -1,7 +1,16 @@
 import clsx from "clsx";
 
 import useUIStore from "@/hooks/store/useUIStore";
-import { BUILDING_INFORMATION, BuildingType, RESOURCE_INPUTS, findResourceById } from "@bibliothecadao/eternum";
+import {
+  BUILDING_CAPACITY,
+  BUILDING_INFORMATION,
+  BUILDING_POPULATION,
+  BUILDING_PRODUCTION_PER_TICK,
+  BUILDING_RESOURCE_PRODUCED,
+  BuildingType,
+  RESOURCE_INPUTS,
+  findResourceById,
+} from "@bibliothecadao/eternum";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
@@ -47,8 +56,7 @@ export const SelectPreviewBuilding = () => {
       key !== "DonkeyFarm" &&
       key !== "TradingPost" &&
       key !== "WatchTower" &&
-      key !== "Walls" &&
-      key !== "Storehouse",
+      key !== "Walls",
   );
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
@@ -163,34 +171,14 @@ export const SelectPreviewBuilding = () => {
   );
 };
 
-const MineInfo = () => {
-  return (
-    <div className="flex flex-col text-white text-sm p-2">
-      <div className="font-bold">Producing</div>
-      <div className="flex space-x-2 font-bold">
-        <div>+100</div> <ResourceIcon resource={"Ruby"} size="xs" />
-        /tick
-      </div>
-
-      <div className="mt-3">Consuming</div>
-      <div className="font-bold flex space-x-2">
-        <div className="text-order-giants">-50</div> <ResourceIcon resource={"Wood"} size="xs" />
-        /tick
-      </div>
-      <div className="font-bold flex space-x-2">
-        <div className="text-order-giants">-50</div> <ResourceIcon resource={"Coal"} size="xs" />
-        /tick
-      </div>
-    </div>
-  );
-};
-
 export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
   const cost = RESOURCE_INPUTS[resourceId];
 
   return (
     <div className="flex flex-col text-white text-sm p-1 space-y-1">
-      <h5 className="text-center">+10 per day</h5>
+      <h5 className="text-center">
+        <ResourceIcon resource={findResourceById(resourceId)?.trait || ""} size="md" /> +10 per day
+      </h5>
       <div className="font-bold text-center">Input Costs</div>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
@@ -210,10 +198,34 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
   const cost = BUILDING_COSTS[buildingId];
 
   const information = BUILDING_INFORMATION[buildingId];
+
+  const population = BUILDING_POPULATION[buildingId];
+
+  const capacity = BUILDING_CAPACITY[buildingId];
+
+  const perTick = BUILDING_PRODUCTION_PER_TICK[buildingId];
+
+  const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
+
   return (
-    <div>
-      <div className="p-2 text-xs w-32">{information}</div>
-      <div className="grid grid-cols-2 gap-2">
+    <div className="p-2 text-sm">
+      <h6>Bonus</h6>
+
+      <div>Population: +{population}</div>
+      <div>Capacity: +{capacity}</div>
+      {resourceProduced !== 0 && (
+        <div className=" flex">
+          <div>Produces: +{perTick}</div>
+
+          <ResourceIcon
+            className="self-center ml-3"
+            resource={findResourceById(resourceProduced)?.trait || ""}
+            size="md"
+          />
+        </div>
+      )}
+      <h6>Cost</h6>
+      <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(cost).map((resourceId) => {
           return (
             <ResourceCost

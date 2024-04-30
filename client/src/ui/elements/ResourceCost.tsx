@@ -38,7 +38,7 @@ export const ResourceCost = ({
           type === "horizontal" ? "ml-1 font-bold  text-left" : "items-center",
         )}
       >
-        <div onClick={onClick} className={clsx("relative text-xxs", props.color)}>
+        <div onClick={onClick} className={clsx("relative text-xs", props.color)}>
           {props.color && props.amount > 0 ? "+" : ""}
           {Intl.NumberFormat("en-US", {
             notation: "compact",

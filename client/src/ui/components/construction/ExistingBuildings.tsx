@@ -10,17 +10,18 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 enum ModelsIndexes {
-  Castle = 0,
-  Mine = 1,
-  Farm = 2,
-  Fishery = 3,
-  Barracks = 4,
-  Market = 5,
-  ArcheryRange = 6,
-  Stable = 7,
-  Forge = 8,
-  LumberMill = 9,
-  WorkersHut = 10,
+  Castle = BuildingType.Castle,
+  Mine = 21,
+  Farm = BuildingType.Farm,
+  Fishery = BuildingType.FishingVillage,
+  Barracks = BuildingType.Barracks,
+  Market = BuildingType.Market,
+  ArcheryRange = BuildingType.ArcheryRange,
+  Stable = BuildingType.Stable,
+  Forge = 22,
+  LumberMill = 23,
+  WorkersHut = BuildingType.WorkersHut,
+  Storehouse = BuildingType.Storehouse,
 }
 
 const ResourceIdToModelIndex: Partial<Record<ResourcesIds, ModelsIndexes>> = {
@@ -58,28 +59,23 @@ export const ExistingBuildings = () => {
     },
   } = useDojo();
 
-  const models = useGLTF([
-    "/models/buildings/castle.glb",
-    "/models/buildings/mine.glb",
-    "/models/buildings/farm.glb",
-    "/models/buildings/fishery.glb",
-    "/models/buildings/barracks.glb",
-    "/models/buildings/market.glb",
-    "/models/buildings/archer_range.glb",
-    "/models/buildings/stable.glb",
-    "/models/buildings/forge.glb",
-    "/models/buildings/lumber_mill.glb",
-    "/models/buildings/workers_hut.glb",
-  ]);
-  useEffect(() => {
-    models.forEach((model) => {
-      model.scene.traverse((child: any) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-        }
-      });
-    });
-  }, [models]);
+  const models = useMemo(
+    () => ({
+      [ModelsIndexes.Castle]: useGLTF("/models/buildings/castle.glb"),
+      [ModelsIndexes.Mine]: useGLTF("/models/buildings/mine.glb"),
+      [ModelsIndexes.Farm]: useGLTF("/models/buildings/farm.glb"),
+      [ModelsIndexes.Fishery]: useGLTF("/models/buildings/fishery.glb"),
+      [ModelsIndexes.Barracks]: useGLTF("/models/buildings/barracks.glb"),
+      [ModelsIndexes.Market]: useGLTF("/models/buildings/market.glb"),
+      [ModelsIndexes.ArcheryRange]: useGLTF("/models/buildings/archer_range.glb"),
+      [ModelsIndexes.Stable]: useGLTF("/models/buildings/stable.glb"),
+      [ModelsIndexes.WorkersHut]: useGLTF("/models/buildings/workers_hut.glb"),
+      [ModelsIndexes.Storehouse]: useGLTF("/models/buildings/storehouse.glb"),
+      [ModelsIndexes.Forge]: useGLTF("/models/buildings/forge.glb"),
+      [ModelsIndexes.LumberMill]: useGLTF("/models/buildings/lumber_mill.glb"),
+    }),
+    [],
+  );
 
   const builtBuildings = useEntityQuery([
     Has(Building),
@@ -138,22 +134,29 @@ export const BuiltBuilding = ({
   rotation?: THREE.Euler;
   resource?: ResourcesIds;
 }) => {
+  const lightRef = useRef<any>();
+
+  useHelper(lightRef, THREE.PointLightHelper, 1, "green");
+
   const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
 
   const modelIndex = useMemo(() => {
     if (buildingCategory === BuildingType.Resource && resource) {
       return ResourceIdToModelIndex[resource] || ModelsIndexes.Mine;
     }
-    return buildingCategory - 1;
+    return buildingCategory;
   }, [buildingCategory, resource]);
 
   const model = useMemo(() => {
-    return models[modelIndex].scene.clone();
+    let model = models[modelIndex];
+
+    model.scene.traverse((child: any) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+      }
+    });
+    return model.scene.clone();
   }, [modelIndex, models]);
-
-  const lightRef = useRef<any>();
-
-  useHelper(lightRef, THREE.PointLightHelper, 1, "green");
 
   const { actions } = useAnimations(models[modelIndex].animations, model);
 

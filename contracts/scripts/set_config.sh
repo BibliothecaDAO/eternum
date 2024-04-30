@@ -30,8 +30,8 @@ export RESOURCE_BUILDING_COST=500
 export FARM_BUILDING_COST=900
 export MARKET_BUILDING_COST=1500
 export MILITARY_BUILDING_COST=2000
-export WORKERS_HUT_BUILDING_COST=100
-export WALLS_BUILDING_COST=1000
+export WORKERS_HUT_BUILDING_COST=500
+export WALLS_BUILDING_COST=3000
 export STOREHOUSE_BUILDING_COST=2000
 
 # // population
@@ -139,16 +139,16 @@ commands+=(
 
 commands+=(
     "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FARM,$WHEAT,1,$WHEAT,$(($FARM_BUILDING_COST * $RESOURCE_PRECISION))"
-
     "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FISHING_VILLAGE,$FISH,1,$WHEAT,$(($FARM_BUILDING_COST * $RESOURCE_PRECISION))"
 
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_WORKERS_HUT,$WHEAT,$(($WORKERS_HUT_BUILDING_COST * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_STOREHOUSE,$WHEAT,$(($STOREHOUSE_BUILDING_COST * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_MARKET,$DONKEY,1,$WHEAT,$(($MARKET_BUILDING_COST * $RESOURCE_PRECISION))"
+
     "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_BARRACKS,$KNIGHT,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
-
     "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_ARCHERY_RANGE,$CROSSBOWMEN,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
-
     "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_STABLE,$PALADIN,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
 
-    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_MARKET,$DONKEY,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
 )
 
 # Resource Buildings - All the same for now.
@@ -207,7 +207,7 @@ commands+=(
     "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $MITHRAL,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$ADAMANTINE,3000,$DRAGONHIDE,1200"
     "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DRAGONHIDE,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$MITHRAL,3200,$WOOD,436100"
 
-    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY,$DONKEYS_PER_TICK,1,$WHEAT,2500"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY,$(($DONKEYS_PER_TICK * $RESOURCE_PRECISION)),1,$WHEAT,2500"
 
     "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $KNIGHT,$(($KNIGHTS_PER_TICK * $RESOURCE_PRECISION)),3,$WHEAT,2500,$SILVER,1000,$IRONWOOD,2500"
     "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $CROSSBOWMEN,$(($CROSSBOWMEN_PER_TICK * $RESOURCE_PRECISION)),3,$WHEAT,2500,$SILVER,1000,$COLDIRON,2500"  
