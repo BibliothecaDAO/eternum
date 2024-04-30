@@ -26,7 +26,7 @@ export const Banks = () => {
 };
 
 export const BankModel = ({ position }: { position: any }) => {
-  const bankModel = useGLTF("/models/buildings/castle.glb");
+  const bankModel = useGLTF("/models/buildings/bank.glb");
   const clone = useMemo(() => {
     const clone = bankModel.scene.clone();
     return clone;

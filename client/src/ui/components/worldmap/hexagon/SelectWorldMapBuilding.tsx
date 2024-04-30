@@ -8,12 +8,20 @@ import { WorldBuildingType } from "@bibliothecadao/eternum";
 import Button from "@/ui/elements/Button";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { useExplore } from "@/hooks/helpers/useExplore";
+import { useStructures } from "@/hooks/helpers/useStructures";
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 const BUILDING_IMAGES_PATH = {
-  [WorldBuildingType.Bank]: BUILD_IMAGES_PREFIX + "mine.png",
-  [WorldBuildingType.Settlement]: BUILD_IMAGES_PREFIX + "farm.png",
-  [WorldBuildingType.Hyperstructure]: BUILD_IMAGES_PREFIX + "fishing_village.png",
+  [WorldBuildingType.Bank]: BUILD_IMAGES_PREFIX + "banks.png",
+  [WorldBuildingType.Settlement]: BUILD_IMAGES_PREFIX + "hyperstructure.png",
+  [WorldBuildingType.Hyperstructure]: BUILD_IMAGES_PREFIX + "hyperstructure.png",
+};
+
+const RESTRICTION_INFO = {
+  [WorldBuildingType.Bank]: "Only on explored hexes. Cannot build on top of other buildings",
+  [WorldBuildingType.Settlement]: "TBD",
+  [WorldBuildingType.Hyperstructure]: "TBD",
 };
 
 const BUILDING_COST = {
@@ -52,14 +60,7 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSelectBuilding = (buildingType: WorldBuildingType) => {
-    if (
-      !BUILDING_UNBLOCKED[buildingType] ||
-      multiplyByPrecision(BUILDING_COST[buildingType]) > lordsBalance ||
-      !clickedHex
-    )
-      return;
     setWorldMapBuilding(buildingType);
-    console.log({ buildingType });
   };
 
   const onBuild = () => {
@@ -76,11 +77,25 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
     }
   };
 
+  const { isExplored } = useExplore();
+  const { hasStructures } = useStructures();
+
+  const canBuild = (worldBuildingType: WorldBuildingType) => {
+    return (
+      BUILDING_UNBLOCKED[worldBuildingType] &&
+      multiplyByPrecision(BUILDING_COST[worldBuildingType]) <= lordsBalance &&
+      clickedHex &&
+      isExplored(clickedHex.contractPos.col, clickedHex.contractPos.row) &&
+      !hasStructures(clickedHex.contractPos.col, clickedHex.contractPos.row)
+    );
+  };
+
   return (
     <div className="flex flex-col overflow-hidden">
       <div className="grid grid-cols-2 gap-2">
         {buildingTypes.map((buildingType, index) => {
           const building = WorldBuildingType[buildingType as keyof typeof WorldBuildingType];
+          const isCanBuild = canBuild(building);
           return (
             <div
               key={index}
@@ -90,8 +105,7 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
                   "!border-lightest !text-lightest": worldMapBuilding === building,
                 },
                 {
-                  "opacity-30 cursor-not-allowed":
-                    !BUILDING_UNBLOCKED[building] || lordsBalance < multiplyByPrecision(BUILDING_COST[building]),
+                  "opacity-30 cursor-not-allowed": !isCanBuild,
                 },
               )}
               style={{
@@ -103,7 +117,7 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
                 if (worldMapBuilding === building) {
                   setWorldMapBuilding(null);
                 } else {
-                  handleSelectBuilding(building);
+                  isCanBuild && handleSelectBuilding(building);
                 }
               }}
             >
@@ -116,6 +130,7 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
                     content: (
                       <div>
                         <CostInfo cost={BUILDING_COST[building]} lordsBalance={lordsBalance} />
+                        <RestrictionInfo restriction={RESTRICTION_INFO[building]} />
                         <div className="text-xs p-2 w-12">{BUILDING_DESCRIPTION[building]}</div>
                       </div>
                     ),
@@ -152,6 +167,15 @@ const CostInfo = ({ cost, lordsBalance }: { cost: number; lordsBalance: number }
         <div className="text-order-brilliance">{divideByPrecision(lordsBalance)}</div>{" "}
         <ResourceIcon resource={"Lords"} size="xs" />
       </div>
+    </div>
+  );
+};
+
+const RestrictionInfo = ({ restriction }: { restriction: string }) => {
+  return (
+    <div className="flex flex-col text-white text-sm p-2">
+      <div className="mt-3">Restriction</div>
+      <div className="font-bold">{restriction}</div>
     </div>
   );
 };
