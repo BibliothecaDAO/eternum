@@ -7,6 +7,7 @@ import {
   BUILDING_POPULATION,
   BUILDING_PRODUCTION_PER_TICK,
   BUILDING_RESOURCE_PRODUCED,
+  BuildingEnumToString,
   BuildingType,
   RESOURCE_INPUTS,
   ResourcesIds,
@@ -89,23 +90,19 @@ export const SelectPreviewBuilding = () => {
           const hasBalance = Object.keys(cost).every((resourceId) => {
             const resourceCost = cost[Number(resourceId)];
             const balance = getBalance(realmEntityId, resourceCost.resource);
-
-            console.log("balance", balance, resourceCost.amount);
             return balance.balance >= resourceCost.amount;
           });
-
-          console.log("hasBalance", hasBalance);
 
           return (
             <div
               key={index}
               className={clsx(
-                "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis p-2 cursor-pointer h-24 relative  ",
+                "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis  cursor-pointer h-24 relative  ",
                 {
                   "!border-lightest !text-lightest": previewBuilding === building,
                 },
                 {
-                  "opacity-50 cursor-not-allowed": (previewBuilding && previewBuilding !== building) || !hasBalance,
+                  " cursor-not-allowed": (previewBuilding && previewBuilding !== building) || !hasBalance,
                 },
                 {},
               )}
@@ -125,8 +122,9 @@ export const SelectPreviewBuilding = () => {
                 }
               }}
             >
+              <div className="absolute w-full h-full bg-black/50 text-white p-4 text-xs">not enough resources</div>
               <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50">
-                {buildingType}
+                {BuildingEnumToString[building]}
               </div>
               <InfoIcon
                 onMouseEnter={() => {
