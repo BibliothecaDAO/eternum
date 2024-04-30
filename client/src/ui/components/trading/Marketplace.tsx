@@ -436,7 +436,7 @@ const OverviewResourceRow = ({
   }, [askSummary?.depthOfMarket]);
 
   return (
-    <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-[100px,50px,1fr,100px,100px,100px] gap-4 text-lightest text-xxs">
+    <div className="grid hover:bg-white/10 items-center border-b h-8 border-gold/30 px-1 grid-cols-[100px,50px,1fr,100px,100px,100px] gap-4 text-lightest text-xs">
       {resource && (
         <div className="flex items-center">
           <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
@@ -646,7 +646,7 @@ const ResourceOfferRow = ({
   }, [makerId, realmEntityId]);
 
   return (
-    <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-5 gap-4 text-lightest text-xxs">
+    <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-gold px-1 grid-cols-5 gap-4 text-gold text-xs">
       {resource && (
         <div className="flex items-center">
           <ResourceIcon
