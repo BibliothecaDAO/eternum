@@ -43,3 +43,8 @@ export type BuildingType = {
   entity_id: RecsType.BigInt;
   outer_entity_id: RecsType.BigInt;
 };
+
+export type QuantityTrackerType = {
+  entity_id: RecsType.BigInt;
+  count: RecsType.BigInt;
+};

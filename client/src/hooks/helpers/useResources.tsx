@@ -96,15 +96,19 @@ export function useResources() {
 export function useResourceBalance() {
   const {
     setup: {
-      components: { Resource, Production },
+      components: { Resource, Production, QuantityTracker },
     },
   } = useDojo();
 
   const currentTick = useBlockchainStore((state) => state.currentTick);
 
   const getFoodResources = (entityId: bigint): Resource[] => {
-    const wheatBalance = new ProductionManager(Production, Resource, entityId, 254n).balance(currentTick);
-    const fishBalance = new ProductionManager(Production, Resource, entityId, 255n).balance(currentTick);
+    const wheatBalance = new ProductionManager(Production, Resource, QuantityTracker, entityId, 254n).balance(
+      currentTick,
+    );
+    const fishBalance = new ProductionManager(Production, Resource, QuantityTracker, entityId, 255n).balance(
+      currentTick,
+    );
 
     return [
       { resourceId: 254, amount: wheatBalance },
@@ -113,7 +117,13 @@ export function useResourceBalance() {
   };
 
   const getBalance = (entityId: bigint, resourceId: number) => {
-    const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+    const productionManager = new ProductionManager(
+      Production,
+      Resource,
+      QuantityTracker,
+      entityId,
+      BigInt(resourceId),
+    );
     return { balance: productionManager.balance(currentTick), resourceId };
   };
 
@@ -129,7 +139,13 @@ export function useResourceBalance() {
     const production = getComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
 
     useEffect(() => {
-      const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+      const productionManager = new ProductionManager(
+        Production,
+        Resource,
+        QuantityTracker,
+        entityId,
+        BigInt(resourceId),
+      );
       setResourceBalance({ amount: productionManager.balance(currentTick), resourceId });
     }, []);
 
@@ -147,11 +163,11 @@ export function useResourceBalance() {
 export const useProductionManager = (entityId: bigint, resourceId: number) => {
   const {
     setup: {
-      components: { Resource, Production },
+      components: { Resource, Production, QuantityTracker },
     },
   } = useDojo();
 
-  return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+  return new ProductionManager(Production, Resource, QuantityTracker, entityId, BigInt(resourceId));
 };
 
 export const useGetBankAccountOnPosition = (address: bigint, position: Position) => {
