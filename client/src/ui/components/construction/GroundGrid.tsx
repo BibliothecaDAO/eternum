@@ -94,11 +94,13 @@ const GroundGrid = () => {
   );
 };
 
-const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
+const bigHexagonShape = createHexagonShape(HEX_RADIUS);
+const smallHexagonShape = createHexagonShape(HEX_RADIUS * 0.5);
+bigHexagonShape.holes.push(smallHexagonShape);
+
+const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
 const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
-const secondaryColor = mainColor.clone().lerp(new THREE.Color(1, 1, 1), 0.2);
 const mainMaterial = new THREE.MeshStandardMaterial({ color: mainColor });
-const secondaryMaterial = new THREE.MeshStandardMaterial({ color: secondaryColor });
 
 export const Hexagon = ({
   position,
@@ -111,7 +113,6 @@ export const Hexagon = ({
 }) => {
   return (
     <group position={[position.x, position.y, position.z]} onPointerEnter={onPointerEnter} onClick={onClick}>
-      <mesh receiveShadow geometry={hexagonGeometry} scale={0.5} position={[0, 0, 0.01]} material={secondaryMaterial} />
       <mesh receiveShadow geometry={hexagonGeometry} material={mainMaterial} />
     </group>
   );

@@ -3,7 +3,13 @@ import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { BuildingEnumToString, BuildingStringToEnum, BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  BuildingEnumToString,
+  BuildingStringToEnum,
+  BuildingType,
+  ResourcesIds,
+  biomes,
+} from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useAnimations, useGLTF, useHelper } from "@react-three/drei";
@@ -22,6 +28,7 @@ enum ModelsIndexes {
   Stable = BuildingType.Stable,
   Forge = 22,
   LumberMill = 23,
+  Dragonhide = 24,
   WorkersHut = BuildingType.WorkersHut,
   Storehouse = BuildingType.Storehouse,
 }
@@ -46,7 +53,7 @@ const ResourceIdToModelIndex: Partial<Record<ResourcesIds, ModelsIndexes>> = {
   [ResourcesIds.Hartwood]: ModelsIndexes.LumberMill,
   [ResourcesIds.Ironwood]: ModelsIndexes.LumberMill,
   [ResourcesIds.Mithral]: ModelsIndexes.Forge,
-  [ResourcesIds.Dragonhide]: ModelsIndexes.Forge,
+  [ResourcesIds.Dragonhide]: ModelsIndexes.Dragonhide,
   [ResourcesIds.AlchemicalSilver]: ModelsIndexes.Forge,
   [ResourcesIds.Adamantine]: ModelsIndexes.Forge,
 };
@@ -75,6 +82,7 @@ export const ExistingBuildings = () => {
       [ModelsIndexes.Storehouse]: useGLTF("/models/buildings/storehouse.glb"),
       [ModelsIndexes.Forge]: useGLTF("/models/buildings/forge.glb"),
       [ModelsIndexes.LumberMill]: useGLTF("/models/buildings/lumber_mill.glb"),
+      [ModelsIndexes.Dragonhide]: useGLTF("/models/buildings/dragonhide.glb"),
     }),
     [],
   );
@@ -155,6 +163,10 @@ export const BuiltBuilding = ({
     model.scene.traverse((child: any) => {
       if (child.isMesh) {
         child.castShadow = true;
+        if (buildingCategory === BuildingType.FishingVillage && child.name === "Water") {
+          child.castShadow = false;
+          child.material.color.set(biomes["ocean"].color);
+        }
       }
     });
     return model.scene.clone();
