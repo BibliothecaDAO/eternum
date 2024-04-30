@@ -7,6 +7,7 @@ export const Transactions = () => {
     network: { provider },
   } = useDojo();
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [failedTransactions, setFailedTransactions] = useState<any>(null); // New state for failed transactions
 
   useEffect(() => {
     const handleTransactionComplete = (data: any) => {
@@ -25,10 +26,20 @@ export const Transactions = () => {
       });
     };
 
+    const handleTransactionFailed = (data: any) => {
+      setFailedTransactions(data.toString());
+
+      setTimeout(() => {
+        setFailedTransactions(null);
+      }, 10000);
+    };
+
     provider.on("transactionComplete", handleTransactionComplete);
+    provider.on("transactionFailed", handleTransactionFailed);
 
     return () => {
       provider.off("transactionComplete", handleTransactionComplete);
+      provider.off("transactionFailed", handleTransactionFailed); // Cleanup for transactionFailed
     };
   }, [provider]);
 
@@ -39,6 +50,8 @@ export const Transactions = () => {
           Status: {transaction.execution_status} {shortenHex(transaction.transaction_hash)}
         </div>
       ))}
+
+      {failedTransactions && <div className="w-72 text-white text-xs p-3">Failed: {failedTransactions}</div>}
     </div>
   );
 };

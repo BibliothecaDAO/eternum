@@ -47,8 +47,9 @@ export class EternumProvider extends EnhancedDojoProvider {
     transactionDetails: AllowArray<Call>,
   ): Promise<any> {
     const tx = await this.executeMulti(signer, transactionDetails);
-    this.emit("transactionComplete", await this.waitForTransactionWithCheck(tx.transaction_hash));
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+    const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
+    this.emit("transactionComplete", transactionResult);
+    return transactionResult;
   }
 
   // Wrapper function to check for transaction errors
@@ -59,6 +60,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     // Check if the transaction was reverted and throw an error if it was
     if (receipt.isReverted()) {
+      this.emit("transactionFailed", `Transaction failed with reason: ${receipt.revert_reason}`);
       throw new Error(`Transaction failed with reason: ${receipt.revert_reason}`);
     }
 
