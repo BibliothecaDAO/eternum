@@ -29,6 +29,7 @@ export const Armies = ({}: ArmiesProps) => {
 
   const myArmies = useOwnerArmies(BigInt(account.address));
 
+  // set animation path for enemies
   useUpdateAnimationPaths();
 
   const realmOrder = useMemo(() => {
@@ -122,6 +123,7 @@ const calculateOffset = (index: number, total: number) => {
 
 const useUpdateAnimationPaths = () => {
   const {
+    account: { account },
     setup: {
       updates: {
         eventUpdates: { createTravelHexEvents },
@@ -136,14 +138,15 @@ const useUpdateAnimationPaths = () => {
   useEffect(() => {
     let subscription: Subscription | undefined;
 
-    const subscribeToExploreEvents = async () => {
+    const subscribeToTravelEvents = async () => {
       const observable = await createTravelHexEvents();
       const sub = observable.subscribe((event) => {
         if (event) {
           const path = [];
-          const realmEntityId = BigInt(event.keys[3]);
-          const myArmy = realmEntityIds.find((realm) => realm.realmEntityId === realmEntityId);
-          const enemy = myArmy ? false : true;
+          const owner = BigInt(event.keys[3]);
+          const enemy = owner !== BigInt(account.address);
+          // if my army, then set animation directly when firing tx
+          if (!enemy) return;
           const id = BigInt(event.data[0]);
           const len = Number(event.data[2]);
           for (let i = 3; i < 3 + len * 2; i += 2) {
@@ -155,7 +158,7 @@ const useUpdateAnimationPaths = () => {
       });
       subscription = sub;
     };
-    subscribeToExploreEvents();
+    subscribeToTravelEvents();
 
     return () => {
       subscription?.unsubscribe();
