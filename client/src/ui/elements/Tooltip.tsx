@@ -32,7 +32,7 @@ export const Tooltip = ({ className }: TooltipProps) => {
         <div
           ref={ref}
           className={clsx(
-            "fixed z-[100] inline-flex opacity-90 text-xxs -translate-x-1/2 p-2 bg-black rounded-xl flex-col justify-start items-center text-white",
+            "fixed z-[100] inline-flex opacity-90 text-xxs -translate-x-1/2 p-2 bg-brown/90 rounded-xl flex-col justify-start items-center text-gold",
             position == "top" && "-translate-y-[150%]",
             position == "bottom" && "translate-y-full",
             position == "left" && "-translate-x-[110%] -translate-y-1/2",
@@ -44,7 +44,7 @@ export const Tooltip = ({ className }: TooltipProps) => {
           <svg
             className={clsx(
               "absolute z-0",
-              position == "top" && "bottom-0 translate-y-1/2 -translate-x-1/2 left-1/2 bottom-0",
+              position == "top" && "bottom-0 translate-y-1/2 -translate-x-1/2 left-1/2",
               position == "bottom" && "top-0 -translate-y-1/2 rotate-180 -translate-x-1/2 left-1/2 bottom-0",
               position == "left" && "right-0 top-1/2 -translate-y-1/2 translate-x-1/2 -rotate-90",
               position == "right" && "left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 rotate-90",
@@ -57,7 +57,7 @@ export const Tooltip = ({ className }: TooltipProps) => {
           >
             <path
               d="M10.6931 16.2253C11.8927 17.6681 14.1074 17.6681 15.3069 16.2253L24.4998 5.1679C26.1248 3.21329 24.7348 0.25 22.1929 0.25H3.80708C1.26518 0.25 -0.124826 3.21329 1.50021 5.1679L10.6931 16.2253Z"
-              fill="#000"
+              fill="fill-brown"
             />
           </svg>
         </div>

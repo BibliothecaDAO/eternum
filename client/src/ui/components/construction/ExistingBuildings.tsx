@@ -187,12 +187,12 @@ export const BuiltBuilding = ({
 
 const HoverBuilding = ({ building }: { building: BuildingType }) => {
   return (
-    <BaseThreeTooltip distanceFactor={30}>
+    <BaseThreeTooltip distanceFactor={20}>
       <div className="flex flex-col  text-sm p-1 space-y-1">
         <div className="font-bold text-center">
           {BuildingEnumToString[building as keyof typeof BuildingEnumToString]}
         </div>
-        <BuildingInfo buildingId={building} />
+        {/* <BuildingInfo buildingId={building} /> */}
       </div>
     </BaseThreeTooltip>
   );

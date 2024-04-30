@@ -9,6 +9,7 @@ import {
   BUILDING_RESOURCE_PRODUCED,
   BuildingEnumToString,
   BuildingType,
+  RESOURCE_INFORMATION,
   RESOURCE_INPUTS,
   ResourcesIds,
   findResourceById,
@@ -24,6 +25,7 @@ import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { BUILDING_COSTS } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { Headline } from "@/ui/elements/Headline";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -216,13 +218,25 @@ export const SelectPreviewBuilding = () => {
 export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
   const cost = RESOURCE_INPUTS[resourceId];
 
-  const buildingCost = BUILDING_COSTS[2];
+  const buildingCost = BUILDING_COSTS[BuildingType.Resource];
+
+  const population = BUILDING_POPULATION[BuildingType.Resource];
+
+  const capacity = BUILDING_CAPACITY[BuildingType.Resource];
+
+  const information = RESOURCE_INFORMATION[resourceId];
+
   return (
-    <div className="flex flex-col text-white text-sm p-1 space-y-1">
+    <div className="flex flex-col text-gold text-sm p-1 space-y-1">
       <h5 className="text-center">
-        <ResourceIcon resource={findResourceById(resourceId)?.trait || ""} size="md" /> +10 per day
+        <ResourceIcon resource={findResourceById(resourceId)?.trait || ""} size="md" /> +10 per cycle
       </h5>
-      <div className="font-bold text-center">Input Costs</div>
+
+      <Headline className="py-3">Building</Headline>
+
+      <div>Population: +{population}</div>
+      <div>Capacity: +{capacity}</div>
+      <Headline className="py-3">Input Costs</Headline>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
           return (
@@ -233,7 +247,8 @@ export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
           );
         })}
       </div>
-      <div className="font-bold text-center">Fixed Costs</div>
+      <Headline className="py-3">Fixed Costs</Headline>
+
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
           return (
@@ -263,8 +278,9 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
   const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
 
   return (
-    <div className="p-2 text-sm">
-      <h6>Bonus</h6>
+    <div className="p-2 text-sm text-gold">
+      <div className="w-32 my-2">{information}</div>
+      <Headline className="py-3">Building </Headline>
 
       <div>Population: +{population}</div>
       <div>Capacity: +{capacity}</div>
@@ -279,7 +295,7 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
           />
         </div>
       )}
-      <h6>Cost</h6>
+      <Headline className="py-3">Cost</Headline>
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(cost).map((resourceId, index) => {
           return (

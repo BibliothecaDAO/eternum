@@ -636,3 +636,52 @@ export const BUILDING_COSTS: ResourceInputs = {
   [BuildingType.Walls]: [{ resource: ResourcesIds.Wheat, amount: 3000000 }],
   [BuildingType.Storehouse]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
 };
+
+interface ResourceDescription {
+  [key: number]: string;
+}
+
+export const RESOURCE_INFORMATION: ResourceDescription = {
+  [ResourcesIds.Wood]:
+    "Wood is the backbone of civilization. Fire, industry, and shelter spawned from its sinew and sap.",
+  [ResourcesIds.Stone]: "Stone masonry is a culture bending the bones of the earth itself to their own purpose.",
+  [ResourcesIds.Coal]:
+    "Coal is the only answer when fire is not enough to stave off the gnawing, winter cold or the ravenous demands of iron forges.",
+  [ResourcesIds.Copper]:
+    "The malleability of copper is a strength. A copper axe will crush a skull as easily as a copper pot sizzles an egg.",
+  [ResourcesIds.Obsidian]:
+    "Hard and brittle, obsidian can be honed to a razors edge nanometers wide, parting armor on an atomic level. The preferred material of assassins and cheap jewelers.",
+  [ResourcesIds.Silver]:
+    "The luster and rarity of silver draws out the basest instinct of laymen and nobility alike. Greed.",
+  [ResourcesIds.Ironwood]:
+    "Metallic minerals drawn from the ironwood’s deep delving roots are the source of its legendary hardness and appearance.",
+  [ResourcesIds.ColdIron]:
+    "Something has infected this metallic ore with a cruel chill and an extraordinary thirst for the warmth of living things.",
+  [ResourcesIds.Gold]: "Ripped from its million-year geological womb within the earth to be hoarded in mortal coffers.",
+  [ResourcesIds.Hartwood]:
+    "Revered by the Orders of Cunning, hartwood is only cut in dire circumstance. It bleeds like any mortal and some claim to hear voices from its sap long after being tapped from the trunk.",
+  [ResourcesIds.Diamonds]:
+    "Diamonds carry the hardness of obsidian, the strength of cold iron, and the preciousness of gold. Blood is easily spilled in its name.",
+  [ResourcesIds.Sapphire]:
+    "Sapphires are given birth from titanic forces that crush and grind for thousands of years in a hellscape of heat and pressure. The result is a gemstone accustomed to both pain and beauty.",
+  [ResourcesIds.Ruby]:
+    "Rubies are the chimeric fusion of metal alloys and oxygen. This hybrid of metal and minerals is often scarcer than the lives of those who seek it.",
+  [ResourcesIds.DeepCrystal]:
+    "Deep crystal was imprisoned from the mortal world by a timeless geode, the source of these formations have confounded scholars for centuries. Strange vibrations can be felt when held.",
+  [ResourcesIds.Ignium]:
+    "Some horrible power has irrevocably scarred this ignium stone with an infernal radiation that evaporates water and skin alike.",
+  [ResourcesIds.EtherealSilica]:
+    "Ethereal silica is a glass that funnels and bends light in ways that deviate from known physics. Those exposed for long periods of time experience an all- consuming lethargic bliss.",
+  [ResourcesIds.TrueIce]:
+    "True ice does not melt, it is carved like living stone from frozen abyssal caverns far beneath the earth. Many a careless mason has lost their life when placing this near Ignium.",
+  [ResourcesIds.TwilightQuartz]:
+    "Fortunately, this gemstone grows deep within the earth, far away from the soft flesh of mortal kind. Its elegance hides a tendency to rapidly engulf organic matter it encounters in a matter of hours.",
+  [ResourcesIds.AlchemicalSilver]:
+    "Alchemical Silver is found pooled beneath battlegrounds from a forgotten, lost era. It can retain an almost unlimited amount of potential energy, making it the perfect catalyst for those delving into the mysteries of the universe.",
+  [ResourcesIds.Adamantine]:
+    "Adamantine forms around ontological anomalies like the immune response of a planetary entity. It contains the supernatural strength to contain such terrors from spreading. Woe to those who shortsightedly take it from its original purpose.",
+  [ResourcesIds.Mithral]:
+    "This otherworldly metal has the strength of adamantine but is lighter than air. The pieces are held in place by strange gravitational core. Those who spend much time with it slowly succumb to neurotic delusions of a rapturous, divine apocalypse.",
+  [ResourcesIds.Dragonhide]:
+    "Dragons are the hidden guardians of our reality. No mortal can witness their work, lest they be purged by dragonfire. If you find one of these scales, flee. Only death can be found in their presence or by the forces they fight in secret.",
+};
