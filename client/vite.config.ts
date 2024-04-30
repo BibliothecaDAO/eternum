@@ -21,7 +21,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         map: resolve(__dirname, "index.html"),
-        realm: resolve(__dirname, "index.html"),
+        hex: resolve(__dirname, "index.html"),
       },
       maxParallelFileOps: 2,
       cache: false,
