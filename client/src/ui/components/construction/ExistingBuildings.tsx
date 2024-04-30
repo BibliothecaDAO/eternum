@@ -3,7 +3,13 @@ import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { BuildingEnumToString, BuildingStringToEnum, BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  BuildingEnumToString,
+  BuildingStringToEnum,
+  BuildingType,
+  ResourcesIds,
+  biomes,
+} from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useAnimations, useGLTF, useHelper } from "@react-three/drei";
@@ -155,6 +161,10 @@ export const BuiltBuilding = ({
     model.scene.traverse((child: any) => {
       if (child.isMesh) {
         child.castShadow = true;
+        if (buildingCategory === BuildingType.FishingVillage && child.name === "Water") {
+          child.castShadow = false;
+          child.material.color.set(biomes["ocean"].color);
+        }
       }
     });
     return model.scene.clone();
