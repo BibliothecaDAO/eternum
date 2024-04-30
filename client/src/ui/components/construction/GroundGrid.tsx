@@ -82,8 +82,10 @@ const smallHexagonShape = createHexagonShape(HEX_RADIUS * 0.5);
 bigHexagonShape.holes.push(smallHexagonShape);
 
 const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
+const invisibleHexagonGeometry = new THREE.ShapeGeometry(smallHexagonShape);
 const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
 const mainMaterial = new THREE.MeshStandardMaterial({ color: mainColor });
+const invisibleMaterial = new THREE.MeshStandardMaterial({ color: mainColor, transparent: true, opacity: 0 });
 
 export const Hexagon = ({
   position,
@@ -97,6 +99,7 @@ export const Hexagon = ({
   return (
     <group position={[position.x, position.y, position.z]} onPointerEnter={onPointerEnter} onClick={onClick}>
       <mesh receiveShadow geometry={hexagonGeometry} material={mainMaterial} />
+      <mesh receiveShadow geometry={invisibleHexagonGeometry} material={invisibleMaterial} />
     </group>
   );
 };
