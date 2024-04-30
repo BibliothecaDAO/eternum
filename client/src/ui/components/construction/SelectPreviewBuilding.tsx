@@ -47,7 +47,15 @@ const BUILDING_IMAGES_PATH = {
 };
 
 export const SelectPreviewBuilding = () => {
-  const { setPreviewBuilding, previewBuilding, selectedResource, setResourceId, setTooltip } = useUIStore();
+  const {
+    setPreviewBuilding,
+    previewBuilding,
+    selectedResource,
+    setResourceId,
+    setTooltip,
+    isDestroyMode,
+    setIsDestroyMode,
+  } = useUIStore();
   const [parent] = useAutoAnimate();
   const { playResourceSound } = usePlayResourceSound();
 
@@ -144,6 +152,22 @@ export const SelectPreviewBuilding = () => {
             </div>
           );
         })}
+        <div
+          className={clsx(
+            "border-2 border-order-giants/50 text-order-giants/50 hover:border-order-giants/85 hover:text-order-giants/85 flex justify-center items-center transition-all duration-20 rounded-lg overflow-hidden text-ellipsis  cursor-pointer h-24 relative",
+            {
+              "!text-order-giants !border-order-giants": isDestroyMode,
+            },
+          )}
+          onClick={() => {
+            if (previewBuilding) {
+              setPreviewBuilding(null);
+            }
+            setIsDestroyMode(!isDestroyMode);
+          }}
+        >
+          Destroy Building
+        </div>
       </div>
       {previewBuilding == BuildingType.Resource && (
         <>

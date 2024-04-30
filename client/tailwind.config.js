@@ -12,6 +12,7 @@ export default {
         fancy: "url(/cursor.png), pointer",
         pointer: "url(/cursor.png), pointer",
         grab: "url(/grab.png), grab",
+        crosshair: "url(/cursor-cross.png), crosshair",
         wait: "url(/images/eternum-logo_animated.png), wait",
       },
       strokeWidth: {

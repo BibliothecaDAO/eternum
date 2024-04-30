@@ -51,6 +51,8 @@ const ResourceIdToModelIndex: Partial<Record<ResourcesIds, ModelsIndexes>> = {
   [ResourcesIds.Adamantine]: ModelsIndexes.Forge,
 };
 
+const redColor = new THREE.Color("red");
+
 export const ExistingBuildings = () => {
   const { hexPosition: globalHex } = useQuery();
   const { existingBuildings, setExistingBuildings } = useUIStore((state) => state);
@@ -137,6 +139,7 @@ export const BuiltBuilding = ({
   resource?: ResourcesIds;
 }) => {
   const lightRef = useRef<any>();
+  const { isDestroyMode } = useUIStore();
 
   useHelper(lightRef, THREE.PointLightHelper, 1, "green");
 
@@ -160,6 +163,21 @@ export const BuiltBuilding = ({
     return model.scene.clone();
   }, [modelIndex, models]);
 
+  const redModel = useMemo(() => {
+    let model = models[modelIndex];
+
+    const newModel = model.scene.clone();
+    newModel.traverse((node: any) => {
+      if (node instanceof THREE.Mesh) {
+        node.material = node.material.clone();
+        node.material.color.set(redColor);
+        node.material.transparent = true;
+        node.material.opacity = 0.3;
+      }
+    });
+    return newModel;
+  }, [modelIndex, models]);
+
   const { actions } = useAnimations(models[modelIndex].animations, model);
 
   useEffect(() => {
@@ -179,7 +197,7 @@ export const BuiltBuilding = ({
       position={[x, 2.33, -y]}
       rotation={rotation}
     >
-      <primitive dropShadow scale={3} object={model} />
+      <primitive dropShadow scale={3} object={isDestroyMode && hover ? redModel : model} />
       {hover && <HoverBuilding building={buildingCategory} />}
     </group>
   );

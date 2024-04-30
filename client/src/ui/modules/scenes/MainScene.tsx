@@ -12,6 +12,7 @@ import { useControls } from "leva";
 import { CameraControls } from "../../utils/Camera";
 import { BlendFunction } from "postprocessing";
 import FPSLimiter from "../../utils/FPSLimiter";
+import clsx from "clsx";
 
 export const Camera = () => {
   const cameraPosition = useUIStore((state) => state.cameraPosition);
@@ -23,6 +24,8 @@ export const Camera = () => {
 
 export const MainScene = () => {
   const [location] = useLocation();
+  const isDestroyMode = useUIStore((state) => state.isDestroyMode);
+
   // location type
   const locationType = useMemo(() => {
     if (location === "/map" || location === "/") {
@@ -106,7 +109,7 @@ export const MainScene = () => {
   return (
     <Canvas
       frameloop="demand" // for fps limiter
-      className="rounded-xl"
+      className={clsx("rounded-xl", isDestroyMode && "!cursor-crosshair")}
       raycaster={{
         params: {
           Points: { threshold: 0.2 },
