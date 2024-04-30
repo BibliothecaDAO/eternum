@@ -12,11 +12,9 @@ import { FilterButton } from "../../elements/FilterButton";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import * as realmsData from "../../../data/geodata/realms.json";
 import { OrderIcon } from "../../elements/OrderIcon";
-import { AcceptOfferPopup } from "../cityview/realm/trade/AcceptOffer";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
 import clsx from "clsx";
-import { FastCreateOfferPopup } from "../cityview/realm/trade/FastCreateOffer";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../hooks/context/DojoContext";
@@ -630,16 +628,33 @@ const ResourceOfferRow = ({
   isBuy: boolean;
   onClick: () => void;
 }) => {
-  const { makerGets: resourcesGive, makerId } = offer;
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { cancel_order },
+    },
+  } = useDojo();
+  const { makerGets, takerGets, makerId } = offer;
   const resource = findResourceById(isBuy ? offer.takerGets[0].resourceId : offer.makerGets[0].resourceId);
   const { realm: makerRealm } = useGetRealm(offer.makerId);
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const { canAcceptOffer } = useTrade();
   const { calculateDistance } = useCaravan();
 
   const canAccept = useMemo(() => {
-    return canAcceptOffer({ realmEntityId, resourcesGive });
-  }, [realmEntityId, resourcesGive]);
+    return canAcceptOffer({ realmEntityId, resourcesGive: makerGets });
+  }, [realmEntityId, makerGets]);
+
+  const onCancel = async () => {
+    setIsLoading(true);
+    await cancel_order({
+      signer: account,
+      trade_id: offer.tradeId,
+      return_resources: takerGets.flatMap(({ resourceId, amount }) => [resourceId, amount]),
+    }).finally(() => setIsLoading(false));
+  };
 
   const distance = useMemo(() => {
     return calculateDistance(makerId, realmEntityId) || 0;
@@ -681,6 +696,13 @@ const ResourceOfferRow = ({
           {`${distance.toFixed(0)} km`}
           <Button className="ml-2" onClick={onClick} disabled={!canAccept} size="xs" variant="success">
             Accept
+          </Button>
+        </div>
+      )}
+      {offer.makerId === realmEntityId && (
+        <div className="flex item-center justify-end">
+          <Button className="ml-2" onClick={onCancel} size="xs" variant="danger" isLoading={isLoading}>
+            Cancel
           </Button>
         </div>
       )}
