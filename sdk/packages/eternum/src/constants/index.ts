@@ -5,3 +5,5 @@ export * from "./events";
 export * from "./travel";
 export * from "./trade";
 export * from "./hex";
+export * from "./time";
+export * from "./buildings";

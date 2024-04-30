@@ -1,9 +1,9 @@
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import { DESTINATION_TYPE, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
-import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys } from "../../ui/utils/utils";
 import { CombatInfo } from "@bibliothecadao/eternum";
 import useBlockchainStore from "../store/useBlockchainStore";
 
@@ -20,195 +20,190 @@ export function useCombat() {
         Owner,
         Health,
         Quantity,
-        Attack,
-        Defence,
+        // Attack,
+        // Defence,
         Movable,
         Capacity,
         ArrivalTime,
-        TownWatch,
+        // TownWatch,
         Realm,
-        Inventory,
+        Army,
       },
     },
   } = useDojo();
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const getEntityWatchTowerId = (entityId: bigint): bigint | undefined => {
-    // find realm watchtower
-    const townWatch = getComponentValue(TownWatch, getEntityIdFromKeys([entityId]));
-    return townWatch?.town_watch_id;
-  };
+  // const getEntityWatchTowerId = (entityId: bigint): bigint | undefined => {
+  //   // find realm watchtower
+  //   const townWatch = getComponentValue(TownWatch, getEntityIdFromKeys([entityId]));
+  //   return townWatch?.town_watch_id;
+  // };
 
-  // todo: need to find better ways to differentiate
-  const useRealmRaiders = (realmEntityId: bigint) => {
-    const entityIds = useEntityQuery([
-      Has(Attack),
-      HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
-      NotValue(Health, { value: 0n }),
-      NotValue(Movable, { sec_per_km: 0 }),
-    ]);
+  // // todo: need to find better ways to differentiate
+  // const useRealmRaiders = (realmEntityId: bigint) => {
+  //   const entityIds = useEntityQuery([
+  //     Has(Attack),
+  //     HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+  //     NotValue(Health, { value: 0n }),
+  //     NotValue(Movable, { sec_per_km: 0 }),
+  //   ]);
 
-    return entityIds.map((id) => {
-      const attack = getComponentValue(Attack, id);
-      return attack!.entity_id;
-    });
-  };
+  //   return entityIds.map((id) => {
+  //     const attack = getComponentValue(Attack, id);
+  //     return attack!.entity_id;
+  //   });
+  // };
 
-  const getRealmRaidersEntities = (realmEntityId: bigint) => {
-    return Array.from(
-      runQuery([
-        Has(Attack),
-        HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
-        NotValue(Health, { value: 0n }),
-        NotValue(Movable, { sec_per_km: 0 }),
-      ]),
-    );
-  };
+  // const getRealmRaidersEntities = (realmEntityId: bigint) => {
+  //   return Array.from(
+  //     runQuery([
+  //       Has(Attack),
+  //       HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+  //       NotValue(Health, { value: 0n }),
+  //       NotValue(Movable, { sec_per_km: 0 }),
+  //     ]),
+  //   );
+  // };
 
-  const getRealmRaidersIds = (realmEntityId: bigint) => {
-    return getRealmRaidersEntities(realmEntityId).map((id) => {
-      const attack = getComponentValue(Attack, id);
-      return attack!.entity_id;
-    });
-  };
+  // const getRealmRaidersIds = (realmEntityId: bigint) => {
+  //   return getRealmRaidersEntities(realmEntityId).map((id) => {
+  //     const attack = getComponentValue(Attack, id);
+  //     return attack!.entity_id;
+  //   });
+  // };
 
-  const useOwnerRaiders = (owner: bigint) => {
-    let entityIds = useEntityQuery([
-      Has(Attack),
-      HasValue(Owner, { address: owner }),
-      NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
-      NotValue(Health, { value: 0n }),
-      NotValue(Movable, { sec_per_km: 0 }),
-    ]);
+  const useOwnerArmies = (owner: bigint) => {
+    let entityIds = useEntityQuery([Has(Army), HasValue(Owner, { address: owner })]);
+
+    console.log("entityIds", entityIds);
 
     return entityIds.map((id) => {
-      const attack = getComponentValue(Attack, id);
-      return attack!.entity_id;
+      const army = getComponentValue(Army, id);
+      return { ...army };
     });
   };
 
-  const getDefenceOnRealm = (realmEntityId: bigint): CombatInfo | undefined => {
-    const watchTower = getComponentValue(TownWatch, getEntityIdFromKeys([realmEntityId]));
-    if (watchTower) {
-      const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id]);
-      if (watchTowerInfo.length === 1) {
-        return watchTowerInfo[0];
-      }
-    }
-  };
+  // const getDefenceOnRealm = (realmEntityId: bigint): CombatInfo | undefined => {
+  //   const watchTower = getComponentValue(TownWatch, getEntityIdFromKeys([realmEntityId]));
+  //   if (watchTower) {
+  //     const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id]);
+  //     if (watchTowerInfo.length === 1) {
+  //       return watchTowerInfo[0];
+  //     }
+  //   }
+  // };
 
-  const getWatchTowerOnPosition = (position: Position): CombatInfo | undefined => {
-    const { x, y } = position;
-    const realmEntityIds = Array.from(runQuery([HasValue(Position, { x, y }), Has(TownWatch)]));
-    const watchTower = realmEntityIds.length === 1 ? getComponentValue(TownWatch, realmEntityIds[0]) : undefined;
-    if (watchTower) {
-      const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id]);
-      if (watchTowerInfo.length === 1) {
-        return watchTowerInfo[0];
-      }
-    }
-  };
+  // const getWatchTowerOnPosition = (position: Position): CombatInfo | undefined => {
+  //   const { x, y } = position;
+  //   const realmEntityIds = Array.from(runQuery([HasValue(Position, { x, y }), Has(TownWatch)]));
+  //   const watchTower = realmEntityIds.length === 1 ? getComponentValue(TownWatch, realmEntityIds[0]) : undefined;
+  //   if (watchTower) {
+  //     const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id]);
+  //     if (watchTowerInfo.length === 1) {
+  //       return watchTowerInfo[0];
+  //     }
+  //   }
+  // };
 
-  const useEnemeyRaiders = (owner: bigint) => {
-    let entityIds = useEntityQuery([
-      Has(Attack),
-      Has(Movable),
-      NotValue(Health, { value: 0n }),
-      NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
-      NotValue(Owner, { address: owner }),
-    ]);
+  // const useEnemeyRaiders = (owner: bigint) => {
+  //   let entityIds = useEntityQuery([
+  //     Has(Attack),
+  //     Has(Movable),
+  //     NotValue(Health, { value: 0n }),
+  //     NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
+  //     NotValue(Owner, { address: owner }),
+  //   ]);
 
-    // find dead enemy entities with items in inventory
-    const deadEntitiesWithResources = useEntityQuery([
-      Has(Attack),
-      Has(Movable),
-      NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
-      HasValue(Health, { value: 0n }),
-      NotValue(Inventory, { items_count: 0n }),
-      NotValue(Owner, { address: owner }),
-    ]);
+  //   // find dead enemy entities with items in inventory
+  //   const deadEntitiesWithResources = useEntityQuery([
+  //     Has(Attack),
+  //     Has(Movable),
+  //     NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
+  //     HasValue(Health, { value: 0n }),
+  //     NotValue(Owner, { address: owner }),
+  //   ]);
 
-    entityIds = entityIds.concat(deadEntitiesWithResources);
+  //   entityIds = entityIds.concat(deadEntitiesWithResources);
 
-    return entityIds.map((id) => {
-      const attack = getComponentValue(Attack, id);
-      return attack!.entity_id;
-    });
-  };
+  //   return entityIds.map((id) => {
+  //     const attack = getComponentValue(Attack, id);
+  //     return attack!.entity_id;
+  //   });
+  // };
 
-  const useEnemyRaidersOnPosition = (owner: bigint, position: Position) => {
-    const { x, y } = position;
-    const entityIds = useEntityQuery([
-      Has(Attack),
-      Has(Movable),
-      NotValue(Health, { value: 0n }),
-      HasValue(Position, { x, y }),
-      NotValue(Owner, { address: owner }),
-    ]);
+  // const useEnemyRaidersOnPosition = (owner: bigint, position: Position) => {
+  //   const { x, y } = position;
+  //   const entityIds = useEntityQuery([
+  //     Has(Attack),
+  //     Has(Movable),
+  //     NotValue(Health, { value: 0n }),
+  //     HasValue(Position, { x, y }),
+  //     NotValue(Owner, { address: owner }),
+  //   ]);
 
-    return entityIds.map((id) => {
-      const attack = getComponentValue(Attack, id);
-      return attack!.entity_id;
-    });
-  };
+  //   return entityIds.map((id) => {
+  //     const attack = getComponentValue(Attack, id);
+  //     return attack!.entity_id;
+  //   });
+  // };
 
-  const useOwnerRaidersOnPosition = (owner: bigint, position: Position) => {
-    const { x, y } = position;
-    const entityIds = useEntityQuery([
-      Has(Attack),
-      Has(Movable),
-      HasValue(Position, { x, y }),
-      HasValue(Owner, { address: owner }),
-      NotValue(Health, { value: 0n }),
-    ]);
+  // const useOwnerRaidersOnPosition = (owner: bigint, position: Position) => {
+  //   const { x, y } = position;
+  //   const entityIds = useEntityQuery([
+  //     Has(Attack),
+  //     Has(Movable),
+  //     HasValue(Position, { x, y }),
+  //     HasValue(Owner, { address: owner }),
+  //     NotValue(Health, { value: 0n }),
+  //   ]);
 
-    return entityIds.map((id) => {
-      const attack = getComponentValue(Attack, id);
-      return attack!.entity_id;
-    });
-  };
+  //   return entityIds.map((id) => {
+  //     const attack = getComponentValue(Attack, id);
+  //     return attack!.entity_id;
+  //   });
+  // };
 
-  const useRealmRaidersOnPosition = (realmEntityId: bigint, position: Position) => {
-    const { x, y } = position;
-    const entityIds = useEntityQuery([
-      Has(Attack),
-      Has(Movable),
-      HasValue(Position, { x, y }),
-      HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
-      NotValue(Health, { value: 0n }),
-    ]);
+  // const useRealmRaidersOnPosition = (realmEntityId: bigint, position: Position) => {
+  //   const { x, y } = position;
+  //   const entityIds = useEntityQuery([
+  //     Has(Attack),
+  //     Has(Movable),
+  //     HasValue(Position, { x, y }),
+  //     HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+  //     NotValue(Health, { value: 0n }),
+  //   ]);
 
-    return entityIds.map((id) => {
-      const attack = getComponentValue(Attack, id);
-      return attack!.entity_id;
-    });
-  };
+  //   return entityIds.map((id) => {
+  //     const attack = getComponentValue(Attack, id);
+  //     return attack!.entity_id;
+  //   });
+  // };
 
-  const getRealmRaidersOnPosition = (realmEntityId: bigint, position: Position) => {
-    const { x, y } = position;
-    const entityIds = Array.from(
-      runQuery([
-        Has(Attack),
-        NotValue(Health, { value: 0n }),
-        HasValue(Position, { x, y }),
-        NotValue(Movable, { sec_per_km: 0 }),
-        HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
-      ]),
-    );
+  // const getRealmRaidersOnPosition = (realmEntityId: bigint, position: Position) => {
+  //   const { x, y } = position;
+  //   const entityIds = Array.from(
+  //     runQuery([
+  //       Has(Attack),
+  //       NotValue(Health, { value: 0n }),
+  //       HasValue(Position, { x, y }),
+  //       NotValue(Movable, { sec_per_km: 0 }),
+  //       HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+  //     ]),
+  //   );
 
-    return entityIds.map((id) => {
-      const attack = getComponentValue(Attack, id);
-      return attack!.entity_id;
-    });
-  };
+  //   return entityIds.map((id) => {
+  //     const attack = getComponentValue(Attack, id);
+  //     return attack!.entity_id;
+  //   });
+  // };
 
   const getOwnerRaidersOnPosition = (position: Position) => {
     const { x, y } = position;
     const entityIds = Array.from(
       runQuery([
-        Has(Attack),
-        NotValue(Health, { value: 0n }),
+        Has(Army),
+        NotValue(Health, { current: 0n }),
         HasValue(Position, { x, y }),
         NotValue(Movable, { sec_per_km: 0 }),
         HasValue(Owner, { address: BigInt(address) }),
@@ -216,7 +211,7 @@ export function useCombat() {
     );
 
     return entityIds.map((id) => {
-      const attack = getComponentValue(Attack, id);
+      const attack = getComponentValue(Army, id);
       return attack!.entity_id;
     });
   };
@@ -226,8 +221,6 @@ export function useCombat() {
       let entityIndex = getEntityIdFromKeys([entityId]);
       const health = getComponentValue(Health, entityIndex);
       const quantity = getComponentValue(Quantity, entityIndex);
-      const attack = getComponentValue(Attack, entityIndex);
-      const defence = getComponentValue(Defence, entityIndex);
       const movable = getComponentValue(Movable, entityIndex);
       const capacity = getComponentValue(Capacity, entityIndex);
       const arrivalTime = getComponentValue(ArrivalTime, entityIndex);
@@ -249,9 +242,7 @@ export function useCombat() {
 
       // if present on hyperstructure
       const locationHyperstructureIds = position
-        ? Array.from(
-            runQuery([Has(HyperStructure), Has(TownWatch), HasValue(Position, { x: position.x, y: position.y })]),
-          )
+        ? Array.from(runQuery([Has(HyperStructure), HasValue(Position, { x: position.x, y: position.y })]))
         : [];
       if (locationHyperstructureIds.length === 1) {
         locationEntityId = getComponentValue(HyperStructure, locationHyperstructureIds[0])?.entity_id;
@@ -270,10 +261,10 @@ export function useCombat() {
 
       return {
         entityId,
-        health: Number(health?.value) || 0,
+        health: Number(health?.current) || 0,
         quantity: Number(quantity?.value) || 0,
-        attack: Number(attack?.value) || 0,
-        defence: Number(defence?.value) || 0,
+        attack: 0,
+        defence: 0,
         sec_per_km: movable?.sec_per_km || 0,
         blocked: movable?.blocked,
         capacity: divideByPrecision(Number(capacity?.weight_gram) * Number(quantity?.value) || 0),
@@ -291,19 +282,19 @@ export function useCombat() {
   };
 
   return {
-    getEntityWatchTowerId,
-    getDefenceOnRealm,
-    getDefenceOnPosition: getWatchTowerOnPosition,
-    getRealmRaidersEntities,
-    getRealmRaidersIds,
-    useRealmRaiders,
-    useOwnerRaiders,
-    useRealmRaidersOnPosition,
-    getRealmRaidersOnPosition,
+    // getEntityWatchTowerId,
+    // getDefenceOnRealm,
+    // getDefenceOnPosition: getWatchTowerOnPosition,
+    // getRealmRaidersEntities,
+    // getRealmRaidersIds,
+    // useRealmRaiders,
+    // useRealmRaidersOnPosition,
+    // getRealmRaidersOnPosition,
     getOwnerRaidersOnPosition,
-    useEnemeyRaiders,
-    useEnemyRaidersOnPosition,
-    useOwnerRaidersOnPosition,
+    // useEnemeyRaiders,
+    // useEnemyRaidersOnPosition,
+    // useOwnerRaidersOnPosition,
     getEntitiesCombatInfo,
+    useOwnerArmies,
   };
 }

@@ -1,4 +1,5 @@
 import { Resources } from "../types";
+import { BuildingType } from "../utils";
 
 export const findResourceById = (value: number) => {
   return resources.find((e) => e.id === value);
@@ -10,6 +11,15 @@ export const findResourceIdByTrait = (trait: string) => {
 };
 
 export const resources: Array<Resources> = [
+  {
+    trait: "Donkeys",
+    value: 249,
+    colour: "#ec4899",
+    colourClass: "",
+    id: 249,
+    description: "Donkeys.",
+    img: "",
+  },
   {
     trait: "Lords",
     value: 253,
@@ -238,6 +248,42 @@ export const resources: Array<Resources> = [
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/dragonhide.gif?raw=true",
   },
   {
+    trait: "Donkey",
+    value: 249,
+    colour: "#ec4899",
+    colourClass: "",
+    id: 249,
+    description: "Wheat.",
+    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+  },
+  {
+    trait: "Knight",
+    value: 250,
+    colour: "#ec4899",
+    colourClass: "",
+    id: 250,
+    description: "Wheat.",
+    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+  },
+  {
+    trait: "Crossbowmen",
+    value: 251,
+    colour: "#ec4899",
+    colourClass: "",
+    id: 251,
+    description: "Wheat.",
+    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+  },
+  {
+    trait: "Paladin",
+    value: 252,
+    colour: "#ec4899",
+    colourClass: "",
+    id: 252,
+    description: "Wheat.",
+    img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+  },
+  {
     trait: "Wheat",
     value: 254,
     colour: "#ec4899",
@@ -283,6 +329,10 @@ export enum ResourcesIds {
   Adamantine = 20,
   Mithral = 21,
   Dragonhide = 22,
+  Donkey = 249,
+  Knight = 250,
+  Crossbowmen = 251,
+  Paladin = 252,
   Lords = 253,
   Wheat = 254,
   Fish = 255,
@@ -376,15 +426,15 @@ export const getLevelingCost = (newLevel: number): { resourceId: number; amount:
       ? // level 4 (resource tier 3)
         [16, 24421, 17, 20954, 18, 16733, 19, 14020, 20, 8291, 21, 5578, 22, 3467]
       : rem === 1
-        ? // level 1 (food)
-          [254, 11340000, 255, 3780000]
-        : rem === 2
-          ? // level 2 (resource tier 1)
-            [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
-          : rem === 3
-            ? // level 3 (resource tier 2)
-              [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
-            : [];
+      ? // level 1 (food)
+        [254, 11340000, 255, 3780000]
+      : rem === 2
+      ? // level 2 (resource tier 1)
+        [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
+      : rem === 3
+      ? // level 3 (resource tier 2)
+        [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
+      : [];
 
   const costResources = [];
   for (let i = 0; i < baseAmounts.length; i = i + 2) {
@@ -437,4 +487,202 @@ export const WEIGHTS: WeightMap = {
   253: 0.001,
   254: 0.1,
   255: 0.1,
+};
+
+export const RESOURCE_TIERS = {
+  lords: [253],
+  military: [250, 251, 252],
+  transport: [249],
+  food: [255, 254],
+  common: [1, 2, 3, 4, 5],
+  uncommon: [6, 7, 8, 9],
+  rare: [10, 11, 12, 13],
+  unique: [14, 15, 16, 17, 18, 19],
+  mythic: [20, 21, 22],
+};
+
+export const TROOP_COSTS = {
+  [ResourcesIds.Knight]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+  [ResourcesIds.Crossbowmen]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+  [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+};
+
+interface ResourceInputs {
+  [key: number]: { resource: ResourcesIds; amount: number }[];
+}
+
+export const RESOURCE_INPUTS: ResourceInputs = {
+  [ResourcesIds.Wood]: [
+    { resource: ResourcesIds.Stone, amount: 1500 },
+    { resource: ResourcesIds.Coal, amount: 1600 },
+  ],
+  [ResourcesIds.Stone]: [
+    { resource: ResourcesIds.Wood, amount: 2500 },
+    { resource: ResourcesIds.Coal, amount: 1900 },
+  ],
+  [ResourcesIds.Coal]: [
+    { resource: ResourcesIds.Stone, amount: 2100 },
+    { resource: ResourcesIds.Copper, amount: 1400 },
+  ],
+  [ResourcesIds.Copper]: [
+    { resource: ResourcesIds.Coal, amount: 2900 },
+    { resource: ResourcesIds.Obsidian, amount: 1700 },
+  ],
+  [ResourcesIds.Obsidian]: [
+    { resource: ResourcesIds.Copper, amount: 2400 },
+    { resource: ResourcesIds.Silver, amount: 1600 },
+  ],
+  [ResourcesIds.Silver]: [
+    { resource: ResourcesIds.Obsidian, amount: 2500 },
+    { resource: ResourcesIds.Ironwood, amount: 1400 },
+  ],
+  [ResourcesIds.Ironwood]: [
+    { resource: ResourcesIds.Silver, amount: 3000 },
+    { resource: ResourcesIds.ColdIron, amount: 1600 },
+  ],
+  [ResourcesIds.ColdIron]: [
+    { resource: ResourcesIds.Ironwood, amount: 2500 },
+    { resource: ResourcesIds.Gold, amount: 1900 },
+  ],
+  [ResourcesIds.Gold]: [
+    { resource: ResourcesIds.ColdIron, amount: 2100 },
+    { resource: ResourcesIds.Hartwood, amount: 1300 },
+  ],
+  [ResourcesIds.Hartwood]: [
+    { resource: ResourcesIds.Gold, amount: 3100 },
+    { resource: ResourcesIds.Diamonds, amount: 1000 },
+  ],
+  [ResourcesIds.Diamonds]: [
+    { resource: ResourcesIds.Hartwood, amount: 4000 },
+    { resource: ResourcesIds.Sapphire, amount: 1600 },
+  ],
+  [ResourcesIds.Sapphire]: [
+    { resource: ResourcesIds.Diamonds, amount: 2400 },
+    { resource: ResourcesIds.Ruby, amount: 1900 },
+  ],
+  [ResourcesIds.Ruby]: [
+    { resource: ResourcesIds.Sapphire, amount: 2100 },
+    { resource: ResourcesIds.DeepCrystal, amount: 2000 },
+  ],
+  [ResourcesIds.DeepCrystal]: [
+    { resource: ResourcesIds.Ruby, amount: 2000 },
+    { resource: ResourcesIds.Ignium, amount: 1400 },
+  ],
+  [ResourcesIds.Ignium]: [
+    { resource: ResourcesIds.DeepCrystal, amount: 2800 },
+    { resource: ResourcesIds.EtherealSilica, amount: 1900 },
+  ],
+  [ResourcesIds.EtherealSilica]: [
+    { resource: ResourcesIds.Ignium, amount: 2100 },
+    { resource: ResourcesIds.TrueIce, amount: 1700 },
+  ],
+  [ResourcesIds.TrueIce]: [
+    { resource: ResourcesIds.EtherealSilica, amount: 2300 },
+    { resource: ResourcesIds.TwilightQuartz, amount: 1600 },
+  ],
+  [ResourcesIds.TwilightQuartz]: [
+    { resource: ResourcesIds.TrueIce, amount: 2500 },
+    { resource: ResourcesIds.AlchemicalSilver, amount: 1700 },
+  ],
+  [ResourcesIds.AlchemicalSilver]: [
+    { resource: ResourcesIds.TwilightQuartz, amount: 2400 },
+    { resource: ResourcesIds.Adamantine, amount: 1200 },
+  ],
+  [ResourcesIds.Adamantine]: [
+    { resource: ResourcesIds.AlchemicalSilver, amount: 3400 },
+    { resource: ResourcesIds.Mithral, amount: 1300 },
+  ],
+  [ResourcesIds.Mithral]: [
+    { resource: ResourcesIds.Adamantine, amount: 3000 },
+    { resource: ResourcesIds.Dragonhide, amount: 1200 },
+  ],
+  [ResourcesIds.Dragonhide]: [
+    { resource: ResourcesIds.Mithral, amount: 3200 },
+    { resource: ResourcesIds.Wood, amount: 436100 },
+  ],
+  [ResourcesIds.Donkey]: [{ resource: ResourcesIds.Wheat, amount: 2500 }],
+  [ResourcesIds.Knight]: [
+    { resource: ResourcesIds.Wheat, amount: 2500 },
+    { resource: ResourcesIds.Silver, amount: 100 },
+    { resource: ResourcesIds.Ironwood, amount: 250 },
+  ],
+  [ResourcesIds.Crossbowmen]: [
+    { resource: ResourcesIds.Wheat, amount: 2500 },
+    { resource: ResourcesIds.Silver, amount: 100 },
+    { resource: ResourcesIds.ColdIron, amount: 250 },
+  ],
+  [ResourcesIds.Paladin]: [
+    { resource: ResourcesIds.Wheat, amount: 2500 },
+    { resource: ResourcesIds.Silver, amount: 100 },
+    { resource: ResourcesIds.Gold, amount: 250 },
+  ],
+  [ResourcesIds.Wheat]: [],
+  [ResourcesIds.Fish]: [],
+  [ResourcesIds.Lords]: [],
+};
+
+export const BUILDING_COSTS: ResourceInputs = {
+  [BuildingType.Castle]: [],
+  [BuildingType.Resource]: [{ resource: ResourcesIds.Wheat, amount: 500000 }],
+  [BuildingType.Farm]: [{ resource: ResourcesIds.Wheat, amount: 900000 }],
+  [BuildingType.FishingVillage]: [{ resource: ResourcesIds.Wheat, amount: 900000 }],
+  [BuildingType.Barracks]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
+  [BuildingType.Market]: [{ resource: ResourcesIds.Wheat, amount: 1500000 }],
+  [BuildingType.ArcheryRange]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
+  [BuildingType.Stable]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
+  [BuildingType.DonkeyFarm]: [{ resource: ResourcesIds.Wheat, amount: 0 }],
+  [BuildingType.TradingPost]: [{ resource: ResourcesIds.Wheat, amount: 0 }],
+  [BuildingType.WorkersHut]: [{ resource: ResourcesIds.Wheat, amount: 500000 }],
+  [BuildingType.WatchTower]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
+  [BuildingType.Walls]: [{ resource: ResourcesIds.Wheat, amount: 3000000 }],
+  [BuildingType.Storehouse]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
+};
+
+interface ResourceDescription {
+  [key: number]: string;
+}
+
+export const RESOURCE_INFORMATION: ResourceDescription = {
+  [ResourcesIds.Wood]:
+    "Wood is the backbone of civilization. Fire, industry, and shelter spawned from its sinew and sap.",
+  [ResourcesIds.Stone]: "Stone masonry is a culture bending the bones of the earth itself to their own purpose.",
+  [ResourcesIds.Coal]:
+    "Coal is the only answer when fire is not enough to stave off the gnawing, winter cold or the ravenous demands of iron forges.",
+  [ResourcesIds.Copper]:
+    "The malleability of copper is a strength. A copper axe will crush a skull as easily as a copper pot sizzles an egg.",
+  [ResourcesIds.Obsidian]:
+    "Hard and brittle, obsidian can be honed to a razors edge nanometers wide, parting armor on an atomic level. The preferred material of assassins and cheap jewelers.",
+  [ResourcesIds.Silver]:
+    "The luster and rarity of silver draws out the basest instinct of laymen and nobility alike. Greed.",
+  [ResourcesIds.Ironwood]:
+    "Metallic minerals drawn from the ironwood’s deep delving roots are the source of its legendary hardness and appearance.",
+  [ResourcesIds.ColdIron]:
+    "Something has infected this metallic ore with a cruel chill and an extraordinary thirst for the warmth of living things.",
+  [ResourcesIds.Gold]: "Ripped from its million-year geological womb within the earth to be hoarded in mortal coffers.",
+  [ResourcesIds.Hartwood]:
+    "Revered by the Orders of Cunning, hartwood is only cut in dire circumstance. It bleeds like any mortal and some claim to hear voices from its sap long after being tapped from the trunk.",
+  [ResourcesIds.Diamonds]:
+    "Diamonds carry the hardness of obsidian, the strength of cold iron, and the preciousness of gold. Blood is easily spilled in its name.",
+  [ResourcesIds.Sapphire]:
+    "Sapphires are given birth from titanic forces that crush and grind for thousands of years in a hellscape of heat and pressure. The result is a gemstone accustomed to both pain and beauty.",
+  [ResourcesIds.Ruby]:
+    "Rubies are the chimeric fusion of metal alloys and oxygen. This hybrid of metal and minerals is often scarcer than the lives of those who seek it.",
+  [ResourcesIds.DeepCrystal]:
+    "Deep crystal was imprisoned from the mortal world by a timeless geode, the source of these formations have confounded scholars for centuries. Strange vibrations can be felt when held.",
+  [ResourcesIds.Ignium]:
+    "Some horrible power has irrevocably scarred this ignium stone with an infernal radiation that evaporates water and skin alike.",
+  [ResourcesIds.EtherealSilica]:
+    "Ethereal silica is a glass that funnels and bends light in ways that deviate from known physics. Those exposed for long periods of time experience an all- consuming lethargic bliss.",
+  [ResourcesIds.TrueIce]:
+    "True ice does not melt, it is carved like living stone from frozen abyssal caverns far beneath the earth. Many a careless mason has lost their life when placing this near Ignium.",
+  [ResourcesIds.TwilightQuartz]:
+    "Fortunately, this gemstone grows deep within the earth, far away from the soft flesh of mortal kind. Its elegance hides a tendency to rapidly engulf organic matter it encounters in a matter of hours.",
+  [ResourcesIds.AlchemicalSilver]:
+    "Alchemical Silver is found pooled beneath battlegrounds from a forgotten, lost era. It can retain an almost unlimited amount of potential energy, making it the perfect catalyst for those delving into the mysteries of the universe.",
+  [ResourcesIds.Adamantine]:
+    "Adamantine forms around ontological anomalies like the immune response of a planetary entity. It contains the supernatural strength to contain such terrors from spreading. Woe to those who shortsightedly take it from its original purpose.",
+  [ResourcesIds.Mithral]:
+    "This otherworldly metal has the strength of adamantine but is lighter than air. The pieces are held in place by strange gravitational core. Those who spend much time with it slowly succumb to neurotic delusions of a rapturous, divine apocalypse.",
+  [ResourcesIds.Dragonhide]:
+    "Dragons are the hidden guardians of our reality. No mortal can witness their work, lest they be purged by dragonfire. If you find one of these scales, flee. Only death can be found in their presence or by the forces they fight in secret.",
 };

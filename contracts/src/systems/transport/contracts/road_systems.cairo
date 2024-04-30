@@ -1,21 +1,24 @@
+#[dojo::interface]
+trait IRoadSystems {
+    fn create(
+        entity_id: eternum::alias::ID,
+        start_coord: eternum::models::position::Coord,
+        end_coord: eternum::models::position::Coord,
+        usage_count: usize
+    );
+}
+
 #[dojo::contract]
 mod road_systems {
-    use eternum::models::position::{Coord};
-    use eternum::models::resources::{Resource, ResourceCost};
-    use eternum::models::road::{Road, RoadImpl};
-    use eternum::models::owner::Owner;
-    use eternum::models::config::RoadConfig;
-
     use eternum::constants::ROAD_CONFIG_ID;
-
-    use eternum::systems::transport::interface::road_systems_interface::{
-        IRoadSystems
-    };
-
+    use eternum::models::config::RoadConfig;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::{Coord};
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+    use eternum::models::road::{Road, RoadImpl};
 
     #[abi(embed_v0)]
-    impl RoadSystemsImpl of IRoadSystems<ContractState> {
-
+    impl RoadSystemsImpl of super::IRoadSystems<ContractState> {
         /// Create a road between two coordinates on the map.
         ///
         /// Note: when you creat a road from A -> B, 
@@ -28,13 +31,18 @@ mod road_systems {
         /// * `end_coord` - The ending coordinate of the road.
         /// * `usage_count` - The number of times the road can be used.
         fn create(
-            self:@ContractState, world: IWorldDispatcher, 
-            entity_id: u128, start_coord: Coord, end_coord: Coord, usage_count: usize
+            world: IWorldDispatcher,
+            entity_id: u128,
+            start_coord: Coord,
+            end_coord: Coord,
+            usage_count: usize
         ) {
-
             // assert that entity is owned by caller
             let entity_owner = get!(world, entity_id, Owner);
-            assert(entity_owner.address == starknet::get_caller_address(), 'entity id not owned by caller');
+            assert(
+                entity_owner.address == starknet::get_caller_address(),
+                'entity id not owned by caller'
+            );
 
             let road = RoadImpl::get(world, start_coord, end_coord);
             assert(road.usage_count == 0, 'road already exists');
@@ -46,32 +54,31 @@ mod road_systems {
                     break;
                 }
 
-                let resource_cost 
-                    = get!(world, (road_config.resource_cost_id, index), ResourceCost);
-                let mut realm_resource 
-                    = get!(world, (entity_id, resource_cost.resource_type), Resource);
-
-                assert(
-                    realm_resource.balance >= resource_cost.amount * usage_count.into(),
-                        'insufficient resources'
+                let resource_cost = get!(
+                    world, (road_config.resource_cost_id, index), ResourceCost
+                );
+                let mut realm_resource = ResourceImpl::get(
+                    world, (entity_id, resource_cost.resource_type)
                 );
 
-                realm_resource.balance -= resource_cost.amount * usage_count.into();
-                set!(world, (realm_resource));
+                realm_resource.burn(resource_cost.amount * usage_count.into());
+                realm_resource.save(world);
 
                 index += 1;
             };
-            
-            set!(world, (
-                Road {
-                    start_coord_x: start_coord.x,
-                    start_coord_y: start_coord.y,
-                    end_coord_x: end_coord.x,
-                    end_coord_y: end_coord.y,
-                    usage_count
-                },
-            ));
-        }
 
+            set!(
+                world,
+                (
+                    Road {
+                        start_coord_x: start_coord.x,
+                        start_coord_y: start_coord.y,
+                        end_coord_x: end_coord.x,
+                        end_coord_y: end_coord.y,
+                        usage_count
+                    },
+                )
+            );
+        }
     }
 }

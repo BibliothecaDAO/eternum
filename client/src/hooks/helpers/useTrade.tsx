@@ -1,12 +1,11 @@
 import { HasValue, getComponentValue, runQuery, Entity } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import { MarketInterface, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
-import { getEntityIdFromKeys } from "../../utils/utils";
-import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
-import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
-import { SortInterface } from "../../elements/SortButton";
+import { getEntityIdFromKeys } from "../../ui/utils/utils";
+import { calculateRatio } from "../../ui/components/cityview/realm/trade/Market/MarketOffer";
+import { SortInterface } from "../../ui/elements/SortButton";
 import useBlockchainStore from "../store/useBlockchainStore";
 import useMarketStore, { isLordsMarket } from "../store/useMarketStore";
 import { useEntityQuery } from "@dojoengine/react";
@@ -24,40 +23,22 @@ type TradeResources = {
 export function useTrade() {
   const {
     setup: {
-      components: { Resource, Trade, Realm, ResourceChest, DetachedResource },
+      components: { Resource, Trade, Realm, DetachedResource },
     },
   } = useDojo();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const getChestResources = (resourcesChestId: bigint): Resource[] => {
-    const resourcesChest = getComponentValue(ResourceChest, getEntityIdFromKeys([resourcesChestId]));
-    if (!resourcesChest) return [];
-    let resources: Resource[] = [];
-    let { resources_count } = resourcesChest;
-    for (let i = 0; i < resources_count; i++) {
-      let entityId = getEntityIdFromKeys([resourcesChestId, BigInt(i)]);
-      const resource = getComponentValue(DetachedResource, entityId);
-      if (resource) {
-        resources.push({
-          resourceId: resource.resource_type,
-          amount: Number(resource.resource_amount),
-        });
-      }
+  const getDetachedResources = (entityId: bigint): Resource[] => {
+    let resources = [];
+    let index = 0n;
+    let detachedResource = getComponentValue(DetachedResource, getEntityIdFromKeys([entityId, index]));
+    while (detachedResource) {
+      resources.push({ resourceId: detachedResource.resource_type, amount: Number(detachedResource.resource_amount) });
+      index++;
+      detachedResource = getComponentValue(DetachedResource, getEntityIdFromKeys([entityId, index]));
     }
     return resources;
-  };
-
-  const getTradeResourcesFromTakerViewpoint = (tradeId: bigint): TradeResourcesFromViewpoint => {
-    let trade = getComponentValue(Trade, getEntityIdFromKeys([BigInt(tradeId)]));
-
-    if (!trade) return { resourcesGet: [], resourcesGive: [] };
-
-    let resourcesGet = getChestResources(trade.taker_resource_chest_id);
-
-    let resourcesGive = getChestResources(trade.maker_resource_chest_id);
-
-    return { resourcesGet, resourcesGive };
   };
 
   const getTradeResources = (tradeId: bigint): TradeResources => {
@@ -65,9 +46,9 @@ export function useTrade() {
 
     if (!trade) return { takerGets: [], makerGets: [] };
 
-    let takerGets = getChestResources(trade.taker_resource_chest_id);
+    let takerGets = getDetachedResources(trade.maker_gives_resources_id);
 
-    let makerGets = getChestResources(trade.maker_resource_chest_id);
+    let makerGets = getDetachedResources(trade.taker_gives_resources_id);
 
     return { takerGets, makerGets };
   };
@@ -79,29 +60,15 @@ export function useTrade() {
 
     let resourcesGet =
       trade.maker_id === entityId
-        ? getChestResources(trade.maker_resource_chest_id)
-        : getChestResources(trade.taker_resource_chest_id);
+        ? getDetachedResources(trade.taker_gives_resources_id)
+        : getDetachedResources(trade.maker_gives_resources_id);
 
     let resourcesGive =
       trade.maker_id === entityId
-        ? getChestResources(trade.taker_resource_chest_id)
-        : getChestResources(trade.maker_resource_chest_id);
+        ? getDetachedResources(trade.maker_gives_resources_id)
+        : getDetachedResources(trade.taker_gives_resources_id);
 
     return { resourcesGet, resourcesGive };
-  };
-
-  const getTradeIdFromResourcesChestId = (resourcesChestId: bigint): bigint | undefined => {
-    const tradeIfMaker = Array.from(runQuery([HasValue(Trade, { maker_resource_chest_id: resourcesChestId })]));
-    const tradeIfTaker = Array.from(runQuery([HasValue(Trade, { taker_resource_chest_id: resourcesChestId })]));
-    if (tradeIfMaker.length > 0) {
-      let trade = getComponentValue(Trade, tradeIfMaker[0]);
-      return trade?.trade_id;
-    } else if (tradeIfTaker.length > 0) {
-      let trade = getComponentValue(Trade, tradeIfTaker[0]);
-      return trade?.trade_id;
-    } else {
-      return undefined;
-    }
   };
 
   function computeTrades(entityIds: Entity[]) {
@@ -152,11 +119,8 @@ export function useTrade() {
   return {
     getTradeResources,
     getTradeResourcesFromEntityViewpoint,
-    getTradeIdFromResourcesChestId,
-    getChestResources,
     canAcceptOffer,
     computeTrades,
-    getTradeResourcesFromTakerViewpoint,
   };
 }
 
@@ -176,12 +140,7 @@ export function useGetMyOffers(): MarketInterface[] {
   const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { maker_id: realmEntityId })]);
 
   useMemo((): any => {
-    const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID.toString() as Entity);
-    const trades = computeTrades(
-      entityIds
-        // avoid having optimistic and real trade at the same time
-        .slice(0, optimisticTradeId === -1 ? entityIds.length + 1 : optimisticTradeId + 1),
-    );
+    const trades = computeTrades(entityIds);
     setMyOffers(trades);
     // only recompute when different number of orders
   }, [entityIds]);

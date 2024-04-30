@@ -2,11 +2,11 @@ import { useHyperstructure } from "../helpers/useHyperstructure";
 import useUIStore from "./useUIStore";
 import { useCallback, useMemo, useState } from "react";
 import useRealmStore from "./useRealmStore";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "../../utils/utils";
-import { getRealm } from "../../utils/realms";
-import hyperstructuresHex from "../../geodata/hex/hyperstructuresHexPositions.json";
+import { getEntityIdFromKeys } from "../../ui/utils/utils";
+import { getRealm } from "../../ui/utils/realms";
+import hyperstructuresHex from "../../data/geodata/hex/hyperstructuresHexPositions.json";
 
 export const useRefreshHyperstructure = () => {
   const {

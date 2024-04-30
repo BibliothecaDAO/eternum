@@ -11,6 +11,12 @@ export enum DESTINATION_TYPE {
   BANK,
 }
 
+export enum ENTITY_TYPE {
+  DONKEY,
+  TROOP,
+  UNKNOWN,
+}
+
 export interface CombatResultInterface {
   attackerRealmEntityId: bigint;
   targetRealmEntityId: bigint;
@@ -93,19 +99,19 @@ export interface RoadInterface {
   usageLeft: number;
 }
 
-export interface CaravanInterface {
-  caravanId: bigint;
-  resourcesChestId: bigint | undefined;
+export interface EntityInterface {
+  entityId: bigint;
   blocked: boolean | undefined;
   arrivalTime: number | undefined;
-  pickupArrivalTime: number | undefined;
   capacity: number | undefined;
   intermediateDestination: Position | undefined;
   owner: bigint | undefined;
   isMine: boolean;
   isRoundTrip: boolean;
   position: Position | undefined;
-  destinationType: DESTINATION_TYPE;
+  homePosition: Position | undefined;
+  resources: Resource[];
+  entityType: ENTITY_TYPE;
 }
 
 /// REALMS
@@ -120,6 +126,17 @@ export interface SelectableRealmInterface {
   addressName: string;
 }
 
+export interface SelectableLocationInterface {
+  entityId: bigint;
+  home: boolean;
+  realmId: bigint;
+  name: string;
+  order: string;
+  distance: number;
+  defence?: CombatInfo;
+  level?: number;
+  addressName: string;
+}
 export interface RealmInterface {
   realmId: bigint;
   name: string;

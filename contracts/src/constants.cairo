@@ -1,21 +1,16 @@
 use eternum::alias::ID;
 
+
 // Config ID to fetch global configs
 const WORLD_CONFIG_ID: u128 = 999999999999999999;
 const BUILDING_CONFIG_ID: u128 = 999999999999999998;
-// DISCUSS: these config IDs are used to query a global config for a set of systems (like labor systems)
-// and are not linked to a specific entity_type, 
-// e.g. LaborConfig holds a set of configuration values 
-// that are used for all labor, regardless of the resource
-// - base_labor_units
-// - base_resources_per_cycle
-const LABOR_CONFIG_ID: u128 = 999999999999999997;
 const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
 const ROAD_CONFIG_ID: u128 = 999999999999999995;
 const COMBAT_CONFIG_ID: u128 = 999999999999999994;
 const REALM_LEVELING_CONFIG_ID: u128 = 999999999999999993;
 const HYPERSTRUCTURE_LEVELING_CONFIG_ID: u128 = 999999999999999992;
 const REALM_FREE_MINT_CONFIG_ID: u128 = 999999999999999991;
+const POPULATION_CONFIG_ID: u128 = 999999999999999990;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
@@ -28,6 +23,16 @@ const REALM_LEVELING_START_TIER: u64 = 1;
 // max realms per user
 const MAX_REALMS_PER_ADDRESS: u8 = 5;
 
+// base population
+// TODO: Move to Onchain config
+const BASE_POPULATION: u32 = 6;
+
+// resource precision
+const RESOURCE_PRECISION: u128 = 10_000;
+
+// base storehouse capacity
+// TODO: Move to Onchain config
+const BASE_STOREHOUSE_CAPACITY: u128 = 10_000;
 
 mod ResourceTypes {
     const WOOD: u8 = 1;
@@ -58,17 +63,24 @@ mod ResourceTypes {
     const UNREFINED_ORE: u8 = 26;
     const SUNKEN_SHEKEL: u8 = 27;
     const DEMONHIDE: u8 = 28;
+
+    // TRANSPORT
+    const DONKEY: u8 = 249;
+
+    // TROOPS // @dev: troops are not resources, but they are stored in the same data structure
+    const KNIGHT: u8 = 250;
+    const CROSSBOWMAN: u8 = 251;
+    const PALADIN: u8 = 252;
+
     const LORDS: u8 = 253;
     const WHEAT: u8 = 254;
     const FISH: u8 = 255;
-
-    // note: update _resource_type_to_position 
-    //  function is any new resources are added
+// note: update _resource_type_to_position 
+//  function is any new resources are added
 }
 
 /// Get resource occurence probabilities
 fn get_resource_probabilities() -> Span<(u8, u128)> {
-
     return array![
         (ResourceTypes::WOOD, 2018108),
         (ResourceTypes::STONE, 1585915),
@@ -92,7 +104,8 @@ fn get_resource_probabilities() -> Span<(u8, u128)> {
         (ResourceTypes::ADAMANTINE, 22133),
         (ResourceTypes::MITHRAL, 14889),
         (ResourceTypes::DRAGONHIDE, 9256),
-    ].span();   
+    ]
+        .span();
 }
 
 
@@ -102,11 +115,13 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
     let mut resource_probabilities = array![];
     loop {
         match zipped.pop_front() {
-            Option::Some((resource_type, probability)) => {
+            Option::Some((
+                resource_type, probability
+            )) => {
                 resource_types.append(*resource_type);
                 resource_probabilities.append(*probability);
             },
-            Option::None => {break;},
+            Option::None => { break; },
         }
     };
 
@@ -114,14 +129,12 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 }
 
 
-
-
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
 // DISCUSS: register each new entity_type to the system by creating an entity containing the config components
-// Using FREE_TRANSPORT_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
-const FREE_TRANSPORT_ENTITY_TYPE: u128 = 256;
+// Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
+const DONKEY_ENTITY_TYPE: u128 = 256;
 const REALM_ENTITY_TYPE: u128 = 257;
-const SOLDIER_ENTITY_TYPE: u128 = 258;
+const ARMY_ENTITY_TYPE: u128 = 258;
 
 
 // TODO: change to consts
@@ -142,4 +155,11 @@ mod LevelIndex {
     const RESOURCE: u8 = 2;
     const TRAVEL: u8 = 3;
     const COMBAT: u8 = 4;
+}
+
+mod ErrorMessages {
+    // we can't use this because values are not "strings" but 'felts'
+    // and we can only use string literals in assert! macro
+    // 
+    const NOT_OWNER: felt252 = 'Not Owner';
 }

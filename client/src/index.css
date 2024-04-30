@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Aleo:wght@300;400;700&family=Merriweather:wght@300;400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap&family=Sedan:ital@0;1&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -7,9 +7,17 @@
 html,
 body {
   overflow: hidden;
-  font-family: "Merriweather", serif;
+  font-family: "Space Grotesk", sans-serif;
   touch-action: none;
   @apply cursor-fancy;
+}
+
+h1,h2,h3,h4,h5,h6 {
+  font-family: "Sedan", sans-serif;
+}
+
+.h1,.h2,.h3,.h4,.h5,.h6 {
+  font-family: "Sedan", sans-serif;
 }
 
 @keyframes dotAnimation {
@@ -91,9 +99,6 @@ body {
   pointer-events: auto;
 }
 
-h1 {
-  @apply text-4xl font-bold;
-}
 
 .track-name-container {
   width: 100%;
@@ -114,4 +119,29 @@ h1 {
   100% {
     transform: translateX(-100%);
   }
+}
+
+
+h1 {
+  @apply text-4xl sm:text-5xl md:text-6xl font-bold ;
+}
+
+h2 {
+  @apply text-2xl sm:text-3xl md:text-4xl font-semibold ;
+}
+
+h3 {
+  @apply text-xl sm:text-2xl md:text-3xl font-medium ;
+}
+
+h4 {
+  @apply text-lg sm:text-xl md:text-2xl font-normal ;
+}
+
+h5 {
+  @apply text-base sm:text-lg md:text-xl font-light ;
+}
+
+h6 {
+  @apply text-sm sm:text-base md:text-lg font-thin ;
 }

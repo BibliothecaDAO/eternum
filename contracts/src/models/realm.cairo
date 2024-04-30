@@ -1,8 +1,8 @@
-use starknet::ContractAddress;
-use traits::Into;
 use array::SpanTrait;
 use eternum::alias::ID;
 use eternum::utils::unpack::unpack_resource_types;
+use starknet::ContractAddress;
+use traits::Into;
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Realm {
@@ -23,7 +23,6 @@ struct Realm {
 }
 
 
-
 trait RealmTrait {
     fn has_resource(self: Realm, resource_type: u8) -> bool;
 }
@@ -36,15 +35,11 @@ impl RealmImpl of RealmTrait {
         let mut has_resource = false;
         loop {
             match resource_types.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        has_resource = true;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    has_resource = true;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
         has_resource

@@ -1,15 +1,15 @@
-import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark.svg";
-import { OrderIcon } from "../../elements/OrderIcon";
-import { Badge } from "../../elements/Badge";
-import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
-import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
+import { ReactComponent as Checkmark } from "@/assets/icons/common/checkmark.svg";
+import { OrderIcon } from "../../ui/elements/OrderIcon";
+import { Badge } from "../../ui/elements/Badge";
+import { getRealmNameById, getRealmOrderNameById } from "../../ui/utils/realms";
+import { divideByPrecision, getEntityIdFromKeys } from "../../ui/utils/utils";
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { ArrivedAtBankData, EventType, NotificationType, useNotificationsStore } from "../store/useNotificationsStore";
 import { useState } from "react";
-import { ResourceCost } from "../../elements/ResourceCost";
-import Button from "../../elements/Button";
+import { ResourceCost } from "../../ui/elements/ResourceCost";
+import Button from "../../ui/elements/Button";
 
 export const useCaravanHasArrivedAtBankNotification = (
   notification: NotificationType,
@@ -22,7 +22,6 @@ export const useCaravanHasArrivedAtBankNotification = (
   const {
     account: { account },
     setup: {
-      systemCalls: { swap_bank_and_travel_back },
       components: { Realm },
     },
   } = useDojo();
@@ -43,18 +42,6 @@ export const useCaravanHasArrivedAtBankNotification = (
 
   const transferAndReturn = async () => {
     setIsLoading(true);
-    await swap_bank_and_travel_back({
-      signer: account,
-      sender_id: data.caravanId,
-      bank_id: data.bank.bankId,
-      inventoryIndex: 0,
-      resource_types: data.resources.map(() => 253),
-      indices: data.indices,
-      // lords amount
-      resource_amounts: data.lordsAmounts.map((amount) => Math.floor(amount * 1000)),
-      destination_coord_x: data.homePosition.x,
-      destination_coord_y: data.homePosition.y,
-    });
     deleteNotification([data.caravanId.toString()], EventType.ArrivedAtBank);
   };
 

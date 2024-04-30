@@ -1,34 +1,33 @@
+#[dojo::interface]
+trait IMapSystems {
+    fn explore(unit_id: u128, direction: eternum::models::position::Direction);
+}
+
 #[dojo::contract]
 mod map_systems {
     use core::traits::Into;
     use eternum::alias::ID;
-    use eternum::models::resources::{Resource, ResourceCost, ResourceTrait, ResourceFoodImpl};
     use eternum::constants::ResourceTypes;
-    use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::quantity::Quantity;
-    use eternum::models::combat::Health;
-    use eternum::models::movable::{Movable,ArrivalTime};
-    use eternum::models::inventory::Inventory;
-    use eternum::models::map::Tile;
-    use eternum::models::position::{Position};
-    use eternum::models::config::{LevelingConfig};
-    use eternum::models::realm::{Realm};
-    use eternum::models::level::{Level, LevelTrait};
-    use eternum::models::config::MapExploreConfig;
-    use eternum::systems::map::interface::IMapSystems;
-    use eternum::utils::map::biomes::{Biome, get_biome};
-    use eternum::utils::random;
-    use eternum::models::position::{Coord, CoordTrait, Direction};
     use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
-    use eternum::systems::resources::contracts::resource_systems::{
-        InternalResourceSystemsImpl
-    };
+    use eternum::models::combat::{Health, HealthTrait};
+    use eternum::models::config::{MapExploreConfig, LevelingConfig};
+    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::level::{Level, LevelTrait};
+    use eternum::models::map::Tile;
+    use eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
+    use eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
+    use eternum::models::position::{Coord, CoordTrait, Direction, Position};
+    use eternum::models::quantity::Quantity;
+    use eternum::models::realm::{Realm};
+    use eternum::models::resources::{Resource, ResourceCost, ResourceTrait, ResourceFoodImpl};
+    use eternum::models::tick::{TickMove, TickMoveTrait};
+    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl
     };
-    use eternum::models::tick::{TickMove, TickMoveTrait};
-    
+    use eternum::utils::map::biomes::{Biome, get_biome};
+    use eternum::utils::random;
+
     use starknet::ContractAddress;
 
 
@@ -52,56 +51,35 @@ mod map_systems {
     }
 
 
+    // @DEV TODO: We can generalise this more...
     #[abi(embed_v0)]
-    impl MapSystemsImpl of IMapSystems<ContractState> {
-
-
-        fn explore(
-            self: @ContractState, world: IWorldDispatcher, 
-            unit_id: u128, direction: Direction
-        ) {
-
+    impl MapSystemsImpl of super::IMapSystems<ContractState> {
+        fn explore(world: IWorldDispatcher, unit_id: u128, direction: Direction) {
             // check that caller owns unit
-            let caller = starknet::get_caller_address();
-            let unit_owner = get!(world, unit_id, Owner);
-            assert(unit_owner.address == caller, 'not unit owner');
+            get!(world, unit_id, Owner).assert_caller_owner();
 
             // ensure unit is alive
-            let unit_health = get!(world, unit_id, Health);      
-            assert(unit_health.value != 0, 'entity is dead');  
+            get!(world, unit_id, Health).assert_alive();
 
             // check that entity owner is a realm
+            // TODO: Do we need this?
             let unit_entity_owner = get!(world, unit_id, EntityOwner);
             let unit_realm = get!(world, unit_entity_owner.entity_owner_id, Realm);
             assert(unit_realm.realm_id != 0, 'not owned by realm');
 
-            // check that there is more than one entity in unit
-            let mut unit_quantity = get!(world, unit_id, Quantity);
-            assert(unit_quantity.value > 0, 'not enough quantity');
-
             // ensure unit can move
-            let unit_movable = get!(world, unit_id, Movable);      
-            assert(unit_movable.sec_per_km != 0, 'entity cant move');  
-            assert(unit_movable.blocked == false, 'entity is blocked');  
-
+            get!(world, unit_id, Movable).assert_moveable();
 
             // ensure unit is not in transit
-            let unit_arrival_time = get!(world, unit_id, ArrivalTime);
-            let ts = starknet::get_block_timestamp();
-            assert(unit_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
+            get!(world, unit_id, ArrivalTime).assert_not_travelling();
 
+            // explore coordinate, pay food and mint reward
+            let exploration_reward = InternalMapSystemsImpl::pay_food_and_get_explore_reward(
+                world, unit_entity_owner.entity_owner_id
+            );
 
-            // // check that unit isn't carrying anything
-            // let unit_inventory = get!(world, unit_id, Inventory);
-            // assert(unit_inventory.items_count == 0, 'unit inventory not empty');
-
-
-            // explore coordinate, burn food and mint reward
-            let exploration_reward 
-                = InternalMapSystemsImpl::burn_food_and_get_explore_reward(
-                        world, unit_entity_owner.entity_owner_id 
-                    );
-            InternalResourceSystemsImpl::transfer(world, 0, unit_id, exploration_reward);
+            // TODO: Fix this
+            InternalResourceSystemsImpl::transfer(world, 0, 0, unit_id, exploration_reward);
 
             let current_coord: Coord = get!(world, unit_id, Position).into();
             let next_coord = current_coord.neighbor(direction);
@@ -111,23 +89,21 @@ mod map_systems {
             InternalTravelSystemsImpl::travel_hex(
                 world, unit_id, current_coord, array![direction].span()
             );
-            
+
             // max out the army's movement for that tick so 
             // they can no longer travel during tick
-            let mut tick_move : TickMove = get!(world, unit_id, TickMove);
+            let mut tick_move: TickMove = get!(world, unit_id, TickMove);
             tick_move.max_out(world);
         }
-
     }
 
 
     #[generate_trait]
     impl InternalMapSystemsImpl of InternalMapSystemsTrait {
-        
-        fn explore(world: IWorldDispatcher, entity_id: u128, coord: Coord, reward: Span<(u8, u128)>) -> Tile {
-
-            let mut tile: Tile
-                 = get!(world, (coord.x, coord.y), Tile);
+        fn explore(
+            world: IWorldDispatcher, entity_id: u128, coord: Coord, reward: Span<(u8, u128)>
+        ) -> Tile {
+            let mut tile: Tile = get!(world, (coord.x, coord.y), Tile);
             assert(tile.explored_at == 0, 'already explored');
 
             // set tile as explored
@@ -139,42 +115,43 @@ mod map_systems {
 
             set!(world, (tile));
 
-
             // emit explored event
             let entity_owned_by = get!(world, entity_id, EntityOwner);
 
-            emit!(world,  MapExplored {
-                entity_id: entity_id,
-                entity_owner_id: entity_owned_by.entity_owner_id,
-                col: tile.col,
-                row: tile.row,
-                biome: tile.biome,
-                reward
-            });
+            emit!(
+                world,
+                (
+                    Event::MapExplored(
+                        MapExplored {
+                            entity_id: entity_id,
+                            entity_owner_id: entity_owned_by.entity_owner_id,
+                            col: tile.col,
+                            row: tile.row,
+                            biome: tile.biome,
+                            reward
+                        }
+                    ),
+                )
+            );
 
             tile
         }
 
-        fn burn_food_and_get_explore_reward(world: IWorldDispatcher, realm_entity_id: u128) -> Span<(u8, u128)> {
-            
+        fn pay_food_and_get_explore_reward(
+            world: IWorldDispatcher, realm_entity_id: u128
+        ) -> Span<(u8, u128)> {
             let explore_config: MapExploreConfig = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
-            let mut wheat_burn_amount = explore_config.wheat_burn_amount;
-            let mut fish_burn_amount = explore_config.fish_burn_amount;
-            ResourceFoodImpl::burn_food(
-                world, realm_entity_id, wheat_burn_amount, 
-                fish_burn_amount, check_balance: true
-            );
+            let mut wheat_pay_amount = explore_config.wheat_burn_amount;
+            let mut fish_pay_amount = explore_config.fish_burn_amount;
+            ResourceFoodImpl::pay(world, realm_entity_id, wheat_pay_amount, fish_pay_amount);
 
             let (resource_types, resources_probs) = split_resources_and_probs();
-            let reward_resource_id: u8 
-                = *random::choices(resource_types, resources_probs, array![].span(), 1, true).at(0);
+            let reward_resource_id: u8 = *random::choices(
+                resource_types, resources_probs, array![].span(), 1, true
+            )
+                .at(0);
             let reward_resource_amount: u128 = explore_config.reward_resource_amount;
             array![(reward_resource_id, reward_resource_amount)].span()
         }
-        
-
     }
-
-
-
 }

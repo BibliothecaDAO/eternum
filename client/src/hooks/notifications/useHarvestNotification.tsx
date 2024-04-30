@@ -1,12 +1,12 @@
-import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark.svg";
-import { OrderIcon } from "../../elements/OrderIcon";
-import { useDojo } from "../../DojoContext";
+import { ReactComponent as Checkmark } from "@/assets/icons/common/checkmark.svg";
+import { OrderIcon } from "../../ui/elements/OrderIcon";
+import { useDojo } from "../context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
-import { Badge } from "../../elements/Badge";
-import { getEntityIdFromKeys } from "../../utils/utils";
-import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
-import Button from "../../elements/Button";
-import { ResourceCost } from "../../elements/ResourceCost";
+import { Badge } from "../../ui/elements/Badge";
+import { getEntityIdFromKeys } from "../../ui/utils/utils";
+import { getRealmNameById, getRealmOrderNameById } from "../../ui/utils/realms";
+import Button from "../../ui/elements/Button";
+import { ResourceCost } from "../../ui/elements/ResourceCost";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { soundSelector, useUiSounds } from "../useUISound";
 import { useMemo, useState } from "react";
@@ -24,8 +24,6 @@ export const useHarvestNotification = (
   const {
     setup: {
       components: { Realm },
-      systemCalls: { harvest_labor },
-      optimisticSystemCalls: { optimisticHarvestLabor },
     },
     account: { account },
   } = useDojo();
@@ -60,16 +58,6 @@ export const useHarvestNotification = (
     setIsLoading(true);
     if (!realmEntityId || !resourceType) return;
     if (levelBonus && resourceType) {
-      await optimisticHarvestLabor(
-        nextBlockTimestamp || 0,
-        levelBonus,
-        hyperstructureLevelBonus,
-        harvest_labor,
-      )({
-        signer: account,
-        realm_id: realmEntityId,
-        resource_type: resourceType,
-      });
       deleteNotification(notification.keys, notification.eventType);
       playHarvest();
       setIsLoading(false);

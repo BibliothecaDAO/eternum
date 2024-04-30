@@ -1,27 +1,33 @@
 import useSound from "use-sound";
 import useUIStore from "./store/useUIStore";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
 
 const dir = "/sound/";
 
 export const soundSelector = {
-  click: "ui/click.mp3",
+  hoverClick: "ui/ui-click-1.wav",
+  click: "ui/click-2.wav",
   sign: "ui/sign.mp3",
   harvest: "ui/harvest.mp3",
   fly: "ui/whoosh.mp3",
   levelUp: "ui/level-up.mp3",
   explore: "ui/explore.mp3",
+  shovelMain: "ui/shovel_1.mp3",
+  shovelAlternative: "ui/shovel_2.mp3",
   buildLabor: "buildings/workhuts.mp3",
   buildMilitary: "buildings/military.mp3",
   buildCastle: "buildings/castle.mp3",
   buildBarracks: "buildings/barracks.mp3",
-  buildArcherTower: "buildings/archer_tower.mp3",
+  buildArcherRange: "buildings/archer_range.mp3",
   buildMageTower: "buildings/mage_tower.mp3",
   buildWorkHut: "buildings/workhuts.mp3",
   buildFishingVillage: "buildings/fishing_village.mp3",
   buildFarm: "buildings/farm.mp3",
   buildStorehouse: "buildings/storehouse.mp3",
+  buildMine: "buildings/mine.mp3",
+  buildMarket: "buildings/market.mp3",
+  buildStables: "buildings/stables.mp3",
   addWheat: "resources/wheat.mp3",
   addFish: "resources/fish.mp3",
   addWood: "resources/wood.mp3",
@@ -206,5 +212,73 @@ export const useRunningSound = () => {
   return {
     play,
     stop,
+  };
+};
+
+export const useShovelSound = () => {
+  const { play: playShovelMain } = useUiSounds(soundSelector.shovelMain);
+  const { play: playShovelAlternative } = useUiSounds(soundSelector.shovelAlternative);
+  const [isFirst, setIsFirst] = useState(true);
+
+  const play = useCallback(() => {
+    if (isFirst) {
+      playShovelMain();
+    } else {
+      playShovelAlternative();
+    }
+    setIsFirst((prev) => !prev);
+  }, [isFirst, playShovelAlternative, playShovelMain]);
+
+  return {
+    play,
+  };
+};
+
+export const useBuildingSound = () => {
+  const { play: playBuildCastle } = useUiSounds(soundSelector.buildCastle);
+  const { play: playBuildFarm } = useUiSounds(soundSelector.buildFarm);
+  const { play: playBuildFishingVillage } = useUiSounds(soundSelector.buildFishingVillage);
+  const { play: playBuildMine } = useUiSounds(soundSelector.buildMine);
+  const { play: playBuildStables } = useUiSounds(soundSelector.buildStables);
+  const { play: playBuildWorkHut } = useUiSounds(soundSelector.buildWorkHut);
+  const { play: playBuildArcherRange } = useUiSounds(soundSelector.buildArcherRange);
+  const { play: playBuildBarracks } = useUiSounds(soundSelector.buildBarracks);
+  const { play: playBuildMarket } = useUiSounds(soundSelector.buildMarket);
+  const { play: playBuildStorehouse } = useUiSounds(soundSelector.buildStorehouse);
+
+  const playBuildingSound = (buildingType: BuildingType) => {
+    switch (buildingType) {
+      case BuildingType.Castle:
+        playBuildCastle();
+        break;
+      case BuildingType.Farm:
+        playBuildFarm();
+        break;
+      case BuildingType.FishingVillage:
+        playBuildFishingVillage();
+        break;
+      case BuildingType.Resource:
+        playBuildMine();
+        break;
+      case BuildingType.Stable:
+        playBuildStables();
+        break;
+      case BuildingType.ArcheryRange:
+        playBuildArcherRange();
+        break;
+      case BuildingType.Barracks:
+        playBuildBarracks();
+        break;
+      case BuildingType.Market:
+        playBuildMarket();
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  return {
+    playBuildingSound,
   };
 };

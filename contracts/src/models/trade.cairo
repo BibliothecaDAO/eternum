@@ -5,11 +5,13 @@ struct Trade {
     #[key]
     trade_id: u128,
     maker_id: u128,
-    maker_resource_chest_id: u128,
-    maker_transport_id: u128,
+    maker_gives_resources_id: u128,
+    maker_gives_resources_hash: felt252,
+    maker_gives_resources_weight: u128,
     taker_id: u128,
-    taker_resource_chest_id: u128,
-    taker_transport_id: u128,
+    taker_gives_resources_id: u128,
+    taker_gives_resources_hash: felt252,
+    taker_gives_resources_weight: u128,
     expires_at: u64,
 }
 

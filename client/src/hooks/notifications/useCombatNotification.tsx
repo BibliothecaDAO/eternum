@@ -1,22 +1,22 @@
-import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark.svg";
-import { OrderIcon } from "../../elements/OrderIcon";
-import { Badge } from "../../elements/Badge";
-import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
-import { ResourceCost } from "../../elements/ResourceCost";
-import { ReactComponent as Map } from "../../assets/icons/common/map.svg";
+import { ReactComponent as Checkmark } from "@/assets/icons/common/checkmark.svg";
+import { OrderIcon } from "../../ui/elements/OrderIcon";
+import { Badge } from "../../ui/elements/Badge";
+import { getRealmNameById, getRealmOrderNameById } from "../../ui/utils/realms";
+import { ResourceCost } from "../../ui/elements/ResourceCost";
+import { ReactComponent as Map } from "@/assets/icons/common/map.svg";
 import {
   divideByPrecision,
   formatTimeLeftDaysHoursMinutes,
   getEntityIdFromKeys,
   getUIPositionFromColRow,
-} from "../../utils/utils";
+} from "../../ui/utils/utils";
 import { CombatResultInterface, UIPosition, Winner } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { NotificationType, RaidersData } from "../store/useNotificationsStore";
 import { useRealm } from "../helpers/useRealm";
-import Button from "../../elements/Button";
+import Button from "../../ui/elements/Button";
 import useRealmStore from "../store/useRealmStore";
 import { useLocation } from "wouter";
 import useUIStore from "../store/useUIStore";

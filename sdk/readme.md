@@ -6,14 +6,6 @@ These packages are designed to allow for easy client integration into the Eternu
 
 - [eternum](./packages/eternum)
 
-### Enviroment setup
-
-We are using [bun](https://bun.sh/) in this repo install it by:
-
-```console
-curl -fsSL https://bun.sh/install | bash
-```
-
 ### Development
 
 From the root to install all the packages deps

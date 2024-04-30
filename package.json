@@ -6,9 +6,10 @@
     "build-packages": "pnpm --dir sdk/packages/eternum build",
     "build-client": "pnpm --dir ./client build",
     "prettier-check": "npx prettier --check .",
-    "prettier": "npx prettier --write ."
+    "prettier": "npx prettier --write .",
+    "dev:docs": "pnpm --dir ./eternum-docs dev"
   },
   "dependencies": {
-    "tsup": "^7.2.0"
+    "tsup": "^8.0.2"
   }
 }

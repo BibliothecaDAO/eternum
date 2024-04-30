@@ -50,8 +50,11 @@ inhabitants.
 
 ## Project Structure
 
-- [Client Readme](./client/readme.md)
-- [Contracts Readme](./contracts/readme.md)
+- [Client](./client) Vite App with threejs interface
+- [Contracts](./contracts) Cairo Based
+- [Eternum Docs](./eternum-docs) Documentation around playing and building on Eternum
+- [Scripts](./scripts) Development
+- [SDK](./sdk) Npm packages
 
 ---
 
@@ -71,7 +74,7 @@ Install dojo via
 
 `curl -L https://install.dojoengine.org | bash`
 
-Make sure install the same version within the `Scarb.toml` file. Currently this is `v0.6.0-alpha.4`
+Make sure install the same version within the `Scarb.toml` file. Currently this is `0.6.1-alpha.4`
 
 Eternum uses a pnpm workspace to allow easy npm packages to be created. So you will need pnpm installed also.
 

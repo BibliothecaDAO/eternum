@@ -1,24 +1,29 @@
-import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
-import { CombatInfo, LABOR_CONFIG, Position, Resource, ResourcesIds, BankInterface } from "@bibliothecadao/eternum";
-import { Components, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { divideByPrecision, getEntityIdFromKeys } from "../../ui/utils/utils";
+import {
+  type CombatInfo,
+  LABOR_CONFIG,
+  type Position,
+  type Resource,
+  ResourcesIds,
+  type BankInterface,
+  TIME_PER_TICK,
+} from "@bibliothecadao/eternum";
+import { type Components, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import {
   CarrierType,
   EventType,
-  NotificationType,
+  type NotificationType,
   extractAndCleanKey,
   getLastLoginTimestamp,
 } from "../store/useNotificationsStore";
-import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
+import { calculateNextHarvest } from "../../ui/components/cityview/realm/labor/laborUtils";
 import { LevelIndex } from "../helpers/useLevel";
-import { getLordsAmountFromBankAuction } from "../../components/worldmap/banks/utils";
-import { BANK_AUCTION_DECAY, targetPrices } from "../helpers/useBanks";
-import { realmsPosition } from "./utils";
-import { TIME_PER_TICK } from "../../components/network/EpochCountdown";
+import { type realmsPosition } from "./utils";
 
-export type UpdatedEntity = {
+export interface UpdatedEntity {
   entityKeys: string[];
   modelNames: string[];
-};
+}
 
 /**
  * Generate trade notifications from entity updates from graphql subscription
@@ -30,10 +35,7 @@ export const generateTradeNotifications = (entityUpdates: UpdatedEntity[], compo
   const notifications = entityUpdates
     .map((update) => {
       if (update.modelNames.includes("Trade")) {
-        const status = getComponentValue(
-          components["Status"],
-          getEntityIdFromKeys(extractAndCleanKey(update.entityKeys)),
-        );
+        const status = getComponentValue(components.Status, getEntityIdFromKeys(extractAndCleanKey(update.entityKeys)));
         switch (status?.value) {
           case 0:
             return { eventType: EventType.DirectOffer, keys: update.entityKeys };
@@ -56,12 +58,12 @@ export const generateTradeNotifications = (entityUpdates: UpdatedEntity[], compo
     .filter(Boolean) as NotificationType[];
 
   // Remove consecutive duplicates
-  return notifications.reduce((acc, curr, idx, array) => {
+  return notifications.reduce<NotificationType[]>((acc, curr, idx, array) => {
     if (idx === 0 || JSON.stringify(curr) !== JSON.stringify(array[idx - 1])) {
       acc.push(curr);
     }
     return acc;
-  }, [] as NotificationType[]);
+  }, []);
 };
 
 /**
@@ -72,7 +74,7 @@ export const generateTradeNotifications = (entityUpdates: UpdatedEntity[], compo
  * @returns
  */
 export const generateLaborNotifications = (
-  resourcesPerRealm: { realmEntityId: bigint; resourceIds: number[] }[],
+  resourcesPerRealm: Array<{ realmEntityId: bigint; resourceIds: number[] }>,
   getRealmLevelBonus: (level: number, levelIndex: LevelIndex) => number,
   getHyperstructureLevelBonus: (level: number, levelIndex: LevelIndex) => number,
   nextBlockTimestamp: number,
@@ -83,9 +85,9 @@ export const generateLaborNotifications = (
   const notifications: NotificationType[] = [];
   resourcesPerRealm.forEach(({ realmEntityId, resourceIds }) => {
     resourceIds.forEach((resourceId) => {
-      const isFood = [ResourcesIds["Wheat"], ResourcesIds["Fish"]].includes(resourceId);
+      const isFood = [ResourcesIds.Wheat, ResourcesIds.Fish].includes(resourceId);
       const labor = getComponentValue(
-        components["Labor"],
+        components.Labor,
         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
       ) as { balance: number; last_harvest: number; multiplier: number } | undefined;
       const realmLevelBonus = getRealmLevelBonus(realmLevel, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
@@ -136,170 +138,46 @@ export const generateEmptyChestNotifications = (
   realmPositions: realmsPosition,
   components: Components,
   nextBlockTimestamp: number,
-  getResourcesFromInventory: (entityId: bigint) => {
-    resources: Resource[];
-    indices: number[];
-  },
+  getResourcesFromBalance: (entityId: bigint) => Resource[],
 ) => {
-  let notifications: NotificationType[] = [];
+  const notifications: NotificationType[] = [];
   for (const { realmId, position: realmPosition } of realmPositions) {
     const entitiesAtPositionWithInventory = runQuery([
-      HasValue(components["Inventory"], {
+      HasValue(components.Inventory, {
         items_count: 1n,
       }),
-      HasValue(components["Position"], {
+      HasValue(components.Position, {
         x: realmPosition?.x,
         y: realmPosition?.y,
       }),
     ]);
 
-    const ids = Array.from(runQuery([HasValue(components["Realm"], { realm_id: realmId })]));
-    let realmEntityId = ids.length > 0 ? getComponentValue(components["Realm"], ids[0])!.entity_id : undefined;
+    const ids = Array.from(runQuery([HasValue(components.Realm, { realm_id: realmId })]));
+    const realmEntityId = ids.length > 0 ? getComponentValue(components.Realm, ids[0])!.entity_id : undefined;
 
     for (const id of entitiesAtPositionWithInventory) {
-      const arrivalTime = getComponentValue(components["ArrivalTime"], id) as { arrives_at: number } | undefined;
-      const caravanMembers = getComponentValue(components["CaravanMembers"], id);
+      const arrivalTime = getComponentValue(components.ArrivalTime, id) as { arrives_at: number } | undefined;
 
       // get key
-      let entityId = getComponentValue(components["Position"], id)!.entity_id;
-      const { resources, indices } = getResourcesFromInventory(entityId);
+      const entityId = getComponentValue(components.Position, id)!.entity_id;
+      const resources = getResourcesFromBalance(entityId);
 
-      let carrierType = caravanMembers ? CarrierType.Caravan : CarrierType.Raiders;
+      const carrierType = CarrierType.Raiders;
 
       if (arrivalTime?.arrives_at && arrivalTime.arrives_at <= nextBlockTimestamp) {
-        notifications.push({
-          eventType: EventType.EmptyChest,
-          keys: [entityId.toString()],
-          data: {
-            destinationRealmId: realmId,
-            carrierType,
-            realmEntityId,
-            entityId: BigInt(entityId),
-            resources,
-            indices,
-          },
-        });
+        // notifications.push({
+        //   eventType: EventType.EmptyChest,
+        //   keys: [entityId.toString()],
+        //   data: {
+        //     destinationRealmId: realmId,
+        //     carrierType,
+        //     realmEntityId,
+        //     entityId: BigInt(entityId),
+        //     resources,
+        //     indices,
+        //   },
+        // });
       }
-    }
-  }
-
-  return notifications;
-};
-
-/**
- * Generate caravans arrived at hyperstructure or bank notifications
- * @param owner address of the owner
- * @param components all components
- * @param banks list of banks
- * @returns
- */
-export const generateArrivedAtBankNotifications = (
-  owner: bigint,
-  components: Components,
-  nextBlockTimestamp: number,
-  banks: BankInterface[],
-  getResourcesFromInventory: (entityId: bigint) => {
-    resources: Resource[];
-    indices: number[];
-  },
-) => {
-  let notifications: NotificationType[] = [];
-  const entityIds = Array.from(
-    runQuery([
-      Has(components["ArrivalTime"]),
-      Has(components["CaravanMembers"]),
-      HasValue(components["Owner"], { address: owner }),
-    ]),
-  );
-
-  for (const id of entityIds) {
-    const arrivalTime = getComponentValue(components["ArrivalTime"], id) as { arrives_at: number } | undefined;
-    const entityOwner = getComponentValue(components["EntityOwner"], id) as
-      | { entity_id: bigint; entity_owner_id: bigint }
-      | undefined;
-    const position = getComponentValue(components["Position"], id) as { x: number; y: number } | undefined;
-    const homePosition = entityOwner
-      ? (getComponentValue(components["Position"], getEntityIdFromKeys([entityOwner.entity_owner_id])) as
-          | { x: number; y: number }
-          | undefined)
-      : undefined;
-
-    // check that arrival is bigger than current block timestamp
-    // and also that notfication close is smaller than arrival (not seen yet by user)
-    const timestamps = getLastLoginTimestamp();
-    const hasArrivedAndNotSeen =
-      arrivalTime &&
-      arrivalTime.arrives_at > timestamps.lastLoginBlockTimestamp &&
-      arrivalTime.arrives_at < nextBlockTimestamp;
-
-    if (!hasArrivedAndNotSeen) continue;
-
-    let bank: BankInterface | undefined;
-    banks.forEach((possibleBank) => {
-      if (possibleBank.position.x === position?.x && possibleBank.position.y === position?.y) {
-        bank = possibleBank;
-      }
-    });
-
-    const { resources, indices } = getResourcesFromInventory(entityOwner?.entity_id || 0n);
-
-    if (!bank) continue;
-
-    const lordsAmountFromWheat =
-      bank.wheatAuction && nextBlockTimestamp
-        ? getLordsAmountFromBankAuction(
-            resources.find((resource) => {
-              return resource.resourceId === 254;
-            })?.amount || 0,
-            targetPrices[254],
-            BANK_AUCTION_DECAY,
-            Number(bank.wheatAuction.per_time_unit),
-            bank.wheatAuction.start_time,
-            nextBlockTimestamp,
-            Number(bank.wheatAuction.sold),
-            Number(bank.wheatAuction.price_update_interval),
-          )
-        : 0;
-
-    const lordsAmountFromFish =
-      bank.fishAuction && nextBlockTimestamp
-        ? getLordsAmountFromBankAuction(
-            resources.find((resource) => {
-              return resource.resourceId === 255;
-            })?.amount || 0,
-            targetPrices[255],
-            BANK_AUCTION_DECAY,
-            Number(bank.fishAuction.per_time_unit),
-            bank.fishAuction.start_time,
-            nextBlockTimestamp,
-            Number(bank.fishAuction.sold),
-            Number(bank.fishAuction.price_update_interval),
-          )
-        : 0;
-
-    let lordsAmounts: number[] = [];
-    if (lordsAmountFromWheat > 0 && lordsAmountFromFish > 0) {
-      lordsAmounts = [lordsAmountFromWheat, lordsAmountFromFish];
-    } else if (lordsAmountFromWheat > 0 && lordsAmountFromFish === 0) {
-      lordsAmounts = [lordsAmountFromWheat];
-    } else if (lordsAmountFromWheat === 0 && lordsAmountFromFish > 0) {
-      lordsAmounts = [lordsAmountFromFish];
-    }
-
-    if (bank && entityOwner && homePosition) {
-      notifications.push({
-        eventType: EventType.ArrivedAtBank,
-        keys: [entityOwner.entity_id.toString()],
-        data: {
-          bank,
-          caravanId: entityOwner.entity_id,
-          realmEntityId: entityOwner.entity_owner_id,
-          resources,
-          indices,
-          lordsAmounts,
-          homePosition: { x: homePosition.x, y: homePosition.y },
-        },
-      });
     }
   }
 
@@ -311,28 +189,22 @@ export const generateArrivedAtHyperstructureNotifications = (
   nextBlockTimestamp: number,
   components: Components,
   hyperstructure: { position: Position; hyperstructureId: bigint },
-  getResourcesFromInventory: (entityId: bigint) => {
+  getResourcesFromBalance: (entityId: bigint) => {
     resources: Resource[];
     indices: number[];
   },
 ): NotificationType[] => {
-  let notifications: NotificationType[] = [];
-  const entityIds = Array.from(
-    runQuery([
-      Has(components["ArrivalTime"]),
-      Has(components["CaravanMembers"]),
-      HasValue(components["Owner"], { address: owner }),
-    ]),
-  );
+  const notifications: NotificationType[] = [];
+  const entityIds = Array.from(runQuery([Has(components.ArrivalTime), HasValue(components.Owner, { address: owner })]));
 
   for (const id of entityIds) {
-    const arrivalTime = getComponentValue(components["ArrivalTime"], id) as { arrives_at: number } | undefined;
-    const entityOwner = getComponentValue(components["EntityOwner"], id) as
+    const arrivalTime = getComponentValue(components.ArrivalTime, id) as { arrives_at: number } | undefined;
+    const entityOwner = getComponentValue(components.EntityOwner, id) as
       | { entity_id: bigint; entity_owner_id: bigint }
       | undefined;
-    const position = getComponentValue(components["Position"], id) as { x: number; y: number } | undefined;
+    const position = getComponentValue(components.Position, id) as { x: number; y: number } | undefined;
     const homePosition = entityOwner
-      ? (getComponentValue(components["Position"], getEntityIdFromKeys([entityOwner.entity_owner_id])) as
+      ? (getComponentValue(components.Position, getEntityIdFromKeys([entityOwner.entity_owner_id])) as
           | { x: number; y: number }
           | undefined)
       : undefined;
@@ -350,7 +222,7 @@ export const generateArrivedAtHyperstructureNotifications = (
       arrivalTime.arrives_at > timestamps.lastLoginBlockTimestamp &&
       arrivalTime.arrives_at < nextBlockTimestamp;
     if (hyperstructureId && hasArrivedAndNotSeen && homePosition && entityOwner) {
-      const { resources, indices } = getResourcesFromInventory(entityOwner.entity_id);
+      const { resources, indices } = getResourcesFromBalance(entityOwner.entity_id);
       notifications.push({
         eventType: EventType.ArrivedAtHyperstructure,
         keys: [entityOwner.entity_id.toString()],
@@ -370,25 +242,25 @@ export const generateArrivedAtHyperstructureNotifications = (
 };
 
 export const generateEnemyRaidersHaveArrivedNotifications = (
-  address: BigInt,
+  address: bigint,
   nextBlockTimestamp: number,
   realmPositions: realmsPosition,
   components: Components,
   getCombatInfo: (raiderIds: bigint[]) => CombatInfo[],
 ) => {
-  let notifications: NotificationType[] = [];
+  const notifications: NotificationType[] = [];
   for (const { position } of realmPositions) {
     const entityIds = Array.from(
       runQuery([
-        Has(components["ArrivalTime"]),
-        Has(components["Attack"]),
-        HasValue(components["Position"], position),
-        NotValue(components["Owner"], { address }),
+        Has(components.ArrivalTime),
+        Has(components.Attack),
+        HasValue(components.Position, position),
+        NotValue(components.Owner, { address }),
       ]),
     );
 
     for (const id of entityIds) {
-      const entityOwner = getComponentValue(components["EntityOwner"], id) as
+      const entityOwner = getComponentValue(components.EntityOwner, id) as
         | { entity_id: bigint; entity_owner_id: bigint }
         | undefined;
 
@@ -424,22 +296,22 @@ export const generateYourRaidersHaveArrivedNotifications = (
   components: Components,
   getCombatInfo: (raiderIds: bigint[]) => CombatInfo[],
 ) => {
-  let notifications: NotificationType[] = [];
+  const notifications: NotificationType[] = [];
   for (const { position, realmEntityId } of realmPositions) {
     const entityIds = Array.from(
       runQuery([
-        Has(components["ArrivalTime"]),
-        Has(components["Attack"]),
-        NotValue(components["Position"], position),
-        HasValue(components["EntityOwner"], { entity_owner_id: realmEntityId }),
+        Has(components.ArrivalTime),
+        Has(components.Attack),
+        NotValue(components.Position, position),
+        HasValue(components.EntityOwner, { entity_owner_id: realmEntityId }),
       ]),
     );
 
     for (const id of entityIds) {
-      const tickMove = getComponentValue(components["TickMove"], id) as
+      const tickMove = getComponentValue(components.TickMove, id) as
         | { entity_id: bigint; tick: number; count: number }
         | undefined;
-      const arrivalTime = getComponentValue(components["ArrivalTime"], id) as
+      const arrivalTime = getComponentValue(components.ArrivalTime, id) as
         | { entity_id: bigint; arrives_at: number }
         | undefined;
       const raidersList = arrivalTime ? getCombatInfo([arrivalTime.entity_id]) : undefined;

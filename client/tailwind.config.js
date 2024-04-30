@@ -1,3 +1,5 @@
+const plugin = require("tailwindcss/plugin");
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
@@ -10,13 +12,14 @@ export default {
         fancy: "url(/cursor.png), pointer",
         pointer: "url(/cursor.png), pointer",
         grab: "url(/grab.png), grab",
+        crosshair: "url(/cursor-cross.png), crosshair",
         wait: "url(/images/eternum-logo_animated.png), wait",
       },
       strokeWidth: {
         8: "8px",
       },
       colors: {
-        gold: "#E0AF65",
+        gold: "#F3C99F",
         crimson: "#89192D",
         brilliance: "#7DFFBA",
         orange: "#FE993C",
@@ -161,5 +164,17 @@ export default {
     "text-biome-tropical_seasonal_forest",
     "text-biome-tropical_rain_forest",
   ],
-  plugins: [],
+  plugins: [
+    plugin(function ({ addUtilities }) {
+      const newUtilities = {
+        ".border-gradient": {
+          borderImage: "linear-gradient(to right, transparent, #F3C99F, transparent) 1",
+        },
+        ".clip-squared": {
+          clipPath: "polygon(10% 0, 90% 0, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0 90%, 0 10%)",
+        },
+      };
+      addUtilities(newUtilities, ["responsive", "hover"]);
+    }),
+  ],
 };

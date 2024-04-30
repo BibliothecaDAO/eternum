@@ -1,7 +1,0 @@
-kind = "DojoContract"
-class_hash = "0x700f0deec8ad23e3dd6dd66045489930d1dc7febc7aebb583a6f54d1ec2161b"
-abi = "abis/base/contracts/caravan_systems.json"
-reads = []
-writes = []
-computed = []
-name = "eternum::systems::transport::contracts::caravan_systems::caravan_systems"

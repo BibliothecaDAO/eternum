@@ -4,7 +4,8 @@ import { Vector3 } from "three";
 import { createDataStoreSlice, DataStore } from "./_dataStore";
 import { createMapStoreSlice, MapStore } from "./_mapStore";
 import React from "react";
-import { getRealmUIPosition } from "../../utils/utils";
+import { getRealmUIPosition, getUIPositionFromColRow } from "../../ui/utils/utils";
+import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -31,6 +32,8 @@ interface UIStore {
   cameraPosition: any;
   setCameraPosition: (position: any) => void;
   cameraTarget: any;
+  compassDirection: number;
+  setCompassDirection: (direction: number) => void;
   tooltip: {
     content: React.ReactNode;
     position: "top" | "left" | "right" | "bottom";
@@ -45,19 +48,12 @@ interface UIStore {
   setShowRealmsFlags: (show: boolean) => void;
   moveCameraToWorldMapView: () => void;
   moveCameraToRealmView: () => void;
-  moveCameraToMarketView: () => void;
-  moveCameraToCaravansView: () => void;
-  moveCameraToLaborView: () => void;
-  moveCameraToFoodView: () => void;
+  moveCameraToColRow: (col: number, row: number, speed?: number | undefined) => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
-  highlightPositions: [number, number, number][];
-  setHighlightPositions: (positions: [number, number, number][]) => void;
-  highlightColor: number;
-  setHighlightColor: (color: number) => void;
 }
 
-const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) => ({
+const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore & BuildModeStore>((set, get) => ({
   theme: "light",
   setTheme: (theme) => set({ theme }),
   showBlurOverlay: false,
@@ -96,6 +92,8 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
   setCameraPosition: (position) => set({ cameraPosition: position }),
   cameraTarget: { x: 0, y: 0, z: 0 },
   setCameraTarget: (target) => set({ cameraTarget: target }),
+  compassDirection: 0,
+  setCompassDirection: (direction) => set({ compassDirection: direction }),
   tooltip: null,
   setTooltip: (tooltip) => set({ tooltip }),
   mouseCoords: { x: 0, y: 0 },
@@ -145,80 +143,38 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
   },
   moveCameraToRealmView: () => {
     const pos = {
-      x: 520.4138155171775,
-      y: 1084.1390819999998,
-      z: 1357.0299115304658,
+      x: 129.4417459968961,
+      y: 78.04975423254507,
+      z: 48.91298881770161,
       transitionDuration: 0.01,
     };
     const target = {
-      x: 40.3221210638067,
-      y: 0.1390819999999989,
-      z: -33.35675413789002,
+      x: 21.103373637682033,
+      y: -0.06254476354386523,
+      z: -19.36047544496302,
       transitionDuration: 0.01,
     };
     set({ cameraPosition: pos, cameraTarget: target });
   },
-  moveCameraToMarketView: () => {
-    const pos = {
-      x: 520.4138155171775,
-      y: 500.1390819999998,
-      z: 1357.0299115304658,
-    };
-    const target = {
-      x: 40.3221210638067,
-      y: 0.1390819999999989,
-      z: -33.35675413789002,
-    };
-    set({ cameraPosition: pos, cameraTarget: target });
-  },
-  moveCameraToCaravansView: () => {
-    const target = {
-      x: 455.04897289817836,
-      y: 0.1390819999999993,
-      z: 126.07263921942426,
-    };
-    const posi = {
-      x: 777.8489507984942,
-      y: 346.3026168062936,
-      z: 631.3327234892186,
-    };
-    set({ cameraPosition: posi, cameraTarget: target });
-  },
-  moveCameraToLaborView: () => {
-    const target = {
-      x: 318.9662654578011,
-      y: 0.13908199999999904,
-      z: -216.45294399992537,
-    };
-    const pos = {
-      x: 612.9471476458315,
-      y: 788.8605838003339,
-      z: 902.2488185381396,
-    };
-    set({ cameraPosition: pos, cameraTarget: target });
-  },
-  moveCameraToFoodView: () => {
-    const target = {
-      x: -217.30692290462147,
-      y: 0.3248529978567156,
-      z: 49.85080979845691,
-    };
-    const pos = {
-      x: 360.9134360872948,
-      y: 1394.9879684979787,
-      z: 1346.6607529192597,
-    };
-    set({ cameraPosition: pos, cameraTarget: target });
+  moveCameraToColRow: (col: number, row: number, speed = undefined) => {
+    const pos = getUIPositionFromColRow(col, row);
+    const x = pos.x;
+    const y = pos.y * -1;
+    const targetPos = new Vector3(x, 0, y);
+    const cameraPos = new Vector3(
+      x + 125 * (Math.random() < 0.5 ? 1 : -1),
+      100,
+      y + 75 * (Math.random() < 0.5 ? 1 : -1),
+    );
+    set({ cameraPosition: speed ? { ...cameraPos, transitionDuration: speed } : cameraPos });
+    set({ cameraTarget: speed ? { ...targetPos, transitionDuration: speed } : targetPos });
   },
   isLoadingScreenEnabled: true,
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
-  highlightPositions: [],
-  setHighlightPositions: (positions) => set({ highlightPositions: positions }),
-  highlightColor: 0xffffff,
-  setHighlightColor: (color) => set({ highlightColor: color }),
-  ...createPopupsSlice(set),
+  ...createPopupsSlice(set, get),
   ...createDataStoreSlice(set),
   ...createMapStoreSlice(set),
+  ...createBuildModeStoreSlice(set),
 }));
 
 export default useUIStore;

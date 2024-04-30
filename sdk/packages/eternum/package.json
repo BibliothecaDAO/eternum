@@ -17,16 +17,15 @@
   "license": "MIT",
   "main": "./dist/index.js",
   "dependencies": {
-    "@dojoengine/core": "0.6.0-alpha.0"
+    "@dojoengine/core": "0.6.121",
+    "eventemitter3": "^5.0.1"
   },
   "peerDependencies": {
-    "starknet": "^6.1.5"
+    "starknet": "6.7.0"
   },
   "devDependencies": {
     "@types/elliptic": "^6.4.14",
-    "bun-types": "^1.0.1",
-    "fetch-mock": "^9.11.0",
-    "tsup": "^7.2.0",
-    "typescript": "^5.0.3"
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.4"
   }
 }

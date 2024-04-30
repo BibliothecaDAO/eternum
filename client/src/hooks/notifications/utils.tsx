@@ -1,10 +1,10 @@
 import { useMemo } from "react";
-import { getPosition } from "../../utils/utils";
+import { getPosition } from "../../ui/utils/utils";
 import { CombatResultInterface, Position, ResourcesIds } from "@bibliothecadao/eternum";
-import { unpackResources } from "../../utils/packedData";
-import { getRealm } from "../../utils/realms";
+import { unpackResources } from "../../ui/utils/packedData";
+import { getRealm } from "../../ui/utils/realms";
 import { EventType, NotificationType } from "../store/useNotificationsStore";
-import { Event } from "../../services/eventPoller";
+import { Event } from "../eventPoller";
 
 export type realmsResources = { realmEntityId: bigint; resourceIds: number[] }[];
 export type realmsPosition = { realmId: bigint; position: Position; realmEntityId: bigint }[];

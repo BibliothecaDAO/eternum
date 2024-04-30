@@ -2,296 +2,219 @@
 
 source ./scripts/contracts.sh
 
-resource_precision=1000
+# // precision
+export RESOURCE_PRECISION=1000
 
-## set tick config
-commands+=(
-    # max_moves_per_tick = 3
-    # tick_interval_in_seconds = 900
-    "sozo execute $CONFIG_SYSTEMS set_tick_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,900"
-)
+# // capactity
+export DONKEY_CAPACITY=100000
 
-## set exploration config
-commands+=(
-    # wheat_burn_amount = 300000
-    # fish_burn_amount = 150000
-    # reward_resource_amount = 20000
-    "sozo execute $CONFIG_SYSTEMS set_exploration_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,300000,150000,20000"
-)
+# // resources
+export RESOURCE_AMOUNT_PER_TICK=10
+export FOOD_PER_TICK=30
+export DONKEYS_PER_TICK=3
+export KNIGHTS_PER_TICK=2
+export CROSSBOWMEN_PER_TICK=2
+export PALADIN_PER_TICK=2
 
+# // global 
+export MAX_MOVE_PER_TICK=3
+export TICK_INTERVAL_IN_SECONDS=900
+
+# // exploration
+export EXPLORATION_WHEAT_BURN_AMOUNT=30000
+export EXPLORATION_FISH_BURN_AMOUNT=15000
+export EXPLORATION_REWARD_RESOURCE_AMOUNT=20000
+
+# // costs
+export RESOURCE_BUILDING_COST=500
+export FARM_BUILDING_COST=900
+export MARKET_BUILDING_COST=1500
+export MILITARY_BUILDING_COST=2000
+export WORKERS_HUT_BUILDING_COST=500
+export WALLS_BUILDING_COST=3000
+export STOREHOUSE_BUILDING_COST=2000
+
+# // population
+export RESOURCE_BUILDING_POPULATION=2
+export FARM_BUILDING_POPULATION=1
+export FISHING_BUILDING_POPULATION=1
+export MARKET_BUILDING_POPULATION=3
+export MILITARY_BUILDING_POPULATION=3
+export WATCH_TOWER_POPULATION=3
+export WORKERS_HUT_POPULATION=0
+export STOREHOUSE_POPULATION=1
+
+# // capacity
+export WORKERS_HUT_CAPACITY=5
+
+
+# ------ POPULATION + CAPACITY CONFIG ------
+# params: population, capacity
 commands+=(
-    ### WORLD ###
+    "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_RESOURCE,$RESOURCE_BUILDING_POPULATION,0"
+    "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FARM,$FARM_BUILDING_POPULATION,0"
+    "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FISHING_VILLAGE,$FISHING_BUILDING_POPULATION,0"
+    "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_MARKET,$MARKET_BUILDING_POPULATION,0"
+    "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_BARRACKS,$MILITARY_BUILDING_POPULATION,0"
+    "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_ARCHERY_RANGE,$MILITARY_BUILDING_POPULATION,0"
+    "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_STABLE,$MILITARY_BUILDING_POPULATION,0"
+    "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_WORKERS_HUT,$WORKERS_HUT_POPULATION,$WORKERS_HUT_CAPACITY"
+    
+    "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_STOREHOUSE,$STOREHOUSE_POPULATION,0"
+    )
+
+
+# ------ BANK CONFIG ------
+# params: owner_cost, lp_fees
+commands+=("sozo execute $CONFIG_SYSTEMS set_bank_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 100000,0")
+
+# ------ TICK CONFIG ------
+# params: max_move_per_tick, tick_interval_in_seconds
+commands+=("sozo execute $CONFIG_SYSTEMS set_tick_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $MAX_MOVE_PER_TICK,$TICK_INTERVAL_IN_SECONDS")
+
+# ------ EXPLORATION CONFIG ------
+# params: wheat_burn_amount, fish_burn_amount, reward_resource_amount
+commands+=("sozo execute $CONFIG_SYSTEMS set_exploration_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $EXPLORATION_WHEAT_BURN_AMOUNT,$EXPLORATION_FISH_BURN_AMOUNT,$EXPLORATION_REWARD_RESOURCE_AMOUNT")
+
+# ------ WORLD CONFIG ------
+commands+=(
     # realm_l2_contract
-    "sozo execute $CONFIG_SYSTEMS set_world_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,$DOJO_ACCOUNT_ADDRESS,0"
-
-    ### BUILDINGS CONFIG ###
-    # level_multiplier = 10
-    # discount = 90% = 16602069666338596454
-    # resources 1 = [1, 2, 3, 7, 10, 17] = 1108152355345
-    # resources 1 count = 6
-    # resources 2 = [4, 6, 8, 9, 19, 20] = 4423951127316
-    # resources 2 count = 6
-    # resources 3 =  [11, 12, 13, 14, 18] = 47446822418
-    # resources 3 count = 5
-    # resources 4 = [5, 15, 16, 21, 22] = 21727548694
-    # resources 4 count = 5
-    "sozo execute $CONFIG_SYSTEMS set_labor_buildings_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,10,16602069666338596454,1108152355345,6,4423951127316,6,47446822418,5,21727548694,5,8,1,126000,2,99016,3,96303,7,29622,10,14924,17,3492,254,1890000,255,630000,8,4,66404,6,43742,8,24044,9,22964,19,2337,20,1382,254,1890000,255,630000,7,11,7537,12,6206,13,6005,14,6005,18,2789,254,1890000,255,630000,7,5,55676,15,4321,16,4070,21,930,22,578,254,1890000,255,630000"
-
-    # ### LABOR ###
-    # # base_labor_units 7200
-    # # base_resources_per_cycle 21
-    # # base_food_per_cycle 21
-    "sozo execute $CONFIG_SYSTEMS set_labor_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,7200,$((21 * resource_precision)),$((21 * resource_precision))"
+    "sozo execute $CONFIG_SYSTEMS set_world_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DOJO_ACCOUNT_ADDRESS,0"
 
     # ### SPEED ###
     # # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
     # # 360 sec per km = 10km/h
-    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,256,360"
+    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY_ENTITY_TYPE,$TICK_INTERVAL_IN_SECONDS"
+    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ARMY_ENTITY_TYPE,$TICK_INTERVAL_IN_SECONDS"
 
     # ### TRAVEL ###
     # # free transport per city = 10 (for testing);
-    "sozo execute $CONFIG_SYSTEMS set_travel_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,10"
+    "sozo execute $CONFIG_SYSTEMS set_travel_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 10"
 
     # ### CAPACITY ###
     # # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
     # # 100000 gr = 100 kg
-    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,256,$((100000 * resource_precision))"
+    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,$(($DONKEY_CAPACITY * $RESOURCE_PRECISION))"
 
     # ### ROAD ###
     # # 10 wheat, fish, stone and wood per road usage
     # # speed up transit by 2x = 2
-    "sozo execute $CONFIG_SYSTEMS set_road_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,4,1,10000,2,10000,254,10000,255,10000,2"
-
-)
-
-### LEVELING CONFIG ###
-commands+=(
-    ## leveling cost
-    ## decay_scaled = 1844674407370955161 => 10%,
-    ## cost_percentage_scaled = 4611686018427387904 => 25%,
-    ## base_multiplier = 25 => 25%,
-    ## wheat_base_amount = 3780 => 12 hours of average prod,
-    ## fish_base_amount = 1260 => 12 hours of average prod,
-    ## resource_1_costs = 1, 132, 2, 104, 3, 101, 4, 70, 5, 58, 6, 46, 7, 31,
-    ## resource_2_costs = 8, 25, 9, 24, 10, 16, 11, 8, 12, 7, 13, 6, 14, 6, 15, 5,
-    ## resource_3_costs = 16, 4, 17, 4, 18, 3, 19, 2, 20, 1, 21, 1, 22, 1,
-    "sozo execute $CONFIG_SYSTEMS set_leveling_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999993,604800,1000,1844674407370955161,4611686018427387904,25,11340000,3780000,7,1,756000,2,594097,3,577816,4,398426,5,334057,6,262452,7,177732,8,8,144266,9,137783,10,89544,11,45224,12,37235,13,36029,14,36029,15,25929,7,16,24421,17,20954,18,16733,19,14020,20,8291,21,5578,22,3467"
+    "sozo execute $CONFIG_SYSTEMS set_road_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 4,1,10000,2,10000,254,10000,255,10000,2"
 )
 
 
-### SOLDIERS CONFIG ###
-commands+=(
-    ## soldier weight 
-    ## 80 kg = 80000 gr
-    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,80000"
-
-    ## soldier capacity
-    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,$((100000 * resource_precision))"
-
-    ## soldier speed
-    ## 800 sec per km = 4.5 km/h
-    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,800"
-
-    ## soldier cost
-    ## 7560 wheat (254)
-    ## 2520 fish (255)
-
-    ## soldier burning
-    ## 150 wheat per soldier
-    ## 50 fish per soldier
-    "sozo execute $CONFIG_SYSTEMS set_soldier_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2,254,1512000,255,504000,150000,50000"
-
-    ## soldier health
-    ## 10 
-    ## 7560/2 wheat (254)
-    ## 2520/2 fish (255)
-    "sozo execute $CONFIG_SYSTEMS set_health_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,2,254,75600,255,25200,10"
-
-    ## soldier attack
-    ## 10 
-    "sozo execute $CONFIG_SYSTEMS set_attack_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,10"
-
-    ## soldier defence
-    ## 10 
-    "sozo execute $CONFIG_SYSTEMS set_defence_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,10"
-
-    ## combat config
-    ## stealing_trial_count
-    ## 100 wheat per soldier
-    ## 30 fish per soldier
-    "sozo execute $CONFIG_SYSTEMS set_combat_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,3,100000,300000"
-)
-
-### WEIGHT ###
-# Loop for resource types 1 to 28
+# ------ WEIGHT CONFIG ------
 for resource_type in {1..28}
 do
     commands+=(
         # 1kg/1000 g per resource unit (resource precision = 1000)
-        "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,$resource_type,1000"
+        "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,1000"
     )
 done
 
-### WEIGHT ###
 commands+=(
-    # Resource type 253
     # 1 gr per unit
-    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,253,1"
-    # Resource type 254
+    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $LORDS,1"
     # 0.1 kg/ 100 gr per unit
-    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,254,100"
-    # Resource type 255
+    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $FISH,100"
     # 0.1 kg/ 100 gr per unit
-    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,255,100"
+    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WHEAT,100"
+)
+
+# ------ COMBAT CONFIG ------
+commands+=(
+    # config_id: 0
+    # knight_health: 10,
+    # paladin_health: 10,
+    # crossbowman_health: 10,
+    # knight_strength: 7,
+    # paladin_strength: 7,
+    # crossbowman_strength: 7,
+    # advantage_percent: 1000, // 10%
+    # disadvantage_percent: 1000, // 10% 
+    "sozo execute $CONFIG_SYSTEMS set_troop_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,10,10,10,7,7,7,1000,1000"
 )
 
 
-## LABOR COSTS
+
+commands+=(
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FARM,$WHEAT,1,$WHEAT,$(($FARM_BUILDING_COST * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FISHING_VILLAGE,$FISH,1,$WHEAT,$(($FARM_BUILDING_COST * $RESOURCE_PRECISION))"
+
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_WORKERS_HUT,$WHEAT,1,$(($WORKERS_HUT_BUILDING_COST * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_STOREHOUSE,$WHEAT,1,$(($STOREHOUSE_BUILDING_COST * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_MARKET,$DONKEY,1,$WHEAT,$(($MARKET_BUILDING_COST * $RESOURCE_PRECISION))"
+
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_BARRACKS,$KNIGHT,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_ARCHERY_RANGE,$CROSSBOWMEN,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_STABLE,$PALADIN,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
+
+)
+
+# Resource Buildings - All the same for now.
+declare -A resources=(
+    [WOOD]=1
+    [STONE]=2
+    [COAL]=3
+    [COPPER]=4
+    [OBSIDIAN]=5
+    [SILVER]=6
+    [IRONWOOD]=7
+    [COLDIRON]=8
+    [GOLD]=9
+    [HARTWOOD]=10
+    [DIAMONDS]=11
+    [SAPPHIRE]=12
+    [RUBY]=13
+    [DEEPCRYSTAL]=14
+    [IGNIUM]=15
+    [ETHEREALSILICA]=16
+    [TRUEICE]=17
+    [TWILIGHTQUARTZ]=18
+    [ALCHEMICALSILVER]=19
+    [ADAMANTINE]=20
+    [MITHRAL]=21
+    [DRAGONHIDE]=22
+)
+
+for resource in "${!resources[@]}"; do
+    resource_id=${resources[$resource]}
+    commands+=("sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_RESOURCE,$resource_id,1,$WHEAT,$(($RESOURCE_BUILDING_COST * $RESOURCE_PRECISION))")
+done
+
 commands+=(
     # resourceId: 1
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,33816319,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2,3274"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,3,3184"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,255,5500"
-    # resourceId: 2
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2,17039103,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2,1,4166"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2,3,3184"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2,255,5500"
-    # resourceId: 3
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,33881855,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,2,3274"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,4,2195"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,255,5500"
-    # resourceId: 4
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,4,17170175,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,4,1,4166"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,4,5,1841"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,4,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,4,255,5500"
-    # resourceId: 5
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,5,67567359,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,5,4,2195"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,5,6,1446"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,5,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,5,255,5500"
-    # resourceId: 6
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,6,84410111,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,6,5,1841"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,6,7,979"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,6,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,6,255,5500"
-    # resourceId: 7
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,7,101252863,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,7,6,1446"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,7,8,795"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,7,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,7,255,5500"
-    # resourceId: 8
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,8,118095615,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,8,7,979"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,8,9,759"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,8,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,8,255,5500"
-    # resourceId: 9
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,9,134938367,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,9,8,795"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,9,10,493"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,9,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,9,255,5500"
-    # resourceId: 10
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,10,151781119,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,10,9,759"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,10,11,249"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,10,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,10,255,5500"
-    # resourceId: 11
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,11,168623871,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,11,10,493"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,11,12,205"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,11,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,11,255,5500"
-    # resourceId: 12
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,12,185466623,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,12,11,249"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,12,13,198"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,12,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,12,255,5500"
-    # resourceId: 13
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,13,202309375,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,13,12,205"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,13,14,198"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,13,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,13,255,5500"
-    # resourceId: 14
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,14,219152127,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,14,13,198"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,14,15,142"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,14,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,14,255,5500"
-    # resourceId: 15
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,15,235994879,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,15,14,198"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,15,16,134"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,15,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,15,255,5500"
-    # resourceId: 16
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,16,252837631,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,16,15,142"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,16,17,115"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,16,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,16,255,5500"
-    # resourceId: 17
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,17,269680383,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,17,16,134"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,17,18,92"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,17,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,17,255,5500"
-    # resourceId: 18
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,18,286523135,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,18,17,115"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,18,19,77"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,18,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,18,255,5500"
-    # resourceId: 19
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,19,303496959,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,19,18,92"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,19,22,19"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,19,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,19,255,5500"
-    # resourceId: 20
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,20,320208639,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,20,19,77"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,20,21,30"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,20,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,20,255,5500"
-    # resourceId: 21
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,21,337051391,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,21,20,45"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,21,22,19"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,21,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,21,255,5500"
-    # resourceId: 22
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,22,336985855,4"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,22,20,45"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,22,21,30"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,22,254,11000"
-    "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,22,255,5500"
-)
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WOOD,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$STONE,1500,$COAL,1600"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STONE,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$WOOD,2500,$COAL,1900"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COAL,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$STONE,2100,$COPPER,1400"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COPPER,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$COAL,2900,$OBSIDIAN,1700"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $OBSIDIAN,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$COPPER,2400,$SILVER,1600"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SILVER,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$OBSIDIAN,2500,$IRONWOOD,1400"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $IRONWOOD,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$SILVER,3000,$COLDIRON,1600"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $COLDIRON,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$IRONWOOD,2500,$GOLD,1900"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $GOLD,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$COLDIRON,2100,$HARTWOOD,1300"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $HARTWOOD,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$GOLD,3100,$DIAMONDS,1000"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DIAMONDS,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$HARTWOOD,4000,$SAPPHIRE,1600"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SAPPHIRE,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$DIAMONDS,2400,$RUBY,1900"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $RUBY,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$SAPPHIRE,2100,$DEEPCRYSTAL,2000"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DEEPCRYSTAL,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$RUBY,2000,$IGNIUM,1400"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $IGNIUM,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$DEEPCRYSTAL,2800,$ETHEREALSILICA,1900"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ETHEREALSILICA,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$IGNIUM,2100,$TRUEICE,1700"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $TRUEICE,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$ETHEREALSILICA,2300,$TWILIGHTQUARTZ,1600"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $TWILIGHTQUARTZ,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$TRUEICE,2500,$ALCHEMICALSILVER,1700"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ALCHEMICALSILVER,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$TWILIGHTQUARTZ,2400,$ADAMANTINE,1200"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ADAMANTINE,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$ALCHEMICALSILVER,3400,$MITHRAL,1300"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $MITHRAL,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$ADAMANTINE,3000,$DRAGONHIDE,1200"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DRAGONHIDE,$(($RESOURCE_AMOUNT_PER_TICK * $RESOURCE_PRECISION)),2,$MITHRAL,3200,$WOOD,436100"
 
-#### SET LABOR AUCTIONS ####
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY,$(($DONKEYS_PER_TICK * $RESOURCE_PRECISION)),1,$WHEAT,2500"
 
-commands+=(
-    # assuming 20 realms per zone
-    # labor on 5 different food/non-food resources every day
-    # 12 labor units needed per day for full-time
-    # 20 * 5 * 12 = 960 labor units per day per zone as target
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $KNIGHT,$(($KNIGHTS_PER_TICK * $RESOURCE_PRECISION)),3,$WHEAT,2500,$SILVER,1000,$IRONWOOD,2500"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $CROSSBOWMEN,$(($CROSSBOWMEN_PER_TICK * $RESOURCE_PRECISION)),3,$WHEAT,2500,$SILVER,1000,$COLDIRON,2500"  
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $PALADIN,$(($PALADIN_PER_TICK * $RESOURCE_PRECISION)),3,$WHEAT,2500,$SILVER,1000,$GOLD,2500"
 
-    # 0.1 decay = 1844674407370955161
-    "sozo execute $CONFIG_SYSTEMS set_labor_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1844674407370955161,960,10"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WHEAT,$(($FOOD_PER_TICK * $RESOURCE_PRECISION)),0"
+    "sozo execute $CONFIG_SYSTEMS set_production_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $FISH,$(($FOOD_PER_TICK * $RESOURCE_PRECISION)),0"
 )
 
 
@@ -348,11 +271,17 @@ fi
 # Initialize commands based on mode
 if [[ "$mode" == "prod" ]]; then
     commands+=(
-        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,24,1,378000,2,297049,3,288908,4,199213,5,167029,6,131226,7,88866,8,72133,9,68892,10,44772,11,22612,12,18618,13,18015,14,18015,15,12965,16,12211,17,10477,18,8367,19,7010,20,4146,21,2789,22,1734,254,12474000,255,4158000"
+        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 29,1,20000,2,20000,3,20000,4,20000,5,20000,6,20000,7,20000,8,20000,9,20000,10,20000,11,20000,12,20000,13,20000,14,20000,15,20000,16,20000,17,20000,18,20000,19,20000,20,20000,21,20000,22,20000,249,2000,250,2000,251,2000,252,2000,253,200000,254,200000,255,200000"
     )
 else
+    # commands+=(
+    #     "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 25,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,253,0,254,0,255,0"
+    # )
     commands+=(
-        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,25,1,1000000000,2,1000000000,3,1000000000,4,1000000000,5,1000000000,6,1000000000,7,1000000000,8,1000000000,9,1000000000,10,1000000000,11,1000000000,12,1000000000,13,1000000000,14,1000000000,15,1000000000,16,1000000000,17,1000000000,18,1000000000,19,1000000000,20,1000000000,21,1000000000,22,1000000000,253,1000000000,254,1000000000,255,1000000000"
+        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 29,1,20000,2,20000,3,20000,4,20000,5,20000,6,20000,7,20000,8,20000,9,20000,10,20000,11,20000,12,20000,13,20000,14,20000,15,20000,16,20000,17,20000,18,20000,19,20000,20,20000,21,20000,22,20000,249,20000,250,2000,251,2000,252,2000,253,2000000,254,2000000,255,2000000"
+        # set donkey speed at highest for dev
+        # 1 sec per km
+        "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,1"
     )
 fi
 

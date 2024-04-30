@@ -1,14 +1,16 @@
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../../DojoContext";
+import { useDojo } from "../context/DojoContext";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useRef, useState } from "react";
-import { Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { Position, Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import useRealmStore from "../store/useRealmStore";
-import { findDirection } from "../../utils/utils";
+import { findDirection } from "../../ui/utils/utils";
+import useUIStore from "../store/useUIStore";
 
 interface ExploreHexProps {
   explorerId: bigint | undefined;
   direction: number | undefined;
+  path: Position[];
 }
 
 export function useExplore() {
@@ -23,6 +25,8 @@ export function useExplore() {
     account: { account },
   } = useDojo();
 
+  const animationPaths = useUIStore((state) => state.animationPaths);
+  const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const isExplored = (col: number, row: number) => {
@@ -103,8 +107,9 @@ export function useExplore() {
     }
   };
 
-  const exploreHex = async ({ explorerId, direction }: ExploreHexProps) => {
+  const exploreHex = async ({ explorerId, direction, path }: ExploreHexProps) => {
     if (!explorerId || direction === undefined) return;
+    setAnimationPaths([...animationPaths, { id: explorerId, path, enemy: false }]);
     await explore({
       unit_id: explorerId,
       direction,

@@ -7,3 +7,14 @@ export interface Hexagon {
   // address
   exploredBy: bigint | undefined;
 }
+
+export interface ClickedHex {
+  contractPos: { col: number; row: number };
+  uiPos: [number, number, number];
+  hexIndex: number;
+}
+
+export interface HighlightPosition {
+  pos: [number, number, number];
+  color: number;
+}

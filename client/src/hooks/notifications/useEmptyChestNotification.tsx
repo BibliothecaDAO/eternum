@@ -1,12 +1,12 @@
-import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark.svg";
-import { OrderIcon } from "../../elements/OrderIcon";
-import { Badge } from "../../elements/Badge";
-import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
+import { ReactComponent as Checkmark } from "@/assets/icons/common/checkmark.svg";
+import { OrderIcon } from "../../ui/elements/OrderIcon";
+import { Badge } from "../../ui/elements/Badge";
+import { getRealmNameById, getRealmOrderNameById } from "../../ui/utils/realms";
 import { useState } from "react";
-import Button from "../../elements/Button";
+import Button from "../../ui/elements/Button";
 import { useResources } from "../helpers/useResources";
-import { ResourceCost } from "../../elements/ResourceCost";
-import { divideByPrecision } from "../../utils/utils";
+import { ResourceCost } from "../../ui/elements/ResourceCost";
+import { divideByPrecision } from "../../ui/utils/utils";
 import { NotificationType } from "../store/useNotificationsStore";
 
 export const useEmptyChestNotification = (
@@ -17,7 +17,7 @@ export const useEmptyChestNotification = (
   title: React.ReactElement;
   content: (onClose: any) => React.ReactElement;
 } => {
-  const { getResourcesFromInventory, offloadChests } = useResources();
+  const { getResourcesFromBalance } = useResources();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,12 +31,12 @@ export const useEmptyChestNotification = (
   const realmName = realmId ? getRealmNameById(realmId) : "";
   const realmOrderName = realmId ? getRealmOrderNameById(realmId) : "";
 
-  let claimableResources = entityId ? getResourcesFromInventory(entityId) : undefined;
+  let claimableResources = entityId ? getResourcesFromBalance(entityId) : undefined;
 
   const emptyChest = async () => {
     setIsLoading(true);
     if (claimableResources && realmEntityId && entityId) {
-      await offloadChests(realmEntityId, entityId, claimableResources.indices, claimableResources.resources);
+      // await offloadChests(realmEntityId, entityId, claimableResources.indices);
       setIsLoading(false);
     }
   };
@@ -62,7 +62,7 @@ export const useEmptyChestNotification = (
       <div className="flex flex-col">
         <div className="flex mt-2 w-full items-center justify-start flex-wrap space-x-2 space-y-1">
           {claimableResources &&
-            claimableResources.resources.map(({ resourceId, amount }) => (
+            claimableResources.map(({ resourceId, amount }) => (
               <ResourceCost
                 // type="vertical"
                 withTooltip

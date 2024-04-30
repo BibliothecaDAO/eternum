@@ -1,0 +1,73 @@
+# Contracts
+
+### Models
+
+#### Entity Key
+
+Use the ID
+
+#### Model design
+
+entity_id: u32
+
+
+#### Implementations
+
+Where possible make traits for the models so they are stateless for unit testing.
+
+Always use generate trait where possible to minimise code.
+
+```rust
+#[generate_trait]
+```
+
+
+### Systems
+
+Design systems like this in the directory
+
+- SystemName
+- - system_name.cairo 
+- - tests.cairo
+
+`system.cairo` should include the implementation of the system like this.
+
+Things to note:
+- Interface at top of File
+- use of `super::IBuildingContract` to minimise imports and make it clear where the interface is defined.
+
+```rust
+#[dojo::interface]
+trait IBuildingContract<TContractState> {
+    fn create(
+        entity_id: u128,
+        building_coord: eternum::models::position::Coord,
+        building_category: eternum::models::buildings::BuildingCategory,
+        produce_resource_type: Option<u8>
+    );
+}
+
+#[dojo::contract]
+mod building_systems {
+    use eternum::alias::ID;
+    use eternum::models::{
+        resources::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
+        order::Orders, position::{Coord, Position, PositionTrait, Direction},
+        buildings::{BuildingCategory, Building, BuildingImpl},
+        production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
+    };
+
+    #[abi(embed_v0)]
+    impl BuildingContractImpl of super::IBuildingContract<ContractState> {
+        fn create(
+            world: IWorldDispatcher,
+            entity_id: u128,
+            building_coord: Coord,
+            building_category: BuildingCategory,
+            produce_resource_type: Option<u8>,
+        ) {
+        }
+    }
+}
+```
+

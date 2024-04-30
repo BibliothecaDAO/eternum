@@ -1,9 +1,9 @@
 use array::ArrayTrait;
-use traits::{Into, TryInto, BitAnd};
-use option::OptionTrait;
 
 use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
 use eternum::utils::math::pow;
+use option::OptionTrait;
+use traits::{Into, TryInto, BitAnd};
 
 fn unpack_resource_types(resource_types_packed: u128, resource_types_count: u8) -> Span<u8> {
     let mut resource_types = ArrayTrait::<u8>::new();
@@ -30,7 +30,6 @@ fn unpack_resource_types(resource_types_packed: u128, resource_types_count: u8) 
 
     resource_types.span()
 }
-
 // #[cfg(test)]
 // mod tests {
 //     use super::unpack_resource_types;

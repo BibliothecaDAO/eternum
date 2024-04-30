@@ -1,25 +1,20 @@
 #[dojo::contract]
 mod hyperstructure_systems {
     use eternum::alias::ID;
-    use eternum::models::resources::{Resource, ResourceCost};
-    use eternum::models::owner::Owner;
+    use eternum::constants::WORLD_CONFIG_ID;
     use eternum::models::hyperstructure::{HyperStructure};
-    use eternum::models::realm::{Realm};
     use eternum::models::order::{Orders};
+    use eternum::models::owner::Owner;
     use eternum::models::position::{Coord, Position, PositionTrait};
+    use eternum::models::realm::{Realm};
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 
     use eternum::systems::hyperstructure::interface::IHyperstructureSystems;
-    use eternum::constants::WORLD_CONFIG_ID;
-
 
 
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of IHyperstructureSystems<ContractState> {
-
-        fn control(
-            self: @ContractState, world: IWorldDispatcher, hyperstructure_id: ID, order_id: u8
-        ) {
-
+        fn control(world: IWorldDispatcher, hyperstructure_id: ID, order_id: u8) {
             let mut hyperstructure = get!(world, hyperstructure_id, HyperStructure);
             assert(hyperstructure.completion_resource_count > 0, 'hyperstructure does not exist');
 
@@ -35,7 +30,9 @@ mod hyperstructure_systems {
                     }
 
                     let resource_cost = get!(world, (completion_cost_id, index), ResourceCost);
-                    let resource = get!(world, (hyperstructure_id, resource_cost.resource_type), Resource);
+                    let resource = ResourceImpl::get(
+                        world, (hyperstructure_id, resource_cost.resource_type)
+                    );
                     assert(resource.balance == 0, 'not conquered');
 
                     index += 1;
@@ -57,14 +54,10 @@ mod hyperstructure_systems {
         }
 
 
-        fn complete(
-            self: @ContractState, world: IWorldDispatcher, hyperstructure_id: ID
-        ) {
-
+        fn complete(world: IWorldDispatcher, hyperstructure_id: ID) {
             let mut hyperstructure = get!(world, hyperstructure_id, HyperStructure);
             assert(hyperstructure.completion_resource_count > 0, 'hyperstructure does not exist');
             assert(hyperstructure.controlling_order != 0, 'not controlled by any order');
-
 
             let completion_cost_id = hyperstructure.completion_cost_id;
             let mut index = 0;
@@ -74,12 +67,13 @@ mod hyperstructure_systems {
                 }
 
                 let resource_cost = get!(world, (completion_cost_id, index), ResourceCost);
-                let resource = get!(world, (hyperstructure_id, resource_cost.resource_type), Resource);
+                let resource: Resource = ResourceImpl::get(
+                    world, (hyperstructure_id, resource_cost.resource_type)
+                );
                 assert(resource.balance >= resource_cost.amount, 'not enough resources');
 
                 index += 1;
-            }; 
-
+            };
 
             // set hyperstructure to completed
             hyperstructure.completed = true;
@@ -90,7 +84,5 @@ mod hyperstructure_systems {
             order.hyperstructure_count += 1;
             set!(world, (order));
         }
-
-       
     }
 }
