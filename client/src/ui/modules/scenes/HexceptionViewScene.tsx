@@ -11,7 +11,7 @@ import { useSearch } from "wouter/use-location";
 import { useThree } from "@react-three/fiber";
 import { useControls } from "leva";
 import * as THREE from "three";
-import { useHexPosition } from "@/hooks/helpers/useHexPosition";
+import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 
 const mainPosition = getUIPositionFromColRow(0, 0, true);
 const pos = getUIPositionFromColRow(7, 4, true);
@@ -22,7 +22,7 @@ const pos5 = getUIPositionFromColRow(0, 9, true);
 const pos6 = getUIPositionFromColRow(0, -9, true);
 
 export const HexceptionViewScene = () => {
-  const { realm, mainHex, neighborHexesInsideView } = useHexPosition();
+  const { realm, mainHex, neighborHexesInsideView, hexType } = useHexPosition();
 
   const texture = useTexture({
     map: "/textures/paper/paper-color.jpg",
@@ -34,7 +34,12 @@ export const HexceptionViewScene = () => {
   return (
     <>
       <group position={[mainPosition.x, 0, -mainPosition.y]} rotation={[0, 0, 0]}>
-        {realm ? <BuildArea /> : <BigHexBiome biome={mainHex?.biome as any} />}
+        <group visible={hexType === HexType.REALM || hexType === HexType.BANK}>
+          <BuildArea />
+        </group>
+        <group visible={hexType === HexType.EMPTY}>
+          <BigHexBiome biome={mainHex?.biome as any} />
+        </group>
       </group>
       {neighborHexesInsideView && neighborHexesInsideView.length > 0 && (
         <group>

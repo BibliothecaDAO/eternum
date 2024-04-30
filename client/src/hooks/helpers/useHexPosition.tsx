@@ -4,10 +4,25 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import { useGetRealms } from "@/hooks/helpers/useRealm";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { useSearch } from "wouter/use-location";
+import { useEntityQuery } from "@dojoengine/react";
+import { Has, HasValue } from "@dojoengine/recs";
+import { useDojo } from "../context/DojoContext";
+
+export enum HexType {
+  BANK = "bank",
+  REALM = "realm",
+  EMPTY = "empty",
+}
 
 export const useHexPosition = () => {
   const { setIsLoadingScreenEnabled, hexData, moveCameraToRealmView } = useUIStore((state) => state);
   const { setRealmId, setRealmEntityId } = useRealmStore();
+
+  const {
+    setup: {
+      components: { Bank, Position },
+    },
+  } = useDojo();
 
   const realms = useGetRealms();
   const searchString = useSearch();
@@ -24,6 +39,14 @@ export const useHexPosition = () => {
     if (!_tmp) return undefined;
     return _tmp;
   }, [hexPosition, realms]);
+
+  const banks = useEntityQuery([Has(Bank), HasValue(Position, { x: hexPosition.col, y: hexPosition.row })]);
+
+  const hexType: HexType = useMemo(() => {
+    if (banks.length > 0) return HexType.BANK;
+    if (realm) return HexType.REALM;
+    return HexType.EMPTY;
+  }, [banks, realm]);
 
   useEffect(() => {
     if (realm) {
@@ -59,5 +82,6 @@ export const useHexPosition = () => {
     realm,
     mainHex,
     neighborHexesInsideView,
+    hexType,
   };
 };
