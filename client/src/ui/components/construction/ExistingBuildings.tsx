@@ -1,13 +1,15 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
+import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { BuildingStringToEnum, BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingEnumToString, BuildingStringToEnum, BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useAnimations, useGLTF, useHelper } from "@react-three/drei";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { BuildingInfo } from "./SelectPreviewBuilding";
 
 enum ModelsIndexes {
   Castle = BuildingType.Castle,
@@ -168,12 +170,30 @@ export const BuiltBuilding = ({
     }, Math.random() * 1000);
   }, [actions]);
 
+  const [hover, setHover] = useState(false);
+
   return (
-    <group position={[x, 2.33, -y]} rotation={rotation}>
+    <group
+      onPointerEnter={() => setHover(true)}
+      onPointerLeave={() => setHover(false)}
+      position={[x, 2.33, -y]}
+      rotation={rotation}
+    >
       <primitive dropShadow scale={3} object={model} />
-      {modelIndex === ModelsIndexes.ArcheryRange && (
-        <pointLight ref={lightRef} position={[0, 2.6, 0]} intensity={0.6} power={150} color={"yellow"} decay={3.5} />
-      )}
+      {hover && <HoverBuilding building={buildingCategory} />}
     </group>
+  );
+};
+
+const HoverBuilding = ({ building }: { building: BuildingType }) => {
+  return (
+    <BaseThreeTooltip distanceFactor={30}>
+      <div className="flex flex-col  text-sm p-1 space-y-1">
+        <div className="font-bold text-center">
+          {BuildingEnumToString[building as keyof typeof BuildingEnumToString]}
+        </div>
+        <BuildingInfo buildingId={building} />
+      </div>
+    </BaseThreeTooltip>
   );
 };

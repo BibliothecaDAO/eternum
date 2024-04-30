@@ -9,7 +9,7 @@ type BaseThreeTooltipProps = {
 export const BaseThreeTooltip = ({ children, distanceFactor = 50 }: BaseThreeTooltipProps) => {
   return (
     <Html distanceFactor={distanceFactor}>
-      <div className="border min-w-[215px] relative border-gold p-2 rounded-xl bg-gray text-white pointer-events-none -left-1/2 -mt-[150px]">
+      <div className="border min-w-[215px] relative border-gold p-2 rounded-xl bg-brown/70 pointer-events-none text-gold -left-1/2 -mt-[250px]">
         {children}
         <svg
           className="absolute bottom-[1px] translate-y-full left-1/2 -translate-x-1/2"
@@ -19,7 +19,7 @@ export const BaseThreeTooltip = ({ children, distanceFactor = 50 }: BaseThreeToo
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path d="M15.0003 12.75L0.751603 -3.445e-06L29.249 9.53674e-07L15.0003 12.75Z" fill="#1B1B1B" />
+          <path d="M15.0003 12.75L0.751603 -3.445e-06L29.249 9.53674e-07L15.0003 12.75Z" fill="fill-dark-brown" />
         </svg>
       </div>
     </Html>

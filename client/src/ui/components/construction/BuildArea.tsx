@@ -72,7 +72,7 @@ const BuildingPreview = () => {
     <>
       <group position={[previewCoords.x, 2.33, -previewCoords.y]}>
         <primitive position={[0, 0, 0]} scale={3} object={previewModel} />
-        {previewBuilding && <BuildingCostThree building={previewBuilding} />}
+        {/* {previewBuilding && <BuildingCostThree building={previewBuilding} />} */}
       </group>
     </>
   ) : null;
