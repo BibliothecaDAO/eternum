@@ -265,6 +265,11 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 export const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) => {
   return (
     <StepContainer>
+      <div>
+        <h3 className="text-center">Select Order</h3>
+        <p> </p>
+      </div>
+
       <SettleRealmComponent />
       <div className="flex space-x-2 mt-8 justify-start">
         <Button variant="outline" onClick={onPrev}>

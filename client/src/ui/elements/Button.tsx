@@ -64,8 +64,9 @@ const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {isLoading ? (
-        <div className="absolute inset-0 flex items-center justify-center h-full">
-          <div className="w-4 h-4 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin "></div>
+        <div className=" inset-0 flex items-center justify-center h-full">
+          <div className="w-4 h-4 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin mr-5"></div>{" "}
+          Casting...
         </div>
       ) : (
         children

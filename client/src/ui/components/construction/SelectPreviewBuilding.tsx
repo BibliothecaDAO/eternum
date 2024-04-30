@@ -23,7 +23,7 @@ import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { BUILDING_COSTS } from "@bibliothecadao/eternum";
-import { useProductionManager, useResourceBalance } from "@/hooks/helpers/useResources";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -54,6 +54,7 @@ export const SelectPreviewBuilding = () => {
   const buildingTypes = Object.keys(BuildingType).filter(
     (key) =>
       isNaN(Number(key)) &&
+      key !== "Resource" &&
       key !== "Castle" &&
       key !== "None" &&
       key !== "DonkeyFarm" &&
@@ -82,6 +83,72 @@ export const SelectPreviewBuilding = () => {
   return (
     <div className="flex flex-col overflow-hidden" ref={parent}>
       <div className="grid grid-cols-2 gap-2 p-2">
+        {realmResourceIds.map((resourceId) => {
+          const resource = findResourceById(resourceId)!;
+
+          const cost = BUILDING_COSTS[BuildingType.Resource];
+
+          const hasBalance = Object.keys(cost).every((resourceId) => {
+            const resourceCost = cost[Number(resourceId)];
+            const balance = getBalance(realmEntityId, resourceCost.resource);
+            return balance.balance >= resourceCost.amount;
+          });
+
+          return (
+            <div
+              style={{
+                backgroundImage: `url(${BUILDING_IMAGES_PATH[BuildingType.Resource]})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+              key={resourceId}
+              onClick={() => {
+                if ((previewBuilding && previewBuilding !== BuildingType.Resource) || !hasBalance) {
+                  return;
+                }
+                if (selectedResource === resourceId) {
+                  setResourceId(null);
+                } else {
+                  setResourceId(resourceId);
+                  playResourceSound(resourceId);
+                }
+
+                if (previewBuilding === BuildingType.Resource) {
+                  setPreviewBuilding(null);
+                } else {
+                  handleSelectBuilding(BuildingType.Resource);
+                }
+              }}
+              className={clsx(
+                "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis  cursor-pointer relative h-24 ",
+                {
+                  "!border-lightest !text-lightest": selectedResource === resourceId,
+                },
+              )}
+            >
+              {!hasBalance && <div className="absolute w-full h-full bg-black/50 text-red p-4 text-xs"></div>}
+              <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50">
+                <span>{resource?.trait}</span>
+              </div>
+              <div className="flex relative flex-col items-start text-xs font-bold p-2">
+                <ResourceIcon resource={resource?.trait} size="lg" />
+
+                <InfoIcon
+                  onMouseEnter={() => {
+                    setTooltip({
+                      content: <ResourceInfo resourceId={resourceId} />,
+                      position: "right",
+                    });
+                  }}
+                  onMouseLeave={() => {
+                    setTooltip(null);
+                  }}
+                  className="w-4 h-4 absolute top-2 right-2"
+                />
+              </div>
+            </div>
+          );
+        })}
         {buildingTypes.map((buildingType, index) => {
           const building = BuildingType[buildingType as keyof typeof BuildingType];
 
@@ -104,7 +171,6 @@ export const SelectPreviewBuilding = () => {
                 {
                   " cursor-not-allowed": (previewBuilding && previewBuilding !== building) || !hasBalance,
                 },
-                {},
               )}
               style={{
                 backgroundImage: `url(${BUILDING_IMAGES_PATH[building]})`,
@@ -122,9 +188,7 @@ export const SelectPreviewBuilding = () => {
                 }
               }}
             >
-              {!hasBalance && (
-                <div className="absolute w-full h-full bg-black/50 text-white p-4 text-xs">not enough resources</div>
-              )}
+              {!hasBalance && <div className="absolute w-full h-full bg-black/50 text-red p-4 text-xs"></div>}
 
               <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50">
                 {BuildingEnumToString[building]}
@@ -145,53 +209,6 @@ export const SelectPreviewBuilding = () => {
           );
         })}
       </div>
-      {previewBuilding == BuildingType.Resource && (
-        <>
-          <h5 className="w-full  p-2">Resources</h5>
-
-          <div className="grid grid-cols-3 gap-2 p-2">
-            {realmResourceIds.map((resourceId) => {
-              const resource = findResourceById(resourceId)!;
-              return (
-                <div
-                  key={resourceId}
-                  onClick={() => {
-                    if (selectedResource === resourceId) {
-                      setResourceId(null);
-                    } else {
-                      setResourceId(resourceId);
-                      playResourceSound(resourceId);
-                    }
-                  }}
-                  className={clsx(
-                    "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis p-2 cursor-pointer relative",
-                    {
-                      "!border-lightest !text-lightest": selectedResource === resourceId,
-                    },
-                  )}
-                >
-                  <div className="flex relative flex-col items-start text-xs font-bold">
-                    <ResourceIcon resource={resource?.trait} size="lg" />
-                    <span>{resource?.trait}</span>
-                    <InfoIcon
-                      onMouseEnter={() => {
-                        setTooltip({
-                          content: <ResourceInfo resourceId={resourceId} />,
-                          position: "right",
-                        });
-                      }}
-                      onMouseLeave={() => {
-                        setTooltip(null);
-                      }}
-                      className="w-4 h-4 absolute top-0 right-0"
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
     </div>
   );
 };
@@ -199,6 +216,7 @@ export const SelectPreviewBuilding = () => {
 export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
   const cost = RESOURCE_INPUTS[resourceId];
 
+  const buildingCost = BUILDING_COSTS[2];
   return (
     <div className="flex flex-col text-white text-sm p-1 space-y-1">
       <h5 className="text-center">
@@ -211,6 +229,18 @@ export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
             <ResourceCost
               resourceId={cost[Number(resourceId)].resource}
               amount={cost[Number(resourceId)].amount / 1000}
+            />
+          );
+        })}
+      </div>
+      <div className="font-bold text-center">Fixed Costs</div>
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        {Object.keys(buildingCost).map((resourceId, index) => {
+          return (
+            <ResourceCost
+              key={index}
+              resourceId={buildingCost[Number(resourceId)].resource}
+              amount={buildingCost[Number(resourceId)].amount / 1000}
             />
           );
         })}

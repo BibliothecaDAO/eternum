@@ -106,7 +106,7 @@ export const SettleRealmComponent = () => {
               <div
                 key={orderId}
                 className={clsx(
-                  " flex relative group items-center justify-center  w-16 h-16 bg-black rounded-xl border",
+                  " flex relative group items-center justify-center  w-16 h-16 border-2  rounded-lg",
                   selectedOrder == orderId && !chosenOrder ? "border-gold !cursor-pointer" : "border-transparent",
                   chosenOrder && chosenOrder == orderId && "!border-gold",
                   chosenOrder && chosenOrder !== orderId && "opacity-30 cursor-not-allowed",
@@ -118,12 +118,15 @@ export const SettleRealmComponent = () => {
                   size={"md"}
                   withTooltip={!chosenOrder || chosenOrder == orderId}
                   order={getOrderName(orderId)}
-                ></OrderIcon>
+                  className={clsx(
+                    selectedOrder == orderId && !chosenOrder ? "opacity-100" : "opacity-30 group-hover:opacity-100",
+                  )}
+                />
               </div>
             ))}
         </div>
         <div className="h-[200px] mt-2 overflow-y-auto ">
-          <div className="text-lg mt-2 italic text-gold text-left">{order_statments[selectedOrder - 1]}</div>
+          <div className="text-lg mt-2 text-gold text-center">{order_statments[selectedOrder - 1]}</div>
         </div>
         <Button
           disabled={!canSettle}
