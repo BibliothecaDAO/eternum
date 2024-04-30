@@ -82,6 +82,13 @@ export const SelectPreviewBuilding = () => {
 
   const { getBalance } = useResourceBalance();
 
+  const checkBalance = (cost: any) =>
+    Object.keys(cost).every((resourceId) => {
+      const resourceCost = cost[Number(resourceId)];
+      const balance = getBalance(realmEntityId, resourceCost.resource);
+      return balance.balance >= resourceCost.amount;
+    });
+
   return (
     <div className="flex flex-col overflow-hidden" ref={parent}>
       <div className="grid grid-cols-2 gap-2 p-2">
@@ -90,11 +97,7 @@ export const SelectPreviewBuilding = () => {
 
           const cost = BUILDING_COSTS[BuildingType.Resource];
 
-          const hasBalance = Object.keys(cost).every((resourceId) => {
-            const resourceCost = cost[Number(resourceId)];
-            const balance = getBalance(realmEntityId, resourceCost.resource);
-            return balance.balance >= resourceCost.amount;
-          });
+          const hasBalance = checkBalance(cost);
 
           return (
             <div
@@ -105,7 +108,7 @@ export const SelectPreviewBuilding = () => {
               }}
               key={resourceId}
               onClick={() => {
-                if ((previewBuilding && previewBuilding !== BuildingType.Resource) || !hasBalance) {
+                if (!hasBalance) {
                   return;
                 }
                 if (selectedResource === resourceId) {
@@ -115,7 +118,7 @@ export const SelectPreviewBuilding = () => {
                   playResourceSound(resourceId);
                 }
 
-                if (previewBuilding === BuildingType.Resource) {
+                if (previewBuilding === BuildingType.Resource && selectedResource === resourceId) {
                   setPreviewBuilding(null);
                 } else {
                   handleSelectBuilding(BuildingType.Resource);
@@ -155,12 +158,7 @@ export const SelectPreviewBuilding = () => {
           const building = BuildingType[buildingType as keyof typeof BuildingType];
 
           const cost = BUILDING_COSTS[building];
-
-          const hasBalance = Object.keys(cost).every((resourceId) => {
-            const resourceCost = cost[Number(resourceId)];
-            const balance = getBalance(realmEntityId, resourceCost.resource);
-            return balance.balance >= resourceCost.amount;
-          });
+          const hasBalance = checkBalance(cost);
 
           return (
             <div
@@ -180,12 +178,13 @@ export const SelectPreviewBuilding = () => {
                 backgroundPosition: "center",
               }}
               onClick={() => {
-                if ((previewBuilding && previewBuilding !== building) || !hasBalance) {
+                if (!hasBalance) {
                   return;
                 }
                 if (previewBuilding === building) {
                   setPreviewBuilding(null);
                 } else {
+                  setResourceId(null);
                   handleSelectBuilding(building);
                 }
               }}

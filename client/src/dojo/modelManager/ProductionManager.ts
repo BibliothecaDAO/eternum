@@ -1,20 +1,17 @@
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ProductionType, ResourceType, QuantityTrackerType } from "./types";
-import { BuildingType, RESOURCE_INPUTS, ResourcesIds } from "@bibliothecadao/eternum";
-import { num, shortString } from "starknet";
+import { ProductionType, ResourceType } from "./types";
+import { RESOURCE_INPUTS } from "@bibliothecadao/eternum";
 
 export class ProductionManager {
   productionModel: Component<ProductionType> | OverridableComponent<ProductionType>;
   resourceModel: Component<ResourceType> | OverridableComponent<ResourceType>;
-  quantityTrackerModel: Component<QuantityTrackerType> | OverridableComponent<QuantityTrackerType>;
   entityId: bigint;
   resourceId: bigint;
 
   constructor(
     productionModel: Component<ProductionType> | OverridableComponent<ProductionType>,
     resourceModel: Component<ResourceType> | OverridableComponent<ResourceType>,
-    quantityTrackerModel: Component<QuantityTrackerType> | OverridableComponent<QuantityTrackerType>,
     entityId: bigint,
     resourceId: bigint,
   ) {
@@ -22,7 +19,6 @@ export class ProductionManager {
     this.entityId = entityId;
     this.resourceId = resourceId;
     this.resourceModel = resourceModel;
-    this.quantityTrackerModel = quantityTrackerModel;
   }
 
   // Retrieves the production data for the current entity
@@ -32,21 +28,6 @@ export class ProductionManager {
 
   public getResource() {
     return this._getResource(this.resourceId);
-  }
-
-  // TODO: Update
-  public getCapacity(): string {
-    const storehouse = getComponentValue(
-      this.quantityTrackerModel,
-      getEntityIdFromKeys([
-        BigInt(this.entityId),
-        BigInt(shortString.encodeShortString("building_quantity")),
-        BigInt(BuildingType.Farm),
-        BigInt(ResourcesIds.Wheat),
-      ]),
-    );
-
-    return storehouse?.count.toString() || "0";
   }
 
   public isActive(): boolean {
@@ -76,7 +57,6 @@ export class ProductionManager {
   }
 
   private _balance(currentTick: number, resourceId: bigint): number {
-    // this.getCapacity();
     const resource = this._getResource(resourceId);
 
     const [sign, rate] = this._netRate(resourceId);

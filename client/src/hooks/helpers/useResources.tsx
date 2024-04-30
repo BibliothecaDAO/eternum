@@ -1,13 +1,10 @@
 import { type Entity, Has, HasValue, NotValue, getComponentValue, runQuery, Not } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
-import useRealmStore from "../store/useRealmStore";
-import { getEntityIdFromKeys, getForeignKeyEntityId, getResourceIdsFromPackedNumber } from "../../ui/utils/utils";
+import { getEntityIdFromKeys, getResourceIdsFromPackedNumber } from "../../ui/utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
-import { type BigNumberish } from "starknet";
-import { Position, type Resource } from "@bibliothecadao/eternum";
-import { useNotificationsStore } from "../store/useNotificationsStore";
+import { Position, ResourcesIds, type Resource } from "@bibliothecadao/eternum";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import useBlockchainStore from "../store/useBlockchainStore";
 
 export function useResources() {
@@ -103,16 +100,16 @@ export function useResourceBalance() {
   const currentTick = useBlockchainStore((state) => state.currentTick);
 
   const getFoodResources = (entityId: bigint): Resource[] => {
-    const wheatBalance = new ProductionManager(Production, Resource, QuantityTracker, entityId, 254n).balance(
+    const wheatBalance = new ProductionManager(Production, Resource, entityId, BigInt(ResourcesIds.Wheat)).balance(
       currentTick,
     );
-    const fishBalance = new ProductionManager(Production, Resource, QuantityTracker, entityId, 255n).balance(
+    const fishBalance = new ProductionManager(Production, Resource, entityId, BigInt(ResourcesIds.Fish)).balance(
       currentTick,
     );
 
     return [
-      { resourceId: 254, amount: wheatBalance },
-      { resourceId: 255, amount: fishBalance },
+      { resourceId: ResourcesIds.Wheat, amount: wheatBalance },
+      { resourceId: ResourcesIds.Fish, amount: fishBalance },
     ];
   };
 
@@ -120,16 +117,12 @@ export function useResourceBalance() {
     const productionManager = new ProductionManager(
       Production,
       Resource,
-      QuantityTracker,
+
       entityId,
       BigInt(resourceId),
     );
     return { balance: productionManager.balance(currentTick), resourceId };
   };
-
-  // const getProductionManager = useMemo(() => {
-  //   return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
-  // }, [entityId, resourceId]);
 
   // We should deprecate this hook and use getBalance instead - too many useEffects
   const useBalance = (entityId: bigint, resourceId: number) => {
@@ -139,13 +132,7 @@ export function useResourceBalance() {
     const production = getComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
 
     useEffect(() => {
-      const productionManager = new ProductionManager(
-        Production,
-        Resource,
-        QuantityTracker,
-        entityId,
-        BigInt(resourceId),
-      );
+      const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
       setResourceBalance({ amount: productionManager.balance(currentTick), resourceId });
     }, []);
 
@@ -156,18 +143,17 @@ export function useResourceBalance() {
     getFoodResources,
     getBalance,
     useBalance,
-    // getProductionManager,
   };
 }
 
 export const useProductionManager = (entityId: bigint, resourceId: number) => {
   const {
     setup: {
-      components: { Resource, Production, QuantityTracker },
+      components: { Resource, Production },
     },
   } = useDojo();
 
-  return new ProductionManager(Production, Resource, QuantityTracker, entityId, BigInt(resourceId));
+  return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
 };
 
 export const useGetBankAccountOnPosition = (address: bigint, position: Position) => {
