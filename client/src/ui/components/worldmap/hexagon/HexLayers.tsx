@@ -440,7 +440,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
         return findDirection({ col: path[i].x, row: path[i].y }, { col: path[i + 1].x, row: path[i + 1].y });
       })
       .filter((d) => d !== undefined) as number[];
-    await travelToHex({ travelingEntityId, directions });
+    await travelToHex({ travelingEntityId, directions, path });
     // reset the state
     clearSelection();
   }

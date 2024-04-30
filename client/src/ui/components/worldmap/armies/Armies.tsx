@@ -29,6 +29,7 @@ export const Armies = ({}: ArmiesProps) => {
 
   const myArmies = useOwnerArmies(BigInt(account.address));
 
+  // set animation path for enemies
   useUpdateAnimationPaths();
 
   const realmOrder = useMemo(() => {
@@ -144,6 +145,8 @@ const useUpdateAnimationPaths = () => {
           const realmEntityId = BigInt(event.keys[3]);
           const myArmy = realmEntityIds.find((realm) => realm.realmEntityId === realmEntityId);
           const enemy = myArmy ? false : true;
+          // if my army, then set animation directly when firing tx
+          if (!enemy) return;
           const id = BigInt(event.data[0]);
           const len = Number(event.data[2]);
           for (let i = 3; i < 3 + len * 2; i += 2) {
