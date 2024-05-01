@@ -92,6 +92,11 @@ impl ResourceLockImpl of ResourceLockTrait {
     fn assert_not_locked(self: ResourceLock) {
         assert!(self.is_open(), "resource locked for entity {}", self.entity_id);
     }
+
+    fn assert_locked(self: ResourceLock) {
+        assert!(!self.is_open(), "resource NOT locked for entity {}", self.entity_id);
+    }
+
     fn is_open(self: ResourceLock) -> bool {
         let now = starknet::get_block_timestamp();
         now > self.release_at

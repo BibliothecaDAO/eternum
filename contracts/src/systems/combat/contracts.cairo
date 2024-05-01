@@ -384,35 +384,46 @@ mod combat_systems {
 
 
         fn battle_leave(world: IWorldDispatcher, battle_id: u128, army_id: u128) {
-            let mut army_owner_entity: EntityOwner = get!(world, army_id, EntityOwner);
-            assert!(
-                army_owner_entity.owner_address(world) == starknet::get_caller_address(),
-                "caller is not army owner"
-            );
+            // ensure caller owns army
+            get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
             // update battle state before any other actions
             let mut battle: Battle = get!(world, battle_id, Battle);
             let tick = TickImpl::get(world);
             battle.update_state(tick);
 
+            // ensure battle id is correct
             let mut caller_army: Army = get!(world, army_id, Army);
             assert!(caller_army.battle_id == battle_id, "wrong battle id");
             assert!(caller_army.battle_side != BattleSide::None, "choose correct battle side");
 
-            let mut caller_army_movable: Movable = get!(world, caller_army.entity_id, Movable);
-            assert!(caller_army_movable.blocked, "caller army should be blocked");
-
-            caller_army_movable.blocked = false;
-            set!(world, (caller_army_movable));
-
-            if battle.has_ended() {
-                if battle.winner() != caller_army.battle_side {
-                    panic!("Battle has ended and your team lost");
-                }
-            //todo@credence claim structure is opponent is structure
+            // make caller army mobile again
+            let mut caller_army_protectee: Protectee = get!(world, army_id, Protectee);
+            let mut caller_army_movable: Movable = get!(world, army_id, Movable);
+            if caller_army_protectee.is_none() {
+                caller_army_movable.assert_blocked();
+                caller_army_movable.blocked = false;
+                set!(world, (caller_army_movable));
             }
 
-            // merge caller army with army troops 
+            if battle.has_ended() {
+                if battle.winner() == caller_army.battle_side
+                    || battle.winner() == BattleSide::None {
+                    // release lock on protected resources
+                    let mut caller_army_protectee: Protectee = get!(world, army_id, Protectee);
+                    let mut caller_army_protectee_resource_lock: ResourceLock = get!(
+                        world, caller_army_protectee.protected_resources_owner(), ResourceLock
+                    );
+                    caller_army_protectee_resource_lock.assert_locked();
+                    let now = starknet::get_block_timestamp();
+                    caller_army_protectee_resource_lock.release_at = now;
+                    set!(world, (caller_army_protectee_resource_lock));
+                } else {
+                    panic!("Battle has ended and your team lost");
+                }
+            }
+
+            // remove caller army from army troops 
             let mut battle_army = battle.attack_army;
             let mut battle_army_health = battle.attack_army_health;
             if caller_army.battle_side == BattleSide::Defence {
