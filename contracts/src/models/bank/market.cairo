@@ -1,8 +1,43 @@
 // External imports
-
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
-// Constants
+// Dojo imports
+use dojo::database::introspect::{Struct, Ty, Introspect, Member, serialize_member};
+
+// Starknet imports
+use starknet::ContractAddress;
+
+impl IntrospectFixed of Introspect<Fixed> {
+    #[inline(always)]
+    fn size() -> usize {
+        2
+    }
+
+    #[inline(always)]
+    fn layout(ref layout: Array<u8>) {
+        layout.append(128);
+        layout.append(1);
+    }
+
+    #[inline(always)]
+    fn ty() -> Ty {
+        Ty::Struct(
+            Struct {
+                name: 'Fixed',
+                attrs: array![].span(),
+                children: array![
+                    serialize_member(
+                        @Member { name: 'mag', ty: Ty::Primitive('u128'), attrs: array![].span() }
+                    ),
+                    serialize_member(
+                        @Member { name: 'sign', ty: Ty::Primitive('bool'), attrs: array![].span() }
+                    )
+                ]
+                    .span()
+            }
+        )
+    }
+}
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Market {
@@ -12,6 +47,7 @@ struct Market {
     resource_type: u8,
     lords_amount: u128,
     resource_amount: u128,
+    total_shares: Fixed,
 }
 
 #[generate_trait]
@@ -148,12 +184,13 @@ impl MarketImpl of MarketTrait {
     // Returns:
     //
     // (amount, quantity, shares): The amount of cash and quantity of items added to the market and the shares minted
-    fn add_liquidity(self: @Market, amount: u128, quantity: u128) -> (u128, u128, Fixed) {
+    fn add_liquidity(self: @Market, amount: u128, quantity: u128) -> (u128, u128, Fixed, Fixed) {
         // Compute the amount and quantity to add to the market
         let (amount, quantity) = self.add_liquidity_inner(amount, quantity);
         // Mint shares for the given amount of liquidity provided
         let shares = self.mint_shares(amount, quantity);
-        (amount, quantity, shares)
+        let total_shares = *self.total_shares + shares;
+        (amount, quantity, shares, total_shares)
     }
 
     // Mint shares for the given amount of liquidity provided
@@ -191,10 +228,10 @@ impl MarketImpl of MarketTrait {
     // Returns:
     //
     // (amount, quantity): The amount of cash and quantity of items removed from the market
-    fn remove_liquidity(self: @Market, shares: Fixed) -> (u128, u128) {
+    fn remove_liquidity(self: @Market, shares: Fixed) -> (u128, u128, Fixed) {
         // Ensure that the market has liquidity
-        let liquidity = self.liquidity();
-        assert(shares <= liquidity, 'insufficient liquidity');
+        let total_shares = *self.total_shares;
+        assert(shares <= total_shares, 'insufficient liquidity');
 
         // Get normalized reserve cash amount and item quantity
         let (reserve_amount, reserve_quantity) = self.get_reserves();
@@ -205,12 +242,14 @@ impl MarketImpl of MarketTrait {
 
         // Compute the amount and quantity to remove from the market
         // dx = S * X / L
-        let amount = (shares * reserve_amount) / liquidity;
+        let amount = (shares * reserve_amount) / total_shares;
         // dy = S * Y / L
-        let quantity = (shares * reserve_quantity) / liquidity;
+        let quantity = (shares * reserve_quantity) / total_shares;
+
+        let total_shares = *self.total_shares - shares;
 
         // Convert amount and quantity both from fixed point to u128 and unscaled u128, respectively
-        (amount.try_into().unwrap(), quantity.try_into().unwrap())
+        (amount.try_into().unwrap(), quantity.try_into().unwrap(), total_shares)
     }
 }
 
@@ -371,7 +410,8 @@ mod tests {
         let two = FixedTrait::new_unscaled(2, false);
         let liquidity_remove = initial_liquidity / two;
 
-        let (amount_remove, quantity_remove) = market.remove_liquidity(liquidity_remove);
+        let (amount_remove, quantity_remove, total_shares) = market
+            .remove_liquidity(liquidity_remove);
 
         // Assert that the amount and quantity removed are half of the initial amount and quantity
         assert(amount_remove == 1, 'wrong cash amount');
@@ -400,7 +440,7 @@ mod tests {
         // Remove liquidity
         let one = FixedTrait::new_unscaled(1, false);
 
-        let (_amount_remove, _quantity_remove) = market.remove_liquidity(one);
+        let (_amount_remove, _quantity_remove, total_shares) = market.remove_liquidity(one);
     }
 
     #[test]
@@ -416,6 +456,7 @@ mod tests {
         let two = FixedTrait::new_unscaled(2, false);
         let liquidity_remove = initial_liquidity * two;
 
-        let (_amount_remove, _quantity_remove) = market.remove_liquidity(liquidity_remove);
+        let (_amount_remove, _quantity_remove, total_shares) = market
+            .remove_liquidity(liquidity_remove);
     }
 }

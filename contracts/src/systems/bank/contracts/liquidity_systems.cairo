@@ -43,7 +43,7 @@ mod liquidity_systems {
             assert(lords_amount <= player_lords.balance, 'not enough lords');
 
             let market = get!(world, (bank_entity_id, resource_type), Market);
-            let (cost_lords, cost_resource_amount, liquidity_shares) = market
+            let (cost_lords, cost_resource_amount, liquidity_shares, total_shares) = market
                 .add_liquidity(lords_amount, resource_amount);
 
             // update market
@@ -54,6 +54,7 @@ mod liquidity_systems {
                     resource_type,
                     lords_amount: market.lords_amount + cost_lords,
                     resource_amount: market.resource_amount + cost_resource_amount,
+                    total_shares,
                 })
             );
 
@@ -89,7 +90,8 @@ mod liquidity_systems {
             assert(player_liquidity.shares >= shares, 'not enough shares');
 
             let market = get!(world, (bank_entity_id, resource_type), Market);
-            let (payout_lords, payout_resource_amount) = market.remove_liquidity(shares);
+            let (payout_lords, payout_resource_amount, total_shares) = market
+                .remove_liquidity(shares);
 
             // update market
             set!(
@@ -99,6 +101,7 @@ mod liquidity_systems {
                     resource_type,
                     lords_amount: market.lords_amount - payout_lords,
                     resource_amount: market.resource_amount - payout_resource_amount,
+                    total_shares,
                 })
             );
 
