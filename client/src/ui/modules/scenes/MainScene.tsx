@@ -13,6 +13,7 @@ import { CameraControls } from "../../utils/Camera";
 import { BlendFunction } from "postprocessing";
 import FPSLimiter from "../../utils/FPSLimiter";
 import clsx from "clsx";
+import { DepthOfField, Pixelation, Vignette, ColorAverage } from "@react-three/postprocessing";
 
 export const Camera = () => {
   const cameraPosition = useUIStore((state) => state.cameraPosition);
@@ -121,7 +122,7 @@ export const MainScene = () => {
           Sprite: { threshold: 0.2 },
         },
       }}
-      camera={{ fov: 15, position: [0, 700, 0], far: 1300, near: 75 }}
+      camera={{ fov: 15, position: [0, 700, 0], far: 1300, near: 20 }}
       dpr={[0.5, 1]}
       performance={{
         min: 0.1,
@@ -149,6 +150,7 @@ export const MainScene = () => {
       <FPSLimiter>
         <ambientLight color={ambientColor} intensity={ambientIntensity} />
         <Camera />
+
         <Bvh firstHitOnly>
           <Suspense fallback={null}>
             <Switch location={locationType}>
@@ -164,9 +166,24 @@ export const MainScene = () => {
           </Suspense>
         </Bvh>
         <EffectComposer multisampling={0}>
+          <Pixelation
+            granularity={2} // pixel granularity
+          />
+
+          <Vignette
+            offset={0.5} // vignette offset
+            darkness={0.5} // vignette darkness
+            eskil={false} // Eskil's vignette technique
+            blendFunction={BlendFunction.NORMAL} // blend mode
+          />
+          <DepthOfField
+            focusDistance={0.5} // where to focus
+            focalLength={1.5} // focal length
+            bokehScale={3} // bokeh size
+          />
           <BrightnessContrast brightness={brightness} contrast={contrast} />
           <Bloom luminanceThreshold={0.9} intensity={0.1} mipmapBlur />
-          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />
+          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.1} />
           <SMAA />
         </EffectComposer>
         <fog attach="fog" color={fogColor} near={fogDistance.near} far={fogDistance.far} />

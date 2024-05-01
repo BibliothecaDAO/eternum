@@ -13,7 +13,8 @@
     "Resource",
     "OwnedResourcesTracker",
     "Tile",
-    "Production"
+    "Production",
+    "HasClaimedStartingResources"
   ],
   "DONKEY_SYSTEMS": [],
   "TRADE_SYSTEMS": [
@@ -70,7 +71,8 @@
     "Direction",
     "Production",
     "Population",
-    "QuantityTracker"
+    "QuantityTracker",
+    "BuildingQuantity"
   ],
   "MAP_SYSTEMS": [
     "Tile",

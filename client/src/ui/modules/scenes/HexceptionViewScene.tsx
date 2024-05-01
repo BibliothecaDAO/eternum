@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
-import { BakeShadows, useHelper, useTexture } from "@react-three/drei";
+import { useTexture } from "@react-three/drei";
 import BuildArea from "../../components/construction/BuildArea";
 import { getUIPositionFromColRow } from "../../utils/utils";
 import BigHexBiome from "../../components/construction/BigHexBiome";

@@ -48,7 +48,7 @@ interface UIStore {
   setShowRealmsFlags: (show: boolean) => void;
   moveCameraToWorldMapView: () => void;
   moveCameraToRealmView: () => void;
-  moveCameraToColRow: (col: number, row: number, speed?: number | undefined) => void;
+  moveCameraToColRow: (col: number, row: number, speed?: number | undefined, transitionMode?: boolean) => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
 }
@@ -156,16 +156,17 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore & BuildMo
     };
     set({ cameraPosition: pos, cameraTarget: target });
   },
-  moveCameraToColRow: (col: number, row: number, speed = undefined) => {
+  moveCameraToColRow: (col: number, row: number, speed = undefined, transitionMode = false) => {
     const pos = getUIPositionFromColRow(col, row);
     const x = pos.x;
     const y = pos.y * -1;
     const targetPos = new Vector3(x, 0, y);
-    const cameraPos = new Vector3(
-      x + 125 * (Math.random() < 0.5 ? 1 : -1),
-      100,
-      y + 75 * (Math.random() < 0.5 ? 1 : -1),
-    );
+    let cameraPos;
+    if (transitionMode) {
+      cameraPos = new Vector3(x + 25, 25, y + 25); // Camera dives into exactly target position
+    } else {
+      cameraPos = new Vector3(x + 125 * (Math.random() < 0.5 ? 1 : -1), 100, y + 75 * (Math.random() < 0.5 ? 1 : -1));
+    }
     set({ cameraPosition: speed ? { ...cameraPos, transitionDuration: speed } : cameraPos });
     set({ cameraTarget: speed ? { ...targetPos, transitionDuration: speed } : targetPos });
   },

@@ -198,7 +198,7 @@ export const BuiltBuilding = ({
     return newModel;
   }, [modelIndex, models]);
 
-  const { actions } = useAnimations(model?.animations, model);
+  const { actions } = useAnimations(models[modelIndex]?.animations || [], model);
 
   useEffect(() => {
     setTimeout(() => {

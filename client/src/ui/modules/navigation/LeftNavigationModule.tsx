@@ -42,6 +42,7 @@ import { Construction } from "../construction/Construction";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
 import { Assistant } from "../assistant/Assistant";
 import { useTour } from "@reactour/tour";
+import { Questing } from "../questing/Questing";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -220,6 +221,7 @@ export const LeftNavigationModule = () => {
       <Trading />
       <Construction entityId={realmEntityId} />
       <Assistant />
+      <Questing entityId={realmEntityId} />
     </>
   );
 };

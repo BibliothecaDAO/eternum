@@ -71,6 +71,7 @@ export const SettleRealmComponent = () => {
 
     // @dev: do it in 1 times because too many steps for 1 tx
     // before could do it in 3 times, but now, takes too many steps so cannot multicall
+
     await create_multiple_realms({
       signer: account,
       realms: [calldata[0]],
@@ -82,14 +83,6 @@ export const SettleRealmComponent = () => {
     await create_multiple_realms({
       signer: account,
       realms: [calldata[2]],
-    });
-    await create_multiple_realms({
-      signer: account,
-      realms: [calldata[3]],
-    });
-    await create_multiple_realms({
-      signer: account,
-      realms: [calldata[4]],
     });
     setIsLoading(false);
     playSign();

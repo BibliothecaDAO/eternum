@@ -9,7 +9,7 @@ import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
-import { assistant } from "@/ui/components/navigation/Config";
+import { assistant, quests } from "@/ui/components/navigation/Config";
 import { Compass } from "@/ui/components/worldmap/Compass";
 
 export const TopMiddleNavigation = () => {
@@ -68,7 +68,10 @@ export const TopMiddleNavigation = () => {
               setTimeout(() => {
                 setLocation("/map");
                 if (hexPosition.col !== 0 && hexPosition.row !== 0) {
-                  moveCameraToColRow(hexPosition.col, hexPosition.row, 0.01);
+                  moveCameraToColRow(hexPosition.col, hexPosition.row, 0.01, true);
+                  setTimeout(() => {
+                    moveCameraToColRow(hexPosition.col, hexPosition.row, 1.5);
+                  }, 10);
                 }
               }, 100);
             } else {
@@ -79,12 +82,19 @@ export const TopMiddleNavigation = () => {
           }}
           size="xl"
         />
-        <CircleButton
+        {/* <CircleButton
           image={BuildingThumbs.squire}
           label={assistant}
           active={isPopupOpen(assistant)}
           size="xl"
           onClick={() => togglePopup(assistant)}
+        /> */}
+        <CircleButton
+          image={BuildingThumbs.squire}
+          label={quests}
+          active={isPopupOpen(quests)}
+          size="xl"
+          onClick={() => togglePopup(quests)}
         />
       </div>
     </div>
