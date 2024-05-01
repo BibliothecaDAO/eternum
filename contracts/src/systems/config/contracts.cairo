@@ -373,7 +373,9 @@ mod config_systems {
             let mut resource_production_config: ProductionConfig = get!(
                 world, resource_type, ProductionConfig
             );
+
             resource_production_config.amount = amount;
+            resource_production_config.input_count = cost.len().into();
 
             loop {
                 match cost.pop_front() {
@@ -390,8 +392,6 @@ mod config_systems {
                                 input_resource_amount: *input_resource_amount
                             })
                         );
-
-                        resource_production_config.input_count += 1;
 
                         // update input resource's production output
                         let mut input_resource_production_config: ProductionConfig = get!(

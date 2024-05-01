@@ -1,4 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap&family=Sedan:ital@0;1&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap&family=Sedan:ital@0;1&display=swap");
+
+@font-face {
+  font-family: 'VCR_OSD_MONO';
+  src: url('./fonts/easvhs.ttf') format('truetype');
+}
 
 @tailwind base;
 @tailwind components;
@@ -7,17 +12,18 @@
 html,
 body {
   overflow: hidden;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: "VCR_OSD_MONO", sans-serif;
+  /* font-optical-sizing: auto; */
   touch-action: none;
   @apply cursor-fancy;
 }
 
 h1,h2,h3,h4,h5,h6 {
-  font-family: "Sedan", sans-serif;
+  font-family: "VCR_OSD_MONO", sans-serif;
 }
 
 .h1,.h2,.h3,.h4,.h5,.h6 {
-  font-family: "Sedan", sans-serif;
+  font-family: "VCR_OSD_MONO", sans-serif;
 }
 
 @keyframes dotAnimation {
