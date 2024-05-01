@@ -14,7 +14,7 @@ import {
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
-import { useAutoAnimate } from "@formkit/auto-animate/react";
+
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { useMemo } from "react";
@@ -58,7 +58,7 @@ export const SelectPreviewBuilding = () => {
     isDestroyMode,
     setIsDestroyMode,
   } = useUIStore();
-  const [parent] = useAutoAnimate();
+
   const { playResourceSound } = usePlayResourceSound();
 
   const buildingTypes = Object.keys(BuildingType).filter(
@@ -98,7 +98,7 @@ export const SelectPreviewBuilding = () => {
     });
 
   return (
-    <div className="flex flex-col overflow-hidden" ref={parent}>
+    <div className="flex flex-col">
       <div className="grid grid-cols-2 gap-2 p-2">
         {realmResourceIds.map((resourceId) => {
           const resource = findResourceById(resourceId)!;
