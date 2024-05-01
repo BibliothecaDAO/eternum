@@ -22,7 +22,7 @@ private_key = "0x2bbf4f9fd0bbb2e60b0316c1fe0b76cf7a4d0198bd493ced9b8df2a3a24d68a
 rpc_url = "https://api.cartridge.gg/x/realms/katana/"
 account_address = "0x7d549f53e4c914608e8a3537eccc5e540c6c6c21547b49a28d3ae9b708db0bc"
 private_key = "0x4a3b4a925e3d264affeb8d05c56dbeb0c7ec431d062ce69c2f1ffb83a3c5013"
-world_address = "0x55febeb6e93ac3b2d237ed2f2724cd9362260c02cfa6dd73378ac85efb3505d"
+# world_address = "0x55febeb6e93ac3b2d237ed2f2724cd9362260c02cfa6dd73378ac85efb3505d"
 
 [[target.dojo]]
 
