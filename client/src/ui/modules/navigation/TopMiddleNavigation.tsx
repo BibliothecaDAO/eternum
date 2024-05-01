@@ -68,7 +68,10 @@ export const TopMiddleNavigation = () => {
               setTimeout(() => {
                 setLocation("/map");
                 if (hexPosition.col !== 0 && hexPosition.row !== 0) {
-                  moveCameraToColRow(hexPosition.col, hexPosition.row, 0.01);
+                  moveCameraToColRow(hexPosition.col, hexPosition.row, 0.01, true);
+                  setTimeout(() => {
+                    moveCameraToColRow(hexPosition.col, hexPosition.row, 1.5);
+                  }, 10);
                 }
               }, 100);
             } else {
