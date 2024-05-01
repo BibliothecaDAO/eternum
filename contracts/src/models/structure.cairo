@@ -26,7 +26,7 @@ impl StructureImpl of StructureTrait {
 #[derive(PartialEq, Copy, Drop, Serde, PrintTrait, Introspect)]
 enum StructureCategory {
     None,
-    Realm, 
+    Realm,
     Hyperstructure,
     Bank
 }
@@ -37,9 +37,8 @@ impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
             StructureCategory::None => 0,
             StructureCategory::Realm => 1,
             StructureCategory::Hyperstructure => 2,
-            StructureCategory::Bank => 3,  
+            StructureCategory::Bank => 3,
         }
     }
 }
-
 

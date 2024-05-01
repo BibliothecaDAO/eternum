@@ -4,7 +4,7 @@ use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait}
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
 use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-use eternum::utils::math::PercentageImpl;
+use eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
 
 #[derive(Model, Copy, Drop, Serde, Default)]
@@ -52,6 +52,10 @@ impl HealthImpl of HealthTrait {
         }
         num_steps
     }
+
+    fn percentage_left(self: Health) -> u128 {
+        self.current * PercentageValueImpl::_100().into() / self.lifetime
+    }
 }
 
 
@@ -94,6 +98,18 @@ impl TroopsImpl of TroopsTrait {
 
         total_knight_health.into() + total_paladin_health.into() + total_crossbowman_health.into()
     }
+
+
+    fn full_strength(self: Troops, troop_config: TroopConfig) -> u128 {
+        let total_knight_strength = troop_config.knight_strength * self.knight_count;
+        let total_paladin_strength = troop_config.paladin_strength * self.paladin_count;
+        let total_crossbowman_strength = troop_config.crossbowman_strength * self.crossbowman_count;
+
+        total_knight_strength.into()
+            + total_paladin_strength.into()
+            + total_crossbowman_strength.into()
+    }
+
 
     fn purchase(
         self: Troops, purchaser_id: u128, troops_resources: (Resource, Resource, Resource),

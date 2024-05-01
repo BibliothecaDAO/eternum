@@ -38,7 +38,7 @@ const BASE_STOREHOUSE_CAPACITY: u128 = 10_000;
 // TODO: Move to Onchain config
 const LOYALTY_TICK_INTERVAL: u64 = 7; // updates after x ticks
 const LOYALTY_PER_TICK_INTERVAL: u64 = 1; // update by y after x ticks
-const LOYALTY_MAX_VALUE: u64 = 100; 
+const LOYALTY_MAX_VALUE: u64 = 100;
 
 mod ResourceTypes {
     const WOOD: u8 = 1;
@@ -84,6 +84,91 @@ mod ResourceTypes {
 // note: update _resource_type_to_position 
 //  function is any new resources are added
 }
+
+
+fn get_resources_for_pillage() -> Span<u8> {
+    return array![
+        ResourceTypes::WOOD,
+        ResourceTypes::STONE,
+        ResourceTypes::COAL,
+        ResourceTypes::COPPER,
+        ResourceTypes::OBSIDIAN,
+        ResourceTypes::SILVER,
+        ResourceTypes::IRONWOOD,
+        ResourceTypes::COLD_IRON,
+        ResourceTypes::GOLD,
+        ResourceTypes::HARTWOOD,
+        ResourceTypes::DIAMONDS,
+        ResourceTypes::SAPPHIRE,
+        ResourceTypes::RUBY,
+        ResourceTypes::DEEP_CRYSTAL,
+        ResourceTypes::IGNIUM,
+        ResourceTypes::ETHEREAL_SILICA,
+        ResourceTypes::TRUE_ICE,
+        ResourceTypes::TWILIGHT_QUARTZ,
+        ResourceTypes::ALCHEMICAL_SILVER,
+        ResourceTypes::ADAMANTINE,
+        ResourceTypes::MITHRAL,
+        ResourceTypes::DRAGONHIDE,
+        ResourceTypes::DESERT_GLASS,
+        ResourceTypes::DIVINE_CLOTH,
+        ResourceTypes::CURIOUS_SPORE,
+        ResourceTypes::UNREFINED_ORE,
+        ResourceTypes::SUNKEN_SHEKEL,
+        ResourceTypes::DEMONHIDE,
+        ResourceTypes::DONKEY,
+        ResourceTypes::KNIGHT,
+        ResourceTypes::CROSSBOWMAN,
+        ResourceTypes::PALADIN,
+        ResourceTypes::LORDS,
+        ResourceTypes::WHEAT,
+        ResourceTypes::FISH,
+    ]
+        .span();
+}
+
+fn get_resources_for_pillage_probs() -> Span<u128> {
+    // 35 
+    return array![
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+    ]
+        .span();
+}
+
 
 /// Get resource occurence probabilities
 fn get_resource_probabilities() -> Span<(u8, u128)> {

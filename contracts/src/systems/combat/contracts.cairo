@@ -9,93 +9,101 @@ trait ICombatContract<TContractState> {
     fn battle_start(attacking_army_id: u128, defending_army_id: u128);
     fn battle_join(battle_id: u128, battle_side: BattleSide, army_id: u128);
     fn battle_leave(battle_id: u128, army_id: u128);
+    fn battle_pillage(army_id: u128, structure_id: u128);
 // fn end_battle(battle_entity_id: u128, army_entity_id: u128 );
 }
 
 
 #[dojo::contract]
 mod combat_systems {
+    use core::option::OptionTrait;
     use core::traits::Into;
-use core::option::OptionTrait;
     use eternum::alias::ID;
-    use eternum::constants::{ResourceTypes, ErrorMessages};
-    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE};
+    use eternum::constants::{
+        ResourceTypes, ErrorMessages, get_resources_for_pillage, get_resources_for_pillage_probs
+    };
+    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, LOYALTY_MAX_VALUE,};
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
         TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig,
         CapacityConfigImpl
     };
+    use eternum::models::config::{WeightConfig, WeightConfigImpl};
+    use eternum::models::loyalty::{Loyalty, LoyaltyTrait};
 
     use eternum::models::movable::Movable;
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use eternum::models::position::{Position, Coord, PositionTrait};
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
-    use eternum::models::structure::{Structure, StructureTrait};
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+    use eternum::models::structure::{Structure, StructureTrait};
+    use eternum::models::weight::Weight;
     use eternum::models::{
         combat::{
             Army, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle,
             BattleImpl, BattleTrait, BattleSide, Guard
         },
     };
+    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
+    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
+        InternalTravelSystemsImpl
+    };
 
-    use eternum::utils::math::PercentageImpl;
+    use eternum::utils::math::{PercentageValueImpl, PercentageImpl};
+    use eternum::utils::math::{min};
+    use eternum::utils::random;
     use super::ICombatContract;
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
-        
-
         fn army_create(world: IWorldDispatcher, army_owner_id: u128, guard: bool) {
-            
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
-
             // make army 
             let mut army_id: u128 = world.uuid().into();
-            set!(world, (Army {
+            set!(
+                world,
+                (Army {
                     entity_id: army_id,
                     troops: Default::default(),
                     battle_id: 0,
                     battle_side: Default::default()
-                }));
+                })
+            );
 
             // set army owner entity
-            set!(world,(EntityOwner {entity_id: army_id, entity_owner_id: army_owner_id}));
+            set!(world, (EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id }));
 
             // set army position to be owner position
             let owner_position: Position = get!(world, army_owner_id, Position);
             set!(
-                world,
-                (Position { entity_id: army_id, x: owner_position.x, y: owner_position.y })
+                world, (Position { entity_id: army_id, x: owner_position.x, y: owner_position.y })
             );
 
- 
             if guard {
-
                 ////// it's a structure guard //////////////
- 
+
                 // ensure entity is a structure
                 get!(world, army_owner_id, Structure).assert_is_structure();
 
                 // ensure entity does not already have a guard
                 let mut guard: Guard = get!(world, army_owner_id, Guard);
-                assert!(guard.army_id.is_zero(), "entity {} already has an army guard", army_owner_id);
+                assert!(
+                    guard.army_id.is_zero(), "entity {} already has an army guard", army_owner_id
+                );
 
                 // set structure guard
                 guard.army_id = army_id;
                 set!(world, (guard));
-  
             } else {
-
                 ////// it's a moving army (raider) //////////////
 
                 // set movable model
                 let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
-                .sec_per_km;
+                    .sec_per_km;
                 set!(
                     world,
                     Movable {
@@ -111,18 +119,18 @@ use core::option::OptionTrait;
                 );
 
                 // set army carry capacity
-                let army_carry_capacity : CapacityConfig = CapacityConfigImpl::get(world, ARMY_ENTITY_TYPE);
-                set!(world, (
-                        Capacity { entity_id: army_id, weight_gram: army_carry_capacity.weight_gram },
-                    )
+                let army_carry_capacity: CapacityConfig = CapacityConfigImpl::get(
+                    world, ARMY_ENTITY_TYPE
+                );
+                set!(
+                    world,
+                    (Capacity { entity_id: army_id, weight_gram: army_carry_capacity.weight_gram },)
                 );
             }
         }
 
 
-
         fn army_buy_troops(world: IWorldDispatcher, army_id: u128, payer_id: u128, troops: Troops) {
-
             // ensure caller owns the entity paying
             get!(world, payer_id, EntityOwner).assert_caller_owner(world);
 
@@ -130,7 +138,7 @@ use core::option::OptionTrait;
             let payer_position: Position = get!(world, payer_id, Position);
             let army_position: Position = get!(world, army_id, Position);
             payer_position.assert_same_location(army_position.into());
-            
+
             // make payment for troops
             let knight_resource = ResourceImpl::get(world, (payer_id, ResourceTypes::KNIGHT));
             let paladin_resource = ResourceImpl::get(world, (payer_id, ResourceTypes::PALADIN));
@@ -157,11 +165,11 @@ use core::option::OptionTrait;
             let mut army_quantity: Quantity = get!(world, army_id, Quantity);
             army_quantity.value += troops.count().into();
             set!(world, (army_quantity));
-
         }
 
-        fn army_merge_troops(world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops,) {
-
+        fn army_merge_troops(
+            world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops,
+        ) {
             // ensure caller owns from and to armies
             get!(world, from_army_id, EntityOwner).assert_caller_owner(world);
             get!(world, to_army_id, EntityOwner).assert_caller_owner(world);
@@ -172,7 +180,7 @@ use core::option::OptionTrait;
             from_army_position.assert_same_location(to_army_position.into());
 
             let troop_config = TroopConfigImpl::get(world);
-            
+
             // decrease from army troops
             let mut from_army: Army = get!(world, from_army_id, Army);
             from_army.troops.deduct(troops);
@@ -188,7 +196,6 @@ use core::option::OptionTrait;
             from_army_quantity.value -= troops.count().into();
             set!(world, (from_army_quantity));
 
-
             // increase to army troops
             let mut to_army: Army = get!(world, to_army_id, Army);
             to_army.troops.add(troops);
@@ -203,10 +210,7 @@ use core::option::OptionTrait;
             let mut to_army_quantity: Quantity = get!(world, to_army_id, Quantity);
             to_army_quantity.value += troops.count().into();
             set!(world, (to_army_quantity));
-
         }
-
-
 
 
         fn battle_start(world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128) {
@@ -394,5 +398,123 @@ use core::option::OptionTrait;
             battle.restart(tick, troop_config);
             set!(world, (battle));
         }
+
+
+        fn battle_pillage(world: IWorldDispatcher, army_id: u128, structure_id: u128,) {
+            // ensure caller owns army
+            get!(world, army_id, EntityOwner).assert_caller_owner(world);
+
+            // ensure entity being pillaged is a structure
+            get!(world, structure_id, Structure).assert_is_structure();
+
+            // ensure army is at structure position
+            let army_position: Position = get!(world, army_id, Position);
+            let structure_position: Position = get!(world, structure_id, Position);
+            army_position.assert_same_location(structure_position.into());
+
+            let tick = TickImpl::get(world);
+            let troop_config = TroopConfigImpl::get(world);
+
+            let structure_army_id: u128 = get!(world, structure_id, Guard).army_id;
+            let structure_army: Army = get!(world, structure_army_id, Army);
+            let structure_army_health: Health = get!(world, structure_army_id, Health);
+
+            // a percentage of it's full strength depending on structure army's health
+            let structure_army_strength = structure_army.troops.full_strength(troop_config)
+                * structure_army_health.percentage_left()
+                / PercentageValueImpl::_100().into();
+
+            // a percentage of its relative strength depending on loyalty
+            let structure_loyalty: Loyalty = get!(world, structure_id, Loyalty);
+            let structure_army_strength = structure_army_strength
+                * structure_loyalty.value(tick).into()
+                / LOYALTY_MAX_VALUE.into();
+
+            // a percentage of it's full strength depending on structure army's health
+            let attacking_army: Army = get!(world, army_id, Army);
+            let attacking_army_health: Health = get!(world, army_id, Health);
+            let attacking_army_strength = attacking_army.troops.full_strength(troop_config)
+                * attacking_army_health.percentage_left()
+                / PercentageValueImpl::_100().into();
+
+            let attack_successful: @bool = random::choices(
+                array![true, false].span(),
+                array![attacking_army_strength, structure_army_strength].span(),
+                array![].span(),
+                1,
+                true
+            )[0];
+
+            if *attack_successful {
+                let success_probability = attacking_army_strength
+                    * PercentageValueImpl::_100().into()
+                    / structure_army_strength;
+
+                let PILLAGE_TRIAL_COUNT: u8 = 10;
+                let mut count = 0;
+                loop {
+                    if count == PILLAGE_TRIAL_COUNT {
+                        break;
+                    }
+                    // choose a random resource to be stolen
+                    let chosen_resource_type: @u8 = random::choices(
+                        get_resources_for_pillage(),
+                        get_resources_for_pillage_probs(),
+                        array![].span(),
+                        1,
+                        true
+                    )[0];
+                    let pillaged_resource_from_structure: Resource = ResourceImpl::get(
+                        world, (structure_id, *chosen_resource_type)
+                    );
+                    if pillaged_resource_from_structure.balance > 0 {
+                        // find out the max resource amount carriable given entity's weight
+                        let army_capacity: Capacity = get!(world, army_id, Capacity);
+                        let army_total_capacity = army_capacity.weight_gram
+                            * attacking_army.troops.count().into();
+                        let army_weight: Weight = get!(world, army_id, Weight);
+                        let max_carriable = (army_total_capacity - army_weight.value)
+                            / WeightConfigImpl::get_weight(world, *chosen_resource_type, 1);
+                        if max_carriable > 0 {
+                            let max_resource_amount_stolen: u128 = attacking_army
+                                .troops
+                                .count()
+                                .into()
+                                * success_probability.into()
+                                / PercentageValueImpl::_100().into();
+
+                            let resource_amount_stolen: u128 = min(
+                                pillaged_resource_from_structure.balance, max_resource_amount_stolen
+                            );
+                            let resource_amount_stolen: u128 = min(
+                                max_carriable, resource_amount_stolen
+                            );
+
+                            InternalResourceSystemsImpl::transfer(
+                                world,
+                                0,
+                                structure_id,
+                                army_id,
+                                array![(*chosen_resource_type, resource_amount_stolen)].span()
+                            );
+
+                            break;
+                        }
+                    }
+                    count += 1;
+                };
+            }
+
+            // army goes home 
+
+            let army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
+            let army_owner_position: Position = get!(world, army_owner_entity_id, Position);
+            let army_movable: Movable = get!(world, army_id, Movable);
+
+            InternalTravelSystemsImpl::travel(
+                world, army_id, army_movable, army_position.into(), army_owner_position.into()
+            );
+        }
     }
 }
+

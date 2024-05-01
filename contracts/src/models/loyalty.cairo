@@ -1,14 +1,12 @@
 use array::SpanTrait;
 use eternum::alias::ID;
+use eternum::constants::{LOYALTY_MAX_VALUE, LOYALTY_PER_TICK_INTERVAL, LOYALTY_TICK_INTERVAL};
+use eternum::models::config::{TickConfig, TickImpl};
+
+use eternum::utils::math::min;
 use eternum::utils::unpack::unpack_resource_types;
 use starknet::ContractAddress;
 use traits::Into;
-
-use eternum::utils::math::min;
-use eternum::constants::{
-    LOYALTY_MAX_VALUE, LOYALTY_PER_TICK_INTERVAL, LOYALTY_TICK_INTERVAL
-};
-use eternum::models::config::{TickConfig, TickImpl};
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -27,8 +25,7 @@ impl LoyaltyImpl of LoyaltyTrait {
         }
 
         let ticks_passed: u64 = tick.current() - self.last_updated_tick;
-        let value: u64 
-            = (ticks_passed / LOYALTY_TICK_INTERVAL) * LOYALTY_PER_TICK_INTERVAL;
+        let value: u64 = (ticks_passed / LOYALTY_TICK_INTERVAL) * LOYALTY_PER_TICK_INTERVAL;
         return min(value, LOYALTY_MAX_VALUE);
     }
 }
