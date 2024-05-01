@@ -14,7 +14,7 @@ trait IWorldConfig {
 
 #[dojo::interface]
 trait IRealmFreeMintConfig {
-    fn set_mint_config(resources: Span<(u8, u128)>);
+    fn set_mint_config(config_id: u32, resources: Span<(u8, u128)>);
 }
 
 
@@ -151,7 +151,7 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl RealmFreeMintConfigImpl of super::IRealmFreeMintConfig<ContractState> {
-        fn set_mint_config(world: IWorldDispatcher, resources: Span<(u8, u128)>) {
+        fn set_mint_config(world: IWorldDispatcher, config_id: u32, resources: Span<(u8, u128)>) {
             assert_caller_is_admin(world);
 
             let detached_resource_id = world.uuid().into();
@@ -184,12 +184,13 @@ mod config_systems {
                 };
             };
 
+            // we define the config indexes so we can have more than 1
+            let config_index = REALM_FREE_MINT_CONFIG_ID + config_id.into();
+
             set!(
                 world,
                 (RealmFreeMintConfig {
-                    config_id: REALM_FREE_MINT_CONFIG_ID,
-                    detached_resource_id,
-                    detached_resource_count
+                    config_id: config_index, detached_resource_id, detached_resource_count
                 })
             );
         }

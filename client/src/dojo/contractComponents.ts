@@ -329,6 +329,19 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    HasClaimedStartingResources: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.BigInt, config_id: RecsType.Number, claimed: RecsType.Boolean },
+        {
+          metadata: {
+            name: "HasClaimedStartingResources",
+            types: ["u128", "u32", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     SoldierConfig: (() => {
       return defineComponent(
         world,

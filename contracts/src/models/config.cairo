@@ -272,5 +272,7 @@ impl PopulationConfigImpl of PopulationConfigTrait {
 struct HasClaimedStartingResources {
     #[key]
     entity_id: u128,
+    #[key]
+    config_id: u32,
     claimed: bool,
 }

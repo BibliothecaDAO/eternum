@@ -2031,8 +2031,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6e5d27950b7aa8eece851aecb7864b8efb9c1c90e7548b8fdd949b9963c6123",
-      "class_hash": "0x36ebd8719a6a0982a6136bd336a785740464f19446a46ad8d009730a4036233",
-      "original_class_hash": "0x36ebd8719a6a0982a6136bd336a785740464f19446a46ad8d009730a4036233",
+      "class_hash": "0x523e9561a0dacf3781522ce6c8d1f7cb8d811a599bcc79bb5c7b9a6d31c9b57",
+      "original_class_hash": "0x523e9561a0dacf3781522ce6c8d1f7cb8d811a599bcc79bb5c7b9a6d31c9b57",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -2139,6 +2139,10 @@
               "type": "function",
               "name": "set_mint_config",
               "inputs": [
+                {
+                  "name": "config_id",
+                  "type": "core::integer::u32"
+                },
                 {
                   "name": "resources",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
@@ -3682,8 +3686,8 @@
     {
       "kind": "DojoContract",
       "address": "0x78954c3172d81b184a548c25b9ac6831881f2a1bf0eda25a7576529fe70811e",
-      "class_hash": "0x718fcc17739c4c6bfd04fa7e63a073bb703f1bdb163ea12f87a3d2c435a43ca",
-      "original_class_hash": "0x718fcc17739c4c6bfd04fa7e63a073bb703f1bdb163ea12f87a3d2c435a43ca",
+      "class_hash": "0x75cef10f64fad371cf807a908add7c69eb95a0c73965433e4e7e22a2a64f8e9",
+      "original_class_hash": "0x75cef10f64fad371cf807a908add7c69eb95a0c73965433e4e7e22a2a64f8e9",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -3823,6 +3827,10 @@
               "type": "function",
               "name": "mint_starting_resources",
               "inputs": [
+                {
+                  "name": "config_id",
+                  "type": "core::integer::u32"
+                },
                 {
                   "name": "entity_id",
                   "type": "core::integer::u128"
@@ -11541,13 +11549,18 @@
           "key": true
         },
         {
+          "name": "config_id",
+          "type": "u32",
+          "key": true
+        },
+        {
           "name": "claimed",
           "type": "bool",
           "key": false
         }
       ],
-      "class_hash": "0x36d6da44faf2b642606700c9e2ffcec5e6972dde90a6fa4310d1ed482c96b29",
-      "original_class_hash": "0x36d6da44faf2b642606700c9e2ffcec5e6972dde90a6fa4310d1ed482c96b29",
+      "class_hash": "0x33efb5561664b25f5c99638c624f081a9e98dc35437cc97c6c528ce80f77e12",
+      "original_class_hash": "0x33efb5561664b25f5c99638c624f081a9e98dc35437cc97c6c528ce80f77e12",
       "abi": [
         {
           "type": "impl",
@@ -11743,6 +11756,10 @@
             {
               "name": "entity_id",
               "type": "core::integer::u128"
+            },
+            {
+              "name": "config_id",
+              "type": "core::integer::u32"
             },
             {
               "name": "claimed",

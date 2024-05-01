@@ -446,12 +446,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async mint_starting_resources(props: SystemProps.CreateStartingResources) {
-    const { realm_entity_id, signer } = props;
+    const { realm_entity_id, config_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "realm_systems"),
       entrypoint: "mint_starting_resources",
-      calldata: [realm_entity_id],
+      calldata: [config_id, realm_entity_id],
     });
   }
 }

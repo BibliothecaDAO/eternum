@@ -12,7 +12,7 @@ trait IRealmSystems {
         order: u8,
         position: eternum::models::position::Position
     ) -> eternum::alias::ID;
-    fn mint_starting_resources(entity_id: u128) -> eternum::alias::ID;
+    fn mint_starting_resources(config_id: u32, entity_id: u128) -> eternum::alias::ID;
 }
 
 
@@ -45,16 +45,17 @@ mod realm_systems {
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
         // TODO: mint_starting_resources
         // exploit as any entity can do this, not just Realms
-        fn mint_starting_resources(world: IWorldDispatcher, entity_id: u128) -> ID {
-            let mut claimed_starting_resources = get!(
-                world, (entity_id), HasClaimedStartingResources
+        fn mint_starting_resources(world: IWorldDispatcher, config_id: u32, entity_id: u128) -> ID {
+            let mut claimed_resources = get!(
+                world, (entity_id, config_id), HasClaimedStartingResources
             );
 
-            assert(!claimed_starting_resources.claimed, 'already claimed');
+            assert(!claimed_resources.claimed, 'already claimed');
 
-            let realm_free_mint_config = get!(
-                world, REALM_FREE_MINT_CONFIG_ID, RealmFreeMintConfig
-            );
+            // get index
+            let config_index = REALM_FREE_MINT_CONFIG_ID + config_id.into();
+
+            let realm_free_mint_config = get!(world, config_index, RealmFreeMintConfig);
             let mut index = 0;
             loop {
                 if index == realm_free_mint_config.detached_resource_count {
@@ -74,8 +75,8 @@ mod realm_systems {
                 index += 1;
             };
 
-            claimed_starting_resources.claimed = true;
-            set!(world, (claimed_starting_resources));
+            claimed_resources.claimed = true;
+            set!(world, (claimed_resources));
 
             entity_id.into()
         }
