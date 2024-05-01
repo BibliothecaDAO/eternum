@@ -6,17 +6,13 @@ use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 use eternum::utils::math::PercentageImpl;
 
-// Gameplay
 
-// Generate Troops like Resources (see resource)
-// fn create_army() this will convert Troops into an Army and burn the resources.
-// Now an Army exists at a location and it can travel
-// Army can initiate a combat with another Army or a Entity that has a combat trait
-
-// initiating combat
-// players select another Army, which must be at the same location, then start a Battle.
-// The Battle calculates the strength of each side and deducts health from each side per tick
-// If reinforcements arrive the Battle updates to the new strength and outcome is updated.
+#[derive(Model, Copy, Drop, Serde, Default)]
+struct Guard {
+    #[key]
+    entity_id: u128,
+    army_id: u128,
+}
 
 #[derive(Model, Copy, Drop, Serde, Default)]
 struct Health {
@@ -179,7 +175,7 @@ impl TroopsImpl of TroopsTrait {
         self_knight_strength + self_paladin_strength + self_crossbowman_strength
     }
 
-    fn count(ref self: Troops) -> u32 {
+    fn count(self: Troops) -> u32 {
         self.knight_count + self.paladin_count + self.crossbowman_count
     }
 }

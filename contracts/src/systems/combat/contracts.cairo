@@ -2,17 +2,21 @@ use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
 #[dojo::interface]
 trait ICombatContract<TContractState> {
-    fn create_army(owner_id: u128, troops: Troops);
-    fn start_battle(attacking_army_id: u128, defending_army_id: u128);
-    fn join_battle(battle_id: u128, battle_side: BattleSide, army_id: u128);
-    fn leave_battle(battle_id: u128, army_id: u128);
+    fn army_create(army_owner_id: u128, guard: bool);
+    fn army_buy_troops(army_id: u128, payer_id: u128, troops: Troops);
+    fn army_merge_troops(from_army_id: u128, to_army_id: u128, troops: Troops);
+
+    fn battle_start(attacking_army_id: u128, defending_army_id: u128);
+    fn battle_join(battle_id: u128, battle_side: BattleSide, army_id: u128);
+    fn battle_leave(battle_id: u128, army_id: u128);
 // fn end_battle(battle_entity_id: u128, army_entity_id: u128 );
 }
 
 
 #[dojo::contract]
 mod combat_systems {
-    use core::option::OptionTrait;
+    use core::traits::Into;
+use core::option::OptionTrait;
     use eternum::alias::ID;
     use eternum::constants::{ResourceTypes, ErrorMessages};
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE};
@@ -25,14 +29,15 @@ mod combat_systems {
 
     use eternum::models::movable::Movable;
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
-    use eternum::models::position::{Position, Coord};
+    use eternum::models::position::{Position, Coord, PositionTrait};
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
+    use eternum::models::structure::{Structure, StructureTrait};
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::{
         combat::{
             Army, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle,
-            BattleImpl, BattleTrait, BattleSide
+            BattleImpl, BattleTrait, BattleSide, Guard
         },
     };
 
@@ -41,99 +46,178 @@ mod combat_systems {
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
-        fn create_army(world: IWorldDispatcher, owner_id: u128, troops: Troops) {
-            // ensure caller is entity owner 
-            get!(world, owner_id, Owner).assert_caller_owner();
+        
 
-            // ensure owner entity is a realm
-            let realm: Realm = get!(world, owner_id, Realm);
-            assert!(realm.realm_id != 0, "owner is not a realm");
+        fn army_create(world: IWorldDispatcher, army_owner_id: u128, guard: bool) {
+            
+            // ensure caller owns entity that will own army
+            get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
+
+            // make army 
+            let mut army_id: u128 = world.uuid().into();
+            set!(world, (Army {
+                    entity_id: army_id,
+                    troops: Default::default(),
+                    battle_id: 0,
+                    battle_side: Default::default()
+                }));
+
+            // set army owner entity
+            set!(world,(EntityOwner {entity_id: army_id, entity_owner_id: army_owner_id}));
+
+            // set army position to be owner position
+            let owner_position: Position = get!(world, army_owner_id, Position);
+            set!(
+                world,
+                (Position { entity_id: army_id, x: owner_position.x, y: owner_position.y })
+            );
+
+ 
+            if guard {
+
+                ////// it's a structure guard //////////////
+ 
+                // ensure entity is a structure
+                get!(world, army_owner_id, Structure).assert_is_structure();
+
+                // ensure entity does not already have a guard
+                let mut guard: Guard = get!(world, army_owner_id, Guard);
+                assert!(guard.army_id.is_zero(), "entity {} already has an army guard", army_owner_id);
+
+                // set structure guard
+                guard.army_id = army_id;
+                set!(world, (guard));
+  
+            } else {
+
+                ////// it's a moving army (raider) //////////////
+
+                // set movable model
+                let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
+                .sec_per_km;
+                set!(
+                    world,
+                    Movable {
+                        entity_id: army_id,
+                        sec_per_km: army_sec_per_km,
+                        blocked: false,
+                        round_trip: false,
+                        start_coord_x: owner_position.x,
+                        start_coord_y: owner_position.y,
+                        intermediate_coord_x: 0,
+                        intermediate_coord_y: 0,
+                    }
+                );
+
+                // set army carry capacity
+                let army_carry_capacity : CapacityConfig = CapacityConfigImpl::get(world, ARMY_ENTITY_TYPE);
+                set!(world, (
+                        Capacity { entity_id: army_id, weight_gram: army_carry_capacity.weight_gram },
+                    )
+                );
+            }
+        }
+
+
+
+        fn army_buy_troops(world: IWorldDispatcher, army_id: u128, payer_id: u128, troops: Troops) {
+
+            // ensure caller owns the entity paying
+            get!(world, payer_id, EntityOwner).assert_caller_owner(world);
+
+            // ensure payer and army are at the same position
+            let payer_position: Position = get!(world, payer_id, Position);
+            let army_position: Position = get!(world, army_id, Position);
+            payer_position.assert_same_location(army_position.into());
+            
             // make payment for troops
-            let knight_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::KNIGHT));
-            let paladin_resource = ResourceImpl::get(world, (owner_id, ResourceTypes::PALADIN));
+            let knight_resource = ResourceImpl::get(world, (payer_id, ResourceTypes::KNIGHT));
+            let paladin_resource = ResourceImpl::get(world, (payer_id, ResourceTypes::PALADIN));
             let crossbowman_resource = ResourceImpl::get(
-                world, (owner_id, ResourceTypes::CROSSBOWMAN)
+                world, (payer_id, ResourceTypes::CROSSBOWMAN)
             );
             let (mut knight_resource, mut paladin_resource, mut crossbowman_resource) = troops
-                .purchase(owner_id, (knight_resource, paladin_resource, crossbowman_resource));
+                .purchase(payer_id, (knight_resource, paladin_resource, crossbowman_resource));
             knight_resource.save(world);
             paladin_resource.save(world);
             crossbowman_resource.save(world);
 
-            // make troops 
-            let mut army: Army = Default::default();
-            army.entity_id = world.uuid().into();
+            // increase troops number
+            let mut army: Army = get!(world, army_id, Army);
             army.troops.add(troops);
             set!(world, (army));
 
-            // set army health
-            let mut army_health: Health = Default::default();
-            army_health.entity_id = army.entity_id;
-            army_health.increase_by(army.troops.full_health(TroopConfigImpl::get(world)));
+            // increase army health
+            let mut army_health: Health = get!(world, army_id, Health);
+            army_health.increase_by(troops.full_health(TroopConfigImpl::get(world)));
             set!(world, (army_health));
 
-            // set army owner entity
-            let mut army_owned_by: EntityOwner = Default::default();
-            army_owned_by.entity_id = army.entity_id;
-            army_owned_by.entity_owner_id = owner_id;
+            // set troop quantity
+            let mut army_quantity: Quantity = get!(world, army_id, Quantity);
+            army_quantity.value += troops.count().into();
+            set!(world, (army_quantity));
 
-            set!(
-                world,
-                (
-                    army_owned_by,
-                    Owner { entity_id: army.entity_id, address: starknet::get_caller_address() }
-                )
-            );
+        }
 
-            // set army position
-            let owner_position: Position = get!(world, owner_id, Position);
-            set!(
-                world,
-                (Position { entity_id: army.entity_id, x: owner_position.x, y: owner_position.y })
-            );
+        fn army_merge_troops(world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops,) {
 
-            // Make Moveable
-            // @DEV TODO: This should be moved to a pure function rather than storing in the state. If we do it like this, then we will be storing the same data in the state multiple times.
-            let individual_speed = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
-                .sec_per_km;
+            // ensure caller owns from and to armies
+            get!(world, from_army_id, EntityOwner).assert_caller_owner(world);
+            get!(world, to_army_id, EntityOwner).assert_caller_owner(world);
 
-            set!(
-                world,
-                Movable {
-                    entity_id: army.entity_id,
-                    sec_per_km: individual_speed,
-                    blocked: false,
-                    round_trip: false,
-                    start_coord_x: owner_position.x,
-                    start_coord_y: owner_position.y,
-                    intermediate_coord_x: 0,
-                    intermediate_coord_y: 0,
-                }
-            );
+            // ensure from and to armies are at the same position
+            let from_army_position: Position = get!(world, from_army_id, Position);
+            let to_army_position: Position = get!(world, to_army_id, Position);
+            from_army_position.assert_same_location(to_army_position.into());
 
-            // set troop capacity and quantity
+            let troop_config = TroopConfigImpl::get(world);
+            
+            // decrease from army troops
+            let mut from_army: Army = get!(world, from_army_id, Army);
+            from_army.troops.deduct(troops);
+            set!(world, (from_army));
 
-            let troop_capacity = CapacityConfigImpl::get(world, ARMY_ENTITY_TYPE);
-            set!(
-                world,
-                (
-                    Capacity { entity_id: army.entity_id, weight_gram: troop_capacity.weight_gram },
-                    Quantity { entity_id: army.entity_id, value: army.troops.count().into() },
-                )
-            );
+            // decrease from army health
+            let mut from_army_health: Health = get!(world, from_army_id, Health);
+            from_army_health.decrease_by(troops.full_health(troop_config));
+            set!(world, (from_army_health));
+
+            // decrease from army  quantity
+            let mut from_army_quantity: Quantity = get!(world, from_army_id, Quantity);
+            from_army_quantity.value -= troops.count().into();
+            set!(world, (from_army_quantity));
+
+
+            // increase to army troops
+            let mut to_army: Army = get!(world, to_army_id, Army);
+            to_army.troops.add(troops);
+            set!(world, (to_army));
+
+            // increase to army health
+            let mut to_army_health: Health = get!(world, to_army_id, Health);
+            to_army_health.increase_by(troops.full_health(troop_config));
+            set!(world, (to_army_health));
+
+            // increase to army quantity
+            let mut to_army_quantity: Quantity = get!(world, to_army_id, Quantity);
+            to_army_quantity.value += troops.count().into();
+            set!(world, (to_army_quantity));
+
         }
 
 
-        fn start_battle(world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128) {
+
+
+        fn battle_start(world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128) {
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             assert!(attacking_army.battle_id == 0, "attacking army is in a battle");
 
-            let mut attacking_army_owned_by: EntityOwner = get!(
+            let mut attacking_army_owner_entity: EntityOwner = get!(
                 world, attacking_army_id, EntityOwner
             );
             assert!(
-                attacking_army_owned_by.owner_address(world) == starknet::get_caller_address(),
+                attacking_army_owner_entity.owner_address(world) == starknet::get_caller_address(),
                 "caller is not attacker"
             );
 
@@ -176,14 +260,14 @@ mod combat_systems {
         }
 
 
-        fn join_battle(
+        fn battle_join(
             world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128
         ) {
             assert!(battle_side != BattleSide::None, "choose correct battle side");
 
-            let mut army_owned_by: EntityOwner = get!(world, army_id, EntityOwner);
+            let mut army_owner_entity: EntityOwner = get!(world, army_id, EntityOwner);
             assert!(
-                army_owned_by.owner_address(world) == starknet::get_caller_address(),
+                army_owner_entity.owner_address(world) == starknet::get_caller_address(),
                 "caller is not army owner"
             );
 
@@ -243,10 +327,10 @@ mod combat_systems {
         }
 
 
-        fn leave_battle(world: IWorldDispatcher, battle_id: u128, army_id: u128) {
-            let mut army_owned_by: EntityOwner = get!(world, army_id, EntityOwner);
+        fn battle_leave(world: IWorldDispatcher, battle_id: u128, army_id: u128) {
+            let mut army_owner_entity: EntityOwner = get!(world, army_id, EntityOwner);
             assert!(
-                army_owned_by.owner_address(world) == starknet::get_caller_address(),
+                army_owner_entity.owner_address(world) == starknet::get_caller_address(),
                 "caller is not army owner"
             );
 
