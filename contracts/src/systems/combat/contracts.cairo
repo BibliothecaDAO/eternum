@@ -2,7 +2,7 @@ use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
 #[dojo::interface]
 trait ICombatContract<TContractState> {
-    fn army_create(army_owner_id: u128, guard: bool);
+    fn army_create(army_owner_id: u128, protector: bool);
     fn army_buy_troops(army_id: u128, payer_id: u128, troops: Troops);
     fn army_merge_troops(from_army_id: u128, to_army_id: u128, troops: Troops);
 
@@ -16,13 +16,16 @@ trait ICombatContract<TContractState> {
 
 #[dojo::contract]
 mod combat_systems {
+    use core::integer::BoundedInt;
     use core::option::OptionTrait;
     use core::traits::Into;
     use eternum::alias::ID;
     use eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_for_pillage, get_resources_for_pillage_probs
     };
-    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, LOYALTY_MAX_VALUE, MAX_PILLAGE_TRIAL_COUNT};
+    use eternum::constants::{
+        WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, LOYALTY_MAX_VALUE, MAX_PILLAGE_TRIAL_COUNT
+    };
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
@@ -32,18 +35,19 @@ mod combat_systems {
     use eternum::models::config::{WeightConfig, WeightConfigImpl};
     use eternum::models::loyalty::{Loyalty, LoyaltyTrait};
 
-    use eternum::models::movable::Movable;
+    use eternum::models::movable::{Movable, MovableTrait};
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use eternum::models::position::{Position, Coord, PositionTrait};
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+    use eternum::models::resources::{ResourceLock, ResourceLockTrait};
     use eternum::models::structure::{Structure, StructureTrait};
     use eternum::models::weight::Weight;
     use eternum::models::{
         combat::{
             Army, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle,
-            BattleImpl, BattleTrait, BattleSide, Guard
+            BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait
         },
     };
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
@@ -58,7 +62,7 @@ mod combat_systems {
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
-        fn army_create(world: IWorldDispatcher, army_owner_id: u128, guard: bool) {
+        fn army_create(world: IWorldDispatcher, army_owner_id: u128, protector: bool) {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
@@ -83,21 +87,26 @@ mod combat_systems {
                 world, (Position { entity_id: army_id, x: owner_position.x, y: owner_position.y })
             );
 
-            if guard {
-                ////// it's a structure guard //////////////
+            if protector {
+                ////// it's a structure protector //////////////
 
                 // ensure entity is a structure
                 get!(world, army_owner_id, Structure).assert_is_structure();
 
-                // ensure entity does not already have a guard
-                let mut guard: Guard = get!(world, army_owner_id, Guard);
+                // ensure entity does not already have a protector
+                let mut protector: Protector = get!(world, army_owner_id, Protector);
                 assert!(
-                    guard.army_id.is_zero(), "entity {} already has an army guard", army_owner_id
+                    protector.army_id.is_zero(),
+                    "entity {} already has an army protector",
+                    army_owner_id
                 );
 
-                // set structure guard
-                guard.army_id = army_id;
-                set!(world, (guard));
+                // set structure protector
+                protector.army_id = army_id;
+                set!(world, (protector));
+
+                // set army protectee
+                set!(world, (Protectee { army_id, protectee_id: army_owner_id }));
             } else {
                 ////// it's a moving army (raider) //////////////
 
@@ -214,53 +223,90 @@ mod combat_systems {
 
 
         fn battle_start(world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128) {
+            // ensure attacking army is not in any battle
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
-            assert!(attacking_army.battle_id == 0, "attacking army is in a battle");
+            assert!(attacking_army.battle_id.is_zero(), "attacking army is in a battle");
 
-            let mut attacking_army_owner_entity: EntityOwner = get!(
-                world, attacking_army_id, EntityOwner
-            );
-            assert!(
-                attacking_army_owner_entity.owner_address(world) == starknet::get_caller_address(),
-                "caller is not attacker"
-            );
+            // ensure caller owns attacking army
+            get!(world, attacking_army_id, EntityOwner).assert_caller_owner(world);
 
+            // ensure defending army is not in any battle
             let mut defending_army: Army = get!(world, defending_army_id, Army);
-            assert!(defending_army.battle_id == 0, "defending army is in a battle");
+            assert!(defending_army.battle_id.is_zero(), "defending army is in a battle");
 
+            // ensure attacker and defender are in same location
             let attacking_army_position: Position = get!(world, attacking_army_id, Position);
             let defending_army_position: Position = get!(world, defending_army_id, Position);
-            assert!(
-                Into::<
-                    Position, Coord
-                    >::into(attacking_army_position) == Into::<
-                    Position, Coord
-                >::into(defending_army_position),
-                "both troops not on same position"
-            );
+            attacking_army_position.assert_same_location(defending_army_position.into());
 
-            // make battle 
+            // update attacking army battle details
+            let battle_id: u128 = world.uuid().into();
+            attacking_army.battle_id = battle_id;
+            attacking_army.battle_side = BattleSide::Attack;
+            set!(world, (attacking_army));
+
+            // update defending army battle details
+            defending_army.battle_id = battle_id;
+            defending_army.battle_side = BattleSide::Defence;
+            set!(world, (defending_army));
+
+            // make attacking army immovable
+            let mut attacking_army_protectee: Protectee = get!(world, attacking_army_id, Protectee);
+            let mut attacking_army_movable: Movable = get!(world, attacking_army_id, Movable);
+            if attacking_army_protectee.is_none() {
+                attacking_army_movable.assert_moveable();
+                attacking_army_movable.blocked = true;
+                set!(world, (attacking_army_movable));
+            }
+
+            // make defending army immovable
+            let mut defending_army_protectee: Protectee = get!(world, defending_army_id, Protectee);
+            let mut defending_army_movable: Movable = get!(world, defending_army_id, Movable);
+            if defending_army_protectee.is_none() {
+                defending_army_movable.assert_moveable();
+                defending_army_movable.blocked = true;
+                set!(world, (defending_army_movable));
+            }
+
+            // lock resources owned by attacking army's protectee
+            let mut attacking_army_protectee_resource_lock: ResourceLock = get!(
+                world, attacking_army_protectee.protected_resources_owner(), ResourceLock
+            );
+            attacking_army_protectee_resource_lock.assert_not_locked();
+            attacking_army_protectee_resource_lock.release_at = BoundedInt::max();
+            set!(world, (attacking_army_protectee_resource_lock));
+
+            // lock resources owned by defending army's protectee
+            let mut defending_army_protectee_resource_lock: ResourceLock = get!(
+                world, defending_army_protectee.protected_resources_owner(), ResourceLock
+            );
+            defending_army_protectee_resource_lock.assert_not_locked();
+            defending_army_protectee_resource_lock.release_at = BoundedInt::max();
+            set!(world, (defending_army_protectee_resource_lock));
+
+            // create battle 
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
 
             let tick = TickImpl::get(world);
             let mut battle: Battle = Default::default();
-            battle.entity_id = world.uuid().into();
+            battle.entity_id = battle_id;
             battle.attack_army = attacking_army;
-            battle.defence_army = attacking_army;
+            battle.defence_army = defending_army;
             battle.attack_army_health = attacking_army_health;
             battle.defence_army_health = defending_army_health;
             battle.tick_last_updated = tick.current();
-            let troop_config = TroopConfigImpl::get(world);
-            battle.restart(tick, troop_config);
-
-            set!(world, (battle));
 
             // set battle position 
             let mut battle_position: Position = Default::default();
             battle_position.y = attacking_army_position.x;
             battle_position.y = attacking_army_position.y;
             set!(world, (battle_position));
+
+            // start battle
+            let troop_config = TroopConfigImpl::get(world);
+            battle.restart(tick, troop_config);
+            set!(world, (battle));
         }
 
 
@@ -287,17 +333,11 @@ mod combat_systems {
 
             let caller_army_position = get!(world, caller_army.entity_id, Position);
             let battle_position = get!(world, battle.entity_id, Position);
-            assert!(
-                Into::<
-                    Position, Coord
-                    >::into(caller_army_position) == Into::<
-                    Position, Coord
-                >::into(battle_position),
-                "caller army not in same position as army"
-            );
+            caller_army_position.assert_same_location(battle_position.into());
 
             caller_army.battle_id = battle_id;
             caller_army.battle_side = battle_side;
+            set!(world, (caller_army));
 
             let mut caller_army_movable: Movable = get!(world, caller_army.entity_id, Movable);
             assert!(!caller_army_movable.blocked, "caller army already blocked by another system");
@@ -357,6 +397,7 @@ mod combat_systems {
                 if battle.winner() != caller_army.battle_side {
                     panic!("Battle has ended and your team lost");
                 }
+            //todo@credence claim structure is opponent is structure
             }
 
             // merge caller army with army troops 
@@ -401,9 +442,7 @@ mod combat_systems {
 
 
         fn battle_pillage(world: IWorldDispatcher, army_id: u128, structure_id: u128,) {
-            
             // todo@credence need to decrease health 
-
 
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
@@ -419,7 +458,7 @@ mod combat_systems {
             let tick = TickImpl::get(world);
             let troop_config = TroopConfigImpl::get(world);
 
-            let structure_army_id: u128 = get!(world, structure_id, Guard).army_id;
+            let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             let structure_army: Army = get!(world, structure_army_id, Army);
             let structure_army_health: Health = get!(world, structure_army_id, Health);
 

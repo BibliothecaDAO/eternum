@@ -8,13 +8,6 @@ use eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
 
 #[derive(Model, Copy, Drop, Serde, Default)]
-struct Guard {
-    #[key]
-    entity_id: u128,
-    army_id: u128,
-}
-
-#[derive(Model, Copy, Drop, Serde, Default)]
 struct Health {
     #[key]
     entity_id: u128,
@@ -205,6 +198,40 @@ struct Army {
     battle_id: u128,
     battle_side: BattleSide
 }
+
+#[derive(Model, Copy, Drop, Serde, Default)]
+struct Protector {
+    #[key]
+    entity_id: u128,
+    army_id: u128,
+}
+
+#[derive(Model, Copy, Drop, Serde, Default)]
+struct Protectee {
+    #[key]
+    army_id: u128,
+    protectee_id: u128
+}
+
+#[generate_trait]
+impl ProtecteeImpl of ProtecteeTrait {
+    fn is_none(self: Protectee) -> bool {
+        self.protectee_id == 0
+    }
+
+    fn is_other(self: Protectee) -> bool {
+        self.protectee_id != 0
+    }
+
+    fn protected_resources_owner(self: Protectee) -> u128 {
+        if self.is_other() {
+            self.protectee_id
+        } else {
+            self.army_id
+        }
+    }
+}
+
 
 #[derive(Model, Copy, Drop, Serde, Default)]
 struct Battle {

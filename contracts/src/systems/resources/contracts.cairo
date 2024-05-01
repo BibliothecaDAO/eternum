@@ -27,9 +27,10 @@ mod resource_systems {
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
-    use eternum::models::resources::LockTrait;
+    use eternum::models::resources::{
+        Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceLock, ResourceLockTrait
+    };
     use eternum::models::resources::{DetachedResource};
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait, ResourceAllowance};
     use eternum::models::road::RoadImpl;
     use eternum::models::weight::Weight;
     use eternum::models::weight::WeightTrait;
@@ -223,9 +224,9 @@ mod resource_systems {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
                         if caller_id.is_non_zero() {
-                            // // ensure resource balance is not locked 
-                            // let resource_lock: ResourceLock = get!(world, sender_id, ResourceLock);
-                            // resource_lock.assert_not_locked();
+                            // ensure resource spending is not locked 
+                            let resource_lock: ResourceLock = get!(world, sender_id, ResourceLock);
+                            resource_lock.assert_not_locked();
 
                             // burn resources from sender's balance
                             let mut sender_resource = ResourceImpl::get(
