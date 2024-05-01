@@ -22,7 +22,7 @@ mod combat_systems {
     use eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_for_pillage, get_resources_for_pillage_probs
     };
-    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, LOYALTY_MAX_VALUE,};
+    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, LOYALTY_MAX_VALUE, MAX_PILLAGE_TRIAL_COUNT};
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
@@ -401,6 +401,10 @@ mod combat_systems {
 
 
         fn battle_pillage(world: IWorldDispatcher, army_id: u128, structure_id: u128,) {
+            
+            // todo@credence need to decrease health 
+
+
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -450,10 +454,9 @@ mod combat_systems {
                     * PercentageValueImpl::_100().into()
                     / structure_army_strength;
 
-                let PILLAGE_TRIAL_COUNT: u8 = 10;
                 let mut count = 0;
                 loop {
-                    if count == PILLAGE_TRIAL_COUNT {
+                    if count == MAX_PILLAGE_TRIAL_COUNT {
                         break;
                     }
                     // choose a random resource to be stolen

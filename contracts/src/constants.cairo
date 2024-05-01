@@ -40,6 +40,10 @@ const LOYALTY_TICK_INTERVAL: u64 = 7; // updates after x ticks
 const LOYALTY_PER_TICK_INTERVAL: u64 = 1; // update by y after x ticks
 const LOYALTY_MAX_VALUE: u64 = 100;
 
+// pillage config
+// TODO: Move to Onchain config
+const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;
+
 mod ResourceTypes {
     const WOOD: u8 = 1;
     const STONE: u8 = 2;
