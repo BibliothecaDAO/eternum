@@ -71,7 +71,8 @@
     "Direction",
     "Production",
     "Population",
-    "QuantityTracker"
+    "QuantityTracker",
+    "BuildingQuantity"
   ],
   "MAP_SYSTEMS": [
     "Tile",
