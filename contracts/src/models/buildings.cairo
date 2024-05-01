@@ -12,7 +12,6 @@ use eternum::models::position::{Coord, Position, Direction, PositionTrait, Coord
 use eternum::models::production::{
     Production, ProductionInput, ProductionRateTrait, ProductionInputImpl
 };
-use eternum::models::quantity::{QuantityTracker};
 use eternum::models::resources::ResourceTrait;
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 
@@ -34,6 +33,14 @@ struct Building {
     entity_id: u128,
     outer_entity_id: u128,
 }
+
+#[derive(Model, PartialEq, Copy, Drop, Serde, PrintTrait)]
+struct BuildingQuantity {
+    #[key]
+    category: BuildingCategory,
+    value: u8
+}
+
 
 #[derive(PartialEq, Copy, Drop, Serde, PrintTrait, Introspect)]
 enum BuildingCategory {
@@ -524,14 +531,12 @@ impl BuildingImpl of BuildingTrait {
         building.start_production(world);
 
         // increase building type count for realm
-        let building_quantity_key = BuildingQuantityTrackerImpl::key(
-            outer_entity_id, building.category.into(), building.produced_resource_type
+
+        let mut building_quantity: BuildingQuantity = get!(
+            world, building.category, BuildingQuantity
         );
-        let mut building_quantity_tracker: QuantityTracker = get!(
-            world, building_quantity_key, QuantityTracker
-        );
-        building_quantity_tracker.count += 1;
-        set!(world, (building_quantity_tracker));
+        building_quantity.value += 1;
+        set!(world, (building_quantity));
 
         let mut population = get!(world, outer_entity_id, Population);
         let population_config = PopulationConfigTrait::get(world, building.category);
@@ -576,14 +581,11 @@ impl BuildingImpl of BuildingTrait {
         building.stop_production(world);
 
         // decrease building type count for realm
-        let building_quantity_key = BuildingQuantityTrackerImpl::key(
-            outer_entity_id, building.category.into(), building.produced_resource_type
+        let mut building_quantity: BuildingQuantity = get!(
+            world, building.category, BuildingQuantity
         );
-        let mut building_quantity_tracker: QuantityTracker = get!(
-            world, building_quantity_key, QuantityTracker
-        );
-        building_quantity_tracker.count -= 1;
-        set!(world, (building_quantity_tracker));
+        building_quantity.value -= 1;
+        set!(world, (building_quantity));
 
         // remove building 
         building.entity_id = 0;
