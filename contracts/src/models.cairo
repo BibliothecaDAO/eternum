@@ -22,6 +22,7 @@ mod tick;
 mod trade;
 mod weight;
 mod structure;
+mod loyalty;
 mod bank {
     mod bank;
     mod liquidity;
