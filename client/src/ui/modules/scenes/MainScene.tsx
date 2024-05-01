@@ -122,7 +122,7 @@ export const MainScene = () => {
           Sprite: { threshold: 0.2 },
         },
       }}
-      camera={{ fov: 15, position: [0, 700, 0], far: 1300, near: 75 }}
+      camera={{ fov: 15, position: [0, 700, 0], far: 1300, near: 20 }}
       dpr={[0.5, 1]}
       performance={{
         min: 0.1,
@@ -176,11 +176,11 @@ export const MainScene = () => {
             eskil={false} // Eskil's vignette technique
             blendFunction={BlendFunction.NORMAL} // blend mode
           />
-          {/* <DepthOfField
-            focusDistance={0.94} // where to focus
-            focalLength={0.2} // focal length
+          <DepthOfField
+            focusDistance={0.5} // where to focus
+            focalLength={1.5} // focal length
             bokehScale={3} // bokeh size
-          /> */}
+          />
           <BrightnessContrast brightness={brightness} contrast={contrast} />
           <Bloom luminanceThreshold={0.9} intensity={0.1} mipmapBlur />
           <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.1} />
