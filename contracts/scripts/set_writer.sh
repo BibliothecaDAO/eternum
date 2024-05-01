@@ -1,37 +1,28 @@
 #!/bin/bash
 
 # Initialize the delay variable
+mode=""
 delay=""
 
 # Function to show usage
 usage() {
-    echo "Usage: $0 [--interval delay]"
-    echo "  --interval: Specify a delay in seconds between each command."
+    echo "Usage: $0 --mode [prod|dev] [--interval delay]"
     exit 1
 }
 
-# Parse command-line arguments for the --interval option
+# Parse command-line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --interval)
-            if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-                delay=$2
-                shift 2
-            else
-                echo "Error: --interval requires a numeric argument."
-                usage
-            fi
-            ;;
-        *)
-            usage
-            ;;
+        --mode) mode="${2:-}"; shift 2;;
+        --interval) delay="${2:-}"; shift 2;;
+        *) usage;;
     esac
 done
 
-# Validate that delay is a number
-if ! [[ "$delay" =~ ^[0-9]+(\.[0-9]+)?$ ]] && [ -n "$delay" ]; then
-    echo "Error: Delay must be a number."
-    exit 1
+# Validate mode
+if [[ "$mode" != "prod" && "$mode" != "dev" ]]; then
+    echo "Error: Invalid mode specified. Please use prod or dev."
+    usage
 fi
 
 # run the contracts.sh file

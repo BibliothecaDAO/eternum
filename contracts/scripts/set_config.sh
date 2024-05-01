@@ -196,8 +196,8 @@ commands+=(
     "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FARM,$WHEAT,1,$WHEAT,$(($FARM_BUILDING_COST * $RESOURCE_PRECISION))"
     "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_FISHING_VILLAGE,$FISH,1,$WHEAT,$(($FARM_BUILDING_COST * $RESOURCE_PRECISION))"
 
-    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_WORKERS_HUT,$WHEAT,1,$(($WORKERS_HUT_BUILDING_COST * $RESOURCE_PRECISION))"
-    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_STOREHOUSE,$WHEAT,1,$(($STOREHOUSE_BUILDING_COST * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_WORKERS_HUT,$WHEAT,1,$WHEAT,$(($WORKERS_HUT_BUILDING_COST * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_STOREHOUSE,$WHEAT,1,$WHEAT,$(($STOREHOUSE_BUILDING_COST * $RESOURCE_PRECISION))"
     "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_MARKET,$DONKEY,1,$WHEAT,$(($MARKET_BUILDING_COST * $RESOURCE_PRECISION))"
 
     "sozo execute $CONFIG_SYSTEMS set_building_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_BARRACKS,$KNIGHT,1,$WHEAT,$(($MILITARY_BUILDING_COST * $RESOURCE_PRECISION))"
@@ -314,4 +314,4 @@ for cmd in "${commands[@]}"; do
     fi
 done
 
-./scripts/set_writer.sh --interval $delay
+./scripts/set_writer.sh --interval $delay  --mode $mode
