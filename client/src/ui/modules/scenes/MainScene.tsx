@@ -167,7 +167,7 @@ export const MainScene = () => {
         </Bvh>
         <EffectComposer multisampling={0}>
           <Pixelation
-            granularity={2} // pixel granularity
+            granularity={4} // pixel granularity
           />
 
           <Vignette
