@@ -268,7 +268,7 @@ mod combat_systems {
                 set!(world, (defending_army_movable));
             }
 
-            // lock resources owned by attacking army's protectee
+            // lock resources being protected by attacking army
             let mut attacking_army_protectee_resource_lock: ResourceLock = get!(
                 world, attacking_army_protectee.protected_resources_owner(), ResourceLock
             );
@@ -276,7 +276,7 @@ mod combat_systems {
             attacking_army_protectee_resource_lock.release_at = BoundedInt::max();
             set!(world, (attacking_army_protectee_resource_lock));
 
-            // lock resources owned by defending army's protectee
+            // lock resources being protected by defending army
             let mut defending_army_protectee_resource_lock: ResourceLock = get!(
                 world, defending_army_protectee.protected_resources_owner(), ResourceLock
             );
@@ -315,22 +315,22 @@ mod combat_systems {
         ) {
             assert!(battle_side != BattleSide::None, "choose correct battle side");
 
-            let mut army_owner_entity: EntityOwner = get!(world, army_id, EntityOwner);
-            assert!(
-                army_owner_entity.owner_address(world) == starknet::get_caller_address(),
-                "caller is not army owner"
-            );
+            // ensure caller owns army
+            get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
             // update battle state before any other actions
             let mut battle: Battle = get!(world, battle_id, Battle);
             let tick = TickImpl::get(world);
             battle.update_state(tick);
 
+            // ensure battle is still ongoing
             assert!(battle.tick_duration_left > 0, "Battle has ended");
 
+            // ensure caller army is not in battle
             let mut caller_army: Army = get!(world, army_id, Army);
-            assert!(caller_army.battle_id == 0, "army is in a battle");
+            assert!(caller_army.battle_id.is_zero(), "army is in a battle");
 
+            // ensure caller army is at battle location
             let caller_army_position = get!(world, caller_army.entity_id, Position);
             let battle_position = get!(world, battle.entity_id, Position);
             caller_army_position.assert_same_location(battle_position.into());
@@ -339,21 +339,33 @@ mod combat_systems {
             caller_army.battle_side = battle_side;
             set!(world, (caller_army));
 
-            let mut caller_army_movable: Movable = get!(world, caller_army.entity_id, Movable);
-            assert!(!caller_army_movable.blocked, "caller army already blocked by another system");
+            // make caller army immovable
+            let mut caller_army_protectee: Protectee = get!(world, army_id, Protectee);
+            let mut caller_army_movable: Movable = get!(world, army_id, Movable);
+            if caller_army_protectee.is_none() {
+                caller_army_movable.assert_moveable();
+                caller_army_movable.blocked = true;
+                set!(world, (caller_army_movable));
+            }
 
-            caller_army_movable.blocked = true;
-            set!(world, (caller_army_movable));
+            // lock resources being protected by army
+            let mut caller_army_protectee_resource_lock: ResourceLock = get!(
+                world, caller_army_protectee.protected_resources_owner(), ResourceLock
+            );
+            caller_army_protectee_resource_lock.assert_not_locked();
+            caller_army_protectee_resource_lock.release_at = BoundedInt::max();
+            set!(world, (caller_army_protectee_resource_lock));
 
-            // merge caller army with army troops 
+            // add caller army troops to battle army troops
             let mut battle_army = battle.attack_army;
             let mut battle_army_health = battle.attack_army_health;
             if battle_side == BattleSide::Defence {
                 battle_army = battle.defence_army;
                 battle_army_health = battle.defence_army_health;
             }
-
             battle_army.troops.add(caller_army.troops);
+
+            // add caller army heath to battle army health 
             let mut caller_army_health: Health = get!(world, army_id, Health);
             battle_army_health.increase_by(caller_army_health.current);
 
