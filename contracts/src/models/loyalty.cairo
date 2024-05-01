@@ -5,11 +5,11 @@ use starknet::ContractAddress;
 use traits::Into;
 
 use eternum::utils::math::min;
+use eternum::constants::{
+    LOYALTY_MAX_VALUE, LOYALTY_PER_TICK_INTERVAL, LOYALTY_TICK_INTERVAL
+};
 use eternum::models::config::{TickConfig, TickImpl};
 
-const LOYALTY_TICK_INTERVAL: u64 = 7; // updates after x ticks
-const LOYALTY_PER_TICK_INTERVAL: u64 = 1; // update by y after x ticks
-const LOYALTY_MAX_VALUE: u64 = 100; 
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Loyalty {
