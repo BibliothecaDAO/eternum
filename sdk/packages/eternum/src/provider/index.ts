@@ -438,12 +438,20 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_army(props: SystemProps.CreateArmyProps) {
     const { owner_id, troops, signer } = props;
 
-    console.log(owner_id, troops, signer);
-
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "create_army",
       calldata: [owner_id, troops.knight_count, troops.paladin_count, troops.crossbowman_count],
+    });
+  }
+
+  public async mint_starting_resources(props: SystemProps.CreateStartingResources) {
+    const { realm_entity_id, config_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "realm_systems"),
+      entrypoint: "mint_starting_resources",
+      calldata: [config_id, realm_entity_id],
     });
   }
 }

@@ -121,6 +121,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.create_army(props);
   };
 
+  const mint_starting_resources = async (props: SystemProps.CreateStartingResources) => {
+    await provider.mint_starting_resources(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -158,6 +162,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_building,
     create_army,
     uuid,
+    mint_starting_resources,
   };
 
   // TODO: Fix Type

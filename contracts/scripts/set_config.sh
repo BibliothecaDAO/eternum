@@ -2,6 +2,53 @@
 
 source ./scripts/contracts.sh
 
+# Initialize variables
+mode=""
+delay=0
+
+# Function to show usage
+usage() {
+    echo "Usage: $0 --mode [prod|dev] [--interval delay]"
+    exit 1
+}
+
+# Parse command-line arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --mode) mode="${2:-}"; shift 2;;
+        --interval) delay="${2:-}"; shift 2;;
+        *) usage;;
+    esac
+done
+
+# Validate mode
+if [[ "$mode" != "prod" && "$mode" != "dev" ]]; then
+    echo "Error: Invalid mode specified. Please use prod or dev."
+    usage
+fi
+
+if [[ "$mode" == "prod" ]]; then 
+    export STARTING_FOOD=2000
+    export STARTING_DONKEYS=30
+    export STARTING_TROOPS=3
+    export STARTING_RESOURCES=20
+    export STARTING_LORDS=100
+
+    export TICK_INTERVAL_IN_SECONDS=900
+
+    export DONKEY_SPEED=$TICK_INTERVAL_IN_SECONDS
+else
+    export STARTING_FOOD=2000
+    export STARTING_DONKEYS=30
+    export STARTING_TROOPS=3
+    export STARTING_RESOURCES=20
+    export STARTING_LORDS=100
+
+    export TICK_INTERVAL_IN_SECONDS=900
+
+    export DONKEY_SPEED=1
+fi
+
 # // precision
 export RESOURCE_PRECISION=1000
 
@@ -18,7 +65,6 @@ export PALADIN_PER_TICK=2
 
 # // global 
 export MAX_MOVE_PER_TICK=3
-export TICK_INTERVAL_IN_SECONDS=900
 
 # // exploration
 export EXPLORATION_WHEAT_BURN_AMOUNT=30000
@@ -47,6 +93,16 @@ export STOREHOUSE_POPULATION=1
 # // capacity
 export WORKERS_HUT_CAPACITY=5
 
+# // starting resources config ids
+export STARTING_ID_FOOD=1
+export STARTING_ID_COMMON_RESOURCES=2
+export STARTING_ID_UNCOMMON_RESOURCES=3
+export STARTING_ID_UNIQUE_RESOURCES=4
+export STARTING_ID_RARE_RESOURCES=5
+export STARTING_ID_LEGENDARY_RESOURCES=6
+export STARTING_ID_MYTHIC_RESOURCES=7
+export STARTING_ID_TRADE=8
+export STARTING_ID_MILITARY=9
 
 # ------ POPULATION + CAPACITY CONFIG ------
 # params: population, capacity
@@ -59,9 +115,8 @@ commands+=(
     "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_ARCHERY_RANGE,$MILITARY_BUILDING_POPULATION,0"
     "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_STABLE,$MILITARY_BUILDING_POPULATION,0"
     "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_WORKERS_HUT,$WORKERS_HUT_POPULATION,$WORKERS_HUT_CAPACITY"
-    
     "sozo execute $CONFIG_SYSTEMS set_population_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BUILDING_STOREHOUSE,$STOREHOUSE_POPULATION,0"
-    )
+)
 
 
 # ------ BANK CONFIG ------
@@ -84,7 +139,7 @@ commands+=(
     # ### SPEED ###
     # # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
     # # 360 sec per km = 10km/h
-    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY_ENTITY_TYPE,$TICK_INTERVAL_IN_SECONDS"
+    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY_ENTITY_TYPE,$DONKEY_SPEED"
     "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ARMY_ENTITY_TYPE,$TICK_INTERVAL_IN_SECONDS"
 
     # ### TRAVEL ###
@@ -218,72 +273,33 @@ commands+=(
 )
 
 
-# Initialize variables
-mode=""
-delay=0
 
-# Function to show usage
-usage() {
-    echo "Usage: $0 --mode [prod|dev] [--interval delay]"
-    echo "  --mode: Specify the environment mode (prod or dev)."
-    echo "  --interval: Specify a delay in seconds between each command."
-    exit 1
-}
 
-# Check if at least one argument is provided
-if [ $# -eq 0 ]; then
-    usage
-fi
+commands+=(
+    # FOOD STARTING CONFIG
+    "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STARTING_ID_FOOD,2,$WHEAT,$(($STARTING_FOOD * $RESOURCE_PRECISION)),$FISH,$(($STARTING_FOOD * $RESOURCE_PRECISION))"
 
-# Parse command-line arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --mode)
-            if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-                mode=$2
-                shift 2
-            else
-                echo "Error: --mode requires an argument (prod or dev)."
-                usage
-            fi
-            ;;
-        --interval)
-            if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-                delay=$2
-                shift 2
-            else
-                echo "Error: --interval requires a numeric argument."
-                usage
-            fi
-            ;;
-        *)
-            usage
-            ;;
-    esac
-done
+    # # TRADE STARTING CONFIG
+    "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STARTING_ID_TRADE,2,$DONKEYS,$(($STARTING_DONKEYS * $RESOURCE_PRECISION)),$LORDS,$(($STARTING_LORDS * $RESOURCE_PRECISION))"
 
-# Validate mode
-if [ "$mode" != "prod" ] && [ "$mode" != "dev" ]; then
-    echo "Error: Invalid mode specified. Please use prod or dev."
-    usage
-fi
+    # # MILITARY STARTING CONFIG
+    "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STARTING_ID_MILITARY,3,$KNIGHT,$(($STARTING_TROOPS * $RESOURCE_PRECISION)),$CROSSBOWMEN,$(($STARTING_TROOPS * $RESOURCE_PRECISION)),$PALADIN,$(($STARTING_TROOPS * $RESOURCE_PRECISION))"
 
-# Initialize commands based on mode
-if [[ "$mode" == "prod" ]]; then
-    commands+=(
-        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 29,1,20000,2,20000,3,20000,4,20000,5,20000,6,20000,7,20000,8,20000,9,20000,10,20000,11,20000,12,20000,13,20000,14,20000,15,20000,16,20000,17,20000,18,20000,19,20000,20,20000,21,20000,22,20000,249,2000,250,2000,251,2000,252,2000,253,200000,254,200000,255,200000"
-    )
-else
-    # commands+=(
-    #     "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 25,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8,0,9,0,10,0,11,0,12,0,13,0,14,0,15,0,16,0,17,0,18,0,19,0,20,0,21,0,22,0,253,0,254,0,255,0"
-    # )
-    commands+=(
-        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 29,1,20000,2,20000,3,20000,4,20000,5,20000,6,20000,7,20000,8,20000,9,20000,10,20000,11,20000,12,20000,13,20000,14,20000,15,20000,16,20000,17,20000,18,20000,19,20000,20,20000,21,20000,22,20000,249,20000,250,2000,251,2000,252,2000,253,2000000,254,2000000,255,2000000"
-        # set donkey speed at highest for dev
-        # 1 sec per km
-        "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,1"
-    )
-fi
+    # RESOURCES STARTING CONFIG
+    # We split into 3 groups to avoid hitting the max step limit
+    "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STARTING_ID_COMMON_RESOURCES,4,$WOOD,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$STONE,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$COAL,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$COPPER,$(($STARTING_RESOURCES * $RESOURCE_PRECISION))"
+
+    "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STARTING_ID_UNCOMMON_RESOURCES,3,$OBSIDIAN,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$SILVER,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$IRONWOOD,$(($STARTING_RESOURCES * $RESOURCE_PRECISION))"
+
+    "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STARTING_ID_UNIQUE_RESOURCES,4,$COLDIRON,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$GOLD,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$HARTWOOD,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$DIAMONDS,$(($STARTING_RESOURCES * $RESOURCE_PRECISION))"
+
+    "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STARTING_ID_RARE_RESOURCES,3,$SAPPHIRE,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$RUBY,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$DEEPCRYSTAL,$(($STARTING_RESOURCES * $RESOURCE_PRECISION))"
+
+    "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STARTING_ID_LEGENDARY_RESOURCES,4,$IGNIUM,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$ETHEREALSILICA,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$TRUEICE,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$TWILIGHTQUARTZ,$(($STARTING_RESOURCES * $RESOURCE_PRECISION))"
+
+    "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $STARTING_ID_MYTHIC_RESOURCES,4,$IGNIUM,$ALCHEMICALSILVER,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$ADAMANTINE,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$MITHRAL,$(($STARTING_RESOURCES * $RESOURCE_PRECISION)),$DRAGONHIDE,$(($STARTING_RESOURCES * $RESOURCE_PRECISION))"
+)
+
 
 for cmd in "${commands[@]}"; do
     echo "Executing command: $cmd"
