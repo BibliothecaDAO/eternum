@@ -28,6 +28,9 @@ use traits::Into;
 
 const _0_1: u128 = 1844674407370955161; // 0.1
 const _1: u128 = 18446744073709551616; // 1
+const INITIAL_RESOURCE_BALANCE: u128 = 10000;
+const INITIAL_LIQUIDITY_AMOUNT: u128 = 1000;
+const SWAP_AMOUNT: u128 = 100;
 
 fn setup(
     owner_fee_scaled: u128, lp_fee_scaled: u128
@@ -65,14 +68,14 @@ fn setup(
     set!(
         world,
         Resource {
-            entity_id: bank_account_entity_id, resource_type: ResourceTypes::WOOD, balance: 10000
+            entity_id: bank_account_entity_id, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE
         }
     );
     // lords
     set!(
         world,
         Resource {
-            entity_id: bank_account_entity_id, resource_type: ResourceTypes::LORDS, balance: 10000
+            entity_id: bank_account_entity_id, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE
         }
     );
 
@@ -102,8 +105,8 @@ fn test_swap_buy_without_fees() {
 
     let player = starknet::get_caller_address();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
-    swap_systems_dispatcher.buy(bank_entity_id, ResourceTypes::WOOD, 100);
+    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT);
+    swap_systems_dispatcher.buy(bank_entity_id, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
@@ -136,8 +139,8 @@ fn test_swap_buy_with_fees() {
 
     let player = starknet::get_caller_address();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
-    swap_systems_dispatcher.buy(bank_entity_id, ResourceTypes::WOOD, 100);
+    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT);
+    swap_systems_dispatcher.buy(bank_entity_id, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
@@ -175,8 +178,8 @@ fn test_swap_sell_without_fees() {
 
     let player = starknet::get_caller_address();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
-    swap_systems_dispatcher.sell(bank_entity_id, ResourceTypes::WOOD, 100);
+    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT);
+    swap_systems_dispatcher.sell(bank_entity_id, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
@@ -211,8 +214,8 @@ fn test_swap_sell_with_fees() {
 
     let player = starknet::get_caller_address();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
-    swap_systems_dispatcher.sell(bank_entity_id, ResourceTypes::WOOD, 100);
+    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT);
+    swap_systems_dispatcher.sell(bank_entity_id, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // player resources
     let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
