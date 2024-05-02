@@ -54,12 +54,12 @@ const CircleButton = ({
         }
       }}
       className={clsx(
-        "flex transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-white/20 hover:opacity-90 border-4 border-black/40 shadow-2xl sepia-[.75] rounded-full hover:sepia-0",
+        "flex transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold hover:opacity-90 border-2  bg-gold/60 shadow-2xl  hover:sepia-0",
         className,
         sizes[size],
         { "opacity-50 cursor-not-allowed": disabled },
-        { "translate-y-0.5 border-white/20": active },
-        { " ": !active },
+        { " border-gold sepia-0": active },
+        { " border-brown/30 sepia-[.75]": !active },
       )}
       style={{
         backgroundImage: image ? `url(${image})` : active ? "" : "",

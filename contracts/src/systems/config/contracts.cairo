@@ -373,9 +373,9 @@ mod config_systems {
             let mut resource_production_config: ProductionConfig = get!(
                 world, resource_type, ProductionConfig
             );
-
             resource_production_config.amount = amount;
-            resource_production_config.input_count = cost.len().into();
+
+            let mut input_count = 0;
 
             loop {
                 match cost.pop_front() {
@@ -387,11 +387,13 @@ mod config_systems {
                             world,
                             (ProductionInput {
                                 output_resource_type: resource_type,
-                                index: resource_production_config.input_count.try_into().unwrap(),
+                                index: input_count.try_into().unwrap(),
                                 input_resource_type: *input_resource_type,
                                 input_resource_amount: *input_resource_amount
                             })
                         );
+
+                        input_count += 1;
 
                         // update input resource's production output
                         let mut input_resource_production_config: ProductionConfig = get!(
@@ -410,12 +412,14 @@ mod config_systems {
                             })
                         );
 
-                        input_resource_production_config.output_count += 1;
+                        input_resource_production_config.output_count = 1;
                         set!(world, (input_resource_production_config));
                     },
                     Option::None => { break; }
                 }
             };
+
+            resource_production_config.input_count = input_count;
 
             set!(world, (resource_production_config));
         }

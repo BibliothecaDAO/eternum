@@ -23,7 +23,7 @@ export const RealmListBoxes = ({ className }: RealmSwitchProps) => {
           <div
             className={`${
               isLocation(realm?.position?.x ?? 0, realm?.position?.y ?? 0) ? "border-gradient bg-brown" : ""
-            } w-48 h-16 p-3 bg-brown/80 text-gold rounded border-2 border-transparent hover:border-gradient duration-300 transition-all flex`}
+            } w-32 h-8 px-2 bg-brown/80 text-gold border-gold border-2 hover:border-gradient duration-300 transition-all flex`}
             key={realm?.realm_id}
             onClick={() => {
               setIsLoadingScreenEnabled(true);
@@ -35,7 +35,9 @@ export const RealmListBoxes = ({ className }: RealmSwitchProps) => {
               }, 300);
             }}
           >
-            <h5 className="text-ellipsis overflow-hidden whitespace-nowrap text-overflow-ellipsis">{realm?.name}</h5>
+            <div className="text-ellipsis overflow-hidden whitespace-nowrap text-overflow-ellipsis self-center">
+              {realm?.name}
+            </div>
           </div>
         ))}
       </div>
