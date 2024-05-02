@@ -78,6 +78,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const explore = async (props: SystemProps.ExploreProps) => {
+    console.log("explore", props);
     await provider.explore(props);
   };
 

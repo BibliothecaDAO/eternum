@@ -193,8 +193,8 @@ export const BottomNavigation = () => {
         </div>
       </div>
       <div className="w-full flex space-x-2 justify-start  pl-24">
-        {navigation.map((item) => (
-          <div key={item.name}>{item.button}</div>
+        {navigation.map((item, index) => (
+          <div key={index}>{item.button}</div>
         ))}
       </div>
     </div>

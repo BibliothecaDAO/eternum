@@ -1,4 +1,4 @@
-import { Resources } from "../types";
+import { Resource, Resources } from "../types";
 import { BuildingType } from "../utils";
 
 export const findResourceById = (value: number) => {
@@ -703,3 +703,13 @@ export const RESOURCE_INFORMATION: {
   [ResourcesIds.Earthenshard]:
     "Earthenshard is a rare and powerful resource that can be used to create powerful items.",
 };
+
+export const EXPLORATION_REWARD_RESOURCE_AMOUNT: number = 20;
+
+export const EXPLORATION_COSTS: Resource[] = [
+  {
+    resourceId: ResourcesIds.Wheat,
+    amount: 30000,
+  },
+  { resourceId: ResourcesIds.Fish, amount: 15000 },
+];

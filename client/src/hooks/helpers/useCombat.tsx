@@ -76,8 +76,6 @@ export function useCombat() {
   const useOwnerArmies = (owner: bigint) => {
     let entityIds = useEntityQuery([Has(Army)]);
 
-    console.log("entityIds", entityIds);
-
     return entityIds.map((id) => {
       const army = getComponentValue(Army, id);
       return { ...army };

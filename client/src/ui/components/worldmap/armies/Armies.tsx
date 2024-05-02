@@ -38,7 +38,6 @@ export const Armies = ({}: ArmiesProps) => {
     return orderName.charAt(0).toUpperCase() + orderName.slice(1);
   }, []);
 
-  console.log("ownerArmies", myArmies);
   const armyInfo = useMemo(
     () =>
       [...myArmies]
@@ -47,7 +46,6 @@ export const Armies = ({}: ArmiesProps) => {
           const health = getComponentValue(Health, getEntityIdFromKeys([armyId?.entity_id || 0n]));
           // const isDead = health?.current ? false : true;
 
-          console.log({ health });
           const isDead = false;
           const owner = getComponentValue(Owner, getEntityIdFromKeys([armyId?.entity_id || 0n]));
           const isMine = owner?.address === BigInt(account.address);
@@ -73,8 +71,6 @@ export const Armies = ({}: ArmiesProps) => {
       }[],
     [myArmies],
   );
-
-  console.log({ armyInfo });
 
   return (
     <group>

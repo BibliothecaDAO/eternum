@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import clsx from "clsx";
-import { type CombatInfo, type Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  type CombatInfo,
+  type Resource,
+  ResourcesIds,
+  EXPLORATION_REWARD_RESOURCE_AMOUNT,
+  EXPLORATION_COSTS,
+} from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
 import { useDojo } from "../../../../hooks/context/DojoContext";
@@ -16,16 +22,6 @@ import { useResources } from "../../../../hooks/helpers/useResources";
 interface ArmyMenuProps {
   entityId: bigint;
 }
-
-const EXPLORATION_REWARD_RESOURCE_AMOUNT: number = 20;
-
-const EXPLORATION_COSTS: Resource[] = [
-  {
-    resourceId: 254,
-    amount: 30000,
-  },
-  { resourceId: 255, amount: 15000 },
-];
 
 export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const {
@@ -45,7 +41,6 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
   const isAttackMode = useUIStore((state) => state.isAttackMode);
   const [playerOwnsSelectedEntity, setPlayerOwnsSelectedEntity] = useState(false);
-  console.log({ selectedEntity });
   const [playerRaidersOnPosition, setPlayerRaidersOnPosition] = useState<CombatInfo[]>([]);
   const [selectedEntityIsDead, setSelectedEntityIsDead] = useState(true);
   const [selectedEntityIsRealm, setSelectedEntityIsRealm] = useState(false);
@@ -60,8 +55,11 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     if (!selectedEntity) return;
     const checkPlayerOwnsSelectedEntity = () => {
       if (selectedEntity?.id) {
-        const owner = getComponentValue(Owner, getEntityIdFromKeys([selectedEntity.id])) || undefined;
-        return owner?.address === BigInt(account.address) ? true : false;
+        const owner = getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntity.id])) || undefined;
+
+        const entity_owner =
+          getComponentValue(Owner, getEntityIdFromKeys([BigInt(owner?.entity_owner_id || "0")])) || undefined;
+        return entity_owner?.address === BigInt(account.address) ? true : false;
       }
       return false;
     };
