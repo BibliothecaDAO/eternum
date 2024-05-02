@@ -166,8 +166,8 @@ name = "eternum::systems::name::contracts::name_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x78954c3172d81b184a548c25b9ac6831881f2a1bf0eda25a7576529fe70811e"
-class_hash = "0x1601fb441f8868a0ce1aed3d8dce2614ece1bd8853245fe60ff10237766ddd8"
-original_class_hash = "0x1601fb441f8868a0ce1aed3d8dce2614ece1bd8853245fe60ff10237766ddd8"
+class_hash = "0x4e7dbb549bba45b830922382de52966544868c05c946e095b14568a1fe0d717"
+original_class_hash = "0x4e7dbb549bba45b830922382de52966544868c05c946e095b14568a1fe0d717"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_realm_contracts_realm_systems.json"
 reads = []

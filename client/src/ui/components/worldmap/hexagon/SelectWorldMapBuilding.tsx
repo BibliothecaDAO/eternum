@@ -11,6 +11,9 @@ import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { useExplore } from "@/hooks/helpers/useExplore";
 import { useStructures } from "@/hooks/helpers/useStructures";
 
+// fixed = 5%
+const BANK_OWNER_FEE = 922337203685477580n;
+
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 const BUILDING_IMAGES_PATH = {
   [WorldBuildingType.Bank]: BUILD_IMAGES_PREFIX + "banks.png",
@@ -71,7 +74,7 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
       create_bank({
         realm_entity_id: entityId,
         coord: { x: clickedHex.contractPos.col, y: clickedHex.contractPos.row },
-        owner_fee_scaled: 0,
+        owner_fee_scaled: BANK_OWNER_FEE,
         signer: account,
       }).finally(() => setIsLoading(false));
     }

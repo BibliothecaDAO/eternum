@@ -112,7 +112,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
             {ownerName ? hexToAscii(numberToHex(Number(ownerName))) : numberToHex(Number(owner!.address)).slice(0, 5)}
           </div>
           {bank && <div>{`Owner fees: ${(Number(bank.owner_fee_scaled) / 2 ** 64) * 100}%`}</div>}
-          <div>LP fees: 0%</div>
+          <div>LP fees: 5%</div>
         </div>
       </div>
 
