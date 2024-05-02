@@ -714,13 +714,13 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    ResourceLock: (() => {
+    ResourceTransferLock: (() => {
       return defineComponent(
         world,
         { entity_id: RecsType.BigInt, release_at: RecsType.BigInt },
         {
           metadata: {
-            name: "ResourceLock",
+            name: "ResourceTransferLock",
             types: ["u128", "u64"],
             customTypes: [],
           },

@@ -42,7 +42,7 @@ mod combat_systems {
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-    use eternum::models::resources::{ResourceLock, ResourceLockTrait};
+    use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockTrait};
     use eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use eternum::models::weight::Weight;
     use eternum::models::{
@@ -270,16 +270,16 @@ mod combat_systems {
             }
 
             // lock resources being protected by attacking army
-            let mut attacking_army_protectee_resource_lock: ResourceLock = get!(
-                world, attacking_army_protectee.protected_resources_owner(), ResourceLock
+            let mut attacking_army_protectee_resource_lock: ResourceTransferLock = get!(
+                world, attacking_army_protectee.protected_resources_owner(), ResourceTransferLock
             );
             attacking_army_protectee_resource_lock.assert_not_locked();
             attacking_army_protectee_resource_lock.release_at = BoundedInt::max();
             set!(world, (attacking_army_protectee_resource_lock));
 
             // lock resources being protected by defending army
-            let mut defending_army_protectee_resource_lock: ResourceLock = get!(
-                world, defending_army_protectee.protected_resources_owner(), ResourceLock
+            let mut defending_army_protectee_resource_lock: ResourceTransferLock = get!(
+                world, defending_army_protectee.protected_resources_owner(), ResourceTransferLock
             );
             defending_army_protectee_resource_lock.assert_not_locked();
             defending_army_protectee_resource_lock.release_at = BoundedInt::max();
@@ -350,8 +350,8 @@ mod combat_systems {
             }
 
             // lock resources being protected by army
-            let mut caller_army_protectee_resource_lock: ResourceLock = get!(
-                world, caller_army_protectee.protected_resources_owner(), ResourceLock
+            let mut caller_army_protectee_resource_lock: ResourceTransferLock = get!(
+                world, caller_army_protectee.protected_resources_owner(), ResourceTransferLock
             );
             caller_army_protectee_resource_lock.assert_not_locked();
             caller_army_protectee_resource_lock.release_at = BoundedInt::max();
@@ -412,8 +412,8 @@ mod combat_systems {
                     || battle.winner() == BattleSide::None {
                     // release lock on protected resources
                     let mut caller_army_protectee: Protectee = get!(world, army_id, Protectee);
-                    let mut caller_army_protectee_resource_lock: ResourceLock = get!(
-                        world, caller_army_protectee.protected_resources_owner(), ResourceLock
+                    let mut caller_army_protectee_resource_lock: ResourceTransferLock = get!(
+                        world, caller_army_protectee.protected_resources_owner(), ResourceTransferLock
                     );
                     caller_army_protectee_resource_lock.assert_locked();
                     let now = starknet::get_block_timestamp();

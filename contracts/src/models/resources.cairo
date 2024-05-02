@@ -79,7 +79,7 @@ struct OwnedResourcesTracker {
 }
 
 #[derive(Model, Copy, Drop, Serde)]
-struct ResourceLock {
+struct ResourceTransferLock {
     #[key]
     entity_id: u128,
     release_at: u64,
@@ -87,16 +87,16 @@ struct ResourceLock {
 
 
 #[generate_trait]
-impl ResourceLockImpl of ResourceLockTrait {
-    fn assert_not_locked(self: ResourceLock) {
+impl ResourceTransferLockImpl of ResourceTransferLockTrait {
+    fn assert_not_locked(self: ResourceTransferLock) {
         assert!(self.is_open(), "resource locked for entity {}", self.entity_id);
     }
 
-    fn assert_locked(self: ResourceLock) {
+    fn assert_locked(self: ResourceTransferLock) {
         assert!(!self.is_open(), "resource NOT locked for entity {}", self.entity_id);
     }
 
-    fn is_open(self: ResourceLock) -> bool {
+    fn is_open(self: ResourceTransferLock) -> bool {
         let now = starknet::get_block_timestamp();
         now > self.release_at
     }
