@@ -25,6 +25,7 @@ mod liquidity_systems {
         bank_entity_id: u128,
         #[key]
         bank_account_entity_id: u128,
+        resource_type: u8,
         lords_amount: u128,
         resource_amount: u128,
         // price in lords for 1000 resource
@@ -169,9 +170,6 @@ mod liquidity_systems {
     #[generate_trait]
     impl InternalLiquiditySystemsImpl of InternalLiquiditySystemsTrait {
         fn emit_event(world: IWorldDispatcher, market: Market, bank_account_entity_id: u128, lords_amount: u128, resource_amount: u128, add: bool) {
-            // resource price in lords for 1000 resources
-            let resource_price = market.quote_amount(1000);
-
             emit!(
                 world,
                 (
@@ -179,9 +177,10 @@ mod liquidity_systems {
                         LiquidityEvent {
                             bank_entity_id: market.bank_entity_id, 
                             bank_account_entity_id, 
+                            resource_type: market.resource_type,
                             lords_amount, 
                             resource_amount, 
-                            resource_price, 
+                            resource_price: market.quote_amount(1000), 
                             add
                         }
                     ),

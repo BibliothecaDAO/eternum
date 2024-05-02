@@ -22,6 +22,28 @@ mod swap_systems {
 
     use traits::{Into, TryInto};
 
+    #[derive(Drop, starknet::Event)]
+    struct SwapEvent {
+        #[key]
+        bank_entity_id: u128,
+        #[key]
+        bank_account_entity_id: u128,
+        resource_type: u8,
+        lords_amount: u128,
+        resource_amount: u128,
+        bank_owner_fees: u128, 
+        lp_fees: u128,
+        // price in lords for 1000 resource
+        resource_price: u128,
+        buy: bool,
+    }
+    
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        SwapEvent: SwapEvent,
+    }
+
     #[abi(embed_v0)]
     impl SwapSystemsImpl of super::ISwapSystems<ContractState> {
         fn buy(world: IWorldDispatcher, bank_entity_id: u128, resource_type: u8, amount: u128) {
@@ -72,6 +94,11 @@ mod swap_systems {
             let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
             resource.add(amount);
             resource.save(world);
+
+            // emit event
+            InternalSwapSystemsImpl::emit_event(
+                world, market, bank_account_entity_id, amount, cost, owner_fees_amount, lp_fees_amount, market.quote_amount(1000), true
+            );
         }
 
 
@@ -124,6 +151,11 @@ mod swap_systems {
             let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
             resource.burn(amount);
             resource.save(world);
+
+            // emit event
+            InternalSwapSystemsImpl::emit_event(
+                world, market, bank_account_entity_id, payout, rest, owner_fees_amount, lp_fees_amount, market.quote_amount(1000), false
+            );
         }
     }
 
@@ -165,6 +197,35 @@ mod swap_systems {
                 lp_amount_fixed.try_into().unwrap(),
                 total.try_into().unwrap()
             )
+        }
+
+        fn emit_event(  
+            world: IWorldDispatcher,
+            market: Market,
+            bank_account_entity_id: u128,
+            lords_amount: u128,
+            resource_amount: u128,
+            bank_owner_fees: u128, 
+            lp_fees: u128,
+            resource_price: u128,
+            buy: bool,
+        ) {
+
+            let event = Event::SwapEvent(
+                SwapEvent {
+                bank_entity_id: market.bank_entity_id, 
+                bank_account_entity_id,
+                resource_type: market.resource_type,
+                lords_amount,
+                resource_amount,
+                bank_owner_fees,
+                lp_fees,
+                resource_price: market.quote_amount(1000),
+                buy,
+                }
+            );
+
+            emit!(world, (event,))
         }
     }
 }
