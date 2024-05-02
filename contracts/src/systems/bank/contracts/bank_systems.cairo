@@ -18,6 +18,7 @@ mod bank_systems {
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceImpl};
+    use eternum::models::structure::{Structure, StructureCategory};
 
     use traits::Into;
 
@@ -49,6 +50,7 @@ mod bank_systems {
             set!(
                 world,
                 (
+                    Structure {entity_id: bank_entity_id, category: StructureCategory::Bank},
                     Bank { entity_id: bank_entity_id, owner_fee_scaled, exists: true },
                     Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },
                     Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() }
