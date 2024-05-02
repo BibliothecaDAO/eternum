@@ -254,7 +254,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
         {playerRealms().length > 0 ? (
           <NavigateToRealm text={"begin"} />
         ) : (
-          <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
+          <Button disabled={!name} size="md" className="mx-auto" variant="primary" onClick={onNext}>
             Continue <ArrowRight className="w-2 fill-current ml-3" />
           </Button>
         )}
@@ -267,15 +267,9 @@ export const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) 
     <StepContainer>
       <div>
         <h3 className="text-center">Select Order</h3>
-        <p> </p>
       </div>
 
       <SettleRealmComponent />
-      <div className="flex space-x-2 mt-8 justify-start">
-        <Button variant="outline" onClick={onPrev}>
-          <ArrowLeft className="w-2" />
-        </Button>
-      </div>
     </StepContainer>
   );
 };
