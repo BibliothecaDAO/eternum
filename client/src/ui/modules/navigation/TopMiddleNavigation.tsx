@@ -58,30 +58,6 @@ export const TopMiddleNavigation = () => {
         </div>
       </div>
       <div className="self-center px-3 flex space-x-2">
-        <CircleButton
-          className="third-step"
-          image={BuildingThumbs.worldMap}
-          label="world map"
-          onClick={() => {
-            if (location !== "/map") {
-              setIsLoadingScreenEnabled(true);
-              setTimeout(() => {
-                setLocation("/map");
-                if (hexPosition.col !== 0 && hexPosition.row !== 0) {
-                  moveCameraToColRow(hexPosition.col, hexPosition.row, 0.01, true);
-                  setTimeout(() => {
-                    moveCameraToColRow(hexPosition.col, hexPosition.row, 1.5);
-                  }, 10);
-                }
-              }, 100);
-            } else {
-              if (hexPosition.col !== 0 && hexPosition.row !== 0) {
-                moveCameraToColRow(hexPosition.col, hexPosition.row);
-              }
-            }
-          }}
-          size="xl"
-        />
         {/* <CircleButton
           image={BuildingThumbs.squire}
           label={assistant}

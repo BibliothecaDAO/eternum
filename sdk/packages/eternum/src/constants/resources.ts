@@ -302,6 +302,15 @@ export const resources: Array<Resources> = [
     description: "Fish.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/.gif?raw=true",
   },
+  {
+    trait: "Earthenshard",
+    value: 29,
+    colour: "#ec4899",
+    colourClass: "",
+    id: 29,
+    description: "Earthenshard is a rare and powerful resource that can be used to create powerful items.",
+    img: "",
+  },
 ];
 
 /* eslint-disable @typescript-eslint/naming-convention */
@@ -329,6 +338,7 @@ export enum ResourcesIds {
   Adamantine = 20,
   Mithral = 21,
   Dragonhide = 22,
+  Earthenshard = 29,
   Donkey = 249,
   Knight = 250,
   Crossbowmen = 251,
@@ -457,59 +467,65 @@ export const getHyperstructureResources = (currentLevel: number): { resourceId: 
   }));
 };
 
-interface WeightMap {
-  [key: number]: number;
-}
 // weight in kg
-export const WEIGHTS: WeightMap = {
-  1: 1,
-  2: 1,
-  3: 1,
-  4: 1,
-  5: 1,
-  6: 1,
-  7: 1,
-  8: 1,
-  9: 1,
-  10: 1,
-  11: 1,
-  12: 1,
-  13: 1,
-  14: 1,
-  15: 1,
-  16: 1,
-  17: 1,
-  18: 1,
-  19: 1,
-  20: 1,
-  21: 1,
-  22: 1,
-  253: 0.001,
-  254: 0.1,
-  255: 0.1,
+export const WEIGHTS: {
+  [key: number]: number;
+} = {
+  [ResourcesIds.Wood]: 1,
+  [ResourcesIds.Stone]: 1,
+  [ResourcesIds.Coal]: 1,
+  [ResourcesIds.Copper]: 1,
+  [ResourcesIds.Obsidian]: 1,
+  [ResourcesIds.Silver]: 1,
+  [ResourcesIds.Ironwood]: 1,
+  [ResourcesIds.ColdIron]: 1,
+  [ResourcesIds.Gold]: 1,
+  [ResourcesIds.Hartwood]: 1,
+  [ResourcesIds.Diamonds]: 1,
+  [ResourcesIds.Sapphire]: 1,
+  [ResourcesIds.Ruby]: 1,
+  [ResourcesIds.DeepCrystal]: 1,
+  [ResourcesIds.Ignium]: 1,
+  [ResourcesIds.EtherealSilica]: 1,
+  [ResourcesIds.TrueIce]: 1,
+  [ResourcesIds.TwilightQuartz]: 1,
+  [ResourcesIds.AlchemicalSilver]: 1,
+  [ResourcesIds.Adamantine]: 1,
+  [ResourcesIds.Mithral]: 1,
+  [ResourcesIds.Dragonhide]: 1,
+  [ResourcesIds.Lords]: 0.001,
+  [ResourcesIds.Wheat]: 0.1,
+  [ResourcesIds.Fish]: 0.1,
 };
 
 export const RESOURCE_TIERS = {
-  lords: [253],
-  military: [250, 251, 252],
-  transport: [249],
-  food: [255, 254],
-  common: [1, 2, 3, 4, 5],
-  uncommon: [6, 7, 8, 9],
-  rare: [10, 11, 12, 13],
-  unique: [14, 15, 16, 17, 18, 19],
-  mythic: [20, 21, 22],
-};
-
-export const TROOP_COSTS = {
-  [ResourcesIds.Knight]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
-  [ResourcesIds.Crossbowmen]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
-  [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+  lords: [ResourcesIds.Lords, ResourcesIds.Earthenshard],
+  military: [ResourcesIds.Knight, ResourcesIds.Crossbowmen, ResourcesIds.Paladin],
+  transport: [ResourcesIds.Donkey],
+  food: [ResourcesIds.Fish, ResourcesIds.Wheat],
+  common: [ResourcesIds.Wood, ResourcesIds.Stone, ResourcesIds.Coal, ResourcesIds.Copper, ResourcesIds.Obsidian],
+  uncommon: [ResourcesIds.Silver, ResourcesIds.Ironwood, ResourcesIds.ColdIron, ResourcesIds.Gold],
+  rare: [ResourcesIds.Hartwood, ResourcesIds.Diamonds, ResourcesIds.Sapphire, ResourcesIds.Ruby],
+  unique: [
+    ResourcesIds.DeepCrystal,
+    ResourcesIds.Ignium,
+    ResourcesIds.EtherealSilica,
+    ResourcesIds.TrueIce,
+    ResourcesIds.TwilightQuartz,
+    ResourcesIds.AlchemicalSilver,
+  ],
+  mythic: [ResourcesIds.Adamantine, ResourcesIds.Mithral, ResourcesIds.Dragonhide],
 };
 
 interface ResourceInputs {
   [key: number]: { resource: ResourcesIds; amount: number }[];
 }
+
+export const TROOP_COSTS: ResourceInputs = {
+  [ResourcesIds.Knight]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+  [ResourcesIds.Crossbowmen]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+  [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+};
 
 export const RESOURCE_INPUTS: ResourceInputs = {
   [ResourcesIds.Wood]: [
@@ -619,6 +635,7 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   [ResourcesIds.Wheat]: [],
   [ResourcesIds.Fish]: [],
   [ResourcesIds.Lords]: [],
+  [ResourcesIds.Earthenshard]: [],
 };
 
 export const BUILDING_COSTS: ResourceInputs = {
@@ -638,11 +655,9 @@ export const BUILDING_COSTS: ResourceInputs = {
   [BuildingType.Storehouse]: [{ resource: ResourcesIds.Wheat, amount: 2000000 }],
 };
 
-interface ResourceDescription {
+export const RESOURCE_INFORMATION: {
   [key: number]: string;
-}
-
-export const RESOURCE_INFORMATION: ResourceDescription = {
+} = {
   [ResourcesIds.Wood]:
     "Wood is the backbone of civilization. Fire, industry, and shelter spawned from its sinew and sap.",
   [ResourcesIds.Stone]: "Stone masonry is a culture bending the bones of the earth itself to their own purpose.",
@@ -685,4 +700,6 @@ export const RESOURCE_INFORMATION: ResourceDescription = {
     "This otherworldly metal has the strength of adamantine but is lighter than air. The pieces are held in place by strange gravitational core. Those who spend much time with it slowly succumb to neurotic delusions of a rapturous, divine apocalypse.",
   [ResourcesIds.Dragonhide]:
     "Dragons are the hidden guardians of our reality. No mortal can witness their work, lest they be purged by dragonfire. If you find one of these scales, flee. Only death can be found in their presence or by the forces they fight in secret.",
+  [ResourcesIds.Earthenshard]:
+    "Earthenshard is a rare and powerful resource that can be used to create powerful items.",
 };

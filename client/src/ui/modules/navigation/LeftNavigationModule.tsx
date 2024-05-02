@@ -46,7 +46,7 @@ import { Questing } from "../questing/Questing";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
-  military: "/images/buildings/thumb/military.png",
+  military: "/images/buildings/thumb/sword.png",
   construction: "/images/buildings/thumb/crane.png",
   trade: "/images/buildings/thumb/trade.png",
   resources: "/images/buildings/thumb/resources.png",
@@ -123,17 +123,17 @@ export const LeftNavigationModule = () => {
         ></CircleButton>
       ),
     },
-    {
-      button: (
-        <CircleButton
-          image={BuildingThumbs.hyperstructures}
-          label={hyperstructures}
-          active={isPopupOpen(hyperstructures)}
-          size="xl"
-          onClick={() => togglePopup(hyperstructures)}
-        ></CircleButton>
-      ),
-    },
+    // {
+    //   button: (
+    //     <CircleButton
+    //       image={BuildingThumbs.hyperstructures}
+    //       label={hyperstructures}
+    //       active={isPopupOpen(hyperstructures)}
+    //       size="xl"
+    //       onClick={() => togglePopup(hyperstructures)}
+    //     ></CircleButton>
+    //   ),
+    // },
     {
       button: (
         <CircleButton
@@ -142,7 +142,7 @@ export const LeftNavigationModule = () => {
           active={isPopupOpen(leaderboard)}
           size="xl"
           onClick={() => togglePopup(leaderboard)}
-        ></CircleButton>
+        />
       ),
     },
   ];
@@ -188,7 +188,7 @@ export const LeftNavigationModule = () => {
     {
       button: (
         <CircleButton active={isPopupOpen(settings)} label={"walkthrough"} size="sm" onClick={() => setIsOpen(true)}>
-          <Refresh className="w-4" />
+          <Refresh className="w-4 " />
         </CircleButton>
       ),
     },
@@ -200,12 +200,12 @@ export const LeftNavigationModule = () => {
 
   return (
     <>
-      <div className="flex flex-col py-2 first-step">
+      {/* <div className="flex flex-col py-2 first-step space-y-2 ">
         {navigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
-      </div>
-      <div className="flex flex-col rounded-r-3xl space-y-2 py-2 px-4">
+      </div> */}
+      <div className="flex flex-col rounded-r-3xl space-y-2 py-2 px-2">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}

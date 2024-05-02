@@ -168,6 +168,12 @@ export const BuiltBuilding = ({
     return buildingCategory;
   }, [buildingCategory, resource]);
 
+  const [hover, setHover] = useState(false);
+
+  const isDestroyable = useMemo(() => {
+    return buildingCategory !== BuildingType.Castle && isDestroyMode && hover;
+  }, [buildingCategory, isDestroyMode, hover]);
+
   const model = useMemo(() => {
     let model = models[modelIndex];
     if (!model) return new THREE.Mesh();
@@ -178,10 +184,19 @@ export const BuiltBuilding = ({
           child.castShadow = false;
           child.material.color.set(biomes["ocean"].color);
         }
+        if (hover) {
+          child.material = child.material.clone();
+          child.material.transparent = true;
+          child.material.opacity = 0.2; // Adjust opacity level as needed
+        } else {
+          child.material = child.material.clone();
+          child.material.transparent = false;
+          child.material.opacity = 1; // Adjust opacity level as needed
+        }
       }
     });
     return model.scene.clone();
-  }, [modelIndex, models]);
+  }, [modelIndex, models, isDestroyable, hover]);
 
   const redModel = useMemo(() => {
     let model = models[modelIndex];
@@ -208,22 +223,17 @@ export const BuiltBuilding = ({
     }, Math.random() * 1000);
   }, [actions]);
 
-  const [hover, setHover] = useState(false);
-
   const handleClick = useCallback(() => {
     if (isDestroyable) {
       destroyBuilding(realmEntityId, position.col, position.row);
     }
   }, [destroyBuilding, position.col, position.row]);
 
-  const isDestroyable = useMemo(() => {
-    return buildingCategory !== BuildingType.Castle && isDestroyMode && hover;
-  }, [buildingCategory, isDestroyMode, hover]);
-
   return (
     <group
-      onPointerEnter={() => setHover(true)}
+      // onPointerEnter={() => setHover(true)}
       onPointerLeave={() => setHover(false)}
+      onDoubleClick={() => setHover(true)}
       onClick={handleClick}
       position={[x, 2.33, -y]}
       rotation={rotation}
@@ -241,7 +251,7 @@ const HoverBuilding = ({ building }: { building: BuildingType }) => {
         <div className="font-bold text-center">
           {BuildingEnumToString[building as keyof typeof BuildingEnumToString]}
         </div>
-        {/* <BuildingInfo buildingId={building} /> */}
+        <BuildingInfo buildingId={building} />
       </div>
     </BaseThreeTooltip>
   );
