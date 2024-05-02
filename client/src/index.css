@@ -13,7 +13,7 @@ html,
 body {
   overflow: hidden;
   font-family: "VCR_OSD_MONO", sans-serif;
-  /* font-optical-sizing: auto; */
+  font-optical-sizing: auto;
   touch-action: none;
   @apply cursor-fancy;
 }
@@ -129,25 +129,25 @@ h1,h2,h3,h4,h5,h6 {
 
 
 h1 {
-  @apply text-4xl sm:text-5xl md:text-6xl font-bold ;
+  @apply text-4xl sm:text-5xl md:text-6xl ;
 }
 
 h2 {
-  @apply text-2xl sm:text-3xl md:text-4xl font-semibold ;
+  @apply text-2xl sm:text-3xl md:text-4xl  ;
 }
 
 h3 {
-  @apply text-xl sm:text-2xl md:text-3xl font-medium ;
+  @apply text-xl sm:text-2xl md:text-3xl  ;
 }
 
 h4 {
-  @apply text-lg sm:text-xl md:text-2xl font-normal ;
+  @apply text-lg sm:text-xl md:text-2xl ;
 }
 
 h5 {
-  @apply text-base sm:text-lg md:text-xl font-light ;
+  @apply text-base sm:text-lg md:text-xl ;
 }
 
 h6 {
-  @apply text-sm sm:text-base md:text-lg font-thin ;
+  @apply text-sm sm:text-base md:text-lg  ;
 }

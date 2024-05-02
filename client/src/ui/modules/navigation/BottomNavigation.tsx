@@ -1,12 +1,15 @@
 import CircleButton from "@/ui/elements/CircleButton";
-import { ReactComponent as Skull } from "@/assets/icons/common/skull.svg";
-import { ReactComponent as City } from "@/assets/icons/common/city.svg";
-import { ReactComponent as Shield } from "@/assets/icons/common/shield.svg";
 
 import { useState } from "react";
 
 import { RealmListBoxes } from "@/ui/components/list/RealmListBoxes";
-import { SelectPreviewBuilding } from "@/ui/components/construction/SelectPreviewBuilding";
+
+import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
+import useUIStore from "@/hooks/store/useUIStore";
+
+import { useQuery } from "@/hooks/helpers/useQuery";
+import { BuildingThumbs } from "./LeftNavigationModule";
+import { useLocation } from "wouter";
 
 export const BottomNavigation = () => {
   const [activeBar, setActiveBar] = useState<null | "R" | "B" | "A">(null);
@@ -18,6 +21,16 @@ export const BottomNavigation = () => {
       setActiveBar(barName);
     }
   };
+  const { hexPosition } = useQuery();
+  const { moveCameraToColRow } = useUIStore();
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+
+  const [location, setLocation] = useLocation();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
+  if (!nextBlockTimestamp) {
+    return null;
+  }
 
   const navigation = [
     {
@@ -35,20 +48,35 @@ export const BottomNavigation = () => {
         </CircleButton>
       ),
     },
-    // {
-    //   name: "bar3",
-    //   button: (
-    //     <CircleButton
-    //       image="/images/buildings/thumb/army.png"
-    //       label="Armies"
-    //       active={activeBar === "A"}
-    //       size="xl"
-    //       onClick={() => toggleBar("A")}
-    //     >
-    //       {/* <Shield className="w-5 fill-current" /> */}
-    //     </CircleButton>
-    //   ),
-    // },
+    {
+      name: "bar3",
+      button: (
+        <CircleButton
+          className="third-step"
+          image={BuildingThumbs.worldMap}
+          label="world map"
+          onClick={() => {
+            if (location !== "/map") {
+              setIsLoadingScreenEnabled(true);
+              setTimeout(() => {
+                setLocation("/map");
+                if (hexPosition.col !== 0 && hexPosition.row !== 0) {
+                  moveCameraToColRow(hexPosition.col, hexPosition.row, 0.01, true);
+                  setTimeout(() => {
+                    moveCameraToColRow(hexPosition.col, hexPosition.row, 1.5);
+                  }, 10);
+                }
+              }, 100);
+            } else {
+              if (hexPosition.col !== 0 && hexPosition.row !== 0) {
+                moveCameraToColRow(hexPosition.col, hexPosition.row);
+              }
+            }
+          }}
+          size="xl"
+        />
+      ),
+    },
   ];
 
   return (

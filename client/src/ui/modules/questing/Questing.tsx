@@ -100,6 +100,10 @@ export const Questing = ({ entityId }: { entityId: bigint | undefined }) => {
             );
           })}
         </div>
+        <div className="my-3">
+          <h5>Bonus</h5>
+          Use your Army to find Earthenshards! You will need these...
+        </div>
       </div>
     </OSWindow>
   );

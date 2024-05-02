@@ -63,6 +63,7 @@ mod ResourceTypes {
     const UNREFINED_ORE: u8 = 26;
     const SUNKEN_SHEKEL: u8 = 27;
     const DEMONHIDE: u8 = 28;
+    const EARTHEN_SHARD: u8 = 29;
 
     // TRANSPORT
     const DONKEY: u8 = 249;
@@ -104,6 +105,7 @@ fn get_resource_probabilities() -> Span<(u8, u128)> {
         (ResourceTypes::ADAMANTINE, 22133),
         (ResourceTypes::MITHRAL, 14889),
         (ResourceTypes::DRAGONHIDE, 9256),
+        (ResourceTypes::EARTHEN_SHARD, 96177), // SHARDS
     ]
         .span();
 }
