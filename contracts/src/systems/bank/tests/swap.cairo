@@ -1,5 +1,4 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes};
@@ -147,9 +146,6 @@ fn test_swap_buy_with_fees() {
 
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
-    'market'.print();
-    market.lords_amount.print();
-    market.resource_amount.print();
 
     // 1000 (reserve) + 111 (quote) + 11 (fees)
     assert(market.lords_amount == 1122, 'market.lords_amount');
@@ -157,9 +153,6 @@ fn test_swap_buy_with_fees() {
     assert(market.resource_amount == 900, 'market.resource_amount');
 
     assert(liquidity.shares == FixedTrait::new_unscaled(1000, false), 'liquidity.shares');
-    'player_balance'.print();
-    wood.balance.print();
-    lords.balance.print();
     // 9000 + 100
     assert(wood.balance == 9100, 'wood.balance');
     // 9000 -  122 (lords cost + fees)
@@ -229,10 +222,6 @@ fn test_swap_sell_with_fees() {
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
 
-    // print
-    'market'.print();
-    market.lords_amount.print();
-    market.resource_amount.print();
 
     // payout for 80 wood = 75 lords
     assert(market.lords_amount == 925, 'market.lords_amount');
@@ -241,10 +230,6 @@ fn test_swap_sell_with_fees() {
 
     assert(liquidity.shares == FixedTrait::new_unscaled(1000, false), 'liquidity.shares');
 
-    // print
-    'player_balance'.print();
-    wood.balance.print();
-    lords.balance.print();
     assert(wood.balance == 8900 + 9, 'wood.balance');
     // 9000 + 75 (payout)
     assert(lords.balance == 9075, 'lords.balance');
