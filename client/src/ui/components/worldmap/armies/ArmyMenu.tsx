@@ -26,6 +26,7 @@ interface ArmyMenuProps {
 export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const {
     account: { account },
+    network: { provider },
     setup: {
       components: { TickMove, ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Owner, Position, Health, Realm },
     },
@@ -135,8 +136,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     });
   }, [entityOwner]);
 
-  // const hasEnoughResourcesToExplore = explorationCosts.every((res) => res.hasEnough);
-  const hasEnoughResourcesToExplore = true;
+  const hasEnoughResourcesToExplore = explorationCosts.every((res) => res.hasEnough);
 
   useEffect(() => {
     setTimeout(() => {
@@ -177,7 +177,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             <TravelIcon />
             <div
               className={clsx(
-                "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+                "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-brown/80 text-gold border border-gold p-2 text-sm",
                 "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
               )}
             >
@@ -200,7 +200,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
           >
             <div
               className={clsx(
-                "absolute left-1/2 -top-1 opacity-0 transition-all -translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+                "absolute left-1/2 -top-1 opacity-0 transition-all -translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-brown/80 text-gold border border-gold p-2 text-sm",
                 "group-hover/icon:opacity-100 group-hover/icon:-translate-y-full",
               )}
             >
@@ -239,7 +239,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             </div>
             <div
               className={clsx(
-                "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm pointer-events-none",
+                "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-brown/80 text-gold border border-gold p-2 text-sm pointer-events-none",
                 "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
               )}
             >
@@ -251,7 +251,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
                       key={res.resourceId}
                       type="vertical"
                       resourceId={res.resourceId}
-                      className={res.hasEnough ? "text-white" : "text-order-giants"}
+                      className={res.hasEnough ? "text-gold" : "text-order-giants"}
                       amount={divideByPrecision(res.amount)}
                     />
                   );
@@ -260,6 +260,44 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             </div>
           </div>
         )}
+        {/* {playerOwnsSelectedEntity && (
+          <div
+            className={clsx("relative group/icon transition-opacity duration-200")}
+            onClick={(e) => {
+              e.stopPropagation();
+
+              if (!isAttackMode && !isTravelMode && !isTraveling && canCarryNewReward && hasEnoughResourcesToExplore) {
+                if (isExploreMode) {
+                  setIsTravelMode(false);
+                  setIsExploreMode(false);
+                  setIsAttackMode(false);
+                } else {
+                  setIsTravelMode(false);
+                  setIsExploreMode(true);
+                  setIsAttackMode(false);
+                }
+              }
+            }}
+          >
+            <div
+              className={
+                isAttackMode || isTravelMode || isTraveling || !canCarryNewReward || !hasEnoughResourcesToExplore
+                  ? "opacity-30 "
+                  : "opacity-100"
+              }
+            >
+              <ExploreIcon />
+            </div>
+            <div
+              className={clsx(
+                "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-brown/80 text-gold border border-gold p-2 text-sm pointer-events-none",
+                "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
+              )}
+            >
+              Drop Off Resources. You must be at home
+            </div>
+          </div>
+        )} */}
       </div>
     </Html>
   );

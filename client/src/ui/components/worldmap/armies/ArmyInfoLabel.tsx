@@ -4,7 +4,7 @@ import { useCombat } from "../../../../hooks/helpers/useCombat";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { getEntityIdFromKeys } from "../../../utils/utils";
+import { currencyFormat, getEntityIdFromKeys } from "../../../utils/utils";
 import { type CombatInfo, type Resource, type UIPosition } from "@bibliothecadao/eternum";
 
 import { useMemo } from "react";
@@ -40,6 +40,8 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   const raider = useMemo(() => {
     return getEntitiesCombatInfo([armyId])[0];
   }, [armyId]);
+
+  console.log(raider);
 
   const tickMove = raider.entityId ? getComponentValue(TickMove, getEntityIdFromKeys([raider.entityId])) : undefined;
   const isPassiveTravel = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
@@ -83,12 +85,8 @@ const RaiderInfo = ({
   const isTraveling = isPassiveTravel || isActiveTravel;
 
   return (
-    <div
-      className={clsx(
-        "w-[300px] flex flex-col p-2 mb-1 bg-black border rounded-md border-gray-gold text-xxs text-gray-gold",
-      )}
-    >
-      <div className="flex items-center text-xxs">
+    <div className={clsx("w-[300px] flex flex-col p-2 mb-1 bg-brown/80  border-gold text-xs text-gray-gold")}>
+      <div className="flex items-center text-xs">
         {entityId.toString() && (
           <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
             #{entityId.toString()}
@@ -130,17 +128,18 @@ const RaiderInfo = ({
         )}
       </div>
       <div className="flex flex-col mt-2 space-y-2">
-        <div className="flex relative justify-between text-xxs text-lightest w-full">
+        <div className="flex relative justify-between  w-full text-gold">
           <div className="flex items-center">
-            <div className="flex items-center h-6 mr-2">
-              <img src="/images/units/troop-icon.png" className="h-[28px]" />
-              <div className="flex ml-1 text-center">
-                <div className="bold mr-1">x{quantity}</div>
-                Raiders
+            <div className="flex items-center  mr-2">
+              {/* <img src="/images/units/troop-icon.png" className="h-[28px]" /> */}
+              <div className="flex flex-col ml-1">
+                <div className="bold mr-1">Knight x{currencyFormat(raider.troops.knightCount, 0)}</div>
+                <div className="bold mr-1">Crossbowmen x{currencyFormat(raider.troops.crossbowmanCount, 0)}</div>
+                <div className="bold mr-1">Paladin x{currencyFormat(raider.troops.paladinCount, 0)}</div>
               </div>
             </div>
           </div>
-          <div className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
+          {/* <div className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
             <div
               className="flex items-center h-6 mr-2"
               onMouseEnter={() => {
@@ -183,9 +182,9 @@ const RaiderInfo = ({
                 <div className="bold ">{defence}</div>
               </div>
             </div>
-          </div>
+          </div> */}
           <div className="flex items-center">
-            <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP
+            <div className="text-order-brilliance">{health && currencyFormat(health, 0)}HP</div>
           </div>
         </div>
         <div className="grid grid-cols-12 gap-0.5">

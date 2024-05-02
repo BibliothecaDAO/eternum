@@ -46,6 +46,13 @@ export interface CombatInfo {
   locationType?: DESTINATION_TYPE;
   originRealmId?: bigint | undefined;
   order: number;
+  troops: {
+    knightCount: number;
+    paladinCount: number;
+    crossbowmanCount: number;
+  };
+  battleId: bigint;
+  battleSide: number;
 }
 
 /// TRADING

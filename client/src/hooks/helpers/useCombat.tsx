@@ -225,6 +225,7 @@ export function useCombat() {
       const position = getComponentValue(Position, entityIndex);
       const entityOwner = getComponentValue(EntityOwner, entityIndex);
       const owner = getComponentValue(Owner, entityIndex);
+      const army = getComponentValue(Army, entityIndex);
 
       /// @note: determine the type of position the raider is on (home, other realm, hyperstructure, bank)
       let locationEntityId: bigint | undefined;
@@ -274,7 +275,14 @@ export function useCombat() {
         locationEntityId,
         locationType,
         originRealmId: originRealm?.realm_id,
-        order: originRealm?.order || 0,
+        order: originRealm?.order ?? 0,
+        troops: {
+          knightCount: army?.troops.knight_count || 0,
+          paladinCount: army?.troops.paladin_count || 0,
+          crossbowmanCount: army?.troops.crossbowman_count || 0,
+        },
+        battleId: BigInt(army?.battle_id || 0),
+        battleSide: army?.battle_side || 0,
       };
     });
   };
