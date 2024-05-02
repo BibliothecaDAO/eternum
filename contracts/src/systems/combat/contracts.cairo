@@ -2,7 +2,7 @@ use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
 #[dojo::interface]
 trait ICombatContract<TContractState> {
-    fn army_create(army_owner_id: u128, protector: bool);
+    fn army_create(army_owner_id: u128, army_is_protector: bool);
     fn army_buy_troops(army_id: u128, payer_id: u128, troops: Troops);
     fn army_merge_troops(from_army_id: u128, to_army_id: u128, troops: Troops);
 
@@ -10,6 +10,7 @@ trait ICombatContract<TContractState> {
     fn battle_join(battle_id: u128, battle_side: BattleSide, army_id: u128);
     fn battle_leave(battle_id: u128, army_id: u128);
     fn battle_pillage(army_id: u128, structure_id: u128);
+    fn battle_claim(army_id: u128, structure_id: u128);
 // fn end_battle(battle_entity_id: u128, army_entity_id: u128 );
 }
 
@@ -42,7 +43,7 @@ mod combat_systems {
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::resources::{ResourceLock, ResourceLockTrait};
-    use eternum::models::structure::{Structure, StructureTrait};
+    use eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use eternum::models::weight::Weight;
     use eternum::models::{
         combat::{
@@ -62,7 +63,7 @@ mod combat_systems {
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
-        fn army_create(world: IWorldDispatcher, army_owner_id: u128, protector: bool) {
+        fn army_create(world: IWorldDispatcher, army_owner_id: u128, army_is_protector: bool) {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
@@ -87,7 +88,7 @@ mod combat_systems {
                 world, (Position { entity_id: army_id, x: owner_position.x, y: owner_position.y })
             );
 
-            if protector {
+            if army_is_protector {
                 ////// it's a structure protector //////////////
 
                 // ensure entity is a structure
@@ -461,6 +462,50 @@ mod combat_systems {
             let troop_config = TroopConfigImpl::get(world);
             battle.restart(tick, troop_config);
             set!(world, (battle));
+        }
+
+
+        fn battle_claim(world: IWorldDispatcher, army_id: u128, structure_id: u128) {
+            // ensure caller owns army
+            get!(world, army_id, EntityOwner).assert_caller_owner(world);
+
+            // ensure entity being claimed is a structure
+            let structure: Structure = get!(world, structure_id, Structure);
+            structure.assert_is_structure();
+
+            // ensure structure is not a realm
+            assert!(structure.category != StructureCategory::Realm, "realms can not be claimed");
+
+            let winner_army: Army = get!(world, army_id, Army);
+            assert!(winner_army.battle_id.is_non_zero(), "army not in battle");
+
+            // ensure army is at structure position
+            let army_position: Position = get!(world, army_id, Position);
+            let structure_position: Position = get!(world, structure_id, Position);
+            army_position.assert_same_location(structure_position.into());
+
+            // update battle state before any other actions
+            let mut battle: Battle = get!(world, winner_army.battle_id, Battle);
+            let tick = TickImpl::get(world);
+            battle.update_state(tick);
+
+            // ensure army won
+            assert!(winner_army.battle_side == battle.winner(), "army did not win");
+
+            let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
+            if structure_army_id.is_non_zero() {
+                let structure_army: Army = get!(world, structure_army_id, Army);
+                assert!(structure_army.battle_id.is_non_zero(), "structure army not in battle");
+                assert!(structure_army.battle_id != winner_army.battle_id, "not same battle");
+                assert!(structure_army.battle_side != winner_army.battle_side, "same battle side");
+            }
+
+            // change structure ownership 
+            let mut structure_owner_entity: EntityOwner = get!(world, structure_id, EntityOwner);
+            let army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
+            structure_owner_entity.entity_owner_id = army_owner_entity_id;
+            set!(world, (structure_owner_entity));
+        //todo restart loyalty
         }
 
 

@@ -223,6 +223,7 @@ mod resource_systems {
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
+                        // ?
                         if caller_id.is_non_zero() {
                             // ensure resource spending is not locked 
                             let resource_lock: ResourceLock = get!(world, sender_id, ResourceLock);
