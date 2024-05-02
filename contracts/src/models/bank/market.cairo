@@ -96,7 +96,7 @@ impl MarketImpl of MarketTrait {
     // based on the reserves in the market
     fn quote_quantity(self: @Market, amount: u128) -> u128 {
         assert(amount > 0, 'insufficient amount');
-        assert(self.has_liquidity(), 'insufficient liquidity');
+        assert(self.has_liquidity(), 'insufficient liquidity 1');
 
         // Get normalized reserve cash amount and item quantity
         let (reserve_amount, reserve_quantity) = self.get_reserves();
@@ -120,7 +120,7 @@ impl MarketImpl of MarketTrait {
     // based on the reserves in the market
     fn quote_amount(self: @Market, quantity: u128) -> u128 {
         assert(quantity > 0, 'insufficient quantity');
-        assert(self.has_liquidity(), 'insufficient liquidity');
+        assert(self.has_liquidity(), 'insufficient liquidity 2');
 
         // Get normalized reserve cash amount and item quantity
         let (reserve_amount, reserve_quantity) = self.get_reserves();
@@ -160,6 +160,7 @@ impl MarketImpl of MarketTrait {
             assert(quantity > 0, 'insufficient quantity');
             (amount, quantity)
         } else {
+            assert(1 != 0, 'not implemented');
             // Given the amount, get optimal quantity to add to the market
             let quantity_optimal = self.quote_quantity(amount);
             if quantity_optimal <= quantity {

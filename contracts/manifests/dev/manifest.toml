@@ -34,8 +34,8 @@ name = "eternum::systems::bank::contracts::bank_systems::bank_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x741d8211a58de8aa10d84c75d0d9438179e763949a28ec036a0233bb0f5e011"
-class_hash = "0x2369b235d3cf6bae8eccd9c2bf1cd96f1de6b5d4e23fb3246d4a0219fe5680d"
-original_class_hash = "0x2369b235d3cf6bae8eccd9c2bf1cd96f1de6b5d4e23fb3246d4a0219fe5680d"
+class_hash = "0x692ab6ff9448ba998e8a13e20f7dc6e26bf1f3dc3157593709d6339c398f968"
+original_class_hash = "0x692ab6ff9448ba998e8a13e20f7dc6e26bf1f3dc3157593709d6339c398f968"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_bank_contracts_liquidity_systems_liquidity_systems.json"
 reads = []
@@ -46,8 +46,8 @@ name = "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x6440451cbba04c452fa7a295964b9c66ff4a904ce6d9fcc295eb1d91522486c"
-class_hash = "0x5cb3b070b5ea46c846c78513d75b2171f3c29097c49ec3330f7ef972d021efa"
-original_class_hash = "0x5cb3b070b5ea46c846c78513d75b2171f3c29097c49ec3330f7ef972d021efa"
+class_hash = "0x1f5498fac9be3b9845d84104c23fea8abe9546da2c012999afe7bdd5449120d"
+original_class_hash = "0x1f5498fac9be3b9845d84104c23fea8abe9546da2c012999afe7bdd5449120d"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_bank_contracts_swap_systems_swap_systems.json"
 reads = []
@@ -166,8 +166,8 @@ name = "eternum::systems::name::contracts::name_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x78954c3172d81b184a548c25b9ac6831881f2a1bf0eda25a7576529fe70811e"
-class_hash = "0x4e7dbb549bba45b830922382de52966544868c05c946e095b14568a1fe0d717"
-original_class_hash = "0x4e7dbb549bba45b830922382de52966544868c05c946e095b14568a1fe0d717"
+class_hash = "0x1601fb441f8868a0ce1aed3d8dce2614ece1bd8853245fe60ff10237766ddd8"
+original_class_hash = "0x1601fb441f8868a0ce1aed3d8dce2614ece1bd8853245fe60ff10237766ddd8"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_realm_contracts_realm_systems.json"
 reads = []

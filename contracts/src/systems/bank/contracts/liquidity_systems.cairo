@@ -62,20 +62,18 @@ mod liquidity_systems {
             );
             assert(lords_amount <= player_lords.balance, 'not enough lords');
 
-            let market = get!(world, (bank_entity_id, resource_type), Market);
+            let mut market = get!(world, (bank_entity_id, resource_type), Market);
             let (cost_lords, cost_resource_amount, liquidity_shares, total_shares) = market
                 .add_liquidity(lords_amount, resource_amount);
+
+            market.lords_amount += cost_lords;
+            market.resource_amount += cost_resource_amount;
+            market.total_shares = total_shares;
 
             // update market
             set!(
                 world,
-                (Market {
-                    bank_entity_id,
-                    resource_type,
-                    lords_amount: market.lords_amount + cost_lords,
-                    resource_amount: market.resource_amount + cost_resource_amount,
-                    total_shares,
-                })
+                (market,)
             );
 
             player_lords.burn(cost_lords);
@@ -86,15 +84,12 @@ mod liquidity_systems {
             resource.save(world);
 
             // update player liquidity
-            let player_liquidity = get!(world, (bank_entity_id, player, resource_type), Liquidity);
+            let mut player_liquidity = get!(world, (bank_entity_id, player, resource_type), Liquidity);
+            player_liquidity.shares += liquidity_shares;
+
             set!(
                 world,
-                (Liquidity {
-                    bank_entity_id,
-                    player,
-                    resource_type: resource_type,
-                    shares: player_liquidity.shares + liquidity_shares
-                })
+                (player_liquidity,)
             );
 
             InternalLiquiditySystemsImpl::emit_event(
@@ -119,20 +114,18 @@ mod liquidity_systems {
             let player_liquidity = get!(world, (bank_entity_id, player, resource_type), Liquidity);
             assert(player_liquidity.shares >= shares, 'not enough shares');
 
-            let market = get!(world, (bank_entity_id, resource_type), Market);
+            let mut market = get!(world, (bank_entity_id, resource_type), Market);
             let (payout_lords, payout_resource_amount, total_shares) = market
                 .remove_liquidity(shares);
+
+            market.lords_amount -= payout_lords;
+            market.resource_amount -= payout_resource_amount;
+            market.total_shares = total_shares;
 
             // update market
             set!(
                 world,
-                (Market {
-                    bank_entity_id,
-                    resource_type,
-                    lords_amount: market.lords_amount - payout_lords,
-                    resource_amount: market.resource_amount - payout_resource_amount,
-                    total_shares,
-                })
+                (market,)
             );
 
             // update player lords
@@ -148,12 +141,11 @@ mod liquidity_systems {
             resource.save(world);
 
             // update player liquidity
-            let player_liquidity = get!(world, (bank_entity_id, player, resource_type), Liquidity);
+            let mut player_liquidity = get!(world, (bank_entity_id, player, resource_type), Liquidity);
+            player_liquidity.shares -= shares;
             set!(
                 world,
-                (Liquidity {
-                    bank_entity_id, player, resource_type, shares: player_liquidity.shares - shares
-                })
+                (player_liquidity,)
             );
 
             InternalLiquiditySystemsImpl::emit_event(
@@ -170,6 +162,11 @@ mod liquidity_systems {
     #[generate_trait]
     impl InternalLiquiditySystemsImpl of InternalLiquiditySystemsTrait {
         fn emit_event(world: IWorldDispatcher, market: Market, bank_account_entity_id: u128, lords_amount: u128, resource_amount: u128, add: bool) {
+            let resource_price = if market.has_liquidity() {
+                market.quote_amount(1000)
+            } else {
+                0
+            };
             emit!(
                 world,
                 (
@@ -180,7 +177,7 @@ mod liquidity_systems {
                             resource_type: market.resource_type,
                             lords_amount, 
                             resource_amount, 
-                            resource_price: market.quote_amount(1000), 
+                            resource_price: resource_price,
                             add
                         }
                     ),
