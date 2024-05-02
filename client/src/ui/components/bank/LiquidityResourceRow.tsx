@@ -69,10 +69,10 @@ export const LiquidityResourceRow = ({ bankEntityId, resourceId }: { bankEntityI
   return (
     <tr className="hover:bg-gray-100">
       <td>{pair}</td>
-      <td>{divideByPrecision(totalLords).toFixed(0)}</td>
-      <td>{divideByPrecision(totalResource).toFixed(0)}</td>
-      <td>{divideByPrecision(lordsAmount).toFixed(0)}</td>
-      <td>{divideByPrecision(resourceAmount).toFixed(0)}</td>
+      <td>{divideByPrecision(totalLords).toFixed(2)}</td>
+      <td>{divideByPrecision(totalResource).toFixed(2)}</td>
+      <td>{divideByPrecision(lordsAmount).toFixed(2)}</td>
+      <td>{divideByPrecision(resourceAmount).toFixed(2)}</td>
       <td>
         <Button onClick={onWithdraw} isLoading={isLoading} disabled={!canWithdraw}>
           Withdraw

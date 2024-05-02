@@ -24,8 +24,8 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
   const [resourceAmount, setResourceAmount] = useState(0);
 
   const hasEnough =
-    getBalance(entityId, Number(LORDS_RESOURCE_ID)).balance > multiplyByPrecision(lordsAmount) &&
-    getBalance(entityId, Number(resourceId)).balance > multiplyByPrecision(resourceAmount);
+    getBalance(entityId, Number(LORDS_RESOURCE_ID)).balance >= multiplyByPrecision(lordsAmount) &&
+    getBalance(entityId, Number(resourceId)).balance >= multiplyByPrecision(resourceAmount);
 
   const isNotZero = lordsAmount > 0 && resourceAmount > 0;
   const canAdd = hasEnough && isNotZero;
@@ -48,7 +48,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
       <div className="p-2 relative">
         <ResourceBar
           entityId={entityId}
-          resources={[resources[0]]}
+          resources={resources.filter((r) => r.id === Number(LORDS_RESOURCE_ID))}
           amount={lordsAmount}
           setAmount={setLordsAmount}
           resourceId={LORDS_RESOURCE_ID}
@@ -69,7 +69,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
 
         <ResourceBar
           entityId={entityId}
-          resources={resources.slice(1, resources.length)}
+          resources={resources.filter((r) => r.id !== Number(LORDS_RESOURCE_ID))}
           amount={resourceAmount}
           setAmount={setResourceAmount}
           resourceId={resourceId}
