@@ -63,7 +63,7 @@ mod bank_systems {
         }
 
         fn open_account(
-            world: IWorldDispatcher, realm_entity_id: u128, bank_entity_id: u128
+            world: IWorldDispatcher, realm_entity_id: ID, bank_entity_id: ID
         ) -> ID {
             let player = starknet::get_caller_address();
 

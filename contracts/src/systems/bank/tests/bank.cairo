@@ -4,10 +4,10 @@ use eternum::models::bank::bank::BankAccounts;
 use eternum::models::position::{Coord};
 
 use eternum::systems::bank::contracts::bank_systems::bank_systems;
-use eternum::systems::bank::interface::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait,};
+use eternum::systems::bank::contracts::bank_systems::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait,};
 
 use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
+use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use starknet::contract_address_const;
@@ -40,8 +40,9 @@ fn test_bank_create_account() {
 
     starknet::testing::set_contract_address(contract_address_const::<'client'>());
     let client = starknet::get_caller_address();
+    let ream_entity_id = 1_u128;
 
-    bank_systems_dispatcher.open_account(bank_entity_id);
+    bank_systems_dispatcher.open_account(ream_entity_id, bank_entity_id);
 
     let account = get!(world, (bank_entity_id, client), BankAccounts);
 

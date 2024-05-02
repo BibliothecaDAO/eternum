@@ -82,6 +82,7 @@ export function defineContractComponents(world: World) {
           resource_type: RecsType.BigInt,
           lords_amount: RecsType.BigInt,
           resource_amount: RecsType.BigInt,
+          total_shares: { mag: RecsType.BigInt, sign: RecsType.Boolean },
         },
         {
           metadata: {

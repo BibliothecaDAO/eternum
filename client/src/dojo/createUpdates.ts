@@ -1,4 +1,4 @@
-import { createEventSubscription } from "./createEventSubscription";
+import { createEventSubscription } from "./events/createEventSubscription";
 import {
   COMBAT_EVENT,
   CREATE_ORDER_EVENT,
