@@ -10,6 +10,8 @@ import { ResourceBar } from "@/ui/components/bank/ResourceBar";
 import { resources } from "@bibliothecadao/eternum";
 
 const LORDS_RESOURCE_ID = 253n;
+const OWNER_FEE = 0.05;
+const LP_FEE = 0.05;
 
 export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint; entityId: bigint }) => {
   const {
@@ -59,7 +61,6 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
   const onInvert = useCallback(() => setIsBuyResource((prev) => !prev), []);
 
   const marketPrice = marketManager.getMarketPrice();
-  const slippage = (marketPrice - lordsAmount / resourceAmount) * 100;
   const onSwap = useCallback(() => {
     setIsLoading(true);
     const operation = isBuyResource ? buy_resources : sell_resources;
@@ -70,6 +71,8 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
       amount: multiplyByPrecision(resourceAmount),
     }).finally(() => setIsLoading(false));
   }, [isBuyResource, buy_resources, sell_resources, account, bankEntityId, resourceId, resourceAmount, lordsAmount]);
+
+  const chosenResourceName = "$" + resources.find((r) => r.id === Number(resourceId))?.trait.toUpperCase();
 
   const renderResourceBar = useCallback(
     (disableInput: boolean, isLords: boolean) => (
@@ -116,7 +119,19 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
       <div className="p-2">
         <div className="mb-2">
           <div>Price: {marketPrice.toFixed(2)} $LORDS</div>
-          {marketPrice > 0 && <div className="text-order-giants">Slippage: {slippage.toFixed(2)} %</div>}
+          {marketPrice > 0 && (
+            <div className="text-order-giants">
+              <div>Slippage: {marketManager.slippage(lordsAmount, resourceAmount).toFixed(2)} %</div>
+              <div>
+                Bank Owner Fees: {((isBuyResource ? lordsAmount : resourceAmount) * OWNER_FEE).toFixed(2)}{" "}
+                {isBuyResource ? "$LORDS" : chosenResourceName}
+              </div>
+              <div>
+                LP Fees: {((isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toFixed(2)}{" "}
+                {isBuyResource ? "$LORDS" : chosenResourceName}
+              </div>
+            </div>
+          )}
         </div>
         <Button onClick={onSwap} variant="primary">
           Swap

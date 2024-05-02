@@ -106,6 +106,11 @@ export class MarketManager {
     return Math.floor(payout);
   };
 
+  public slippage = (lordsAmount: number, resourceAmount: number) => {
+    const marketPrice = this.getMarketPrice();
+    return (marketPrice - lordsAmount / resourceAmount) * 100;
+  };
+
   public getMyLP() {
     const [reserveLordsAmount, reserveResourceAmount] = this.getReserves();
     const perc = this.getMyLpPercentage();
