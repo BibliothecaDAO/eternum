@@ -1,7 +1,7 @@
 import { gql } from "graphql-request";
 import { ReplaySubject, Observable } from "rxjs";
 import { getLastLoginTimestamp } from "../../hooks/store/useNotificationsStore";
-import { client, getEventsQuery, wsClient } from "./graphqlClient";
+import { Event, client, getEventsQuery, wsClient } from "./graphqlClient";
 
 const MAX_EVENTS = 50;
 
