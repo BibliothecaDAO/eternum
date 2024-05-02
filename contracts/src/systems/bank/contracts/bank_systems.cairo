@@ -50,7 +50,7 @@ mod bank_systems {
             set!(
                 world,
                 (
-                    Structure {entity_id: bank_entity_id, category: StructureCategory::Bank},
+                    Structure { entity_id: bank_entity_id, category: StructureCategory::Bank },
                     Bank { entity_id: bank_entity_id, owner_fee_scaled, exists: true },
                     Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },
                     Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() }
