@@ -40,8 +40,8 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
     const operation = isBuyResource ? marketManager.buyResource : marketManager.sellResource;
 
     if (amount > 0) {
-      const resource = operation(multiplyByPrecision(amount));
-      setAmount(divideByPrecision(resource));
+      const cost = operation(multiplyByPrecision(amount));
+      setAmount(divideByPrecision(cost));
     }
   }, [lordsAmount, resourceAmount, isBuyResource, marketManager]);
 
@@ -67,7 +67,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
       signer: account,
       bank_entity_id: bankEntityId,
       resource_type: resourceId,
-      amount: multiplyByPrecision(isBuyResource ? resourceAmount : lordsAmount),
+      amount: multiplyByPrecision(resourceAmount),
     }).finally(() => setIsLoading(false));
   }, [isBuyResource, buy_resources, sell_resources, account, bankEntityId, resourceId, resourceAmount, lordsAmount]);
 

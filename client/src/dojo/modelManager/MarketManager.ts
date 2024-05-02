@@ -1,6 +1,6 @@
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { LiquidityType, MarketType, ProductionType, ResourceType } from "./types";
+import { LiquidityType, MarketType } from "./types";
 
 export class MarketManager {
   marketModel: Component<MarketType> | OverridableComponent<MarketType>;
