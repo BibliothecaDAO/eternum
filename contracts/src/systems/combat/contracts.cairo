@@ -486,6 +486,7 @@ mod combat_systems {
 
             // ensure structure has no army protecting it 
             // or it has lost the battle it is currently in
+            let tick = TickImpl::get(world);
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
                 let structure_army: Army = get!(world, structure_army_id, Army);
@@ -493,7 +494,6 @@ mod combat_systems {
 
                 // update battle state before checking battle winner
                 let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
-                let tick = TickImpl::get(world);
                 battle.update_state(tick);
                 set!(world, (battle));
 
@@ -508,7 +508,9 @@ mod combat_systems {
                 .entity_owner_id;
             structure_owner_entity.entity_owner_id = claimer_army_owner_entity_id;
             set!(world, (structure_owner_entity));
-        //todo restart loyalty
+
+            // reset structure loyalty
+            set!(world, (Loyalty { entity_id: structure_id, last_updated_tick: tick.current() }));
         }
 
 
