@@ -19,6 +19,25 @@ mod liquidity_systems {
     use eternum::models::bank::market::{Market, MarketTrait};
     use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
 
+    #[derive(Drop, starknet::Event)]
+    struct LiquidityEvent {
+        #[key]
+        bank_entity_id: u128,
+        #[key]
+        bank_account_entity_id: u128,
+        lords_amount: u128,
+        resource_amount: u128,
+        // price in lords for 1000 resource
+        resource_price: u128,
+        add: bool,
+    }
+    
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        LiquidityEvent: LiquidityEvent,
+    }
+
     #[abi(embed_v0)]
     impl LiquiditySystemsImpl of super::ILiquiditySystems<ContractState> {
         fn add(
@@ -29,7 +48,6 @@ mod liquidity_systems {
             lords_amount: u128,
         ) {
             let player = starknet::get_caller_address();
-
 
             let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
             let bank_account_entity_id = bank_account.entity_id;
@@ -77,6 +95,16 @@ mod liquidity_systems {
                     shares: player_liquidity.shares + liquidity_shares
                 })
             );
+
+            InternalLiquiditySystemsImpl::emit_event(
+                world,
+                market,
+                bank_account_entity_id,
+                cost_lords,
+                cost_resource_amount,
+                true,
+            );
+
         }
 
 
@@ -126,6 +154,40 @@ mod liquidity_systems {
                     bank_entity_id, player, resource_type, shares: player_liquidity.shares - shares
                 })
             );
+
+            InternalLiquiditySystemsImpl::emit_event(
+                world,
+                market,
+                bank_account_entity_id,
+                payout_lords,
+                payout_resource_amount,
+                false,
+            );
         }
+    }
+
+    #[generate_trait]
+    impl InternalLiquiditySystemsImpl of InternalLiquiditySystemsTrait {
+        fn emit_event(world: IWorldDispatcher, market: Market, bank_account_entity_id: u128, lords_amount: u128, resource_amount: u128, add: bool) {
+            // resource price in lords for 1000 resources
+            let resource_price = market.quote_amount(1000);
+
+            emit!(
+                world,
+                (
+                    Event::LiquidityEvent(
+                        LiquidityEvent {
+                            bank_entity_id: market.bank_entity_id, 
+                            bank_account_entity_id, 
+                            lords_amount, 
+                            resource_amount, 
+                            resource_price, 
+                            add
+                        }
+                    ),
+                )
+            );
+        }
+
     }
 }
