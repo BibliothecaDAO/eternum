@@ -1,9 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap&family=Sedan:ital@0;1&display=swap");
-
-@font-face {
-  font-family: 'VCR_OSD_MONO';
-  src: url('./fonts/easvhs.ttf') format('truetype');
-}
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap&family=Sedan:ital@0;1&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -12,18 +7,17 @@
 html,
 body {
   overflow: hidden;
-  font-family: "VCR_OSD_MONO", sans-serif;
-  font-optical-sizing: auto;
+  font-family: "Space Grotesk", sans-serif;
   touch-action: none;
   @apply cursor-fancy;
 }
 
 h1,h2,h3,h4,h5,h6 {
-  font-family: "VCR_OSD_MONO", sans-serif;
+  font-family: "Sedan", sans-serif;
 }
 
 .h1,.h2,.h3,.h4,.h5,.h6 {
-  font-family: "VCR_OSD_MONO", sans-serif;
+  font-family: "Sedan", sans-serif;
 }
 
 @keyframes dotAnimation {
@@ -129,25 +123,25 @@ h1,h2,h3,h4,h5,h6 {
 
 
 h1 {
-  @apply text-4xl sm:text-5xl md:text-6xl ;
+  @apply text-4xl sm:text-5xl md:text-6xl font-bold ;
 }
 
 h2 {
-  @apply text-2xl sm:text-3xl md:text-4xl  ;
+  @apply text-2xl sm:text-3xl md:text-4xl font-semibold ;
 }
 
 h3 {
-  @apply text-xl sm:text-2xl md:text-3xl  ;
+  @apply text-xl sm:text-2xl md:text-3xl font-medium ;
 }
 
 h4 {
-  @apply text-lg sm:text-xl md:text-2xl ;
+  @apply text-lg sm:text-xl md:text-2xl font-normal ;
 }
 
 h5 {
-  @apply text-base sm:text-lg md:text-xl ;
+  @apply text-base sm:text-lg md:text-xl font-light ;
 }
 
 h6 {
-  @apply text-sm sm:text-base md:text-lg  ;
+  @apply text-sm sm:text-base md:text-lg font-thin ;
 }
