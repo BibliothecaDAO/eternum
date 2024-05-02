@@ -1,4 +1,5 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes};
@@ -12,14 +13,14 @@ use eternum::systems::bank::contracts::bank_systems::bank_systems;
 
 use eternum::systems::bank::contracts::liquidity_systems::liquidity_systems;
 use eternum::systems::bank::contracts::swap_systems::swap_systems;
-use eternum::systems::bank::interface::bank::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
-use eternum::systems::bank::interface::liquidity::{
+use eternum::systems::bank::contracts::bank_systems::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
+use eternum::systems::bank::contracts::liquidity_systems::{
     ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,
 };
-use eternum::systems::bank::interface::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait,};
+use eternum::systems::bank::contracts::swap_systems::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait,};
 
 use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
+use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use starknet::contract_address_const;
@@ -146,13 +147,23 @@ fn test_swap_buy_with_fees() {
 
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
+    'market'.print();
+    market.lords_amount.print();
+    market.resource_amount.print();
 
-    assert(market.lords_amount == 1120, 'market.lords_amount');
+    // 1000 (reserve) + 111 (quote) + 11 (fees)
+    assert(market.lords_amount == 1122, 'market.lords_amount');
+    // 1000 (reserve) - 100 (result)
     assert(market.resource_amount == 900, 'market.resource_amount');
 
     assert(liquidity.shares == FixedTrait::new_unscaled(1000, false), 'liquidity.shares');
+    'player_balance'.print();
+    wood.balance.print();
+    lords.balance.print();
+    // 9000 + 100
     assert(wood.balance == 9100, 'wood.balance');
-    assert(lords.balance == 8880, 'lords.balance');
+    // 9000 -  122 (lords cost + fees)
+    assert(lords.balance == 8878, 'lords.balance');
 }
 
 #[test]
@@ -218,11 +229,23 @@ fn test_swap_sell_with_fees() {
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
 
-    assert(market.lords_amount == 924, 'market.lords_amount');
-    assert(market.resource_amount == 1091, 'market.resource_amount');
+    // print
+    'market'.print();
+    market.lords_amount.print();
+    market.resource_amount.print();
+
+    // payout for 80 wood = 75 lords
+    assert(market.lords_amount == 925, 'market.lords_amount');
+    // reserve wood increase = 100 - 11 (fees)
+    assert(market.resource_amount == 1089, 'market.resource_amount');
 
     assert(liquidity.shares == FixedTrait::new_unscaled(1000, false), 'liquidity.shares');
 
+    // print
+    'player_balance'.print();
+    wood.balance.print();
+    lords.balance.print();
     assert(wood.balance == 8900 + 9, 'wood.balance');
-    assert(lords.balance == 9076, 'lords.balance');
+    // 9000 + 75 (payout)
+    assert(lords.balance == 9075, 'lords.balance');
 }
