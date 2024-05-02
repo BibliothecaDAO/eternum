@@ -199,6 +199,17 @@ struct Army {
     battle_side: BattleSide
 }
 
+#[generate_trait]
+impl ArmyImpl of ArmyTrait {
+    fn assert_in_battle(self: Army) {
+        assert!(self.battle_id.is_non_zero(), "army not in battle")
+    }
+
+    fn assert_not_in_battle(self: Army) {
+        assert!(self.battle_id.is_zero(), "army in battle")
+    }
+}
+
 #[derive(Model, Copy, Drop, Serde, Default)]
 struct Protector {
     #[key]

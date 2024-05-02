@@ -47,8 +47,8 @@ mod combat_systems {
     use eternum::models::weight::Weight;
     use eternum::models::{
         combat::{
-            Army, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait, Battle,
-            BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait
+            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait,
+            Battle, BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait
         },
     };
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
@@ -226,14 +226,14 @@ mod combat_systems {
         fn battle_start(world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128) {
             // ensure attacking army is not in any battle
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
-            assert!(attacking_army.battle_id.is_zero(), "attacking army is in a battle");
+            attacking_army.assert_not_in_battle();
 
             // ensure caller owns attacking army
             get!(world, attacking_army_id, EntityOwner).assert_caller_owner(world);
 
             // ensure defending army is not in any battle
             let mut defending_army: Army = get!(world, defending_army_id, Army);
-            assert!(defending_army.battle_id.is_zero(), "defending army is in a battle");
+            defending_army.assert_not_in_battle();
 
             // ensure attacker and defender are in same location
             let attacking_army_position: Position = get!(world, attacking_army_id, Position);
@@ -329,7 +329,7 @@ mod combat_systems {
 
             // ensure caller army is not in battle
             let mut caller_army: Army = get!(world, army_id, Army);
-            assert!(caller_army.battle_id.is_zero(), "army is in a battle");
+            caller_army.assert_not_in_battle();
 
             // ensure caller army is at battle location
             let caller_army_position = get!(world, caller_army.entity_id, Position);
@@ -413,7 +413,9 @@ mod combat_systems {
                     // release lock on protected resources
                     let mut caller_army_protectee: Protectee = get!(world, army_id, Protectee);
                     let mut caller_army_protectee_resource_lock: ResourceTransferLock = get!(
-                        world, caller_army_protectee.protected_resources_owner(), ResourceTransferLock
+                        world,
+                        caller_army_protectee.protected_resources_owner(),
+                        ResourceTransferLock
                     );
                     caller_army_protectee_resource_lock.assert_locked();
                     let now = starknet::get_block_timestamp();
@@ -476,8 +478,9 @@ mod combat_systems {
             // ensure structure is not a realm
             assert!(structure.category != StructureCategory::Realm, "realms can not be claimed");
 
+            // ensure claimer army is not in battle
             let claimer_army: Army = get!(world, army_id, Army);
-            assert!(claimer_army.battle_id.is_zero(), "army is in battle");
+            claimer_army.assert_not_in_battle();
 
             // ensure army is at structure position
             let claimer_army_position: Position = get!(world, army_id, Position);
@@ -489,8 +492,9 @@ mod combat_systems {
             let tick = TickImpl::get(world);
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
+                // ensure structure army is in battle
                 let structure_army: Army = get!(world, structure_army_id, Army);
-                assert!(structure_army.battle_id.is_non_zero(), "structure army not in battle");
+                structure_army.assert_in_battle();
 
                 // update battle state before checking battle winner
                 let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
@@ -523,6 +527,10 @@ mod combat_systems {
             // ensure entity being pillaged is a structure
             get!(world, structure_id, Structure).assert_is_structure();
 
+            // ensure attacking army is not in a battle
+            let attacking_army: Army = get!(world, army_id, Army);
+            attacking_army.assert_not_in_battle();
+
             // ensure army is at structure position
             let army_position: Position = get!(world, army_id, Position);
             let structure_position: Position = get!(world, structure_id, Position);
@@ -531,9 +539,33 @@ mod combat_systems {
             let tick = TickImpl::get(world);
             let troop_config = TroopConfigImpl::get(world);
 
+            // get structure army and health
+
+            // if the structure army is in a battle, you get to fight against the
+            // the structure army has the combined strength of all armies on its side
+            // of the battle. else the structure army is alone so you fight it alone
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
-            let structure_army: Army = get!(world, structure_army_id, Army);
-            let structure_army_health: Health = get!(world, structure_army_id, Health);
+            let mut structure_army: Army = Default::default();
+            let mut structure_army_health: Health = Default::default();
+            if structure_army_id.is_non_zero() {
+                structure_army = get!(world, structure_army_id, Army);
+                if structure_army.battle_id.is_non_zero() {
+                    // update battle state 
+                    let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
+                    battle.update_state(tick);
+                    set!(world, (battle));
+
+                    if structure_army.battle_side == BattleSide::Attack {
+                        structure_army = battle.attack_army;
+                        structure_army_health = battle.attack_army_health;
+                    } else {
+                        structure_army = battle.defence_army;
+                        structure_army_health = battle.defence_army_health;
+                    }
+                } else {
+                    structure_army_health = get!(world, structure_army_id, Health);
+                }
+            }
 
             // a percentage of it's full strength depending on structure army's health
             let structure_army_strength = structure_army.troops.full_strength(troop_config)
@@ -547,7 +579,6 @@ mod combat_systems {
                 / LOYALTY_MAX_VALUE.into();
 
             // a percentage of it's full strength depending on structure army's health
-            let attacking_army: Army = get!(world, army_id, Army);
             let attacking_army_health: Health = get!(world, army_id, Health);
             let attacking_army_strength = attacking_army.troops.full_strength(troop_config)
                 * attacking_army_health.percentage_left()

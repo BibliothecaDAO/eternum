@@ -28,7 +28,8 @@ mod resource_systems {
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{
-        Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceTransferLock, ResourceTransferLockTrait
+        Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceTransferLock,
+        ResourceTransferLockTrait
     };
     use eternum::models::resources::{DetachedResource};
     use eternum::models::road::RoadImpl;
@@ -226,7 +227,9 @@ mod resource_systems {
                         // ?
                         if caller_id.is_non_zero() {
                             // ensure resource spending is not locked 
-                            let resource_lock: ResourceTransferLock = get!(world, sender_id, ResourceTransferLock);
+                            let resource_lock: ResourceTransferLock = get!(
+                                world, sender_id, ResourceTransferLock
+                            );
                             resource_lock.assert_not_locked();
 
                             // burn resources from sender's balance
