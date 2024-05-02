@@ -476,34 +476,37 @@ mod combat_systems {
             // ensure structure is not a realm
             assert!(structure.category != StructureCategory::Realm, "realms can not be claimed");
 
-            let winner_army: Army = get!(world, army_id, Army);
-            assert!(winner_army.battle_id.is_non_zero(), "army not in battle");
+            let claimer_army: Army = get!(world, army_id, Army);
+            assert!(claimer_army.battle_id.is_zero(), "army is in battle");
 
             // ensure army is at structure position
-            let army_position: Position = get!(world, army_id, Position);
+            let claimer_army_position: Position = get!(world, army_id, Position);
             let structure_position: Position = get!(world, structure_id, Position);
-            army_position.assert_same_location(structure_position.into());
+            claimer_army_position.assert_same_location(structure_position.into());
 
-            // update battle state before any other actions
-            let mut battle: Battle = get!(world, winner_army.battle_id, Battle);
-            let tick = TickImpl::get(world);
-            battle.update_state(tick);
-
-            // ensure army won
-            assert!(winner_army.battle_side == battle.winner(), "army did not win");
-
+            // ensure structure has no army protecting it 
+            // or it has lost the battle it is currently in
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
                 let structure_army: Army = get!(world, structure_army_id, Army);
                 assert!(structure_army.battle_id.is_non_zero(), "structure army not in battle");
-                assert!(structure_army.battle_id != winner_army.battle_id, "not same battle");
-                assert!(structure_army.battle_side != winner_army.battle_side, "same battle side");
+
+                // update battle state before checking battle winner
+                let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
+                let tick = TickImpl::get(world);
+                battle.update_state(tick);
+                set!(world, (battle));
+
+                // ensure structure lost the battle
+                assert!(battle.winner() != BattleSide::None, "battle has no winner");
+                assert!(structure_army.battle_side != battle.winner(), "structure army won");
             }
 
-            // change structure ownership 
+            // pass ownership of structure to claimer
             let mut structure_owner_entity: EntityOwner = get!(world, structure_id, EntityOwner);
-            let army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
-            structure_owner_entity.entity_owner_id = army_owner_entity_id;
+            let claimer_army_owner_entity_id: u128 = get!(world, army_id, EntityOwner)
+                .entity_owner_id;
+            structure_owner_entity.entity_owner_id = claimer_army_owner_entity_id;
             set!(world, (structure_owner_entity));
         //todo restart loyalty
         }
