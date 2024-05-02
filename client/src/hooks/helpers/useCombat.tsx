@@ -74,7 +74,7 @@ export function useCombat() {
   // };
 
   const useOwnerArmies = (owner: bigint) => {
-    let entityIds = useEntityQuery([Has(Army), HasValue(Owner, { address: owner })]);
+    let entityIds = useEntityQuery([Has(Army)]);
 
     console.log("entityIds", entityIds);
 

@@ -241,25 +241,47 @@ export interface Troops {
   crossbowman_count: num.BigNumberish;
 }
 
-export interface CreateArmyProps extends SystemSigner {
-  owner_id: num.BigNumberish;
+export interface ArmyCreateProps extends SystemSigner {
+  army_owner_id: num.BigNumberish;
+  army_is_protector: boolean;
+}
+
+export interface ArmyBuyTroopsProps extends SystemSigner {
+  army_id: num.BigNumberish;
+  payer_id: num.BigNumberish;
   troops: Troops;
 }
 
-export interface StartBattleProps extends SystemSigner {
-  attacker_id: num.BigNumberish;
-  defender_id: num.BigNumberish;
+export interface ArmyMergeTroopsProps extends SystemSigner {
+  from_army_id: num.BigNumberish;
+  to_army_id: num.BigNumberish;
+  troops: Troops;
 }
 
-export interface JoinBattleProps extends SystemSigner {
+export interface BattleStartProps extends SystemSigner {
+  attacking_army_id: num.BigNumberish;
+  defending_army_id: num.BigNumberish;
+}
+
+export interface BattleJoinProps extends SystemSigner {
   battle_id: num.BigNumberish;
   battle_side: num.BigNumberish;
   army_id: num.BigNumberish;
 }
 
-export interface LeaveBattleProps extends SystemSigner {
+export interface BattleLeaveProps extends SystemSigner {
   battle_id: num.BigNumberish;
   army_id: num.BigNumberish;
+}
+
+export interface BattlePillageProps extends SystemSigner {
+  army_id: num.BigNumberish;
+  structure_id: num.BigNumberish;
+}
+
+export interface BattleClaimProps extends SystemSigner {
+  army_id: num.BigNumberish;
+  structure_id: num.BigNumberish;
 }
 
 export interface CreateStartingResources extends SystemSigner {

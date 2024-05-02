@@ -48,12 +48,8 @@ export const TroopSelect = ({ entity }: any) => {
     setIsLoading(true);
     create_army({
       signer: account,
-      owner_id: entity.entity_id,
-      troops: {
-        knight_count: troopCounts[250] * 1000 || 0,
-        paladin_count: troopCounts[251] * 1000 || 0,
-        crossbowman_count: troopCounts[252] * 1000 || 0,
-      },
+      army_owner_id: entity.entity_id,
+      army_is_protector: false,
     }).finally(() => setIsLoading(false));
   };
 
@@ -74,6 +70,7 @@ export const TroopSelect = ({ entity }: any) => {
   return (
     <div>
       <h4 className="my-5">New Army</h4>
+      <StepOne />
       <div className="grid grid-cols-3 gap-2">
         {troops.map((troop) => (
           <div className="p-2 border" key={troop.name}>
@@ -129,6 +126,19 @@ export const TroopSelect = ({ entity }: any) => {
       >
         Create Army
       </Button>
+    </div>
+  );
+};
+
+export const StepOne = () => {
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <div className="border h-32">
+        <Button onClick={() => console.log()}>Create Defending Army</Button>
+      </div>
+      <div className="border h-32">
+        <Button onClick={() => console.log()}>Create Attacking Army</Button>
+      </div>
     </div>
   );
 };

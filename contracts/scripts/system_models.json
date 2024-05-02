@@ -14,7 +14,8 @@
     "OwnedResourcesTracker",
     "Tile",
     "Production",
-    "HasClaimedStartingResources"
+    "HasClaimedStartingResources",
+    "Structure"
   ],
   "DONKEY_SYSTEMS": [],
   "TRADE_SYSTEMS": [
@@ -113,6 +114,8 @@
     "Owner",
     "Capacity",
     "Quantity",
-    "Inventory"
+    "Inventory",
+    "Protector",
+    "Protectee"
   ]
 }

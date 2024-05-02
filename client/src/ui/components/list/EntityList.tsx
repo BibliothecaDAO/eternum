@@ -4,12 +4,13 @@ import Button from "@/ui/elements/Button";
 
 interface EntityListProps {
   title: string;
+  headerPanel?: React.ReactElement;
   panel: (props: { entity: any; previous?: undefined | any[] }) => React.ReactElement;
   list: any[];
   previous?: any[];
 }
 
-export const EntityList = ({ title, panel, list }: EntityListProps) => {
+export const EntityList = ({ title, panel, list, headerPanel }: EntityListProps) => {
   const [selectedEntity, setSelectedEntity] = useState(null);
 
   const handleBankClick = (entity: any) => {
@@ -32,6 +33,7 @@ export const EntityList = ({ title, panel, list }: EntityListProps) => {
         </div>
       ) : (
         <>
+          {headerPanel}
           <ul>
             {list.map((entity) => (
               <li

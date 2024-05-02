@@ -4,7 +4,6 @@ import { military } from "@/ui/components/navigation/Config";
 import { EntityList } from "@/ui/components/list/EntityList";
 import { Tabs } from "@/ui/elements/tab";
 import { useMemo, useState } from "react";
-import { EntityArmyList } from "@/ui/components/military/ArmyList";
 import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
 import { useEntities } from "@/hooks/helpers/useEntities";
 
