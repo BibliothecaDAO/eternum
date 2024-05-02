@@ -166,10 +166,6 @@ export const MainScene = () => {
           </Suspense>
         </Bvh>
         <EffectComposer multisampling={0}>
-          <Pixelation
-            granularity={4} // pixel granularity
-          />
-
           <Vignette
             offset={0.5} // vignette offset
             darkness={0.5} // vignette darkness
