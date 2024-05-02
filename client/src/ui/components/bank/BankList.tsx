@@ -105,10 +105,13 @@ export const BankPanel = ({ entity }: BankListProps) => {
     <div>
       <div className="flex justify-between">
         <h3>{entity.name}</h3>
-
+        <div>
+          <div>Fees Earned </div>
+          <div>Banker Owner: </div>
+        </div>
         <div className="mr-3">
           <div>
-            Banker:{" "}
+            Banker Owner:{" "}
             {ownerName ? hexToAscii(numberToHex(Number(ownerName))) : numberToHex(Number(owner!.address)).slice(0, 5)}
           </div>
           {bank && <div>{`Owner fees: ${(Number(bank.owner_fee_scaled) / 2 ** 64) * 100}%`}</div>}
