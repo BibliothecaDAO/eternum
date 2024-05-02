@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { SecondaryPopup } from "../../../../../../../../elements/SecondaryPopup";
-import Button from "../../../../../../../../elements/Button";
-import { useDojo } from "../../../../../../../../DojoContext";
+import { SecondaryPopup } from "../../../../../../elements/SecondaryPopup";
+import Button from "../../../../../../elements/Button";
+import { useDojo } from "../../../../../../DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "../../../../../../../../utils/utils";
-import { Headline } from "../../../../../../../../elements/Headline";
+import { getEntityIdFromKeys } from "../../../../../../utils/utils";
+import { Headline } from "../../../../../../elements/Headline";
 import { SelectNpcForTravelPanel } from "./SelectNpcForTravel";
-import { Npc } from "../../../../types";
+import { Npc } from "../../types";
 
 type TravelNpcPopupProps = {
   npc: Npc;

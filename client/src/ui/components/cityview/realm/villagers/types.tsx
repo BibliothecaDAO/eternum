@@ -14,18 +14,23 @@ export type Characteristics = {
   sex: string;
 };
 
-export type Residents = {
-  natives: Npc[];
-  foreigners: Npc[];
+export type SortVillagers = {
+  residents: Villager[];
+  travelers: Villager[];
+  atGates: Villager[];
 };
 
-export type Travelers = Npc[];
+export enum VillagerType {
+  Resident,
+  Traveler,
+  AtGates
+}
 
-export type AtGates = {
+export type Villager = {
   npc: Npc;
-  arrival_time: bigint;
+  type: VillagerType;
   native: boolean;
-}[];
+};
 
 export type DiscussionSegment = {
   npcEntityId: number;

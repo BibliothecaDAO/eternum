@@ -29,7 +29,7 @@ const NpcChat = ({}) => {
   const { isDiscussionLoading } = useNpcStore();
 
   const residents = useResidentsNpcs(realmEntityId, Npc, EntityOwner);
-  const npcs = residents.foreigners.concat(residents.natives);
+  const npcs = residents.map(item => item.npc)
 
   const topRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);

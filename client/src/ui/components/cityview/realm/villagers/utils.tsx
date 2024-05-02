@@ -1,5 +1,5 @@
 import { BigNumberish, shortString } from "starknet";
-import { AtGates, Characteristics, Npc, Residents, Travelers } from "./types";
+import { Characteristics, Npc, Villager, VillagerType } from "./types";
 import { SEX, ROLES } from "./constants";
 import { Entity, Has, HasValue, NotValue, QueryFragment, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useEntityQuery } from "@dojoengine/react";
@@ -19,9 +19,9 @@ export const getTravelersNpcs = (
   NpcComponent: any,
   EntityOwnerComponent: any,
   PositionComponent: any,
-) => {
+): Villager[] => {
   const realmPosition = getPosition(realmId);
-  let travelers: Travelers = getNpcsFromQuery(
+  let travelers: Npc[] = getNpcsFromQuery(
     [
       Has(NpcComponent),
       HasValue(EntityOwnerComponent, { entity_owner_id: realmEntityId }),
@@ -30,7 +30,13 @@ export const getTravelersNpcs = (
     ],
     NpcComponent,
   );
-  return travelers;
+  const villagers: Villager[] = travelers.map(npc => ({
+    npc: npc,
+    type: VillagerType.Traveler,
+    native: true,
+  }))
+
+  return villagers;
 };
 
 export const getAtGatesNpcs = (
@@ -41,7 +47,7 @@ export const getAtGatesNpcs = (
   PositionComponent: any,
   ArrivalTime: any,
   EntityOwnerComponent: any,
-): AtGates => {
+): Villager[] => {
   const realmPosition = getPosition(realmId);
 
   const potentialNatives = getNpcsFromQuery(
@@ -54,7 +60,7 @@ export const getAtGatesNpcs = (
     NpcComponent,
   );
 
-  const natives: AtGates = getNpcsOnlyIfArrivedAtGates(potentialNatives, nextBlockTimestamp, true, ArrivalTime);
+  const natives: Villager[] = getNpcsOnlyIfArrivedAtGates(potentialNatives, nextBlockTimestamp, true, ArrivalTime);
 
   const potentialForeigners = getNpcsFromQuery(
     [
@@ -65,20 +71,20 @@ export const getAtGatesNpcs = (
     ],
     NpcComponent,
   );
-  const foreigners: AtGates = getNpcsOnlyIfArrivedAtGates(potentialForeigners, nextBlockTimestamp, false, ArrivalTime);
+  const foreigners: Villager[] = getNpcsOnlyIfArrivedAtGates(potentialForeigners, nextBlockTimestamp, false, ArrivalTime);
 
-  return natives.concat(foreigners).sort((a, b) => Number(b!.arrival_time - a!.arrival_time));
+  return natives.concat(foreigners);
 };
 
 export const alreadyArrivedAtGates = (
   npc: Npc,
   nextBlockTimestamp: number,
   ArrivalTimeComponent: any,
-): { npc: Npc; arrival_time: bigint } | undefined => {
+): Npc | undefined => {
   const npcArrivalTimeEntityId = runQuery([HasValue(ArrivalTimeComponent, { entity_id: BigInt(npc.entityId) })]);
   const npcArrivalTime = getComponentValue(ArrivalTimeComponent, npcArrivalTimeEntityId.values().next().value);
   if (npcArrivalTime!.arrives_at <= nextBlockTimestamp) {
-    return { npc, arrival_time: npcArrivalTime!.arrives_at };
+    return npc;
   }
 };
 
@@ -87,34 +93,50 @@ const getNpcsOnlyIfArrivedAtGates = (
   nextBlockTimestamp: number,
   native: boolean,
   ArrivalTime: any,
-): AtGates => {
-  const npcs: AtGates = tempNpcs.reduce((acc: AtGates, npc: Npc) => {
+): Villager[] => {
+  const npcs: Villager[] = tempNpcs.reduce((acc: Villager[], npc: Npc) => {
     const npcWithArrivalTimeAlreadyAtGate = alreadyArrivedAtGates(npc, nextBlockTimestamp, ArrivalTime);
     if (npcWithArrivalTimeAlreadyAtGate !== undefined) {
-      acc.push({ ...npcWithArrivalTimeAlreadyAtGate, native });
+      acc.push({ npc:npcWithArrivalTimeAlreadyAtGate, type:VillagerType.AtGates, native });
     }
     return acc;
   }, []);
   return npcs;
 };
 
-export const useResidentsNpcs = (realmEntityId: bigint, NpcComponent: any, EntityOwnerComponent: any): Residents => {
-  let residents: Residents = { foreigners: [], natives: [] };
-  residents.natives = getNpcsFromQuery(
+export const useResidentsNpcs = (realmEntityId: bigint, NpcComponent: any, EntityOwnerComponent: any): Villager[] => {
+  let residents: Villager[];
+
+  const natives = getNpcsFromQuery(
     [
       HasValue(NpcComponent, { current_realm_entity_id: realmEntityId }),
       HasValue(EntityOwnerComponent, { entity_owner_id: realmEntityId }),
     ],
     NpcComponent,
   );
-  residents.foreigners = getNpcsFromQuery(
+
+  const natives_as_villager = natives.map(npc => ({
+    npc: npc,
+    type: VillagerType.Resident,
+    native: true
+  }))
+
+  const foreigners = getNpcsFromQuery(
     [
       HasValue(NpcComponent, { current_realm_entity_id: realmEntityId }),
       NotValue(EntityOwnerComponent, { entity_owner_id: realmEntityId }),
     ],
     NpcComponent,
   );
-  return residents;
+
+  const foreigners_as_villager = foreigners.map(npc => ({
+    npc: npc,
+    type: VillagerType.Resident,
+    native: false
+  }))
+
+
+  return natives_as_villager.concat(foreigners_as_villager);
 };
 
 export const getNpcsFromQuery = (query: QueryFragment[], NpcComponent: any): Npc[] => {
