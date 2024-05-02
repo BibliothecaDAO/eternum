@@ -104,6 +104,10 @@ export STARTING_ID_MYTHIC_RESOURCES=7
 export STARTING_ID_TRADE=8
 export STARTING_ID_MILITARY=9
 
+// banks
+export BANK_OWNER_COST=100000
+export BANK_LP_FEES=922337203685477580
+
 # ------ POPULATION + CAPACITY CONFIG ------
 # params: population, capacity
 commands+=(
@@ -121,7 +125,7 @@ commands+=(
 
 # ------ BANK CONFIG ------
 # params: owner_cost, lp_fees
-commands+=("sozo execute $CONFIG_SYSTEMS set_bank_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 100000,0")
+commands+=("sozo execute $CONFIG_SYSTEMS set_bank_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $BANK_OWNER_COST,$BANK_LP_FEES")
 
 # ------ TICK CONFIG ------
 # params: max_move_per_tick, tick_interval_in_seconds

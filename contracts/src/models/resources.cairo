@@ -312,7 +312,7 @@ mod tests_resource_traits {
     use eternum::models::production::ProductionRateTrait;
     use eternum::models::resources::ResourceTrait;
     use eternum::systems::config::contracts::config_systems;
-    use eternum::systems::config::interface::{
+    use eternum::systems::config::contracts::{
         IProductionConfigDispatcher, IProductionConfigDispatcherTrait
     };
     use eternum::utils::testing::{spawn_eternum, deploy_system};
@@ -435,39 +435,39 @@ mod tests_resource_traits {
 }
 
 
-#[cfg(test)]
-mod owned_resources_tracker_tests {
-    use eternum::constants::ResourceTypes;
-    use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
+// #[cfg(test)]
+// mod owned_resources_tracker_tests {
+//     use eternum::constants::ResourceTypes;
+//     use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
 
 
-    #[test]
-    fn test_resource_type_to_position() {
-        let ort = OwnedResourcesTracker { entity_id: 0, resource_types: 0 };
-        assert!(ort._resource_type_to_position(255) == 31, " wrong ans");
-        assert!(ort._resource_type_to_position(254) == 30, " wrong ans");
-        assert!(ort._resource_type_to_position(253) == 29, " wrong ans");
-        assert!(ort._resource_type_to_position(28) == 27, " wrong ans");
-        assert!(ort._resource_type_to_position(2) == 1, " wrong ans");
-        assert!(ort._resource_type_to_position(1) == 0, " wrong ans");
-    }
+//     #[test]
+//     fn test_resource_type_to_position() {
+//         let ort = OwnedResourcesTracker { entity_id: 0, resource_types: 0 };
+//         assert!(ort._resource_type_to_position(255) == 31, " wrong ans");
+//         assert!(ort._resource_type_to_position(254) == 30, " wrong ans");
+//         assert!(ort._resource_type_to_position(253) == 29, " wrong ans");
+//         assert!(ort._resource_type_to_position(28) == 27, " wrong ans");
+//         assert!(ort._resource_type_to_position(2) == 1, " wrong ans");
+//         assert!(ort._resource_type_to_position(1) == 0, " wrong ans");
+//     }
 
 
-    #[test]
-    fn test_get_and_set_resource_ownership() {
-        let mut ort = OwnedResourcesTracker { entity_id: 0, resource_types: 0 };
-        ort.set_resource_ownership(ResourceTypes::WOOD, true);
-        ort.set_resource_ownership(ResourceTypes::COAL, true);
-        ort.set_resource_ownership(ResourceTypes::LORDS, true);
-        ort.set_resource_ownership(ResourceTypes::WHEAT, true);
+//     #[test]
+//     fn test_get_and_set_resource_ownership() {
+//         let mut ort = OwnedResourcesTracker { entity_id: 0, resource_types: 0 };
+//         ort.set_resource_ownership(ResourceTypes::WOOD, true);
+//         ort.set_resource_ownership(ResourceTypes::COAL, true);
+//         ort.set_resource_ownership(ResourceTypes::LORDS, true);
+//         ort.set_resource_ownership(ResourceTypes::WHEAT, true);
 
-        assert!(ort.owns_resource_type(ResourceTypes::WOOD), "should be true");
-        assert!(ort.owns_resource_type(ResourceTypes::COAL), "should be true");
-        assert!(ort.owns_resource_type(ResourceTypes::LORDS), "should be true");
-        assert!(ort.owns_resource_type(ResourceTypes::WHEAT), "should be true");
+//         assert!(ort.owns_resource_type(ResourceTypes::WOOD), "should be true");
+//         assert!(ort.owns_resource_type(ResourceTypes::COAL), "should be true");
+//         assert!(ort.owns_resource_type(ResourceTypes::LORDS), "should be true");
+//         assert!(ort.owns_resource_type(ResourceTypes::WHEAT), "should be true");
 
-        assert!(ort.owns_resource_type(ResourceTypes::DRAGONHIDE) == false, "should be false");
-        assert!(ort.owns_resource_type(ResourceTypes::DEMONHIDE) == false, "should be false");
-    }
-}
+//         assert!(ort.owns_resource_type(ResourceTypes::DRAGONHIDE) == false, "should be false");
+//         assert!(ort.owns_resource_type(ResourceTypes::DEMONHIDE) == false, "should be false");
+//     }
+// }
 

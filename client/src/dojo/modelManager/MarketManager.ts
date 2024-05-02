@@ -1,6 +1,6 @@
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { LiquidityType, MarketType, ProductionType, ResourceType } from "./types";
+import { LiquidityType, MarketType } from "./types";
 
 export class MarketManager {
   marketModel: Component<MarketType> | OverridableComponent<MarketType>;
@@ -43,6 +43,13 @@ export class MarketManager {
     const liquidity = this.getLiquidity();
     if (!liquidity) return 0;
     return Math.floor(Number(liquidity.shares.mag) / 2 ** 64);
+  };
+
+  public getMyLpPercentage = () => {
+    const liquidity = this.getLiquidity();
+    const market = this.getMarket();
+    if (!liquidity?.shares.mag || !market?.total_shares.mag) return 0;
+    return Number(liquidity.shares.mag / market.total_shares.mag);
   };
 
   public getSharesUnscaled = () => {
@@ -99,17 +106,21 @@ export class MarketManager {
     return Math.floor(payout);
   };
 
+  public slippage = (lordsAmount: number, resourceAmount: number) => {
+    const marketPrice = this.getMarketPrice();
+    return (marketPrice - lordsAmount / resourceAmount) * 100;
+  };
+
   public getMyLP() {
     const [reserveLordsAmount, reserveResourceAmount] = this.getReserves();
-    const liquidity = this.getTotalLiquidity();
-    const shares = this.getSharesScaled();
+    const perc = this.getMyLpPercentage();
 
     let lords_amount = 0;
     let resource_amount = 0;
 
-    if (liquidity > 0) {
-      lords_amount = (shares * reserveLordsAmount) / liquidity;
-      resource_amount = (shares * reserveResourceAmount) / liquidity;
+    if (perc > 0) {
+      lords_amount = perc * reserveLordsAmount;
+      resource_amount = perc * reserveResourceAmount;
     }
 
     return [lords_amount, resource_amount];

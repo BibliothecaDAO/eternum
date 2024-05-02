@@ -57,7 +57,7 @@
   ],
   "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
   "NAME_SYSTEMS": ["AddressName", "EntityName"],
-  "BANK_SYSTEMS": ["Bank", "Position", "BankAccounts", "Owner", "Resource", "Production", "EntityOwner"],
+  "BANK_SYSTEMS": ["Bank", "Position", "BankAccounts", "Owner", "Resource", "Production", "EntityOwner", "OwnedResourcesTracker"],
   "SWAP_SYSTEMS": ["Market", "OwnedResourcesTracker", "Resource", "Production"],
   "LIQUIDITY_SYSTEMS": ["Market", "OwnedResourcesTracker", "Production", "Resource", "Liquidity"],
   "HYPERSTRUCTURE_SYSTEMS": ["Orders", "HyperStructure"],

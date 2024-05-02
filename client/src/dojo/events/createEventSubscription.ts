@@ -1,27 +1,9 @@
-import { GraphQLClient, gql } from "graphql-request";
-import { createClient } from "graphql-ws";
+import { gql } from "graphql-request";
 import { ReplaySubject, Observable } from "rxjs";
-import { getLastLoginTimestamp } from "../hooks/store/useNotificationsStore";
+import { getLastLoginTimestamp } from "../../hooks/store/useNotificationsStore";
+import { Event, client, getEventsQuery, wsClient } from "./graphqlClient";
 
 const MAX_EVENTS = 50;
-
-const client = new GraphQLClient(import.meta.env.VITE_TORII_GRAPHQL!);
-const wsClient = createClient({ url: import.meta.env.VITE_TORII_WS });
-
-type Event = {
-  id: string[];
-  keys: string[];
-  data: any;
-  createdAt: string;
-};
-
-type getEventsQuery = {
-  events: {
-    edges: {
-      node: Event;
-    }[];
-  };
-};
 
 export async function createEventSubscription(
   keys: string[],

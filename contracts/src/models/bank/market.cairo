@@ -1,8 +1,43 @@
 // External imports
-
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
-// Constants
+// Dojo imports
+use dojo::database::introspect::{Struct, Ty, Introspect, Member, serialize_member};
+
+// Starknet imports
+use starknet::ContractAddress;
+
+impl IntrospectFixed of Introspect<Fixed> {
+    #[inline(always)]
+    fn size() -> usize {
+        2
+    }
+
+    #[inline(always)]
+    fn layout(ref layout: Array<u8>) {
+        layout.append(128);
+        layout.append(1);
+    }
+
+    #[inline(always)]
+    fn ty() -> Ty {
+        Ty::Struct(
+            Struct {
+                name: 'Fixed',
+                attrs: array![].span(),
+                children: array![
+                    serialize_member(
+                        @Member { name: 'mag', ty: Ty::Primitive('u128'), attrs: array![].span() }
+                    ),
+                    serialize_member(
+                        @Member { name: 'sign', ty: Ty::Primitive('bool'), attrs: array![].span() }
+                    )
+                ]
+                    .span()
+            }
+        )
+    }
+}
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Market {
@@ -12,6 +47,7 @@ struct Market {
     resource_type: u8,
     lords_amount: u128,
     resource_amount: u128,
+    total_shares: Fixed,
 }
 
 #[generate_trait]
@@ -60,7 +96,7 @@ impl MarketImpl of MarketTrait {
     // based on the reserves in the market
     fn quote_quantity(self: @Market, amount: u128) -> u128 {
         assert(amount > 0, 'insufficient amount');
-        assert(self.has_liquidity(), 'insufficient liquidity');
+        assert(self.has_liquidity(), 'insufficient liquidity 1');
 
         // Get normalized reserve cash amount and item quantity
         let (reserve_amount, reserve_quantity) = self.get_reserves();
@@ -84,7 +120,7 @@ impl MarketImpl of MarketTrait {
     // based on the reserves in the market
     fn quote_amount(self: @Market, quantity: u128) -> u128 {
         assert(quantity > 0, 'insufficient quantity');
-        assert(self.has_liquidity(), 'insufficient liquidity');
+        assert(self.has_liquidity(), 'insufficient liquidity 2');
 
         // Get normalized reserve cash amount and item quantity
         let (reserve_amount, reserve_quantity) = self.get_reserves();
@@ -124,6 +160,7 @@ impl MarketImpl of MarketTrait {
             assert(quantity > 0, 'insufficient quantity');
             (amount, quantity)
         } else {
+            assert(1 != 0, 'not implemented');
             // Given the amount, get optimal quantity to add to the market
             let quantity_optimal = self.quote_quantity(amount);
             if quantity_optimal <= quantity {
@@ -148,12 +185,13 @@ impl MarketImpl of MarketTrait {
     // Returns:
     //
     // (amount, quantity, shares): The amount of cash and quantity of items added to the market and the shares minted
-    fn add_liquidity(self: @Market, amount: u128, quantity: u128) -> (u128, u128, Fixed) {
+    fn add_liquidity(self: @Market, amount: u128, quantity: u128) -> (u128, u128, Fixed, Fixed) {
         // Compute the amount and quantity to add to the market
         let (amount, quantity) = self.add_liquidity_inner(amount, quantity);
         // Mint shares for the given amount of liquidity provided
         let shares = self.mint_shares(amount, quantity);
-        (amount, quantity, shares)
+        let total_shares = *self.total_shares + shares;
+        (amount, quantity, shares, total_shares)
     }
 
     // Mint shares for the given amount of liquidity provided
@@ -191,10 +229,10 @@ impl MarketImpl of MarketTrait {
     // Returns:
     //
     // (amount, quantity): The amount of cash and quantity of items removed from the market
-    fn remove_liquidity(self: @Market, shares: Fixed) -> (u128, u128) {
+    fn remove_liquidity(self: @Market, shares: Fixed) -> (u128, u128, Fixed) {
         // Ensure that the market has liquidity
-        let liquidity = self.liquidity();
-        assert(shares <= liquidity, 'insufficient liquidity');
+        let total_shares = *self.total_shares;
+        assert(shares <= total_shares, 'insufficient liquidity');
 
         // Get normalized reserve cash amount and item quantity
         let (reserve_amount, reserve_quantity) = self.get_reserves();
@@ -205,12 +243,14 @@ impl MarketImpl of MarketTrait {
 
         // Compute the amount and quantity to remove from the market
         // dx = S * X / L
-        let amount = (shares * reserve_amount) / liquidity;
+        let amount = (shares * reserve_amount) / total_shares;
         // dy = S * Y / L
-        let quantity = (shares * reserve_quantity) / liquidity;
+        let quantity = (shares * reserve_quantity) / total_shares;
+
+        let total_shares = *self.total_shares - shares;
 
         // Convert amount and quantity both from fixed point to u128 and unscaled u128, respectively
-        (amount.try_into().unwrap(), quantity.try_into().unwrap())
+        (amount.try_into().unwrap(), quantity.try_into().unwrap(), total_shares)
     }
 }
 
@@ -226,6 +266,8 @@ mod tests {
     // Local imports
 
     use super::{Market, MarketTrait};
+
+    use debug::PrintTrait;
 
     // Constants
 
@@ -243,7 +285,11 @@ mod tests {
     #[should_panic(expected: ('not enough liquidity',))]
     fn test_market_not_enough_quantity() {
         let market = Market {
-            bank_entity_id: 1, resource_type: 1, lords_amount: 1, resource_amount: 1,
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 1,
+            resource_amount: 1,
+            total_shares: FixedTrait::new_unscaled(1, false),
         }; // pool 1:1
         let _cost = market.buy(10);
     }
@@ -251,7 +297,11 @@ mod tests {
     #[test]
     fn test_market_buy() {
         let market = Market {
-            bank_entity_id: 1, resource_type: 1, lords_amount: 1, resource_amount: 10,
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 1,
+            resource_amount: 10,
+            total_shares: FixedTrait::new_unscaled(1, false),
         }; // pool 1:10
         let cost = market.buy(5);
         assert(cost == 1, 'wrong cost');
@@ -260,7 +310,11 @@ mod tests {
     #[test]
     fn test_market_sell() {
         let market = Market {
-            bank_entity_id: 1, resource_type: 1, lords_amount: 10000, resource_amount: 1000,
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 10000,
+            resource_amount: 1000,
+            total_shares: FixedTrait::new_unscaled(1, false),
         }; // pool 10:1
         let payout = market.sell(5);
         assert(payout == 50, 'wrong payout');
@@ -270,12 +324,16 @@ mod tests {
     fn test_market_add_liquidity_no_initial() {
         // Without initial liquidity
         let market = Market {
-            bank_entity_id: 1, resource_type: 1, lords_amount: 0, resource_amount: 0,
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 0,
+            resource_amount: 0,
+            total_shares: FixedTrait::new_unscaled(0, false),
         };
 
         // Add liquidity
         let (amount, quantity) = (5, 5); // pool 1:1
-        let (amount_add, quantity_add, liquidity_add) = market.add_liquidity(amount, quantity);
+        let (amount_add, quantity_add, liquidity_add, _) = market.add_liquidity(amount, quantity);
 
         // Assert that the amount and quantity added are the same as the given amount and quantity
         // and that the liquidity shares minted are the same as the entire liquidity
@@ -293,13 +351,17 @@ mod tests {
     fn test_market_add_liquidity_optimal() {
         // With initial liquidity
         let market = Market {
-            bank_entity_id: 1, resource_type: 1, lords_amount: 1, resource_amount: 10,
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 1,
+            resource_amount: 10,
+            total_shares: FixedTrait::new_unscaled(1, false),
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 
         // Add liquidity with the same ratio
         let (amount, quantity) = (2, 20); // pool 1:10
-        let (amount_add, quantity_add, liquidity_add) = market.add_liquidity(amount, quantity);
+        let (amount_add, quantity_add, liquidity_add, _) = market.add_liquidity(amount, quantity);
 
         // Assert 
         assert(amount_add == amount, 'wrong cash amount');
@@ -320,50 +382,38 @@ mod tests {
     fn test_market_add_liquidity_not_optimal() {
         // With initial liquidity
         let market = Market {
-            bank_entity_id: 1, resource_type: 1, lords_amount: 1, resource_amount: 10,
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 1,
+            resource_amount: 10,
+            total_shares: FixedTrait::new(58333726685869899776, false),
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 
         // Add liquidity without the same ratio
         let (amount, quantity) = (2, 10); // pool 1:5
 
-        let (amount_add, quantity_add, liquidity_add) = market.add_liquidity(amount, quantity);
+        let (amount_add, quantity_add, liquidity_add, total_shares) = market
+            .add_liquidity(amount, quantity);
 
         // Assert that the amount added is optimal even though the
         // amount originally requested was not
         let amount_optimal = 1;
         assert(amount_add == amount_optimal, 'wrong cash amount');
         assert(quantity_add == quantity, 'wrong item quantity');
-
-        // Get expected amount and convert to fixed point
-        let expected_amount = FixedTrait::new_unscaled(1 + amount_add, false);
-        let expected_quantity: u128 = (10 + quantity).into();
-        let expected_quantity = FixedTrait::new_unscaled(expected_quantity, false);
-
-        // Get expecteed liquidity
-        let _expected_liquidity = FixedTrait::sqrt(expected_amount * expected_quantity);
-
-        let _final_liquidity = initial_liquidity + liquidity_add;
-    // assert_precise(expected_liquidity, final_liquidity.into(), 'wrong liquidity', Option::None(()));
+        assert(total_shares.mag == 116667453371739799552, 'wrong total shares');
+        assert(liquidity_add.mag == 58333726685869899776, 'wrong liquidity');
+        assert(initial_liquidity.mag == 58333726685869899776, 'wrong initial liquidity');
     }
-
-    // cannot fail since optimal quantity/amount is calculated
-    // #[test]
-    // #[should_panic(expected: ('insufficient amount',))]
-    // fn test_market_add_liquidity_insufficient_amount() {
-    //     let market = Market {
-    //         bank_entity_id: 1, resource_type: 1, lords_amount: 1, resource_amount: 10,
-    //     }; // pool 1:10
-    //     // Adding 20 items requires 2 cash amount to maintain the ratio
-    //     // Therefore this should fail
-    //     let (_amount_add, _quantity_add, _liquidity_add) = market.add_liquidity(1000000000, 20);
-    // }
 
     #[test]
     fn test_market_remove_liquidity() {
-        // With initial liquidity
         let market = Market {
-            bank_entity_id: 1, resource_type: 1, lords_amount: 2, resource_amount: 20,
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 2,
+            resource_amount: 20,
+            total_shares: FixedTrait::new(116667453371739799552, false),
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 
@@ -371,11 +421,13 @@ mod tests {
         let two = FixedTrait::new_unscaled(2, false);
         let liquidity_remove = initial_liquidity / two;
 
-        let (amount_remove, quantity_remove) = market.remove_liquidity(liquidity_remove);
+        let (amount_remove, quantity_remove, total_shares) = market
+            .remove_liquidity(liquidity_remove);
 
         // Assert that the amount and quantity removed are half of the initial amount and quantity
         assert(amount_remove == 1, 'wrong cash amount');
         assert(quantity_remove == 10, 'wrong item quantity');
+        assert(total_shares.mag == 58333726685869899776, 'wrong total shares');
 
         // Get expected amount and convert to fixed point
         let expected_amount = FixedTrait::new_unscaled(2 - amount_remove, false);
@@ -386,7 +438,6 @@ mod tests {
         let _expected_liquidity = FixedTrait::sqrt(expected_amount * expected_quantity);
 
         let _final_liquidity = initial_liquidity - liquidity_remove;
-    // assert_precise(expected_liquidity, final_liquidity.into(), 'wrong liquidity', Option::None(()));
     }
 
     #[test]
@@ -394,13 +445,17 @@ mod tests {
     fn test_market_remove_liquidity_no_initial() {
         // Without initial liquidity
         let market = Market {
-            bank_entity_id: 1, resource_type: 1, lords_amount: 0, resource_amount: 0,
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 0,
+            resource_amount: 0,
+            total_shares: FixedTrait::new_unscaled(0, false),
         }; // pool 1:10
 
         // Remove liquidity
         let one = FixedTrait::new_unscaled(1, false);
 
-        let (_amount_remove, _quantity_remove) = market.remove_liquidity(one);
+        let (_amount_remove, _quantity_remove, _) = market.remove_liquidity(one);
     }
 
     #[test]
@@ -408,7 +463,11 @@ mod tests {
     fn test_market_remove_liquidity_more_than_available() {
         // With initial liquidity
         let market = Market {
-            bank_entity_id: 1, resource_type: 1, lords_amount: 2, resource_amount: 20,
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 2,
+            resource_amount: 20,
+            total_shares: FixedTrait::new_unscaled(2, false),
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 
@@ -416,6 +475,6 @@ mod tests {
         let two = FixedTrait::new_unscaled(2, false);
         let liquidity_remove = initial_liquidity * two;
 
-        let (_amount_remove, _quantity_remove) = market.remove_liquidity(liquidity_remove);
+        let (_amount_remove, _quantity_remove, _) = market.remove_liquidity(liquidity_remove);
     }
 }
