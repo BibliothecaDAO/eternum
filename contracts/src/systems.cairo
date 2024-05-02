@@ -60,7 +60,7 @@ mod combat {
 
 mod bank {
     mod contracts;
-    // #[cfg(test)]
-    // mod tests;
+    #[cfg(test)]
+    mod tests;
 }
 

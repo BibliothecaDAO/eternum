@@ -30,6 +30,7 @@ mod liquidity_systems {
         ) {
             let player = starknet::get_caller_address();
 
+
             let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
             let bank_account_entity_id = bank_account.entity_id;
             assert(bank_account_entity_id != 0, 'bank account not found');
