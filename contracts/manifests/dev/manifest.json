@@ -1667,8 +1667,8 @@
     {
       "kind": "DojoContract",
       "address": "0x490d8572029a070064c52d09d2fdb4d5a538bd26f723abfcdeeaff38e47dfeb",
-      "class_hash": "0x463a9d1317e135129c0e5f6a3222df879a1f2157cab805f4e0bff26d1cf9a90",
-      "original_class_hash": "0x463a9d1317e135129c0e5f6a3222df879a1f2157cab805f4e0bff26d1cf9a90",
+      "class_hash": "0x34ad007ab60ed766fbff4f14558344c8f475e78d62da5153df528d666ee3c92",
+      "original_class_hash": "0x34ad007ab60ed766fbff4f14558344c8f475e78d62da5153df528d666ee3c92",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -7186,22 +7186,22 @@
         },
         {
           "name": "attack_army",
-          "type": "Army",
+          "type": "BattleArmy",
           "key": false
         },
         {
           "name": "defence_army",
-          "type": "Army",
+          "type": "BattleArmy",
           "key": false
         },
         {
           "name": "attack_army_health",
-          "type": "Health",
+          "type": "BattleHealth",
           "key": false
         },
         {
           "name": "defence_army_health",
-          "type": "Health",
+          "type": "BattleHealth",
           "key": false
         },
         {
@@ -7225,8 +7225,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x27ee4bfec63fb0f46883fefa0eb04140472b2ae7368e7489ba99c01151edc73",
-      "original_class_hash": "0x27ee4bfec63fb0f46883fefa0eb04140472b2ae7368e7489ba99c01151edc73",
+      "class_hash": "0x1865f3d58fa32f36b9c8e80e11f6fd3eb1598ab1e20de1c963fece5c1947e57",
+      "original_class_hash": "0x1865f3d58fa32f36b9c8e80e11f6fd3eb1598ab1e20de1c963fece5c1947e57",
       "abi": [
         {
           "type": "impl",
@@ -7439,12 +7439,8 @@
         },
         {
           "type": "struct",
-          "name": "eternum::models::combat::Army",
+          "name": "eternum::models::combat::BattleArmy",
           "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
             {
               "name": "troops",
               "type": "eternum::models::combat::Troops"
@@ -7461,12 +7457,8 @@
         },
         {
           "type": "struct",
-          "name": "eternum::models::combat::Health",
+          "name": "eternum::models::combat::BattleHealth",
           "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
             {
               "name": "current",
               "type": "core::integer::u128"
@@ -7487,19 +7479,19 @@
             },
             {
               "name": "attack_army",
-              "type": "eternum::models::combat::Army"
+              "type": "eternum::models::combat::BattleArmy"
             },
             {
               "name": "defence_army",
-              "type": "eternum::models::combat::Army"
+              "type": "eternum::models::combat::BattleArmy"
             },
             {
               "name": "attack_army_health",
-              "type": "eternum::models::combat::Health"
+              "type": "eternum::models::combat::BattleHealth"
             },
             {
               "name": "defence_army_health",
-              "type": "eternum::models::combat::Health"
+              "type": "eternum::models::combat::BattleHealth"
             },
             {
               "name": "attack_delta",

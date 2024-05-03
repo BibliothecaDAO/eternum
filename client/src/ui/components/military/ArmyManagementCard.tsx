@@ -12,6 +12,19 @@ import useUIStore from "@/hooks/store/useUIStore";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { getComponentValue } from "@dojoengine/recs";
 import { formatSecondsInHoursMinutes } from "../cityview/realm/labor/laborUtils";
+import { useLocation } from "wouter";
+import { RealmSelect, RealmsListComponent } from "../worldmap/realms/RealmsListComponent";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/ui/elements/Select";
+import { useGetRealms } from "@/hooks/helpers/useRealm";
+import useRealmStore from "@/hooks/store/useRealmStore";
 
 export const nameMapping: { [key: number]: string } = {
   [ResourcesIds.Knight]: "Knight",
@@ -157,6 +170,20 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
     },
   ];
 
+  const [location, setLocation] = useLocation();
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+
+  const [travelLocation, setTravelLocation] = useState({ x: 0, y: 0 });
+
+  const realms = useGetRealms();
+
+  const handleSetTravelLocation = (realmId: string) => {
+    const realm = realms.find((realm) => realm.entity_id.toString() === realmId);
+    if (realm) {
+      setTravelLocation({ x: realm.position.x, y: realm.position.y });
+    }
+  };
+
   return (
     <div className="flex flex-col">
       <div className="flex justify-between border-b py-2">
@@ -188,7 +215,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
             </Button>
           </div>
         ) : (
-          <h3>Army - {name ? shortString.decodeShortString(name.name.toString()) : "Army"}</h3>
+          <h3>{name ? shortString.decodeShortString(name.name.toString()) : "Army"}</h3>
         )}
         <Button size="xs" variant="outline" onClick={() => setEditName(!editName)}>
           edit name
@@ -202,7 +229,28 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
             : position
             ? `(x:${position.x.toLocaleString()}, y: ${position.y.toLocaleString()})`
             : "Unknown"}
-          <Button variant="outline" onClick={() => moveCameraToColRow(position.x, position.y, 1.5)}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (location !== "/map") {
+                setIsLoadingScreenEnabled(true);
+                setTimeout(() => {
+                  setLocation("/map");
+                  if (position.x !== 0 && position.y !== 0) {
+                    moveCameraToColRow(position.x, position.y, 0.01, true);
+                    setTimeout(() => {
+                      moveCameraToColRow(position.x, position.y, 1.5);
+                    }, 10);
+                  }
+                }, 100);
+              } else {
+                if (position.x !== 0 && position.y !== 0) {
+                  moveCameraToColRow(position.x, position.y);
+                }
+              }
+              moveCameraToColRow(position.x, position.y, 1.5);
+            }}
+          >
             <span> view on map</span>
           </Button>
         </div>
@@ -235,17 +283,54 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
         </div>
       </div>
 
-      <div>
-        <div className="my-2 uppercase mb-1 font-bold">Status:</div>
-        {arrivalTime && isTraveling && nextBlockTimestamp ? (
-          <div className="flex ml-auto -mt-2 italic ">
-            Traveling for{" "}
-            {isPassiveTravel
-              ? formatSecondsInHoursMinutes(arrivalTime?.arrives_at - nextBlockTimestamp)
-              : "Arrives Next Tick"}
+      <div className="flex justify-between">
+        <div>
+          <div className="my-2 uppercase mb-1 font-bold">Status:</div>
+          {arrivalTime && isTraveling && nextBlockTimestamp ? (
+            <div className="flex ml-auto -mt-2 italic ">
+              Traveling for{" "}
+              {isPassiveTravel
+                ? formatSecondsInHoursMinutes(arrivalTime?.arrives_at - nextBlockTimestamp)
+                : "Arrives Next Tick"}
+            </div>
+          ) : (
+            "Idle"
+          )}
+        </div>
+        {!isTraveling && (
+          <div className="self-center">
+            <div className="flex">
+              <Select onValueChange={(value) => handleSetTravelLocation(value)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select a Realm" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {realms.map((realm) => {
+                      return (
+                        <SelectItem key={realm.entity_id} value={realm.entity_id.toString()}>
+                          {realm.name}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={() =>
+                  travel({
+                    signer: account,
+                    travelling_entity_id: entity.entity_id,
+                    destination_coord_x: travelLocation.x,
+                    destination_coord_y: travelLocation.y,
+                  })
+                }
+                variant="outline"
+              >
+                Travel
+              </Button>
+            </div>
           </div>
-        ) : (
-          "Idle"
         )}
       </div>
 
