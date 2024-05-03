@@ -48,7 +48,8 @@ mod combat_systems {
     use eternum::models::{
         combat::{
             Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait,
-            Battle, BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait
+            Battle, BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait,
+            BattleHealthTrait
         },
     };
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
@@ -292,10 +293,10 @@ mod combat_systems {
             let tick = TickImpl::get(world);
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;
-            battle.attack_army = attacking_army;
-            battle.defence_army = defending_army;
-            battle.attack_army_health = attacking_army_health;
-            battle.defence_army_health = defending_army_health;
+            battle.attack_army = attacking_army.into();
+            battle.defence_army = defending_army.into();
+            battle.attack_army_health = attacking_army_health.into();
+            battle.defence_army_health = defending_army_health.into();
             battle.tick_last_updated = tick.current();
 
             // set battle position 
