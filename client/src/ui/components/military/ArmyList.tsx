@@ -1,12 +1,12 @@
 import { EntityList } from "../list/EntityList";
 import { useEntityArmies, usePositionArmies } from "@/hooks/helpers/useArmies";
-
 import { InventoryResources } from "../resources/InventoryResources";
 import { Position } from "@bibliothecadao/eternum";
-import { ArmyCard } from "./ArmyCard";
+import { ArmyManagementCard } from "./ArmyManagementCard";
 import { useDojo } from "@/hooks/context/DojoContext";
 import React, { useState } from "react";
 import Button from "@/ui/elements/Button";
+import { ArmyViewCard } from "./ArmyViewCard";
 
 export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
@@ -64,7 +64,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
         title="armies"
         panel={({ entity }) => (
           <React.Fragment key={entity.entity_id}>
-            <ArmyCard owner_entity={entity_id?.entity_id} entity={entity} />
+            <ArmyManagementCard owner_entity={entity_id?.entity_id} entity={entity} />
             <InventoryResources entityId={entity.entity_id} />
           </React.Fragment>
         )}
@@ -74,18 +74,22 @@ export const EntityArmyList = ({ entity_id }: any) => {
 };
 
 export const PositionArmyList = ({ position }: { position: Position }) => {
-  const { positionArmies } = usePositionArmies({ position });
+  const { positionArmies, userArmies } = usePositionArmies({ position });
 
   return (
-    <EntityList
-      list={positionArmies()}
-      title="armies at position"
-      panel={({ entity }) => (
-        <React.Fragment key={entity.entity_id}>
-          <ArmyCard entity={entity} />
-          <InventoryResources entityId={entity.entity_id} />
-        </React.Fragment>
-      )}
-    />
+    <div>
+      <h4 className="uppercase">Your Armies</h4>
+      <div className="grid grid-cols-3">
+        {userArmies.map((entity, index) => (
+          <ArmyViewCard key={index} army={entity} />
+        ))}
+      </div>
+      <h4 className="uppercase">All Armies</h4>
+      <div className="grid grid-cols-3">
+        {positionArmies.map((entity, index) => (
+          <ArmyViewCard key={index} army={entity} />
+        ))}
+      </div>
+    </div>
   );
 };

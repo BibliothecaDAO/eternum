@@ -9,13 +9,13 @@ import { useComponentValue } from "@dojoengine/react";
 import { shortString } from "starknet";
 import { NumberInput } from "@/ui/elements/NumberInput";
 
-const nameMapping: { [key: number]: string } = {
+export const nameMapping: { [key: number]: string } = {
   [ResourcesIds.Knight]: "Knight",
   [ResourcesIds.Crossbowmen]: "Crossbowman",
   [ResourcesIds.Paladin]: "Paladin",
 };
 
-export const ArmyCard = ({ owner_entity, entity }: any) => {
+export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
   const {
     account: { account },
     network: { provider },

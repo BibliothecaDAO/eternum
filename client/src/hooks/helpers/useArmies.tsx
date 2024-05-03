@@ -1,13 +1,24 @@
 import { useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../context/DojoContext";
-import { Component, Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { Component, Entity, Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { Position } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
+import { useMemo } from "react";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { ClientComponents } from "@/dojo/createClientComponents";
 
-const formatArmies = (armies: any[], Army: Component, Name: Component) => {
+const formatArmies = (
+  armies: Entity[],
+  Army: Component,
+  Name: Component,
+): (ClientComponents["Army"]["schema"] & {
+  name: string;
+})[] => {
   return armies.map((id) => {
-    const army = getComponentValue(Army, id);
-    const name = getComponentValue(Name, id);
+    const army = getComponentValue(Army, id) as ClientComponents["Army"]["schema"];
+    const name = getComponentValue(Name, id) as {
+      name: string;
+    };
     return { ...army, name: name ? shortString.decodeShortString(name.name.toString()) : `Army ${army?.entity_id}` };
   });
 };
@@ -30,14 +41,39 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
   {
     const {
       setup: {
-        components: { Army, Position, EntityName },
+        components: { Army, Position, EntityName, EntityOwner, Owner },
       },
+      account: { account },
     } = useDojo();
 
-    const armies = useEntityQuery([Has(Army), HasValue(Position, position)]);
+    const allArmiesAtPosition = useEntityQuery([Has(Army), HasValue(Position, position)]);
+
+    const allArmies = useMemo(() => {
+      return formatArmies(allArmiesAtPosition, Army, EntityName);
+    }, [allArmiesAtPosition]);
+
+    const userArmies = useMemo(() => {
+      return allArmies.filter((army: any) => {
+        const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([army?.entity_id || 0n]));
+        const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+
+        return owner?.address === BigInt(account.address);
+      });
+    }, [allArmies]);
+
+    const enemyArmies = useMemo(() => {
+      return allArmies.filter((army: any) => {
+        const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([army?.entity_id || 0n]));
+        const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+
+        return owner?.address !== BigInt(account.address);
+      });
+    }, [allArmies]);
 
     return {
-      positionArmies: () => formatArmies(armies, Army, EntityName),
+      allArmies,
+      enemyArmies,
+      userArmies,
     };
   }
 };

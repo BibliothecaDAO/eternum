@@ -1,21 +1,63 @@
+import useUIStore from "@/hooks/store/useUIStore";
+import { PositionArmyList } from "./ArmyList";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useStructuresPosition } from "@/hooks/helpers/useStructures";
+import { usePositionArmies } from "@/hooks/helpers/useArmies";
+import { ArmyViewCard } from "./ArmyViewCard";
+import { RealmViewCard } from "../structures/RealmViewCard";
+import Button from "@/ui/elements/Button";
+
 export const Battle = () => {
+  const clickedHex = useUIStore((state) => state.clickedHex);
+  const { col: x, row: y } = clickedHex!.contractPos;
+
+  const {
+    account: { account },
+    network: { provider },
+    setup: {
+      systemCalls: { create_army, army_buy_troops },
+    },
+  } = useDojo();
+
+  const { formattedRealmsAtPosition } = useStructuresPosition({ position: { x, y } });
+  const { allArmies, userArmies } = usePositionArmies({ position: { x, y } });
+
+  console.log(userArmies);
+
   return (
     <div className="p-2">
-      <BattleStatusBar
+      {/* <BattleStatusBar
         healthArmyOne={1000}
         healthArmyTwo={800}
         damagePerSecondArmyOne={50}
         damagePerSecondArmyTwo={30}
-      />
-
-      <div className="p-4 flex justify-between">
-        <div>
-          <h5>Defending Armies</h5>
-        </div>
-        <div>
-          <h5>Attacking Armies</h5>
-        </div>
+      /> */}
+      {/* <h4>Your Armies</h4>
+      <div className="grid grid-cols-3">
+        {userArmies.map((entity, index) => (
+          <ArmyViewCard key={index} army={entity} />
+        ))}
       </div>
+      <h4>All Armies</h4>
+      <div className="grid grid-cols-3">
+        {allArmies.map((entity, index) => (
+          <ArmyViewCard key={index} army={entity} />
+        ))}
+      </div> */}
+      {formattedRealmsAtPosition.length > 0 && (
+        <div className="grid grid-cols-3">
+          {formattedRealmsAtPosition.map((entity, index) => (
+            <RealmViewCard
+              onPillage={() =>
+                provider.battle_start({ signer: account, attacking_army_id: 43n, defending_army_id: 95n })
+              }
+              onSiege={() => provider.battle_pillage({ signer: account, army_id: 43n, structure_id: entity.entity_id })}
+              key={index}
+              realm={entity}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

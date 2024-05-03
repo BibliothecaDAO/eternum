@@ -2,6 +2,8 @@
 
 import { defineComponent, Type as RecsType, World } from "@dojoengine/recs";
 
+export type ContractComponents = ReturnType<typeof defineContractComponents>;
+
 export function defineContractComponents(world: World) {
   return {
     Production: (() => {

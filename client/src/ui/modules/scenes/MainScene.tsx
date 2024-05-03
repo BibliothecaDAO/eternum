@@ -140,7 +140,7 @@ export const MainScene = () => {
         logarithmicDepthBuffer: true,
       }}
     >
-      {import.meta.env.DEV && (
+      {import.meta.env.VITE_PUBLIC_GRAPHICS_DEV === "true" && (
         <>
           <Stats />
           <Perf position="bottom-left" />

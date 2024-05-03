@@ -6,8 +6,6 @@ import { useEntities } from "@/hooks/helpers/useEntities";
 import { Battle } from "../../military/Battle";
 import { PositionArmyList } from "../../military/ArmyList";
 
-const CommercePanel = () => <div className="p-2">Commerce</div>;
-
 const BuildPanel = ({ playerRealms }: { playerRealms: () => any }) => (
   <EntityList
     list={playerRealms()}
@@ -18,17 +16,11 @@ const BuildPanel = ({ playerRealms }: { playerRealms: () => any }) => (
 
 export const HexagonInformationPanel = () => {
   const [openPanel, setOpenPanel] = useState<string | null>(null);
-  const clickedHex = useUIStore((state) => state.clickedHex);
-
   const { playerRealms } = useEntities();
 
-  const { col: x, row: y } = clickedHex!.contractPos;
-
   const panels = [
-    { key: "entities", title: "Armies at Location", content: <PositionArmyList position={{ x, y }} /> },
-    { key: "build", title: "Improve Location", content: <BuildPanel playerRealms={playerRealms} /> },
-    { key: "combat", title: "Battles at Location", content: <Battle /> },
-    // { key: "entities", title: "Commerce", content: <CommercePanel /> },
+    { key: "build", title: "Build", content: <BuildPanel playerRealms={playerRealms} /> },
+    { key: "combat", title: "Combat", content: <Battle /> },
   ];
 
   const togglePanel = (key: string) => {
