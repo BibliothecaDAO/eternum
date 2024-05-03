@@ -1,6 +1,7 @@
 import useUIStore from "../../../hooks/store/useUIStore";
 import { OSWindow } from "../../components/navigation/OSWindow";
 import { leaderboard } from "../../components/navigation/Config";
+import { LeaderboardPanel } from "@/ui/components/worldmap/leaderboard/LeaderboardPanel";
 
 export const Leaderboard = () => {
   const { togglePopup } = useUIStore();
@@ -10,7 +11,7 @@ export const Leaderboard = () => {
   return (
     <OSWindow onClick={() => togglePopup(leaderboard)} show={isOpen} title={leaderboard}>
       {/* COMPONENTS GO HERE */}
-      hello
+      <LeaderboardPanel />
     </OSWindow>
   );
 };
