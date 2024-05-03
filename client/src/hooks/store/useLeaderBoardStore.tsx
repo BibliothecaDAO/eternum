@@ -5,115 +5,119 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import { useGetRealms, useRealm } from "../helpers/useRealm";
 import { useEffect } from "react";
-import useRealmStore from "./useRealmStore";
-import { getRealmOrderNameById } from "../../ui/utils/realms";
+import { useEntities } from "../helpers/useEntities";
 
-export interface RealmLordsLeaderboardInterface {
+export interface PlayerResourceLeaderboardInterface {
   address: string;
   addressName: string;
   order: string;
-  totalLords: number;
+  totalResources: number;
   isYours: boolean;
 }
 
-export interface OrderLordsLeaderboardInterface {
+export interface OrderResourceLeaderboardInterface {
   order: string;
   realmCount: number;
-  totalLords: number;
+  totalResources: number;
   isYours: boolean;
 }
 
 interface LeaderboardStore {
   loading: boolean;
   setLoading: (loading: boolean) => void;
-  realmLordsLeaderboard: RealmLordsLeaderboardInterface[];
-  orderLordsLeaderboard: OrderLordsLeaderboardInterface[];
-  setLordsLeaderboards: (
-    realmLordsLeaderboard: RealmLordsLeaderboardInterface[],
-    orderLordsLeaderboard: OrderLordsLeaderboardInterface[],
+  playerResourceLeaderboard: PlayerResourceLeaderboardInterface[];
+  orderResourceLeaderboard: OrderResourceLeaderboardInterface[];
+  setResourceLeaderboards: (
+    playerResourceLeaderboard: PlayerResourceLeaderboardInterface[],
+    orderResourceLeaderboard: OrderResourceLeaderboardInterface[],
   ) => void;
 }
 
 const useLeaderBoardStore = create<LeaderboardStore>((set) => {
   return {
     loading: false,
-    realmLordsLeaderboard: [],
-    orderLordsLeaderboard: [],
-    setLordsLeaderboards: (
-      realmLordsLeaderboard: RealmLordsLeaderboardInterface[],
-      orderLordsLeaderboard: OrderLordsLeaderboardInterface[],
-    ) => set({ realmLordsLeaderboard, orderLordsLeaderboard }),
+    playerResourceLeaderboard: [],
+    orderResourceLeaderboard: [],
+    setResourceLeaderboards: (
+      playermResourceLeaderboard: PlayerResourceLeaderboardInterface[],
+      orderResourceLeaderboard: OrderResourceLeaderboardInterface[],
+    ) => set({ playerResourceLeaderboard: playermResourceLeaderboard, orderResourceLeaderboard }),
     setLoading: (loading) => set({ loading }),
   };
 });
 
-export const useComputeLordsLeaderboards = () => {
+export const useComputeResourceLeaderboards = (resourceId: bigint) => {
   const {
     account: { account },
     setup: {
-      components: { Resource },
+      components: { Resource, Realm },
     },
   } = useDojo();
 
-  const { setLordsLeaderboards } = useLeaderBoardStore();
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+  const { setResourceLeaderboards } = useLeaderBoardStore();
+  const { playerRealms } = useEntities();
 
   const { getAddressName } = useRealm();
 
+  // todo: do entities like bank accounts as well
   const realms = useGetRealms();
 
   useEffect(() => {
-    // todo: add player order to the useRealmStore
-    const playerOrder = getRealmOrderNameById(realmEntityIds[0].realmId);
+    const playerOrder = getOrderName(
+      getComponentValue(Realm, getEntityIdFromKeys([playerRealms()[0]?.entity_id || 0n]))?.order || 0,
+    );
 
-    const realmLordsLeaderboard: RealmLordsLeaderboardInterface[] = [];
-    const orderLordsLeaderboard: Record<string, OrderLordsLeaderboardInterface> = {};
+    const playerResourceLeaderboard: PlayerResourceLeaderboardInterface[] = [];
+    const orderResourceLeaderboard: Record<string, OrderResourceLeaderboardInterface> = {};
     orders
-      // don't include order of the gods
       .filter((order) => order.orderId !== 17)
       .forEach((order) => {
         const isYours = order.orderName.toLowerCase() === playerOrder;
-        orderLordsLeaderboard[order.orderName] = {
+        orderResourceLeaderboard[order.orderName] = {
           order: order.orderName,
           realmCount: 0,
-          totalLords: 0,
+          totalResources: 0,
           isYours,
         };
       });
 
     for (const realm of realms) {
-      const lordsAmounts = getComponentValue(Resource, getEntityIdFromKeys([realm.entity_id, 253n]));
-      if (lordsAmounts && lordsAmounts?.balance > 100000000) continue;
+      const owner = "0x" + realm.owner?.toString(16) || "0x0";
+      const resourceAmounts = getComponentValue(Resource, getEntityIdFromKeys([realm.entity_id, resourceId]));
+      if (resourceAmounts && resourceAmounts?.balance > 100000000) continue;
       let order = getOrderName(realm.order);
-      let owner = "0x" + realm.owner?.toString(16) || "0x0";
       const isYours = account.address === owner;
-      realmLordsLeaderboard.push({
-        address: owner,
-        addressName: getAddressName(owner) || "",
-        order,
-        totalLords: Number(lordsAmounts?.balance) || 0,
-        isYours,
-      });
+      const existingEntryIndex = playerResourceLeaderboard.findIndex((entry) => entry.address === owner);
+      if (existingEntryIndex !== -1) {
+        playerResourceLeaderboard[existingEntryIndex].totalResources += Number(resourceAmounts?.balance) || 0;
+      } else {
+        playerResourceLeaderboard.push({
+          address: owner,
+          addressName: getAddressName(owner) || "",
+          order,
+          totalResources: Number(resourceAmounts?.balance) || 0,
+          isYours,
+        });
+      }
 
-      if (!orderLordsLeaderboard[order]) {
-        orderLordsLeaderboard[order] = {
+      if (!orderResourceLeaderboard[order]) {
+        orderResourceLeaderboard[order] = {
           order,
           realmCount: 1,
-          totalLords: Number(lordsAmounts?.balance) || 0,
+          totalResources: Number(resourceAmounts?.balance) || 0,
           isYours: order === playerOrder,
         };
       } else {
-        orderLordsLeaderboard[order].realmCount++;
-        orderLordsLeaderboard[order].totalLords += Number(lordsAmounts?.balance) || 0;
+        orderResourceLeaderboard[order].realmCount++;
+        orderResourceLeaderboard[order].totalResources += Number(resourceAmounts?.balance) || 0;
       }
     }
 
-    // sort by total lords
-    setLordsLeaderboards(
-      realmLordsLeaderboard.sort((a, b) => b.totalLords - a.totalLords),
-      Object.values(orderLordsLeaderboard).sort((a, b) => b.totalLords - a.totalLords),
+    setResourceLeaderboards(
+      playerResourceLeaderboard.sort((a, b) => b.totalResources - a.totalResources),
+      Object.values(orderResourceLeaderboard).sort((a, b) => b.totalResources - a.totalResources),
     );
-  }, []);
+  }, [resourceId]);
 };
 
 export default useLeaderBoardStore;

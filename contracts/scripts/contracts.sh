@@ -24,7 +24,7 @@ export TRAVEL_SYSTEMS=$(get_contract_address "eternum::systems::transport::contr
 
 export REALM_SYSTEMS=$(get_contract_address "eternum::systems::realm::contracts::realm_systems")
 
-export DEV_RESOURCE_SYSTEMS=$(get_contract_address "eternum::systems::test::contracts::resource::dev_resource_systems")
+export DEV_RESOURCE_SYSTEMS=$(get_contract_address "eternum::systems::dev::contracts::resource::dev_resource_systems")
 
 export COMBAT_SYSTEMS=$(get_contract_address "eternum::systems::combat::contracts::combat_systems")
 
@@ -43,6 +43,8 @@ export HYPERSTRUCTURE_SYSTEMS=$(get_contract_address "eternum::systems::hyperstr
 export BUILDINGS_SYSTEMS=$(get_contract_address "eternum::systems::buildings::contracts::building_systems")
 
 export MAP_SYSTEMS=$(get_contract_address "eternum::systems::map::contracts::map_systems")
+
+export DEV_BANK_SYSTEMS=$(get_contract_address "eternum::systems::dev::contracts::bank::dev_bank_systems")
 
 # Display the addresses
 echo "-------------------------ADDRESS----------------------------------------"
@@ -64,3 +66,4 @@ echo liquidity : $LIQUIDITY_SYSTEMS
 echo hyperstructure : $HYPERSTRUCTURE_SYSTEMS
 echo buildings : $BUILDINGS_SYSTEMS
 echo maps : $MAP_SYSTEMS
+echo test_bank : $DEV_BANK_SYSTEMS

@@ -93,6 +93,18 @@ name = "eternum::systems::config::contracts::config_systems"
 
 [[contracts]]
 kind = "DojoContract"
+address = "0x4da2fbfc66a9f68f5913608c995d3fe09f77c64df2ed02581cc0d7244ae5d2c"
+class_hash = "0xf9fbe9e169d49d8802092f92d28930f4eb1a2e88797dc4eb02b1aabfcab53c"
+original_class_hash = "0xf9fbe9e169d49d8802092f92d28930f4eb1a2e88797dc4eb02b1aabfcab53c"
+base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
+abi = "abis/deployments/contracts/eternum_systems_dev_contracts_bank_dev_bank_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::dev::contracts::bank::dev_bank_systems"
+
+[[contracts]]
+kind = "DojoContract"
 address = "0x46e69866d66b367ddcfd41a1d8262736478e71562f7798907f581dfb9657f31"
 class_hash = "0x1f563bca4987876576a1c95adec9a9d6e349dc466d50f4f35121fb7af24d5cd"
 original_class_hash = "0x1f563bca4987876576a1c95adec9a9d6e349dc466d50f4f35121fb7af24d5cd"
