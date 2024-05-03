@@ -14,7 +14,7 @@ export const OrdersLeaderboard = () => {
 
   const [loading, _] = useState(false);
 
-  const orderLordsLeaderboard = useLeaderBoardStore((state) => state.orderLordsLeaderboard);
+  const orderResourceLeaderboard = useLeaderBoardStore((state) => state.orderResourceLeaderboard);
 
   const sortingParams = useMemo(() => {
     return [
@@ -22,7 +22,7 @@ export const OrdersLeaderboard = () => {
       { label: "Order", sortKey: "order", className: "ml-4" },
       { label: "Name", sortKey: "name", className: "ml-6" },
       { label: "Realm Count", sortKey: "count", className: "ml-6" },
-      { label: "Total Lords", sortKey: "total_lords", className: "ml-auto mr-4" },
+      { label: "Total Shards", sortKey: "total_resources", className: "ml-auto mr-4" },
     ];
   }, []);
 
@@ -51,6 +51,7 @@ export const OrdersLeaderboard = () => {
         ))}
         {!loading && (
           <Refresh
+            height={15}
             onClick={() => {}}
             onMouseLeave={() => setTooltip(null)}
             onMouseEnter={() =>
@@ -69,31 +70,33 @@ export const OrdersLeaderboard = () => {
       </SortPanel>
       {!loading && (
         <div className="flex flex-col p-2 space-y-2  overflow-y-auto">
-          {orderLordsLeaderboard.map(({ order, realmCount, totalLords, isYours }, i) => {
-            return (
-              <div
-                key={i}
-                className={`flex flex-col p-2 border ${
-                  isYours ? "border-order-brilliance" : ""
-                } rounded-md text-xxs text-gold`}
-              >
-                <div className="flex items-center justify-between text-xxs">
-                  <div className="flex-none mr-5">{`#${i + 1}`}</div>
-                  <div className="flex-none w-10">
-                    <OrderIcon order={order} size="xs" />
-                  </div>
-                  <div className="flex-none w-20">{order}</div>
+          {orderResourceLeaderboard
+            .filter((row) => row.totalResources !== 0)
+            .map(({ order, realmCount, totalResources, isYours }, i) => {
+              return (
+                <div
+                  key={i}
+                  className={`flex flex-col p-2 border ${
+                    isYours ? "border-order-brilliance" : ""
+                  } rounded-md text-xxs text-gold`}
+                >
+                  <div className="flex items-center justify-between text-xxs">
+                    <div className="flex-none mr-5">{`#${i + 1}`}</div>
+                    <div className="flex-none w-10">
+                      <OrderIcon order={order} size="xs" />
+                    </div>
+                    <div className="flex-none w-20">{order}</div>
 
-                  <div className="flex-none w-20">{realmCount}</div>
+                    <div className="flex-none w-20">{realmCount}</div>
 
-                  <div className="flex-none w-16 text-left mr-2 flex flex-cols">
-                    <div> {currencyFormat(totalLords, 0)}</div>
-                    <ResourceIcon resource="Lords" size="xs"></ResourceIcon>
+                    <div className="flex-none w-16 text-left mr-2 flex flex-cols">
+                      <div> {currencyFormat(totalResources, 0)}</div>
+                      <ResourceIcon resource="Resource" size="xs"></ResourceIcon>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       )}
       {loading && (

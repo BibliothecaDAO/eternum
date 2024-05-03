@@ -1,13 +1,19 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
-import { RealmsLeaderboard } from "./RealmsLeaderboard";
-import { useComputeLordsLeaderboards } from "../../../../hooks/store/useLeaderBoardStore";
+import { useComputeResourceLeaderboards } from "../../../../hooks/store/useLeaderBoardStore";
 import { OrdersLeaderboard } from "./OrdersLeaderboard";
+import { ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { PlayersLeaderboard } from "./PlayersLeaderboard";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+
+const LEADERBOARD_RESOURCE_TYPE = ResourcesIds.Earthenshard;
 
 export const LeaderboardPanel = () => {
   const [selectedTab, setSelectedTab] = useState(0);
 
-  useComputeLordsLeaderboards();
+  const resourceName = resources.find((r) => r.id === LEADERBOARD_RESOURCE_TYPE)?.trait;
+
+  useComputeResourceLeaderboards(BigInt(LEADERBOARD_RESOURCE_TYPE));
 
   const tabs = useMemo(
     () => [
@@ -15,10 +21,10 @@ export const LeaderboardPanel = () => {
         key: "leaderboard",
         label: (
           <div className="flex group relative flex-col items-center">
-            <div>Realms</div>
+            <div>Players</div>
           </div>
         ),
-        component: <RealmsLeaderboard />,
+        component: <PlayersLeaderboard />,
       },
       {
         key: "leaderboard",
@@ -35,6 +41,10 @@ export const LeaderboardPanel = () => {
 
   return (
     <>
+      <div className="flex mt-2">
+        {resourceName && <ResourceIcon size="md" resource={resourceName} />}
+        <div className="text-xs">{resourceName} Leaderboard</div>
+      </div>
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => setSelectedTab(index)}
