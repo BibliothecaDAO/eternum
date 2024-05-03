@@ -1,25 +1,31 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { currencyFormat } from "@/ui/utils/utils";
 
-export const ArmyViewCard = ({ army }: { army: ClientComponents["Army"]["schema"] & { name: string } }) => {
-  const {
-    account: { account },
-    network: { provider },
-    setup: {
-      systemCalls: { create_army, army_buy_troops },
-    },
-  } = useDojo();
-
+export const ArmyViewCard = ({
+  army,
+  onClick,
+  active,
+}: {
+  army: ClientComponents["Army"]["schema"] & { name: string };
+  onClick: (entityId: string) => void;
+  active?: boolean;
+}) => {
   return (
-    <div className="border p-2">
+    <div
+      onClick={() => onClick(army.entity_id.toString())}
+      className={` p-2 hover:bg-gold hover:text-brown border border-transparent ${
+        active ? "bg-gold text-brown animate-pulse" : ""
+      }`}
+    >
       <h5>{army.name}</h5>
       <hr />
       <div>{army.battle_id ? army.battle_id : "No battle"}</div>
 
       <div>Battle:{army.battle_side ? army.battle_side : "idle"}</div>
-      <div>Crossbowman: {army.troops.crossbowman_count}</div>
-      <div>Knightcount: {army.troops.knight_count}</div>
-      <div>Paladincount: {army.troops.paladin_count}</div>
+      <div>Crossbowman: {currencyFormat(army.troops.crossbowman_count, 0)}</div>
+      <div>Knights: {currencyFormat(army.troops.knight_count, 0)}</div>
+      <div>Paladins: {currencyFormat(army.troops.paladin_count, 0)}</div>
     </div>
   );
 };

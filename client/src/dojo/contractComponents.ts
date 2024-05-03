@@ -145,7 +145,6 @@ export function defineContractComponents(world: World) {
         {
           entity_id: RecsType.BigInt,
           attack_army: {
-            entity_id: RecsType.BigInt,
             troops: {
               knight_count: RecsType.Number,
               paladin_count: RecsType.Number,
@@ -155,7 +154,6 @@ export function defineContractComponents(world: World) {
             battle_side: RecsType.Number,
           },
           defence_army: {
-            entity_id: RecsType.BigInt,
             troops: {
               knight_count: RecsType.Number,
               paladin_count: RecsType.Number,
@@ -164,8 +162,8 @@ export function defineContractComponents(world: World) {
             battle_id: RecsType.BigInt,
             battle_side: RecsType.Number,
           },
-          attack_army_health: { entity_id: RecsType.BigInt, current: RecsType.BigInt, lifetime: RecsType.BigInt },
-          defence_army_health: { entity_id: RecsType.BigInt, current: RecsType.BigInt, lifetime: RecsType.BigInt },
+          attack_army_health: { current: RecsType.BigInt, lifetime: RecsType.BigInt },
+          defence_army_health: { current: RecsType.BigInt, lifetime: RecsType.BigInt },
           attack_delta: RecsType.Number,
           defence_delta: RecsType.Number,
           tick_last_updated: RecsType.BigInt,
@@ -176,20 +174,16 @@ export function defineContractComponents(world: World) {
             name: "Battle",
             types: [
               "u128",
-              "u128",
               "u32",
               "u32",
               "u32",
               "u128",
               "enum",
-              "u128",
               "u32",
               "u32",
               "u32",
               "u128",
               "enum",
-              "u128",
-              "u128",
               "u128",
               "u128",
               "u128",
@@ -199,7 +193,16 @@ export function defineContractComponents(world: World) {
               "u64",
               "u64",
             ],
-            customTypes: ["Army", "Troops", "BattleSide", "Army", "Troops", "BattleSide", "Health", "Health"],
+            customTypes: [
+              "BattleArmy",
+              "Troops",
+              "BattleSide",
+              "BattleArmy",
+              "Troops",
+              "BattleSide",
+              "BattleHealth",
+              "BattleHealth",
+            ],
           },
         },
       );

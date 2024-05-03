@@ -31,8 +31,9 @@ export const useStructures = () => {
 export const useStructuresPosition = ({ position }: { position: Position }) => {
   const {
     setup: {
-      components: { Position, Bank, Realm },
+      components: { Position, Bank, Realm, EntityOwner, Owner },
     },
+    account: { account },
   } = useDojo();
 
   const realmsAtPosition = useEntityQuery([HasValue(Position, position), Has(Realm)]);
@@ -41,7 +42,10 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
   const formattedRealmsAtPosition = useMemo(() => {
     return realmsAtPosition.map((realm_entity_id: any) => {
       const realm = getComponentValue(Realm, realm_entity_id) as any;
-      return realm;
+      const entityOwner = getComponentValue(EntityOwner, realm_entity_id);
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+
+      return { ...realm, self: owner?.address === BigInt(account.address) };
     });
   }, [realmsAtPosition]);
 

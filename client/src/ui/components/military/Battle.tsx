@@ -6,6 +6,7 @@ import { usePositionArmies } from "@/hooks/helpers/useArmies";
 import { ArmyViewCard } from "./ArmyViewCard";
 import { RealmViewCard } from "../structures/RealmViewCard";
 import Button from "@/ui/elements/Button";
+import { useState } from "react";
 
 export const Battle = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
@@ -22,7 +23,7 @@ export const Battle = () => {
   const { formattedRealmsAtPosition } = useStructuresPosition({ position: { x, y } });
   const { allArmies, userArmies } = usePositionArmies({ position: { x, y } });
 
-  console.log(userArmies);
+  const [selectedArmy, setSelectedArmy] = useState<any>(null);
 
   return (
     <div className="p-2">
@@ -34,11 +35,16 @@ export const Battle = () => {
       /> */}
 
       {userArmies.length !== 0 && (
-        <div>
-          <h4>Your Armies</h4>
-          <div className="grid grid-cols-3">
+        <div className="my-3">
+          <h5 className="py-2">Armies At Location</h5>
+          <div className="grid grid-cols-3 gap-4">
             {userArmies.map((entity, index) => (
-              <ArmyViewCard key={index} army={entity} />
+              <ArmyViewCard
+                active={entity.entity_id.toString() == selectedArmy}
+                onClick={(value) => setSelectedArmy(value)}
+                key={index}
+                army={entity}
+              />
             ))}
           </div>
         </div>
@@ -51,18 +57,24 @@ export const Battle = () => {
         ))}
       </div> */}
       {formattedRealmsAtPosition.length > 0 && (
-        <div className="grid grid-cols-3">
-          {formattedRealmsAtPosition.map((entity, index) => (
-            <RealmViewCard
-              onPillage={() =>
-                provider.battle_start({ signer: account, attacking_army_id: 43n, defending_army_id: 95n })
-              }
-              onSiege={() => provider.battle_pillage({ signer: account, army_id: 43n, structure_id: entity.entity_id })}
-              key={index}
-              realm={entity}
-            />
-          ))}
-        </div>
+        <>
+          <h4>Structure</h4>
+          <div className="grid grid-cols-1">
+            {formattedRealmsAtPosition.map((entity, index) => (
+              <RealmViewCard
+                self={entity.self}
+                onPillage={() =>
+                  provider.battle_start({ signer: account, attacking_army_id: 43n, defending_army_id: 95n })
+                }
+                onSiege={() =>
+                  provider.battle_pillage({ signer: account, army_id: selectedArmy, structure_id: entity.entity_id })
+                }
+                key={index}
+                realm={entity}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

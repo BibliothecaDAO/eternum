@@ -223,12 +223,15 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
       </div>
 
       <div className="my-2 flex justify-between">
-        <div>
-          {checkSamePosition
-            ? "At Base "
-            : position
-            ? `(x:${position.x.toLocaleString()}, y: ${position.y.toLocaleString()})`
-            : "Unknown"}
+        <div className="flex">
+          {/* <div className="mr-2 self-center">
+            {checkSamePosition
+              ? "At Base "
+              : position
+              ? `(x:${position.x.toLocaleString()}, y: ${position.y.toLocaleString()})`
+              : "Unknown"}
+          </div> */}
+
           <Button
             variant="outline"
             onClick={() => {
@@ -255,32 +258,34 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
           </Button>
         </div>
 
-        <div className="flex space-x-2">
-          {travelToBase ? (
-            <>
-              <Button
-                onClick={() =>
-                  travel({
-                    signer: account,
-                    travelling_entity_id: entity.entity_id,
-                    destination_coord_x: entityOwnerPosition.x,
-                    destination_coord_y: entityOwnerPosition.y,
-                  })
-                }
-                variant="outline"
-              >
-                Confirm
+        {!isTraveling && (
+          <div className="flex space-x-2">
+            {travelToBase ? (
+              <>
+                <Button
+                  onClick={() =>
+                    travel({
+                      signer: account,
+                      travelling_entity_id: entity.entity_id,
+                      destination_coord_x: entityOwnerPosition.x,
+                      destination_coord_y: entityOwnerPosition.y,
+                    })
+                  }
+                  variant="outline"
+                >
+                  Confirm
+                </Button>
+                <Button onClick={() => setTravelToBase(false)} variant="outline">
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => setTravelToBase(true)} variant="outline">
+                Travel to Base
               </Button>
-              <Button onClick={() => setTravelToBase(false)} variant="outline">
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button onClick={() => setTravelToBase(true)} variant="outline">
-              Travel to Base
-            </Button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex justify-between">
