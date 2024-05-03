@@ -36,7 +36,9 @@ if [[ "$mode" == "prod" ]]; then
 
     export TICK_INTERVAL_IN_SECONDS=900
 
-    export DONKEY_SPEED=$TICK_INTERVAL_IN_SECONDS
+    # 300 sec/km = 12 km /hour
+    export DONKEY_SPEED=300
+    export ARMY_SPEED=300
 else
     export STARTING_FOOD=2000
     export STARTING_DONKEYS=30
@@ -47,6 +49,7 @@ else
     export TICK_INTERVAL_IN_SECONDS=900
 
     export DONKEY_SPEED=1
+    export ARMY_SPEED=1
 fi
 
 # // precision
@@ -142,9 +145,9 @@ commands+=(
 
     # ### SPEED ###
     # # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
-    # # 360 sec per km = 10km/h
+    # # 300 sec per km = 12km/h
     "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $DONKEY_ENTITY_TYPE,$DONKEY_SPEED"
-    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ARMY_ENTITY_TYPE,$TICK_INTERVAL_IN_SECONDS"
+    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ARMY_ENTITY_TYPE,$ARMY_SPEED"
 
     # ### TRAVEL ###
     # # free transport per city = 10 (for testing);
