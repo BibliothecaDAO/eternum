@@ -4,7 +4,9 @@ use eternum::models::bank::bank::BankAccounts;
 use eternum::models::position::{Coord};
 
 use eternum::systems::bank::contracts::bank_systems::bank_systems;
-use eternum::systems::bank::contracts::bank_systems::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait,};
+use eternum::systems::bank::contracts::bank_systems::{
+    IBankSystemsDispatcher, IBankSystemsDispatcherTrait,
+};
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};

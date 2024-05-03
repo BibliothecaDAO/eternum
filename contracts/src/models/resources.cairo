@@ -433,13 +433,10 @@ mod tests_resource_traits {
         assert_eq!(wood_production.input_finish_tick, (104 - 2) / 3); // 3 =  wood_cost_gold_rate
     }
 }
-
-
 // #[cfg(test)]
 // mod owned_resources_tracker_tests {
 //     use eternum::constants::ResourceTypes;
 //     use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
-
 
 //     #[test]
 //     fn test_resource_type_to_position() {
@@ -451,7 +448,6 @@ mod tests_resource_traits {
 //         assert!(ort._resource_type_to_position(2) == 1, " wrong ans");
 //         assert!(ort._resource_type_to_position(1) == 0, " wrong ans");
 //     }
-
 
 //     #[test]
 //     fn test_get_and_set_resource_ownership() {
@@ -470,4 +466,5 @@ mod tests_resource_traits {
 //         assert!(ort.owns_resource_type(ResourceTypes::DEMONHIDE) == false, "should be false");
 //     }
 // }
+
 
