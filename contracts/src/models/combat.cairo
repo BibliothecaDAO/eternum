@@ -1,4 +1,5 @@
 use core::option::OptionTrait;
+use core::traits::Into;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
@@ -118,12 +119,16 @@ impl TroopsImpl of TroopsTrait {
     }
 
     fn delta(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> (u32, u32) {
-        let self_strength = self.strength_against(enemy_troops, troop_config);
-        let enemy_strength = enemy_troops.strength_against(self, troop_config);
-        let _strength_difference = self_strength - enemy_strength;
-
-        // should be at least one to prevent division errrors
-        (1, 1)
+        let self_strength: i64 = self.strength_against(enemy_troops, troop_config);
+        let enemy_strength: i64 = enemy_troops.strength_against(self, troop_config);
+        let mut strength_difference: i64 = self_strength - enemy_strength;
+        if strength_difference < 0 {
+            strength_difference *= -1;
+        }
+        let strength_difference: u32 = Into::<i64, felt252>::into(strength_difference)
+            .try_into()
+            .unwrap();
+        (strength_difference, strength_difference)
     }
 
     /// @dev Calculates the net combat strength of one troop against another, factoring in troop-specific strengths and advantages/disadvantages.

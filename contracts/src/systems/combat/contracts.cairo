@@ -519,8 +519,6 @@ mod combat_systems {
 
 
         fn battle_pillage(world: IWorldDispatcher, army_id: u128, structure_id: u128,) {
-            // todo@credence need to decrease health 
-
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -541,30 +539,13 @@ mod combat_systems {
 
             // get structure army and health
 
-            // if the structure army is in a battle, you get to fight against the
-            // the structure army has the combined strength of all armies on its side
-            // of the battle. else the structure army is alone so you fight it alone
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             let mut structure_army: Army = Default::default();
             let mut structure_army_health: Health = Default::default();
             if structure_army_id.is_non_zero() {
                 structure_army = get!(world, structure_army_id, Army);
-                if structure_army.battle_id.is_non_zero() {
-                    // update battle state 
-                    let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
-                    battle.update_state(tick);
-                    set!(world, (battle));
-
-                    if structure_army.battle_side == BattleSide::Attack {
-                        structure_army = battle.attack_army;
-                        structure_army_health = battle.attack_army_health;
-                    } else {
-                        structure_army = battle.defence_army;
-                        structure_army_health = battle.defence_army_health;
-                    }
-                } else {
-                    structure_army_health = get!(world, structure_army_id, Health);
-                }
+                structure_army.assert_not_in_battle();
+                structure_army_health = get!(world, structure_army_id, Health);
             }
 
             // a percentage of it's full strength depending on structure army's health
@@ -579,7 +560,7 @@ mod combat_systems {
                 / LOYALTY_MAX_VALUE.into();
 
             // a percentage of it's full strength depending on structure army's health
-            let attacking_army_health: Health = get!(world, army_id, Health);
+            let mut attacking_army_health: Health = get!(world, army_id, Health);
             let attacking_army_strength = attacking_army.troops.full_strength(troop_config)
                 * attacking_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
@@ -593,9 +574,10 @@ mod combat_systems {
             )[0];
 
             if *attack_successful {
-                let success_probability = attacking_army_strength
+                let attack_success_probability = attacking_army_strength
                     * PercentageValueImpl::_100().into()
-                    / structure_army_strength;
+                    / structure_army_strength
+                    + 1;
 
                 let mut count = 0;
                 loop {
@@ -626,7 +608,7 @@ mod combat_systems {
                                 .troops
                                 .count()
                                 .into()
-                                * success_probability.into()
+                                * attack_success_probability.into()
                                 / PercentageValueImpl::_100().into();
 
                             let resource_amount_stolen: u128 = min(
@@ -649,6 +631,28 @@ mod combat_systems {
                     }
                     count += 1;
                 };
+            }
+
+            // reduce attacking army's health by 10%
+            // (pending better formula for health reduction)
+            attacking_army_health
+                .decrease_by(
+                    attacking_army_health.current
+                        * PercentageValueImpl::_10().into()
+                        / PercentageValueImpl::_100().into()
+                );
+            set!(world, (attacking_army_health));
+
+            // reduce structure army's health by 10%
+            // (pending better formula for health reduction)
+            if structure_army_id.is_non_zero() {
+                structure_army_health
+                    .decrease_by(
+                        structure_army_health.current
+                            * PercentageValueImpl::_10().into()
+                            / PercentageValueImpl::_100().into()
+                    );
+                set!(world, (structure_army_health));
             }
 
             // army goes home 

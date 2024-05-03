@@ -64,9 +64,7 @@ mod bank_systems {
             (bank_entity_id, bank_account_entity_id)
         }
 
-        fn open_account(
-            world: IWorldDispatcher, realm_entity_id: ID, bank_entity_id: ID
-        ) -> ID {
+        fn open_account(world: IWorldDispatcher, realm_entity_id: ID, bank_entity_id: ID) -> ID {
             let player = starknet::get_caller_address();
 
             // check if the bank exists

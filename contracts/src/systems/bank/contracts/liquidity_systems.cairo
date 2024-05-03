@@ -32,7 +32,7 @@ mod liquidity_systems {
         resource_price: u128,
         add: bool,
     }
-    
+
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
@@ -71,10 +71,7 @@ mod liquidity_systems {
             market.total_shares = total_shares;
 
             // update market
-            set!(
-                world,
-                (market,)
-            );
+            set!(world, (market,));
 
             player_lords.burn(cost_lords);
             player_lords.save(world);
@@ -84,23 +81,16 @@ mod liquidity_systems {
             resource.save(world);
 
             // update player liquidity
-            let mut player_liquidity = get!(world, (bank_entity_id, player, resource_type), Liquidity);
+            let mut player_liquidity = get!(
+                world, (bank_entity_id, player, resource_type), Liquidity
+            );
             player_liquidity.shares += liquidity_shares;
 
-            set!(
-                world,
-                (player_liquidity,)
-            );
+            set!(world, (player_liquidity,));
 
             InternalLiquiditySystemsImpl::emit_event(
-                world,
-                market,
-                bank_account_entity_id,
-                cost_lords,
-                cost_resource_amount,
-                true,
+                world, market, bank_account_entity_id, cost_lords, cost_resource_amount, true,
             );
-
         }
 
 
@@ -123,10 +113,7 @@ mod liquidity_systems {
             market.total_shares = total_shares;
 
             // update market
-            set!(
-                world,
-                (market,)
-            );
+            set!(world, (market,));
 
             // update player lords
             let mut player_lords = ResourceImpl::get(
@@ -141,27 +128,28 @@ mod liquidity_systems {
             resource.save(world);
 
             // update player liquidity
-            let mut player_liquidity = get!(world, (bank_entity_id, player, resource_type), Liquidity);
-            player_liquidity.shares -= shares;
-            set!(
-                world,
-                (player_liquidity,)
+            let mut player_liquidity = get!(
+                world, (bank_entity_id, player, resource_type), Liquidity
             );
+            player_liquidity.shares -= shares;
+            set!(world, (player_liquidity,));
 
             InternalLiquiditySystemsImpl::emit_event(
-                world,
-                market,
-                bank_account_entity_id,
-                payout_lords,
-                payout_resource_amount,
-                false,
+                world, market, bank_account_entity_id, payout_lords, payout_resource_amount, false,
             );
         }
     }
 
     #[generate_trait]
     impl InternalLiquiditySystemsImpl of InternalLiquiditySystemsTrait {
-        fn emit_event(world: IWorldDispatcher, market: Market, bank_account_entity_id: u128, lords_amount: u128, resource_amount: u128, add: bool) {
+        fn emit_event(
+            world: IWorldDispatcher,
+            market: Market,
+            bank_account_entity_id: u128,
+            lords_amount: u128,
+            resource_amount: u128,
+            add: bool
+        ) {
             let resource_price = if market.has_liquidity() {
                 market.quote_amount(1000)
             } else {
@@ -172,11 +160,11 @@ mod liquidity_systems {
                 (
                     Event::LiquidityEvent(
                         LiquidityEvent {
-                            bank_entity_id: market.bank_entity_id, 
-                            bank_account_entity_id, 
+                            bank_entity_id: market.bank_entity_id,
+                            bank_account_entity_id,
                             resource_type: market.resource_type,
-                            lords_amount, 
-                            resource_amount, 
+                            lords_amount,
+                            resource_amount,
                             resource_price: resource_price,
                             add
                         }
@@ -184,6 +172,5 @@ mod liquidity_systems {
                 )
             );
         }
-
     }
 }
