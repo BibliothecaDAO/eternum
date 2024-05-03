@@ -45,10 +45,9 @@ export function BannerFlag(props: any) {
       for (let i = 0; i < positionAttribute.count; i++) {
         const y = positionAttribute.getY(i);
         const z = positionAttribute.getZ(i);
-        const waveY1 = Math.cos(y + time * 5);
-        const waveY2 = Math.cos(y * 2 + time * 8) / 2;
-        const waveZ1 = Math.cos(z * 3 + time * 4);
-        positionAttribute.setX(i, 0.05 + ((waveY1 + waveY2 + waveZ1) * (y - 2.2781)) / 50);
+        const waveY1 = Math.cos(y + z + time * 2.5);
+        const waveY2 = Math.sin(y + z * 2 + time);
+        positionAttribute.setX(i, 0.05 + ((waveY1 + waveY2) * (y - 2.2781)) / 25);
       }
 
       positionAttribute.needsUpdate = true;
