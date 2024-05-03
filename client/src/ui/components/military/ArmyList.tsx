@@ -74,7 +74,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
 };
 
 export const PositionArmyList = ({ position }: { position: Position }) => {
-  const { positionArmies, userArmies } = usePositionArmies({ position });
+  const { allArmies, userArmies } = usePositionArmies({ position });
 
   return (
     <div>
@@ -86,7 +86,7 @@ export const PositionArmyList = ({ position }: { position: Position }) => {
       </div>
       <h4 className="uppercase">All Armies</h4>
       <div className="grid grid-cols-3">
-        {positionArmies.map((entity, index) => (
+        {allArmies.map((entity, index) => (
           <ArmyViewCard key={index} army={entity} />
         ))}
       </div>

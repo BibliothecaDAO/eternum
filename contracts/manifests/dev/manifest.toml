@@ -70,8 +70,8 @@ name = "eternum::systems::buildings::contracts::building_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x490d8572029a070064c52d09d2fdb4d5a538bd26f723abfcdeeaff38e47dfeb"
-class_hash = "0x574e58a163b63df4aba0cb4eccd59504bfe1c1d7203f4c19b321eb170340e41"
-original_class_hash = "0x574e58a163b63df4aba0cb4eccd59504bfe1c1d7203f4c19b321eb170340e41"
+class_hash = "0x463a9d1317e135129c0e5f6a3222df879a1f2157cab805f4e0bff26d1cf9a90"
+original_class_hash = "0x463a9d1317e135129c0e5f6a3222df879a1f2157cab805f4e0bff26d1cf9a90"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_combat_contracts_combat_systems.json"
 reads = []

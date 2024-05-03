@@ -8,9 +8,10 @@ export const InventoryResources = ({ entityId }: { entityId: bigint }) => {
   const inventoryResources = getResourcesFromBalance(entityId);
 
   return (
-    <div className="flex items-center justify-between mt-[8px] text-xxs">
+    <div className=" my-3">
+      <h5>Inventory</h5>
       {inventoryResources && (
-        <div className="flex justify-center items-center space-x-1 flex-wrap">
+        <div className="flex items-center space-x-1 flex-wrap">
           {inventoryResources.map(
             (resource) =>
               resource && (

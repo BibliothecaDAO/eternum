@@ -74,21 +74,21 @@ h1,h2,h3,h4,h5,h6 {
 
 *::-webkit-scrollbar-track {
   background-color: #1b1b1b;
-  border-radius: 8px;
-  border: 1px solid var(--gray-gold, #776756);
+  
+  /* border: 1px solid var(--gray-gold, #776756); */
   margin-bottom: 2px;
 }
 
 *::-webkit-scrollbar {
   width: 8px;
   background-color: #1b1b1b;
-  border-radius: 8px;
+
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: #e0af65;
-  border-radius: 8px;
-  border: 1px solid var(--gray-gold, #776756);
+
+  /* border: 2px solid var(--gray-gold, #776756); */
+  @apply bg-gold;
 }
 
 .root-container {

@@ -11,9 +11,11 @@ export const ArmyViewCard = ({ army }: { army: ClientComponents["Army"]["schema"
   } = useDojo();
 
   return (
-    <div className="border p-3">
+    <div className="border p-2">
       <h5>{army.name}</h5>
+      <hr />
       <div>{army.battle_id ? army.battle_id : "No battle"}</div>
+
       <div>Battle:{army.battle_side ? army.battle_side : "idle"}</div>
       <div>Crossbowman: {army.troops.crossbowman_count}</div>
       <div>Knightcount: {army.troops.knight_count}</div>

@@ -32,13 +32,19 @@ export const Battle = () => {
         damagePerSecondArmyOne={50}
         damagePerSecondArmyTwo={30}
       /> */}
-      {/* <h4>Your Armies</h4>
-      <div className="grid grid-cols-3">
-        {userArmies.map((entity, index) => (
-          <ArmyViewCard key={index} army={entity} />
-        ))}
-      </div>
-      <h4>All Armies</h4>
+
+      {userArmies.length !== 0 && (
+        <div>
+          <h4>Your Armies</h4>
+          <div className="grid grid-cols-3">
+            {userArmies.map((entity, index) => (
+              <ArmyViewCard key={index} army={entity} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* <h4>All Armies</h4>
       <div className="grid grid-cols-3">
         {allArmies.map((entity, index) => (
           <ArmyViewCard key={index} army={entity} />

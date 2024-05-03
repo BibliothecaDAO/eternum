@@ -41,12 +41,20 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
     return getEntitiesCombatInfo([armyId])[0];
   }, [armyId]);
 
-  console.log(raider);
+  const tickMove = useMemo(
+    () => (raider.entityId ? getComponentValue(TickMove, getEntityIdFromKeys([raider.entityId])) : undefined),
+    [raider.entityId, TickMove],
+  );
 
-  const tickMove = raider.entityId ? getComponentValue(TickMove, getEntityIdFromKeys([raider.entityId])) : undefined;
-  const isPassiveTravel = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
+  const isPassiveTravel = useMemo(
+    () => (raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false),
+    [raider.arrivalTime, nextBlockTimestamp],
+  );
 
-  const isActiveTravel = tickMove !== undefined ? tickMove.tick >= currentTick : false;
+  const isActiveTravel = useMemo(
+    () => (tickMove !== undefined ? tickMove.tick >= currentTick : false),
+    [tickMove, currentTick],
+  );
 
   return (
     <HoveringContainer position={[position.x, position.z, -position.y]}>

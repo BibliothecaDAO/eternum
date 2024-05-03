@@ -4,10 +4,14 @@ import { useResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { ResourcesIds } from "@bibliothecadao/eternum";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useComponentValue } from "@dojoengine/react";
 import { shortString } from "starknet";
 import { NumberInput } from "@/ui/elements/NumberInput";
+import useUIStore from "@/hooks/store/useUIStore";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { getComponentValue } from "@dojoengine/recs";
+import { formatSecondsInHoursMinutes } from "../cityview/realm/labor/laborUtils";
 
 export const nameMapping: { [key: number]: string } = {
   [ResourcesIds.Knight]: "Knight",
@@ -15,20 +19,65 @@ export const nameMapping: { [key: number]: string } = {
   [ResourcesIds.Paladin]: "Paladin",
 };
 
+// TODO Unify this. Push all useComponentValues up to the top level
 export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
   const {
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { create_army, army_buy_troops },
-      components: { EntityName },
+      systemCalls: { army_buy_troops, travel },
+      components: { EntityName, Position, EntityOwner, ArrivalTime, TickMove },
     },
   } = useDojo();
 
+  const { getBalance } = useResourceBalance();
+  const { moveCameraToColRow } = useUIStore();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const currentTick = useBlockchainStore((state) => state.currentTick);
+
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
+  const [travelToBase, setTravelToBase] = useState(false);
 
+  // TODO: Clean this up
+  const name = useComponentValue(EntityName, getEntityIdFromKeys([BigInt(entity.entity_id)]));
+  const position = useComponentValue(Position, getEntityIdFromKeys([BigInt(entity.entity_id)])) || { x: 0, y: 0 };
+  const entityOwner = useComponentValue(EntityOwner, getEntityIdFromKeys([BigInt(entity.entity_id)]));
+  const arrivalTime = useComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(entity.entity_id)]));
+
+  const tickMove = useMemo(
+    () => (entity.entityId ? getComponentValue(TickMove, getEntityIdFromKeys([entity.entityId])) : undefined),
+    [entity.entityId],
+  );
+
+  const isPassiveTravel = useMemo(
+    () => (arrivalTime?.arrives_at && nextBlockTimestamp ? arrivalTime?.arrives_at > nextBlockTimestamp : false),
+    [arrivalTime, nextBlockTimestamp],
+  );
+
+  const isActiveTravel = useMemo(
+    () => (tickMove !== undefined ? tickMove.tick >= currentTick : false),
+    [tickMove, currentTick],
+  );
+
+  const isTraveling = useMemo(() => {
+    return isPassiveTravel || isActiveTravel;
+  }, [arrivalTime, nextBlockTimestamp]);
+
+  const entityOwnerPosition = useComponentValue(
+    Position,
+    getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]),
+  ) || { x: 0, y: 0 };
+
+  const checkSamePosition = useMemo(() => {
+    return position.x === entityOwnerPosition.x && position.y === entityOwnerPosition.y;
+  }, [entityOwnerPosition, position]);
+
+  console.log(checkSamePosition);
+
+  const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
+
   const [troopCounts, setTroopCounts] = useState<{ [key: number]: number }>({
     [ResourcesIds.Knight]: 0,
     [ResourcesIds.Crossbowmen]: 0,
@@ -53,8 +102,6 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
     }).finally(() => setIsLoading(false));
   };
 
-  const { getBalance } = useResourceBalance();
-
   useEffect(() => {
     let canCreate = true;
     Object.keys(troopCounts).forEach((troopId) => {
@@ -72,11 +119,13 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
     ) {
       canCreate = false;
     }
+
+    if (!checkSamePosition) {
+      canCreate = false;
+    }
+
     setCanCreate(canCreate);
   }, [troopCounts]);
-
-  const name = useComponentValue(EntityName, getEntityIdFromKeys([BigInt(entity.entity_id)]));
-  const [editName, setEditName] = useState(false);
 
   const troops = [
     {
@@ -146,6 +195,60 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
         </Button>
       </div>
 
+      <div className="my-2 flex justify-between">
+        <div>
+          {checkSamePosition
+            ? "At Base "
+            : position
+            ? `(x:${position.x.toLocaleString()}, y: ${position.y.toLocaleString()})`
+            : "Unknown"}
+          <Button variant="outline" onClick={() => moveCameraToColRow(position.x, position.y, 1.5)}>
+            <span> view on map</span>
+          </Button>
+        </div>
+
+        <div className="flex space-x-2">
+          {travelToBase ? (
+            <>
+              <Button
+                onClick={() =>
+                  travel({
+                    signer: account,
+                    travelling_entity_id: entity.entity_id,
+                    destination_coord_x: entityOwnerPosition.x,
+                    destination_coord_y: entityOwnerPosition.y,
+                  })
+                }
+                variant="outline"
+              >
+                Confirm
+              </Button>
+              <Button onClick={() => setTravelToBase(false)} variant="outline">
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => setTravelToBase(true)} variant="outline">
+              Travel to Base
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <div className="my-2 uppercase mb-1 font-bold">Status:</div>
+        {arrivalTime && isTraveling && nextBlockTimestamp ? (
+          <div className="flex ml-auto -mt-2 italic ">
+            Traveling for{" "}
+            {isPassiveTravel
+              ? formatSecondsInHoursMinutes(arrivalTime?.arrives_at - nextBlockTimestamp)
+              : "Arrives Next Tick"}
+          </div>
+        ) : (
+          "Idle"
+        )}
+      </div>
+
       <div className="grid grid-cols-3 gap-2 my-2">
         {troops.map((troop) => (
           <div className="p-2 border" key={troop.name}>
@@ -194,21 +297,8 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
         ))}
       </div>
 
-      {/* <div className="mb-3 border p-2">
-        <h4>Enlisting</h4>
-        <div>
-          {nameMapping[ResourcesIds.Knight]}: {troopCounts[ResourcesIds.Knight]}
-        </div>
-        <div>
-          {nameMapping[ResourcesIds.Crossbowmen]}: {troopCounts[ResourcesIds.Crossbowmen]}
-        </div>
-        <div>
-          {nameMapping[ResourcesIds.Paladin]}: {troopCounts[ResourcesIds.Paladin]}
-        </div>
-      </div> */}
-      <hr />
       <Button className="w-full " disabled={!canCreate} variant="primary" isLoading={isLoading} onClick={handleBuyArmy}>
-        Enlist Army
+        {checkSamePosition ? "Buy Troops" : "Must be at Base to Purchase"}
       </Button>
     </div>
   );
