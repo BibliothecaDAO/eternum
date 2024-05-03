@@ -18,14 +18,6 @@ struct Health {
 
 #[generate_trait]
 impl HealthImpl of HealthTrait {
-    fn is_alive(self: Health) -> bool {
-        self.current > 0
-    }
-
-    fn assert_alive(self: Health) {
-        assert(self.is_alive(), 'Entity is dead');
-    }
-
     fn increase_by(ref self: Health, value: u128) {
         self.current += value;
         self.lifetime += value;
@@ -37,6 +29,13 @@ impl HealthImpl of HealthTrait {
         } else {
             self.current = 0;
         }
+    }
+    fn is_alive(self: Health) -> bool {
+        self.current > 0
+    }
+
+    fn assert_alive(self: Health) {
+        assert(self.is_alive(), 'Entity is dead');
     }
 
     fn steps_to_finish(self: @Health, deduction: u128) -> u128 {
@@ -204,6 +203,74 @@ struct Army {
     battle_side: BattleSide
 }
 
+#[derive(Copy, Drop, Serde, Introspect, Default)]
+struct BattleArmy {
+    troops: Troops,
+    battle_id: u128,
+    battle_side: BattleSide
+}
+
+impl ArmyIntoBattlrArmyImpl of Into<Army, BattleArmy> {
+    fn into(self: Army) -> BattleArmy {
+        return BattleArmy {
+            troops: self.troops, battle_id: self.battle_id, battle_side: self.battle_side
+        };
+    }
+}
+
+
+#[derive(Introspect, Copy, Drop, Serde, Default)]
+struct BattleHealth {
+    current: u128,
+    lifetime: u128
+}
+
+impl HealthIntoBattleHealthImpl of Into<Health, BattleHealth> {
+    fn into(self: Health) -> BattleHealth {
+        return BattleHealth { // entity_id: self.entity_id,
+            current: self.current, lifetime: self.lifetime
+        };
+    }
+}
+
+impl BattleHealthIntoHealthImpl of Into<BattleHealth, Health> {
+    fn into(self: BattleHealth) -> Health {
+        return Health { entity_id: 0, current: self.current, lifetime: self.lifetime };
+    }
+}
+
+#[generate_trait]
+impl BattleHealthImpl of BattleHealthTrait {
+    fn increase_by(ref self: BattleHealth, value: u128) {
+        self.current += value;
+        self.lifetime += value;
+    }
+
+    fn decrease_by(ref self: BattleHealth, value: u128) {
+        if self.current > value {
+            self.current -= value;
+        } else {
+            self.current = 0;
+        }
+    }
+    fn is_alive(self: BattleHealth) -> bool {
+        Into::<BattleHealth, Health>::into(self).is_alive()
+    }
+
+    fn assert_alive(self: BattleHealth) {
+        Into::<BattleHealth, Health>::into(self).assert_alive()
+    }
+
+    fn steps_to_finish(self: @BattleHealth, deduction: u128) -> u128 {
+        Into::<BattleHealth, Health>::into(*self).steps_to_finish(deduction)
+    }
+
+    fn percentage_left(self: BattleHealth) -> u128 {
+        Into::<BattleHealth, Health>::into(self).percentage_left()
+    }
+}
+
+
 #[generate_trait]
 impl ArmyImpl of ArmyTrait {
     fn assert_in_battle(self: Army) {
@@ -253,10 +320,10 @@ impl ProtecteeImpl of ProtecteeTrait {
 struct Battle {
     #[key]
     entity_id: u128,
-    attack_army: Army,
-    defence_army: Army,
-    attack_army_health: Health,
-    defence_army_health: Health,
+    attack_army: BattleArmy,
+    defence_army: BattleArmy,
+    attack_army_health: BattleHealth,
+    defence_army_health: BattleHealth,
     attack_delta: u32,
     defence_delta: u32,
     tick_last_updated: u64,
