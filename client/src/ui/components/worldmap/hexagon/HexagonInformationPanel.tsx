@@ -29,12 +29,6 @@ export const HexagonInformationPanel = () => {
     setOpenPanel(openPanel === key ? null : key);
   };
 
-  // const { getBiome } = useHexPosition();
-
-  // const biome = useMemo(() => {
-  //   return getBiome({ x, y });
-  // }, [getBiome]);
-
   return (
     <>
       <div className="p-2">
@@ -44,11 +38,6 @@ export const HexagonInformationPanel = () => {
             <div>{`x: ${x?.toLocaleString()}`}</div>
             <div>{`y: ${y?.toLocaleString()}`}</div>
           </div>
-        </div>
-
-        <div>
-          <h5>Biome</h5>
-          {/* {biome && <img src={`/images/biomes/${biome?.toLowerCase()}.png`} className="w-full rounded" />} */}
         </div>
 
         <ArmiesAtLocation />

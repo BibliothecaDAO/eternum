@@ -18,7 +18,7 @@ export const BlankOverlayContainer = ({ children, open }: BlurOverlayContainerPr
       leaveFrom="opacity-100"
       leaveTo="opacity-0"
     >
-      <div className="top-0 left-0 flex justify-center items-center rounded-lg z-50 fixed bg-brown/40 w-screen h-screen backdrop-blur-sm">
+      <div className="top-0 left-0 flex justify-center items-center rounded-lg z-50 fixed  w-screen h-screen backdrop-blur-sm">
         {children}
       </div>
     </Transition>

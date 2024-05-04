@@ -2,6 +2,9 @@ import "./index.css";
 import "react-toastify/dist/ReactToastify.css";
 import { World } from "./ui/layouts/World";
 import { ToastContainer } from "react-toastify";
+import useUIStore from "./hooks/store/useUIStore";
+import { useEffect } from "react";
+import { Hexagon } from "./types";
 
 function App() {
   return (
