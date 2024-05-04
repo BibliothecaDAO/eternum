@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { useGetRealms } from "@/hooks/helpers/useRealm";
-import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { Position, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { useSearch } from "wouter/use-location";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue } from "@dojoengine/recs";
@@ -48,7 +48,7 @@ export const useHexPosition = () => {
     return HexType.EMPTY;
   }, [banks, realm]);
 
-  useEffect(() => {
+  useMemo(() => {
     if (realm) {
       setRealmId(realm.realmId);
       setRealmEntityId(realm.entity_id);
@@ -59,6 +59,7 @@ export const useHexPosition = () => {
     const mainHex = hexData?.find((hex) => hex.col === hexPosition.col && hex.row === hexPosition.row);
 
     const neighborOffsets = hexPosition.row % 2 !== 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+
     const neighborHexes = neighborOffsets.map((neighbor: { i: number; j: number; direction: number }) => {
       const tmpCol = hexPosition.col + neighbor.i;
       const tmpRow = hexPosition.row + neighbor.j;
@@ -73,15 +74,20 @@ export const useHexPosition = () => {
     );
   }, [hexData, neighborHexes]);
 
-  useEffect(() => {
+  useMemo(() => {
     moveCameraToRealmView();
     setIsLoadingScreenEnabled(false);
   }, []);
+
+  const getBiome = ({ x, y }: Position) => {
+    return hexData?.find((hex) => hex.col === x && hex.row === y)?.biome;
+  };
 
   return {
     realm,
     mainHex,
     neighborHexesInsideView,
     hexType,
+    getBiome,
   };
 };

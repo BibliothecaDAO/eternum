@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { SelectWorldMapBuilding } from "@/ui/components/worldmap/hexagon/SelectWorldMapBuilding";
 import useUIStore from "@/hooks/store/useUIStore";
 import { EntityList } from "../../list/EntityList";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { ArmiesAtLocation, Battle } from "../../military/Battle";
 import { PositionArmyList } from "../../military/ArmyList";
+import { useHexPosition } from "@/hooks/helpers/useHexPosition";
 
 const BuildPanel = ({ playerRealms }: { playerRealms: () => any }) => (
   <EntityList
@@ -17,7 +18,8 @@ const BuildPanel = ({ playerRealms }: { playerRealms: () => any }) => (
 export const HexagonInformationPanel = () => {
   const [openPanel, setOpenPanel] = useState<string | null>(null);
   const { playerRealms } = useEntities();
-
+  const clickedHex = useUIStore((state) => state.clickedHex);
+  const { col: x, row: y } = clickedHex!.contractPos;
   const panels = [
     { key: "build", title: "Build", content: <BuildPanel playerRealms={playerRealms} /> },
     { key: "combat", title: "Combat", content: <Battle /> },
@@ -27,16 +29,27 @@ export const HexagonInformationPanel = () => {
     setOpenPanel(openPanel === key ? null : key);
   };
 
+  // const { getBiome } = useHexPosition();
+
+  // const biome = useMemo(() => {
+  //   return getBiome({ x, y });
+  // }, [getBiome]);
+
   return (
     <>
       <div className="p-2">
-        {/* <div className="p-2">
+        <div className="p-2 flex justify-between">
           <h5>Coordinates</h5>
-          <div className="p-2 font-bold flex  space-x-2 justify-between">
-            <div>{`x: ${clickedHex?.col.toLocaleString()}`}</div>
-            <div>{`y: ${clickedHex?.row.toLocaleString()}`}</div>
+          <div className=" font-bold flex  space-x-2 justify-between self-center ">
+            <div>{`x: ${x?.toLocaleString()}`}</div>
+            <div>{`y: ${y?.toLocaleString()}`}</div>
           </div>
-        </div> */}
+        </div>
+
+        <div>
+          <h5>Biome</h5>
+          {/* {biome && <img src={`/images/biomes/${biome?.toLowerCase()}.png`} className="w-full rounded" />} */}
+        </div>
 
         <ArmiesAtLocation />
         <Battle />
