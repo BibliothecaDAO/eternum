@@ -1,26 +1,36 @@
 #!/bin/bash
 
-source ./scripts/contracts.sh
-
 # Initialize variables
 # delay=0
 # notw: only works with delay=2 seconds
-delay=2
+# Initialize variables
+mode=""
+delay=0
 
 # Function to show usage
-# usage() {
-#     echo "Usage: $0 [--interval delay]"
-#     exit 1
-# }
+usage() {
+    echo "Usage: $0 --mode [prod|dev] [--interval delay]"
+    exit 1
+}
 
 # Parse command-line arguments
-# while [[ "$#" -gt 0 ]]; do
-#     case $1 in
-#         --mode) mode="${2:-}"; shift 2;;
-#         --interval) delay="${2:-}"; shift 2;;
-#         *) usage;;
-#     esac
-# done
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --mode) mode="${2:-}"; shift 2;;
+        --interval) delay="${2:-}"; shift 2;;
+        *) usage;;
+    esac
+done
+
+# Validate mode
+if [[ "$mode" != "prod" && "$mode" != "dev" ]]; then
+    echo "Error: Invalid mode specified. Please use prod or dev."
+    usage
+fi
+
+source ./scripts/env_variables.sh dev
+
+source ./scripts/contracts.sh
 
 # entity ids
 export ADMIN_BANK_ACCOUNT_ENTITY_ID=999999999999999999 
@@ -29,12 +39,12 @@ export ADMIN_BANK_ENTITY_ID=999999999999999998
 export FOOD_LIQUIDITY=20000
 export DONKEYS_LIQUIDITY=300
 export TROOPS_LIQUIDITY=30
-export $RESOURCE_LIQUIDITY=200
+export RESOURCE_LIQUIDITY=200
 export LORDS_LIQUIDITY_PER_RESOURCE=200
 export RESOURCE_NUMBER=28
 
 # Precision
-export $RESOURCE_PRECISION=1000
+export RESOURCE_PRECISION=1000
 
 # Banks
 export COORD_X=2147483901

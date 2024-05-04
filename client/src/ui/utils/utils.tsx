@@ -122,19 +122,35 @@ export function addressToNumber(address: string) {
   return (sum % 5) + 1;
 }
 
-export const calculateDistance = (start: Position, destination: Position): number => {
-  const x: number =
-    start.x > destination.x ? Math.pow(start.x - destination.x, 2) : Math.pow(destination.x - start.x, 2);
+// export const calculateDistance = (start: Position, destination: Position): number => {
+//   const x: number =
+//     start.x > destination.x ? Math.pow(start.x - destination.x, 2) : Math.pow(destination.x - start.x, 2);
 
-  const y: number =
-    start.y > destination.y ? Math.pow(start.y - destination.y, 2) : Math.pow(destination.y - start.y, 2);
+//   const y: number =
+//     start.y > destination.y ? Math.pow(start.y - destination.y, 2) : Math.pow(destination.y - start.y, 2);
 
-  // Using bitwise shift for the square root approximation for BigInt.
-  // we store coords in x * 10000 to get precise distance
-  const distance = (x + y) ** 0.5 / 10000;
+//   // Using bitwise shift for the square root approximation for BigInt.
+//   // we store coords in x * 10000 to get precise distance
+//   const distance = (x + y) ** 0.5 / 10000;
 
-  return distance;
-};
+//   return distance;
+// };
+
+export function calculateDistance(start: Position, destination: Position): number | undefined {
+  // d = √((x2-x1)² + (y2-y1)²)
+
+  if (start && destination) {
+    // Calculate the difference in x and y coordinates
+    const deltaX = Math.abs(start.x - destination.x);
+    const deltaY = Math.abs(start.y - destination.y);
+
+    // Calculate the distance using the Pythagorean theorem
+    // Each tile is 1 km, so we don't need to divide by 10000 here
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    return distance;
+  }
+}
 
 export const getUIPositionFromColRow = (col: number, row: number, normalized?: boolean): UIPosition => {
   const hexRadius = 3;

@@ -1,12 +1,14 @@
-import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, SPEED_PER_DONKEY } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { useMemo } from "react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { unpackResources } from "@/ui/utils/packedData";
-import { getRealmNameById } from "@/ui/utils/realms";
+import { getRealm, getRealmNameById } from "@/ui/utils/realms";
+import { useCaravan } from "./useCaravans";
+import { calculateDistance } from "@/ui/utils/utils";
 
 export const useStructures = () => {
   const {
@@ -72,3 +74,45 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
     structuresAtPosition,
   };
 };
+
+// TODO: Make Generic
+export function useStructuresFromPosition({ position }: { position: Position }) {
+  const {
+    setup: {
+      components: { Realm, Owner },
+    },
+  } = useDojo();
+
+  const allRealms = useEntityQuery([Has(Realm)]);
+
+  const realms = useMemo(
+    () =>
+      allRealms.map((entityId) => {
+        const realm = getComponentValue(Realm, entityId);
+        if (realm) {
+          const realmData = getRealm(realm.realm_id);
+          if (!realmData) return undefined;
+          const name = realmData.name;
+          const owner = getComponentValue(Owner, entityId);
+          const resources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+
+          const distanceFromPosition = calculateDistance(position, realmData.position) ?? 0;
+
+          const timeToTravel = Math.floor(((distanceFromPosition / SPEED_PER_DONKEY) * 3600) / 60 / 60);
+
+          return {
+            ...realm,
+            name,
+            position: realmData.position,
+            owner: owner?.address,
+            resources,
+            distanceFromPosition,
+            timeToTravel,
+          };
+        }
+      }),
+    [allRealms],
+  );
+
+  return { realms };
+}

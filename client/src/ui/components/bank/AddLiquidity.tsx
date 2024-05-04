@@ -45,7 +45,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
 
   return (
     <div>
-      <div className="p-2 relative">
+      <div className="p-2 relative space-y-2">
         <ResourceBar
           entityId={entityId}
           resources={resources.filter((r) => r.id === Number(LORDS_RESOURCE_ID))}
@@ -55,7 +55,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
           setResourceId={setResourceId}
         />
 
-        <div className="w-full mt-2 absolute top-1/3 left-1/3">
+        <div className="mt-2 absolute top-1/3 left-1/3">
           <Button
             isLoading={isLoading}
             disabled={!canAdd}

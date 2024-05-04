@@ -35,8 +35,8 @@ function ListSelect(props: ListSelectProps) {
                 "flex items-center relative justify-center w-full cursor-pointer text-xs py-1 min-h-[32px]",
                 props.style === "black"
                   ? open
-                    ? "bg-black/50 text-gold !justify-start"
-                    : "bg-black text-gold/90 hover:bg-black/70  !justify-start"
+                    ? "bg-brown/50 text-gold !justify-start"
+                    : "bg-brown text-gold/90 hover:bg-brown/70  !justify-start"
                   : open
                   ? "bg-dark-brown text-gold"
                   : "bg-dark-brown  hover:bg-dark-brown/50",

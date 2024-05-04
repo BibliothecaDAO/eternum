@@ -51,7 +51,7 @@ export const ArmyViewCard = ({
         </Headline>
         <div className="my-2">
           <span>HP: </span>
-          {Number(army.current.toString()) / 1000}
+          {Number(army.current?.toString()) / 1000}
         </div>
         {/* <div className="flex justify-between w-full">
           <span>{army.battle_id ? army.battle_id : "No battle"}</span>

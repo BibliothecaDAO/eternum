@@ -95,47 +95,61 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
 
   return (
     <div>
-      <div className="p-2 relative">
+      <div className="relative my-2 space-y-1">
         {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
-        <div className="w-full absolute top-1/4 left-1/3">
+        <div className="absolute top-[49px] left-1/3">
           <Button
             className="text-brown bg-brown"
             isLoading={false}
             disabled={false}
             onClick={onInvert}
-            variant="primary"
+            size="md"
+            variant="default"
           >
-            <Refresh className="text-gold cursor-pointer h-7"></Refresh>
+            <Refresh className="text-gold cursor-pointer h-4"></Refresh>
           </Button>
         </div>
         {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
+      </div>
+      <div className="p-2 border">
+        <div className="mb-2">
+          <table className="w-full text-left text-xs">
+            <tbody>
+              <tr className="text-xl">
+                <td>{chosenResourceName} Price:</td>
+                <td>{marketPrice.toFixed(2)} $LORDS</td>
+              </tr>
+              {marketPrice > 0 && (
+                <>
+                  <tr>
+                    <td>Slippage:</td>
+                    <td>{marketManager.slippage(lordsAmount, resourceAmount).toFixed(2)} %</td>
+                  </tr>
+                  <tr>
+                    <td>Bank Owner Fees:</td>
+                    <td>
+                      {((isBuyResource ? lordsAmount : resourceAmount) * OWNER_FEE).toFixed(2)}{" "}
+                      {isBuyResource ? "$LORDS" : chosenResourceName}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>LP Fees:</td>
+                    <td>
+                      {((isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toFixed(2)}{" "}
+                      {isBuyResource ? "$LORDS" : chosenResourceName}
+                    </td>
+                  </tr>
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
         <div className="w-full flex flex-col justify-center mt-2">
           <Button className="text-brown" isLoading={isLoading} disabled={!canSwap} onClick={onSwap} variant="primary">
             Swap
           </Button>
           {!canSwap && <div className="ml-1 text-danger">Warning: not enough resources or amount is zero</div>}
         </div>
-      </div>
-      <div className="p-2">
-        <div className="mb-2">
-          <div>Price: {marketPrice.toFixed(2)} $LORDS</div>
-          {marketPrice > 0 && (
-            <div className="text-order-giants">
-              <div>Slippage: {marketManager.slippage(lordsAmount, resourceAmount).toFixed(2)} %</div>
-              <div>
-                Bank Owner Fees: {((isBuyResource ? lordsAmount : resourceAmount) * OWNER_FEE).toFixed(2)}{" "}
-                {isBuyResource ? "$LORDS" : chosenResourceName}
-              </div>
-              <div>
-                LP Fees: {((isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toFixed(2)}{" "}
-                {isBuyResource ? "$LORDS" : chosenResourceName}
-              </div>
-            </div>
-          )}
-        </div>
-        <Button onClick={onSwap} variant="primary">
-          Swap
-        </Button>
       </div>
     </div>
   );

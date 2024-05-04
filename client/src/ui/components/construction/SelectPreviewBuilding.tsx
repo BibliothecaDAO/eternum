@@ -384,8 +384,8 @@ export const SelectPreviewBuildingMenu = () => {
     });
 
   return (
-    <div className="flex flex-col -mt-48">
-      <div className="grid grid-cols-8 gap-2 p-2">
+    <div className="flex flex-col -mt-44">
+      <div className="grid grid-cols-6 gap-2 p-2">
         {realmResourceIds.map((resourceId) => {
           const resource = findResourceById(resourceId)!;
 

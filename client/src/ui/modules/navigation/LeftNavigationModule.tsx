@@ -129,7 +129,7 @@ export const LeftNavigationModule = () => {
       <HyperStructures />
       <SettingsWindow />
       <Resources entityId={realmEntityId} />
-      <Military />
+      <Military entityId={realmEntityId} />
       <EntityDetails />
       <Trading />
       <Construction entityId={realmEntityId} />

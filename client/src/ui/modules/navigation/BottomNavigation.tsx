@@ -188,7 +188,10 @@ export const BottomNavigation = () => {
     return location === "/map"
       ? navigation.filter(
           (item) =>
-            item.name !== MenuEnum.construction && item.name !== MenuEnum.resources && item.name !== MenuEnum.worldMap,
+            item.name !== MenuEnum.construction &&
+            item.name !== MenuEnum.resources &&
+            item.name !== MenuEnum.worldMap &&
+            item.name !== MenuEnum.trade,
         )
       : navigation;
   }, [location]);

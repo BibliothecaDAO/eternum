@@ -35,8 +35,8 @@ export const LiquidityResourceRow = ({ bankEntityId, resourceId }: { bankEntityI
   const pair = useMemo(
     () => (
       <div className="flex flex-row">
-        {resourceName && <ResourceIcon resource={resourceName} size="xs" />}
-        <>LORDS/{resourceName?.toUpperCase()}</>
+        {resourceName && <ResourceIcon resource={resourceName} size="xs" className="mr-2" />}
+        <>LORDS/${resourceName}</>
       </div>
     ),
     [resourceName],

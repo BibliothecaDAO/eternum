@@ -23,8 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/ui/elements/Select";
-import { useGetRealms } from "@/hooks/helpers/useRealm";
-import useRealmStore from "@/hooks/store/useRealmStore";
+import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
 
 export const nameMapping: { [key: number]: string } = {
   [ResourcesIds.Knight]: "Knight",
@@ -175,10 +174,10 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
 
   const [travelLocation, setTravelLocation] = useState({ x: 0, y: 0 });
 
-  const realms = useGetRealms();
+  const { realms } = useStructuresFromPosition({ position });
 
   const handleSetTravelLocation = (realmId: string) => {
-    const realm = realms.find((realm) => realm.entity_id.toString() === realmId);
+    const realm = realms.find((realm) => realm?.entity_id.toString() === realmId);
     if (realm) {
       setTravelLocation({ x: realm.position.x, y: realm.position.y });
     }
@@ -313,8 +312,8 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
                   <SelectGroup>
                     {realms.map((realm) => {
                       return (
-                        <SelectItem key={realm.entity_id} value={realm.entity_id.toString()}>
-                          {realm.name}
+                        <SelectItem key={realm?.entity_id} value={realm?.entity_id.toString() || ""}>
+                          {realm?.name} - {realm?.timeToTravel}hrs
                         </SelectItem>
                       );
                     })}
