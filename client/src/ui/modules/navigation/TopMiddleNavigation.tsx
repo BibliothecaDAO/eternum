@@ -11,6 +11,7 @@ import { useLocation } from "wouter";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
 import { assistant, quests } from "@/ui/components/navigation/Config";
 import { Compass } from "@/ui/components/worldmap/Compass";
+import { Headline } from "@/ui/elements/Headline";
 
 export const TopMiddleNavigation = () => {
   const { hexPosition } = useQuery();
@@ -41,21 +42,26 @@ export const TopMiddleNavigation = () => {
           <Compass />
         </div>
       )}
-      <div className="self-center text-center text-4xl px-4 text-gold second-step">{progress.toFixed()}%</div>
-      <div className="flex bg-brown/70 rounded-b border-gradient  p-3 w-[600px] text-gold px-4 justify-between border-gold/50 border-b-2">
-        <div>
-          <h3 className="self-center">{realmId ? getRealmNameById(realmId as any | "") : ""}</h3>
-          <h6>{"0x...420"}</h6>
+      <div className="self-center text-center text-xl p-4 second-step bg-gold/50 text-brown border m-2">
+        {progress.toFixed()}%
+      </div>
+      <div className="flex bg-brown/90  border-gradient  p-3 px-24 text-gold  justify-center border-gold/50 border-b-2 text-center">
+        <div className="self-center ">
+          <Headline>
+            <h5 className="self-center uppercase">{realmId ? getRealmNameById(realmId as any | "") : ""}</h5>
+          </Headline>
+
+          {/* <h6>{"0x...420"}</h6> */}
         </div>
 
-        <div className="flex flex-col self-center font-bold">
+        {/* <div className="flex flex-col self-center font-bold">
           <div className="">
             x: {hexPosition.col !== 0 ? hexPosition.col.toLocaleString() : colRow?.col.toLocaleString()}
           </div>
           <div className="">
             y: {hexPosition.row !== 0 ? hexPosition.row.toLocaleString() : colRow?.row.toLocaleString()}
           </div>
-        </div>
+        </div> */}
       </div>
       <div className="self-center px-3 flex space-x-2">
         {/* <CircleButton

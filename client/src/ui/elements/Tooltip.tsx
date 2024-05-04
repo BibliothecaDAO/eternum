@@ -32,7 +32,7 @@ export const Tooltip = ({ className }: TooltipProps) => {
         <div
           ref={ref}
           className={clsx(
-            "fixed z-[100] inline-flex opacity-90 text-xxs -translate-x-1/2 p-2 bg-brown/90 uppercase flex-col justify-start items-center text-gold",
+            "fixed z-[100] inline-flex opacity-90 text-xxs -translate-x-1/2 px-4 py-1 bg-brown/90 uppercase flex-col justify-start items-center text-gold leading-loose font-bold",
             position == "top" && "-translate-y-[150%]",
             position == "bottom" && "translate-y-full",
             position == "left" && "-translate-x-[110%] -translate-y-1/2",
