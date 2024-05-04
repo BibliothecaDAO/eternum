@@ -23,7 +23,7 @@ export const ArmiesAtLocation = () => {
     },
   } = useDojo();
 
-  const { formattedRealmsAtPosition } = useStructuresPosition({ position: { x, y } });
+  const { formattedRealmsAtPosition, structuresAtPosition } = useStructuresPosition({ position: { x, y } });
   const { allArmies, userArmies } = usePositionArmies({ position: { x, y } });
 
   const { toggleModal } = useModal();
@@ -48,9 +48,16 @@ export const ArmiesAtLocation = () => {
       {allArmies.length !== 0 && (
         <>
           <Headline className="my-3">Armies</Headline>
-          <div className="grid grid-cols-3">
+          <div className="grid grid-cols-2 gap-2">
             {allArmies.map((entity, index) => (
-              <ArmyViewCard onClick={() => toggleModal(<ArmyActions army={entity} />)} key={index} army={entity} />
+              <ArmyViewCard
+                actions={structuresAtPosition}
+                onClick={() => {
+                  structuresAtPosition ? toggleModal(<ArmyActions army={entity} />) : console.log("no structures");
+                }}
+                key={index}
+                army={entity}
+              />
             ))}
           </div>
         </>
@@ -118,18 +125,18 @@ export const ArmyActions = ({ army }: { army: ArmyAndName }) => {
             )}
             <div className="grid ">
               {formattedRealmsAtPosition.map((realm, index) => (
-                // <RealmListItem key={realm.entity_id} realm={realm} />
-                <RealmViewCard
-                  self={false}
-                  onPillage={() =>
-                    provider.battle_pillage({ signer: account, army_id: army.entity_id, structure_id: realm.entity_id })
-                  }
-                  onSiege={() =>
-                    provider.battle_pillage({ signer: account, army_id: army.entity_id, structure_id: realm.entity_id })
-                  }
-                  key={index}
-                  realm={realm}
-                />
+                <RealmListItem key={realm.entity_id} realm={realm} />
+                // <RealmViewCard
+                //   self={false}
+                //   onPillage={() =>
+                //     provider.battle_pillage({ signer: account, army_id: army.entity_id, structure_id: realm.entity_id })
+                //   }
+                //   onSiege={() =>
+                //     provider.battle_pillage({ signer: account, army_id: army.entity_id, structure_id: realm.entity_id })
+                //   }
+                //   key={index}
+                //   realm={realm}
+                // />
               ))}
             </div>
           </div>

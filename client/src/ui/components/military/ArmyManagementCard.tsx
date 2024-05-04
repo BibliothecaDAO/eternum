@@ -342,7 +342,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
       <div className="grid grid-cols-3 gap-2 my-2">
         {troops.map((troop) => (
           <div className="p-2 border" key={troop.name}>
-            <img src={`/images/units/${nameMapping[troop.name]}.png`} alt={nameMapping[troop.name]} />
+            {/* <img src={`/images/units/${nameMapping[troop.name]}.png`} alt={nameMapping[troop.name]} /> */}
             <h5 className="font-bold">
               {nameMapping[troop.name]} [{troop.current}]
             </h5>

@@ -5,6 +5,8 @@ import { useEntityQuery } from "@dojoengine/react";
 import { useMemo } from "react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { unpackResources } from "@/ui/utils/packedData";
+import { getRealmNameById } from "@/ui/utils/realms";
 
 export const useStructures = () => {
   const {
@@ -45,7 +47,11 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
       const entityOwner = getComponentValue(EntityOwner, realm_entity_id);
       const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
 
-      return { ...realm, self: owner?.address === BigInt(account.address) };
+      const resources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+
+      const name = getRealmNameById(realm.realm_id);
+
+      return { ...realm, resources, self: owner?.address === BigInt(account.address), name };
     });
   }, [realmsAtPosition]);
 
@@ -56,8 +62,13 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
     });
   }, [banksAtPosition]);
 
+  const structuresAtPosition = useMemo(() => {
+    return formattedRealmsAtPosition.length > 0 || formattedBanksAtPosition.length > 0;
+  }, [formattedRealmsAtPosition, formattedBanksAtPosition]);
+
   return {
     formattedRealmsAtPosition,
     formattedBanksAtPosition,
+    structuresAtPosition,
   };
 };

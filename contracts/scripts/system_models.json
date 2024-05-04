@@ -126,6 +126,8 @@
     "Inventory",
     "Protector",
     "Protectee",
-    "ResourceTransferLock"
+    "ResourceTransferLock",
+    "Loyalty",
+    "ArrivalTime"
   ]
 }

@@ -1,10 +1,12 @@
-import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import { DESTINATION_TYPE, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
 import { divideByPrecision, getEntityIdFromKeys } from "../../ui/utils/utils";
 import { CombatInfo } from "@bibliothecadao/eternum";
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { shortString } from "starknet";
 
 export function useCombat() {
   const {
@@ -40,64 +42,6 @@ export function useCombat() {
     });
   };
 
-  // const useEnemeyRaiders = (owner: bigint) => {
-  //   let entityIds = useEntityQuery([
-  //     Has(Attack),
-  //     Has(Movable),
-  //     NotValue(Health, { value: 0n }),
-  //     NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
-  //     NotValue(Owner, { address: owner }),
-  //   ]);
-
-  //   // find dead enemy entities with items in inventory
-  //   const deadEntitiesWithResources = useEntityQuery([
-  //     Has(Attack),
-  //     Has(Movable),
-  //     NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
-  //     HasValue(Health, { value: 0n }),
-  //     NotValue(Owner, { address: owner }),
-  //   ]);
-
-  //   entityIds = entityIds.concat(deadEntitiesWithResources);
-
-  //   return entityIds.map((id) => {
-  //     const attack = getComponentValue(Attack, id);
-  //     return attack!.entity_id;
-  //   });
-  // };
-
-  // const useEnemyRaidersOnPosition = (owner: bigint, position: Position) => {
-  //   const { x, y } = position;
-  //   const entityIds = useEntityQuery([
-  //     Has(Attack),
-  //     Has(Movable),
-  //     NotValue(Health, { value: 0n }),
-  //     HasValue(Position, { x, y }),
-  //     NotValue(Owner, { address: owner }),
-  //   ]);
-
-  //   return entityIds.map((id) => {
-  //     const attack = getComponentValue(Attack, id);
-  //     return attack!.entity_id;
-  //   });
-  // };
-
-  // const useOwnerRaidersOnPosition = (owner: bigint, position: Position) => {
-  //   const { x, y } = position;
-  //   const entityIds = useEntityQuery([
-  //     Has(Attack),
-  //     Has(Movable),
-  //     HasValue(Position, { x, y }),
-  //     HasValue(Owner, { address: owner }),
-  //     NotValue(Health, { value: 0n }),
-  //   ]);
-
-  //   return entityIds.map((id) => {
-  //     const attack = getComponentValue(Attack, id);
-  //     return attack!.entity_id;
-  //   });
-  // };
-
   const getOwnerRaidersOnPosition = (position: Position) => {
     const { x, y } = position;
     const entityIds = Array.from(
@@ -128,6 +72,7 @@ export function useCombat() {
       const entityOwner = getComponentValue(EntityOwner, entityIndex);
       const owner = getComponentValue(Owner, entityIndex);
       const army = getComponentValue(Army, entityIndex);
+      const name = getComponentValue(EntityName, entityIndex);
 
       /// @note: determine the type of position the raider is on (home, other realm, hyperstructure, bank)
       let locationEntityId: bigint | undefined;
@@ -188,6 +133,7 @@ export function useCombat() {
         },
         battleId: BigInt(army?.battle_id || 0),
         battleSide: army?.battle_side || 0,
+        name: name ? shortString.decodeShortString(name.name.toString()) : `Army ${army?.entity_id}`,
       };
     });
   };

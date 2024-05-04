@@ -26,15 +26,21 @@ export const ResourceCost = ({
   return (
     <div
       className={clsx(
-        "relative flex items-center px-1 rounded ",
+        "relative flex items-center border border-gold/30 p-1",
         type === "horizontal" ? "flex-row" : "flex-col justify-center",
         className,
       )}
     >
-      <ResourceIcon isLabor={isLabor} withTooltip={withTooltip} resource={trait || ""} size="md" />
+      <ResourceIcon
+        className="self-center"
+        isLabor={isLabor}
+        withTooltip={withTooltip}
+        resource={trait || ""}
+        size="md"
+      />
       <div
         className={clsx(
-          "relative flex flex-col shrink-0",
+          "relative flex flex-col shrink-0 mt-2",
           type === "horizontal" ? "ml-1 font-bold  text-left" : "items-center",
         )}
       >
