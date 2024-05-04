@@ -7,13 +7,9 @@ import { useMemo } from "react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "@/dojo/createClientComponents";
 
-const formatArmies = (
-  armies: Entity[],
-  Army: Component,
-  Name: Component,
-): (ClientComponents["Army"]["schema"] & {
-  name: string;
-})[] => {
+export type ArmyAndName = ClientComponents["Army"]["schema"] & { name: string };
+
+const formatArmies = (armies: Entity[], Army: Component, Name: Component): ArmyAndName[] => {
   return armies.map((id) => {
     const army = getComponentValue(Army, id) as ClientComponents["Army"]["schema"];
     const name = getComponentValue(Name, id) as {

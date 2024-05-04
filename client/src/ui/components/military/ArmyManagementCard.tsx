@@ -224,13 +224,13 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
 
       <div className="my-2 flex justify-between">
         <div className="flex">
-          {/* <div className="mr-2 self-center">
+          <div className="mr-2 self-center">
             {checkSamePosition
               ? "At Base "
               : position
               ? `(x:${position.x.toLocaleString()}, y: ${position.y.toLocaleString()})`
               : "Unknown"}
-          </div> */}
+          </div>
 
           <Button
             variant="outline"
@@ -258,7 +258,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
           </Button>
         </div>
 
-        {!isTraveling && (
+        {!isTraveling && !checkSamePosition && (
           <div className="flex space-x-2">
             {travelToBase ? (
               <>

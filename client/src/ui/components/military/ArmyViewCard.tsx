@@ -8,15 +8,22 @@ export const ArmyViewCard = ({
   active,
 }: {
   army: ClientComponents["Army"]["schema"] & { name: string };
-  onClick: (entityId: string) => void;
+  onClick?: (entityId: string) => void;
   active?: boolean;
 }) => {
+  const handleToggle = (id: string) => {
+    if (onClick) {
+      if (active) {
+        return onClick("");
+      }
+      onClick(id);
+    }
+  };
+
   return (
     <div
-      onClick={() => onClick(army.entity_id.toString())}
-      className={` p-2 hover:bg-gold hover:text-brown border border-transparent ${
-        active ? "bg-gold text-brown animate-pulse" : ""
-      }`}
+      onClick={() => (onClick ? handleToggle(army.entity_id.toString()) : null)}
+      className={` p-2 hover:bg-gold hover:text-brown border ${active ? "bg-gold text-brown animate-pulse" : ""}`}
     >
       <h5>{army.name}</h5>
       <hr />

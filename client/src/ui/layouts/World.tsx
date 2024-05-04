@@ -20,12 +20,29 @@ import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "./Onboarding";
 import { HooksComponent } from "../components/HooksComponent";
 import { Transactions } from "../modules/transactions/Transactions";
+import useRealmStore from "@/hooks/store/useRealmStore";
 
 export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const progress = useProgress((state) => state.progress);
+
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+
+  const showModal = useUIStore((state) => state.showModal);
+  const modalContent = useUIStore((state) => state.modalContent);
+  const toggleModal = useUIStore((state) => state.toggleModal);
+
+  useEffect(() => {
+    if (realmEntityIds.length > 4) {
+      setBlankOverlay(false);
+    } else {
+      setBlankOverlay(true);
+    }
+  }, [realmEntityIds]);
 
   useEffect(() => {
     if (progress === 100) {
@@ -37,7 +54,8 @@ export const World = () => {
 
   return (
     <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden">
-      <BlankOverlayContainer>
+      <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
+      <BlankOverlayContainer open={showBlankOverlay}>
         <Onboarding />
       </BlankOverlayContainer>
       <HooksComponent />

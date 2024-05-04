@@ -51,6 +51,9 @@ interface UIStore {
   moveCameraToColRow: (col: number, row: number, speed?: number | undefined, transitionMode?: boolean) => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
+  modalContent: React.ReactNode;
+  toggleModal: (content: React.ReactNode) => void;
+  showModal: boolean;
 }
 
 const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore & BuildModeStore>((set, get) => ({
@@ -172,6 +175,9 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore & BuildMo
   },
   isLoadingScreenEnabled: true,
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
+  modalContent: null,
+  toggleModal: (content) => set({ modalContent: content, showModal: !get().showModal }),
+  showModal: false,
   ...createPopupsSlice(set, get),
   ...createDataStoreSlice(set),
   ...createMapStoreSlice(set),

@@ -5,6 +5,9 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      backgroundImage: {
+        map: "url(/map.svg)",
+      },
       fontSize: {
         xxs: ".625rem",
       },

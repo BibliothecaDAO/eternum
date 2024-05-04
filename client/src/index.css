@@ -139,11 +139,11 @@ h4 {
 }
 
 h5 {
-  @apply text-base sm:text-lg md:text-xl font-light ;
+  @apply text-base sm:text-lg md:text-xl ;
 }
 
 h6 {
-  @apply text-sm sm:text-base md:text-lg font-thin ;
+  @apply text-sm sm:text-base md:text-lg uppercase ;
 }
 
 
