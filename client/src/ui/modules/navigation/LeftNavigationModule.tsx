@@ -58,6 +58,7 @@ export const LeftNavigationModule = () => {
         <CircleButton
           label={"expand all popups"}
           size="sm"
+          tooltipLocation="right"
           onClick={() =>
             openAllPopups([
               entityDetails,
@@ -78,21 +79,33 @@ export const LeftNavigationModule = () => {
     },
     {
       button: (
-        <CircleButton label={"close all popups"} size="sm" onClick={() => closeAllPopups()}>
+        <CircleButton tooltipLocation="right" label={"close all popups"} size="sm" onClick={() => closeAllPopups()}>
           <Close className="w-4" />
         </CircleButton>
       ),
     },
     {
       button: (
-        <CircleButton active={isPopupOpen(settings)} label={"settings"} size="sm" onClick={() => togglePopup(settings)}>
+        <CircleButton
+          tooltipLocation="right"
+          active={isPopupOpen(settings)}
+          label={"settings"}
+          size="sm"
+          onClick={() => togglePopup(settings)}
+        >
           <Settings className="w-4" />
         </CircleButton>
       ),
     },
     {
       button: (
-        <CircleButton active={isPopupOpen(settings)} label={"walkthrough"} size="sm" onClick={() => setIsOpen(true)}>
+        <CircleButton
+          tooltipLocation="right"
+          active={isPopupOpen(settings)}
+          label={"walkthrough"}
+          size="sm"
+          onClick={() => setIsOpen(true)}
+        >
           <Refresh className="w-4 " />
         </CircleButton>
       ),
