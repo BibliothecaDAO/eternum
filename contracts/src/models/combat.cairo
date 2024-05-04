@@ -47,7 +47,7 @@ impl HealthImpl of HealthTrait {
     }
 
     fn percentage_left(self: Health) -> u128 {
-        self.current * PercentageValueImpl::_100().into() / self.lifetime + 1
+        self.current * PercentageValueImpl::_100().into() / (self.lifetime + 1)
     }
 }
 
