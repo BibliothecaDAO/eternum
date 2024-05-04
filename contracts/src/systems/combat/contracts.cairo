@@ -577,8 +577,7 @@ mod combat_systems {
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
                     * PercentageValueImpl::_100().into()
-                    / structure_army_strength
-                    + 1;
+                    / (structure_army_strength + 1);
 
                 let mut count = 0;
                 loop {
