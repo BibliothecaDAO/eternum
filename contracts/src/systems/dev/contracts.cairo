@@ -1,3 +1,3 @@
-mod resource;
 mod bank;
+mod resource;
 
