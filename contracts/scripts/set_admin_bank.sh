@@ -28,7 +28,7 @@ if [[ "$mode" != "prod" && "$mode" != "dev" ]]; then
     usage
 fi
 
-source ./scripts/env_variables.sh dev
+source ./scripts/env_variables.sh $mode
 
 source ./scripts/contracts.sh
 
