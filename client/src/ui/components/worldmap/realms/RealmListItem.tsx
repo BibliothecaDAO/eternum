@@ -8,9 +8,10 @@ import { InventoryResources } from "../../resources/InventoryResources";
 
 type RealmListItemProps = {
   realm: RealmExtended;
+  onClick?: () => void;
 };
 
-export const RealmListItem = ({ realm }: RealmListItemProps) => {
+export const RealmListItem = ({ realm, onClick }: RealmListItemProps) => {
   const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
 
   const { getRealmAddressName } = useRealm();

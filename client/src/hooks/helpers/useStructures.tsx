@@ -43,7 +43,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
   const realmsAtPosition = useEntityQuery([HasValue(Position, position), Has(Realm)]);
   const banksAtPosition = useEntityQuery([HasValue(Position, position), Has(Bank)]);
 
-  const formattedRealmsAtPosition = useMemo(() => {
+  const formattedRealmAtPosition = useMemo(() => {
     return realmsAtPosition.map((realm_entity_id: any) => {
       const realm = getComponentValue(Realm, realm_entity_id) as any;
       const entityOwner = getComponentValue(EntityOwner, realm_entity_id);
@@ -55,21 +55,21 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
 
       return { ...realm, resources, self: owner?.address === BigInt(account.address), name };
     });
-  }, [realmsAtPosition]);
+  }, [realmsAtPosition])[0];
 
   const formattedBanksAtPosition = useMemo(() => {
     return banksAtPosition.map((bank_entity_id: any) => {
       const bank = getComponentValue(Bank, bank_entity_id);
       return { ...bank };
     });
-  }, [banksAtPosition]);
+  }, [banksAtPosition])[0];
 
   const structuresAtPosition = useMemo(() => {
-    return formattedRealmsAtPosition.length > 0 || formattedBanksAtPosition.length > 0;
-  }, [formattedRealmsAtPosition, formattedBanksAtPosition]);
+    return formattedRealmAtPosition || formattedBanksAtPosition;
+  }, [formattedRealmAtPosition, formattedBanksAtPosition]);
 
   return {
-    formattedRealmsAtPosition,
+    formattedRealmAtPosition,
     formattedBanksAtPosition,
     structuresAtPosition,
   };

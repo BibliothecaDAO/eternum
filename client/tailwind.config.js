@@ -7,6 +7,7 @@ export default {
     extend: {
       backgroundImage: {
         map: "url(/map.svg)",
+        "battle-one": "url(/test-bg.png)",
       },
       fontSize: {
         xxs: ".625rem",

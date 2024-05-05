@@ -416,6 +416,45 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Protectee: (() => {
+      return defineComponent(
+        world,
+        { army_id: RecsType.BigInt, protectee_id: RecsType.BigInt },
+        {
+          metadata: {
+            name: "Protectee",
+            types: ["u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Protector: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.BigInt, army_id: RecsType.BigInt },
+        {
+          metadata: {
+            name: "Protector",
+            types: ["u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Loyalty: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.BigInt, last_updated_tick: RecsType.BigInt },
+        {
+          metadata: {
+            name: "Loyalty",
+            types: ["u128", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     WorldConfig: (() => {
       return defineComponent(
         world,
