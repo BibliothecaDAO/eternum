@@ -8,6 +8,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "@/dojo/createClientComponents";
 
 export type ArmyAndName = ClientComponents["Army"]["schema"] & { name: string } & ClientComponents["Health"]["schema"] &
+  ClientComponents["Protectee"]["schema"] &
   ClientComponents["Quantity"]["schema"] &
   ClientComponents["Movable"]["schema"] &
   ClientComponents["Capacity"]["schema"] &
@@ -21,6 +22,7 @@ export type ArmyAndName = ClientComponents["Army"]["schema"] & { name: string } 
 const formatArmies = (
   armies: Entity[],
   Army: Component,
+  Protectee: Component,
   Name: Component,
   Health: Component,
   Quantity: Component,
@@ -34,6 +36,7 @@ const formatArmies = (
 ): ArmyAndName[] => {
   return armies.map((id) => {
     const army = getComponentValue(Army, id) as ClientComponents["Army"]["schema"];
+    const protectee = getComponentValue(Protectee, id) as ClientComponents["Protectee"]["schema"];
     const health = getComponentValue(Health, id) as ClientComponents["Health"]["schema"];
     const quantity = getComponentValue(Quantity, id) as ClientComponents["Quantity"]["schema"];
     const movable = getComponentValue(Movable, id) as ClientComponents["Movable"]["schema"];
@@ -58,6 +61,7 @@ const formatArmies = (
 
     return {
       ...army,
+      ...protectee,
       ...health,
       ...quantity,
       ...movable,
@@ -68,7 +72,9 @@ const formatArmies = (
       ...owner,
       realm,
       homePosition,
-      name: name ? shortString.decodeShortString(name.name.toString()) : `Army ${army?.entity_id}`,
+      name:
+        (name ? shortString.decodeShortString(name.name.toString()) : `Army ${army?.entity_id}`) +
+        ` - ${protectee ? "Defense 🛡️" : "Attack 🗡️"}`,
     };
   });
 };
@@ -87,6 +93,7 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
         ArrivalTime,
         Realm,
         Army,
+        Protectee,
         EntityName,
       },
     },
@@ -99,6 +106,7 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
       formatArmies(
         armies,
         Army,
+        Protectee,
         EntityName,
         Health,
         Quantity,
@@ -128,6 +136,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
           ArrivalTime,
           Realm,
           Army,
+          Protectee,
           EntityName,
         },
       },
@@ -140,6 +149,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
       return formatArmies(
         allArmiesAtPosition,
         Army,
+        Protectee,
         EntityName,
         Health,
         Quantity,

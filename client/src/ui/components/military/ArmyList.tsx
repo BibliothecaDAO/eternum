@@ -4,12 +4,13 @@ import { InventoryResources } from "../resources/InventoryResources";
 import { Position } from "@bibliothecadao/eternum";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { useDojo } from "@/hooks/context/DojoContext";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Button from "@/ui/elements/Button";
 import { ArmyViewCard } from "./ArmyViewCard";
 
 export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
+  const armyList = entityArmies();
   const {
     account: { account },
     setup: {
@@ -18,6 +19,8 @@ export const EntityArmyList = ({ entity_id }: any) => {
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const canCreateProtector = useMemo(() => !armyList.find((army) => army.protectee_id), [armyList]);
 
   const handleCreateArmy = (army_is_protector: boolean) => {
     setIsLoading(true);
@@ -31,7 +34,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
   return (
     <>
       <EntityList
-        list={entityArmies()}
+        list={armyList}
         headerPanel={
           <>
             {" "}
@@ -54,7 +57,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
                 isLoading={isLoading}
                 variant="primary"
                 onClick={() => handleCreateArmy(true)}
-                disabled={isLoading}
+                disabled={isLoading || !canCreateProtector}
               >
                 Create Defense
               </Button>

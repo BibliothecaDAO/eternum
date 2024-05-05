@@ -73,7 +73,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
   }, [banksAtPosition])[0];
 
   const structuresAtPosition = useMemo(() => {
-    return formattedRealmAtPosition.entity_id != null || formattedBanksAtPosition != null;
+    return formattedRealmAtPosition?.entity_id != null || formattedBanksAtPosition != null;
   }, [formattedRealmAtPosition, formattedBanksAtPosition]);
 
   return {
