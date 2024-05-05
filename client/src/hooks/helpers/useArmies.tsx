@@ -1,11 +1,12 @@
 import { useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../context/DojoContext";
-import { Component, Entity, Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { Component, Entity, Has, HasValue, Not, NotValue, getComponentValue } from "@dojoengine/recs";
 import { Position } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import { useMemo } from "react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { getForeignKeyEntityId } from "@/ui/utils/utils";
 
 export type ArmyAndName = ClientComponents["Army"]["schema"] & { name: string } & ClientComponents["Health"]["schema"] &
   ClientComponents["Protectee"]["schema"] &
@@ -44,7 +45,13 @@ const formatArmies = (
     const arrivalTime = getComponentValue(ArrivalTime, id) as ClientComponents["ArrivalTime"]["schema"];
     const position = getComponentValue(Position, id) as ClientComponents["Position"]["schema"];
     const entityOwner = getComponentValue(EntityOwner, id) as ClientComponents["EntityOwner"]["schema"];
-    const owner = getComponentValue(Owner, id) as ClientComponents["Owner"]["schema"];
+    let owner = getComponentValue(Owner, id) as ClientComponents["Owner"]["schema"];
+    if (!owner && entityOwner?.entity_owner_id) {
+      owner = getComponentValue(
+        Owner,
+        getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+      ) as ClientComponents["Owner"]["schema"];
+    }
     const name = getComponentValue(Name, id) as ClientComponents["EntityName"]["schema"];
     const realm =
       entityOwner &&
@@ -75,8 +82,52 @@ const formatArmies = (
       name:
         (name ? shortString.decodeShortString(name.name.toString()) : `Army ${army?.entity_id}`) +
         ` - ${protectee ? "Defense 🛡️" : "Attack 🗡️"}`,
+      // note: have to explicitly specify entity id as the army entity id or else it's realm entity id
+      entity_id: army.entity_id,
     };
   });
+};
+
+export const useArmies = () => {
+  const {
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+      },
+    },
+  } = useDojo();
+
+  const armies = useEntityQuery([Has(Army), Has(Health), NotValue(Health, { lifetime: 0n })]);
+
+  return {
+    armies: () =>
+      formatArmies(
+        armies,
+        Army,
+        Protectee,
+        EntityName,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Position,
+        EntityOwner,
+        Owner,
+        Realm,
+      ),
+  };
 };
 
 export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
@@ -167,7 +218,6 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
       return allArmies.filter((army: any) => {
         const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([army?.entity_id || 0n]));
         const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
-
         return owner?.address === BigInt(account.address);
       });
     }, [allArmies]);
