@@ -8,7 +8,7 @@ import { InventoryResources } from "../../resources/InventoryResources";
 import { Structure } from "@/hooks/helpers/useStructures";
 
 type RealmListItemProps = {
-  realm: Structure;
+  realm: Structure | RealmExtended;
   onClick?: () => void;
 };
 

@@ -61,7 +61,8 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
   const position = { x: entity.x, y: entity.y };
 
   const tickMove = useMemo(
-    () => (entity.entity_id ? getComponentValue(TickMove, getEntityIdFromKeys([entity.entity_id])) : undefined),
+    () =>
+      entity.entity_id ? getComponentValue(TickMove, getEntityIdFromKeys([BigInt(entity.entity_id || 0n)])) : undefined,
     [entity.entity_id],
   );
 
@@ -239,7 +240,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
                 setIsLoadingScreenEnabled(true);
                 setTimeout(() => {
                   setLocation("/map");
-                  if (position.x !== 0 && position.y !== 0) {
+                  if (Number(position.x) !== 0 && Number(position.y) !== 0) {
                     moveCameraToColRow(position.x, position.y, 0.01, true);
                     setTimeout(() => {
                       moveCameraToColRow(position.x, position.y, 1.5);
@@ -247,7 +248,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
                   }
                 }, 100);
               } else {
-                if (position.x !== 0 && position.y !== 0) {
+                if (Number(position.x) !== 0 && Number(position.y) !== 0) {
                   moveCameraToColRow(position.x, position.y);
                 }
               }
