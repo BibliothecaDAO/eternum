@@ -96,7 +96,10 @@ export const ArmyActions = ({ army }: { army: ArmyAndName }) => {
   const [loading, setLoading] = useState(false);
 
   const getProtector = useMemo(() => {
-    const protector = getComponentValue(Protector, getEntityIdFromKeys([BigInt(formattedRealmAtPosition.entity_id)]));
+    const protector = getComponentValue(
+      Protector,
+      getEntityIdFromKeys([BigInt(formattedRealmAtPosition?.entity_id || 0n)]),
+    );
     const protectorArmy = getComponentValue(Army, getEntityIdFromKeys([BigInt(protector?.army_id || 0n)]));
     const health = getComponentValue(Health, getEntityIdFromKeys([BigInt(protectorArmy?.entity_id || 0n)]));
 
@@ -123,7 +126,7 @@ export const ArmyActions = ({ army }: { army: ArmyAndName }) => {
     await provider.battle_pillage({
       signer: account,
       army_id: army.entity_id,
-      structure_id: formattedRealmAtPosition.entity_id,
+      structure_id: formattedRealmAtPosition?.entity_id || 0n,
     });
 
     setLoading(false);
@@ -131,10 +134,6 @@ export const ArmyActions = ({ army }: { army: ArmyAndName }) => {
 
   return (
     <ModalContainer>
-      <div className="text-center">
-        <h2>Combat</h2>
-      </div>
-
       <div className="flex justify-center">
         <div className="grid grid-cols-12 gap-8 container ">
           <div className="col-span-3">

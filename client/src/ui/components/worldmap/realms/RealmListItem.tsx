@@ -5,9 +5,10 @@ import clsx from "clsx";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { RealmExtended, useRealm } from "../../../../hooks/helpers/useRealm";
 import { InventoryResources } from "../../resources/InventoryResources";
+import { Structure } from "@/hooks/helpers/useStructures";
 
 type RealmListItemProps = {
-  realm: RealmExtended;
+  realm: Structure;
   onClick?: () => void;
 };
 
