@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Subscription } from "rxjs";
 import { Army } from "./Army";
 import { getRealmOrderNameById } from "../../../utils/realms";
+import { useArmies } from "@/hooks/helpers/useArmies";
 
 type ArmiesProps = {
   props?: any;
@@ -18,16 +19,12 @@ type ArmiesProps = {
 export const Armies = ({}: ArmiesProps) => {
   const {
     account: { account },
-    setup: {
-      components: { Position, Owner, Health },
-    },
   } = useDojo();
 
   const realms = useRealmStore((state) => state.realmEntityIds);
 
-  const { useOwnerArmies } = useCombat();
-
-  const myArmies = useOwnerArmies(BigInt(account.address));
+  const { armies } = useArmies();
+  const armiesList = armies();
 
   // set animation path for enemies
   useUpdateAnimationPaths();
@@ -38,39 +35,22 @@ export const Armies = ({}: ArmiesProps) => {
     return orderName.charAt(0).toUpperCase() + orderName.slice(1);
   }, []);
 
-  const armyInfo = useMemo(
-    () =>
-      [...myArmies]
-        .map((armyId) => {
-          const position = getComponentValue(Position, getEntityIdFromKeys([armyId?.entity_id || 0n]));
-          const health = getComponentValue(Health, getEntityIdFromKeys([armyId?.entity_id || 0n]));
-          // const isDead = health?.current ? false : true;
-
-          const isDead = false;
-          const owner = getComponentValue(Owner, getEntityIdFromKeys([armyId?.entity_id || 0n]));
-          const isMine = owner?.address === BigInt(account.address);
-
-          // // if animated army dont display
-          if (!position) return;
-          let z = 0.32;
-
+  const armyInfo = useMemo(() => {
+    return (
+      [...armiesList]
+        // only show movable armies
+        .filter((army) => army.sec_per_km > 0)
+        .map((army) => {
+          const isMine = BigInt(army.address) === BigInt(account.address);
           return {
-            contractPos: { x: position.x, y: position.y },
-            uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
-            id: position.entity_id,
-            isDead,
+            contractPos: { x: army.x, y: army.y },
+            uiPos: { ...getUIPositionFromColRow(army.x, army.y), z: 0.32 },
+            id: BigInt(army.entity_id),
             isMine,
           };
         })
-        .filter(Boolean) as {
-        contractPos: Position;
-        uiPos: UIPosition;
-        id: bigint;
-        isDead: boolean;
-        isMine: boolean;
-      }[],
-    [myArmies],
-  );
+    );
+  }, [armiesList]); // Fixed missing dependency array
 
   return (
     <group>

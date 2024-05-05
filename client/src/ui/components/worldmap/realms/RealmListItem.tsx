@@ -5,12 +5,14 @@ import clsx from "clsx";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { RealmExtended, useRealm } from "../../../../hooks/helpers/useRealm";
 import { InventoryResources } from "../../resources/InventoryResources";
+import { Structure } from "@/hooks/helpers/useStructures";
 
 type RealmListItemProps = {
-  realm: RealmExtended;
+  realm: Structure | RealmExtended;
+  onClick?: () => void;
 };
 
-export const RealmListItem = ({ realm }: RealmListItemProps) => {
+export const RealmListItem = ({ realm, onClick }: RealmListItemProps) => {
   const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
 
   const { getRealmAddressName } = useRealm();

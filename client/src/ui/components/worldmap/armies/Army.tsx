@@ -7,11 +7,10 @@ import { WarriorModel } from "../../models/armies/WarriorModel";
 import { Vector3 } from "three";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import { ArmyInfoLabel } from "./ArmyInfoLabel";
-import { Flag } from "../Flag";
 import { ArmyMenu } from "./ArmyMenu";
 
 type ArmyProps = {
-  info: { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: boolean; order: string; isMine: boolean };
+  info: { contractPos: Position; uiPos: UIPosition; id: bigint; order: string; isMine: boolean };
   offset: { x: number; y: number };
 };
 
@@ -106,12 +105,11 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
   });
 
   const onClick = useCallback(() => {
-    console.log(info);
-    if (!info.isDead && !isRunning && info.isMine) {
+    if (!isRunning && info.isMine) {
       playBuildMilitary();
     }
     setSelectedEntity({ id: info.id, position: info.contractPos });
-  }, [info.isDead, info.id, info.contractPos, playBuildMilitary, setSelectedEntity]);
+  }, [info.id, info.contractPos, playBuildMilitary, setSelectedEntity]);
 
   const onPointerIn = useCallback((e: any) => {
     e.stopPropagation();
@@ -125,7 +123,6 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
   return (
     <>
       {hovered && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />}
-      {/* {!info.isDead && info.isMine && <Flag angle={rotationY} order={info.order} position={position}></Flag>} */}
       <group position={position}>
         {selectedEntity && selectedEntity.id == info.id && <ArmyMenu entityId={info.id} />}
         <WarriorModel
@@ -137,7 +134,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
           onPointerOut={onPointerOut}
           isRunning={isRunning}
           hovered={hovered}
-          isDead={info.isDead}
+          isDead={false}
           isFriendly={info.isMine}
         />
       </group>

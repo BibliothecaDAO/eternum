@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/ui/elements/Select";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
+import { ArmyAndName } from "@/hooks/helpers/useArmies";
 
 export const nameMapping: { [key: number]: string } = {
   [ResourcesIds.Knight]: "Knight",
@@ -31,14 +32,19 @@ export const nameMapping: { [key: number]: string } = {
   [ResourcesIds.Paladin]: "Paladin",
 };
 
+type ArmyManagementCardProps = {
+  owner_entity: bigint;
+  entity: ArmyAndName;
+};
+
 // TODO Unify this. Push all useComponentValues up to the top level
-export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
+export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardProps) => {
   const {
     account: { account },
     network: { provider },
     setup: {
       systemCalls: { army_buy_troops, travel },
-      components: { EntityName, Position, EntityOwner, ArrivalTime, TickMove },
+      components: { Position, TickMove },
     },
   } = useDojo();
 
@@ -52,19 +58,17 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
   const [travelToBase, setTravelToBase] = useState(false);
 
   // TODO: Clean this up
-  const name = useComponentValue(EntityName, getEntityIdFromKeys([BigInt(entity.entity_id)]));
-  const position = useComponentValue(Position, getEntityIdFromKeys([BigInt(entity.entity_id)])) || { x: 0, y: 0 };
-  const entityOwner = useComponentValue(EntityOwner, getEntityIdFromKeys([BigInt(entity.entity_id)]));
-  const arrivalTime = useComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(entity.entity_id)]));
+  const position = { x: entity.x, y: entity.y };
 
   const tickMove = useMemo(
-    () => (entity.entityId ? getComponentValue(TickMove, getEntityIdFromKeys([entity.entityId])) : undefined),
-    [entity.entityId],
+    () =>
+      entity.entity_id ? getComponentValue(TickMove, getEntityIdFromKeys([BigInt(entity.entity_id || 0n)])) : undefined,
+    [entity.entity_id],
   );
 
   const isPassiveTravel = useMemo(
-    () => (arrivalTime?.arrives_at && nextBlockTimestamp ? arrivalTime?.arrives_at > nextBlockTimestamp : false),
-    [arrivalTime, nextBlockTimestamp],
+    () => (entity.arrives_at && nextBlockTimestamp ? entity.arrives_at > nextBlockTimestamp : false),
+    [nextBlockTimestamp],
   );
 
   const isActiveTravel = useMemo(
@@ -74,18 +78,16 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
 
   const isTraveling = useMemo(() => {
     return isPassiveTravel || isActiveTravel;
-  }, [arrivalTime, nextBlockTimestamp]);
+  }, [nextBlockTimestamp]);
 
   const entityOwnerPosition = useComponentValue(
     Position,
-    getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]),
+    getEntityIdFromKeys([BigInt(entity.entity_owner_id || 0)]),
   ) || { x: 0, y: 0 };
 
   const checkSamePosition = useMemo(() => {
     return position.x === entityOwnerPosition.x && position.y === entityOwnerPosition.y;
   }, [entityOwnerPosition, position]);
-
-  console.log(checkSamePosition);
 
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
@@ -214,7 +216,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
             </Button>
           </div>
         ) : (
-          <h3>{name ? shortString.decodeShortString(name.name.toString()) : "Army"}</h3>
+          <h3>{entity.name}</h3>
         )}
         <Button size="xs" variant="outline" onClick={() => setEditName(!editName)}>
           edit name
@@ -238,7 +240,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
                 setIsLoadingScreenEnabled(true);
                 setTimeout(() => {
                   setLocation("/map");
-                  if (position.x !== 0 && position.y !== 0) {
+                  if (Number(position.x) !== 0 && Number(position.y) !== 0) {
                     moveCameraToColRow(position.x, position.y, 0.01, true);
                     setTimeout(() => {
                       moveCameraToColRow(position.x, position.y, 1.5);
@@ -246,7 +248,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
                   }
                 }, 100);
               } else {
-                if (position.x !== 0 && position.y !== 0) {
+                if (Number(position.x) !== 0 && Number(position.y) !== 0) {
                   moveCameraToColRow(position.x, position.y);
                 }
               }
@@ -257,87 +259,93 @@ export const ArmyManagementCard = ({ owner_entity, entity }: any) => {
           </Button>
         </div>
 
-        {!isTraveling && !checkSamePosition && (
-          <div className="flex space-x-2">
-            {travelToBase ? (
-              <>
-                <Button
-                  onClick={() =>
-                    travel({
-                      signer: account,
-                      travelling_entity_id: entity.entity_id,
-                      destination_coord_x: entityOwnerPosition.x,
-                      destination_coord_y: entityOwnerPosition.y,
-                    })
-                  }
-                  variant="outline"
-                >
-                  Confirm
-                </Button>
-                <Button onClick={() => setTravelToBase(false)} variant="outline">
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <Button onClick={() => setTravelToBase(true)} variant="outline">
-                Travel to Base
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-between">
         <div>
-          <div className="my-2 uppercase mb-1 font-bold">Status:</div>
-          {arrivalTime && isTraveling && nextBlockTimestamp ? (
-            <div className="flex ml-auto -mt-2 italic ">
-              Traveling for{" "}
-              {isPassiveTravel
-                ? formatSecondsInHoursMinutes(arrivalTime?.arrives_at - nextBlockTimestamp)
-                : "Arrives Next Tick"}
+          {!isTraveling && !checkSamePosition && (
+            <div className="flex space-x-2">
+              {travelToBase ? (
+                <>
+                  <Button
+                    onClick={() =>
+                      travel({
+                        signer: account,
+                        travelling_entity_id: entity.entity_id,
+                        destination_coord_x: entityOwnerPosition.x,
+                        destination_coord_y: entityOwnerPosition.y,
+                      })
+                    }
+                    variant="outline"
+                  >
+                    Confirm
+                  </Button>
+                  <Button onClick={() => setTravelToBase(false)} variant="outline">
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={() => setTravelToBase(true)} variant="outline">
+                  Travel to Base
+                </Button>
+              )}
             </div>
-          ) : (
-            "Idle"
           )}
         </div>
-        {!isTraveling && (
-          <div className="self-center">
-            <div className="flex">
-              <Select onValueChange={(value) => handleSetTravelLocation(value)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select a Realm" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {realms.map((realm) => {
-                      return (
-                        <SelectItem key={realm?.entity_id} value={realm?.entity_id.toString() || ""}>
-                          {realm?.name} - {realm?.timeToTravel}hrs
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={() =>
-                  travel({
-                    signer: account,
-                    travelling_entity_id: entity.entity_id,
-                    destination_coord_x: travelLocation.x,
-                    destination_coord_y: travelLocation.y,
-                  })
-                }
-                variant="outline"
-              >
-                Travel
-              </Button>
+
+        {!entity.protectee_id && entity.lifetime > 0 && (
+          <div>
+            <div className="flex justify-between">
+              <div>
+                <div className="my-2 uppercase mb-1 font-bold">Status:</div>
+                {isTraveling && nextBlockTimestamp ? (
+                  <div className="flex ml-auto -mt-2 italic ">
+                    Traveling for{" "}
+                    {isPassiveTravel
+                      ? formatSecondsInHoursMinutes(entity.arrives_at - nextBlockTimestamp)
+                      : "Arrives Next Tick"}
+                  </div>
+                ) : (
+                  "Idle"
+                )}
+              </div>
+              {!isTraveling && (
+                <div className="self-center">
+                  <div className="flex">
+                    <Select onValueChange={(value) => handleSetTravelLocation(value)}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select a Realm" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {realms.map((realm) => {
+                            return (
+                              <SelectItem key={realm?.entity_id} value={realm?.entity_id.toString() || ""}>
+                                {realm?.name} - {realm?.timeToTravel}hrs
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      onClick={() =>
+                        travel({
+                          signer: account,
+                          travelling_entity_id: entity.entity_id,
+                          destination_coord_x: travelLocation.x,
+                          destination_coord_y: travelLocation.y,
+                        })
+                      }
+                      variant="outline"
+                    >
+                      Travel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
+        <div className="mt-2 text-order-giants">{entity.lifetime && <div> Buy troops before traveling</div>}</div>
       </div>
-
       <div className="grid grid-cols-3 gap-2 my-2">
         {troops.map((troop) => (
           <div className="p-2 border" key={troop.name}>

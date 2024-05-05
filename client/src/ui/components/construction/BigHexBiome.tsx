@@ -61,7 +61,7 @@ const BigHexBiome = ({ biome }: { biome: keyof typeof biomes }) => {
   const { BiomeComponent, material } = useMemo(() => {
     return {
       BiomeComponent: biomeComponents[biome],
-      material: new THREE.MeshMatcapMaterial({ color: new THREE.Color(biomes[biome].color) }),
+      material: new THREE.MeshMatcapMaterial({ color: new THREE.Color(biomes[biome]?.color) }),
     };
   }, [biome]);
 
