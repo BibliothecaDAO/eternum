@@ -40,7 +40,7 @@ for system in $(echo $system_models_json | jq -r 'keys[]'); do
         system_var="${system}"
         contract_address="${!system_var}"
         # make the system a writer of the component
-        if [[ "$mode" != "prod" && "$mode" != "dev" ]]; then
+        if [[ "$mode" == "prod" && "$mode" != "dev" ]]; then
             commands+=("sozo --profile prod auth grant writer $model,$contract_address")
         else
             commands+=("sozo auth grant writer $model,$contract_address")
