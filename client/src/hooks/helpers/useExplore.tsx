@@ -114,6 +114,9 @@ export function useExplore() {
       unit_id: explorerId,
       direction,
       signer: account,
+    }).catch(() => {
+      // revert animation so that it goes back to the original position
+      setAnimationPaths([...animationPaths, { id: explorerId, path: path.reverse(), enemy: false }]);
     });
   };
   return { isExplored, exploredColsRows, useFoundResources, getExplorationInput, exploreHex };

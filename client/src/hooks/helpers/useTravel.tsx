@@ -24,6 +24,9 @@ export function useTravel() {
       signer: account,
       travelling_entity_id: travelingEntityId,
       directions,
+    }).catch(() => {
+      // revert animation so that it goes back to the original position
+      setAnimationPaths([...animationPaths, { id: travelingEntityId, path: path.reverse(), enemy: false }]);
     });
   };
 
