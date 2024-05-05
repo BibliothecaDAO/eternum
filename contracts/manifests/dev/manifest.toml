@@ -1717,23 +1717,6 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x70343f3eb7fb0b118f926672fcb4e3be4a36e495cb08eda93559b8c9e2fea3b"
-original_class_hash = "0x70343f3eb7fb0b118f926672fcb4e3be4a36e495cb08eda93559b8c9e2fea3b"
-abi = "abis/deployments/models/eternum_models_resources_resource_lock.json"
-name = "eternum::models::resources::resource_lock"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "release_at"
-type = "u64"
-key = false
-
-[[models]]
-kind = "DojoModel"
 class_hash = "0x5cfe113f0758e1749fa0e1307bc80c8d9c1fbe2a3b3bb1e43aae0ad3de077d7"
 original_class_hash = "0x5cfe113f0758e1749fa0e1307bc80c8d9c1fbe2a3b3bb1e43aae0ad3de077d7"
 abi = "abis/deployments/models/eternum_models_resources_resource_transfer_lock.json"
