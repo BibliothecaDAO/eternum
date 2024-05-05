@@ -1,32 +1,13 @@
 import CircleButton from "@/ui/elements/CircleButton";
-import { ReactComponent as Settings } from "@/assets/icons/common/settings.svg";
-import { ReactComponent as Close } from "@/assets/icons/common/collapse.svg";
-import { ReactComponent as Expand } from "@/assets/icons/common/expand.svg";
-import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { useMemo, useState } from "react";
-
 import { RealmListBoxes } from "@/ui/components/list/RealmListBoxes";
-
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
-
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
-import {
-  banks,
-  entityDetails,
-  eventLog,
-  hyperstructures,
-  leaderboard,
-  military,
-  resources,
-  settings,
-  trade,
-  construction,
-  assistant,
-} from "../../components/navigation/Config";
-import { SelectPreviewBuilding, SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
+import { banks, leaderboard, military, resources, trade, construction } from "../../components/navigation/Config";
+import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 
 export enum MenuEnum {
   realm = "realm",
@@ -194,6 +175,10 @@ export const BottomNavigation = () => {
             item.name !== MenuEnum.trade,
         )
       : navigation;
+  }, [location]);
+
+  useMemo(() => {
+    setActiveBar(null);
   }, [location]);
 
   if (!nextBlockTimestamp) {
