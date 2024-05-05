@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo } from "react";
 
 export function BannerFlag(props: any) {
-  const { nodes, materials } = useGLTF("/models/flag_single.glb");
+  const { nodes, materials }: any = useGLTF("/models/flag_single.glb");
 
   // * TODO: Get actual banners baseURL and let user choose banner tokenId at onboarding
   //

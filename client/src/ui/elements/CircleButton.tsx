@@ -11,6 +11,7 @@ type CircleButtonProps = {
   active?: boolean;
   label?: string;
   image?: string; // Added image prop
+  tooltipLocation?: "top" | "bottom" | "left" | "right";
 } & React.ComponentPropsWithRef<"button">;
 
 const sizes = {
@@ -30,6 +31,7 @@ const CircleButton = ({
   active,
   label,
   image,
+  tooltipLocation = "bottom",
   ...props
 }: CircleButtonProps) => {
   const { play: hoverClick } = useUiSounds(soundSelector.hoverClick);
@@ -42,7 +44,7 @@ const CircleButton = ({
         hoverClick();
         label &&
           setTooltip({
-            position: "bottom",
+            position: tooltipLocation,
             content: <span className="whitespace-nowrap pointer-events-none">{label}</span>,
           });
       }}
@@ -54,7 +56,7 @@ const CircleButton = ({
         }
       }}
       className={clsx(
-        "flex transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold hover:opacity-90 border-2  bg-gold/60 shadow-2xl  hover:sepia-0",
+        "flex transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold hover:opacity-90 border-2  bg-brown/80 shadow-2xl  hover:sepia-0",
         className,
         sizes[size],
         { "opacity-50 cursor-not-allowed": disabled },

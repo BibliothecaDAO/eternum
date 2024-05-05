@@ -78,6 +78,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const explore = async (props: SystemProps.ExploreProps) => {
+    console.log("explore", props);
     await provider.explore(props);
   };
 
@@ -117,8 +118,16 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.remove_liquidity(props);
   };
 
-  const create_army = async (props: SystemProps.CreateArmyProps) => {
+  const create_army = async (props: SystemProps.ArmyCreateProps) => {
     await provider.create_army(props);
+  };
+
+  const army_buy_troops = async (props: SystemProps.ArmyBuyTroopsProps) => {
+    await provider.army_buy_troops(props);
+  };
+
+  const army_merge_troops = async (props: SystemProps.ArmyMergeTroopsProps) => {
+    await provider.army_merge_troops(props);
   };
 
   const mint_starting_resources = async (props: SystemProps.CreateStartingResources) => {
@@ -163,6 +172,9 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_army,
     uuid,
     mint_starting_resources,
+
+    army_buy_troops,
+    army_merge_troops,
   };
 
   // TODO: Fix Type

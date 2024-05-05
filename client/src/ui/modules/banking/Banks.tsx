@@ -20,14 +20,14 @@ export const Banks = () => {
   const bankList = bankEntities.map((bank) => {
     return {
       id: bank.entityId,
-      name: `Bank ${bank.entityId}`,
+      name: `Bank `,
     };
   });
 
   const myBankList = myBankEntities.map((bank) => {
     return {
       id: bank.entityId,
-      name: `Bank ${bank.entityId}`,
+      name: `Bank `,
     };
   });
 

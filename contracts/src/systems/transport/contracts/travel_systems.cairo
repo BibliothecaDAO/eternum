@@ -22,8 +22,7 @@ mod travel_systems {
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::order::{Orders, OrdersTrait};
-    use eternum::models::owner::EntityOwnerTrait;
-    use eternum::models::owner::{Owner, EntityOwner};
+    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
     use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
@@ -71,12 +70,7 @@ mod travel_systems {
         ///
         fn travel(world: IWorldDispatcher, travelling_entity_id: ID, destination_coord: Coord) {
             // todo@security prevent free transport units from travelling
-
-            let travelling_entity_owner = get!(world, travelling_entity_id, Owner);
-            assert(
-                travelling_entity_owner.address == starknet::get_caller_address(),
-                'not owner of entity'
-            );
+            get!(world, travelling_entity_id, EntityOwner).assert_caller_owner(world);
 
             let travelling_entity_movable = get!(world, travelling_entity_id, Movable);
             assert(travelling_entity_movable.sec_per_km != 0, 'entity has no speed');
@@ -103,11 +97,7 @@ mod travel_systems {
         fn travel_hex(
             world: IWorldDispatcher, travelling_entity_id: ID, directions: Span<Direction>
         ) {
-            let travelling_entity_owner = get!(world, travelling_entity_id, Owner);
-            assert(
-                travelling_entity_owner.address == starknet::get_caller_address(),
-                'not owner of entity'
-            );
+            get!(world, travelling_entity_id, EntityOwner).assert_caller_owner(world);
 
             let travelling_entity_movable = get!(world, travelling_entity_id, Movable);
             assert(travelling_entity_movable.sec_per_km != 0, 'entity has no speed');

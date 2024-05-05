@@ -41,10 +41,14 @@ export const LeaderboardPanel = () => {
 
   return (
     <>
-      <div className="flex mt-2">
-        {resourceName && <ResourceIcon size="md" resource={resourceName} />}
-        <div className="text-xs">{resourceName} Leaderboard</div>
+      <div className="my-3 p-4">
+        {resourceName && <ResourceIcon className="mr-2 self-center" size="lg" resource={resourceName} />}
+        <h4 className="flex mt-2 justify-center w-full">
+          <div>{resourceName} Leaderboard</div>
+        </h4>
+        <p className="text-center">Find these on the map....</p>
       </div>
+
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => setSelectedTab(index)}

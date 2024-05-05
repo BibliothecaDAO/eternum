@@ -1,15 +1,6 @@
 import { ReactComponent as Settings } from "@/assets/icons/common/settings.svg";
-import { ReactComponent as WorldIcon } from "@/assets/icons/common/world.svg";
-import { ReactComponent as Coin } from "@/assets/icons/common/coin.svg";
-import { ReactComponent as Relic } from "@/assets/icons/common/relic.svg";
-import { ReactComponent as Hex } from "@/assets/icons/common/hex.svg";
 import { ReactComponent as Close } from "@/assets/icons/common/collapse.svg";
 import { ReactComponent as Expand } from "@/assets/icons/common/expand.svg";
-import { ReactComponent as CrossSwords } from "@/assets/icons/common/cross-swords.svg";
-import { ReactComponent as PickAxe } from "@/assets/icons/common/pick-axe.svg";
-import { ReactComponent as LeaderBoard } from "@/assets/icons/common/leaderboard.svg";
-import { ReactComponent as Donkey } from "@/assets/icons/units/donkey-circle.svg";
-import { ReactComponent as City } from "@/assets/icons/common/city.svg";
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import {
   banks,
@@ -25,12 +16,11 @@ import {
   assistant,
 } from "../../components/navigation/Config";
 import useUIStore from "../../../hooks/store/useUIStore";
-import { useLocation } from "wouter";
+
 import CircleButton from "../../elements/CircleButton";
 import { SettingsWindow } from "../settings/Settings";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { useGetRealm } from "../../../hooks/helpers/useRealm";
-import { EventLog } from "../events/Events";
+
 import { Banks } from "../banking/Banks";
 import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { HyperStructures } from "../hyperstructures/Hyperstructures";
@@ -39,7 +29,6 @@ import { Military } from "@/ui/modules/military/Military";
 import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
 import { Trading } from "../trade/Trading";
 import { Construction } from "../construction/Construction";
-import { useHexPosition } from "@/hooks/helpers/useHexPosition";
 import { Assistant } from "../assistant/Assistant";
 import { useTour } from "@reactour/tour";
 import { Questing } from "../questing/Questing";
@@ -59,93 +48,9 @@ export const BuildingThumbs = {
 
 export const LeftNavigationModule = () => {
   const { togglePopup, closeAllPopups, openAllPopups, isPopupOpen } = useUIStore();
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const [location, setLocation] = useLocation();
-  const { moveCameraToRealm } = useUIStore();
 
   const { realmEntityId } = useRealmStore();
   const { setIsOpen } = useTour();
-  const navigation = [
-    {
-      button: (
-        <CircleButton
-          image={BuildingThumbs.military}
-          label={military}
-          active={isPopupOpen(military)}
-          size="xl"
-          onClick={() => togglePopup(military)}
-        ></CircleButton>
-      ),
-    },
-    {
-      button: (
-        <CircleButton
-          image={BuildingThumbs.construction}
-          label={construction}
-          active={isPopupOpen(construction)}
-          size="xl"
-          onClick={() => togglePopup(construction)}
-        ></CircleButton>
-      ),
-    },
-    {
-      button: (
-        <CircleButton
-          image={BuildingThumbs.trade}
-          label={trade}
-          active={isPopupOpen(trade)}
-          size="xl"
-          onClick={() => togglePopup(trade)}
-        >
-          {/* <Donkey className="w-9 fill-current" /> */}
-        </CircleButton>
-      ),
-    },
-    {
-      button: (
-        <CircleButton
-          image={BuildingThumbs.resources}
-          label={resources}
-          active={isPopupOpen(resources)}
-          size="xl"
-          onClick={() => togglePopup(resources)}
-        ></CircleButton>
-      ),
-    },
-    {
-      button: (
-        <CircleButton
-          image={BuildingThumbs.banks}
-          label={banks}
-          active={isPopupOpen(banks)}
-          size="xl"
-          onClick={() => togglePopup(banks)}
-        ></CircleButton>
-      ),
-    },
-    // {
-    //   button: (
-    //     <CircleButton
-    //       image={BuildingThumbs.hyperstructures}
-    //       label={hyperstructures}
-    //       active={isPopupOpen(hyperstructures)}
-    //       size="xl"
-    //       onClick={() => togglePopup(hyperstructures)}
-    //     ></CircleButton>
-    //   ),
-    // },
-    {
-      button: (
-        <CircleButton
-          image={BuildingThumbs.leaderboard}
-          label={leaderboard}
-          active={isPopupOpen(leaderboard)}
-          size="xl"
-          onClick={() => togglePopup(leaderboard)}
-        />
-      ),
-    },
-  ];
 
   const secondaryNavigation = [
     {
@@ -153,6 +58,7 @@ export const LeftNavigationModule = () => {
         <CircleButton
           label={"expand all popups"}
           size="sm"
+          tooltipLocation="right"
           onClick={() =>
             openAllPopups([
               entityDetails,
@@ -173,21 +79,33 @@ export const LeftNavigationModule = () => {
     },
     {
       button: (
-        <CircleButton label={"close all popups"} size="sm" onClick={() => closeAllPopups()}>
+        <CircleButton tooltipLocation="right" label={"close all popups"} size="sm" onClick={() => closeAllPopups()}>
           <Close className="w-4" />
         </CircleButton>
       ),
     },
     {
       button: (
-        <CircleButton active={isPopupOpen(settings)} label={"settings"} size="sm" onClick={() => togglePopup(settings)}>
+        <CircleButton
+          tooltipLocation="right"
+          active={isPopupOpen(settings)}
+          label={"settings"}
+          size="sm"
+          onClick={() => togglePopup(settings)}
+        >
           <Settings className="w-4" />
         </CircleButton>
       ),
     },
     {
       button: (
-        <CircleButton active={isPopupOpen(settings)} label={"walkthrough"} size="sm" onClick={() => setIsOpen(true)}>
+        <CircleButton
+          tooltipLocation="right"
+          active={isPopupOpen(settings)}
+          label={"walkthrough"}
+          size="sm"
+          onClick={() => setIsOpen(true)}
+        >
           <Refresh className="w-4 " />
         </CircleButton>
       ),
@@ -200,12 +118,7 @@ export const LeftNavigationModule = () => {
 
   return (
     <>
-      {/* <div className="flex flex-col py-2 first-step space-y-2 ">
-        {navigation.map((a, index) => (
-          <div key={index}>{a.button}</div>
-        ))}
-      </div> */}
-      <div className="flex flex-col rounded-r-3xl space-y-2 py-2 px-2">
+      <div className="flex flex-col space-y-2 py-2">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
@@ -216,7 +129,7 @@ export const LeftNavigationModule = () => {
       <HyperStructures />
       <SettingsWindow />
       <Resources entityId={realmEntityId} />
-      <Military />
+      <Military entityId={realmEntityId} />
       <EntityDetails />
       <Trading />
       <Construction entityId={realmEntityId} />

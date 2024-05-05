@@ -16,17 +16,17 @@ export const ArmyPanel = ({ entity }: any) => {
             <div>Armies</div>
           </div>
         ),
-        component: <EntityArmyList entity={entity} />,
+        component: <EntityArmyList entity_id={entity} />,
       },
-      {
-        key: "Create",
-        label: (
-          <div className="flex relative group flex-col items-center">
-            <div>New Army</div>
-          </div>
-        ),
-        component: <TroopSelect entity={entity} />,
-      },
+      // {
+      //   key: "Create",
+      //   label: (
+      //     <div className="flex relative group flex-col items-center">
+      //       <div>New Army</div>
+      //     </div>
+      //   ),
+      //   component: <TroopSelect entity={entity} />,
+      // },
     ],
     [selectedTab, entity],
   );

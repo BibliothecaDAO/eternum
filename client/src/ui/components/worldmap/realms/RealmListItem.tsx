@@ -1,13 +1,10 @@
 import { OrderIcon } from "../../../elements/OrderIcon";
-import Button from "../../../elements/Button";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { findResourceById, orderNameDict } from "@bibliothecadao/eternum";
-import { ReactComponent as Map } from "@/assets/icons/common/map.svg";
-import * as realmsData from "../../../../data/geodata/realms.json";
 import clsx from "clsx";
 import useUIStore from "../../../../hooks/store/useUIStore";
-import { displayAddress } from "../../../utils/utils";
 import { RealmExtended, useRealm } from "../../../../hooks/helpers/useRealm";
+import { InventoryResources } from "../../resources/InventoryResources";
 
 type RealmListItemProps = {
   realm: RealmExtended;
@@ -21,22 +18,18 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
   const addressName = getRealmAddressName(BigInt(realm.entity_id));
 
   return (
-    <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
+    <div className="flex flex-col p-2 border  ">
       <div className="flex items-center">
         {realm && (
-          <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
+          <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0  border-gold">
             {realm.order && <OrderIcon order={orderNameDict[realm.order]} size="xs" className="mr-1" />}
-            {realmsData["features"][Number(realm.realmId) - 1]?.name}
+            {realm.name}
           </div>
         )}
-        <div className="-mt-2 ml-2 italic">
-          owned by
-          {realm && (
-            <span className="text-gold ml-1 mr-1">{displayAddress("0x" + realm?.owner?.toString(16) || "0x0")}</span>
-          )}
+        <div className="-mt-2 ml-2 italic text-xs">
           {addressName && <span className="text-gold ml-1 mr-1">{addressName}</span>}
         </div>
-        <div className=" text-gold flex ml-auto ">
+        {/* <div className=" text-gold flex ml-auto ">
           <Button
             onClick={() => moveCameraToRealm(Number(realm?.realmId))}
             variant="outline"
@@ -45,12 +38,12 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
             <Map className="mr-1 fill-current" />
             Show on map
           </Button>
-        </div>
+        </div> */}
       </div>
       <div className="flex items-end mt-2">
         <div className={clsx("flex items-center justify-around flex-1")}>
           <div className="flex-1 text-gold flex items-center flex-wrap">
-            Resources:
+            Produces:
             {realm.resources &&
               realm.resources.map((resourceId: number) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
@@ -60,20 +53,21 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
           </div>
         </div>
       </div>
-      <div className="mt-2 space-x-2">
-        <div className="text-gold inline-block">
-          Cities: <span className="text-white">{realm.cities}</span>
+      <div className="mt-2 grid grid-cols-2">
+        <div className="text-gold border p-1">
+          Cities: <span className="">{realm.cities}</span>
         </div>
-        <div className="text-gold inline-block">
-          Harbors: <span className="text-white">{realm.harbors}</span>
+        <div className="text-gold border  p-1">
+          Harbors: <span className="">{realm.harbors}</span>
         </div>
-        <div className="text-gold inline-block">
-          Rivers: <span className="text-white">{realm.rivers}</span>
+        <div className="text-gold  border p-1">
+          Rivers: <span className="">{realm.rivers}</span>
         </div>
-        <div className="text-gold inline-block">
-          Regions: <span className="text-white">{realm.regions}</span>
+        <div className="text-gold  border p-1">
+          Regions: <span className="">{realm.regions}</span>
         </div>
       </div>
+      <InventoryResources entityId={BigInt(realm.entity_id)} />
     </div>
   );
 };

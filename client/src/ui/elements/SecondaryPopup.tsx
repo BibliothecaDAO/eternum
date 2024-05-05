@@ -165,7 +165,7 @@ SecondaryPopup.Body = ({
         width ? "" : "min-w-[438px]",
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
-        `relative z-10 bg-brown/90 flex flex-col border-brown/50 border-2 rounded-b overflow-auto  `,
+        `relative z-10 bg-brown/90 flex flex-col border-brown/50 border-2 rounded-b overflow-auto bg-map `,
       )}
       style={{ width: width ? width : "", height: height ? height : "", maxHeight: maxHeight ? `${maxHeight}px` : "" }}
     >

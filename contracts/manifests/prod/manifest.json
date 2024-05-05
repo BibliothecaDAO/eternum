@@ -660,13 +660,13 @@
         ]
       }
     ],
-    "address": "0x33de265e91c5e9222ec308743843d41d20acba98f81d791cd545b7158d88422",
-    "transaction_hash": "0x35f67650b04cebbe67f840cb3b1602daa1de5037ba211f2cbb95aa7b32df92a",
-    "block_number": 17,
-    "seed": "eternum7",
+    "address": "0x177a3f3d912cf4b55f0f74eccf3b7def7c6144efeba033e9f21d9cdb0230c64",
+    "transaction_hash": "0x52d225e62111b2912d60d547d09d4f02b6113cf424097ff6078ba1dd3231355",
+    "block_number": 3,
+    "seed": "eternum",
     "metadata": {
-      "profile_name": "prod",
-      "rpc_url": "https://api.cartridge.gg/x/realms/katana/"
+      "profile_name": "dev",
+      "rpc_url": "http://localhost:5050/"
     },
     "name": "dojo::world::world"
   },
@@ -680,9 +680,9 @@
   "contracts": [
     {
       "kind": "DojoContract",
-      "address": "0x6bf08d3ba48bd9d41e4cac905442afc08a1c3084bf044f0efef9013b3bce03a",
-      "class_hash": "0x648dc6f0c0a3f9324730fcd7204ac95b4a4c7dc36943b7424ef5a6ad81f757e",
-      "original_class_hash": "0x648dc6f0c0a3f9324730fcd7204ac95b4a4c7dc36943b7424ef5a6ad81f757e",
+      "address": "0x3d88a37dcabf182a6c3eb945c0f64e9fb4e3bcfaeb8c16575b375d6b9977413",
+      "class_hash": "0x3fcc18ddfa64e99ec7bbef937dab919311a2ea6cd92aa03f322b6e7ca6fd24",
+      "original_class_hash": "0x3fcc18ddfa64e99ec7bbef937dab919311a2ea6cd92aa03f322b6e7ca6fd24",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -891,9 +891,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x37f703c95fae323f39b7ba80c783b417ab815a5536444df2559046e33d59b7",
-      "class_hash": "0x31de6467abc18f3b9690ac722fb78e941443221c1af37537e276b60e282581b",
-      "original_class_hash": "0x31de6467abc18f3b9690ac722fb78e941443221c1af37537e276b60e282581b",
+      "address": "0x741d8211a58de8aa10d84c75d0d9438179e763949a28ec036a0233bb0f5e011",
+      "class_hash": "0x68f1d22573a3714cc4071ffc96347c774ee60dae63bb4756b3a7d212c553382",
+      "original_class_hash": "0x68f1d22573a3714cc4071ffc96347c774ee60dae63bb4756b3a7d212c553382",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -1082,12 +1082,59 @@
         },
         {
           "type": "event",
+          "name": "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems::LiquidityEvent",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "bank_entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "bank_account_entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "resource_type",
+              "type": "core::integer::u8",
+              "kind": "data"
+            },
+            {
+              "name": "lords_amount",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "resource_amount",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "resource_price",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "add",
+              "type": "core::bool",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
           "name": "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems::Event",
           "kind": "enum",
           "variants": [
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "LiquidityEvent",
+              "type": "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems::LiquidityEvent",
               "kind": "nested"
             }
           ]
@@ -1100,9 +1147,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x1e6935a71877a6a4386a75d72cdc109ef8f1487776ff98af952c18bf725117b",
-      "class_hash": "0xc9aa6f2273fb5a772e4239d1a894056e224e349c33f83dff9e8b2e5d2d7e95",
-      "original_class_hash": "0xc9aa6f2273fb5a772e4239d1a894056e224e349c33f83dff9e8b2e5d2d7e95",
+      "address": "0x6440451cbba04c452fa7a295964b9c66ff4a904ce6d9fcc295eb1d91522486c",
+      "class_hash": "0x1f9951276c5ff50f19208212e0fda3cdae99f3b8b428bb8f28193e4183d0b98",
+      "original_class_hash": "0x1f9951276c5ff50f19208212e0fda3cdae99f3b8b428bb8f28193e4183d0b98",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -1258,6 +1305,72 @@
           ]
         },
         {
+          "type": "enum",
+          "name": "core::bool",
+          "variants": [
+            {
+              "name": "False",
+              "type": "()"
+            },
+            {
+              "name": "True",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::bank::contracts::swap_systems::swap_systems::SwapEvent",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "bank_entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "bank_account_entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "resource_type",
+              "type": "core::integer::u8",
+              "kind": "data"
+            },
+            {
+              "name": "lords_amount",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "resource_amount",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "bank_owner_fees",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "lp_fees",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "resource_price",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "buy",
+              "type": "core::bool",
+              "kind": "data"
+            }
+          ]
+        },
+        {
           "type": "event",
           "name": "eternum::systems::bank::contracts::swap_systems::swap_systems::Event",
           "kind": "enum",
@@ -1265,6 +1378,11 @@
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "SwapEvent",
+              "type": "eternum::systems::bank::contracts::swap_systems::swap_systems::SwapEvent",
               "kind": "nested"
             }
           ]
@@ -1277,9 +1395,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x2dee89ce0f0b15aa995ef304995ecd3d13009fd6600b0034ebaec2db461762e",
-      "class_hash": "0x38d77266c299b89f24514ff1008cc5707b1057b604ba00587469de21888e8bf",
-      "original_class_hash": "0x38d77266c299b89f24514ff1008cc5707b1057b604ba00587469de21888e8bf",
+      "address": "0x5e248d25812ebb9ffa35d7d15f37e37a84b7631d691b5c8191e359ef3071776",
+      "class_hash": "0x2046bc03faaf43dd5e5a85112b20a6ca926a737899ef9ca0643fe2ae01931ea",
+      "original_class_hash": "0x2046bc03faaf43dd5e5a85112b20a6ca926a737899ef9ca0643fe2ae01931ea",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -1548,9 +1666,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x22dbeb71627cec02755e3637d047b1cd9b6a5b99f48184db782da058719a221",
-      "class_hash": "0x61339fbc74ac4403c122fe5cf07b4c11381073752274ff0286768165791ea33",
-      "original_class_hash": "0x61339fbc74ac4403c122fe5cf07b4c11381073752274ff0286768165791ea33",
+      "address": "0x490d8572029a070064c52d09d2fdb4d5a538bd26f723abfcdeeaff38e47dfeb",
+      "class_hash": "0x32a66e5031c41e493f816a79cccab6808441dd166bf3c59cc906b24f244bce5",
+      "original_class_hash": "0x32a66e5031c41e493f816a79cccab6808441dd166bf3c59cc906b24f244bce5",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -1613,6 +1731,20 @@
           "interface_name": "eternum::systems::combat::contracts::ICombatContract"
         },
         {
+          "type": "enum",
+          "name": "core::bool",
+          "variants": [
+            {
+              "name": "False",
+              "type": "()"
+            },
+            {
+              "name": "True",
+              "type": "()"
+            }
+          ]
+        },
+        {
           "type": "struct",
           "name": "eternum::models::combat::Troops",
           "members": [
@@ -1654,10 +1786,30 @@
           "items": [
             {
               "type": "function",
-              "name": "create_army",
+              "name": "army_create",
               "inputs": [
                 {
-                  "name": "owner_id",
+                  "name": "army_owner_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "army_is_protector",
+                  "type": "core::bool"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "army_buy_troops",
+              "inputs": [
+                {
+                  "name": "army_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "payer_id",
                   "type": "core::integer::u128"
                 },
                 {
@@ -1670,7 +1822,27 @@
             },
             {
               "type": "function",
-              "name": "start_battle",
+              "name": "army_merge_troops",
+              "inputs": [
+                {
+                  "name": "from_army_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "to_army_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "troops",
+                  "type": "eternum::models::combat::Troops"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "battle_start",
               "inputs": [
                 {
                   "name": "attacking_army_id",
@@ -1686,7 +1858,7 @@
             },
             {
               "type": "function",
-              "name": "join_battle",
+              "name": "battle_join",
               "inputs": [
                 {
                   "name": "battle_id",
@@ -1706,7 +1878,7 @@
             },
             {
               "type": "function",
-              "name": "leave_battle",
+              "name": "battle_leave",
               "inputs": [
                 {
                   "name": "battle_id",
@@ -1714,6 +1886,38 @@
                 },
                 {
                   "name": "army_id",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "battle_pillage",
+              "inputs": [
+                {
+                  "name": "army_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "structure_id",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "battle_claim",
+              "inputs": [
+                {
+                  "name": "army_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "structure_id",
                   "type": "core::integer::u128"
                 }
               ],
@@ -1789,248 +1993,7 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x2022b6f9278ae876e6a55815640dbaa465f4717956d0140eef410aababe6562",
-      "class_hash": "0x4eaa3265bb608ea2cc8c871f4e1a75e0f778bda8a46216a8d401d7dd2aabf3",
-      "original_class_hash": "0x4eaa3265bb608ea2cc8c871f4e1a75e0f778bda8a46216a8d401d7dd2aabf3",
-      "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoResourceProviderImpl",
-          "interface_name": "dojo::world::IDojoResourceProvider"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::world::IDojoResourceProvider",
-          "items": [
-            {
-              "type": "function",
-              "name": "dojo_resource",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "WorldProviderImpl",
-          "interface_name": "dojo::world::IWorldProvider"
-        },
-        {
-          "type": "struct",
-          "name": "dojo::world::IWorldDispatcher",
-          "members": [
-            {
-              "name": "contract_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::world::IWorldProvider",
-          "items": [
-            {
-              "type": "function",
-              "name": "world",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::world::IWorldDispatcher"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "Combatv2ContractImpl",
-          "interface_name": "eternum::systems::combatv2::contracts::ICombatv2Contract"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::combatV2::Troops",
-          "members": [
-            {
-              "name": "knight_count",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "paladin_count",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "crossbowman_count",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "eternum::models::combatV2::BattleSide",
-          "variants": [
-            {
-              "name": "None",
-              "type": "()"
-            },
-            {
-              "name": "Attack",
-              "type": "()"
-            },
-            {
-              "name": "Defence",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::systems::combatv2::contracts::ICombatv2Contract",
-          "items": [
-            {
-              "type": "function",
-              "name": "create_army",
-              "inputs": [
-                {
-                  "name": "owner_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "troops",
-                  "type": "eternum::models::combatV2::Troops"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "start_battle",
-              "inputs": [
-                {
-                  "name": "attacking_army_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "defending_army_id",
-                  "type": "core::integer::u128"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "join_battle",
-              "inputs": [
-                {
-                  "name": "battle_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "battle_side",
-                  "type": "eternum::models::combatV2::BattleSide"
-                },
-                {
-                  "name": "army_id",
-                  "type": "core::integer::u128"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "leave_battle",
-              "inputs": [
-                {
-                  "name": "battle_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "army_id",
-                  "type": "core::integer::u128"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "UpgradableImpl",
-          "interface_name": "dojo::components::upgradeable::IUpgradeable"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::components::upgradeable::IUpgradeable",
-          "items": [
-            {
-              "type": "function",
-              "name": "upgrade",
-              "inputs": [
-                {
-                  "name": "new_class_hash",
-                  "type": "core::starknet::class_hash::ClassHash"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::components::upgradeable::upgradeable::Upgraded",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::components::upgradeable::upgradeable::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "Upgraded",
-              "type": "dojo::components::upgradeable::upgradeable::Upgraded",
-              "kind": "nested"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::combatv2::contracts::combat_v2_systems::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "UpgradeableEvent",
-              "type": "dojo::components::upgradeable::upgradeable::Event",
-              "kind": "nested"
-            }
-          ]
-        }
-      ],
-      "reads": [],
-      "writes": [],
-      "computed": [],
-      "name": "eternum::systems::combatv2::contracts::combat_v2_systems"
-    },
-    {
-      "kind": "DojoContract",
-      "address": "0x2c8d7eb11118f8c756701d05aba927a7ec117da898655ab2fd9e2e0b66148",
+      "address": "0x6e5d27950b7aa8eece851aecb7864b8efb9c1c90e7548b8fdd949b9963c6123",
       "class_hash": "0x7427e0e333dc1b5d616ed3314be7f1d38b53cc64cc04331de9788059d7bc0ec",
       "original_class_hash": "0x7427e0e333dc1b5d616ed3314be7f1d38b53cc64cc04331de9788059d7bc0ec",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
@@ -2738,7 +2701,7 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x1c9d8f0fe2b5aac745544af1f93d7a147ccd5843265b3f1bba842cefb412f86",
+      "address": "0x46e69866d66b367ddcfd41a1d8262736478e71562f7798907f581dfb9657f31",
       "class_hash": "0x1f563bca4987876576a1c95adec9a9d6e349dc466d50f4f35121fb7af24d5cd",
       "original_class_hash": "0x1f563bca4987876576a1c95adec9a9d6e349dc466d50f4f35121fb7af24d5cd",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
@@ -2901,7 +2864,7 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x547a479484e3bb95f5174f3a480f026a6d50bf37d4dc2a79468d2d3962554fb",
+      "address": "0x8e44985380e607cbaad3dcc39a0a5033ca225df0f74d943c428b287e9898b9",
       "class_hash": "0x53d1dd2675923b612e25a03bf15bd682dc657811db6b86fe11e7b467b1c3413",
       "original_class_hash": "0x53d1dd2675923b612e25a03bf15bd682dc657811db6b86fe11e7b467b1c3413",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
@@ -3066,9 +3029,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x270ef9b953db8f1b332fa782951ae4a9b770040da4259c8b56d45610f72e565",
-      "class_hash": "0x4d568a8dcde79ddc5087edeacab46531417a12a5f236171dd693154167399a7",
-      "original_class_hash": "0x4d568a8dcde79ddc5087edeacab46531417a12a5f236171dd693154167399a7",
+      "address": "0x6d08a1347df3214e6d192d14eb3fc6224afdb7182fe574e71865b94cb8ca43b",
+      "class_hash": "0x7ee9f34508ae54ba282f51394c749a864bcde81892b892979d2ddc9b1ac7a8b",
+      "original_class_hash": "0x7ee9f34508ae54ba282f51394c749a864bcde81892b892979d2ddc9b1ac7a8b",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -3215,9 +3178,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x236b77e832180484bc57f147b420e57e4689022d35ba1f388e161488afa4ff5",
-      "class_hash": "0x665a6281131103b026423ae45b8cb52e2a7a0121fc24963b5e849dddb95b3f3",
-      "original_class_hash": "0x665a6281131103b026423ae45b8cb52e2a7a0121fc24963b5e849dddb95b3f3",
+      "address": "0xe41bb92d0734340f4d6ad423426f5bf2f611fa13b3c94d325c5f3b64c7ddea",
+      "class_hash": "0x6e6b606ede31028f699b24565e8063621b90528823f196ef8fe8ca969d0567",
+      "original_class_hash": "0x6e6b606ede31028f699b24565e8063621b90528823f196ef8fe8ca969d0567",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -3520,9 +3483,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x6f9f9ef5ec6e9d335844bc1789fdaa3293f70ebe1e378042d48f4ff6ec8e9a2",
-      "class_hash": "0x16972cf59450be20d5dc60b5dec928f50acf91a26396243178de1ec4a7531a9",
-      "original_class_hash": "0x16972cf59450be20d5dc60b5dec928f50acf91a26396243178de1ec4a7531a9",
+      "address": "0x7ec9b2ac7dbfc56510886835a1d5c607dd56248492c1c5cceaadf32e87f8a0",
+      "class_hash": "0x6060e06e48caea5efbb955ad85892fcdbe0c94036b7dcc765179683196b1422",
+      "original_class_hash": "0x6060e06e48caea5efbb955ad85892fcdbe0c94036b7dcc765179683196b1422",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -3685,9 +3648,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x360cb14ebb5d19485b042410ecc9332eb1c5d87a48177d77127b44245cbb84d",
-      "class_hash": "0x1601fb441f8868a0ce1aed3d8dce2614ece1bd8853245fe60ff10237766ddd8",
-      "original_class_hash": "0x1601fb441f8868a0ce1aed3d8dce2614ece1bd8853245fe60ff10237766ddd8",
+      "address": "0x78954c3172d81b184a548c25b9ac6831881f2a1bf0eda25a7576529fe70811e",
+      "class_hash": "0x7e8a929927ae772b23ace09ecc0b5ea1db91cd4b47ee92365808e68aaa45df2",
+      "original_class_hash": "0x7e8a929927ae772b23ace09ecc0b5ea1db91cd4b47ee92365808e68aaa45df2",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -3912,9 +3875,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x4d5756c9a3f18212e98b7d00a65662f695b2d663e475e1bf3be3e99b7e337e2",
-      "class_hash": "0x27dd5f014ac833c44dab6326a0df18a8e34073bc175959549e331495e131568",
-      "original_class_hash": "0x27dd5f014ac833c44dab6326a0df18a8e34073bc175959549e331495e131568",
+      "address": "0x3d2e8efbfb6b507fcdbdfac3d74a1f2b0852f6193b57aa01573aa95e8472c59",
+      "class_hash": "0x904250ed20bd6148a8f5a77978d18a597306015d2cd8241529a7311eea0c40",
+      "original_class_hash": "0x904250ed20bd6148a8f5a77978d18a597306015d2cd8241529a7311eea0c40",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -4151,172 +4114,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x2c57e3f49d82b769b49ff083964e21f08336b142ad58f633a7bb10cabf54eb4",
-      "class_hash": "0x2d7fe23b1c26ba2702306e6da9dde0daad10053c3edd98380aaae94d033644a",
-      "original_class_hash": "0x2d7fe23b1c26ba2702306e6da9dde0daad10053c3edd98380aaae94d033644a",
-      "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoResourceProviderImpl",
-          "interface_name": "dojo::world::IDojoResourceProvider"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::world::IDojoResourceProvider",
-          "items": [
-            {
-              "type": "function",
-              "name": "dojo_resource",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "WorldProviderImpl",
-          "interface_name": "dojo::world::IWorldProvider"
-        },
-        {
-          "type": "struct",
-          "name": "dojo::world::IWorldDispatcher",
-          "members": [
-            {
-              "name": "contract_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::world::IWorldProvider",
-          "items": [
-            {
-              "type": "function",
-              "name": "world",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::world::IWorldDispatcher"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "ResourceSystemsImpl",
-          "interface_name": "eternum::systems::test::interface::resource::IResourceSystems"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::systems::test::interface::resource::IResourceSystems",
-          "items": [
-            {
-              "type": "function",
-              "name": "mint",
-              "inputs": [
-                {
-                  "name": "entity_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "UpgradableImpl",
-          "interface_name": "dojo::components::upgradeable::IUpgradeable"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::components::upgradeable::IUpgradeable",
-          "items": [
-            {
-              "type": "function",
-              "name": "upgrade",
-              "inputs": [
-                {
-                  "name": "new_class_hash",
-                  "type": "core::starknet::class_hash::ClassHash"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::components::upgradeable::upgradeable::Upgraded",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "class_hash",
-              "type": "core::starknet::class_hash::ClassHash",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "dojo::components::upgradeable::upgradeable::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "Upgraded",
-              "type": "dojo::components::upgradeable::upgradeable::Upgraded",
-              "kind": "nested"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::test::contracts::resource::test_resource_systems::Event",
-          "kind": "enum",
-          "variants": [
-            {
-              "name": "UpgradeableEvent",
-              "type": "dojo::components::upgradeable::upgradeable::Event",
-              "kind": "nested"
-            }
-          ]
-        }
-      ],
-      "reads": [],
-      "writes": [],
-      "computed": [],
-      "name": "eternum::systems::test::contracts::resource::test_resource_systems"
-    },
-    {
-      "kind": "DojoContract",
-      "address": "0x14ec594bd9927672e667004a4db937bd16a1d59a9dbd559b00e917d167a64cf",
-      "class_hash": "0x3febb8a8940e76db50a87a1f9cb60e58729ddc54ef2cbf60414f1f0ea5d6f0a",
-      "original_class_hash": "0x3febb8a8940e76db50a87a1f9cb60e58729ddc54ef2cbf60414f1f0ea5d6f0a",
+      "address": "0x33be47a5861a422cb123bbdc81851e526db54b56bfde6e2b8069c7b93a7503",
+      "class_hash": "0x24aab51867141dd40dde9b31607af9d0630f81daeb3e71cb2a213df2b24493b",
+      "original_class_hash": "0x24aab51867141dd40dde9b31607af9d0630f81daeb3e71cb2a213df2b24493b",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -4570,7 +4370,7 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x58581269a68eb14dc68ac4eb7ac45460ae9b84f30fa2ef35eb039a1dbaa6dbc",
+      "address": "0x390665298c3fd9c43ea46dfc0e0bb66a7eb9778be2c74e21e4380620118e054",
       "class_hash": "0x18cc49caf5cc1f0e5ca90d5facdc8423eff0b6d6e1b1f8fac301217589831eb",
       "original_class_hash": "0x18cc49caf5cc1f0e5ca90d5facdc8423eff0b6d6e1b1f8fac301217589831eb",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
@@ -4696,9 +4496,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x480c2af62ae654310897ef00c6788eea50c230ba8edadc7786a88d2137a6023",
-      "class_hash": "0x41a5a8d31debbc86c73f797c3e7c07b22e1e69d72d087bab6d3d5fd4a32ee32",
-      "original_class_hash": "0x41a5a8d31debbc86c73f797c3e7c07b22e1e69d72d087bab6d3d5fd4a32ee32",
+      "address": "0x326d3b8b83d171eb1a87d09add38f4602faf0503cdac9bbb2a3c0d4248cdb4a",
+      "class_hash": "0x50998dd278420f790366a51558db58fc64b1b3c5f1e77118fb97921065a3325",
+      "original_class_hash": "0x50998dd278420f790366a51558db58fc64b1b3c5f1e77118fb97921065a3325",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -4871,9 +4671,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x933fb2c57787503e5eb1cc62b01ee5dd91b4e16d2b48cf237b3cbbdd6c787b",
-      "class_hash": "0x539b436087ab52d9d74a1ef716db60ee069943b9b891609c70dbb57c68092fb",
-      "original_class_hash": "0x539b436087ab52d9d74a1ef716db60ee069943b9b891609c70dbb57c68092fb",
+      "address": "0xe1f49815a807210be14ca3310a70cadcea3b4093c48b7303494adcffcf2715",
+      "class_hash": "0x1b3718857777933cbf59566727cee9c53109ddfadcb5251b616d153163407ce",
+      "original_class_hash": "0x1b3718857777933cbf59566727cee9c53109ddfadcb5251b616d153163407ce",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -5939,10 +5739,15 @@
           "name": "resource_amount",
           "type": "u128",
           "key": false
+        },
+        {
+          "name": "total_shares",
+          "type": "Fixed",
+          "key": false
         }
       ],
-      "class_hash": "0x40f490e41656659252e49e90b78f5370d40860a49431e8a6a6d7e210f7f99d2",
-      "original_class_hash": "0x40f490e41656659252e49e90b78f5370d40860a49431e8a6a6d7e210f7f99d2",
+      "class_hash": "0x3bd847200444559c3bc19d5a8717bdafec3c680b1ee9c2f43993ff673e575a8",
+      "original_class_hash": "0x3bd847200444559c3bc19d5a8717bdafec3c680b1ee9c2f43993ff673e575a8",
       "abi": [
         {
           "type": "impl",
@@ -6118,6 +5923,34 @@
           "interface_name": "eternum::models::bank::market::Imarket"
         },
         {
+          "type": "enum",
+          "name": "core::bool",
+          "variants": [
+            {
+              "name": "False",
+              "type": "()"
+            },
+            {
+              "name": "True",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "cubit::f128::types::fixed::Fixed",
+          "members": [
+            {
+              "name": "mag",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "sign",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
           "type": "struct",
           "name": "eternum::models::bank::market::Market",
           "members": [
@@ -6136,6 +5969,10 @@
             {
               "name": "resource_amount",
               "type": "core::integer::u128"
+            },
+            {
+              "name": "total_shares",
+              "type": "cubit::f128::types::fixed::Fixed"
             }
           ]
         },
@@ -7078,901 +6915,6 @@
           "key": false
         }
       ],
-      "class_hash": "0x657bfe75d2202dcd000b7e15ed841044de67c34b1ee8b3ccb3a8129772aa98e",
-      "original_class_hash": "0x657bfe75d2202dcd000b7e15ed841044de67c34b1ee8b3ccb3a8129772aa98e",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "armyImpl",
-          "interface_name": "eternum::models::combatV2::Iarmy"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::combatV2::Troops",
-          "members": [
-            {
-              "name": "knight_count",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "paladin_count",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "crossbowman_count",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "eternum::models::combatV2::BattleSide",
-          "variants": [
-            {
-              "name": "None",
-              "type": "()"
-            },
-            {
-              "name": "Attack",
-              "type": "()"
-            },
-            {
-              "name": "Defence",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::combatV2::Army",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "troops",
-              "type": "eternum::models::combatV2::Troops"
-            },
-            {
-              "name": "battle_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "battle_side",
-              "type": "eternum::models::combatV2::BattleSide"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::combatV2::Iarmy",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::combatV2::Army"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::combatV2::army::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::combatV2::army"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "u128",
-          "key": true
-        },
-        {
-          "name": "attack_army",
-          "type": "Army",
-          "key": false
-        },
-        {
-          "name": "defence_army",
-          "type": "Army",
-          "key": false
-        },
-        {
-          "name": "attack_army_health",
-          "type": "Healthv2",
-          "key": false
-        },
-        {
-          "name": "defence_army_health",
-          "type": "Healthv2",
-          "key": false
-        },
-        {
-          "name": "attack_delta",
-          "type": "u32",
-          "key": false
-        },
-        {
-          "name": "defence_delta",
-          "type": "u32",
-          "key": false
-        },
-        {
-          "name": "tick_last_updated",
-          "type": "u64",
-          "key": false
-        },
-        {
-          "name": "tick_duration_left",
-          "type": "u64",
-          "key": false
-        }
-      ],
-      "class_hash": "0x7227246cbe9bfcda3d797b4c9ca05f47cc6a0956ee577b125f680fb7e37194",
-      "original_class_hash": "0x7227246cbe9bfcda3d797b4c9ca05f47cc6a0956ee577b125f680fb7e37194",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "battleImpl",
-          "interface_name": "eternum::models::combatV2::Ibattle"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::combatV2::Troops",
-          "members": [
-            {
-              "name": "knight_count",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "paladin_count",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "crossbowman_count",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "eternum::models::combatV2::BattleSide",
-          "variants": [
-            {
-              "name": "None",
-              "type": "()"
-            },
-            {
-              "name": "Attack",
-              "type": "()"
-            },
-            {
-              "name": "Defence",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::combatV2::Army",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "troops",
-              "type": "eternum::models::combatV2::Troops"
-            },
-            {
-              "name": "battle_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "battle_side",
-              "type": "eternum::models::combatV2::BattleSide"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::combatV2::Healthv2",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "current",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "lifetime",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::combatV2::Battle",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "attack_army",
-              "type": "eternum::models::combatV2::Army"
-            },
-            {
-              "name": "defence_army",
-              "type": "eternum::models::combatV2::Army"
-            },
-            {
-              "name": "attack_army_health",
-              "type": "eternum::models::combatV2::Healthv2"
-            },
-            {
-              "name": "defence_army_health",
-              "type": "eternum::models::combatV2::Healthv2"
-            },
-            {
-              "name": "attack_delta",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "defence_delta",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "tick_last_updated",
-              "type": "core::integer::u64"
-            },
-            {
-              "name": "tick_duration_left",
-              "type": "core::integer::u64"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::combatV2::Ibattle",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::combatV2::Battle"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::combatV2::battle::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::combatV2::battle"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "u128",
-          "key": true
-        },
-        {
-          "name": "current",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "lifetime",
-          "type": "u128",
-          "key": false
-        }
-      ],
-      "class_hash": "0x6563a26c21279d79c696789d78a3f4a4dbe29a66ceb0c9162dd69cf603de59c",
-      "original_class_hash": "0x6563a26c21279d79c696789d78a3f4a4dbe29a66ceb0c9162dd69cf603de59c",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "healthv_2Impl",
-          "interface_name": "eternum::models::combatV2::Ihealthv_2"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::combatV2::Healthv2",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "current",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "lifetime",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::combatV2::Ihealthv_2",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::combatV2::Healthv2"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::combatV2::healthv_2::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::combatV2::healthv_2"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "u128",
-          "key": true
-        },
-        {
-          "name": "troops",
-          "type": "Troops",
-          "key": false
-        },
-        {
-          "name": "battle_id",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "battle_side",
-          "type": "BattleSide",
-          "key": false
-        }
-      ],
       "class_hash": "0x63e689127d1cf4202ebdfc6648cccc0b69412366d9e7b19cb78cbfe8eaca471",
       "original_class_hash": "0x63e689127d1cf4202ebdfc6648cccc0b69412366d9e7b19cb78cbfe8eaca471",
       "abi": [
@@ -8233,237 +7175,6 @@
         }
       ],
       "name": "eternum::models::combat::army"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "u128",
-          "key": true
-        },
-        {
-          "name": "value",
-          "type": "u128",
-          "key": false
-        }
-      ],
-      "class_hash": "0xdfa3be9acc06d8c7d9f4279213b7c8f98081eceff4d0691b17c9ec5d80013f",
-      "original_class_hash": "0xdfa3be9acc06d8c7d9f4279213b7c8f98081eceff4d0691b17c9ec5d80013f",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "attackImpl",
-          "interface_name": "eternum::models::combat::Iattack"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::combat::Attack",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "value",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::combat::Iattack",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::combat::Attack"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::combat::attack::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::combat::attack"
     },
     {
       "kind": "DojoModel",
@@ -8844,237 +7555,6 @@
           "key": true
         },
         {
-          "name": "value",
-          "type": "u128",
-          "key": false
-        }
-      ],
-      "class_hash": "0x4b6699a57804f0fc7e696ed0cf27f665ec79c6d342f44589f869836d0855c45",
-      "original_class_hash": "0x4b6699a57804f0fc7e696ed0cf27f665ec79c6d342f44589f869836d0855c45",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "defenceImpl",
-          "interface_name": "eternum::models::combat::Idefence"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::combat::Defence",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "value",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::combat::Idefence",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::combat::Defence"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::combat::defence::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::combat::defence"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "u128",
-          "key": true
-        },
-        {
           "name": "current",
           "type": "u128",
           "key": false
@@ -9310,18 +7790,18 @@
       "kind": "DojoModel",
       "members": [
         {
-          "name": "entity_id",
+          "name": "army_id",
           "type": "u128",
           "key": true
         },
         {
-          "name": "town_watch_id",
+          "name": "protectee_id",
           "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x80a7648d1bfde9dd0a67cb6a808f987aa41a2266d2f5a187f6700d7d2a1fc2",
-      "original_class_hash": "0x80a7648d1bfde9dd0a67cb6a808f987aa41a2266d2f5a187f6700d7d2a1fc2",
+      "class_hash": "0x7884d27f07073d798b3c6888d151d3ab17443953ab8fe99f48ba91d9b62fd9c",
+      "original_class_hash": "0x7884d27f07073d798b3c6888d151d3ab17443953ab8fe99f48ba91d9b62fd9c",
       "abi": [
         {
           "type": "impl",
@@ -9493,26 +7973,257 @@
         },
         {
           "type": "impl",
-          "name": "town_watchImpl",
-          "interface_name": "eternum::models::combat::Itown_watch"
+          "name": "protecteeImpl",
+          "interface_name": "eternum::models::combat::Iprotectee"
         },
         {
           "type": "struct",
-          "name": "eternum::models::combat::TownWatch",
+          "name": "eternum::models::combat::Protectee",
+          "members": [
+            {
+              "name": "army_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "protectee_id",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::models::combat::Iprotectee",
+          "items": [
+            {
+              "type": "function",
+              "name": "ensure_abi",
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "eternum::models::combat::Protectee"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::combat::protectee::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "name": "eternum::models::combat::protectee"
+    },
+    {
+      "kind": "DojoModel",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "u128",
+          "key": true
+        },
+        {
+          "name": "army_id",
+          "type": "u128",
+          "key": false
+        }
+      ],
+      "class_hash": "0x6107d9e11565be97ca7245f51843d7a3a9ab0b7127a2e369e6d3c007f166ef5",
+      "original_class_hash": "0x6107d9e11565be97ca7245f51843d7a3a9ab0b7127a2e369e6d3c007f166ef5",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoModelImpl",
+          "interface_name": "dojo::model::IDojoModel"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::introspect::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::introspect::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::introspect::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            },
+            {
+              "name": "Array",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::model::IDojoModel",
+          "items": [
+            {
+              "type": "function",
+              "name": "name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "unpacked_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "packed_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "layout",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::integer::u8>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "schema",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::database::introspect::Ty"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "protectorImpl",
+          "interface_name": "eternum::models::combat::Iprotector"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::combat::Protector",
           "members": [
             {
               "name": "entity_id",
               "type": "core::integer::u128"
             },
             {
-              "name": "town_watch_id",
+              "name": "army_id",
               "type": "core::integer::u128"
             }
           ]
         },
         {
           "type": "interface",
-          "name": "eternum::models::combat::Itown_watch",
+          "name": "eternum::models::combat::Iprotector",
           "items": [
             {
               "type": "function",
@@ -9520,7 +8231,7 @@
               "inputs": [
                 {
                   "name": "model",
-                  "type": "eternum::models::combat::TownWatch"
+                  "type": "eternum::models::combat::Protector"
                 }
               ],
               "outputs": [],
@@ -9530,243 +8241,12 @@
         },
         {
           "type": "event",
-          "name": "eternum::models::combat::town_watch::Event",
+          "name": "eternum::models::combat::protector::Event",
           "kind": "enum",
           "variants": []
         }
       ],
-      "name": "eternum::models::combat::town_watch"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "entity_type",
-          "type": "u128",
-          "key": true
-        },
-        {
-          "name": "max_value",
-          "type": "u128",
-          "key": false
-        }
-      ],
-      "class_hash": "0x6005ab5721faf4bfa759290e630f0bc003855641d44dde2b2855dc88babdebf",
-      "original_class_hash": "0x6005ab5721faf4bfa759290e630f0bc003855641d44dde2b2855dc88babdebf",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "attack_configImpl",
-          "interface_name": "eternum::models::config::Iattack_config"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::config::AttackConfig",
-          "members": [
-            {
-              "name": "entity_type",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "max_value",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::config::Iattack_config",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::config::AttackConfig"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::config::attack_config::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::config::attack_config"
+      "name": "eternum::models::combat::protector"
     },
     {
       "kind": "DojoModel",
@@ -10816,486 +9296,6 @@
       "kind": "DojoModel",
       "members": [
         {
-          "name": "config_id",
-          "type": "u128",
-          "key": true
-        },
-        {
-          "name": "stealing_trial_count",
-          "type": "u32",
-          "key": false
-        },
-        {
-          "name": "wheat_burn_per_soldier",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "fish_burn_per_soldier",
-          "type": "u128",
-          "key": false
-        }
-      ],
-      "class_hash": "0x2d24eb8c28fb4669501069fa338440e0619e4cb2148d7cc68fe5c93fa633572",
-      "original_class_hash": "0x2d24eb8c28fb4669501069fa338440e0619e4cb2148d7cc68fe5c93fa633572",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "combat_configImpl",
-          "interface_name": "eternum::models::config::Icombat_config"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::config::CombatConfig",
-          "members": [
-            {
-              "name": "config_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "stealing_trial_count",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "wheat_burn_per_soldier",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "fish_burn_per_soldier",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::config::Icombat_config",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::config::CombatConfig"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::config::combat_config::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::config::combat_config"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "entity_type",
-          "type": "u128",
-          "key": true
-        },
-        {
-          "name": "max_value",
-          "type": "u128",
-          "key": false
-        }
-      ],
-      "class_hash": "0xc6dd5dceb0c1f3129ee088954553d2fcefc73bcf77c8b4976ec2f6f3215a38",
-      "original_class_hash": "0xc6dd5dceb0c1f3129ee088954553d2fcefc73bcf77c8b4976ec2f6f3215a38",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "defence_configImpl",
-          "interface_name": "eternum::models::config::Idefence_config"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::config::DefenceConfig",
-          "members": [
-            {
-              "name": "entity_type",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "max_value",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::config::Idefence_config",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::config::DefenceConfig"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::config::defence_config::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::config::defence_config"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
           "name": "entity_id",
           "type": "u128",
           "key": true
@@ -11545,255 +9545,6 @@
         }
       ],
       "name": "eternum::models::config::has_claimed_starting_resources"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "entity_type",
-          "type": "u128",
-          "key": true
-        },
-        {
-          "name": "resource_cost_id",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "resource_cost_count",
-          "type": "u32",
-          "key": false
-        },
-        {
-          "name": "max_value",
-          "type": "u128",
-          "key": false
-        }
-      ],
-      "class_hash": "0x19857ac16e78d676e37d2822490d791df97cc68c023947b4c98372e60c515ab",
-      "original_class_hash": "0x19857ac16e78d676e37d2822490d791df97cc68c023947b4c98372e60c515ab",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "health_configImpl",
-          "interface_name": "eternum::models::config::Ihealth_config"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::config::HealthConfig",
-          "members": [
-            {
-              "name": "entity_type",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "resource_cost_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "resource_cost_count",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "max_value",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::config::Ihealth_config",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::config::HealthConfig"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::config::health_config::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::config::health_config"
     },
     {
       "kind": "DojoModel",
@@ -13445,264 +11196,6 @@
           "key": true
         },
         {
-          "name": "resource_cost_id",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "resource_cost_count",
-          "type": "u32",
-          "key": false
-        },
-        {
-          "name": "wheat_burn_per_soldier",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "fish_burn_per_soldier",
-          "type": "u128",
-          "key": false
-        }
-      ],
-      "class_hash": "0x3d673bdc05302fab34d01d3973f6f40c50c45b7a6a42fcabef7624c08c88858",
-      "original_class_hash": "0x3d673bdc05302fab34d01d3973f6f40c50c45b7a6a42fcabef7624c08c88858",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "soldier_configImpl",
-          "interface_name": "eternum::models::config::Isoldier_config"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::config::SoldierConfig",
-          "members": [
-            {
-              "name": "config_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "resource_cost_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "resource_cost_count",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "wheat_burn_per_soldier",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "fish_burn_per_soldier",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::config::Isoldier_config",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::config::SoldierConfig"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::config::soldier_config::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::config::soldier_config"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "config_id",
-          "type": "u128",
-          "key": true
-        },
-        {
           "name": "speed_config_id",
           "type": "u128",
           "key": true
@@ -14182,237 +11675,6 @@
         }
       ],
       "name": "eternum::models::config::tick_config"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "config_id",
-          "type": "u128",
-          "key": true
-        },
-        {
-          "name": "free_transport_per_city",
-          "type": "u128",
-          "key": false
-        }
-      ],
-      "class_hash": "0xd65ea9ba4aff460b97d7e94b23ebd09617121ce5a65947196c16539d177754",
-      "original_class_hash": "0xd65ea9ba4aff460b97d7e94b23ebd09617121ce5a65947196c16539d177754",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "travel_configImpl",
-          "interface_name": "eternum::models::config::Itravel_config"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::config::TravelConfig",
-          "members": [
-            {
-              "name": "config_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "free_transport_per_city",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::config::Itravel_config",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::config::TravelConfig"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::config::travel_config::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::config::travel_config"
     },
     {
       "kind": "DojoModel",
@@ -15759,246 +13021,6 @@
           "key": true
         },
         {
-          "name": "items_key",
-          "type": "felt252",
-          "key": false
-        },
-        {
-          "name": "items_count",
-          "type": "u128",
-          "key": false
-        }
-      ],
-      "class_hash": "0x4549eb4e0df599e8ac1f8d76f7b84b28e25ed66f9a1b72dd7e05f590712b71f",
-      "original_class_hash": "0x4549eb4e0df599e8ac1f8d76f7b84b28e25ed66f9a1b72dd7e05f590712b71f",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "inventoryImpl",
-          "interface_name": "eternum::models::inventory::Iinventory"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::inventory::Inventory",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "items_key",
-              "type": "core::felt252"
-            },
-            {
-              "name": "items_count",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::inventory::Iinventory",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::inventory::Inventory"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::inventory::inventory::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::inventory::inventory"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "u128",
-          "key": true
-        },
-        {
           "name": "level",
           "type": "u64",
           "key": false
@@ -16229,6 +13251,237 @@
         }
       ],
       "name": "eternum::models::level::level"
+    },
+    {
+      "kind": "DojoModel",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "u128",
+          "key": true
+        },
+        {
+          "name": "last_updated_tick",
+          "type": "u64",
+          "key": false
+        }
+      ],
+      "class_hash": "0x7f7358235c8d086b40038dd305c40caa278fc9d5edebc8645e209b52fca5bea",
+      "original_class_hash": "0x7f7358235c8d086b40038dd305c40caa278fc9d5edebc8645e209b52fca5bea",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoModelImpl",
+          "interface_name": "dojo::model::IDojoModel"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::introspect::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::introspect::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::introspect::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            },
+            {
+              "name": "Array",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::model::IDojoModel",
+          "items": [
+            {
+              "type": "function",
+              "name": "name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "unpacked_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "packed_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "layout",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::integer::u8>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "schema",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::database::introspect::Ty"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "loyaltyImpl",
+          "interface_name": "eternum::models::loyalty::Iloyalty"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::loyalty::Loyalty",
+          "members": [
+            {
+              "name": "entity_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "last_updated_tick",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::models::loyalty::Iloyalty",
+          "items": [
+            {
+              "type": "function",
+              "name": "ensure_abi",
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "eternum::models::loyalty::Loyalty"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::loyalty::loyalty::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "name": "eternum::models::loyalty::loyalty"
     },
     {
       "kind": "DojoModel",
@@ -21725,246 +18978,6 @@
           "key": true
         },
         {
-          "name": "locked_until",
-          "type": "u64",
-          "key": false
-        },
-        {
-          "name": "resources_count",
-          "type": "u32",
-          "key": false
-        }
-      ],
-      "class_hash": "0x7095b1999af3887e0f646b84bbf8f4fbc0d1716b5ef1f875a55ab35a5b837a6",
-      "original_class_hash": "0x7095b1999af3887e0f646b84bbf8f4fbc0d1716b5ef1f875a55ab35a5b837a6",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "resource_chestImpl",
-          "interface_name": "eternum::models::resources::Iresource_chest"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::resources::ResourceChest",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "locked_until",
-              "type": "core::integer::u64"
-            },
-            {
-              "name": "resources_count",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::resources::Iresource_chest",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::resources::ResourceChest"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::resources::resource_chest::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::resources::resource_chest"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "u128",
-          "key": true
-        },
-        {
           "name": "index",
           "type": "u32",
           "key": true
@@ -22693,6 +19706,259 @@
         }
       ],
       "name": "eternum::models::road::road"
+    },
+    {
+      "kind": "DojoModel",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "u128",
+          "key": true
+        },
+        {
+          "name": "category",
+          "type": "StructureCategory",
+          "key": false
+        }
+      ],
+      "class_hash": "0x270760164d1e91f52842eb7b83d152ab0a2e31643135a5e2e8a8a2c7cdc157c",
+      "original_class_hash": "0x270760164d1e91f52842eb7b83d152ab0a2e31643135a5e2e8a8a2c7cdc157c",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoModelImpl",
+          "interface_name": "dojo::model::IDojoModel"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::introspect::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::introspect::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::introspect::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            },
+            {
+              "name": "Array",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::model::IDojoModel",
+          "items": [
+            {
+              "type": "function",
+              "name": "name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "unpacked_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "packed_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "layout",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::integer::u8>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "schema",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::database::introspect::Ty"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "structureImpl",
+          "interface_name": "eternum::models::structure::Istructure"
+        },
+        {
+          "type": "enum",
+          "name": "eternum::models::structure::StructureCategory",
+          "variants": [
+            {
+              "name": "None",
+              "type": "()"
+            },
+            {
+              "name": "Realm",
+              "type": "()"
+            },
+            {
+              "name": "Hyperstructure",
+              "type": "()"
+            },
+            {
+              "name": "Bank",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::structure::Structure",
+          "members": [
+            {
+              "name": "entity_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "category",
+              "type": "eternum::models::structure::StructureCategory"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::models::structure::Istructure",
+          "items": [
+            {
+              "type": "function",
+              "name": "ensure_abi",
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "eternum::models::structure::Structure"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::structure::structure::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "name": "eternum::models::structure::structure"
     },
     {
       "kind": "DojoModel",

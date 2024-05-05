@@ -15,7 +15,7 @@ export const LiquidityTable = ({
   return (
     <table className="min-w-full leading-normal">
       <thead>
-        <tr>
+        <tr className="uppercase text-xs">
           <th>Pair</th>
           {/* <th>Total TVL</th> */}
           <th>Total Lords</th>

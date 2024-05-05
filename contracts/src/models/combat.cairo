@@ -1,22 +1,12 @@
 use core::option::OptionTrait;
+use core::traits::Into;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
 use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-use eternum::utils::math::PercentageImpl;
+use eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 
-// Gameplay
-
-// Generate Troops like Resources (see resource)
-// fn create_army() this will convert Troops into an Army and burn the resources.
-// Now an Army exists at a location and it can travel
-// Army can initiate a combat with another Army or a Entity that has a combat trait
-
-// initiating combat
-// players select another Army, which must be at the same location, then start a Battle.
-// The Battle calculates the strength of each side and deducts health from each side per tick
-// If reinforcements arrive the Battle updates to the new strength and outcome is updated.
 
 #[derive(Model, Copy, Drop, Serde, Default)]
 struct Health {
@@ -28,14 +18,6 @@ struct Health {
 
 #[generate_trait]
 impl HealthImpl of HealthTrait {
-    fn is_alive(self: Health) -> bool {
-        self.current > 0
-    }
-
-    fn assert_alive(self: Health) {
-        assert(self.is_alive(), 'Entity is dead');
-    }
-
     fn increase_by(ref self: Health, value: u128) {
         self.current += value;
         self.lifetime += value;
@@ -48,6 +30,13 @@ impl HealthImpl of HealthTrait {
             self.current = 0;
         }
     }
+    fn is_alive(self: Health) -> bool {
+        self.current > 0
+    }
+
+    fn assert_alive(self: Health) {
+        assert(self.is_alive(), 'Entity is dead');
+    }
 
     fn steps_to_finish(self: @Health, deduction: u128) -> u128 {
         let mut num_steps = *self.current / deduction;
@@ -55,6 +44,10 @@ impl HealthImpl of HealthTrait {
             num_steps += 1;
         }
         num_steps
+    }
+
+    fn percentage_left(self: Health) -> u128 {
+        self.current * PercentageValueImpl::_100().into() / (self.lifetime + 1)
     }
 }
 
@@ -99,6 +92,18 @@ impl TroopsImpl of TroopsTrait {
         total_knight_health.into() + total_paladin_health.into() + total_crossbowman_health.into()
     }
 
+
+    fn full_strength(self: Troops, troop_config: TroopConfig) -> u128 {
+        let total_knight_strength = troop_config.knight_strength * self.knight_count;
+        let total_paladin_strength = troop_config.paladin_strength * self.paladin_count;
+        let total_crossbowman_strength = troop_config.crossbowman_strength * self.crossbowman_count;
+
+        total_knight_strength.into()
+            + total_paladin_strength.into()
+            + total_crossbowman_strength.into()
+    }
+
+
     fn purchase(
         self: Troops, purchaser_id: u128, troops_resources: (Resource, Resource, Resource),
     ) -> (Resource, Resource, Resource) {
@@ -113,12 +118,16 @@ impl TroopsImpl of TroopsTrait {
     }
 
     fn delta(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> (u32, u32) {
-        let self_strength = self.strength_against(enemy_troops, troop_config);
-        let enemy_strength = enemy_troops.strength_against(self, troop_config);
-        let _strength_difference = self_strength - enemy_strength;
-
-        // should be at least one to prevent division errrors
-        (1, 1)
+        let self_strength: i64 = self.strength_against(enemy_troops, troop_config);
+        let enemy_strength: i64 = enemy_troops.strength_against(self, troop_config);
+        let mut strength_difference: i64 = self_strength - enemy_strength;
+        if strength_difference < 0 {
+            strength_difference *= -1;
+        }
+        let strength_difference: u32 = Into::<i64, felt252>::into(strength_difference)
+            .try_into()
+            .unwrap();
+        (strength_difference, strength_difference)
     }
 
     /// @dev Calculates the net combat strength of one troop against another, factoring in troop-specific strengths and advantages/disadvantages.
@@ -179,7 +188,7 @@ impl TroopsImpl of TroopsTrait {
         self_knight_strength + self_paladin_strength + self_crossbowman_strength
     }
 
-    fn count(ref self: Troops) -> u32 {
+    fn count(self: Troops) -> u32 {
         self.knight_count + self.paladin_count + self.crossbowman_count
     }
 }
@@ -194,14 +203,127 @@ struct Army {
     battle_side: BattleSide
 }
 
+#[derive(Copy, Drop, Serde, Introspect, Default)]
+struct BattleArmy {
+    troops: Troops,
+    battle_id: u128,
+    battle_side: BattleSide
+}
+
+impl ArmyIntoBattlrArmyImpl of Into<Army, BattleArmy> {
+    fn into(self: Army) -> BattleArmy {
+        return BattleArmy {
+            troops: self.troops, battle_id: self.battle_id, battle_side: self.battle_side
+        };
+    }
+}
+
+
+#[derive(Introspect, Copy, Drop, Serde, Default)]
+struct BattleHealth {
+    current: u128,
+    lifetime: u128
+}
+
+impl HealthIntoBattleHealthImpl of Into<Health, BattleHealth> {
+    fn into(self: Health) -> BattleHealth {
+        return BattleHealth { // entity_id: self.entity_id,
+            current: self.current, lifetime: self.lifetime
+        };
+    }
+}
+
+impl BattleHealthIntoHealthImpl of Into<BattleHealth, Health> {
+    fn into(self: BattleHealth) -> Health {
+        return Health { entity_id: 0, current: self.current, lifetime: self.lifetime };
+    }
+}
+
+#[generate_trait]
+impl BattleHealthImpl of BattleHealthTrait {
+    fn increase_by(ref self: BattleHealth, value: u128) {
+        self.current += value;
+        self.lifetime += value;
+    }
+
+    fn decrease_by(ref self: BattleHealth, value: u128) {
+        if self.current > value {
+            self.current -= value;
+        } else {
+            self.current = 0;
+        }
+    }
+    fn is_alive(self: BattleHealth) -> bool {
+        Into::<BattleHealth, Health>::into(self).is_alive()
+    }
+
+    fn assert_alive(self: BattleHealth) {
+        Into::<BattleHealth, Health>::into(self).assert_alive()
+    }
+
+    fn steps_to_finish(self: @BattleHealth, deduction: u128) -> u128 {
+        Into::<BattleHealth, Health>::into(*self).steps_to_finish(deduction)
+    }
+
+    fn percentage_left(self: BattleHealth) -> u128 {
+        Into::<BattleHealth, Health>::into(self).percentage_left()
+    }
+}
+
+
+#[generate_trait]
+impl ArmyImpl of ArmyTrait {
+    fn assert_in_battle(self: Army) {
+        assert!(self.battle_id.is_non_zero(), "army not in battle")
+    }
+
+    fn assert_not_in_battle(self: Army) {
+        assert!(self.battle_id.is_zero(), "army in battle")
+    }
+}
+
+#[derive(Model, Copy, Drop, Serde, Default)]
+struct Protector {
+    #[key]
+    entity_id: u128,
+    army_id: u128,
+}
+
+#[derive(Model, Copy, Drop, Serde, Default)]
+struct Protectee {
+    #[key]
+    army_id: u128,
+    protectee_id: u128
+}
+
+#[generate_trait]
+impl ProtecteeImpl of ProtecteeTrait {
+    fn is_none(self: Protectee) -> bool {
+        self.protectee_id == 0
+    }
+
+    fn is_other(self: Protectee) -> bool {
+        self.protectee_id != 0
+    }
+
+    fn protected_resources_owner(self: Protectee) -> u128 {
+        if self.is_other() {
+            self.protectee_id
+        } else {
+            self.army_id
+        }
+    }
+}
+
+
 #[derive(Model, Copy, Drop, Serde, Default)]
 struct Battle {
     #[key]
     entity_id: u128,
-    attack_army: Army,
-    defence_army: Army,
-    attack_army_health: Health,
-    defence_army_health: Health,
+    attack_army: BattleArmy,
+    defence_army: BattleArmy,
+    attack_army_health: BattleHealth,
+    defence_army_health: BattleHealth,
     attack_delta: u32,
     defence_delta: u32,
     tick_last_updated: u64,

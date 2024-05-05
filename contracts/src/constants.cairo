@@ -34,6 +34,16 @@ const RESOURCE_PRECISION: u128 = 10_000;
 // TODO: Move to Onchain config
 const BASE_STOREHOUSE_CAPACITY: u128 = 10_000;
 
+// loyalty config
+// TODO: Move to Onchain config
+const LOYALTY_TICK_INTERVAL: u64 = 7; // updates after x ticks
+const LOYALTY_PER_TICK_INTERVAL: u64 = 1; // update by y after x ticks
+const LOYALTY_MAX_VALUE: u64 = 100;
+
+// pillage config
+// TODO: Move to Onchain config
+const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;
+
 mod ResourceTypes {
     const WOOD: u8 = 1;
     const STONE: u8 = 2;
@@ -79,6 +89,167 @@ mod ResourceTypes {
 // note: update _resource_type_to_position 
 //  function is any new resources are added
 }
+
+fn resource_type_name(resource_type: u8) -> ByteArray {
+    if resource_type == 1 {
+        "WOOD"
+    } else if resource_type == 2 {
+        "STONE"
+    } else if resource_type == 3 {
+        "COAL"
+    } else if resource_type == 4 {
+        "COPPER"
+    } else if resource_type == 5 {
+        "OBSIDIAN"
+    } else if resource_type == 6 {
+        "SILVER"
+    } else if resource_type == 7 {
+        "IRONWOOD"
+    } else if resource_type == 8 {
+        "COLD IRON"
+    } else if resource_type == 9 {
+        "GOLD"
+    } else if resource_type == 10 {
+        "HARTWOOD"
+    } else if resource_type == 11 {
+        "DIAMONDS"
+    } else if resource_type == 12 {
+        "SAPPHIRE"
+    } else if resource_type == 13 {
+        "RUBY"
+    } else if resource_type == 14 {
+        "DEEP CRYSTAL"
+    } else if resource_type == 15 {
+        "IGNIUM"
+    } else if resource_type == 16 {
+        "ETHEREAL SILICA"
+    } else if resource_type == 17 {
+        "TRUE ICE"
+    } else if resource_type == 18 {
+        "TWILIGHT QUARTZ"
+    } else if resource_type == 19 {
+        "ALCHEMICAL SILVER"
+    } else if resource_type == 20 {
+        "ADAMANTINE"
+    } else if resource_type == 21 {
+        "MITHRAL"
+    } else if resource_type == 22 {
+        "DRAGONHIDE"
+    } else if resource_type == 23 {
+        "DESERT GLASS"
+    } else if resource_type == 24 {
+        "DIVINE CLOTH"
+    } else if resource_type == 25 {
+        "CURIOUS SPORE"
+    } else if resource_type == 26 {
+        "UNREFINED ORE"
+    } else if resource_type == 27 {
+        "SUNKEN SHEKEL"
+    } else if resource_type == 28 {
+        "DEMONHIDE"
+    } else if resource_type == 249 {
+        "DONKEY"
+    } else if resource_type == 250 {
+        "KNIGHT"
+    } else if resource_type == 251 {
+        "CROSSBOWMAN"
+    } else if resource_type == 252 {
+        "PALADIN"
+    } else if resource_type == 253 {
+        "LORDS"
+    } else if resource_type == 254 {
+        "WHEAT"
+    } else if resource_type == 255 {
+        "FISH"
+    } else {
+        format!("{} (unknown resource name)", resource_type)
+    }
+}
+
+
+fn get_resources_for_pillage() -> Span<u8> {
+    return array![
+        ResourceTypes::WOOD,
+        ResourceTypes::STONE,
+        ResourceTypes::COAL,
+        ResourceTypes::COPPER,
+        ResourceTypes::OBSIDIAN,
+        ResourceTypes::SILVER,
+        ResourceTypes::IRONWOOD,
+        ResourceTypes::COLD_IRON,
+        ResourceTypes::GOLD,
+        ResourceTypes::HARTWOOD,
+        ResourceTypes::DIAMONDS,
+        ResourceTypes::SAPPHIRE,
+        ResourceTypes::RUBY,
+        ResourceTypes::DEEP_CRYSTAL,
+        ResourceTypes::IGNIUM,
+        ResourceTypes::ETHEREAL_SILICA,
+        ResourceTypes::TRUE_ICE,
+        ResourceTypes::TWILIGHT_QUARTZ,
+        ResourceTypes::ALCHEMICAL_SILVER,
+        ResourceTypes::ADAMANTINE,
+        ResourceTypes::MITHRAL,
+        ResourceTypes::DRAGONHIDE,
+        ResourceTypes::DESERT_GLASS,
+        ResourceTypes::DIVINE_CLOTH,
+        ResourceTypes::CURIOUS_SPORE,
+        ResourceTypes::UNREFINED_ORE,
+        ResourceTypes::SUNKEN_SHEKEL,
+        ResourceTypes::DEMONHIDE,
+        ResourceTypes::DONKEY,
+        ResourceTypes::KNIGHT,
+        ResourceTypes::CROSSBOWMAN,
+        ResourceTypes::PALADIN,
+        ResourceTypes::LORDS,
+        ResourceTypes::WHEAT,
+        ResourceTypes::FISH,
+    ]
+        .span();
+}
+
+fn get_resources_for_pillage_probs() -> Span<u128> {
+    // 35 
+    return array![
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+    ]
+        .span();
+}
+
 
 /// Get resource occurence probabilities
 fn get_resource_probabilities() -> Span<(u8, u128)> {

@@ -9,15 +9,15 @@ use eternum::models::bank::market::{Market, MarketImpl};
 use eternum::models::position::{Coord};
 use eternum::models::resources::{ResourceImpl, Resource};
 use eternum::systems::bank::contracts::bank_systems::bank_systems;
-
-use eternum::systems::bank::contracts::liquidity_systems::liquidity_systems;
-use eternum::systems::bank::contracts::swap_systems::swap_systems;
 use eternum::systems::bank::contracts::bank_systems::{
     IBankSystemsDispatcher, IBankSystemsDispatcherTrait
 };
+
+use eternum::systems::bank::contracts::liquidity_systems::liquidity_systems;
 use eternum::systems::bank::contracts::liquidity_systems::{
     ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,
 };
+use eternum::systems::bank::contracts::swap_systems::swap_systems;
 use eternum::systems::bank::contracts::swap_systems::{
     ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait
 };
@@ -78,14 +78,18 @@ fn setup() -> (
     set!(
         world,
         Resource {
-            entity_id: bank_account_entity_id, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE
+            entity_id: bank_account_entity_id,
+            resource_type: ResourceTypes::WOOD,
+            balance: INITIAL_RESOURCE_BALANCE
         }
     );
     // lords
     set!(
         world,
         Resource {
-            entity_id: bank_account_entity_id, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE
+            entity_id: bank_account_entity_id,
+            resource_type: ResourceTypes::LORDS,
+            balance: INITIAL_RESOURCE_BALANCE
         }
     );
 
@@ -141,7 +145,8 @@ fn test_liquidity_add() {
     ) =
         setup();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
+    liquidity_systems_dispatcher
+        .add(bank_entity_id, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
 
     let player = starknet::get_caller_address();
 
@@ -157,7 +162,9 @@ fn test_liquidity_add() {
     assert(market.resource_amount == LIQUIDITY_AMOUNT, 'market.resource_amount');
     assert(market.total_shares.mag == MARKET_TOTAL_SHARES, 'market.total_shares');
 
-    assert(liquidity.shares == FixedTrait::new_unscaled(LIQUIDITY_AMOUNT, false), 'liquidity.shares');
+    assert(
+        liquidity.shares == FixedTrait::new_unscaled(LIQUIDITY_AMOUNT, false), 'liquidity.shares'
+    );
 
     assert(wood.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT, 'wood.balance');
     assert(lords.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT, 'lords.balance');
@@ -177,7 +184,8 @@ fn test_liquidity_remove() {
 
     let player = starknet::get_caller_address();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
+    liquidity_systems_dispatcher
+        .add(bank_entity_id, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
     liquidity_systems_dispatcher.remove(bank_entity_id, ResourceTypes::WOOD, liquidity.shares);
 
@@ -215,7 +223,8 @@ fn test_liquidity_buy() {
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
     let player2 = starknet::get_contract_address();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
+    liquidity_systems_dispatcher
+        .add(bank_entity_id, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
 
     // check state
     let liquidity = get!(world, (bank_entity_id, player2, ResourceTypes::WOOD), Liquidity);
@@ -282,7 +291,8 @@ fn test_liquidity_sell() {
     starknet::testing::set_contract_address(contract_address_const::<'player2'>());
     let player2 = starknet::get_contract_address();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
+    liquidity_systems_dispatcher
+        .add(bank_entity_id, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
 
     // check state
     let liquidity = get!(world, (bank_entity_id, player2, ResourceTypes::WOOD), Liquidity);
@@ -297,7 +307,7 @@ fn test_liquidity_sell() {
     // initial reserves + 449 (input - owner fees)
     assert(market.resource_amount == 1449, 'market.resource_amount');
     // total shares
-    
+
     // player resources
     let bank_account = get!(world, (bank_entity_id, player2), BankAccounts);
     let wood = ResourceImpl::get(world, (bank_account.entity_id, ResourceTypes::WOOD));

@@ -35,6 +35,7 @@ mod realm_systems {
     use eternum::models::quantity::QuantityTracker;
     use eternum::models::realm::Realm;
     use eternum::models::resources::{DetachedResource, Resource, ResourceImpl, ResourceTrait};
+    use eternum::models::structure::{Structure, StructureCategory};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
 
@@ -117,6 +118,7 @@ mod realm_systems {
                 (
                     Owner { entity_id: entity_id.into(), address: caller },
                     EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() },
+                    Structure { entity_id: entity_id.into(), category: StructureCategory::Realm },
                     Realm {
                         entity_id: entity_id.into(),
                         realm_id,

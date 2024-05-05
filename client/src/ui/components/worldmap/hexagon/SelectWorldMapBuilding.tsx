@@ -4,7 +4,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { InfoIcon } from "lucide-react";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { WorldBuildingType } from "@bibliothecadao/eternum";
+import { ResourcesIds, WorldBuildingType } from "@bibliothecadao/eternum";
 import Button from "@/ui/elements/Button";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
@@ -40,13 +40,16 @@ const BUILDING_UNBLOCKED = {
 };
 
 const BUILDING_DESCRIPTION = {
-  [WorldBuildingType.Bank]: "Build an AMM",
+  [WorldBuildingType.Bank]:
+    "Creates an AMM at location, allowing players to trade resources. You are in control of this.",
   [WorldBuildingType.Settlement]: "Expands your Base, and allows leasing of land to other players",
   [WorldBuildingType.Hyperstructure]: "Allows the creation of new lands",
 };
 
 export const SelectWorldMapBuilding = ({ entityId }: any) => {
-  const buildingTypes = Object.keys(WorldBuildingType).filter((type) => isNaN(Number(type)) && type !== "None");
+  const buildingTypes = Object.keys(WorldBuildingType).filter(
+    (type) => isNaN(Number(type)) && type !== "None" && type !== "Settlement" && type !== "Hyperstructure",
+  );
 
   const { worldMapBuilding, setWorldMapBuilding, clickedHex, setTooltip } = useUIStore();
   const {
@@ -58,7 +61,7 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
 
   const { getBalance } = useResourceBalance();
 
-  const lordsBalance = getBalance(entityId, 253).balance;
+  const lordsBalance = getBalance(entityId, ResourcesIds.Lords).balance;
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -131,10 +134,10 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
                 onMouseEnter={() => {
                   setTooltip({
                     content: (
-                      <div>
+                      <div className="w-48 p-2">
+                        <div className="text-sm ">{BUILDING_DESCRIPTION[building]}</div>
                         <CostInfo cost={BUILDING_COST[building]} lordsBalance={lordsBalance} />
                         <RestrictionInfo restriction={RESTRICTION_INFO[building]} />
-                        <div className="text-xs p-2 w-12">{BUILDING_DESCRIPTION[building]}</div>
                       </div>
                     ),
                     position: "right",
@@ -160,23 +163,23 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
 
 const CostInfo = ({ cost, lordsBalance }: { cost: number; lordsBalance: number }) => {
   return (
-    <div className="flex flex-col text-white text-sm p-2">
+    <div className="flex flex-col">
       <div className="mt-3">Cost</div>
       <div className="font-bold flex space-x-2">
         <div className="text-order-giants">-{cost}</div> <ResourceIcon resource={"Lords"} size="xs" />
       </div>
-      <div className="mt-3">Balance</div>
+      {/* <div className="mt-3">Balance</div>
       <div className="font-bold flex space-x-2">
         <div className="text-order-brilliance">{divideByPrecision(lordsBalance)}</div>{" "}
         <ResourceIcon resource={"Lords"} size="xs" />
-      </div>
+      </div> */}
     </div>
   );
 };
 
 const RestrictionInfo = ({ restriction }: { restriction: string }) => {
   return (
-    <div className="flex flex-col text-white text-sm p-2">
+    <div className="flex flex-col">
       <div className="mt-3">Restriction</div>
       <div className="font-bold">{restriction}</div>
     </div>

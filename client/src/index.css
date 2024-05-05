@@ -74,21 +74,21 @@ h1,h2,h3,h4,h5,h6 {
 
 *::-webkit-scrollbar-track {
   background-color: #1b1b1b;
-  border-radius: 8px;
-  border: 1px solid var(--gray-gold, #776756);
+  
+  /* border: 1px solid var(--gray-gold, #776756); */
   margin-bottom: 2px;
 }
 
 *::-webkit-scrollbar {
   width: 8px;
   background-color: #1b1b1b;
-  border-radius: 8px;
+
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: #e0af65;
-  border-radius: 8px;
-  border: 1px solid var(--gray-gold, #776756);
+
+  /* border: 2px solid var(--gray-gold, #776756); */
+  @apply bg-gold;
 }
 
 .root-container {
@@ -139,9 +139,28 @@ h4 {
 }
 
 h5 {
-  @apply text-base sm:text-lg md:text-xl font-light ;
+  @apply text-base sm:text-lg md:text-xl ;
 }
 
 h6 {
-  @apply text-sm sm:text-base md:text-lg font-thin ;
+  @apply text-sm sm:text-base md:text-lg uppercase ;
+}
+
+
+.fade-in {
+  animation: fadeIn 1s;
+}
+
+.fade-out {
+  animation: fadeOut 1s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }

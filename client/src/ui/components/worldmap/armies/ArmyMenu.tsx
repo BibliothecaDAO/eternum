@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import clsx from "clsx";
-import { type CombatInfo, type Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import {
+  type CombatInfo,
+  type Resource,
+  ResourcesIds,
+  EXPLORATION_REWARD_RESOURCE_AMOUNT,
+  EXPLORATION_COSTS,
+} from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
 import { useDojo } from "../../../../hooks/context/DojoContext";
@@ -17,19 +23,10 @@ interface ArmyMenuProps {
   entityId: bigint;
 }
 
-const EXPLORATION_REWARD_RESOURCE_AMOUNT: number = 20;
-
-const EXPLORATION_COSTS: Resource[] = [
-  {
-    resourceId: 254,
-    amount: 30000,
-  },
-  { resourceId: 255, amount: 15000 },
-];
-
 export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const {
     account: { account },
+    network: { provider },
     setup: {
       components: { TickMove, ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Owner, Position, Health, Realm },
     },
@@ -45,7 +42,6 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
   const isAttackMode = useUIStore((state) => state.isAttackMode);
   const [playerOwnsSelectedEntity, setPlayerOwnsSelectedEntity] = useState(false);
-  console.log({ selectedEntity });
   const [playerRaidersOnPosition, setPlayerRaidersOnPosition] = useState<CombatInfo[]>([]);
   const [selectedEntityIsDead, setSelectedEntityIsDead] = useState(true);
   const [selectedEntityIsRealm, setSelectedEntityIsRealm] = useState(false);
@@ -60,8 +56,11 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     if (!selectedEntity) return;
     const checkPlayerOwnsSelectedEntity = () => {
       if (selectedEntity?.id) {
-        const owner = getComponentValue(Owner, getEntityIdFromKeys([selectedEntity.id])) || undefined;
-        return owner?.address === BigInt(account.address) ? true : false;
+        const owner = getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntity.id])) || undefined;
+
+        const entity_owner =
+          getComponentValue(Owner, getEntityIdFromKeys([BigInt(owner?.entity_owner_id || "0")])) || undefined;
+        return entity_owner?.address === BigInt(account.address) ? true : false;
       }
       return false;
     };
@@ -137,8 +136,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     });
   }, [entityOwner]);
 
-  // const hasEnoughResourcesToExplore = explorationCosts.every((res) => res.hasEnough);
-  const hasEnoughResourcesToExplore = true;
+  const hasEnoughResourcesToExplore = explorationCosts.every((res) => res.hasEnough);
 
   useEffect(() => {
     setTimeout(() => {
@@ -179,7 +177,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             <TravelIcon />
             <div
               className={clsx(
-                "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+                "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-brown/80 text-gold border border-gold p-2 text-sm",
                 "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
               )}
             >
@@ -202,7 +200,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
           >
             <div
               className={clsx(
-                "absolute left-1/2 -top-1 opacity-0 transition-all -translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+                "absolute left-1/2 -top-1 opacity-0 transition-all -translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-brown/80 text-gold border border-gold p-2 text-sm",
                 "group-hover/icon:opacity-100 group-hover/icon:-translate-y-full",
               )}
             >
@@ -241,7 +239,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             </div>
             <div
               className={clsx(
-                "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm pointer-events-none",
+                "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-brown/80 text-gold border border-gold p-2 text-sm pointer-events-none",
                 "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
               )}
             >
@@ -253,7 +251,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
                       key={res.resourceId}
                       type="vertical"
                       resourceId={res.resourceId}
-                      className={res.hasEnough ? "text-white" : "text-order-giants"}
+                      className={res.hasEnough ? "text-gold" : "text-order-giants"}
                       amount={divideByPrecision(res.amount)}
                     />
                   );
@@ -262,6 +260,44 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             </div>
           </div>
         )}
+        {/* {playerOwnsSelectedEntity && (
+          <div
+            className={clsx("relative group/icon transition-opacity duration-200")}
+            onClick={(e) => {
+              e.stopPropagation();
+
+              if (!isAttackMode && !isTravelMode && !isTraveling && canCarryNewReward && hasEnoughResourcesToExplore) {
+                if (isExploreMode) {
+                  setIsTravelMode(false);
+                  setIsExploreMode(false);
+                  setIsAttackMode(false);
+                } else {
+                  setIsTravelMode(false);
+                  setIsExploreMode(true);
+                  setIsAttackMode(false);
+                }
+              }
+            }}
+          >
+            <div
+              className={
+                isAttackMode || isTravelMode || isTraveling || !canCarryNewReward || !hasEnoughResourcesToExplore
+                  ? "opacity-30 "
+                  : "opacity-100"
+              }
+            >
+              <ExploreIcon />
+            </div>
+            <div
+              className={clsx(
+                "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-brown/80 text-gold border border-gold p-2 text-sm pointer-events-none",
+                "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
+              )}
+            >
+              Drop Off Resources. You must be at home
+            </div>
+          </div>
+        )} */}
       </div>
     </Html>
   );

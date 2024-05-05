@@ -71,7 +71,7 @@ export const useHyperstructure = () => {
           ? getComponentValue(Position, getEntityIdFromKeys([realmEntityIds[0].realmEntityId]))
           : undefined;
         // todo: find true distance between 2 hex
-        let distance = realmPosition ? calculateDistance(realmPosition, { x, y }) : 0;
+        let distance = realmPosition ? calculateDistance(realmPosition, { x, y }) || 0 : 0;
 
         const uiPosition = getUIPositionFromColRow(x, y);
 

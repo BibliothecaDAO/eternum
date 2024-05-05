@@ -435,13 +435,83 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async create_army(props: SystemProps.CreateArmyProps) {
-    const { owner_id, troops, signer } = props;
+  public async create_army(props: SystemProps.ArmyCreateProps) {
+    const { army_owner_id, army_is_protector, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
-      entrypoint: "create_army",
-      calldata: [owner_id, troops.knight_count, troops.paladin_count, troops.crossbowman_count],
+      entrypoint: "army_create",
+      calldata: [army_owner_id, army_is_protector],
+    });
+  }
+
+  public async army_buy_troops(props: SystemProps.ArmyBuyTroopsProps) {
+    const { army_id, payer_id, troops, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "army_buy_troops",
+      calldata: [army_id, payer_id, troops.knight_count, troops.paladin_count, troops.crossbowman_count],
+    });
+  }
+
+  public async army_merge_troops(props: SystemProps.ArmyMergeTroopsProps) {
+    const { from_army_id, to_army_id, troops, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "army_merge_troops",
+      calldata: [from_army_id, to_army_id, troops],
+    });
+  }
+
+  public async battle_start(props: SystemProps.BattleStartProps) {
+    const { attacking_army_id, defending_army_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "battle_start",
+      calldata: [attacking_army_id, defending_army_id],
+    });
+  }
+
+  public async battle_join(props: SystemProps.BattleJoinProps) {
+    const { battle_id, battle_side, army_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "battle_join",
+      calldata: [battle_id, battle_side, army_id],
+    });
+  }
+
+  public async battle_leave(props: SystemProps.BattleLeaveProps) {
+    const { battle_id, army_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "battle_leave",
+      calldata: [battle_id, army_id],
+    });
+  }
+
+  public async battle_pillage(props: SystemProps.BattlePillageProps) {
+    const { army_id, structure_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "battle_pillage",
+      calldata: [army_id, structure_id],
+    });
+  }
+
+  public async battle_claim(props: SystemProps.BattleClaimProps) {
+    const { army_id, structure_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "battle_claim",
+      calldata: [army_id, structure_id],
     });
   }
 

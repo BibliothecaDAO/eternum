@@ -172,7 +172,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                 <div className="flex w-full h-full">
                   <TextInput placeholder="Your Name..." maxLength={12} value={inputName} onChange={setInputName} />
                   <Button
-                    isLoading={loading}
+                    isLoading={loading || !account}
                     onClick={onSetName}
                     variant="primary"
                     disabled={loading || inputName.length === 0}

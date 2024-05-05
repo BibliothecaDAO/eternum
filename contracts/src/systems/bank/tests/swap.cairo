@@ -9,14 +9,18 @@ use eternum::models::bank::market::{Market};
 use eternum::models::position::{Coord};
 use eternum::models::resources::{Resource, ResourceImpl};
 use eternum::systems::bank::contracts::bank_systems::bank_systems;
+use eternum::systems::bank::contracts::bank_systems::{
+    IBankSystemsDispatcher, IBankSystemsDispatcherTrait
+};
 
 use eternum::systems::bank::contracts::liquidity_systems::liquidity_systems;
-use eternum::systems::bank::contracts::swap_systems::swap_systems;
-use eternum::systems::bank::contracts::bank_systems::{IBankSystemsDispatcher, IBankSystemsDispatcherTrait};
 use eternum::systems::bank::contracts::liquidity_systems::{
     ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,
 };
-use eternum::systems::bank::contracts::swap_systems::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait,};
+use eternum::systems::bank::contracts::swap_systems::swap_systems;
+use eternum::systems::bank::contracts::swap_systems::{
+    ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait,
+};
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
@@ -68,14 +72,18 @@ fn setup(
     set!(
         world,
         Resource {
-            entity_id: bank_account_entity_id, resource_type: ResourceTypes::WOOD, balance: INITIAL_RESOURCE_BALANCE
+            entity_id: bank_account_entity_id,
+            resource_type: ResourceTypes::WOOD,
+            balance: INITIAL_RESOURCE_BALANCE
         }
     );
     // lords
     set!(
         world,
         Resource {
-            entity_id: bank_account_entity_id, resource_type: ResourceTypes::LORDS, balance: INITIAL_RESOURCE_BALANCE
+            entity_id: bank_account_entity_id,
+            resource_type: ResourceTypes::LORDS,
+            balance: INITIAL_RESOURCE_BALANCE
         }
     );
 
@@ -105,7 +113,10 @@ fn test_swap_buy_without_fees() {
 
     let player = starknet::get_caller_address();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT);
+    liquidity_systems_dispatcher
+        .add(
+            bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT
+        );
     swap_systems_dispatcher.buy(bank_entity_id, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // player resources
@@ -139,7 +150,10 @@ fn test_swap_buy_with_fees() {
 
     let player = starknet::get_caller_address();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT);
+    liquidity_systems_dispatcher
+        .add(
+            bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT
+        );
     swap_systems_dispatcher.buy(bank_entity_id, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // player resources
@@ -178,7 +192,10 @@ fn test_swap_sell_without_fees() {
 
     let player = starknet::get_caller_address();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT);
+    liquidity_systems_dispatcher
+        .add(
+            bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT
+        );
     swap_systems_dispatcher.sell(bank_entity_id, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // player resources
@@ -214,7 +231,10 @@ fn test_swap_sell_with_fees() {
 
     let player = starknet::get_caller_address();
 
-    liquidity_systems_dispatcher.add(bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT);
+    liquidity_systems_dispatcher
+        .add(
+            bank_entity_id, ResourceTypes::WOOD, INITIAL_LIQUIDITY_AMOUNT, INITIAL_LIQUIDITY_AMOUNT
+        );
     swap_systems_dispatcher.sell(bank_entity_id, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     // player resources
@@ -224,7 +244,6 @@ fn test_swap_sell_with_fees() {
 
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
-
 
     // payout for 80 wood = 75 lords
     assert(market.lords_amount == 925, 'market.lords_amount');

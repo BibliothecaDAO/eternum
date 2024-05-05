@@ -103,19 +103,18 @@ export const BankPanel = ({ entity }: BankListProps) => {
 
   return (
     <div>
-      <div className="flex justify-between">
-        <h3>{entity.name}</h3>
+      <div className="flex justify-between mb-4">
         <div>
-          <div>Fees Earned </div>
-          <div>Banker Owner: </div>
-        </div>
-        <div className="mr-3">
-          <div>
-            Banker Owner:{" "}
+          <h3>{entity.name}</h3>
+          <div className="text-xs">
+            Banker:{" "}
             {ownerName ? hexToAscii(numberToHex(Number(ownerName))) : numberToHex(Number(owner!.address)).slice(0, 5)}
           </div>
-          {bank && <div>{`Owner fees: ${(Number(bank.owner_fee_scaled) / 2 ** 64) * 100}%`}</div>}
-          <div>LP fees: 5%</div>
+        </div>
+        <div className="border px-6 flex uppercase">
+          <div className="font-bold self-center">
+            {bank && <div>{`Trading Fees: ${(Number(bank.owner_fee_scaled) / 2 ** 64) * 100}%`}</div>}{" "}
+          </div>
         </div>
       </div>
 

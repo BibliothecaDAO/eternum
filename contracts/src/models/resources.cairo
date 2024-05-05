@@ -3,7 +3,7 @@ use core::integer::BoundedInt;
 use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::constants::ResourceTypes;
+use eternum::constants::{ResourceTypes, resource_type_name};
 use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION, BASE_STOREHOUSE_CAPACITY};
 use eternum::models::buildings::{
     Building, BuildingTrait, BuildingQuantityTrackerImpl, BuildingCategory, BuildingQuantity
@@ -27,7 +27,10 @@ struct Resource {
 impl ResourceDisplay of Display<Resource> {
     fn fmt(self: @Resource, ref f: Formatter) -> Result<(), Error> {
         let str: ByteArray = format!(
-            "Resource ({}, {}, {})", *self.entity_id, *self.resource_type, *self.balance
+            "Resource (entity id: {}, resource type: {}, balance: {})",
+            *self.entity_id,
+            resource_type_name(*self.resource_type),
+            *self.balance
         );
         f.buffer.append(@str);
         Result::Ok(())
@@ -76,7 +79,7 @@ struct OwnedResourcesTracker {
 }
 
 #[derive(Model, Copy, Drop, Serde)]
-struct ResourceLock {
+struct ResourceTransferLock {
     #[key]
     entity_id: u128,
     release_at: u64,
@@ -84,11 +87,16 @@ struct ResourceLock {
 
 
 #[generate_trait]
-impl ResourceLockImpl of LockTrait {
-    fn assert_not_locked(self: ResourceLock) {
+impl ResourceTransferLockImpl of ResourceTransferLockTrait {
+    fn assert_not_locked(self: ResourceTransferLock) {
         assert!(self.is_open(), "resource locked for entity {}", self.entity_id);
     }
-    fn is_open(self: ResourceLock) -> bool {
+
+    fn assert_locked(self: ResourceTransferLock) {
+        assert!(!self.is_open(), "resource NOT locked for entity {}", self.entity_id);
+    }
+
+    fn is_open(self: ResourceTransferLock) -> bool {
         let now = starknet::get_block_timestamp();
         now > self.release_at
     }
@@ -160,7 +168,7 @@ impl ResourceImpl of ResourceTrait {
             return;
         };
 
-        assert!(self.balance >= amount, "not enough resources, {}", self);
+        assert!(self.balance >= amount, "not enough resources, {}. deduction: {}", self, amount);
 
         if amount > self.balance {
             self.balance = 0;
@@ -425,13 +433,10 @@ mod tests_resource_traits {
         assert_eq!(wood_production.input_finish_tick, (104 - 2) / 3); // 3 =  wood_cost_gold_rate
     }
 }
-
-
 // #[cfg(test)]
 // mod owned_resources_tracker_tests {
 //     use eternum::constants::ResourceTypes;
 //     use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
-
 
 //     #[test]
 //     fn test_resource_type_to_position() {
@@ -443,7 +448,6 @@ mod tests_resource_traits {
 //         assert!(ort._resource_type_to_position(2) == 1, " wrong ans");
 //         assert!(ort._resource_type_to_position(1) == 0, " wrong ans");
 //     }
-
 
 //     #[test]
 //     fn test_get_and_set_resource_ownership() {
@@ -462,4 +466,5 @@ mod tests_resource_traits {
 //         assert!(ort.owns_resource_type(ResourceTypes::DEMONHIDE) == false, "should be false");
 //     }
 // }
+
 

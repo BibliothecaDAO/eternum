@@ -24,7 +24,7 @@ const StarsSky = () => {
   particlesGeometry.setAttribute("position", new THREE.BufferAttribute(position, 3));
 
   const particlesMaterial = new THREE.PointsMaterial({
-    size: 3,
+    size: 1,
     sizeAttenuation: false,
   });
 
@@ -49,7 +49,7 @@ export const WorldMapScene = () => {
     const _texture = texture[key as keyof typeof texture];
     _texture.wrapS = THREE.RepeatWrapping;
     _texture.wrapT = THREE.RepeatWrapping;
-    _texture.repeat.set(60, 60);
+    _texture.repeat.set(10, 30);
   });
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export const WorldMapScene = () => {
       <HighlightedHexes />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]}>
         <planeGeometry args={[2668, 1390.35]} />
-        <meshStandardMaterial {...texture} />
+        <meshStandardMaterial displacementScale={0.8} roughness={0.6} metalness={0.4} {...texture} />
       </mesh>
       <WorldMapLight />
     </>

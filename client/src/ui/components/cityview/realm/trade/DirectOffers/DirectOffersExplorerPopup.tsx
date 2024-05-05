@@ -193,7 +193,7 @@ const RealmResourceExplorerPanel = ({
                   balance={amount}
                   resourceId={resourceId}
                   realm={realm}
-                  distance={distance}
+                  distance={distance || 0}
                   onCreateDirectOffer={onCreateDirectOffer}
                 />
               </div>
