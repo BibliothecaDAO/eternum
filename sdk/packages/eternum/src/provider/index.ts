@@ -79,7 +79,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     //   return [taker_gives_resource_types[i], amount];
     // });
 
-    const tx = await this.executeMulti(signer, [
+    return await this.executeAndCheckTransaction(signer, [
       {
         contractAddress: getContractByName(this.manifest, "trade_systems"),
         entrypoint: "create_order",
@@ -94,13 +94,12 @@ export class EternumProvider extends EnhancedDojoProvider {
         ],
       },
     ]);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async accept_order(props: SystemProps.AcceptOrderProps) {
     const { taker_id, trade_id, maker_gives_resources, taker_gives_resources, signer } = props;
 
-    const tx = await this.executeMulti(signer, [
+    return await this.executeAndCheckTransaction(signer, [
       {
         contractAddress: getContractByName(this.manifest, "trade_systems"),
         entrypoint: "accept_order",
@@ -114,29 +113,26 @@ export class EternumProvider extends EnhancedDojoProvider {
         ],
       },
     ]);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async cancel_order(props: SystemProps.CancelOrderProps) {
     const { trade_id, return_resources, signer } = props;
-    const tx = await this.executeMulti(signer, {
+
+    return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "trade_systems"),
       entrypoint: "cancel_order",
       calldata: [trade_id, return_resources.length / 2, ...return_resources],
     });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async mint_resources(props: SystemProps.MintResourcesProps) {
     const { receiver_id, resources } = props;
 
-    const tx = await this.executeMulti(props.signer, {
+    return await this.executeAndCheckTransaction(props.signer, {
       contractAddress: getContractByName(this.manifest, "dev_resource_systems"),
       entrypoint: "mint",
       calldata: [receiver_id, resources.length / 2, ...resources],
     });
-
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async create_realm(props: SystemProps.CreateRealmProps) {
@@ -218,13 +214,13 @@ export class EternumProvider extends EnhancedDojoProvider {
       return calldata;
     });
 
-    const tx = await this.executeMulti(signer, calldata);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+    return await this.executeAndCheckTransaction(signer, calldata);
   };
 
   public async create_road(props: SystemProps.CreateRoadProps) {
     const { creator_id, start_coord, end_coord, usage_count, signer } = props;
-    const tx = await this.executeMulti(signer, {
+
+    return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "road_systems"),
       entrypoint: "create",
       calldata: [
@@ -237,34 +233,32 @@ export class EternumProvider extends EnhancedDojoProvider {
         usage_count,
       ],
     });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async transfer_resources(props: SystemProps.TransferResourcesProps) {
     const { sending_entity_id, receiving_entity_id, resources, signer } = props;
-    const tx = await this.executeMulti(signer, {
+
+    return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "resource_systems"),
       entrypoint: "transfer",
       calldata: [sending_entity_id, receiving_entity_id, resources.length / 2, ...resources],
     });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async send_resources(props: SystemProps.SendResourcesProps) {
     const { sender_entity_id, recipient_entity_id, resources, signer } = props;
 
-    const tx = await this.executeMulti(signer, {
+    return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "resource_systems"),
       entrypoint: "send",
       calldata: [sender_entity_id, recipient_entity_id, resources.length / 2, ...resources],
     });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async pickup_resources(props: SystemProps.PickupResourcesProps) {
     const { recipient_entity_id, owner_entity_id, resources, signer } = props;
 
-    const tx = await this.executeMulti(signer, [
+    return await this.executeAndCheckTransaction(signer, [
       {
         contractAddress: getContractByName(this.manifest, "resource_systems"),
         entrypoint: "approve",
@@ -276,27 +270,26 @@ export class EternumProvider extends EnhancedDojoProvider {
         calldata: [recipient_entity_id, owner_entity_id, resources.length / 2, ...resources],
       },
     ]);
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async travel(props: SystemProps.TravelProps) {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
-    const tx = await this.executeMulti(signer, {
+
+    return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "travel_systems"),
       entrypoint: "travel",
       calldata: [travelling_entity_id, destination_coord_x, destination_coord_y],
     });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async travel_hex(props: SystemProps.TravelHexProps) {
     const { travelling_entity_id, directions, signer } = props;
-    const tx = await this.executeMulti(signer, {
+
+    return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "travel_systems"),
       entrypoint: "travel_hex",
       calldata: [travelling_entity_id, directions],
     });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async level_up_realm(props: SystemProps.LevelUpRealmProps) {
