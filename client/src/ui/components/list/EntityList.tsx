@@ -12,7 +12,7 @@ interface EntityListProps {
 }
 
 export const EntityList = ({ title, panel, list, headerPanel, current }: EntityListProps) => {
-  const [selectedEntity, setSelectedEntity] = useState<bigint | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<any>(null);
 
   useEffect(() => {
     const entity = list.find((entity) => entity.entity_id === current);
@@ -27,7 +27,7 @@ export const EntityList = ({ title, panel, list, headerPanel, current }: EntityL
             &lt; Back to {title}
           </Button>
 
-          {panel({ entity: selectedEntity })}
+          {panel({ entity: list.find(entity => entity.entity_id === selectedEntity.entity_id) })}
         </div>
       ) : (
         <>
