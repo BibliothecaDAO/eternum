@@ -18,7 +18,9 @@ mod bank_systems {
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::resources::{Resource, ResourceImpl};
-    use eternum::models::structure::{Structure, StructureCategory};
+    use eternum::models::structure::{
+        Structure, StructureCategory, StructureCount, StructureCountTrait
+    };
 
     use traits::Into;
 
@@ -34,8 +36,10 @@ mod bank_systems {
             let bank_entity_id: ID = world.uuid().into();
 
             //todo: check that tile is explored
-            //todo: check that no bank on this position
-            //todo: check that no realm on this position
+
+            // ensure that the coord is not occupied by any other structure
+            let structure_count: StructureCount = get!(world, coord, StructureCount);
+            structure_count.assert_none();
 
             // remove the resources from the realm
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
@@ -51,6 +55,7 @@ mod bank_systems {
                 world,
                 (
                     Structure { entity_id: bank_entity_id, category: StructureCategory::Bank },
+                    StructureCount { coord, count: 1 },
                     Bank { entity_id: bank_entity_id, owner_fee_scaled, exists: true },
                     Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },
                     Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() }
