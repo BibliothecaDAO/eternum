@@ -32,6 +32,7 @@ import { useTravel } from "../../../../hooks/helpers/useTravel";
 import { useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useLocation } from "wouter";
+import { useFrame } from "@react-three/fiber";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
@@ -176,28 +177,40 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   }, [group, explored]);
 
   // Create the mesh only once when the component is mounted
-  const mesh: InstancedMesh = useMemo(() => {
+  const mesh = useMemo(() => {
     const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
     const hexMaterial = new THREE.MeshStandardMaterial({
       color: "green",
       vertexColors: false,
       transparent: true,
-      opacity: 0.3,
+      opacity: 0.0, // Start fully transparent
+      wireframe: false,
     });
+
+    const edgesGeometry = new THREE.EdgesGeometry(hexagonGeometry);
+    const edgesMaterial = new THREE.LineBasicMaterial({
+      color: "black",
+      linewidth: 1,
+      transparent: true,
+      opacity: 0.4,
+    });
+    const edgesMesh = new THREE.LineSegments(edgesGeometry, edgesMaterial);
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, revealedHexes.length);
     let idx = 0;
     let matrix = new Matrix4();
     revealedHexes.forEach((hex) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
-      // set the z position with math.random to have a random height
       matrix.setPosition(x, y, 0.31);
 
       instancedMesh.setMatrixAt(idx, matrix);
+      instancedMesh.setColorAt(idx, color.setRGB(0.4, 0.4, 0.4));
 
-      // color.setStyle(BIOMES[hex.biome].color);
-      color.setRGB(0.4, 0.4, 0.4);
-      instancedMesh.setColorAt(idx, color);
+      // Add edges to each hexagon instance
+      const edges = edgesMesh.clone();
+      edges.applyMatrix4(matrix);
+      instancedMesh.add(edges);
+
       idx++;
     });
 
@@ -205,6 +218,12 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     instancedMesh.frustumCulled = true;
     return instancedMesh;
   }, [revealedHexes]);
+
+  // Animation logic
+  useFrame((state, delta) => {
+    const opacityIncrease = delta * 0.5; // Adjust speed here
+    mesh.material.opacity = Math.min(mesh.material.opacity + opacityIncrease, 0.4); // Ensure it does not exceed the maximum
+  });
 
   const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
 
