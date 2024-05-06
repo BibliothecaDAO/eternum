@@ -80,7 +80,7 @@ export const MainScene = () => {
 
   const { ambientColor, ambientIntensityHexception, ambientIntensityMap } = useControls("Ambient Light", {
     ambientColor: { value: "#fff", label: "Color" },
-    ambientIntensityHexception: { value: 0.23, min: 0, max: 1, step: 0.01 },
+    ambientIntensityHexception: { value: 0.5, min: 0, max: 1, step: 0.01 },
     ambientIntensityMap: { value: 0.75, min: 0, max: 1, step: 0.01 },
   });
 
@@ -168,7 +168,7 @@ export const MainScene = () => {
         <EffectComposer multisampling={0}>
           <Vignette
             offset={0.5} // vignette offset
-            darkness={0.5} // vignette darkness
+            darkness={0.2} // vignette darkness
             eskil={false} // Eskil's vignette technique
             blendFunction={BlendFunction.NORMAL} // blend mode
           />
@@ -177,9 +177,10 @@ export const MainScene = () => {
             focalLength={1.5} // focal length
             bokehScale={3} // bokeh size
           />
+          {/* <Pixelation granularity={3} /> */}
           <BrightnessContrast brightness={brightness} contrast={contrast} />
           <Bloom luminanceThreshold={0.9} intensity={0.1} mipmapBlur />
-          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.1} />
+          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.4} />
           <SMAA />
         </EffectComposer>
         <fog attach="fog" color={fogColor} near={fogDistance.near} far={fogDistance.far} />

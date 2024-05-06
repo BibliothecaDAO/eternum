@@ -81,7 +81,7 @@ const formatArmies = (
       homePosition,
       name:
         (name ? shortString.decodeShortString(name.name.toString()) : `Army ${army?.entity_id}`) +
-        ` - ${protectee ? "Defense 🛡️" : "Attack 🗡️"}`,
+        ` - ${protectee ? "🛡️" : "🗡️"}`,
       // note: have to explicitly specify entity id as the army entity id or else it's realm entity id
       entity_id: army.entity_id,
     };

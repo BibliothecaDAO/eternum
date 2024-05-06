@@ -37,6 +37,12 @@ export type ResourceType = {
   balance: RecsType.BigInt;
 };
 
+export type BuildQuantityType = {
+  entity_id: RecsType.BigInt;
+  category: RecsType.Number;
+  value: RecsType.Number;
+};
+
 export type BuildingType = {
   outer_col: RecsType.BigInt;
   outer_row: RecsType.BigInt;

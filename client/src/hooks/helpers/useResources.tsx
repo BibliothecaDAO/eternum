@@ -1,10 +1,19 @@
-import { type Entity, Has, HasValue, NotValue, getComponentValue, runQuery, Not } from "@dojoengine/recs";
+import {
+  type Entity,
+  Has,
+  HasValue,
+  NotValue,
+  getComponentValue,
+  runQuery,
+  Not,
+  getEntitiesWithValue,
+} from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import { getEntityIdFromKeys, getResourceIdsFromPackedNumber } from "../../ui/utils/utils";
-import { useEntityQuery } from "@dojoengine/react";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Position, ResourcesIds, type Resource } from "@bibliothecadao/eternum";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useBlockchainStore from "../store/useBlockchainStore";
 
 export function useResources() {
@@ -93,19 +102,27 @@ export function useResources() {
 export function useResourceBalance() {
   const {
     setup: {
-      components: { Resource, Production, QuantityTracker },
+      components: { Resource, Production, QuantityTracker, BuildingQuantity },
     },
   } = useDojo();
 
   const currentTick = useBlockchainStore((state) => state.currentTick);
 
   const getFoodResources = (entityId: bigint): Resource[] => {
-    const wheatBalance = new ProductionManager(Production, Resource, entityId, BigInt(ResourcesIds.Wheat)).balance(
-      currentTick,
-    );
-    const fishBalance = new ProductionManager(Production, Resource, entityId, BigInt(ResourcesIds.Fish)).balance(
-      currentTick,
-    );
+    const wheatBalance = new ProductionManager(
+      Production,
+      Resource,
+      BuildingQuantity,
+      entityId,
+      BigInt(ResourcesIds.Wheat),
+    ).balance(currentTick);
+    const fishBalance = new ProductionManager(
+      Production,
+      Resource,
+      BuildingQuantity,
+      entityId,
+      BigInt(ResourcesIds.Fish),
+    ).balance(currentTick);
 
     return [
       { resourceId: ResourcesIds.Wheat, amount: wheatBalance },
@@ -117,7 +134,7 @@ export function useResourceBalance() {
     const productionManager = new ProductionManager(
       Production,
       Resource,
-
+      BuildingQuantity,
       entityId,
       BigInt(resourceId),
     );
@@ -132,7 +149,13 @@ export function useResourceBalance() {
     const production = getComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
 
     useEffect(() => {
-      const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+      const productionManager = new ProductionManager(
+        Production,
+        Resource,
+        BuildingQuantity,
+        entityId,
+        BigInt(resourceId),
+      );
       setResourceBalance({ amount: productionManager.balance(currentTick), resourceId });
     }, []);
 
@@ -149,11 +172,17 @@ export function useResourceBalance() {
 export const useProductionManager = (entityId: bigint, resourceId: number) => {
   const {
     setup: {
-      components: { Resource, Production },
+      components: { Resource, Production, BuildingQuantity },
     },
   } = useDojo();
 
-  return new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+  const production = useComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
+
+  const productionManager = useMemo(() => {
+    return new ProductionManager(Production, Resource, BuildingQuantity, entityId, BigInt(resourceId));
+  }, [Production, Resource, entityId, resourceId, production]);
+
+  return productionManager;
 };
 
 export const useGetBankAccountOnPosition = (address: bigint, position: Position) => {
