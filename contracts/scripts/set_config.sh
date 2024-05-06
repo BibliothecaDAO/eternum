@@ -199,7 +199,7 @@ commands+=(
 
     # ### CAPACITY ###
     # # entity type ARMY_ENTITY_TYPE = 258
-    # # 100000 gr = 100 kg
+    # # 1 kg
     "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,$(($ARMY_CAPACITY * $RESOURCE_PRECISION))"
 
 )
