@@ -302,7 +302,7 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
 
   return (
     <div className="p-2 text-sm text-gold">
-      <div className="w-32 my-2">{information}</div>
+      {/* <div className="w-32 my-2">{information}</div> */}
       <Headline className="py-3">Building </Headline>
 
       <div>Population: +{population}</div>

@@ -194,7 +194,7 @@ impl ResourceImpl of ResourceTrait {
         let entity_is_realm = entity_realm.realm_id != 0;
         if entity_is_realm {
             let mut storehouse_building_quantity: BuildingQuantity = get!(
-                world, BuildingCategory::Storehouse, BuildingQuantity
+                world, (self.entity_id, BuildingCategory::Storehouse), BuildingQuantity
             );
             let max_resource_balance = BASE_STOREHOUSE_CAPACITY * RESOURCE_PRECISION
                 + (storehouse_building_quantity.value.into()

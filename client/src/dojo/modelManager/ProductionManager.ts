@@ -1,21 +1,26 @@
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { ProductionType, ResourceType } from "./types";
-import { RESOURCE_INPUTS } from "@bibliothecadao/eternum";
+import { BuildQuantityType, ProductionType, ResourceType } from "./types";
+import { BuildingType, RESOURCE_INPUTS, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
+import { ClientComponents } from "../createClientComponents";
+import { ContractComponents } from "../contractComponents";
 
 export class ProductionManager {
   productionModel: Component<ProductionType> | OverridableComponent<ProductionType>;
   resourceModel: Component<ResourceType> | OverridableComponent<ResourceType>;
+  buildingQuantity: Component<BuildQuantityType> | OverridableComponent<BuildQuantityType>;
   entityId: bigint;
   resourceId: bigint;
 
   constructor(
     productionModel: Component<ProductionType> | OverridableComponent<ProductionType>,
     resourceModel: Component<ResourceType> | OverridableComponent<ResourceType>,
+    buildingQuantity: Component<BuildQuantityType> | OverridableComponent<BuildQuantityType>,
     entityId: bigint,
     resourceId: bigint,
   ) {
     this.productionModel = productionModel;
+    this.buildingQuantity = buildingQuantity;
     this.entityId = entityId;
     this.resourceId = resourceId;
     this.resourceModel = resourceModel;
@@ -56,6 +61,16 @@ export class ProductionManager {
     return this._balance(currentTick, this.resourceId);
   }
 
+  public getStoreCapacity(): number {
+    const quantity =
+      getComponentValue(
+        this.buildingQuantity,
+        getEntityIdFromKeys([BigInt(this.entityId || "0"), BigInt(BuildingType.Storehouse)]),
+      )?.value || "0n";
+
+    return (Number(quantity) * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY) * 1000;
+  }
+
   private _balance(currentTick: number, resourceId: bigint): number {
     const resource = this._getResource(resourceId);
 
@@ -64,7 +79,10 @@ export class ProductionManager {
     if (rate !== 0) {
       if (sign) {
         // Positive net rate, increase balance
-        return Number(resource?.balance || 0n) + this._productionDuration(currentTick, resourceId) * rate;
+
+        const balance = Number(resource?.balance || 0n) + this._productionDuration(currentTick, resourceId) * rate;
+
+        return balance > this.getStoreCapacity() ? this.getStoreCapacity() : balance;
       } else {
         // Negative net rate, decrease balance but not below zero
         let balance = Number(resource?.balance || 0n) - -this._depletionDuration(currentTick, resourceId) * rate;

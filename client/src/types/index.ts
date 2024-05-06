@@ -8,13 +8,15 @@ export interface Hexagon {
   exploredBy: bigint | undefined;
 }
 
+export type Position3D = [number, number, number];
+
 export interface ClickedHex {
   contractPos: { col: number; row: number };
-  uiPos: [number, number, number];
+  uiPos: Position3D;
   hexIndex: number;
 }
 
 export interface HighlightPosition {
-  pos: [number, number, number];
+  pos: Position3D;
   color: number;
 }

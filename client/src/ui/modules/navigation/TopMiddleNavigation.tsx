@@ -3,7 +3,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { getRealmNameById } from "@/ui/utils/realms";
-import { BASE_POPULATION_CAPACITY, TIME_PER_TICK } from "@bibliothecadao/eternum";
+import { BASE_POPULATION_CAPACITY, BuildingType, STOREHOUSE_CAPACITY, TIME_PER_TICK } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
@@ -15,11 +15,12 @@ import { Headline } from "@/ui/elements/Headline";
 import { useMemo } from "react";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { getComponentValue } from "@dojoengine/recs";
 
 export const TopMiddleNavigation = () => {
   const {
     setup: {
-      components: { Population },
+      components: { Population, BuildingQuantity },
     },
   } = useDojo();
   const { hexPosition } = useQuery();
@@ -38,6 +39,16 @@ export const TopMiddleNavigation = () => {
   }, [nextBlockTimestamp]);
 
   const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realm?.entity_id || "0")]));
+
+  const storehouses = useMemo(() => {
+    const quantity =
+      getComponentValue(
+        BuildingQuantity,
+        getEntityIdFromKeys([BigInt(realm?.entity_id || "0"), BigInt(BuildingType.Storehouse)]),
+      )?.value || 0;
+
+    return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
+  }, []);
 
   if (!nextBlockTimestamp) {
     return null;
@@ -64,7 +75,7 @@ export const TopMiddleNavigation = () => {
         onMouseLeave={() => setTooltip(null)}
         className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient m-2 h5"
       >
-        {progress.toFixed()}%
+        {progress.toFixed()}% in cycle
       </div>
       <div className="flex bg-brown/90  border-gradient py-2  px-24 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center">
         <div className="self-center ">
@@ -95,8 +106,7 @@ export const TopMiddleNavigation = () => {
                 position: "bottom",
                 content: (
                   <span className="whitespace-nowrap pointer-events-none">
-                    <span>Structures Population</span>
-                    <br />
+                    <Headline>Population</Headline>
 
                     <span>
                       {population.population} population / {population.capacity + BASE_POPULATION_CAPACITY} capacity
@@ -108,9 +118,32 @@ export const TopMiddleNavigation = () => {
               });
             }}
             onMouseLeave={() => setTooltip(null)}
-            className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient  h5"
+            className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5"
           >
-            {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
+            {population.population} / {population.capacity + BASE_POPULATION_CAPACITY} pop
+          </div>
+        )}
+        {storehouses && (
+          <div
+            onMouseEnter={() => {
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <div className="whitespace-nowrap pointer-events-none">
+                    <Headline>Storehouses Capacity</Headline>
+
+                    <span>This is the max per resource you can store</span>
+
+                    <br />
+                    <span>Build Storehouses to increase this</span>
+                  </div>
+                ),
+              });
+            }}
+            onMouseLeave={() => setTooltip(null)}
+            className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5"
+          >
+            {storehouses.toLocaleString()} max
           </div>
         )}
       </div>

@@ -76,6 +76,19 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    BuildingQuantity: (() => {
+      return defineComponent(
+        world,
+        { entity_id: RecsType.BigInt, category: RecsType.Number, value: RecsType.Number },
+        {
+          metadata: {
+            name: "BuildingQuantity",
+            types: ["u128", "enum", "u8"],
+            customTypes: ["BuildingCategory"],
+          },
+        },
+      );
+    })(),
     Market: (() => {
       return defineComponent(
         world,

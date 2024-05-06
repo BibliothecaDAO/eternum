@@ -37,6 +37,8 @@ struct Building {
 #[derive(Model, PartialEq, Copy, Drop, Serde, PrintTrait)]
 struct BuildingQuantity {
     #[key]
+    entity_id: u128,
+    #[key]
     category: BuildingCategory,
     value: u8
 }
@@ -533,7 +535,7 @@ impl BuildingImpl of BuildingTrait {
         // increase building type count for realm
 
         let mut building_quantity: BuildingQuantity = get!(
-            world, building.category, BuildingQuantity
+            world, (outer_entity_id, building.category), BuildingQuantity
         );
         building_quantity.value += 1;
         set!(world, (building_quantity));
@@ -582,7 +584,7 @@ impl BuildingImpl of BuildingTrait {
 
         // decrease building type count for realm
         let mut building_quantity: BuildingQuantity = get!(
-            world, building.category, BuildingQuantity
+            world, (outer_entity_id, building.category), BuildingQuantity
         );
         building_quantity.value -= 1;
         set!(world, (building_quantity));

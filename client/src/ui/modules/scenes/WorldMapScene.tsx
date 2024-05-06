@@ -9,6 +9,7 @@ import { WorldMap } from "../../components/worldmap/hexagon/WorldHexagon.js";
 import { useHelper, useTexture } from "@react-three/drei";
 import { useControls } from "leva";
 import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
+import HoveredHex from "@/ui/components/worldmap/hexagon/HoveredHexes.js";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();
@@ -49,7 +50,7 @@ export const WorldMapScene = () => {
     const _texture = texture[key as keyof typeof texture];
     _texture.wrapS = THREE.RepeatWrapping;
     _texture.wrapT = THREE.RepeatWrapping;
-    _texture.repeat.set(10, 30);
+    _texture.repeat.set(1, 30);
   });
 
   useEffect(() => {
@@ -61,11 +62,10 @@ export const WorldMapScene = () => {
   return (
     <>
       {!showBlankOverlay && isMapView && <WorldMap />}
-      <StarsSky />
       <HighlightedHexes />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]}>
         <planeGeometry args={[2668, 1390.35]} />
-        <meshStandardMaterial displacementScale={0.8} roughness={0.6} metalness={0.4} {...texture} />
+        <meshPhongMaterial {...texture} />
       </mesh>
       <WorldMapLight />
     </>
@@ -74,9 +74,6 @@ export const WorldMapScene = () => {
 
 const WorldMapLight = () => {
   const dLightRef = useRef<any>();
-  // if (import.meta.env.DEV) {
-  //   useHelper(dLightRef, THREE.DirectionalLightHelper, 10, "hotpink");
-  // }
 
   const { lightPosition, intensity } = useControls("Worldmap Light", {
     lightPosition: {
@@ -111,7 +108,7 @@ const WorldMapLight = () => {
         position={[lightPosition.x, lightPosition.y, lightPosition.z]}
         color={"#fff"}
         intensity={intensity}
-      ></directionalLight>
+      />
     </group>
   );
 };

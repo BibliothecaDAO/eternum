@@ -2,6 +2,7 @@ import { BuildingType } from "../utils";
 import { ResourcesIds } from "./resources";
 
 export const BASE_POPULATION_CAPACITY = 5;
+export const STOREHOUSE_CAPACITY = 10000;
 
 interface ResourceDescription {
   [key: number]: string;

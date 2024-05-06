@@ -179,10 +179,10 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   const mesh: InstancedMesh = useMemo(() => {
     const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
     const hexMaterial = new THREE.MeshStandardMaterial({
-      color: "darkgrey",
+      color: "green",
       vertexColors: false,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.3,
     });
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, revealedHexes.length);
@@ -304,7 +304,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
       if (!pos || !hexDataRef.current || !exploredHexesRef.current) return;
 
       if (!selectedEntityRef.current) {
-        const positions = [{ pos: [pos.x, -pos.y, pos.z], color: 0xffffff }];
+        const positions = [{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }];
         if (clickedHexRef.current) {
           positions.push({ pos: clickedHexRef.current.uiPos, color: CLICKED_HEX_COLOR });
         }

@@ -5,7 +5,7 @@ import { createHexagonPath } from "./HexagonGeometry";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 
-const HighlightedHexes = () => {
+const HoveredHex = () => {
   const tubeRadius = 0.01; // Adjust the tube radius (width) as needed
   const radialSegments = 8; // Adjust for smoother or sharper corners
   const tubularSegments = 64; // Adjust for a smoother or more faceted tube
@@ -49,4 +49,4 @@ const HighlightedHexes = () => {
     </>
   );
 };
-export default HighlightedHexes;
+export default HoveredHex;
