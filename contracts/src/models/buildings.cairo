@@ -35,7 +35,7 @@ struct Building {
 }
 
 #[derive(Model, PartialEq, Copy, Drop, Serde, PrintTrait)]
-struct BuildingQuantity {
+struct BuildingQuantityv2 {
     #[key]
     entity_id: u128,
     #[key]
@@ -87,13 +87,13 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
 
 
 #[generate_trait]
-impl BuildingQuantityTrackerImpl of BuildingQuantityTrackerTrait {
+impl BuildingQuantityv2TrackerImpl of BuildingQuantityv2TrackerTrait {
     fn salt() -> felt252 {
         'building_quantity'
     }
     fn key(entity_id: u128, category: felt252, resource_type: u8) -> felt252 {
         let q: Array<felt252> = array![
-            entity_id.into(), BuildingQuantityTrackerImpl::salt(), category, resource_type.into()
+            entity_id.into(), BuildingQuantityv2TrackerImpl::salt(), category, resource_type.into()
         ];
         hash(q.span())
     }
@@ -534,8 +534,8 @@ impl BuildingImpl of BuildingTrait {
 
         // increase building type count for realm
 
-        let mut building_quantity: BuildingQuantity = get!(
-            world, (outer_entity_id, building.category), BuildingQuantity
+        let mut building_quantity: BuildingQuantityv2 = get!(
+            world, (outer_entity_id, building.category), BuildingQuantityv2
         );
         building_quantity.value += 1;
         set!(world, (building_quantity));
@@ -583,8 +583,8 @@ impl BuildingImpl of BuildingTrait {
         building.stop_production(world);
 
         // decrease building type count for realm
-        let mut building_quantity: BuildingQuantity = get!(
-            world, (outer_entity_id, building.category), BuildingQuantity
+        let mut building_quantity: BuildingQuantityv2 = get!(
+            world, (outer_entity_id, building.category), BuildingQuantityv2
         );
         building_quantity.value -= 1;
         set!(world, (building_quantity));

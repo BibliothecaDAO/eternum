@@ -6,7 +6,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, resource_type_name};
 use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION, BASE_STOREHOUSE_CAPACITY};
 use eternum::models::buildings::{
-    Building, BuildingTrait, BuildingQuantityTrackerImpl, BuildingCategory, BuildingQuantity
+    Building, BuildingTrait, BuildingQuantityv2TrackerImpl, BuildingCategory, BuildingQuantityv2
 };
 use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
 
@@ -193,8 +193,8 @@ impl ResourceImpl of ResourceTrait {
         let entity_realm: Realm = get!(world, self.entity_id, Realm);
         let entity_is_realm = entity_realm.realm_id != 0;
         if entity_is_realm {
-            let mut storehouse_building_quantity: BuildingQuantity = get!(
-                world, (self.entity_id, BuildingCategory::Storehouse), BuildingQuantity
+            let mut storehouse_building_quantity: BuildingQuantityv2 = get!(
+                world, (self.entity_id, BuildingCategory::Storehouse), BuildingQuantityv2
             );
             let max_resource_balance = BASE_STOREHOUSE_CAPACITY * RESOURCE_PRECISION
                 + (storehouse_building_quantity.value.into()

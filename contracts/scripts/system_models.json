@@ -82,7 +82,7 @@
     "Production",
     "Population",
     "QuantityTracker",
-    "BuildingQuantity"
+    "BuildingQuantityv2"
   ],
   "MAP_SYSTEMS": [
     "Tile",

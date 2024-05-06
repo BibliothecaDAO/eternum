@@ -20,7 +20,7 @@ import { getComponentValue } from "@dojoengine/recs";
 export const TopMiddleNavigation = () => {
   const {
     setup: {
-      components: { Population, BuildingQuantity },
+      components: { Population, BuildingQuantityv2 },
     },
   } = useDojo();
   const { hexPosition } = useQuery();
@@ -43,7 +43,7 @@ export const TopMiddleNavigation = () => {
   const storehouses = useMemo(() => {
     const quantity =
       getComponentValue(
-        BuildingQuantity,
+        BuildingQuantityv2,
         getEntityIdFromKeys([BigInt(realm?.entity_id || "0"), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
 

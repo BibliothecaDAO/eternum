@@ -76,13 +76,13 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    BuildingQuantity: (() => {
+    BuildingQuantityv2: (() => {
       return defineComponent(
         world,
         { entity_id: RecsType.BigInt, category: RecsType.Number, value: RecsType.Number },
         {
           metadata: {
-            name: "BuildingQuantity",
+            name: "BuildingQuantityv2",
             types: ["u128", "enum", "u8"],
             customTypes: ["BuildingCategory"],
           },

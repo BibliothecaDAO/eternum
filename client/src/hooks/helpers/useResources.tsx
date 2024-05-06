@@ -102,7 +102,7 @@ export function useResources() {
 export function useResourceBalance() {
   const {
     setup: {
-      components: { Resource, Production, QuantityTracker, BuildingQuantity },
+      components: { Resource, Production, QuantityTracker, BuildingQuantityv2 },
     },
   } = useDojo();
 
@@ -112,14 +112,14 @@ export function useResourceBalance() {
     const wheatBalance = new ProductionManager(
       Production,
       Resource,
-      BuildingQuantity,
+      BuildingQuantityv2,
       entityId,
       BigInt(ResourcesIds.Wheat),
     ).balance(currentTick);
     const fishBalance = new ProductionManager(
       Production,
       Resource,
-      BuildingQuantity,
+      BuildingQuantityv2,
       entityId,
       BigInt(ResourcesIds.Fish),
     ).balance(currentTick);
@@ -134,7 +134,7 @@ export function useResourceBalance() {
     const productionManager = new ProductionManager(
       Production,
       Resource,
-      BuildingQuantity,
+      BuildingQuantityv2,
       entityId,
       BigInt(resourceId),
     );
@@ -152,7 +152,7 @@ export function useResourceBalance() {
       const productionManager = new ProductionManager(
         Production,
         Resource,
-        BuildingQuantity,
+        BuildingQuantityv2,
         entityId,
         BigInt(resourceId),
       );
@@ -172,14 +172,14 @@ export function useResourceBalance() {
 export const useProductionManager = (entityId: bigint, resourceId: number) => {
   const {
     setup: {
-      components: { Resource, Production, BuildingQuantity },
+      components: { Resource, Production, BuildingQuantityv2 },
     },
   } = useDojo();
 
   const production = useComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
 
   const productionManager = useMemo(() => {
-    return new ProductionManager(Production, Resource, BuildingQuantity, entityId, BigInt(resourceId));
+    return new ProductionManager(Production, Resource, BuildingQuantityv2, entityId, BigInt(resourceId));
   }, [Production, Resource, entityId, resourceId, production]);
 
   return productionManager;

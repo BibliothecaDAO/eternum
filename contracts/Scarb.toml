@@ -22,7 +22,7 @@ private_key = "0x2bbf4f9fd0bbb2e60b0316c1fe0b76cf7a4d0198bd493ced9b8df2a3a24d68a
 rpc_url = "https://api.cartridge.gg/x/realms/katana/"
 account_address = "0x7d549f53e4c914608e8a3537eccc5e540c6c6c21547b49a28d3ae9b708db0bc"
 private_key = "0x4a3b4a925e3d264affeb8d05c56dbeb0c7ec431d062ce69c2f1ffb83a3c5013"
-world_address = "0x33de265e91c5e9222ec308743843d41d20acba98f81d791cd545b7158d88422"
+world_address = "0x436c555f0ac263c04cfa0a96d2b170c56b02d92b6325892837b86ee81094ccb"
 # dev
 # world_address = "0x177a3f3d912cf4b55f0f74eccf3b7def7c6144efeba033e9f21d9cdb0230c64"
 
