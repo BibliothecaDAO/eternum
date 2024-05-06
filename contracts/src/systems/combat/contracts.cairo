@@ -17,6 +17,7 @@ trait ICombatContract<TContractState> {
 
 #[dojo::contract]
 mod combat_systems {
+    use core::array::SpanTrait;
     use core::integer::BoundedInt;
     use core::option::OptionTrait;
     use core::traits::Into;
@@ -579,57 +580,64 @@ mod combat_systems {
                     * PercentageValueImpl::_100().into()
                     / (structure_army_strength + 1);
 
-                let mut count = 0;
+                // choose x random resource to be stolen
+                let mut chosen_resource_types: Span<u8> = random::choices(
+                    get_resources_for_pillage(),
+                    get_resources_for_pillage_probs(),
+                    array![].span(),
+                    MAX_PILLAGE_TRIAL_COUNT.try_into().unwrap(),
+                    true
+                );
+
                 loop {
-                    if count == MAX_PILLAGE_TRIAL_COUNT {
-                        break;
+                    match chosen_resource_types.pop_front() {
+                        Option::Some(chosen_resource_type) => {
+                            let pillaged_resource_from_structure: Resource = ResourceImpl::get(
+                                world, (structure_id, *chosen_resource_type)
+                            );
+
+                            if pillaged_resource_from_structure.balance > 0 {
+                                // find out the max resource amount carriable given entity's weight
+                                let army_capacity: Capacity = get!(world, army_id, Capacity);
+                                let army_total_capacity = army_capacity.weight_gram
+                                    * attacking_army.troops.count().into();
+                                let army_weight: Weight = get!(world, army_id, Weight);
+                                let max_carriable = (army_total_capacity - army_weight.value)
+                                    / (WeightConfigImpl::get_weight(world, *chosen_resource_type, 1)
+                                        + 1);
+
+                                if max_carriable > 0 {
+                                    let max_resource_amount_stolen: u128 = attacking_army
+                                        .troops
+                                        .count()
+                                        .into()
+                                        * attack_success_probability.into()
+                                        / PercentageValueImpl::_100().into();
+
+                                    let resource_amount_stolen: u128 = min(
+                                        pillaged_resource_from_structure.balance,
+                                        max_resource_amount_stolen
+                                    );
+
+                                    let resource_amount_stolen: u128 = min(
+                                        max_carriable, resource_amount_stolen
+                                    );
+
+                                    InternalResourceSystemsImpl::transfer(
+                                        world,
+                                        0,
+                                        structure_id,
+                                        army_id,
+                                        array![(*chosen_resource_type, resource_amount_stolen)]
+                                            .span()
+                                    );
+
+                                    break;
+                                }
+                            }
+                        },
+                        Option::None => { break; }
                     }
-                    // choose a random resource to be stolen
-                    let chosen_resource_type: @u8 = random::choices(
-                        get_resources_for_pillage(),
-                        get_resources_for_pillage_probs(),
-                        array![].span(),
-                        1,
-                        true
-                    )[0];
-                    let pillaged_resource_from_structure: Resource = ResourceImpl::get(
-                        world, (structure_id, *chosen_resource_type)
-                    );
-                    if pillaged_resource_from_structure.balance > 0 {
-                        // find out the max resource amount carriable given entity's weight
-                        let army_capacity: Capacity = get!(world, army_id, Capacity);
-                        let army_total_capacity = army_capacity.weight_gram
-                            * attacking_army.troops.count().into();
-                        let army_weight: Weight = get!(world, army_id, Weight);
-                        let max_carriable = (army_total_capacity - army_weight.value)
-                            / WeightConfigImpl::get_weight(world, *chosen_resource_type, 1);
-                        if max_carriable > 0 {
-                            let max_resource_amount_stolen: u128 = attacking_army
-                                .troops
-                                .count()
-                                .into()
-                                * attack_success_probability.into()
-                                / PercentageValueImpl::_100().into();
-
-                            let resource_amount_stolen: u128 = min(
-                                pillaged_resource_from_structure.balance, max_resource_amount_stolen
-                            );
-                            let resource_amount_stolen: u128 = min(
-                                max_carriable, resource_amount_stolen
-                            );
-
-                            InternalResourceSystemsImpl::transfer(
-                                world,
-                                0,
-                                structure_id,
-                                army_id,
-                                array![(*chosen_resource_type, resource_amount_stolen)].span()
-                            );
-
-                            break;
-                        }
-                    }
-                    count += 1;
                 };
             }
 
