@@ -5,13 +5,15 @@ import { useEffect, useState } from "react";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
 
-export const ResourceWeightsInfo = ({
+export const TravelInfo = ({
   entityId,
   resources,
+  travelTime,
   setCanCarry,
 }: {
   entityId: bigint;
   resources: Resource[];
+  travelTime?: number;
   setCanCarry?: (canContinue: boolean) => void;
 }) => {
   const [resourceWeight, setResourceWeight] = useState(0);
@@ -47,6 +49,12 @@ export const ResourceWeightsInfo = ({
       <Headline>Transfer Details</Headline>
       <table className="min-w-full divide-y divide-gray-200 text-sm mt-2 text-center">
         <tbody className=" divide-y divide-gray-200 border">
+          {travelTime && (
+            <tr>
+              <td className="px-6 py-1 whitespace-nowrap border font-bold text-right">Travel Time</td>
+              <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${travelTime} hrs`}</td>
+            </tr>
+          )}
           <tr>
             <td className="px-6 py-1 whitespace-nowrap border font-bold text-right">Total Weight</td>
             <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${divideByPrecision(

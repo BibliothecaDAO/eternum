@@ -15,7 +15,7 @@ import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils"
 import { useRealm } from "../../../../../hooks/helpers/useRealm";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { TradeRealmSelector } from "./TradeRealmSelector";
-import { ResourceWeightsInfo } from "@/ui/components/resources/ResourceWeight";
+import { TravelInfo } from "@/ui/components/resources/ResourceWeight";
 
 interface CreateOfferPopupProps {
   onClose: () => void;
@@ -327,7 +327,7 @@ const SelectResourcesAmountPanel = ({
           })}
         </div>
       </div>
-      <ResourceWeightsInfo
+      <TravelInfo
         entityId={realmEntityId}
         resources={selectedResourceIdsGet.map((resourceId) => ({
           resourceId,

@@ -9,7 +9,7 @@ import useMarketStore from "../../../../../hooks/store/useMarketStore";
 import { EventType, useNotificationsStore } from "../../../../../hooks/store/useNotificationsStore";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { acceptOfferTitle } from "@/ui/components/navigation/Config";
-import { ResourceWeightsInfo } from "@/ui/components/resources/ResourceWeight";
+import { TravelInfo } from "@/ui/components/resources/ResourceWeight";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -80,7 +80,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
   return (
     <OSWindow title={acceptOfferTitle} onClick={onClose} show={show} width="456px">
       <div className="flex flex-col items-center m-2 text-xxs">
-        <ResourceWeightsInfo
+        <TravelInfo
           entityId={realmEntityId}
           resources={resourcesGet.map(({ resourceId, amount }) => ({ resourceId, amount: divideByPrecision(amount) }))}
           setCanCarry={setCanCarry}

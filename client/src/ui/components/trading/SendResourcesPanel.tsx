@@ -9,7 +9,7 @@ import { ResourceCost } from "../../elements/ResourceCost";
 import clsx from "clsx";
 import { NumberInput } from "../../elements/NumberInput";
 import { PercentageSelection } from "../../elements/PercentageSelection";
-import { ResourceWeightsInfo } from "../resources/ResourceWeight";
+import { TravelInfo } from "../resources/ResourceWeight";
 
 export const SendResourcesPanel = ({
   senderEntityId,
@@ -142,7 +142,7 @@ export const SendResourcesPanel = ({
         </>
         <PercentageSelection percentages={[0, 25, 50, 75, 100]} setPercentage={setPercentage}></PercentageSelection>
       </>
-      <ResourceWeightsInfo
+      <TravelInfo
         entityId={senderEntityId}
         resources={Object.keys(feedResourcesGiveAmounts).map((resourceId) => {
           return {

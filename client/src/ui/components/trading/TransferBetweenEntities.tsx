@@ -5,12 +5,13 @@ import ListSelect from "@/ui/elements/ListSelect";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { resources } from "@bibliothecadao/eternum";
+import { SPEED_PER_DONKEY, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import { useMemo, useState } from "react";
-import { ResourceWeightsInfo } from "../resources/ResourceWeight";
+import { useEffect, useMemo, useState } from "react";
+import { TravelInfo } from "../resources/ResourceWeight";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { Headline } from "@/ui/elements/Headline";
+import { useTravel } from "@/hooks/helpers/useTravel";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -36,6 +37,7 @@ export const TransferBetweenEntities = ({ entities }: { entities: any[] }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [canCarry, setCanCarry] = useState(true);
   const [isOriginDonkeys, setIsOriginDonkeys] = useState(true);
+  const [travelTime, setTravelTime] = useState<number | undefined>(undefined);
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
 
@@ -45,6 +47,14 @@ export const TransferBetweenEntities = ({ entities }: { entities: any[] }) => {
       systemCalls: { send_resources, pickup_resources },
     },
   } = useDojo();
+
+  const { computeTravelTime } = useTravel();
+
+  useEffect(() => {
+    selectedEntityIdFrom &&
+      selectedEntityIdTo &&
+      setTravelTime(computeTravelTime(selectedEntityIdFrom, selectedEntityIdTo, SPEED_PER_DONKEY));
+  }, [selectedEntityIdFrom, selectedEntityIdTo]);
 
   const onSendResources = () => {
     setIsLoading(true);
@@ -91,6 +101,7 @@ export const TransferBetweenEntities = ({ entities }: { entities: any[] }) => {
 
       {currentStep?.id === STEP_ID.SELECT_ENTITIES && (
         <>
+          <div className="w-full flex justify-center items-center">Travel Time: {travelTime || 0} hrs</div>
           <div className="grid grid-cols-2 gap-6 mt-3">
             <div className="justify-around">
               <Headline>From</Headline>
@@ -135,13 +146,14 @@ export const TransferBetweenEntities = ({ entities }: { entities: any[] }) => {
             setSelectedResourceAmounts={setSelectedResourceAmounts}
             entity_id={selectedEntityIdFrom!}
           />
-          <div className="flex flex-col w-full items-center my-4">
-            <ResourceWeightsInfo
+          <div className="flex flex-col w-full items-center mt-4">
+            <TravelInfo
               entityId={isOriginDonkeys ? selectedEntityIdFrom! : selectedEntityIdTo!}
               resources={selectedResourceIds.map((resourceId: number) => ({
                 resourceId,
                 amount: selectedResourceAmounts[resourceId],
               }))}
+              travelTime={travelTime}
               setCanCarry={setCanCarry}
             />
           </div>
