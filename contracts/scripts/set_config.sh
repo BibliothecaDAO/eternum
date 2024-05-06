@@ -56,7 +56,8 @@ fi
 export RESOURCE_PRECISION=1000
 
 # // capactity
-export DONKEY_CAPACITY=100000
+export DONKEY_CAPACITY=100 # kg
+export ARMY_CAPACITY=1 # kg
 
 # // resources
 export RESOURCE_AMOUNT_PER_TICK=10
@@ -195,6 +196,12 @@ commands+=(
     # advantage_percent: 1000, // 10%
     # disadvantage_percent: 1000, // 10% 
     "sozo execute $CONFIG_SYSTEMS set_troop_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,10,10,10,7,7,7,1000,1000"
+
+    # ### CAPACITY ###
+    # # entity type ARMY_ENTITY_TYPE = 258
+    # # 100000 gr = 100 kg
+    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,$(($ARMY_CAPACITY * $RESOURCE_PRECISION))"
+
 )
 
 
