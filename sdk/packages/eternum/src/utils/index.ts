@@ -176,3 +176,38 @@ export function getProducedResource(name: BuildingType): number {
       return 0;
   }
 }
+
+export enum EntityState {
+  Traveling,
+  WaitingForDeparture,
+  Idle,
+  WaitingToOffload,
+  NotApplicable, // When the entity should not be rendered
+}
+
+export function determineEntityState(
+  nextBlockTimestamp: number | undefined,
+  blocked: boolean | undefined,
+  arrivalTime: number | undefined,
+  hasResources: boolean,
+): EntityState {
+  const isTraveling =
+    !blocked && nextBlockTimestamp !== undefined && arrivalTime !== undefined && arrivalTime > nextBlockTimestamp;
+  const isWaitingForDeparture = blocked;
+  const isIdle = !isTraveling && !isWaitingForDeparture && !hasResources;
+  const isWaitingToOffload = !blocked && !isTraveling && hasResources;
+
+  if (isTraveling) {
+    return EntityState.Traveling;
+  }
+  if (isWaitingForDeparture) {
+    return EntityState.WaitingForDeparture;
+  }
+  if (isIdle) {
+    return EntityState.Idle;
+  }
+  if (isWaitingToOffload) {
+    return EntityState.WaitingToOffload;
+  }
+  return EntityState.Idle; // Default state
+}
