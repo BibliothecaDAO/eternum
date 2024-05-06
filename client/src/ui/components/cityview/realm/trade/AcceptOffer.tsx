@@ -3,13 +3,14 @@ import Button from "../../../../elements/Button";
 import { useDojo } from "../../../../../hooks/context/DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
-import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
-import { MarketInterface } from "@bibliothecadao/eternum";
+import { divideByPrecision } from "../../../../utils/utils";
+import { MarketInterface, SPEED_PER_DONKEY } from "@bibliothecadao/eternum";
 import useMarketStore from "../../../../../hooks/store/useMarketStore";
 import { EventType, useNotificationsStore } from "../../../../../hooks/store/useNotificationsStore";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { acceptOfferTitle } from "@/ui/components/navigation/Config";
 import { TravelInfo } from "@/ui/components/resources/ResourceWeight";
+import { useTravel } from "@/hooks/helpers/useTravel";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -32,6 +33,8 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
     },
   } = useDojo();
 
+  const { computeTravelTime } = useTravel();
+
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const deleteTrade = useMarketStore((state) => state.deleteTrade);
@@ -39,6 +42,11 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
 
   const selectedResourceIdsGet = selectedTrade.takerGets.map((resource) => resource.resourceId);
   const selectedResourceIdsGive = selectedTrade.makerGets.map((resource) => resource.resourceId);
+
+  const travelTime = useMemo(
+    () => computeTravelTime(realmEntityId, selectedTrade.makerId, SPEED_PER_DONKEY),
+    [realmEntityId, selectedTrade],
+  );
 
   const onAccept = async () => {
     setIsLoading(true);
@@ -84,19 +92,22 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
           entityId={realmEntityId}
           resources={resourcesGet.map(({ resourceId, amount }) => ({ resourceId, amount: divideByPrecision(amount) }))}
           setCanCarry={setCanCarry}
+          travelTime={travelTime}
         />
-        <Button
-          disabled={!canCarry}
-          className="!px-[6px] !py-[2px] text-xxs"
-          onClick={onAccept}
-          variant={canCarry ? "success" : "danger"}
-          isLoading={isLoading}
-        >
-          Accept Offer
-        </Button>
-        <Button className="!px-[6px] !py-[2px] text-xxs" onClick={onClose} variant="outline">
-          Cancel
-        </Button>
+        <div className="w-full">
+          <Button
+            disabled={!canCarry}
+            className="w-full my-2"
+            onClick={onAccept}
+            variant={canCarry ? "success" : "danger"}
+            isLoading={isLoading}
+          >
+            Accept Offer
+          </Button>
+          <Button className="w-full" onClick={onClose} variant="outline">
+            Cancel
+          </Button>
+        </div>
       </div>
     </OSWindow>
   );

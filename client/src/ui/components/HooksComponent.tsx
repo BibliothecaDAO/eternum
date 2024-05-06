@@ -9,7 +9,6 @@ import { Hexagon } from "@/types";
 export const HooksComponent = () => {
   useFetchBlockchainData();
   useComputeMarket();
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const { refreshAllHyperstructures } = useRefreshHyperstructure();

@@ -4,7 +4,14 @@ import TextInput from "../../elements/TextInput";
 import Button from "../../elements/Button";
 import { SortPanel } from "../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../elements/SortButton";
-import { MarketInterface, ResourcesIds, findResourceById, orderNameDict, resources } from "@bibliothecadao/eternum";
+import {
+  MarketInterface,
+  ResourcesIds,
+  SPEED_PER_DONKEY,
+  findResourceById,
+  orderNameDict,
+  resources,
+} from "@bibliothecadao/eternum";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { useGetMyOffers, useTrade } from "../../../hooks/helpers/useTrade";
 import { FiltersPanel } from "../../elements/FiltersPanel";
@@ -20,6 +27,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../hooks/context/DojoContext";
 import useMarketStore from "../../../hooks/store/useMarketStore";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
+import { useTravel } from "@/hooks/helpers/useTravel";
 
 interface MarketplaceProps {
   onCreateOffer: (resourceId: number | null, isBuy: boolean) => void;
@@ -634,14 +642,14 @@ const ResourceOfferRow = ({
       systemCalls: { cancel_order },
     },
   } = useDojo();
-  const { makerGets, takerGets, makerId } = offer;
+  const { makerGets, takerGets } = offer;
   const resource = findResourceById(isBuy ? offer.takerGets[0].resourceId : offer.makerGets[0].resourceId);
   const { realm: makerRealm } = useGetRealm(offer.makerId);
+  const { computeTravelTime } = useTravel();
 
   const [isLoading, setIsLoading] = useState(false);
 
   const { canAcceptOffer } = useTrade();
-  const { calculateDistance } = useCaravan();
 
   const canAccept = useMemo(() => {
     return canAcceptOffer({ realmEntityId, resourcesGive: makerGets });
@@ -656,9 +664,10 @@ const ResourceOfferRow = ({
     }).finally(() => setIsLoading(false));
   };
 
-  const distance = useMemo(() => {
-    return calculateDistance(makerId, realmEntityId) || 0;
-  }, [makerId, realmEntityId]);
+  const travelTime = useMemo(
+    () => computeTravelTime(realmEntityId, offer.makerId, SPEED_PER_DONKEY),
+    [realmEntityId, offer],
+  );
 
   return (
     <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-gold px-1 grid-cols-5 gap-4 text-gold text-xs">
@@ -693,7 +702,7 @@ const ResourceOfferRow = ({
       )}
       {offer.makerId !== realmEntityId && (
         <div className="flex item-center justify-end">
-          {`${distance.toFixed(0)} km`}
+          {`${travelTime} hrs`}
           <Button className="ml-2" onClick={onClick} disabled={!canAccept} size="xs" variant="success">
             Accept
           </Button>
