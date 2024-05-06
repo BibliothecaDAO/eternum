@@ -4,14 +4,13 @@ import clsx from "clsx";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { useGetOwnedEntityOnPosition, useResources } from "@/hooks/helpers/useResources";
-import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { TravelEntityPopup } from "./TravelEntityPopup";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { ENTITY_TYPE } from "@bibliothecadao/eternum";
+import { ENTITY_TYPE, EntityState, determineEntityState } from "@bibliothecadao/eternum";
+import { DepositResources } from "../resources/DepositResources";
 
 const entityIcon: Record<ENTITY_TYPE, string> = {
   [ENTITY_TYPE.DONKEY]: "🫏",
@@ -47,19 +46,10 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const depositEntityIds = position ? useGetOwnedEntityOnPosition(BigInt(account.address), position) : [];
   const depositEntityId = depositEntityIds[0];
 
-  // capacity
-  let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...entityResources]);
-  }, [entityResources]);
-
   const hasResources = entityResources.length > 0;
 
-  const isTraveling =
-    !blocked && nextBlockTimestamp !== undefined && arrivalTime !== undefined && arrivalTime > nextBlockTimestamp;
-  const isWaitingForDeparture = blocked;
-  const isIdle = !isTraveling && !isWaitingForDeparture && !resourceWeight;
-  const isWaitingToOffload = !blocked && !isTraveling && resourceWeight > 0;
-  if ((blocked || isTraveling) && props.idleOnly) {
+  const entityState = determineEntityState(nextBlockTimestamp, blocked, arrivalTime, hasResources);
+  if (entityState === EntityState.NotApplicable) {
     return null;
   }
 
@@ -90,39 +80,40 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
           #{Number(entityId)}
         </div>
         <div className="flex items-center ml-1 -mt-2">
-          {!isTraveling && (
+          {entityState !== EntityState.Traveling && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">{`Waiting`}</span>
             </div>
           )}
-          {/* when you are not trading (trading is round trip) it means you are either going to/coming from bank/hyperstructure */}
-          {isTraveling && (
+          {entityState === EntityState.Traveling && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">{`Traveling`}</span>
             </div>
           )}
         </div>
-        {isWaitingForDeparture && (
+        {entityState === EntityState.WaitingForDeparture && (
           <div className="flex ml-auto -mt-2 italic text-gold">
             Trade Bound <Pen className="ml-1 fill-gold" />
           </div>
         )}
-        {isWaitingToOffload && <div className="flex ml-auto -mt-2 italic text-gold">Waiting to offload</div>}
-        {isIdle && (
+        {entityState === EntityState.WaitingToOffload && (
+          <div className="flex ml-auto -mt-2 italic text-gold">Waiting to offload</div>
+        )}
+        {entityState === EntityState.Idle && (
           <div className="flex ml-auto -mt-2 italic text-gold">
             Idle
             <Pen className="ml-1 fill-gold" />
           </div>
         )}
-        {arrivalTime && isTraveling && nextBlockTimestamp && (
+        {arrivalTime && entityState === EntityState.Traveling && nextBlockTimestamp && (
           <div className="flex ml-auto -mt-2 italic text-light-pink">
             {formatSecondsLeftInDaysHours(arrivalTime - nextBlockTimestamp)}
           </div>
         )}
       </div>
       <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
-        {!isIdle &&
-          !isWaitingForDeparture &&
+        {entityState !== EntityState.Idle &&
+          entityState !== EntityState.WaitingForDeparture &&
           resources &&
           resources.map(
             (resource) =>
@@ -137,35 +128,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
               ),
           )}
       </div>
-      <div className="flex w-full mt-2">
-        <div className="grid w-full grid-cols-1 gap-5">
-          <div className="flex flex-col">
-            <div className="flex items-center justify-between mt-[6px] text-xxs">
-              <div className="text-xl">{entityIcon[entityType]}</div>
-              <div className="">
-                {hasResources && depositEntityId !== undefined && (
-                  <Button
-                    size="xs"
-                    className="ml-auto"
-                    isLoading={isLoading}
-                    disabled={isTraveling}
-                    onClick={() => onOffload(depositEntityId)}
-                    variant="success"
-                    withoutSound
-                  >
-                    {`Deposit Resources`}
-                  </Button>
-                )}
-                {/* {!isTraveling && !blocked && (
-                  <Button size="xs" className="ml-auto" onClick={() => setShowTravel(true)} variant={"success"}>
-                    {"Travel"}
-                  </Button>
-                )} */}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DepositResources entityId={entityId} />
     </div>
   );
 };
