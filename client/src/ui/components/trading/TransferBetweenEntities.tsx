@@ -19,7 +19,7 @@ enum STEP_ID {
 const STEPS = [
   {
     id: STEP_ID.SELECT_ENTITIES,
-    title: "Select entities you want to transfer between",
+    title: "Select transfer",
   },
   {
     id: STEP_ID.SELECT_RESOURCES,

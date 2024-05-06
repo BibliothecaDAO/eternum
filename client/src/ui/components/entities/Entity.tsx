@@ -81,7 +81,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
 
   return (
     <div
-      className={clsx("flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold", props.className)}
+      className={clsx("flex flex-col p-2 border  border-gold text-xs text-gray-gold", props.className)}
       onClick={props.onClick}
     >
       {showTravel && <TravelEntityPopup entityId={entityId} onClose={onCloseTravel} />}
@@ -150,7 +150,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
                     isLoading={isLoading}
                     disabled={isTraveling}
                     onClick={() => onOffload(depositEntityId)}
-                    variant="success"
+                    variant="primary"
                     withoutSound
                   >
                     {`Deposit Resources`}
