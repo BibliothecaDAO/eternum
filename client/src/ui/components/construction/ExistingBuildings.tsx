@@ -230,29 +230,31 @@ export const BuiltBuilding = ({
   }, [actions]);
 
   const handleClick = useCallback(() => {
-    if (isDestroyable) {
+    if (!isDestroyMode) {
+      setHover(true);
+    }
+    else if (isDestroyable) {
       destroyBuilding(realmEntityId, position.col, position.row);
     }
   }, [destroyBuilding, position.col, position.row]);
 
   return (
     <group
-      // onPointerEnter={() => setHover(true)}
+      onPointerEnter={() => isDestroyMode && setHover(true)}
       onPointerLeave={() => setHover(false)}
-      onDoubleClick={() => setHover(true)}
       onClick={handleClick}
       position={[x, 2.33, -y]}
       rotation={rotation}
     >
       <primitive dropShadow scale={3} object={isDestroyable ? redModel : model} />
-      {hover && <HoverBuilding building={buildingCategory} />}
+      {!isDestroyMode && hover && <HoverBuilding building={buildingCategory} />}
     </group>
   );
 };
 
 const HoverBuilding = ({ building }: { building: BuildingType }) => {
   return (
-    <BaseThreeTooltip distanceFactor={20}>
+    <BaseThreeTooltip distanceFactor={30}>
       <div className="flex flex-col  text-sm p-1 space-y-1">
         <div className="font-bold text-center">
           {BuildingEnumToString[building as keyof typeof BuildingEnumToString]}
