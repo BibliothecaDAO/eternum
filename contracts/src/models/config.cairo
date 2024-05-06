@@ -1,7 +1,7 @@
 use core::debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::constants::{WORLD_CONFIG_ID, POPULATION_CONFIG_ID};
+use eternum::constants::{WORLD_CONFIG_ID, POPULATION_CONFIG_ID, RESOURCE_PRECISION};
 use eternum::models::buildings::BuildingCategory;
 use eternum::utils::unpack::unpack_resource_types;
 
@@ -136,7 +136,7 @@ impl WeightConfigImpl of WeightConfigTrait {
     fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
         let resource_weight_config = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
 
-        return resource_weight_config.weight_gram * amount;
+        (resource_weight_config.weight_gram * amount) / RESOURCE_PRECISION
     }
 }
 

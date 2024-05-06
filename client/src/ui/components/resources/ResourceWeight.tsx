@@ -1,5 +1,5 @@
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { Resource, WEIGHTS, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
+import { Resource, ResourcesIds, WEIGHTS, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { useEffect, useState } from "react";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
@@ -16,6 +16,7 @@ export const ResourceWeightsInfo = ({
 }) => {
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
+  const [sendingDonkeys, setSendingDonkeys] = useState(0);
   const neededDonkeys = Math.ceil(divideByPrecision(resourceWeight) / WEIGHT_PER_DONKEY_KG);
 
   const { getBalance } = useResourceBalance();
@@ -26,10 +27,11 @@ export const ResourceWeightsInfo = ({
       const multipliedWeight = multiplyByPrecision(totalWeight);
       setResourceWeight(multipliedWeight);
 
-      const { balance } = await getBalance(entityId, 249);
-      const currentDonkeyAmount = resources.find((r) => r.resourceId === 249)?.amount || 0;
+      const { balance } = await getBalance(entityId, ResourcesIds.Donkey);
+      const currentDonkeyAmount = resources.find((r) => r.resourceId === ResourcesIds.Donkey)?.amount || 0;
       const calculatedDonkeyBalance = divideByPrecision(balance) - currentDonkeyAmount;
       setDonkeyBalance(calculatedDonkeyBalance);
+      setSendingDonkeys(currentDonkeyAmount);
 
       if (setCanCarry) {
         console.log({ donkeyBalance, neededDonkeys });
@@ -43,7 +45,7 @@ export const ResourceWeightsInfo = ({
   return (
     <>
       <Headline>Transfer Details</Headline>
-      <table className="min-w-full divide-y divide-gray-200 text-xs mt-2 text-center">
+      <table className="min-w-full divide-y divide-gray-200 text-sm mt-2 text-center">
         <tbody className=" divide-y divide-gray-200 border">
           <tr>
             <td className="px-6 py-1 whitespace-nowrap border font-bold text-right">Total Weight</td>
@@ -58,28 +60,15 @@ export const ResourceWeightsInfo = ({
                 neededDonkeys > donkeyBalance ? "giants" : "brilliance"
               }`}
             >
-              {neededDonkeys} [{donkeyBalance}]{" "}
+              {neededDonkeys} + {sendingDonkeys} [{donkeyBalance}]{" "}
             </td>
           </tr>
-
-          {/* <tr>
-            <td className="px-6 py-1 whitespace-nowrap border font-bold">Food</td>
-            <td className="px-6 py-1 whitespace-nowrap text-gold">{`${WEIGHTS[254]} kg/unit`}</td>
-          </tr>
-          <tr>
-            <td className="px-6 py-1 whitespace-nowrap border font-bold">Resource</td>
-            <td className="px-6 py-1 whitespace-nowrap text-gold">{`${WEIGHTS[1]} kg/unit`}</td>
-          </tr>
-          <tr>
-            <td className="px-6 py-1 whitespace-nowrap border font-bold">Lords</td>
-            <td className="px-6 py-1 whitespace-nowrap text-gold">{`${WEIGHTS[253]} kg/unit`}</td>
-          </tr> */}
         </tbody>
       </table>
-      <div className="flex text-xs my-2 justify-between w-full">
+      <div className="flex text-xs my-2 justify-center w-full gap-4 uppercase font-bold">
+        <div className="ml-2">Lords: {`${WEIGHTS[253]} kg/unit`}</div>
         <div>Food: {`${WEIGHTS[254]} kg/unit`}</div>
         <div className="ml-2">Resource: {`${WEIGHTS[1]} kg/unit`}</div>
-        <div className="ml-2">Lords: {`${WEIGHTS[253]} kg/unit`}</div>
       </div>
     </>
   );

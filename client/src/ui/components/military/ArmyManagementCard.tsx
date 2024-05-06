@@ -187,6 +187,48 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
 
   return (
     <div className="flex flex-col">
+      <div className="flex justify-between">
+        <div className="flex">
+          <div className="my-2 uppercase mb-1 font-bold">Status:</div>
+          <div className="flex ml-2 italic self-center">
+            {isTraveling && nextBlockTimestamp ? (
+              <>
+                Traveling for{" "}
+                {isPassiveTravel
+                  ? formatSecondsInHoursMinutes(entity.arrives_at - nextBlockTimestamp)
+                  : "Arrives Next Tick"}
+              </>
+            ) : (
+              "Idle"
+            )}
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (location !== "/map") {
+              setIsLoadingScreenEnabled(true);
+              setTimeout(() => {
+                setLocation("/map");
+                if (Number(position.x) !== 0 && Number(position.y) !== 0) {
+                  moveCameraToColRow(position.x, position.y, 0.01, true);
+                  setTimeout(() => {
+                    moveCameraToColRow(position.x, position.y, 1.5);
+                  }, 10);
+                }
+              }, 100);
+            } else {
+              if (Number(position.x) !== 0 && Number(position.y) !== 0) {
+                moveCameraToColRow(position.x, position.y);
+              }
+            }
+            moveCameraToColRow(position.x, position.y, 1.5);
+          }}
+        >
+          <span> view on map</span>
+        </Button>
+      </div>
+
       <div className="flex justify-between border-b py-2">
         {editName ? (
           <div className="flex space-x-2">
@@ -225,87 +267,45 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
 
       <div className="my-2 flex justify-between">
         <div className="flex">
-          <div className="mr-2 self-center">
-            {checkSamePosition
-              ? "At Base "
-              : position
-              ? `(x:${position.x.toLocaleString()}, y: ${position.y.toLocaleString()})`
-              : "Unknown"}
-          </div>
+          <div className="self-center mr-2">{checkSamePosition ? "At Base " : position ? `On Map` : "Unknown"}</div>
 
-          <Button
-            variant="outline"
-            onClick={() => {
-              if (location !== "/map") {
-                setIsLoadingScreenEnabled(true);
-                setTimeout(() => {
-                  setLocation("/map");
-                  if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-                    moveCameraToColRow(position.x, position.y, 0.01, true);
-                    setTimeout(() => {
-                      moveCameraToColRow(position.x, position.y, 1.5);
-                    }, 10);
-                  }
-                }, 100);
-              } else {
-                if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-                  moveCameraToColRow(position.x, position.y);
-                }
-              }
-              moveCameraToColRow(position.x, position.y, 1.5);
-            }}
-          >
-            <span> view on map</span>
-          </Button>
-        </div>
-
-        <div>
-          {!isTraveling && !checkSamePosition && (
-            <div className="flex space-x-2">
-              {travelToBase ? (
-                <>
-                  <Button
-                    onClick={() =>
-                      travel({
-                        signer: account,
-                        travelling_entity_id: entity.entity_id,
-                        destination_coord_x: entityOwnerPosition.x,
-                        destination_coord_y: entityOwnerPosition.y,
-                      })
-                    }
-                    variant="outline"
-                  >
-                    Confirm
-                  </Button>
-                  <Button onClick={() => setTravelToBase(false)} variant="outline">
-                    Cancel
-                  </Button>
-                </>
-              ) : (
-                <Button onClick={() => setTravelToBase(true)} variant="outline">
-                  Travel to Base
-                </Button>
+          <div className="flex">
+            <div>
+              {!isTraveling && !checkSamePosition && (
+                <div className="flex space-x-2">
+                  {travelToBase ? (
+                    <>
+                      <Button
+                        onClick={() =>
+                          travel({
+                            signer: account,
+                            travelling_entity_id: entity.entity_id,
+                            destination_coord_x: entityOwnerPosition.x,
+                            destination_coord_y: entityOwnerPosition.y,
+                          })
+                        }
+                        variant="outline"
+                      >
+                        Confirm
+                      </Button>
+                      <Button onClick={() => setTravelToBase(false)} variant="outline">
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button onClick={() => setTravelToBase(true)} variant="outline">
+                      Travel to Base
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
-          )}
+          </div>
         </div>
 
         {!entity.protectee_id && entity.lifetime > 0 && (
           <div>
             <div className="flex justify-between">
-              <div>
-                <div className="my-2 uppercase mb-1 font-bold">Status:</div>
-                {isTraveling && nextBlockTimestamp ? (
-                  <div className="flex ml-auto -mt-2 italic ">
-                    Traveling for{" "}
-                    {isPassiveTravel
-                      ? formatSecondsInHoursMinutes(entity.arrives_at - nextBlockTimestamp)
-                      : "Arrives Next Tick"}
-                  </div>
-                ) : (
-                  "Idle"
-                )}
-              </div>
               {!isTraveling && (
                 <div className="self-center">
                   <div className="flex">
@@ -344,7 +344,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
             </div>
           </div>
         )}
-        <div className="mt-2 text-order-giants">{entity.lifetime && <div> Buy troops before traveling</div>}</div>
+        {/* <div className="mt-2 text-order-giants">{entity.lifetime && <div> Buy troops before traveling</div>}</div> */}
       </div>
       <div className="grid grid-cols-3 gap-2 my-2">
         {troops.map((troop) => (
