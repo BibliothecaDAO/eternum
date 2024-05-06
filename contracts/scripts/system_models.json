@@ -15,7 +15,8 @@
     "Tile",
     "Production",
     "HasClaimedStartingResources",
-    "Structure"
+    "Structure",
+    "StructureCount"
   ],
   "DONKEY_SYSTEMS": [],
   "TRADE_SYSTEMS": [
@@ -65,7 +66,9 @@
     "Resource",
     "Production",
     "EntityOwner",
-    "OwnedResourcesTracker"
+    "OwnedResourcesTracker",
+    "Structure",
+    "StructureCount"
   ],
   "SWAP_SYSTEMS": ["Market", "OwnedResourcesTracker", "Resource", "Production"],
   "LIQUIDITY_SYSTEMS": ["Market", "OwnedResourcesTracker", "Production", "Resource", "Liquidity"],
