@@ -83,7 +83,14 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>Transfer</div>
           </div>
         ),
-        component: <TransferBetweenEntities entities={[...playerRealms(), ...playerAccounts()]} />,
+        component: (
+          <TransferBetweenEntities
+            entitiesList={[
+              { entities: playerRealms(), name: "Player Realms" },
+              { entities: playerAccounts(), name: "Player Bank Accounts" },
+            ]}
+          />
+        ),
       },
       {
         key: "all",

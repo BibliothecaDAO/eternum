@@ -12,6 +12,7 @@ import { TravelInfo } from "../resources/ResourceWeight";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { Headline } from "@/ui/elements/Headline";
 import { useTravel } from "@/hooks/helpers/useTravel";
+import { ToggleComponent } from "../toggle/ToggleComponent";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -28,7 +29,7 @@ const STEPS = [
   },
 ];
 
-export const TransferBetweenEntities = ({ entities }: { entities: any[] }) => {
+export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { entities: any[]; name: string }[] }) => {
   const [selectedEntityIdFrom, setSelectedEntityIdFrom] = useState<bigint | null>(null);
   const [selectedEntityIdTo, setSelectedEntityIdTo] = useState<bigint | null>(null);
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
@@ -105,21 +106,29 @@ export const TransferBetweenEntities = ({ entities }: { entities: any[] }) => {
           <div className="grid grid-cols-2 gap-6 mt-3">
             <div className="justify-around">
               <Headline>From</Headline>
-              <SelectEntityFromList
-                onSelect={setSelectedEntityIdFrom}
-                selectedCounterpartyId={selectedEntityIdTo}
-                selectedEntityId={selectedEntityIdFrom}
-                entities={entities}
-              />
+              {entitiesList.map(({ entities, name: title }, index) => (
+                <ToggleComponent title={title} key={index}>
+                  <SelectEntityFromList
+                    onSelect={setSelectedEntityIdFrom}
+                    selectedCounterpartyId={selectedEntityIdTo}
+                    selectedEntityId={selectedEntityIdFrom}
+                    entities={entities}
+                  />
+                </ToggleComponent>
+              ))}
             </div>
             <div className="justify-around">
               <Headline>To</Headline>
-              <SelectEntityFromList
-                onSelect={setSelectedEntityIdTo}
-                selectedCounterpartyId={selectedEntityIdFrom}
-                selectedEntityId={selectedEntityIdTo}
-                entities={entities}
-              />
+              {entitiesList.map(({ entities, name: title }, index) => (
+                <ToggleComponent title={title} key={index}>
+                  <SelectEntityFromList
+                    onSelect={setSelectedEntityIdTo}
+                    selectedCounterpartyId={selectedEntityIdFrom}
+                    selectedEntityId={selectedEntityIdTo}
+                    entities={entities}
+                  />
+                </ToggleComponent>
+              ))}
             </div>
           </div>
           <div className="flex justify-center w-full">
