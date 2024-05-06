@@ -27,7 +27,7 @@ export const Trading = () => {
     setShowCreateOffer(true);
   }, []);
 
-  const { playerRealms, playerAccounts } = useEntities();
+  const { playerRealms, playerAccounts, otherRealms } = useEntities();
 
   const tabs = useMemo(
     () => [
@@ -47,7 +47,15 @@ export const Trading = () => {
             <div>Transfer</div>
           </div>
         ),
-        component: <TransferBetweenEntities entities={[...playerRealms(), ...playerAccounts()]} />,
+        component: (
+          <TransferBetweenEntities
+            entitiesList={[
+              { entities: playerRealms(), name: "Player Realms" },
+              { entities: playerAccounts(), name: "Player Bank Accounts" },
+              { entities: otherRealms(), name: "Other Realms" },
+            ]}
+          />
+        ),
       },
       {
         key: "arrivals",

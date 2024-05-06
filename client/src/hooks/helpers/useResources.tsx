@@ -1,13 +1,4 @@
-import {
-  type Entity,
-  Has,
-  HasValue,
-  NotValue,
-  getComponentValue,
-  runQuery,
-  Not,
-  getEntitiesWithValue,
-} from "@dojoengine/recs";
+import { type Entity, Has, HasValue, NotValue, getComponentValue, runQuery, Not } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import { getEntityIdFromKeys, getResourceIdsFromPackedNumber } from "../../ui/utils/utils";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
@@ -216,12 +207,16 @@ export const useGetOwnedEntityOnPosition = (address: bigint, position: Position)
     },
   } = useDojo();
 
+  const { x, y } = position;
+
   const entities = runQuery([
+    Has(Realm),
     HasValue(Owner, { address }),
     Not(Movable),
     // don't want bank but bank accounts
     Not(Bank),
-    HasValue(Position, { ...position }),
+    // @note: safer to do like this rather than deconstruct because there's a chance entity_id is also there
+    HasValue(Position, { x, y }),
   ]);
 
   return Array.from(entities)

@@ -3,14 +3,11 @@ import { Tabs } from "@/ui/elements/tab";
 import { ResourceSwap } from "./Swap";
 import { OpenBankAccount } from "./OpenBankAccount";
 import { BankEntityList } from "./BankEntityList";
-import { EntityList } from "../list/EntityList";
 import { useBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { SendResourcesPanel } from "@/ui/components/trading/SendResourcesPanel";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { EntitiesOnPositionList } from "../entities/EntitiesOnPositionList";
 import { LiquidityTable } from "./LiquidityTable";
 import AddLiquidity from "./AddLiquidity";
 import { hexToAscii, numberToHex } from "@/ui/utils/utils";
@@ -86,7 +83,14 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>Transfer</div>
           </div>
         ),
-        component: <TransferBetweenEntities entities={[...playerRealms(), ...playerAccounts()]} />,
+        component: (
+          <TransferBetweenEntities
+            entitiesList={[
+              { entities: playerRealms(), name: "Player Realms" },
+              { entities: playerAccounts(), name: "Player Bank Accounts" },
+            ]}
+          />
+        ),
       },
       {
         key: "all",

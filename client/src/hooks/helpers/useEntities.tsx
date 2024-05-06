@@ -1,6 +1,6 @@
 import { useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../context/DojoContext";
-import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys, getPosition, numberToHex } from "@/ui/utils/utils";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { hexToAscii } from "@dojoengine/utils";
@@ -20,7 +20,6 @@ export const useEntities = () => {
         EntityOwner,
         Movable,
         Capacity,
-        OwnedResourcesTracker,
         Position,
         Army,
       },
@@ -30,6 +29,7 @@ export const useEntities = () => {
   const { getResourcesFromBalance } = useResources();
 
   const playerRealms = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
+  const otherRealms = useEntityQuery([Has(Realm), NotValue(Owner, { address: BigInt(account.address) })]);
 
   const getEntityName = (entityId: bigint) => {
     const entityName = getComponentValue(EntityName, getEntityIdFromKeys([entityId]));
@@ -78,6 +78,12 @@ export const useEntities = () => {
   return {
     playerRealms: () => {
       return playerRealms.map((id) => {
+        const realm = getComponentValue(Realm, id);
+        return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
+      });
+    },
+    otherRealms: () => {
+      return otherRealms.map((id) => {
         const realm = getComponentValue(Realm, id);
         return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
       });

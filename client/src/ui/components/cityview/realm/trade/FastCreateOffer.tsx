@@ -14,7 +14,7 @@ import { TradeRealmSelector } from "./TradeRealmSelector";
 import { usePlayResourceSound } from "../../../../../hooks/useUISound";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { createOffer } from "@/ui/components/navigation/Config";
-import { ResourceWeightsInfo } from "@/ui/components/resources/ResourceWeight";
+import { TravelInfo } from "@/ui/components/resources/ResourceWeight";
 import { useDojo } from "@/hooks/context/DojoContext";
 
 interface FastCreateOfferPopupProps {
@@ -412,14 +412,14 @@ const SelectResourcesAmountPanel = ({
           )}
         </div>
       </div>
-      <ResourceWeightsInfo
+      <TravelInfo
         entityId={realmEntityId}
         resources={selectedResourceIdsGet.map((resourceId) => ({
           resourceId,
           amount: selectedResourcesGetAmounts[resourceId],
         }))}
         setCanCarry={setCanCarry}
-      ></ResourceWeightsInfo>
+      ></TravelInfo>
       {!marketplaceMode && (
         <TradeRealmSelector selectedRealmId={selectedRealmId} setSelectedRealmId={setSelectedRealmId} />
       )}

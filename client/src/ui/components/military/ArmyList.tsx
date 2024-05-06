@@ -7,6 +7,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import React, { useMemo, useState } from "react";
 import Button from "@/ui/elements/Button";
 import { ArmyViewCard } from "./ArmyViewCard";
+import { DepositResources } from "../resources/DepositResources";
 
 export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
@@ -69,6 +70,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
           <React.Fragment key={entity.entity_id}>
             <ArmyManagementCard owner_entity={entity_id?.entity_id} entity={entity} />
             <InventoryResources entityId={entity.entity_id} />
+            <DepositResources entityId={entity.entity_id} />
           </React.Fragment>
         )}
       />
