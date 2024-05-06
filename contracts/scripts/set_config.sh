@@ -108,6 +108,11 @@ export STARTING_ID_MYTHIC_RESOURCES=7
 export STARTING_ID_TRADE=8
 export STARTING_ID_MILITARY=9
 
+# weight - grams
+export RESOURCE_UNIT_WEIGHT=1000
+export FOOD_UNIT_WEIGHT=100
+export CURRENCY_UNIT_WEIGHT=1
+
 // banks
 export BANK_OWNER_COST=100000
 export BANK_LP_FEES=922337203685477580
@@ -152,7 +157,7 @@ commands+=(
 
     # ### TRAVEL ###
     # # free transport per city = 10 (for testing);
-    "sozo execute $CONFIG_SYSTEMS set_travel_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 10"
+    # "sozo execute $CONFIG_SYSTEMS set_travel_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 10"
 
     # ### CAPACITY ###
     # # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
@@ -166,22 +171,23 @@ commands+=(
 )
 
 
+
 # ------ WEIGHT CONFIG ------
 for resource_type in {1..28}
 do
     commands+=(
         # 1kg/1000 g per resource unit (resource precision = 1000)
-        "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,1000"
+        "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,$RESOURCE_UNIT_WEIGHT"
     )
 done
 
 commands+=(
     # 1 gr per unit
-    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $LORDS,1"
+    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $LORDS,$CURRENCY_UNIT_WEIGHT"
     # 0.1 kg/ 100 gr per unit
-    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $FISH,100"
+    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $FISH,$FOOD_UNIT_WEIGHT"
     # 0.1 kg/ 100 gr per unit
-    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WHEAT,100"
+    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $WHEAT,$FOOD_UNIT_WEIGHT"
 )
 
 # ------ COMBAT CONFIG ------
@@ -200,7 +206,7 @@ commands+=(
     # ### CAPACITY ###
     # # entity type ARMY_ENTITY_TYPE = 258
     # # 1 kg
-    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata 258,$(($ARMY_CAPACITY * $RESOURCE_PRECISION))"
+    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $ARMY_ENTITY_TYPE,$(($ARMY_CAPACITY * $RESOURCE_PRECISION))"
 
 )
 

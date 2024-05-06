@@ -40,7 +40,7 @@ export const ResourceCost = ({
       />
       <div
         className={clsx(
-          "relative flex flex-col shrink-0 mt-2",
+          "relative flex flex-col shrink-0  self-center ml-2",
           type === "horizontal" ? "ml-1 font-bold  text-left" : "items-center",
         )}
       >

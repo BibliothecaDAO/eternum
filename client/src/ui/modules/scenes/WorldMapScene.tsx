@@ -36,7 +36,6 @@ const StarsSky = () => {
 export const WorldMapScene = () => {
   const [isMapView] = useRoute("/map");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const texture = useTexture({
@@ -46,12 +45,14 @@ export const WorldMapScene = () => {
     normalMap: "/textures/paper/paper-normal.jpg",
   });
 
-  Object.keys(texture).forEach((key) => {
-    const _texture = texture[key as keyof typeof texture];
-    _texture.wrapS = THREE.RepeatWrapping;
-    _texture.wrapT = THREE.RepeatWrapping;
-    _texture.repeat.set(1, 30);
-  });
+  useMemo(() => {
+    Object.keys(texture).forEach((key) => {
+      const _texture = texture[key as keyof typeof texture];
+      _texture.wrapS = THREE.RepeatWrapping;
+      _texture.wrapT = THREE.RepeatWrapping;
+      _texture.repeat.set(20, 20);
+    });
+  }, [texture]);
 
   useEffect(() => {
     setTimeout(() => {
