@@ -68,7 +68,7 @@ export class ProductionManager {
         getEntityIdFromKeys([BigInt(this.entityId || "0"), BigInt(BuildingType.Storehouse)]),
       )?.value || "0n";
 
-    return (Number(quantity) * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY) * 1000;
+    return (Number(quantity) * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY) * 100;
   }
 
   private _balance(currentTick: number, resourceId: bigint): number {
