@@ -24,7 +24,7 @@ const HighlightedHexes = () => {
 
   useFrame(({ clock }) => {
     const elapsedTime = clock.getElapsedTime();
-    const pulseFactor = Math.sin(elapsedTime * Math.PI) * 0.5 + 0.5;
+    const pulseFactor = Math.sin(elapsedTime * Math.PI) * 0.2 + 0.5;
     if (meshRef.current?.material) {
       meshRef.current.material.emissiveIntensity = pulseFactor;
       meshRef.current.scale.set(pulseFactor, pulseFactor, pulseFactor);
@@ -40,7 +40,7 @@ const HighlightedHexes = () => {
             ref={meshRef}
             geometry={hexagonGeometry}
             rotation={[0, 0, 0]}
-            position={[highlightPosition[0], 0.32, highlightPosition[1]]}
+            position={[highlightPosition[0], 0.3, highlightPosition[1]]}
           >
             <meshPhongMaterial color={highlightColor} emissive={"green"} />
           </mesh>

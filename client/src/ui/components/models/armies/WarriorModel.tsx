@@ -61,6 +61,7 @@ type WarriorModelProps = {
   onClick: () => void;
   onPointerEnter: (e: any) => void;
   onPointerOut: (e: any) => void;
+  onContextMenu: (e: any) => void;
   hovered: boolean;
   isRunning: boolean;
   isDead: boolean;
@@ -74,6 +75,7 @@ export function WarriorModel({
   onClick,
   onPointerEnter,
   onPointerOut,
+  onContextMenu,
   hovered,
   isRunning,
   isDead,
@@ -178,6 +180,7 @@ export function WarriorModel({
       onClick={onClickAction}
       onPointerEnter={onPointerEnter}
       onPointerOut={onPointerOut}
+      onContextMenu={onContextMenu}
     >
       <group name="Scene">
         <group name="CharacterArmature">

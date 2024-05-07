@@ -257,8 +257,9 @@ export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
 
       <Headline className="py-3">Building</Headline>
 
-      <div>Population: +{population}</div>
-      <div>Capacity: +{capacity}</div>
+      {population !== 0 && <div>Increases Population: +{population}</div>}
+
+      {capacity !== 0 && <div>Increases Capacity: +{capacity}</div>}
       <Headline className="py-3">Input Costs</Headline>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
@@ -305,8 +306,10 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
       {/* <div className="w-32 my-2">{information}</div> */}
       <Headline className="py-3">Building </Headline>
 
-      <div>Population: +{population}</div>
-      <div>Capacity: +{capacity}</div>
+      {population !== 0 && <div>Increases Population: +{population}</div>}
+
+      {capacity !== 0 && <div>Increases Capacity: +{capacity}</div>}
+
       {resourceProduced !== 0 && (
         <div className=" flex">
           <div>Produces: +{perTick}</div>
@@ -335,15 +338,8 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
 };
 
 export const SelectPreviewBuildingMenu = () => {
-  const {
-    setPreviewBuilding,
-    previewBuilding,
-    selectedResource,
-    setResourceId,
-    setTooltip,
-    isDestroyMode,
-    setIsDestroyMode,
-  } = useUIStore();
+  const { setPreviewBuilding, previewBuilding, selectedResource, setResourceId, isDestroyMode, setIsDestroyMode } =
+    useUIStore();
 
   const { playResourceSound } = usePlayResourceSound();
 
@@ -394,13 +390,9 @@ export const SelectPreviewBuildingMenu = () => {
           const hasBalance = checkBalance(cost);
 
           return (
-            <div
-              style={{
-                backgroundImage: `url(${BUILDING_IMAGES_PATH[BuildingType.Resource]})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
+            <BuildingCard
               key={resourceId}
+              buildingId={BuildingType.Resource}
               onClick={() => {
                 if (!hasBalance) {
                   return;
@@ -418,34 +410,11 @@ export const SelectPreviewBuildingMenu = () => {
                   handleSelectBuilding(BuildingType.Resource);
                 }
               }}
-              className={clsx(
-                "border border-gold hover:border-gold/50 transition-all duration-200 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-24 ",
-                {
-                  "!border-lightest !text-lightest": selectedResource === resourceId,
-                },
-              )}
-            >
-              {!hasBalance && <div className="absolute w-full h-full bg-black/50 text-red p-4 text-xs"></div>}
-              <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50">
-                <span>{resource?.trait}</span>
-              </div>
-              <div className="flex relative flex-col items-start text-xs font-bold p-2">
-                <ResourceIcon resource={resource?.trait} size="lg" />
-
-                <InfoIcon
-                  onMouseEnter={() => {
-                    setTooltip({
-                      content: <ResourceInfo resourceId={resourceId} />,
-                      position: "right",
-                    });
-                  }}
-                  onMouseLeave={() => {
-                    setTooltip(null);
-                  }}
-                  className="w-4 h-4 absolute top-2 right-2"
-                />
-              </div>
-            </div>
+              active={selectedResource === resourceId}
+              name={resource?.trait}
+              toolTip={<ResourceInfo resourceId={resourceId} />}
+              canBuild={hasBalance}
+            />
           );
         })}
         {buildingTypes.map((buildingType, index) => {
@@ -455,22 +424,9 @@ export const SelectPreviewBuildingMenu = () => {
           const hasBalance = checkBalance(cost);
 
           return (
-            <div
+            <BuildingCard
               key={index}
-              className={clsx(
-                "border border-gold hover:border-gold/50 transition-all duration-200 text-gold  overflow-hidden text-ellipsis  cursor-pointer h-24 relative  ",
-                {
-                  "!border-lightest !text-lightest": previewBuilding === building,
-                },
-                {
-                  " cursor-not-allowed": (previewBuilding && previewBuilding !== building) || !hasBalance,
-                },
-              )}
-              style={{
-                backgroundImage: `url(${BUILDING_IMAGES_PATH[building]})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
+              buildingId={building}
               onClick={() => {
                 if (!hasBalance) {
                   return;
@@ -482,30 +438,16 @@ export const SelectPreviewBuildingMenu = () => {
                   handleSelectBuilding(building);
                 }
               }}
-            >
-              {!hasBalance && <div className="absolute w-full h-full bg-black/50 text-red p-4 text-xs"></div>}
-
-              <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50">
-                {BuildingEnumToString[building]}
-              </div>
-              <InfoIcon
-                onMouseEnter={() => {
-                  setTooltip({
-                    content: <BuildingInfo buildingId={building} />,
-                    position: "right",
-                  });
-                }}
-                onMouseLeave={() => {
-                  setTooltip(null);
-                }}
-                className="w-4 h-4 absolute top-2 right-2"
-              />
-            </div>
+              active={false}
+              name={BuildingEnumToString[building]}
+              toolTip={<BuildingInfo buildingId={building} />}
+              canBuild={hasBalance}
+            />
           );
         })}
         <div
           className={clsx(
-            "border border-order-giants/50 text-order-giants/90 hover:border-order-giants/85 hover:text-order-giants/85 flex justify-center items-center transition-all duration-20 bg-order-giants/20 overflow-hidden text-ellipsis  cursor-pointer h-24 relative p-2 ",
+            "border border-order-giants/50 text-white hover:border-order-giants/85 hover:text-order-giants/85 flex justify-center items-center transition-all duration-20 bg-order-giants/80 overflow-hidden text-ellipsis  cursor-pointer h-24 relative p-2 ",
             {
               "!text-order-giants !border-order-giants": isDestroyMode,
             },
@@ -519,6 +461,65 @@ export const SelectPreviewBuildingMenu = () => {
         >
           Destroy Building
         </div>
+      </div>
+    </div>
+  );
+};
+
+export const BuildingCard = ({
+  buildingId,
+  onClick,
+  active,
+  name,
+  toolTip,
+  canBuild,
+}: {
+  buildingId: BuildingType;
+  onClick: () => void;
+  active: boolean;
+  name: string;
+  toolTip: React.ReactElement;
+  canBuild?: boolean;
+}) => {
+  const { setTooltip } = useUIStore();
+  return (
+    <div
+      style={{
+        backgroundImage: `url(${BUILDING_IMAGES_PATH[buildingId as BuildingType]})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+      onClick={onClick}
+      className={clsx(
+        " hover:border-gold border border-transparent transition-all duration-200 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-24 ",
+        {
+          "!border-lightest !text-lightest": active,
+        },
+      )}
+    >
+      {!canBuild && (
+        <div className="absolute w-full h-full bg-black/50 text-white/60 p-4 text-xs pt-4 flex justify-center">
+          <div className="self-center">no resources</div>
+        </div>
+      )}
+      <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50 ">
+        <div className="truncate">{name}</div>
+      </div>
+      <div className="flex relative flex-col items-start text-xs font-bold p-2">
+        {buildingId === BuildingType.Resource && <ResourceIcon resource={name} size="lg" />}
+
+        <InfoIcon
+          onMouseEnter={() => {
+            setTooltip({
+              content: toolTip,
+              position: "right",
+            });
+          }}
+          onMouseLeave={() => {
+            setTooltip(null);
+          }}
+          className="w-4 h-4 absolute top-2 right-2"
+        />
       </div>
     </div>
   );

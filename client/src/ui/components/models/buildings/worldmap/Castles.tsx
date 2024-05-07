@@ -70,7 +70,7 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
             {selectedEntity && selectedEntity.id == castle.id && <ArmyMenu entityId={castle.id} />}
             <primitive
               object={model.scene.clone()}
-              scale={3}
+              scale={4}
               name="castle"
               castShadow
               // onClick={(e: any) => onClick(e, castle)}

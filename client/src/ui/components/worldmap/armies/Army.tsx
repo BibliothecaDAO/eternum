@@ -129,7 +129,8 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
           {...props}
           id={Number(info.id)}
           rotationY={rotationY}
-          onClick={onClick}
+          onClick={() => {}}
+          onContextMenu={onClick}
           onPointerEnter={onPointerIn}
           onPointerOut={onPointerOut}
           isRunning={isRunning}

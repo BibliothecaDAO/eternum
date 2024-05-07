@@ -19,14 +19,6 @@ export const ArmiesAtLocation = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
   const { col: x, row: y } = clickedHex!.contractPos;
 
-  const {
-    account: { account },
-    network: { provider },
-    setup: {
-      systemCalls: { create_army, army_buy_troops },
-    },
-  } = useDojo();
-
   const { structuresAtPosition } = useStructuresPosition({ position: { x, y } });
   const { allArmies, userArmies } = usePositionArmies({ position: { x, y } });
 
@@ -135,15 +127,15 @@ export const ArmyActions = ({ army }: { army: ArmyAndName }) => {
   return (
     <ModalContainer>
       <div className="flex justify-center">
-        <div className="grid grid-cols-12 gap-8 container ">
+        <div className="grid grid-cols-12 gap-12 container ">
           <div className="col-span-3">
             <Headline className="my-3">
               <h4> Your Army</h4>
             </Headline>
             <ArmyViewCard army={army} />
           </div>
-          <div className="border p-8 text-center col-span-6 space-y-8 flex flex-col justify-center">
-            <div>
+          <div className="border p-8 text-center col-span-6 space-y-8 flex flex-col justify-between">
+            <div className="w-64">
               <Headline>
                 <h5>{army.name}</h5>
               </Headline>
@@ -155,28 +147,28 @@ export const ArmyActions = ({ army }: { army: ArmyAndName }) => {
 
             <div>
               {" "}
-              <Button isLoading={loading} variant="primary" onClick={() => handlePillage()}>
-                Pillage
+              <Button className=" h-32" isLoading={loading} variant="primary" onClick={() => handlePillage()}>
+                Pillage {formattedRealmAtPosition.name}
               </Button>
             </div>
 
-            <div>
+            <div className="w-64 ml-auto">
               <Headline>
                 <h5>{formattedRealmAtPosition.name}</h5>
               </Headline>
 
-              {getProtector ? (
+              {getProtector.current ? (
                 <>
                   {" "}
-                  <h6> {Number(getProtector.current?.toString()) / 1000}HP</h6>
+                  <h6> {Number(getProtector.current?.toString() || 0) / 1000}HP</h6>
                   <div className="flex justify-center gap-8 mt-4">
-                    <div>Crossbowmen: {currencyFormat(getProtector?.troops?.crossbowman_count, 0)}</div>
-                    <div>Knight: {currencyFormat(getProtector?.troops?.knight_count, 0)}</div>
-                    <div>Paladin: {currencyFormat(getProtector?.troops?.paladin_count, 0)}</div>
+                    <div>Crossbowmen: {currencyFormat(getProtector?.troops?.crossbowman_count || 0, 0)}</div>
+                    <div>Knight: {currencyFormat(getProtector?.troops?.knight_count || 0, 0)}</div>
+                    <div>Paladin: {currencyFormat(getProtector?.troops?.paladin_count || 0, 0)}</div>
                   </div>
                 </>
               ) : (
-                "No Defending Army"
+                "No Defending Army! Pillage Away"
               )}
             </div>
           </div>

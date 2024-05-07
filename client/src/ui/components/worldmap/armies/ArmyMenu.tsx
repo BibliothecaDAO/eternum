@@ -18,6 +18,7 @@ import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
 import { Html } from "@react-three/drei";
 import { useResources } from "../../../../hooks/helpers/useResources";
+import Button from "@/ui/elements/Button";
 
 interface ArmyMenuProps {
   entityId: bigint;
@@ -148,10 +149,10 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   }, []);
 
   return (
-    <Html position={[0, 5, 0]}>
+    <Html position={[0, 3, -0.5]}>
       <div
         className={clsx(
-          "flex space-x-0.5 -translate-x-1/2 transition-all duration-200",
+          "flex  -translate-x-1/2 transition-all duration-100",
           appeared ? "opacity-100" : "opacity-0 translate-y-1/2",
         )}
       >
@@ -260,44 +261,6 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             </div>
           </div>
         )}
-        {/* {playerOwnsSelectedEntity && (
-          <div
-            className={clsx("relative group/icon transition-opacity duration-200")}
-            onClick={(e) => {
-              e.stopPropagation();
-
-              if (!isAttackMode && !isTravelMode && !isTraveling && canCarryNewReward && hasEnoughResourcesToExplore) {
-                if (isExploreMode) {
-                  setIsTravelMode(false);
-                  setIsExploreMode(false);
-                  setIsAttackMode(false);
-                } else {
-                  setIsTravelMode(false);
-                  setIsExploreMode(true);
-                  setIsAttackMode(false);
-                }
-              }
-            }}
-          >
-            <div
-              className={
-                isAttackMode || isTravelMode || isTraveling || !canCarryNewReward || !hasEnoughResourcesToExplore
-                  ? "opacity-30 "
-                  : "opacity-100"
-              }
-            >
-              <ExploreIcon />
-            </div>
-            <div
-              className={clsx(
-                "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-brown/80 text-gold border border-gold p-2 text-sm pointer-events-none",
-                "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
-              )}
-            >
-              Drop Off Resources. You must be at home
-            </div>
-          </div>
-        )} */}
       </div>
     </Html>
   );
