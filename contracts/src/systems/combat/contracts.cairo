@@ -28,6 +28,7 @@ mod combat_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, LOYALTY_MAX_VALUE, MAX_PILLAGE_TRIAL_COUNT
     };
+    use eternum::models::buildings::{Building, BuildingImpl};
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
@@ -39,7 +40,8 @@ mod combat_systems {
 
     use eternum::models::movable::{Movable, MovableTrait};
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
-    use eternum::models::position::{Position, Coord, PositionTrait};
+    use eternum::models::position::CoordTrait;
+    use eternum::models::position::{Position, Coord, PositionTrait, Direction};
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
@@ -525,7 +527,8 @@ mod combat_systems {
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
             // ensure entity being pillaged is a structure
-            get!(world, structure_id, Structure).assert_is_structure();
+            let structure: Structure = get!(world, structure_id, Structure);
+            structure.assert_is_structure();
 
             // ensure attacking army is not in a battle
             let attacking_army: Army = get!(world, army_id, Army);
@@ -641,6 +644,101 @@ mod combat_systems {
                         Option::None => { break; }
                     }
                 };
+            }
+
+            if structure.category == StructureCategory::Realm {
+                // all buildings are at most 4 directions from the center
+                // so first we pick a random between within 1 and 4 
+                // with higher probability of high numbers
+
+                let mut chosen_direction_count: u8 = *random::choices(
+                    array![1_u8, 2, 3, 4].span(), // options are (1,2,3,4)
+                    array![1, 7, 14, 30].span(), // these are the weights of each option
+                    array![].span(),
+                    1,
+                    true
+                )[0];
+
+                // make different sets of direction arrangements so the targeted
+                // building locations aren't clustered or so they arent facing only one direction
+                let direction_arrangements = array![
+                    array![
+                        Direction::East,
+                        Direction::NorthEast,
+                        Direction::NorthWest,
+                        Direction::West,
+                        Direction::SouthWest,
+                        Direction::SouthEast
+                    ],
+                    array![
+                        Direction::SouthWest,
+                        Direction::SouthEast,
+                        Direction::East,
+                        Direction::NorthEast,
+                        Direction::NorthWest,
+                        Direction::West,
+                    ],
+                    array![
+                        Direction::NorthWest,
+                        Direction::West,
+                        Direction::SouthWest,
+                        Direction::SouthEast,
+                        Direction::East,
+                        Direction::NorthEast,
+                    ],
+                    array![
+                        Direction::NorthWest,
+                        Direction::NorthEast,
+                        Direction::SouthWest,
+                        Direction::SouthEast,
+                        Direction::East,
+                        Direction::West
+                    ],
+                ];
+                // move `chosen_direction_count` steps from the center in random directions
+                let mut chosen_directions: Span<Direction> = random::choices(
+                    direction_arrangements
+                        .at(
+                            // choose one arrangement at random
+                            *random::choices(
+                                array![0_u32, 1, 2, 3].span(), // options are (0,1,2,3) i.e index
+                                array![1, 1, 1, 1]
+                                    .span(), // each carry the same weight so equal probs
+                                array![].span(),
+                                1,
+                                true
+                            )[0]
+                        )
+                        .span(),
+                    array![1, 2, 4, 7, 11, 15]
+                        .span(), // direction weights are in ascending order so the last 3 carry the most weight
+                    array![].span(),
+                    chosen_direction_count.into(),
+                    true
+                );
+
+                let mut final_coord = BuildingImpl::center();
+                loop {
+                    match chosen_directions.pop_front() {
+                        Option::Some(direction) => {
+                            final_coord = final_coord.neighbor(*direction);
+                        },
+                        Option::None => { break; }
+                    }
+                };
+
+                if final_coord != BuildingImpl::center() {
+                    // check if there is a building at the destination coordinate
+                    let mut pillaged_building: Building = get!(
+                        world,
+                        (structure_position.x, structure_position.y, final_coord.x, final_coord.y),
+                        Building
+                    );
+                    if pillaged_building.entity_id.is_non_zero() {
+                        // destroy building if it exists
+                        BuildingImpl::destroy(world, structure_id, final_coord);
+                    }
+                }
             }
 
             // reduce attacking army's health by 10%

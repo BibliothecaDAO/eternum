@@ -88,18 +88,46 @@ impl CubeImpl of CubeTrait {
 
 #[derive(Drop, Copy, Serde)]
 enum Direction {
-    East: (),
-    NorthEast: (),
-    NorthWest: (),
-    West: (),
-    SouthWest: (),
-    SouthEast: (),
+    East,
+    NorthEast,
+    NorthWest,
+    West,
+    SouthWest,
+    SouthEast,
 }
+
+impl DirectionDisplay of Display<Direction> {
+    fn fmt(self: @Direction, ref f: Formatter) -> Result<(), Error> {
+        let str: ByteArray = format!("Direction: ");
+        f.buffer.append(@str);
+
+        match self {
+            Direction::East => { f.buffer.append(@"East") },
+            Direction::NorthEast => { f.buffer.append(@"NorthEast") },
+            Direction::NorthWest => { f.buffer.append(@"NorthWest") },
+            Direction::West => { f.buffer.append(@"West") },
+            Direction::SouthWest => { f.buffer.append(@"SouthWest") },
+            Direction::SouthEast => { f.buffer.append(@"SouthEast") },
+        }
+        Result::Ok(())
+    }
+}
+
 
 #[derive(Copy, Drop, PartialEq, Serde, Print, Introspect, Debug, Zeroable)]
 struct Coord {
     x: u128,
     y: u128
+}
+
+
+impl CoordDisplay of Display<Coord> {
+    fn fmt(self: @Coord, ref f: Formatter) -> Result<(), Error> {
+        let str: ByteArray = format!("Coord (x:{}, y:{}) ", self.x, self.y);
+        f.buffer.append(@str);
+
+        Result::Ok(())
+    }
 }
 
 #[generate_trait]
