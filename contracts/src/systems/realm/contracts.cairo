@@ -31,11 +31,13 @@ mod realm_systems {
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::movable::Movable;
     use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::position::Position;
+    use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::QuantityTracker;
     use eternum::models::realm::Realm;
     use eternum::models::resources::{DetachedResource, Resource, ResourceImpl, ResourceTrait};
-    use eternum::models::structure::{Structure, StructureCategory};
+    use eternum::models::structure::{
+        Structure, StructureCategory, StructureCount, StructureCountTrait
+    };
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
 
@@ -95,6 +97,11 @@ mod realm_systems {
             order: u8,
             position: Position,
         ) -> ID {
+            // ensure that the coord is not occupied by any other structure
+            let coord: Coord = position.into();
+            let structure_count: StructureCount = get!(world, coord, StructureCount);
+            structure_count.assert_none();
+
             let entity_id = world.uuid();
             let caller = starknet::get_caller_address();
 
@@ -119,6 +126,7 @@ mod realm_systems {
                     Owner { entity_id: entity_id.into(), address: caller },
                     EntityOwner { entity_id: entity_id.into(), entity_owner_id: entity_id.into() },
                     Structure { entity_id: entity_id.into(), category: StructureCategory::Realm },
+                    StructureCount { coord, count: 1 },
                     Realm {
                         entity_id: entity_id.into(),
                         realm_id,
