@@ -23,7 +23,8 @@ export type SortVillagers = {
 export enum VillagerType {
   Resident,
   Traveler,
-  AtGates
+  AtGates,
+  Unknown,
 }
 
 export type Villager = {

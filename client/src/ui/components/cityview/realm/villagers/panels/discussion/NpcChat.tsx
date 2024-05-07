@@ -1,20 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { NpcChatMessage } from "./NpcChatMessage";
 import { StorageDiscussions, StorageDiscussion, Npc, DiscussionSegment } from "../../types";
-import { useResidentsNpcs, scrollToElement } from "../../utils";
+import { useResidentsNpcs, scrollToElement, getNpcFromEntityId } from "../../utils";
 import BlurryLoadingImage from "../../../../../../elements/BlurryLoadingImage";
-import useRealmStore from "../../../../../../hooks/store/useRealmStore";
-import { useDojo } from "../../../../../../DojoContext";
-import { defaultNpc } from "../../defaults";
-import useNpcStore from "../../../../../../hooks/store/useNpcStore";
-import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { NpcPopup } from "../../NpcPopup";
 import { useDiscussion } from "./DiscussionContext";
+import { useDojo } from "@/hooks/context/DojoContext";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import useNpcStore from "@/hooks/store/useNpcStore";
 
 const NpcChat = ({}) => {
-  const [selectedNpc, setSelectedNpc] = useState<Npc | undefined>(undefined);
-
   const {
     setup: {
       components: { Npc, EntityOwner },
@@ -29,7 +24,7 @@ const NpcChat = ({}) => {
   const { isDiscussionLoading } = useNpcStore();
 
   const residents = useResidentsNpcs(realmEntityId, Npc, EntityOwner);
-  const npcs = residents.map(item => item.npc)
+  const npcs = residents.map((item) => item.npc);
 
   const topRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -65,7 +60,7 @@ const NpcChat = ({}) => {
         className="relative flex flex-col h-full overflow-auto top-3 center mx-auto w-[96%] mb-3  border border-gold"
         style={{ scrollbarWidth: "unset" }}
       >
-        {(getNumberOfStoredDiscussions(LOCAL_STORAGE_ID) === 0 && !isDiscussionLoading) ? (
+        {getNumberOfStoredDiscussions(LOCAL_STORAGE_ID) === 0 && !isDiscussionLoading ? (
           <>
             <BlurryLoadingImage
               blurhash="LBHLO~W9x.F^Atoy%2Ri~TA0Myxt"
@@ -96,14 +91,12 @@ const NpcChat = ({}) => {
                 bottomRef,
                 LOCAL_STORAGE_ID,
                 Npc,
-                setSelectedNpc,
               )
             )}
-            <span className="" ref={bottomRef}></span>;
+            <span className="" ref={bottomRef}></span>
           </>
         )}
       </div>
-      {selectedNpc && <NpcPopup selectedNpc={selectedNpc} onClose={() => setSelectedNpc(undefined)} />}
     </div>
   );
 };
@@ -136,7 +129,6 @@ const getDisplayableChatMessages = (
   bottomRef: React.RefObject<HTMLDivElement>,
   localStorageId: string,
   NpcComponent: any,
-  setSelectedNpc: (state: Npc) => void,
 ) => {
   const storageDiscussion: StorageDiscussion = getDiscussionFromStorage(selectedDiscussion ?? 0, localStorageId);
 
@@ -159,7 +151,6 @@ const getDisplayableChatMessages = (
         wasAlreadyViewed={storageDiscussion.viewed}
         dialogueSegment={segment}
         npc={getNpcFromRealmNpcsOrEntityId(NpcComponent, BigInt(npcEntityId), npcs)}
-        setSelectedNpc={setSelectedNpc}
       />
     );
   });
@@ -175,11 +166,8 @@ const getNpcFromRealmNpcsOrEntityId = (NpcComponent: any, npcEntityId: bigint, n
   if (maybeNpc !== undefined) {
     return maybeNpc;
   }
-  maybeNpc = getComponentValue(NpcComponent, getEntityIdFromKeys([npcEntityId])) as Npc | undefined;
-  if (maybeNpc === undefined) {
-    return defaultNpc;
-  }
-  return maybeNpc;
+
+  return getNpcFromEntityId(getEntityIdFromKeys([npcEntityId]), NpcComponent);
 };
 
 export default NpcChat;

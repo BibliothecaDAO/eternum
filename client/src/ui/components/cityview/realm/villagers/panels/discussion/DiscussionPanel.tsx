@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import Button from "../../../../../../elements/Button";
 import NpcChat from "./NpcChat";
-import useRealmStore from "../../../../../../hooks/store/useRealmStore";
-import { ReactComponent as ArrowPrev } from "../../../../../../assets/icons/common/arrow-left.svg";
-import { ReactComponent as ArrowNext } from "../../../../../../assets/icons/common/arrow-right.svg";
+import { ReactComponent as ArrowPrev } from "../../../../../../../assets/icons/common/arrow-left.svg";
+import { ReactComponent as ArrowNext } from "../../../../../../../assets/icons/common/arrow-right.svg";
 import { StorageDiscussions, DiscussionRpcResponse, StorageDiscussion } from "../../types";
 import { getRealm } from "../../../../../../utils/realms";
 import { keysSnakeToCamel } from "../../utils";
 import TextInput from "../../../../../../elements/TextInput";
 import { MAX_DISCUSSION_INPUT_LENGTH } from "../../constants";
-import useNpcStore from "../../../../../../hooks/store/useNpcStore";
-import { ReactComponent as Bell } from "../../../../../../assets/icons/npc/bell.svg";
+import { ReactComponent as Bell } from "../../../../../../../assets/icons/npc/bell.svg";
 import { useDiscussion } from "./DiscussionContext";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import useNpcStore from "@/hooks/store/useNpcStore";
 
 type DiscussionPanelProps = {
   type?: "all" | "farmers" | "miners";
@@ -111,10 +111,7 @@ export const DiscussionPanel = ({ type = "all" }: DiscussionPanelProps) => {
           value={DiscussionInput}
           onChange={handleUserMessageChange}
         />
-        <Button
-          className="mr-2"
-          onClick={gatherVillagers}
-        >
+        <Button className="mr-2" onClick={gatherVillagers}>
           <Bell className="h-5 fill-gold" />
         </Button>
       </div>

@@ -1,10 +1,10 @@
-import { useDojo } from "../../../../../../DojoContext";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../../utils/realms";
 import { formatSecondsLeftInDaysHours } from "../../../labor/laborUtils";
-import useBlockchainStore from "../../../../../../hooks/store/useBlockchainStore";
 import { OrderIcon } from "../../../../../../elements/OrderIcon";
 import { Npc, Villager, VillagerType } from "../../types";
+import { useDojo } from "@/hooks/context/DojoContext";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 
 export function getVillagerTypeInfo(villager: Villager) {
   const {
@@ -140,5 +140,5 @@ export function getVillagerTypeInfo(villager: Villager) {
     );
   };
 
-  return getInfoByType() ;
+  return getInfoByType();
 }

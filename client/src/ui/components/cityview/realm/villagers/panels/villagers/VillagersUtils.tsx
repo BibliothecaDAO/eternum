@@ -59,14 +59,6 @@ export function sortVillagers(npcs: Villager[], activeSort: SortInterface): Vill
           return b.npc.characteristics.sex.localeCompare(a.npc.characteristics.sex);
         }
       });
-    } else if (activeSort.sortKey === "trait") {
-      return sortedNpcs.sort((a, b) => {
-        if (activeSort.sort === "asc") {
-          return a.npc.characterTrait.localeCompare(b.npc.characterTrait);
-        } else {
-          return b.npc.characterTrait.localeCompare(a.npc.characterTrait);
-        }
-      });
     }
   }
   return sortedNpcs;

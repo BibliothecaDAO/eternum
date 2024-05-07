@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { useDojo } from "../../../../../../DojoContext";
-import { Entity, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BigNumberish, shortString } from "starknet";
 import { SortPanel } from "../../../../../../elements/SortPanel";
@@ -10,19 +9,19 @@ import {
   NPC_CONFIG_ID,
   keysSnakeToCamel,
   packCharacteristics,
-  getAtGatesNpcs,
+  useAtGatesNpcs,
   useResidentsNpcs,
-  getTravelersNpcs,
+  useTravelersNpcs,
 } from "../../utils";
-import useBlockchainStore from "../../../../../../hooks/store/useBlockchainStore";
-import useRealmStore from "../../../../../../hooks/store/useRealmStore";
-import useNpcStore from "../../../../../../hooks/store/useNpcStore";
-import { ReactComponent as Plus } from "../../../../../../assets/icons/npc/plus.svg";
+import { ReactComponent as Plus } from "../../../../../../../assets/icons/npc/plus.svg";
 import { NpcSortButton } from "../../NpcSortButton";
-import { NpcPopup } from "../../NpcPopup";
-import { Npc, SortVillagers } from "../../types";
+import { SortVillagers } from "../../types";
 import { formatSecondsLeftInDaysHours } from "../../../labor/laborUtils";
 import { VillagerComponent } from "../../VillagerComponent";
+import { useDojo } from "@/hooks/context/DojoContext";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import useNpcStore from "@/hooks/store/useNpcStore";
 
 export const VillagersPanel = () => {
   const {
@@ -35,12 +34,13 @@ export const VillagersPanel = () => {
 
   const { realmId, realmEntityId } = useRealmStore();
   const { nextBlockTimestamp } = useBlockchainStore();
+  console.log(realmEntityId);
   const { loreMachineJsonRpcCall } = useNpcStore();
 
   const villagers: SortVillagers = {
     residents: useResidentsNpcs(realmEntityId, NpcComponent, EntityOwner),
-    travelers: getTravelersNpcs(realmId!, realmEntityId, NpcComponent, EntityOwner, Position),
-    atGates: getAtGatesNpcs(
+    travelers: useTravelersNpcs(realmId!, realmEntityId, NpcComponent, EntityOwner, Position),
+    atGates: useAtGatesNpcs(
       realmId!,
       realmEntityId!,
       nextBlockTimestamp!,
@@ -51,7 +51,6 @@ export const VillagersPanel = () => {
     ),
   };
 
-  const [npcDisplayedInPopup, setNpcDisplayedInPopup] = useState<Npc | undefined>(undefined);
   const [npcIsSpawning, setNpcIsSpawning] = useState(false);
 
   const [displayedNpcGroup, setDisplayedNpcGroup] = useState("None");
@@ -74,7 +73,6 @@ export const VillagersPanel = () => {
       { label: "Role", sortKey: "role", className: "mr-4" },
       { label: "Age", sortKey: "age", className: "mr-4" },
       { label: "Gender", sortKey: "sex", className: "mr-4" },
-      { label: "Character Trait", sortKey: "trait", className: "" },
     ];
   }, []);
 
@@ -118,7 +116,7 @@ export const VillagersPanel = () => {
       return (
         <>
           <p>Ready to spawn</p>
-          <Plus onClick={spawnNpc} className="ml-2 rounded-sm bg-gold" />
+          <Plus style={{ backgroundColor: "#E0AF65" }} onClick={spawnNpc} className="ml-2 rounded-sm h-4" />
         </>
       );
     }
@@ -126,16 +124,13 @@ export const VillagersPanel = () => {
       <>
         <p>Spawn available in: </p>
         <div className="ml-1 text-gold">{formatSecondsLeftInDaysHours(lastSpawnTs)}</div>
-        <Plus onClick={spawnNpc} className="ml-2 rounded-sm bg-dark" />
+        <Plus onClick={spawnNpc} className="ml-2 rounded-sm bg-dark h-4" />
       </>
     );
   };
 
   const getLastSpawnTs = (): number => {
-    const npcConfig = getComponentValue(
-      NpcConfig,
-      getEntityIdFromKeys([BigInt("0x" + NPC_CONFIG_ID.toString(16))]) as Entity,
-    );
+    const npcConfig = getComponentValue(NpcConfig, getEntityIdFromKeys([NPC_CONFIG_ID]));
     const last_spawned = getComponentValue(LastSpawned, getEntityIdFromKeys([BigInt(realmEntityId)]));
 
     const spawnDelay: bigint = npcConfig!.spawn_delay;
@@ -157,14 +152,8 @@ export const VillagersPanel = () => {
     return false;
   };
 
-  const onClose = (): void => {
-    setNpcDisplayedInPopup(undefined);
-  };
-
   return (
     <div className="flex flex-col">
-      {npcDisplayedInPopup && <NpcPopup selectedNpc={npcDisplayedInPopup} onClose={onClose} />}
-
       <SortPanel className="flex justify-between px-3 py-2">
         {sortingParams.map(({ label, sortKey, className }) => (
           <SortButton
@@ -224,7 +213,7 @@ export const VillagersPanel = () => {
               {villagers &&
                 sortVillagers(villagers, sortedByParam)?.map((villager) => (
                   <div className="flex flex-col p-2" key={villager.npc.entityId}>
-                    <VillagerComponent villager={villager} setNpcDisplayedInPopup={setNpcDisplayedInPopup} />
+                    <VillagerComponent villager={villager} />
                   </div>
                 ))}
             </>

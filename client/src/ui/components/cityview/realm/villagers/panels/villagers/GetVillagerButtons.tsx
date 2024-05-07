@@ -1,20 +1,20 @@
 import { useState } from "react";
-import { useDojo } from "../../../../../../DojoContext";
 import Button from "../../../../../../elements/Button";
 import { useArrivalTimeByEntityId } from "../../utils";
-import useBlockchainStore from "../../../../../../hooks/store/useBlockchainStore";
-import useRealmStore from "../../../../../../hooks/store/useRealmStore";
-import { ReactComponent as ArrowSquare } from "../../../../../../assets/icons/npc/arrow_in.svg";
+import { ReactComponent as ArrowIn } from "../../../../../../../assets/icons/npc/arrow_in.svg";
+import { ReactComponent as ArrowOut } from "../../../../../../../assets/icons/npc/arrow_out.svg";
 import clsx from "clsx";
-import { Npc, Villager, VillagerType } from "../../types";
+import { Villager, VillagerType } from "../../types";
+import { useDojo } from "@/hooks/context/DojoContext";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import useNpcStore from "@/hooks/store/useNpcStore";
 
 type VillagerButtonsProps = {
   villager: Villager;
-  setNpcDisplayedInPopup: (state: Npc | undefined) => void;
-  setShowTravel: (state: boolean) => void;
 };
 
-export function getVillagerButtons({ villager, setNpcDisplayedInPopup, setShowTravel }: VillagerButtonsProps) {
+export function getVillagerButtons({ villager }: VillagerButtonsProps) {
   const {
     setup: {
       components: { ArrivalTime },
@@ -23,6 +23,7 @@ export function getVillagerButtons({ villager, setNpcDisplayedInPopup, setShowTr
     account: { account },
   } = useDojo();
 
+  const { setNpcInTravelPopup } = useNpcStore();
   const [loading, setLoading] = useState(false);
 
   const { realmEntityId } = useRealmStore();
@@ -50,7 +51,6 @@ export function getVillagerButtons({ villager, setNpcDisplayedInPopup, setShowTr
         to_realm_entity_id: realmEntityId!,
       });
       setLoading(false);
-      setNpcDisplayedInPopup(undefined);
     }
   };
 
@@ -70,7 +70,10 @@ export function getVillagerButtons({ villager, setNpcDisplayedInPopup, setShowTr
     }
   };
 
-  const isDisabled = (villager.type === VillagerType.Traveler) ? (useArrivalTimeByEntityId(villager.npc.entityId, ArrivalTime) > nextBlockTimestamp!) : true;
+  const isDisabled =
+    villager.type === VillagerType.Traveler
+      ? useArrivalTimeByEntityId(villager.npc.entityId, ArrivalTime) > nextBlockTimestamp!
+      : true;
   const extraButtonsTraveler: any = [
     <Button
       key="bringBackButton"
@@ -82,7 +85,7 @@ export function getVillagerButtons({ villager, setNpcDisplayedInPopup, setShowTr
       variant="outline"
       withoutSound
     >
-      <ArrowSquare className={clsx("mr-1", isDisabled && "fill-gray-gold", !isDisabled && "fill-gold")} />
+      <ArrowIn className={clsx("h-3", "mr-1", isDisabled && "fill-gray-gold", !isDisabled && "fill-gold")} />
       {`Bring back`}
     </Button>,
   ];
@@ -95,12 +98,12 @@ export function getVillagerButtons({ villager, setNpcDisplayedInPopup, setShowTr
         size="md"
         className="ml-auto h-6"
         onClick={() => {
-          setShowTravel(true);
+          setNpcInTravelPopup(villager.npc);
         }}
         variant="outline"
         withoutSound
       >
-        <ArrowSquare className="h-3 mr-1 fill-gold" />
+        <ArrowOut className="h-3 mr-1 fill-gold" />
         {`Travel`}
       </Button>
     ) : (
@@ -112,7 +115,7 @@ export function getVillagerButtons({ villager, setNpcDisplayedInPopup, setShowTr
 
   const extraButtonsGates: any = [
     <Button size="md" isLoading={loading} className="ml-auto h-6" onClick={welcomeIn} variant="outline" withoutSound>
-      <ArrowSquare className="mr-1 fill-gold" />
+      <ArrowIn className="mr-1 fill-gold" />
       {`Welcome in`}
     </Button>,
   ];

@@ -1,31 +1,25 @@
-import { Npc, Villager } from "./types";
-import { ReactComponent as Mars } from "../../../../assets/icons/npc/mars.svg";
-import { ReactComponent as Venus } from "../../../../assets/icons/npc/venus.svg";
-import { ReactComponent as Info } from "../../../../assets/icons/npc/info.svg";
+import { Villager } from "./types";
+import { ReactComponent as Mars } from "../../../../../assets/icons/npc/mars.svg";
+import { ReactComponent as Venus } from "../../../../../assets/icons/npc/venus.svg";
+import { ReactComponent as Info } from "../../../../../assets/icons/common/info.svg";
 import { getNpcImagePath } from "./utils";
 import { useState } from "react";
 import { getVillagerTypeInfo } from "./panels/villagers/GetVillagerTypeInfo";
 import { getVillagerButtons } from "./panels/villagers/GetVillagerButtons";
 import { TravelNpcPopup } from "./panels/villagers/TravelNpcPopup";
+import useNpcStore from "@/hooks/store/useNpcStore";
 
 type VillagerComponentProps = {
   villager: Villager;
-  setNpcDisplayedInPopup: (state: Npc | undefined) => void;
 };
 
-export const VillagerComponent = ({ villager, setNpcDisplayedInPopup }: VillagerComponentProps) => {
-  const [showTravel, setShowTravel] = useState(false);
+export const VillagerComponent = ({ villager }: VillagerComponentProps) => {
+  const { setNpcInInfoPopup } = useNpcStore();
   const villagerInfo = getVillagerTypeInfo(villager);
-  const buttons = getVillagerButtons({ villager, setNpcDisplayedInPopup, setShowTravel });
-
-  const onClose = (): void => {
-    setShowTravel(false);
-  };
+  const buttons = getVillagerButtons({ villager });
 
   return (
     <>
-      {showTravel && <TravelNpcPopup npc={villager.npc} onClose={onClose} />}
-
       <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-light-pink">
         <div className="flex items-center">
           <div className="p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 rounded-br-md border-gray-gold">
@@ -41,8 +35,8 @@ export const VillagerComponent = ({ villager, setNpcDisplayedInPopup }: Villager
           <div className="flex flex-col mt-auto ml-2">
             <div className="flex flex-row items-center">
               <p className="text-gold font-semibold text-xs"> {villager.npc.fullName}</p>
-              <button className="cursor-pointer" onClick={() => setNpcDisplayedInPopup(villager.npc)}>
-                <Info className="ml-1.5 rounded-sm  p-0.5 bg-gold" />
+              <button className="cursor-pointer" onClick={() => setNpcInInfoPopup(villager.npc)}>
+                <Info className="ml-1.5 rounded-sm  p-0.5 w-5" />
               </button>
             </div>
 

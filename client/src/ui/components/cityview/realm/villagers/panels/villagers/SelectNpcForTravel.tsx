@@ -1,17 +1,16 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
-import useRealmStore from "../../../../../../../../hooks/store/useRealmStore";
-import { useTrade } from "../../../../../../../../hooks/helpers/useTrade";
-import { useCaravan } from "../../../../../../../../hooks/helpers/useCaravans";
-import { SortButton, SortInterface } from "../../../../../../../../elements/SortButton";
-import { getRealm } from "../../../../../../../../utils/realms";
-import { useDojo } from "../../../../../../../../DojoContext";
-import TextInput from "../../../../../../../../elements/TextInput";
-import { SortPanel } from "../../../../../../../../elements/SortPanel";
-import { OrderIcon } from "../../../../../../../../elements/OrderIcon";
-import { useLevel } from "../../../../../../../../hooks/helpers/useLevel";
-import { useRealm } from "../../../../../../../../hooks/helpers/useRealm";
+import { SortButton, SortInterface } from "../../../../../../elements/SortButton";
+import { getRealm } from "../../../../../../utils/realms";
+import TextInput from "../../../../../../elements/TextInput";
+import { SortPanel } from "../../../../../../elements/SortPanel";
+import { OrderIcon } from "../../../../../../elements/OrderIcon";
+import { useDojo } from "@/hooks/context/DojoContext";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import { useLevel } from "@/hooks/helpers/useLevel";
+import { useCaravan } from "@/hooks/helpers/useCaravans";
 
 export const SelectNpcForTravelPanel = ({
   selectedEntityId,
@@ -35,7 +34,7 @@ export const SelectNpcForTravelPanel = ({
 
   const { realmId, realmEntityId } = useRealmStore();
 
-  const { getRealmEntityIdFromRealmId } = useTrade();
+  const { getRealmEntityIdFromRealmId } = useRealm();
   const { getEntityLevel } = useLevel();
   const { getRealmAddressName } = useRealm();
 

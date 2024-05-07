@@ -11,9 +11,9 @@ const U8_MASK: bigint = BigInt(0xff);
 const TWO_POW_8 = 0x100;
 const TWO_POW_16 = 0x10000;
 
-export const NPC_CONFIG_ID = BigInt("999999999999999990");
+export const NPC_CONFIG_ID = 999999999999999989n;
 
-export const getTravelersNpcs = (
+export const useTravelersNpcs = (
   realmId: bigint,
   realmEntityId: bigint,
   NpcComponent: any,
@@ -30,16 +30,16 @@ export const getTravelersNpcs = (
     ],
     NpcComponent,
   );
-  const villagers: Villager[] = travelers.map(npc => ({
+  const villagers: Villager[] = travelers.map((npc) => ({
     npc: npc,
     type: VillagerType.Traveler,
     native: true,
-  }))
+  }));
 
   return villagers;
 };
 
-export const getAtGatesNpcs = (
+export const useAtGatesNpcs = (
   realmId: bigint,
   realmEntityId: bigint,
   nextBlockTimestamp: number,
@@ -71,7 +71,12 @@ export const getAtGatesNpcs = (
     ],
     NpcComponent,
   );
-  const foreigners: Villager[] = getNpcsOnlyIfArrivedAtGates(potentialForeigners, nextBlockTimestamp, false, ArrivalTime);
+  const foreigners: Villager[] = getNpcsOnlyIfArrivedAtGates(
+    potentialForeigners,
+    nextBlockTimestamp,
+    false,
+    ArrivalTime,
+  );
 
   return natives.concat(foreigners);
 };
@@ -97,7 +102,7 @@ const getNpcsOnlyIfArrivedAtGates = (
   const npcs: Villager[] = tempNpcs.reduce((acc: Villager[], npc: Npc) => {
     const npcWithArrivalTimeAlreadyAtGate = alreadyArrivedAtGates(npc, nextBlockTimestamp, ArrivalTime);
     if (npcWithArrivalTimeAlreadyAtGate !== undefined) {
-      acc.push({ npc:npcWithArrivalTimeAlreadyAtGate, type:VillagerType.AtGates, native });
+      acc.push({ npc: npcWithArrivalTimeAlreadyAtGate, type: VillagerType.AtGates, native });
     }
     return acc;
   }, []);
@@ -105,8 +110,6 @@ const getNpcsOnlyIfArrivedAtGates = (
 };
 
 export const useResidentsNpcs = (realmEntityId: bigint, NpcComponent: any, EntityOwnerComponent: any): Villager[] => {
-  let residents: Villager[];
-
   const natives = getNpcsFromQuery(
     [
       HasValue(NpcComponent, { current_realm_entity_id: realmEntityId }),
@@ -115,11 +118,11 @@ export const useResidentsNpcs = (realmEntityId: bigint, NpcComponent: any, Entit
     NpcComponent,
   );
 
-  const natives_as_villager = natives.map(npc => ({
+  const nativeAsVillagers = natives.map((npc) => ({
     npc: npc,
     type: VillagerType.Resident,
-    native: true
-  }))
+    native: true,
+  }));
 
   const foreigners = getNpcsFromQuery(
     [
@@ -129,21 +132,20 @@ export const useResidentsNpcs = (realmEntityId: bigint, NpcComponent: any, Entit
     NpcComponent,
   );
 
-  const foreigners_as_villager = foreigners.map(npc => ({
+  const foreignersAsVillagers = foreigners.map((npc) => ({
     npc: npc,
     type: VillagerType.Resident,
-    native: false
-  }))
+    native: false,
+  }));
 
-
-  return natives_as_villager.concat(foreigners_as_villager);
+  return nativeAsVillagers.concat(foreignersAsVillagers);
 };
 
 export const getNpcsFromQuery = (query: QueryFragment[], NpcComponent: any): Npc[] => {
   return Array.from(useEntityQuery(query)).map((npcEntityId) => getNpcFromEntityId(npcEntityId, NpcComponent));
 };
 
-const getNpcFromEntityId = (npcEntityId: Entity, NpcComponent: any): Npc => {
+export const getNpcFromEntityId = (npcEntityId: Entity, NpcComponent: any): Npc => {
   const npcEntity = getComponentValue(NpcComponent, npcEntityId);
   return {
     entityId: npcEntity!.entity_id,
@@ -206,7 +208,10 @@ function snakeToCamel(s: string): string {
   return s.replace(/(_\w)/g, (m) => m[1].toUpperCase());
 }
 
-export function getNpcImagePath(npc: Npc): string {
+export function getNpcImagePath(npc: Npc | null): string {
+  if (npc === null) {
+    return "";
+  }
   const role_path = npc.characteristics.role.toLowerCase() + "/";
   const sex_path = npc.characteristics.sex + "/";
   const age_path = getAgeRange(npc.characteristics.age);
