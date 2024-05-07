@@ -28,7 +28,7 @@ mod combat_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, LOYALTY_MAX_VALUE, MAX_PILLAGE_TRIAL_COUNT
     };
-    use eternum::models::buildings::{Building, BuildingImpl};
+    use eternum::models::buildings::{Building, BuildingImpl, BuildingCategory};
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
@@ -75,7 +75,7 @@ mod combat_systems {
         army_id: u128,
         winner: BattleSide,
         pillaged_resources: Span<(u8, u128)>,
-        destroyed_building_coords: Coord
+        destroyed_building_category: BuildingCategory
     }
 
     #[event]
@@ -669,8 +669,8 @@ mod combat_systems {
                 };
             }
 
-            // if no destruction final_coord stays center
-            let mut final_coord = BuildingImpl::center();
+            let mut destroyed_building_category = BuildingCategory::None;
+
             if structure.category == StructureCategory::Realm {
                 // all buildings are at most 4 directions from the center
                 // so first we pick a random between within 1 and 4 
@@ -742,6 +742,7 @@ mod combat_systems {
                     true
                 );
 
+                let mut final_coord = BuildingImpl::center();
                 loop {
                     match chosen_directions.pop_front() {
                         Option::Some(direction) => {
@@ -760,7 +761,8 @@ mod combat_systems {
                     );
                     if pillaged_building.entity_id.is_non_zero() {
                         // destroy building if it exists
-                        BuildingImpl::destroy(world, structure_id, final_coord);
+                        let building_category = BuildingImpl::destroy(world, structure_id, final_coord);
+                        destroyed_building_category = building_category;
                     }
                 }
             }
@@ -812,7 +814,7 @@ mod combat_systems {
                                 BattleSide::Defence
                             },
                             pillaged_resources: pillaged_resources.span(),
-                            destroyed_building_coords: final_coord
+                            destroyed_building_category
                         }
                     ),
                 )

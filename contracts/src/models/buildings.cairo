@@ -566,7 +566,7 @@ impl BuildingImpl of BuildingTrait {
     }
 
 
-    fn destroy(world: IWorldDispatcher, outer_entity_id: u128, inner_coord: Coord) {
+    fn destroy(world: IWorldDispatcher, outer_entity_id: u128, inner_coord: Coord) -> BuildingCategory {
         get!(world, outer_entity_id, Owner).assert_caller_owner();
 
         // check that the outer entity has a position
@@ -617,6 +617,8 @@ impl BuildingImpl of BuildingTrait {
 
         // set population
         set!(world, (population));
+
+        building.category
     }
 
     fn make_payment(

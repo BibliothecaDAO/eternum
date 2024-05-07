@@ -58,8 +58,8 @@ name = "eternum::systems::bank::contracts::swap_systems::swap_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x5e248d25812ebb9ffa35d7d15f37e37a84b7631d691b5c8191e359ef3071776"
-class_hash = "0x7a1921951d816ac3bc039be62f753c46611b5f7d77db1ec88c6a30daaffae7b"
-original_class_hash = "0x7a1921951d816ac3bc039be62f753c46611b5f7d77db1ec88c6a30daaffae7b"
+class_hash = "0x2e2d06bcb1b27d3b66e7b8dd28e8e404cfdc03e9d653a37f0290dd285679b"
+original_class_hash = "0x2e2d06bcb1b27d3b66e7b8dd28e8e404cfdc03e9d653a37f0290dd285679b"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_buildings_contracts_building_systems.json"
 reads = []
@@ -70,8 +70,8 @@ name = "eternum::systems::buildings::contracts::building_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x490d8572029a070064c52d09d2fdb4d5a538bd26f723abfcdeeaff38e47dfeb"
-class_hash = "0x3698831dca8b73fd36246f898cb3eb6b092c47c9a5bc73e2b3d799097473760"
-original_class_hash = "0x3698831dca8b73fd36246f898cb3eb6b092c47c9a5bc73e2b3d799097473760"
+class_hash = "0x23f3de13072b7af938667a43b6a63c271ad44b04d402f55144d7c12d352d683"
+original_class_hash = "0x23f3de13072b7af938667a43b6a63c271ad44b04d402f55144d7c12d352d683"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_combat_contracts_combat_systems.json"
 reads = []
@@ -392,15 +392,10 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x6ae1405a3f117ae2579b9f5ac9273d3a6c43043c48accc9e69523d4525683d2"
-original_class_hash = "0x6ae1405a3f117ae2579b9f5ac9273d3a6c43043c48accc9e69523d4525683d2"
+class_hash = "0x23d9fe45eaa73d6b98176213873a4537442f397737974018f2dc710d07dd384"
+original_class_hash = "0x23d9fe45eaa73d6b98176213873a4537442f397737974018f2dc710d07dd384"
 abi = "abis/deployments/models/eternum_models_buildings_building_quantity.json"
 name = "eternum::models::buildings::building_quantity"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
 
 [[models.members]]
 name = "category"
