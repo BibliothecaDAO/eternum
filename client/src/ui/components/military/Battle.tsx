@@ -15,8 +15,9 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { currencyFormat, divideByPrecision } from "@/ui/utils/utils";
 import { Event } from "@/dojo/events/graphqlClient";
-import { BuildingEnumToString, BuildingType, Resource, getBuildingType } from "@bibliothecadao/eternum";
+import { BuildingType, Resource } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { Subscription } from "rxjs";
 
 export const ArmiesAtLocation = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
@@ -323,7 +324,7 @@ export const PillageHistory = ({
     },
   } = useDojo();
   const [pillageHistory, setPillageHistory] = useState<any[]>([]);
-  const subscriptionRef = useRef();
+  const subscriptionRef = useRef<Subscription | undefined>();
 
   useEffect(() => {
     let isActive = true; // Flag to manage async operation
