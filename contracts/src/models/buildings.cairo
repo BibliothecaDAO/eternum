@@ -477,6 +477,10 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
 #[generate_trait]
 impl BuildingImpl of BuildingTrait {
+    fn center() -> Coord {
+        Coord { x: 4, y: 4 }
+    }
+
     fn create(
         world: IWorldDispatcher,
         outer_entity_id: u128,
