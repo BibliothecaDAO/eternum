@@ -41,16 +41,16 @@ export const LiquidityResourceRow = ({ bankEntityId, resourceId }: LiquidityReso
     [dojoContext, bankEntityId, resourceId, market, liquidity],
   );
 
-  const resourceName = useMemo(() => resources.find((r) => r.id === resourceId)?.trait, [resourceId]);
+  const resource = useMemo(() => resources.find((r) => r.id === resourceId), [resourceId]);
 
   const pair = useMemo(
     () => (
       <div className="flex flex-row">
-        {resourceName && <ResourceIcon resource={resourceName} size="xs" className="mr-2" />}
-        <>LORDS/${resourceName}</>
+        {resource?.trait && <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />}
+        <>$LORDS/{resource?.ticker}</>
       </div>
     ),
-    [resourceName],
+    [resource],
   );
 
   const [totalLords, totalResource] = marketManager.getReserves();
