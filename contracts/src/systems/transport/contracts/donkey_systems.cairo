@@ -47,13 +47,12 @@ mod donkey_systems {
 
         fn create_donkey(
             world: IWorldDispatcher,
+            is_round_trip: bool,
             donkey_id: ID,
-            payer_id: ID,
             receiver_id: ID,
             start_coord: Coord,
             intermediate_coord: Coord
         ) -> ID {
-            let is_round_trip: bool = payer_id == receiver_id;
             let arrives_at: u64 = starknet::get_block_timestamp()
                 + InternalDonkeySystemsImpl::get_donkey_travel_time(
                     world,
