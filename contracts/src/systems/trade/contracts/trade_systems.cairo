@@ -236,7 +236,13 @@ mod trade_systems {
             set!(world, (Status { trade_id, value: TradeStatus::ACCEPTED, }),);
 
             let (_, taker_receives_resources_hash, _) = internal_resources::transfer(
-                world, 0, trade.maker_id, trade.taker_id, maker_gives_resources
+                world,
+                trade.maker_id,
+                trade.taker_id,
+                maker_gives_resources,
+                trade.taker_id,
+                true,
+                false
             );
             assert!(
                 taker_receives_resources_hash == trade.maker_gives_resources_hash,
@@ -244,7 +250,13 @@ mod trade_systems {
             );
 
             let (_, maker_receives_resources_hash, _) = internal_resources::transfer(
-                world, trade.taker_id, trade.taker_id, trade.maker_id, taker_gives_resources
+                world,
+                trade.taker_id,
+                trade.maker_id,
+                taker_gives_resources,
+                trade.maker_id,
+                false,
+                true
             );
 
             assert!(
@@ -264,7 +276,7 @@ mod trade_systems {
             assert(trade_status.value == TradeStatus::OPEN, 'trade must be open');
 
             let (_, maker_receives_resources_hash, _) = internal_resources::transfer(
-                world, 0, 0, trade.maker_id, return_resources
+                world, 0, trade.maker_id, return_resources, 0, false, false
             );
 
             assert!(
