@@ -1,3 +1,4 @@
+use core::fmt::{Display, Formatter, Error};
 use debug::PrintTrait;
 
 use eternum::utils::number::{NumberTrait, i128Div};
