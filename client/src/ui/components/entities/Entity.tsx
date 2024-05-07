@@ -1,12 +1,11 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import clsx from "clsx";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { useGetOwnedEntityOnPosition, useResources } from "@/hooks/helpers/useResources";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { useResources } from "@/hooks/helpers/useResources";
 import { TravelEntityPopup } from "./TravelEntityPopup";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { ENTITY_TYPE, EntityState, determineEntityState } from "@bibliothecadao/eternum";
@@ -27,24 +26,15 @@ type EntityProps = {
 export const Entity = ({ entityId, ...props }: EntityProps) => {
   const { getEntityInfo } = useEntities();
   const entityInfo = getEntityInfo(entityId);
-  const { position, arrivalTime, blocked, capacity, resources, entityType } = entityInfo;
+  const { arrivalTime, blocked, resources } = entityInfo;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const {
-    account: { account },
-    setup: {
-      systemCalls: { send_resources },
-    },
-  } = useDojo();
 
-  const [isLoading, setIsLoading] = React.useState(false);
   const [showTravel, setShowTravel] = React.useState(false);
 
   const { getResourcesFromBalance } = useResources();
 
   const entityResources = getResourcesFromBalance(entityId);
-  const depositEntityIds = position ? useGetOwnedEntityOnPosition(BigInt(account.address), position) : [];
-  const depositEntityId = depositEntityIds[0];
 
   const hasResources = entityResources.length > 0;
 
@@ -52,18 +42,6 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   if (entityState === EntityState.NotApplicable) {
     return null;
   }
-
-  const onOffload = async (receiverEntityId: bigint) => {
-    setIsLoading(true);
-    if (entityId && hasResources) {
-      await send_resources({
-        sender_entity_id: entityId,
-        recipient_entity_id: receiverEntityId,
-        resources: entityResources.flatMap((resource) => [resource.resourceId, resource.amount]),
-        signer: account,
-      }).finally(() => setIsLoading(false));
-    }
-  };
 
   const onCloseTravel = () => {
     setShowTravel(false);

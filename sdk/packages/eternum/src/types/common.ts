@@ -88,6 +88,7 @@ export interface Resources {
   id: number;
   description: string;
   img: string;
+  ticker: string;
 }
 
 export interface Resource {

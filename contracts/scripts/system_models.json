@@ -132,6 +132,9 @@
     "ResourceTransferLock",
     "Loyalty",
     "ArrivalTime",
-    "Weight"
+    "Weight",
+    "Building",
+    "Population",
+    "BuildingQuantityv2"
   ]
 }
