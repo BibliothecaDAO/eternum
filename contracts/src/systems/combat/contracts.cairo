@@ -625,11 +625,13 @@ mod combat_systems {
 
                                     InternalResourceSystemsImpl::transfer(
                                         world,
-                                        0,
                                         structure_id,
                                         army_id,
                                         array![(*chosen_resource_type, resource_amount_stolen)]
-                                            .span()
+                                            .span(),
+                                        army_id,
+                                        true,
+                                        true
                                     );
 
                                     break;

@@ -1,5 +1,6 @@
 use array::SpanTrait;
 use eternum::alias::ID;
+use eternum::models::position::Coord;
 use eternum::utils::unpack::unpack_resource_types;
 use starknet::ContractAddress;
 use traits::Into;
@@ -42,3 +43,17 @@ impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
     }
 }
 
+
+#[derive(Model, Copy, Drop, Serde)]
+struct StructureCount {
+    #[key]
+    coord: Coord,
+    count: u8
+}
+
+#[generate_trait]
+impl StructureCountImpl of StructureCountTrait {
+    fn assert_none(self: StructureCount) {
+        assert!(self.count == 0, "structure exists at this location");
+    }
+}

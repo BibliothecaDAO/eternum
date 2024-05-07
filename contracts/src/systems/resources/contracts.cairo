@@ -128,7 +128,13 @@ mod resource_systems {
             get!(world, sender_entity_id, EntityOwner).assert_caller_owner(world);
 
             InternalResourceSystemsImpl::transfer(
-                world, sender_entity_id, sender_entity_id, recipient_entity_id, resources
+                world,
+                sender_entity_id,
+                recipient_entity_id,
+                resources,
+                sender_entity_id,
+                true,
+                true
             );
         }
 
@@ -186,7 +192,13 @@ mod resource_systems {
             };
 
             InternalResourceSystemsImpl::transfer(
-                world, recipient_entity_id, owner_entity_id, recipient_entity_id, resources
+                world,
+                owner_entity_id,
+                recipient_entity_id,
+                resources,
+                recipient_entity_id,
+                true,
+                true
             );
         }
     }
@@ -195,22 +207,23 @@ mod resource_systems {
     impl InternalResourceSystemsImpl of InternalResourceSystemsTrait {
         fn transfer(
             world: IWorldDispatcher,
-            caller_id: ID,
-            sender_id: ID,
+            owner_id: ID,
             recipient_id: ID,
-            mut resources: Span<(u8, u128)>
+            mut resources: Span<(u8, u128)>,
+            transport_provider_id: ID,
+            transport_resource_burn: bool,
+            enforce_owner_payment: bool
         ) -> (ID, felt252, u128) {
-            get!(world, sender_id, ArrivalTime).assert_not_travelling();
+            get!(world, owner_id, ArrivalTime).assert_not_travelling();
             get!(world, recipient_id, ArrivalTime).assert_not_travelling();
 
-            let sender_coord: Coord = get!(world, sender_id, Position).into();
+            let owner_coord: Coord = get!(world, owner_id, Position).into();
             let recipient_coord: Coord = get!(world, recipient_id, Position).into();
-
-            let mut transport_id: ID = recipient_id;
-            let transport_is_needed: bool = sender_coord.is_non_zero()
-                && sender_coord != recipient_coord;
+            let mut actual_recipient_id: ID = recipient_id;
+            let transport_is_needed: bool = owner_coord.is_non_zero()
+                && owner_coord != recipient_coord;
             if transport_is_needed {
-                transport_id = world.uuid().into()
+                actual_recipient_id = world.uuid().into()
             };
 
             // transfer resources from sender to recipient
@@ -224,25 +237,24 @@ mod resource_systems {
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
-                        // ?
-                        if caller_id.is_non_zero() {
+                        if enforce_owner_payment {
                             // ensure resource spending is not locked 
                             let resource_lock: ResourceTransferLock = get!(
-                                world, sender_id, ResourceTransferLock
+                                world, owner_id, ResourceTransferLock
                             );
                             resource_lock.assert_not_locked();
 
                             // burn resources from sender's balance
-                            let mut sender_resource = ResourceImpl::get(
-                                world, (sender_id, resource_type)
+                            let mut owner_resource = ResourceImpl::get(
+                                world, (owner_id, resource_type)
                             );
-                            sender_resource.burn(resource_amount);
-                            sender_resource.save(world);
+                            owner_resource.burn(resource_amount);
+                            owner_resource.save(world);
                         }
 
                         // add resources to recipient's balance
                         let mut recipient_resource = ResourceImpl::get(
-                            world, (transport_id, resource_type)
+                            world, (actual_recipient_id, resource_type)
                         );
                         recipient_resource.add(resource_amount);
                         recipient_resource.save(world);
@@ -260,50 +272,43 @@ mod resource_systems {
             };
 
             // increase recipient weight
-            let mut recipient_weight: Weight = get!(world, transport_id, Weight);
-            let recipient_capacity: Capacity = get!(world, transport_id, Capacity);
-            let recipient_quantity: Quantity = get!(world, transport_id, Quantity);
+            let mut recipient_weight: Weight = get!(world, actual_recipient_id, Weight);
+            let recipient_capacity: Capacity = get!(world, actual_recipient_id, Capacity);
+            let recipient_quantity: Quantity = get!(world, actual_recipient_id, Quantity);
             recipient_weight.add(recipient_capacity, recipient_quantity, total_resources_weight);
             set!(world, (recipient_weight));
 
-            if caller_id.is_non_zero() {
+            if enforce_owner_payment {
                 // decrease sender weight
-                let mut sender_weight: Weight = get!(world, sender_id, Weight);
-                let sender_capacity: Capacity = get!(world, sender_id, Capacity);
-                sender_weight.deduct(sender_capacity, total_resources_weight);
-                set!(world, (sender_weight));
+                let mut owner_weight: Weight = get!(world, owner_id, Weight);
+                let owner_capacity: Capacity = get!(world, owner_id, Capacity);
+                owner_weight.deduct(owner_capacity, total_resources_weight);
+                set!(world, (owner_weight));
             }
 
             if transport_is_needed {
                 // create donkey that can carry weight
+                let is_round_trip = transport_provider_id == recipient_id;
                 donkey::create_donkey(
-                    world, transport_id, caller_id, recipient_id, sender_coord, recipient_coord
+                    world,
+                    is_round_trip,
+                    actual_recipient_id,
+                    recipient_id,
+                    owner_coord,
+                    recipient_coord
                 );
 
-                if caller_id.is_non_zero() {
-                    // make payment for donkey
-                    donkey::burn_donkey(world, caller_id, total_resources_weight);
+                if transport_resource_burn {
+                    donkey::burn_donkey(world, transport_provider_id, total_resources_weight);
                 }
-            // lock resource balance until it is in possession of the recipient
-            // let transport_arrival_time: ArrivalTime = get!(world, transport_id, ArrivalTime);
-            // let is_round_trip: bool = caller_id == recipient_id;
-            // if is_round_trip {
-            //     let resources_collected_at: u64 = transport_arrival_time.arrives_at / 2;
-            //     set!(
-            //         world,
-            //         (ResourceTransferLock {
-            //             entity_id: transport_id, release_at: resources_collected_at
-            //         })
-            //     );
-            // }
             }
 
             // emit transfer event
             InternalResourceSystemsImpl::emit_transfer_event(
-                world, sender_id, transport_id, resources
+                world, owner_id, actual_recipient_id, resources
             );
 
-            (transport_id, hash(resources_felt_arr.span()), total_resources_weight)
+            (actual_recipient_id, hash(resources_felt_arr.span()), total_resources_weight)
         }
 
         fn emit_transfer_event(
