@@ -65,6 +65,25 @@ mod combat_systems {
     use eternum::utils::random;
     use super::ICombatContract;
 
+    #[derive(Drop, starknet::Event)]
+    struct PillageEvent {
+        #[key]
+        structure_id: ID,
+        #[key]
+        attacker_realm_entity_id: ID,
+        #[key]
+        army_id: u128,
+        winner: BattleSide,
+        pillaged_resources: Span<(u8, u128)>,
+        destroyed_building_coords: Coord
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        PillageEvent: PillageEvent,
+    }
+
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
         fn army_create(world: IWorldDispatcher, army_owner_id: u128, army_is_protector: bool) {
@@ -578,6 +597,8 @@ mod combat_systems {
                 true
             )[0];
 
+            let mut pillaged_resources: Array<(u8, u128)> = array![];
+
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
                     * PercentageValueImpl::_100().into()
@@ -591,7 +612,7 @@ mod combat_systems {
                     MAX_PILLAGE_TRIAL_COUNT.try_into().unwrap(),
                     true
                 );
-
+                
                 loop {
                     match chosen_resource_types.pop_front() {
                         Option::Some(chosen_resource_type) => {
@@ -625,6 +646,8 @@ mod combat_systems {
                                     let resource_amount_stolen: u128 = min(
                                         max_carriable, resource_amount_stolen
                                     );
+                                    
+                                    pillaged_resources.append((*chosen_resource_type, resource_amount_stolen));
 
                                     InternalResourceSystemsImpl::transfer(
                                         world,
@@ -646,6 +669,8 @@ mod combat_systems {
                 };
             }
 
+            // if no destruction final_coord stays center
+            let mut final_coord = BuildingImpl::center();
             if structure.category == StructureCategory::Realm {
                 // all buildings are at most 4 directions from the center
                 // so first we pick a random between within 1 and 4 
@@ -717,7 +742,6 @@ mod combat_systems {
                     true
                 );
 
-                let mut final_coord = BuildingImpl::center();
                 loop {
                     match chosen_directions.pop_front() {
                         Option::Some(direction) => {
@@ -771,6 +795,27 @@ mod combat_systems {
 
             InternalTravelSystemsImpl::travel(
                 world, army_id, army_movable, army_position.into(), army_owner_position.into()
+            );
+
+            // emit pillage event
+            emit!(
+                world,
+                (
+                    Event::PillageEvent(
+                        PillageEvent {
+                            structure_id,
+                            attacker_realm_entity_id: army_owner_entity_id,
+                            army_id,
+                            winner: if *attack_successful {
+                                BattleSide::Attack
+                            } else {
+                                BattleSide::Defence
+                            },
+                            pillaged_resources: pillaged_resources.span(),
+                            destroyed_building_coords: final_coord
+                        }
+                    ),
+                )
             );
         }
     }
