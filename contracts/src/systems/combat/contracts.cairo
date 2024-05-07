@@ -612,7 +612,7 @@ mod combat_systems {
                     MAX_PILLAGE_TRIAL_COUNT.try_into().unwrap(),
                     true
                 );
-                
+
                 loop {
                     match chosen_resource_types.pop_front() {
                         Option::Some(chosen_resource_type) => {
@@ -646,8 +646,9 @@ mod combat_systems {
                                     let resource_amount_stolen: u128 = min(
                                         max_carriable, resource_amount_stolen
                                     );
-                                    
-                                    pillaged_resources.append((*chosen_resource_type, resource_amount_stolen));
+
+                                    pillaged_resources
+                                        .append((*chosen_resource_type, resource_amount_stolen));
 
                                     InternalResourceSystemsImpl::transfer(
                                         world,
@@ -761,7 +762,9 @@ mod combat_systems {
                     );
                     if pillaged_building.entity_id.is_non_zero() {
                         // destroy building if it exists
-                        let building_category = BuildingImpl::destroy(world, structure_id, final_coord);
+                        let building_category = BuildingImpl::destroy(
+                            world, structure_id, final_coord
+                        );
                         destroyed_building_category = building_category;
                     }
                 }
