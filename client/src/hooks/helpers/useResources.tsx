@@ -210,7 +210,6 @@ export const useGetOwnedEntityOnPosition = (address: bigint, position: Position)
   const { x, y } = position;
 
   const entities = runQuery([
-    Has(Realm),
     HasValue(Owner, { address }),
     Not(Movable),
     // don't want bank but bank accounts

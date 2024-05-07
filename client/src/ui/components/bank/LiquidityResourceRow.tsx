@@ -7,7 +7,13 @@ import Button from "@/ui/elements/Button";
 import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { useComponentValue } from "@dojoengine/react";
 
-export const LiquidityResourceRow = ({ bankEntityId, resourceId }: { bankEntityId: bigint; resourceId: number }) => {
+type LiquidityResourceRowProps = {
+  bankEntityId: bigint;
+  bankAccountEntityId: bigint;
+  resourceId: number;
+};
+
+export const LiquidityResourceRow = ({ bankEntityId, resourceId }: LiquidityResourceRowProps) => {
   const dojoContext = useDojo();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -15,8 +21,13 @@ export const LiquidityResourceRow = ({ bankEntityId, resourceId }: { bankEntityI
     () => getEntityIdFromKeys([bankEntityId, BigInt(resourceId)]),
     [bankEntityId, resourceId],
   );
+  const liquidityEntityId = useMemo(
+    () => getEntityIdFromKeys([bankEntityId, BigInt(dojoContext.account.account.address), BigInt(resourceId)]),
+    [bankEntityId, resourceId],
+  );
+
   const market = useComponentValue(dojoContext.setup.components.Market, marketEntityId);
-  const liquidity = useComponentValue(dojoContext.setup.components.Liquidity, marketEntityId);
+  const liquidity = useComponentValue(dojoContext.setup.components.Liquidity, liquidityEntityId);
 
   const marketManager = useMemo(
     () =>
@@ -30,16 +41,16 @@ export const LiquidityResourceRow = ({ bankEntityId, resourceId }: { bankEntityI
     [dojoContext, bankEntityId, resourceId, market, liquidity],
   );
 
-  const resourceName = useMemo(() => resources.find((r) => r.id === resourceId)?.trait, [resourceId]);
+  const resource = useMemo(() => resources.find((r) => r.id === resourceId), [resourceId]);
 
   const pair = useMemo(
     () => (
       <div className="flex flex-row">
-        {resourceName && <ResourceIcon resource={resourceName} size="xs" className="mr-2" />}
-        <>LORDS/${resourceName}</>
+        {resource?.trait && <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />}
+        <>$LORDS/{resource?.ticker}</>
       </div>
     ),
-    [resourceName],
+    [resource],
   );
 
   const [totalLords, totalResource] = marketManager.getReserves();

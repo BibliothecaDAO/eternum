@@ -12,24 +12,6 @@ export const findResourceIdByTrait = (trait: string) => {
 
 export const resources: Array<Resources> = [
   {
-    trait: "Donkeys",
-    value: 249,
-    colour: "#ec4899",
-    colourClass: "",
-    id: 249,
-    description: "Donkeys.",
-    img: "",
-  },
-  {
-    trait: "Lords",
-    value: 253,
-    colour: "#ec4899",
-    colourClass: "",
-    id: 253,
-    description: "Lords.",
-    img: "",
-  },
-  {
     trait: "Wood",
     value: 5015,
     colour: "#78350f",
@@ -37,6 +19,7 @@ export const resources: Array<Resources> = [
     id: 1,
     description: "Wood is the backbone of civilization. Fire, industry, and shelter spawned from its sinew and sap.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wood.gif?raw=true",
+    ticker: "$WOOD",
   },
 
   {
@@ -47,6 +30,7 @@ export const resources: Array<Resources> = [
     id: 2,
     description: "Stone masonry is a culture bending the bones of the earth itself to their own purpose.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/stone.gif?raw=true",
+    ticker: "$STONE",
   },
   {
     trait: "Coal",
@@ -57,6 +41,7 @@ export const resources: Array<Resources> = [
     description:
       "Coal is the only answer when fire is not enough to stave off the gnawing, winter cold or the ravenous demands of iron forges.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/coal.gif?raw=true",
+    ticker: "$COAL",
   },
   {
     trait: "Copper",
@@ -67,6 +52,7 @@ export const resources: Array<Resources> = [
     description:
       "The malleability of copper is a strength. A copper axe will crush a skull as easily as a copper pot sizzles an egg.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/copper.gif?raw=true",
+    ticker: "$COPPER",
   },
   {
     trait: "Obsidian",
@@ -77,6 +63,7 @@ export const resources: Array<Resources> = [
     description:
       "Hard and brittle, obsidian can be honed to a razors edge nanometers wide, parting armor on an atomic level. The preferred material of assassins and cheap jewelers.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/obsidian.gif?raw=true",
+    ticker: "$OBS",
   },
   {
     trait: "Silver",
@@ -86,6 +73,7 @@ export const resources: Array<Resources> = [
     id: 6,
     description: "The luster and rarity of silver draws out the basest instinct of laymen and nobility alike. Greed.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/silver.gif?raw=true",
+    ticker: "$SILVER",
   },
 
   {
@@ -97,6 +85,7 @@ export const resources: Array<Resources> = [
     description:
       "Metallic minerals drawn from the ironwood’s deep delving roots are the source of its legendary hardness and appearance.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/ironwood.gif?raw=true",
+    ticker: "$IRNWD",
   },
   {
     trait: "Cold Iron",
@@ -107,6 +96,7 @@ export const resources: Array<Resources> = [
     description:
       "Something has infected this metallic ore with a cruel chill and an extraordinary thirst for the warmth of living things.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/cold%20iron.gif?raw=true",
+    ticker: "$CLDIRN",
   },
   {
     trait: "Gold",
@@ -116,6 +106,7 @@ export const resources: Array<Resources> = [
     id: 9,
     description: "Ripped from its million-year geological womb within the earth to be hoarded in mortal coffers.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/gold.gif?raw=true",
+    ticker: "$GOLD",
   },
   {
     trait: "Hartwood",
@@ -126,6 +117,7 @@ export const resources: Array<Resources> = [
     description:
       "Revered by the Orders of Cunning, hartwood is only cut in dire circumstance. It bleeds like any mortal and some claim to hear voices from its sap long after being tapped from the trunk.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/hartwood.gif?raw=true",
+    ticker: "$HRTWD",
   },
   {
     trait: "Diamonds",
@@ -136,6 +128,7 @@ export const resources: Array<Resources> = [
     description:
       "Diamonds carry the hardness of obsidian, the strength of cold iron, and the preciousness of gold. Blood is easily spilled in its name.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/diamond.gif?raw=true",
+    ticker: "$DMND",
   },
   {
     trait: "Sapphire",
@@ -146,6 +139,7 @@ export const resources: Array<Resources> = [
     description:
       "Sapphires are given birth from titanic forces that crush and grind for thousands of years in a hellscape of heat and pressure. The result is a gemstone accustomed to both pain and beauty.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/sapphire.gif?raw=true",
+    ticker: "$SPHR",
   },
   {
     trait: "Ruby",
@@ -156,6 +150,7 @@ export const resources: Array<Resources> = [
     description:
       "Rubies are the chimeric fusion of metal alloys and oxygen. This hybrid of metal and minerals is often scarcer than the lives of those who seek it.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/ruby.gif?raw=true",
+    ticker: "$RUBY",
   },
   {
     trait: "Deep Crystal",
@@ -166,6 +161,7 @@ export const resources: Array<Resources> = [
     description:
       "Deep crystal was imprisoned from the mortal world by a timeless geode, the source of these formations have confounded scholars for centuries. Strange vibrations can be felt when held.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/deep%20crystal.gif?raw=true",
+    ticker: "$CRYSTL",
   },
   {
     trait: "Ignium",
@@ -176,6 +172,7 @@ export const resources: Array<Resources> = [
     description:
       "Some horrible power has irrevocably scarred this ignium stone with an infernal radiation that evaporates water and skin alike.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/ignium.gif?raw=true",
+    ticker: "$IGNIUM",
   },
   {
     trait: "Ethereal Silica",
@@ -186,6 +183,7 @@ export const resources: Array<Resources> = [
     description:
       "Ethereal silica is a glass that funnels and bends light in ways that deviate from known physics. Those exposed for long periods of time experience an all- consuming lethargic bliss.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/ethereal%20silica.gif?raw=true",
+    ticker: "$SILICA",
   },
   {
     trait: "True Ice",
@@ -196,6 +194,7 @@ export const resources: Array<Resources> = [
     description:
       "True ice does not melt, it is carved like living stone from frozen abyssal caverns far beneath the earth. Many a careless mason has lost their life when placing this near Ignium.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/true%20ice.gif?raw=true",
+    ticker: "$TRUICE",
   },
   {
     trait: "Twilight Quartz",
@@ -206,6 +205,7 @@ export const resources: Array<Resources> = [
     description:
       "Fortunately, this gemstone grows deep within the earth, far away from the soft flesh of mortal kind. Its elegance hides a tendency to rapidly engulf organic matter it encounters in a matter of hours.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/twilight%20quartz.gif?raw=true",
+    ticker: "$QUARTZ",
   },
   {
     trait: "Alchemical Silver",
@@ -216,6 +216,7 @@ export const resources: Array<Resources> = [
     description:
       "Alchemical Silver is found pooled beneath battlegrounds from a forgotten, lost era. It can retain an almost unlimited amount of potential energy, making it the perfect catalyst for those delving into the mysteries of the universe.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/alchemical%20silver.gif?raw=true",
+    ticker: "$ALCHMY",
   },
   {
     trait: "Adamantine",
@@ -226,6 +227,7 @@ export const resources: Array<Resources> = [
     description:
       "Adamantine forms around ontological anomalies like the immune response of a planetary entity. It contains the supernatural strength to contain such terrors from spreading. Woe to those who shortsightedly take it from its original purpose.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/adamantine.gif?raw=true",
+    ticker: "$ADMT",
   },
   {
     trait: "Mithral",
@@ -236,6 +238,7 @@ export const resources: Array<Resources> = [
     description:
       "This otherworldly metal has the strength of adamantine but is lighter than air. The pieces are held in place by strange gravitational core. Those who spend much time with it slowly succumb to neurotic delusions of a rapturous, divine apocalypse.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/mithral.gif?raw=true",
+    ticker: "$MITHRL",
   },
   {
     trait: "Dragonhide",
@@ -246,15 +249,17 @@ export const resources: Array<Resources> = [
     description:
       "Dragons are the hidden guardians of our reality. No mortal can witness their work, lest they be purged by dragonfire. If you find one of these scales, flee. Only death can be found in their presence or by the forces they fight in secret.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/dragonhide.gif?raw=true",
+    ticker: "$DRGNHD",
   },
   {
-    trait: "Donkey",
+    trait: "Donkeys",
     value: 249,
     colour: "#ec4899",
     colourClass: "",
     id: 249,
-    description: "Wheat.",
+    description: "Donkeys.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+    ticker: "$DONKEY",
   },
   {
     trait: "Knight",
@@ -264,6 +269,7 @@ export const resources: Array<Resources> = [
     id: 250,
     description: "Wheat.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+    ticker: "$KNIGHT",
   },
   {
     trait: "Crossbowmen",
@@ -273,6 +279,7 @@ export const resources: Array<Resources> = [
     id: 251,
     description: "Wheat.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+    ticker: "$CRSSBW",
   },
   {
     trait: "Paladin",
@@ -282,6 +289,17 @@ export const resources: Array<Resources> = [
     id: 252,
     description: "Wheat.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+    ticker: "$PLDN",
+  },
+  {
+    trait: "Lords",
+    value: 253,
+    colour: "#ec4899",
+    colourClass: "",
+    id: 253,
+    description: "Lords.",
+    img: "",
+    ticker: "$LORDS",
   },
   {
     trait: "Wheat",
@@ -291,6 +309,7 @@ export const resources: Array<Resources> = [
     id: 254,
     description: "Wheat.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
+    ticker: "$WHEAT",
   },
 
   {
@@ -301,6 +320,7 @@ export const resources: Array<Resources> = [
     id: 255,
     description: "Fish.",
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/.gif?raw=true",
+    ticker: "$FISH",
   },
   {
     trait: "Earthenshard",
@@ -310,6 +330,7 @@ export const resources: Array<Resources> = [
     id: 29,
     description: "Earthenshard is a rare and powerful resource that can be used to create powerful items.",
     img: "",
+    ticker: "$SHARDS",
   },
 ];
 
