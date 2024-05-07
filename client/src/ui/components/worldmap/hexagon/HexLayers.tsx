@@ -177,13 +177,13 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   }, [group, explored]);
 
   // Create the mesh only once when the component is mounted
-  const mesh = useMemo(() => {
+  const mesh: InstancedMesh = useMemo(() => {
     const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
     const hexMaterial = new THREE.MeshStandardMaterial({
       color: "green",
       vertexColors: false,
       transparent: true,
-      opacity: 0.0, // Start fully transparent
+      opacity: 0.4, // Start fully transparent
       wireframe: false,
     });
 
@@ -219,12 +219,11 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     return instancedMesh;
   }, [revealedHexes]);
 
-  // Animation logic
-  useFrame((state, delta) => {
-    const opacityIncrease = delta * 0.5; // Adjust speed here
-    mesh.material.opacity = Math.min(mesh.material.opacity + opacityIncrease, 0.4); // Ensure it does not exceed the maximum
-  });
-
+  // // Animation logic
+  // useFrame((state, delta) => {
+  //   const opacityIncrease = delta * 0.5; // Adjust speed here
+  //   mesh.material.opacity = Math.min(mesh.material.opacity + opacityIncrease, 0.4); // Ensure it does not exceed the maximum
+  // });
   const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
 
   const [_, setLocation] = useLocation();

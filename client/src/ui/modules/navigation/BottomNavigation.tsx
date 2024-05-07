@@ -28,7 +28,6 @@ export const BottomNavigation = () => {
     setActiveBar((currentBar) => (currentBar === barName ? null : barName));
   };
 
-  console.log("activeBar", activeBar);
   const { hexPosition } = useQuery();
   const { moveCameraToColRow } = useUIStore();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);

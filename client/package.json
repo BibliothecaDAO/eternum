@@ -54,6 +54,8 @@
     "rxjs": "^7.8.1",
     "tailwind-merge": "^2.2.2",
     "three": "^0.163.0",
+    "three-csg": "^1.0.0",
+    "three-csg-ts": "^3.1.14",
     "three-stdlib": "^2.29.5",
     "use-sound": "^4.0.1",
     "vite-plugin-top-level-await": "^1.4.1",

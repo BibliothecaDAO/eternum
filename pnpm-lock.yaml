@@ -143,6 +143,12 @@ importers:
       three:
         specifier: ^0.163.0
         version: 0.163.0
+      three-csg:
+        specifier: ^1.0.0
+        version: 1.0.0
+      three-csg-ts:
+        specifier: ^3.1.14
+        version: 3.1.14(@types/three@0.163.0)(three@0.163.0)
       three-stdlib:
         specifier: ^2.29.5
         version: 2.29.6(three@0.163.0)
@@ -10248,6 +10254,20 @@ packages:
     resolution: {integrity: sha512-RVZSIV5IG10Hk3enotrhvz0T9em6cyHBLkH/YAZuKqd8hRkKhSfCGIcP2KUY0EPxndzANBmNllzWPwak+bheSw==}
     dependencies:
       any-promise: 1.3.0
+
+  /three-csg-ts@3.1.14(@types/three@0.163.0)(three@0.163.0):
+    resolution: {integrity: sha512-miDfFA/bxXU5sgnePj28Nq4wcdmGkdM6dbv+lqK/vb0KbeYEDzcA9aTwMOyS1a3Fd/TDkcJ7MxHRevIGj8hMSA==}
+    peerDependencies:
+      '@types/three': '>= 0.125.0'
+      three: '>= 0.125.0'
+    dependencies:
+      '@types/three': 0.163.0
+      three: 0.163.0
+    dev: false
+
+  /three-csg@1.0.0:
+    resolution: {integrity: sha512-dSwkYcgapojo+U8WiTSwcHmwngue6+7y0wNV7KTwz6htRhIHBtucCYeUmPAf6ldi6FKsRIH4znwW7V7bT0q+fg==}
+    dev: false
 
   /three-mesh-bvh@0.7.3(three@0.163.0):
     resolution: {integrity: sha512-3W6KjzmupjfE89GuHPT31kxKWZ4YGZPEZJNysJpiOZfQRsBQQgmK7v/VJPpjG6syhAvTnY+5Fr77EvIkTLpGSw==}

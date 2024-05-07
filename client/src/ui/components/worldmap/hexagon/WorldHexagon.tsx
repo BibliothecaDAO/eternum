@@ -8,6 +8,25 @@ import { MyCastles, OtherCastles } from "../../models/buildings/worldmap/Castles
 import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
 import { Banks } from "../../models/buildings/worldmap/Banks.js";
 import { Armies } from "../armies/Armies.js";
+import { create } from "zustand";
+
+interface ExploredHexesState {
+  exploredHexes: Map<number, Set<number>>;
+  setExploredHexes: (col: number, row: number) => void;
+}
+
+export const useExploredHexesStore = create<ExploredHexesState>((set) => ({
+  exploredHexes: new Map(),
+
+  setExploredHexes: (col, row) =>
+    set((state) => {
+      const newMap = new Map(state.exploredHexes);
+      const rowSet = newMap.get(col) || new Set();
+      rowSet.add(row);
+      newMap.set(col, rowSet);
+      return { exploredHexes: newMap };
+    }),
+}));
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
@@ -40,7 +59,8 @@ export const WorldMap = () => {
     return hexagonGrids;
   }, []);
 
-  const [exploredHexes, setExploredHexes] = useState<Map<number, Set<number>>>(new Map());
+  const setExploredHexes = useExploredHexesStore((state) => state.setExploredHexes);
+  const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
 
   useEffect(() => {
     let subscription: Subscription | undefined;
@@ -51,13 +71,7 @@ export const WorldMap = () => {
         if (event && hexData) {
           const col = Number(event.keys[2]) - FELT_CENTER;
           const row = Number(event.keys[3]) - FELT_CENTER;
-          setExploredHexes((prev) => {
-            const newMap = new Map(prev);
-            const rowSet = newMap.get(col) || new Set();
-            rowSet.add(row);
-            newMap.set(col, rowSet);
-            return newMap;
-          });
+          setExploredHexes(col, row);
         }
       });
       subscription = sub;
@@ -67,7 +81,7 @@ export const WorldMap = () => {
     return () => {
       subscription?.unsubscribe();
     };
-  }, [hexData]);
+  }, [hexData, setExploredHexes]);
 
   const models = useMemo(() => {
     return (

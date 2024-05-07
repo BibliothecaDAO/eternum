@@ -193,7 +193,7 @@ export const BuiltBuilding = ({
         if (hover) {
           child.material = child.material.clone();
           child.material.transparent = true;
-          child.material.opacity = 0.2; // Adjust opacity level as needed
+          child.material.opacity = 0.8; // Adjust opacity level as needed
         } else {
           child.material = child.material.clone();
           child.material.transparent = false;
@@ -213,7 +213,7 @@ export const BuiltBuilding = ({
         node.material = node.material.clone();
         node.material.color.set(redColor);
         node.material.transparent = true;
-        node.material.opacity = 0.3;
+        node.material.opacity = 0.8;
       }
     });
     return newModel;
@@ -232,8 +232,7 @@ export const BuiltBuilding = ({
   const handleClick = useCallback(() => {
     if (!isDestroyMode) {
       setHover(true);
-    }
-    else if (isDestroyable) {
+    } else if (isDestroyable) {
       destroyBuilding(realmEntityId, position.col, position.row);
     }
   }, [destroyBuilding, position.col, position.row]);
@@ -242,8 +241,9 @@ export const BuiltBuilding = ({
     <group
       onPointerEnter={() => isDestroyMode && setHover(true)}
       onPointerLeave={() => setHover(false)}
-      onClick={handleClick}
-      position={[x, 2.33, -y]}
+      // onClick={handleClick}
+      onContextMenu={handleClick}
+      position={[x, 2.8, -y]}
       rotation={rotation}
     >
       <primitive dropShadow scale={3} object={isDestroyable ? redModel : model} />
