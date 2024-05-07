@@ -6,14 +6,17 @@ import { ArmyAndName, usePositionArmies } from "@/hooks/helpers/useArmies";
 import { ArmyViewCard } from "./ArmyViewCard";
 import { RealmViewCard } from "../structures/RealmViewCard";
 import Button from "@/ui/elements/Button";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RealmListItem } from "../worldmap/realms/RealmListItem";
 import { Headline } from "@/ui/elements/Headline";
 import { useModal } from "@/hooks/store/useModal";
 import { ModalContainer } from "../ModalContainer";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { currencyFormat } from "@/ui/utils/utils";
+import { currencyFormat, divideByPrecision } from "@/ui/utils/utils";
+import { Event } from "@/dojo/events/graphqlClient";
+import { BuildingEnumToString, BuildingType, Resource, getBuildingType } from "@bibliothecadao/eternum";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
 
 export const ArmiesAtLocation = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
@@ -171,8 +174,11 @@ export const ArmyActions = ({ army }: { army: ArmyAndName }) => {
                 "No Defending Army! Pillage Away"
               )}
             </div>
+            <PillageHistory
+              structureId={BigInt(formattedRealmAtPosition?.entity_id) || 0n}
+              attackerRealmEntityId={BigInt(army.entity_owner_id)}
+            />
           </div>
-
           <div className="col-span-3">
             <Headline className="my-3">
               <h4>Attackable</h4>
@@ -302,4 +308,107 @@ export const BattleStatusBar = ({
       </div>
     </>
   );
+};
+
+export const PillageHistory = ({
+  structureId,
+  attackerRealmEntityId,
+}: {
+  structureId: bigint;
+  attackerRealmEntityId: bigint;
+}) => {
+  const {
+    setup: {
+      updates: { eventUpdates },
+    },
+  } = useDojo();
+  const [pillageHistory, setPillageHistory] = useState<any[]>([]);
+  const subscriptionRef = useRef();
+
+  useEffect(() => {
+    let isActive = true; // Flag to manage async operation
+
+    const subscribeToFoundResources = async () => {
+      const observable = await eventUpdates.createPillageHistoryEvents(structureId, attackerRealmEntityId);
+      const subscription = observable.subscribe((event) => {
+        if (event && isActive) {
+          // Check if component is still mounted
+          setPillageHistory((prev) => [formatPillageEvent(event), ...prev]);
+        }
+      });
+      subscriptionRef.current = subscription;
+    };
+
+    subscribeToFoundResources();
+
+    return () => {
+      isActive = false; // Prevent setting state on unmounted component
+      subscriptionRef.current?.unsubscribe(); // Ensure to unsubscribe on component unmount
+    };
+  }, [structureId, attackerRealmEntityId, eventUpdates]);
+
+  return (
+    <div className="border p-2 ">
+      <div className="m-3">
+        <Headline> Pillage History </Headline>
+      </div>
+      <div className="overflow-auto max-h-[300px]">
+        {pillageHistory.map((history, index) => (
+          <div key={index} className={`group hover:bg-gold/10 border relative bg-gold/5 text-gold`}>
+            <div className="flex">
+              <div className="flex items-center p-1 border-t-0 border-l-0 border pr-3 h5">
+                <div>Army ID: {history.armyId.toString()}</div>
+              </div>
+            </div>
+            <div className="p-2">
+              <div className="my-2">
+                <Headline>Winner </Headline>
+                {history.winner === 0 ? "Defender" : "Attacker"}
+              </div>
+              <div className="flex flex-col space-y-2 items-center">
+                <Headline> Pillaged Resources</Headline>
+                <div className="flex flex-wrap justify-center gap-4">
+                  {history.pillagedResources.map((resource: Resource) => (
+                    <ResourceCost
+                      key={resource.resourceId}
+                      resourceId={resource.resourceId}
+                      amount={divideByPrecision(resource.amount)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Headline> Destroyed Building</Headline>
+                <div>{history.destroyedBuildingType}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const formatPillageEvent = (event: Event) => {
+  const structureId = BigInt(event.keys[1]);
+  const attackerRealmEntityId = BigInt(event.keys[2]);
+  const armyId = BigInt(event.keys[3]);
+  const owner = BigInt(event.keys[4]);
+
+  const winner = Number(event.data[0]);
+  const pillagedResources: Resource[] = [];
+  for (let i = 0; i < Number(event.data[1]); i++) {
+    pillagedResources.push({ resourceId: Number(event.data[2 + i * 2]), amount: Number(event.data[3 + i * 2]) });
+  }
+  const destroyedBuildingType = BuildingType[Number(event.data[2 + Number(event.data[1]) * 2])];
+
+  return {
+    structureId,
+    attackerRealmEntityId,
+    armyId,
+    owner,
+    winner,
+    pillagedResources,
+    destroyedBuildingType,
+  };
 };
