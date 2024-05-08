@@ -147,7 +147,8 @@ For local setup and execution on Katana, follow these steps:
 
    ```bash
    # Make sure to set a delay in seconds of at least 0.1 seconds between each transaction
-   ./scripts/set_config.sh
+   ./scripts/set_config.sh --interval 0.1 --mode dev
+   ./scripts/set_config_npc.sh --interval 0.1
    ```
 
 ## License
