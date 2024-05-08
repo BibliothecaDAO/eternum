@@ -276,20 +276,27 @@ mod trade_systems {
                 maker_receives_resources_hash == trade.taker_gives_resources_hash,
                 "wrong taker_gives_resources provided"
             );
-            
-            let maker_realm = get!(world, trade.maker_id, Realm );
-            let taker_realm = get!(world, trade.taker_id, Realm );
 
-            emit!(world, (Event::OrderAccepted(OrderAccepted {
-                trade_id, 
-                maker_realm_entity_id: maker_realm.entity_id,
-                maker_realm_id: maker_realm.realm_id,
-                taker_realm_entity_id: taker_realm.entity_id,
-                taker_realm_id: taker_realm.realm_id,
-                maker_resources: maker_gives_resources,
-                taker_resources: taker_gives_resources,
-                timestamp: ts
-            }), ));
+            let maker_realm = get!(world, trade.maker_id, Realm);
+            let taker_realm = get!(world, trade.taker_id, Realm);
+
+            emit!(
+                world,
+                (
+                    Event::OrderAccepted(
+                        OrderAccepted {
+                            trade_id,
+                            maker_realm_entity_id: maker_realm.entity_id,
+                            maker_realm_id: maker_realm.realm_id,
+                            taker_realm_entity_id: taker_realm.entity_id,
+                            taker_realm_id: taker_realm.realm_id,
+                            maker_resources: maker_gives_resources,
+                            taker_resources: taker_gives_resources,
+                            timestamp: ts
+                        }
+                    ),
+                )
+            );
         }
 
 

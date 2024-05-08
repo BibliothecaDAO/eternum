@@ -66,8 +66,8 @@ mod bank {
 
 mod npc {
     mod contracts;
+    mod interface;
     #[cfg(test)]
     mod tests;
     mod utils;
-    mod interface;
 }

@@ -12,6 +12,7 @@ use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
 use eternum::models::metadata::{foreign_key, ForeignKey};
 use eternum::models::movable::{movable, Movable, arrival_time, ArrivalTime};
+use eternum::models::npc::{npc, Npc,};
 // models
 use eternum::models::owner::{owner, Owner};
 use eternum::models::position::{position, Position};
@@ -21,7 +22,6 @@ use eternum::models::resources::{resource, Resource};
 use eternum::models::resources::{resource_cost, ResourceCost};
 use eternum::models::road::{road, Road};
 use eternum::models::trade::{status, Status, trade, Trade,};
-use eternum::models::npc::{npc, Npc,};
 
 use starknet::{syscalls::deploy_syscall, ClassHash, ContractAddress};
 

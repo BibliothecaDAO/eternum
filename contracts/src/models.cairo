@@ -3,12 +3,14 @@ mod capacity;
 mod combat;
 mod config;
 mod hyperstructure;
+mod last_spawned;
 mod level;
 mod loyalty;
 mod map;
 mod metadata;
 mod movable;
 mod name;
+mod npc;
 mod order;
 mod owner;
 mod population;
@@ -28,5 +30,3 @@ mod bank {
     mod liquidity;
     mod market;
 }
-mod last_spawned;
-mod npc;

@@ -1,3 +1,4 @@
+use dojo::world::{IWorldDispatcherTrait, IWorldDispatcher};
 use eternum::{
     models::config::{WorldConfig, NpcConfig},
     systems::{
@@ -8,8 +9,6 @@ use eternum::{
     },
     utils::testing::{spawn_eternum, deploy_system}, constants::{NPC_CONFIG_ID},
 };
-
-use dojo::world::{IWorldDispatcherTrait, IWorldDispatcher};
 
 const NEW_PUB_KEY: felt252 = 0x111111111111111111111111111111111111111111111111111111111111111;
 const MAX_NUM_RESIDENT_NPCS: u8 = 5;

@@ -1,9 +1,9 @@
 use core::pedersen::pedersen;
-use starknet::ContractAddress;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::models::{owner::Owner, realm::{Realm}, npc::{Characteristics}};
+use starknet::ContractAddress;
 
 const TWO_POW_2: u256 = 0x4;
 const TWO_POW_8: u256 = 0x100;

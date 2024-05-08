@@ -930,9 +930,7 @@ fn test_emitted_order_accepted() {
                 assert(timestamp == 0, 'wrong timestamp');
                 break;
             },
-            Option::None => {
-                break;
-            },
+            Option::None => { break; },
         }
     };
     assert(found == true, 'OrderAccepted not found');

@@ -1,7 +1,3 @@
-use traits::Into;
-use option::OptionTrait;
-use starknet::contract_address_const;
-
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::{
@@ -22,6 +18,9 @@ use eternum::{
     },
     utils::testing::{spawn_eternum, deploy_system}
 };
+use option::OptionTrait;
+use starknet::contract_address_const;
+use traits::Into;
 
 
 const pub_key: felt252 = 0x141a26313bd3355fe4c4f3dda7e40dfb77ce54aea5f62578b4ec5aad8dd63b1;

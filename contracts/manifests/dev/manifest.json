@@ -3855,8 +3855,8 @@
     {
       "kind": "DojoContract",
       "address": "0x3f05e2e7647482bf49e3bc0b9429571605e686be1376aef7892e5abf9f9dcf6",
-      "class_hash": "0x91e478c711f9c565b9c15ba207f2a10a53bdf87f94e13ba6a7cd0996bf273f",
-      "original_class_hash": "0x91e478c711f9c565b9c15ba207f2a10a53bdf87f94e13ba6a7cd0996bf273f",
+      "class_hash": "0x55adafc152449e3bb412c7a77f9b5928e2791919d610e42cdec3393ae9ea4e7",
+      "original_class_hash": "0x55adafc152449e3bb412c7a77f9b5928e2791919d610e42cdec3393ae9ea4e7",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -3962,26 +3962,6 @@
                   "type": "core::integer::u128"
                 }
               ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "change_character_trait",
-              "inputs": [
-                {
-                  "name": "realm_entity_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "entity_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "character_trait",
-                  "type": "core::felt252"
-                }
-              ],
-              "outputs": [],
               "state_mutability": "view"
             },
             {

@@ -70,7 +70,7 @@ fn test_npc_travel_twice() {
 #[available_gas(3000000000)]
 #[should_panic(expected: ('not a realm', 'ENTRYPOINT_FAILED'))]
 fn test_npc_travel_to_invalid_realm() {
-    let (world, npc_dispatcher, from_realm_entity_id, to_realm_entity_id) = setup();
+    let (world, npc_dispatcher, from_realm_entity_id, _to_realm_entity_id) = setup();
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
     npc_dispatcher.npc_travel(npc.entity_id, 1000);
@@ -91,7 +91,7 @@ fn test_npc_travel_while_traveling() {
 #[available_gas(3000000000)]
 #[should_panic(expected: ('already in dest realm', 'ENTRYPOINT_FAILED'))]
 fn test_npc_travel_to_current_realm() {
-    let (world, npc_dispatcher, from_realm_entity_id, to_realm_entity_id) = setup();
+    let (world, npc_dispatcher, from_realm_entity_id, _to_realm_entity_id) = setup();
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
     npc_dispatcher.npc_travel(npc.entity_id, from_realm_entity_id);
@@ -150,7 +150,7 @@ fn test_welcome_npc_invalid_into_realm_entity_id() {
 #[test]
 #[should_panic(expected: ('npc_entity_id is 0', 'ENTRYPOINT_FAILED'))]
 fn test_welcome_npc_invalid_npc_entity_id() {
-    let (world, npc_dispatcher, _from_realm_entity_id, to_realm_entity_id) = setup();
+    let (_world, npc_dispatcher, _from_realm_entity_id, to_realm_entity_id) = setup();
 
     npc_dispatcher.welcome_npc(0, to_realm_entity_id);
 }
@@ -245,14 +245,14 @@ fn test_kick_out_npc() {
 #[test]
 #[should_panic(expected: ('npc_entity_id is 0', 'ENTRYPOINT_FAILED'))]
 fn test_kick_out_invalid_npc_entity_id() {
-    let (world, npc_dispatcher, _from_realm_entity_id, _to_realm_entity_id) = setup();
+    let (_world, npc_dispatcher, _from_realm_entity_id, _to_realm_entity_id) = setup();
     npc_dispatcher.kick_out_npc(0);
 }
 
 #[test]
 #[should_panic(expected: ('invalid npc_entity_id', 'ENTRYPOINT_FAILED'))]
 fn test_kick_out_non_existent_npc() {
-    let (world, npc_dispatcher, _from_realm_entity_id, _to_realm_entity_id) = setup();
+    let (_world, npc_dispatcher, _from_realm_entity_id, _to_realm_entity_id) = setup();
     npc_dispatcher.kick_out_npc(100);
 }
 

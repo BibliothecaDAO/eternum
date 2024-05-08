@@ -1,3 +1,4 @@
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::{
     models::{
         owner::{Owner, EntityOwner}, config::NpcConfig,
@@ -6,16 +7,12 @@ use eternum::{
     constants::NPC_CONFIG_ID
 };
 
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
 #[dojo::contract]
 mod npc_systems {
-    use core::{Into, ecdsa::check_ecdsa_signature};
     use box::BoxTrait;
+    use core::{Into, ecdsa::check_ecdsa_signature};
 
-    use starknet::{get_caller_address, info::{BlockInfo, v2::ExecutionInfo, get_execution_info}};
-
-    use super::{assert_is_allowed_to_spawn};
+    use debug::PrintTrait;
 
     use eternum::{
         models::{
@@ -37,7 +34,9 @@ mod npc_systems {
         }
     };
 
-    use debug::PrintTrait;
+    use starknet::{get_caller_address, info::{BlockInfo, v2::ExecutionInfo, get_execution_info}};
+
+    use super::{assert_is_allowed_to_spawn};
 
     #[derive(Drop, starknet::Event)]
     struct NpcSpawned {
@@ -49,34 +48,6 @@ mod npc_systems {
     #[derive(Drop, starknet::Event)]
     enum Event {
         NpcSpawned: NpcSpawned,
-    }
-
-    #[generate_trait]
-    impl InternalFunctions of InternalFunctionsTrait {
-        fn change_characteristics(
-            world: IWorldDispatcher,
-            realm_entity_id: u128,
-            entity_id: u128,
-            characteristics: felt252
-        ) {
-            assert_realm_existance_and_ownership(world, realm_entity_id);
-
-            assert(entity_id != 0, 'entity id is zero');
-
-            let old_npc = get!(world, (entity_id), (Npc));
-            assert(old_npc.entity_id != 0, 'npc doesnt exist');
-
-            set!(
-                world,
-                (Npc {
-                    entity_id,
-                    current_realm_entity_id: old_npc.current_realm_entity_id,
-                    characteristics,
-                    character_trait: old_npc.character_trait,
-                    full_name: old_npc.full_name
-                })
-            );
-        }
     }
 
     #[abi(embed_v0)]
@@ -164,44 +135,12 @@ mod npc_systems {
                 }
             );
 
-            emit!(world, (Event::NpcSpawned(NpcSpawned{ realm_entity_id, entity_id }), ));
+            emit!(world, (Event::NpcSpawned(NpcSpawned { realm_entity_id, entity_id }),));
 
             entity_id
         }
 
-        fn change_character_trait(
-            world: IWorldDispatcher,
-            realm_entity_id: u128,
-            entity_id: u128,
-            character_trait: felt252,
-        ) {
-            assert_realm_existance_and_ownership(world, realm_entity_id);
-            assert(entity_id != 0, 'npc inexistant');
-
-            let old_npc = get!(world, entity_id, (Npc));
-
-            let entity_owner = get!(world, (entity_id), (EntityOwner));
-            assert(entity_owner.entity_owner_id == realm_entity_id, 'not owner of NPC');
-
-            assert(old_npc.entity_id != 0, 'npc doesnt exist');
-
-            set!(
-                world,
-                (Npc {
-                    entity_id,
-                    current_realm_entity_id: old_npc.current_realm_entity_id,
-                    characteristics: old_npc.characteristics,
-                    character_trait,
-                    full_name: old_npc.full_name
-                })
-            );
-        }
-
-        fn npc_travel(
-            world: IWorldDispatcher,
-            npc_entity_id: u128,
-            to_realm_entity_id: u128
-        ) {
+        fn npc_travel(world: IWorldDispatcher, npc_entity_id: u128, to_realm_entity_id: u128) {
             assert(npc_entity_id != 0, 'npc_entity_id is 0');
             assert(to_realm_entity_id != 0, 'to_realm_entity_id is 0');
 
@@ -255,11 +194,7 @@ mod npc_systems {
             );
         }
 
-        fn welcome_npc(
-            world: IWorldDispatcher,
-            npc_entity_id: u128,
-            into_realm_entity_id: u128,
-        ) {
+        fn welcome_npc(world: IWorldDispatcher, npc_entity_id: u128, into_realm_entity_id: u128,) {
             assert(npc_entity_id != 0, 'npc_entity_id is 0');
             assert(into_realm_entity_id != 0, 'into_realm_entity_id is 0');
 

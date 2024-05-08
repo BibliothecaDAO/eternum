@@ -30,7 +30,7 @@ const MAX_NUM_NATIVE_NPCS: u8 = 5;
 fn setup() -> (IWorldDispatcher, INpcDispatcher, u128, u128) {
     let world = spawn_eternum();
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
-    let npc_config_dispatcher = INpcConfigDispatcher { contract_address: config_systems_address }
+    INpcConfigDispatcher { contract_address: config_systems_address }
         .set_npc_config(SPAWN_DELAY, PUB_KEY, MAX_NUM_RESIDENT_NPCS, MAX_NUM_NATIVE_NPCS);
     ITransportConfigDispatcher { contract_address: config_systems_address }
         .set_speed_config(NPC_ENTITY_TYPE, 55); // 10km per sec

@@ -1,5 +1,5 @@
-use core::traits::Into;
 use core::option::OptionTrait;
+use core::traits::Into;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -11,7 +11,8 @@ use eternum::{
     systems::{
         npc::{
             utils::{pack_characs}, contracts::{npc_systems},
-            interface::{INpcDispatcher, INpcDispatcherTrait}, tests::{utils::{spawn_npc_util, setup}}
+            interface::{INpcDispatcher, INpcDispatcherTrait},
+            tests::{utils::{spawn_npc_util, setup}}
         },
         realm::{
             contracts::realm_systems,
@@ -95,7 +96,7 @@ fn test_spawn_more_than_five() {
 #[available_gas(3000000000)]
 #[should_panic(expected: ('Invalid signature', 'ENTRYPOINT_FAILED'))]
 fn test_invalid_trait() {
-    let (world, npc_dispatcher, from_realm_entity_id, _to_realm_entity_id) = setup();
+    let (_world, npc_dispatcher, from_realm_entity_id, _to_realm_entity_id) = setup();
 
     let characs = pack_characs(Characteristics { age: 30, role: 10, sex: 1, });
     let r_sign = 0x6a43f62142ac80f794378d1298d429b77c068cba42f884b1856f2087cdaf0c6;
@@ -103,7 +104,5 @@ fn test_invalid_trait() {
 
     // 'brave' -> 'Brave'
     npc_dispatcher
-        .spawn_npc(
-            from_realm_entity_id, characs, 'Brave', 'John', array![r_sign, s_sign].span()
-        );
+        .spawn_npc(from_realm_entity_id, characs, 'Brave', 'John', array![r_sign, s_sign].span());
 }
