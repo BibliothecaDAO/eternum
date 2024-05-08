@@ -32,7 +32,7 @@ const RESOURCE_PRECISION: u128 = 1_000;
 
 // base storehouse capacity
 // TODO: Move to Onchain config
-const BASE_STOREHOUSE_CAPACITY: u128 = 1_000;
+const BASE_STOREHOUSE_CAPACITY: u128 = 10_000;
 
 // loyalty config
 // TODO: Move to Onchain config

@@ -21,6 +21,8 @@ import { Onboarding } from "./Onboarding";
 import { HooksComponent } from "../components/HooksComponent";
 import { Transactions } from "../modules/transactions/Transactions";
 import useRealmStore from "@/hooks/store/useRealmStore";
+import TopLeftContainer from "../containers/TopLeftContainer";
+import { QuestList } from "../components/hints/HintBox";
 
 export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
@@ -59,11 +61,7 @@ export const World = () => {
         <Onboarding />
       </BlankOverlayContainer>
       <HooksComponent />
-      <TopContainer>
-        <div className="flex w-72">
-          <NotificationsComponent />
-        </div>
-      </TopContainer>
+
       <BackgroundContainer className=" rounded-xl relative">
         <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-12 bg-gradient-to-b from-black/20 to-transparent opacity-90" />
         <div className="h-full w-full main-scene">
@@ -79,19 +77,32 @@ export const World = () => {
           <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
         </div>
       </BackgroundContainer>
-      <BottomRightContainer>
-        <Transactions />
-      </BottomRightContainer>
+
+      {/* TOP */}
       <TopMiddleContainer>
         <TopMiddleNavigation />
       </TopMiddleContainer>
+      {/* <TopLeftContainer>
+        <QuestList />
+      </TopLeftContainer> */}
+      <TopContainer>
+        <div className="flex w-72">
+          <NotificationsComponent />
+        </div>
+      </TopContainer>
+
+      {/* LEFT */}
       <LeftMiddleContainer>
         <LeftNavigationModule />
       </LeftMiddleContainer>
+
+      {/* BOTTOM */}
       <BottomMiddleContainer>
         <BottomNavigation />
       </BottomMiddleContainer>
-      <BottomRightContainer>{/* <ChatModule /> */}</BottomRightContainer>
+      <BottomRightContainer>
+        <Transactions />
+      </BottomRightContainer>
 
       <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} />
       <Tooltip />

@@ -238,24 +238,14 @@ export const TroopCard = ({ count, id }: { count: number; id: number }) => {
 export const Battle = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
   const { col: x, row: y } = clickedHex!.contractPos;
-
-  const {
-    account: { account },
-    network: { provider },
-    setup: {
-      systemCalls: { create_army, army_buy_troops },
-    },
-  } = useDojo();
-
   const { formattedRealmAtPosition } = useStructuresPosition({ position: { x, y } });
-  const { allArmies, userArmies } = usePositionArmies({ position: { x, y } });
 
   return (
     <>
       <Headline className="my-3">Structures</Headline>
 
       <div className="grid grid-cols-2">
-        {formattedRealmAtPosition && <RealmListItem realm={formattedRealmAtPosition} />}
+        {formattedRealmAtPosition ? <RealmListItem realm={formattedRealmAtPosition} /> : "Nothing is here yet..."}
       </div>
     </>
   );

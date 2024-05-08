@@ -17,3 +17,7 @@ slot deployments create eternum-11 torii --version 0.6.1-alpha.4 --world $SOZO_W
 
 echo "Setting up config..."
 ./scripts/set_config.sh --interval 1 --mode prod
+
+
+echo "Setting up bank..."
+./scripts/set_admin_bank.sh --mode prod --interval 2

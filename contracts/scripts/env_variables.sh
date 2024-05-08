@@ -60,6 +60,7 @@ export ALCHEMICALSILVER=19
 export ADAMANTINE=20
 export MITHRAL=21
 export DRAGONHIDE=22
+export EARTHENSHARD=29
 
 # Transports
 export DONKEY=249;
