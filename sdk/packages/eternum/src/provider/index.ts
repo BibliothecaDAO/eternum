@@ -2,6 +2,9 @@ import { DojoProvider } from "@dojoengine/core";
 import * as SystemProps from "../types/provider";
 import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
 import EventEmitter from "eventemitter3";
+import extensionsProviderFunctions from "./extensions/providerFunctions";
+
+export * from "./extensions";
 
 export const getContractByName = (manifest: any, name: string) => {
   const contract = manifest.contracts.find((contract: any) => contract.name.includes("::" + name));
@@ -32,6 +35,8 @@ function ApplyEventEmitter<T extends new (...args: any[]) => {}>(Base: T) {
 const EnhancedDojoProvider = ApplyEventEmitter(DojoProvider);
 
 export class EternumProvider extends EnhancedDojoProvider {
+  [key: string]: any;
+
   constructor(katana: any, url?: string) {
     super(katana, url);
     this.manifest = katana;
@@ -40,6 +45,10 @@ export class EternumProvider extends EnhancedDojoProvider {
       const worldAddress = this.manifest.world.address;
       return worldAddress;
     };
+
+    Object.entries(extensionsProviderFunctions).map(([key, value]) => {
+      this[key] = value;
+    });
   }
 
   private async executeAndCheckTransaction(
@@ -516,45 +525,5 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "mint_starting_resources",
       calldata: [config_id, realm_entity_id],
     });
-  }
-
-  public async spawn_npc(props: SystemProps.SpawnNpcProps) {
-    const { realm_entity_id, characteristics, character_trait, full_name, signature } = props;
-    const tx = await this.executeMulti(props.signer, {
-      contractAddress: getContractByName(this.manifest, "npc_systems"),
-      entrypoint: "spawn_npc",
-      calldata: [realm_entity_id, characteristics, character_trait, full_name, signature],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async npc_travel(props: SystemProps.NpcTravelProps) {
-    const { npc_entity_id, to_realm_entity_id } = props;
-    const tx = await this.executeMulti(props.signer, {
-      contractAddress: getContractByName(this.manifest, "npc_systems"),
-      entrypoint: "npc_travel",
-      calldata: [npc_entity_id, to_realm_entity_id],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async welcome_npc(props: SystemProps.WelcomeNpcProps) {
-    const { npc_entity_id, into_realm_entity_id } = props;
-    const tx = await this.executeMulti(props.signer, {
-      contractAddress: getContractByName(this.manifest, "npc_systems"),
-      entrypoint: "welcome_npc",
-      calldata: [npc_entity_id, into_realm_entity_id],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
-  }
-
-  public async kick_out_npc(props: SystemProps.KickOutNpcProps) {
-    const { npc_entity_id } = props;
-    const tx = await this.executeMulti(props.signer, {
-      contractAddress: getContractByName(this.manifest, "npc_systems"),
-      entrypoint: "kick_out_npc",
-      calldata: [npc_entity_id],
-    });
-    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 }
