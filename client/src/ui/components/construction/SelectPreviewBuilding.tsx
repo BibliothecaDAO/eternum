@@ -49,15 +49,13 @@ const BUILDING_IMAGES_PATH = {
 };
 
 export const SelectPreviewBuilding = () => {
-  const {
-    setPreviewBuilding,
-    previewBuilding,
-    selectedResource,
-    setResourceId,
-    setTooltip,
-    isDestroyMode,
-    setIsDestroyMode,
-  } = useUIStore();
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+  const previewBuilding = useUIStore((state) => state.previewBuilding);
+  const selectedResource = useUIStore((state) => state.selectedResource);
+  const setResourceId = useUIStore((state) => state.setResourceId);
+  const setTooltip = useUIStore((state) => state.setTooltip);
+  const isDestroyMode = useUIStore((state) => state.isDestroyMode);
+  const setIsDestroyMode = useUIStore((state) => state.setIsDestroyMode);
 
   const { playResourceSound } = usePlayResourceSound();
 
@@ -481,7 +479,7 @@ export const BuildingCard = ({
   toolTip: React.ReactElement;
   canBuild?: boolean;
 }) => {
-  const { setTooltip } = useUIStore();
+  const setTooltip = useUIStore((state) => state.setTooltip);
   return (
     <div
       style={{

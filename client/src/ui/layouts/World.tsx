@@ -85,12 +85,6 @@ export const World = () => {
       {/* <TopLeftContainer>
         <QuestList />
       </TopLeftContainer> */}
-      <TopContainer>
-        <div className="flex w-72">
-          <NotificationsComponent />
-        </div>
-      </TopContainer>
-
       {/* LEFT */}
       <LeftMiddleContainer>
         <LeftNavigationModule />

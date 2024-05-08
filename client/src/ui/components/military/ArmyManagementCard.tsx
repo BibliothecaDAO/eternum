@@ -49,7 +49,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
   } = useDojo();
 
   const { getBalance } = useResourceBalance();
-  const { moveCameraToColRow } = useUIStore();
+  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const currentTick = useBlockchainStore((state) => state.currentTick);
 

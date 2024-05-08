@@ -21,9 +21,11 @@ const GroundGrid = () => {
   const hexPositions = useMemo(() => generateHexPositions(), []);
   const { playBuildingSound } = useBuildingSound();
   const { play: playShovel } = useShovelSound();
-  const { previewBuilding, setHoveredBuildHex, existingBuildings, selectedResource, setPreviewBuilding } = useUIStore(
-    (state) => state,
-  );
+  const previewBuilding = useUIStore((state) => state.previewBuilding);
+  const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
+  const existingBuildings = useUIStore((state) => state.existingBuildings);
+  const selectedResource = useUIStore((state) => state.selectedResource);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const { realmEntityId } = useRealmStore();
   const { placeBuilding } = useBuildings();
 

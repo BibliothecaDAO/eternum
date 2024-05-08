@@ -36,7 +36,6 @@ export const TravelInfo = ({
       setSendingDonkeys(currentDonkeyAmount);
 
       if (setCanCarry) {
-        console.log({ donkeyBalance, neededDonkeys });
         setCanCarry(calculatedDonkeyBalance >= neededDonkeys);
       }
     };

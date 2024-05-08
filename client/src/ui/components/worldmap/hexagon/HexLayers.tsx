@@ -135,7 +135,10 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
 };
 
 export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
-  const { hexData, moveCameraToTarget, moveCameraToColRow, setIsLoadingScreenEnabled } = useUIStore((state) => state);
+  const hexData = useUIStore((state) => state.hexData);
+  const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
+  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const { hoverHandler, clickHandler } = useEventHandlers(explored);
 
@@ -148,7 +151,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     });
 
     return { group: filteredGroup };
-  }, [startRow, endRow, startCol, endCol, HEX_RADIUS, hexData]);
+  }, [startRow, endRow, startCol, endCol, hexData]);
 
   const revealedHexes = useMemo(() => {
     const revealed: Hexagon[] = [];

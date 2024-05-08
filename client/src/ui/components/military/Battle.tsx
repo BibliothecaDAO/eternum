@@ -102,8 +102,6 @@ export const ArmyActions = ({ army }: { army: ArmyAndName }) => {
     return { ...protectorArmy, ...health };
   }, []);
 
-  console.log(getProtector);
-
   const handleBattleStart = async () => {
     setLoading(true);
 
@@ -314,15 +312,16 @@ export const PillageHistory = ({
     },
   } = useDojo();
   const [pillageHistory, setPillageHistory] = useState<any[]>([]);
+
   const subscriptionRef = useRef<Subscription | undefined>();
+  const isComponentMounted = useRef(true);
 
   useEffect(() => {
-    let isActive = true; // Flag to manage async operation
-
     const subscribeToFoundResources = async () => {
       const observable = await eventUpdates.createPillageHistoryEvents(structureId, attackerRealmEntityId);
       const subscription = observable.subscribe((event) => {
-        if (event && isActive) {
+        if (!isComponentMounted.current) return;
+        if (event) {
           // Check if component is still mounted
           setPillageHistory((prev) => [formatPillageEvent(event), ...prev]);
         }
@@ -333,7 +332,7 @@ export const PillageHistory = ({
     subscribeToFoundResources();
 
     return () => {
-      isActive = false; // Prevent setting state on unmounted component
+      isComponentMounted.current = false;
       subscriptionRef.current?.unsubscribe(); // Ensure to unsubscribe on component unmount
     };
   }, [structureId, attackerRealmEntityId, eventUpdates]);

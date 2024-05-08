@@ -6,6 +6,7 @@ import { Position, Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bi
 import useRealmStore from "../store/useRealmStore";
 import { findDirection } from "../../ui/utils/utils";
 import useUIStore from "../store/useUIStore";
+import { Subscription } from "rxjs";
 
 interface ExploreHexProps {
   explorerId: bigint | undefined;
@@ -55,29 +56,29 @@ export function useExplore() {
   const useFoundResources = (entityId: bigint | undefined) => {
     const [foundResources, setFoundResources] = useState<Resource | undefined>();
 
-    const subscriptionRef = useRef(null);
+    const subscriptionRef = useRef<Subscription | undefined>();
+    const isComponentMounted = useRef(true);
 
     useEffect(() => {
       if (!entityId) return;
       const subscribeToFoundResources = async () => {
         const observable = await exploreEntityMapEvents(entityId);
         const subscription = observable.subscribe((event) => {
+          if (!isComponentMounted.current) return;
           if (event) {
             const resourceId = Number(event.data[3]);
             const amount = Number(event.data[4]);
             setFoundResources({ resourceId, amount });
           }
         });
-        return subscription;
+        subscriptionRef.current = subscription;
       };
       subscribeToFoundResources();
 
       // Cleanup function
       return () => {
-        if (subscriptionRef.current) {
-          // @ts-ignore
-          subscriptionRef.current.unsubscribe();
-        }
+        isComponentMounted.current = false;
+        subscriptionRef.current?.unsubscribe(); // Ensure to unsubscribe on component unmount
       };
     }, [entityId]);
 

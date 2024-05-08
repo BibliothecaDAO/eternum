@@ -67,7 +67,8 @@ const redColor = new THREE.Color("red");
 
 export const ExistingBuildings = () => {
   const { hexPosition: globalHex } = useQuery();
-  const { existingBuildings, setExistingBuildings } = useUIStore((state) => state);
+  const existingBuildings = useUIStore((state) => state.existingBuildings);
+  const setExistingBuildings = useUIStore((state) => state.setExistingBuildings);
   const { hexType } = useHexPosition();
 
   const {
@@ -159,7 +160,7 @@ export const BuiltBuilding = ({
   resource?: ResourcesIds;
 }) => {
   const lightRef = useRef<any>();
-  const { isDestroyMode } = useUIStore();
+  const isDestroyMode = useUIStore((state) => state.isDestroyMode);
   const { destroyBuilding } = useBuildings();
   const { realmEntityId } = useRealmStore();
 

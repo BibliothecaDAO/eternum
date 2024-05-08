@@ -56,11 +56,11 @@ export const TopMiddleNavigation = () => {
 
   return (
     <div className="flex">
-      {location === "/map" && (
+      {/* {location === "/map" && (
         <div className="flex mr-4">
           <Compass />
         </div>
-      )}
+      )} */}
       <div
         onMouseEnter={() => {
           setTooltip({
