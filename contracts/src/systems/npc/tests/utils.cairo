@@ -11,30 +11,31 @@ use eternum::{
         },
         config::{
             contracts::config_systems,
-            interface::{
+            contracts::{
                 ITransportConfigDispatcher, ITransportConfigDispatcherTrait, INpcConfigDispatcher,
                 INpcConfigDispatcherTrait
             },
-            tests::npc_config_tests::{MAX_NUM_RESIDENT_NPCS, MAX_NUM_NATIVE_NPCS}
         },
         realm::{
             contracts::realm_systems,
-            interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,}
+            contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,}
         },
     },
     utils::testing::{spawn_eternum, deploy_system}, constants::{NPC_ENTITY_TYPE},
 };
 
+const MAX_NUM_RESIDENT_NPCS: u8 = 5;
+const MAX_NUM_NATIVE_NPCS: u8 = 5;
 
 fn setup() -> (IWorldDispatcher, INpcDispatcher, u128, u128) {
     let world = spawn_eternum();
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let npc_config_dispatcher = INpcConfigDispatcher { contract_address: config_systems_address }
-        .set_npc_config(world, SPAWN_DELAY, PUB_KEY, MAX_NUM_RESIDENT_NPCS, MAX_NUM_NATIVE_NPCS);
+        .set_npc_config(SPAWN_DELAY, PUB_KEY, MAX_NUM_RESIDENT_NPCS, MAX_NUM_NATIVE_NPCS);
     ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_speed_config(world, NPC_ENTITY_TYPE, 55); // 10km per sec
+        .set_speed_config(NPC_ENTITY_TYPE, 55); // 10km per sec
 
-    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -42,7 +43,6 @@ fn setup() -> (IWorldDispatcher, INpcDispatcher, u128, u128) {
     world.uuid();
     let from_realm_entity_id = realm_systems_dispatcher
         .create(
-            world,
             1, // realm id
             0x209, // resource_types_packed // 2,9 // stone and gold
             2, // resource_types_count
@@ -58,7 +58,6 @@ fn setup() -> (IWorldDispatcher, INpcDispatcher, u128, u128) {
 
     let to_realm_entity_id = realm_systems_dispatcher
         .create(
-            world,
             2, // realm id
             0x209, // resource_types_packed // 2,9 // stone and gold
             2, // resource_types_count
@@ -72,7 +71,7 @@ fn setup() -> (IWorldDispatcher, INpcDispatcher, u128, u128) {
         // x needs to be > 470200 to get zone
         );
 
-    let npc_address = deploy_system(npc_systems::TEST_CLASS_HASH);
+    let npc_address = deploy_system(world, npc_systems::TEST_CLASS_HASH);
     let npc_dispatcher = INpcDispatcher { contract_address: npc_address };
     (world, npc_dispatcher, from_realm_entity_id, to_realm_entity_id)
 }
@@ -92,7 +91,7 @@ fn spawn_npc_util(
     let s_sign = 0x1171a4553f2b9d6a053f4e60c35b5c329931c7b353324f03f7ec5055f48f1ec;
 
     let entity_id = npc_dispatcher
-        .spawn_npc(world, realm_entity_id, characs, 'brave', 'John', array![r_sign, s_sign].span());
+        .spawn_npc(realm_entity_id, characs, 'brave', 'John', array![r_sign, s_sign].span());
 
     assert(entity_id != 0, 'entity id is zero');
 

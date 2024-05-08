@@ -14,7 +14,7 @@ type VillagerButtonsProps = {
   villager: Villager;
 };
 
-export function getVillagerButtons({ villager }: VillagerButtonsProps) {
+export const ButtonFromVillagerType = ({ villager }: VillagerButtonsProps) => {
   const {
     setup: {
       components: { ArrivalTime },
@@ -29,14 +29,14 @@ export function getVillagerButtons({ villager }: VillagerButtonsProps) {
   const { realmEntityId } = useRealmStore();
   const { nextBlockTimestamp } = useBlockchainStore();
 
-  const getButtonsByType = (): any[] => {
+  const getButtonsByType = () => {
     switch (villager.type) {
       case VillagerType.Traveler:
-        return extraButtonsTraveler;
+        return buttonTraveler;
       case VillagerType.Resident:
-        return extraButtonsResident;
+        return buttonResident;
       case VillagerType.AtGates:
-        return extraButtonsGates;
+        return buttonGates;
       default:
         return [<></>];
     }
@@ -74,9 +74,9 @@ export function getVillagerButtons({ villager }: VillagerButtonsProps) {
     villager.type === VillagerType.Traveler
       ? useArrivalTimeByEntityId(villager.npc.entityId, ArrivalTime) > nextBlockTimestamp!
       : true;
-  const extraButtonsTraveler: any = [
+  const buttonTraveler = (
     <Button
-      key="bringBackButton"
+      key="bringBack"
       disabled={isDisabled}
       isLoading={loading}
       size="md"
@@ -87,38 +87,43 @@ export function getVillagerButtons({ villager }: VillagerButtonsProps) {
     >
       <ArrowIn className={clsx("h-3", "mr-1", isDisabled && "fill-gray-gold", !isDisabled && "fill-gold")} />
       {`Bring back`}
-    </Button>,
-  ];
+    </Button>
+  );
 
-  const extraButtonsResident: any = [
-    villager.native ? (
-      <Button
-        key="travelButton"
-        isLoading={loading}
-        size="md"
-        className="ml-auto h-6"
-        onClick={() => {
-          setNpcInTravelPopup(villager.npc);
-        }}
-        variant="outline"
-        withoutSound
-      >
-        <ArrowOut className="h-3 mr-1 fill-gold" />
-        {`Travel`}
-      </Button>
-    ) : (
-      <Button isLoading={loading} size="xs" className="ml-auto" onClick={kickOut} variant="outline" withoutSound>
-        {`Kick Out`}
-      </Button>
-    ),
-  ];
+  const buttonResident = villager.native ? (
+    <Button
+      key="travel"
+      isLoading={loading}
+      size="md"
+      className="ml-auto h-6"
+      onClick={() => {
+        setNpcInTravelPopup(villager.npc);
+      }}
+      variant="outline"
+      withoutSound
+    >
+      <ArrowOut className="h-3 mr-1 fill-gold" />
+      {`Travel`}
+    </Button>
+  ) : (
+    <Button isLoading={loading} size="xs" className="ml-auto" onClick={kickOut} variant="outline" withoutSound>
+      {`Kick Out`}
+    </Button>
+  );
 
-  const extraButtonsGates: any = [
-    <Button size="md" isLoading={loading} className="ml-auto h-6" onClick={welcomeIn} variant="outline" withoutSound>
+  const buttonGates = (
+    <Button
+      key="welcomeIn"
+      size="md"
+      isLoading={loading}
+      className="ml-auto h-6"
+      onClick={welcomeIn}
+      variant="outline"
+      withoutSound
+    >
       <ArrowIn className="mr-1 fill-gold" />
       {`Welcome in`}
-    </Button>,
-  ];
-
+    </Button>
+  );
   return getButtonsByType();
-}
+};

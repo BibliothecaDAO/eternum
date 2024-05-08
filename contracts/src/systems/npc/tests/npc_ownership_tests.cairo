@@ -14,11 +14,10 @@ use eternum::{
         },
         realm::{
             contracts::realm_systems,
-            interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,}
+            contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,}
         },
         config::{
-            contracts::config_systems, interface::{INpcConfigDispatcher, INpcConfigDispatcherTrait},
-            tests::npc_config_tests::{MAX_NUM_RESIDENT_NPCS, MAX_NUM_NATIVE_NPCS}
+            contracts::config_systems, contracts::{INpcConfigDispatcher, INpcConfigDispatcherTrait}
         }
     },
     utils::testing::{spawn_eternum, deploy_system}

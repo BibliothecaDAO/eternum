@@ -11,9 +11,7 @@ import {
   military,
   resources,
   settings,
-  trade,
   construction,
-  assistant,
 } from "../../components/navigation/Config";
 import useUIStore from "../../../hooks/store/useUIStore";
 
@@ -32,6 +30,7 @@ import { Construction } from "../construction/Construction";
 import { Assistant } from "../assistant/Assistant";
 import { useTour } from "@reactour/tour";
 import { Questing } from "../questing/Questing";
+import { Villagers } from "../villagers/Villagers";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -44,6 +43,7 @@ export const BuildingThumbs = {
   leaderboard: "/images/buildings/thumb/leaderboard.png",
   worldMap: "/images/buildings/thumb/world-map.png",
   squire: "/images/buildings/thumb/squire.png",
+  villagers: "/images/buildings/thumb/villagers.png",
 };
 
 export const LeftNavigationModule = () => {
@@ -124,6 +124,7 @@ export const LeftNavigationModule = () => {
         ))}
       </div>
       {/* <EventLog /> */}
+      <Villagers />
       <Banks />
       <Leaderboard />
       <HyperStructures />

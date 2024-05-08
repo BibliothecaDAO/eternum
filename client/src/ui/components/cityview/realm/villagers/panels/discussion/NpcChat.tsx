@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { NpcChatMessage } from "./NpcChatMessage";
 import { StorageDiscussions, StorageDiscussion, Npc, DiscussionSegment } from "../../types";
 import { useResidentsNpcs, scrollToElement, getNpcFromEntityId } from "../../utils";
@@ -31,7 +31,6 @@ const NpcChat = ({}) => {
 
   useEffect(() => {
     if (selectedDiscussion === null || localStorage.getItem(LOCAL_STORAGE_ID) == null) {
-      console.log(selectedDiscussion);
       return;
     }
     setLastMessageDisplayedIndex(0);

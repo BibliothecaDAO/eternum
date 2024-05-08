@@ -34,7 +34,7 @@ export const VillagersPanel = () => {
 
   const { realmId, realmEntityId } = useRealmStore();
   const { nextBlockTimestamp } = useBlockchainStore();
-  console.log(realmEntityId);
+
   const { loreMachineJsonRpcCall } = useNpcStore();
 
   const villagers: SortVillagers = {
@@ -155,10 +155,10 @@ export const VillagersPanel = () => {
   return (
     <div className="flex flex-col">
       <SortPanel className="flex justify-between px-3 py-2">
-        {sortingParams.map(({ label, sortKey, className }) => (
+        {sortingParams.map(({ label, sortKey, className }, index: number) => (
           <SortButton
             className={className}
-            key={sortKey}
+            key={index}
             label={label}
             sortKey={sortKey}
             activeSort={sortedByParam}
@@ -173,25 +173,23 @@ export const VillagersPanel = () => {
       </SortPanel>
 
       <SortPanel className="flex justify-center px-3 py-2 ">
-        {npcGroupSortingParams.map(({ label, className }) => (
-          <>
-            <NpcSortButton
-              key={label}
-              className={className}
-              label={label}
-              isActive={displayedNpcGroup === label}
-              onChange={() => {
-                setDisplayedNpcGroup((prevState) => (prevState === label ? "None" : label));
-              }}
-            />
-          </>
+        {npcGroupSortingParams.map(({ label, className }, index) => (
+          <NpcSortButton
+            key={index}
+            className={className}
+            label={label}
+            isActive={displayedNpcGroup === label}
+            onChange={() => {
+              setDisplayedNpcGroup((prevState) => (prevState === label ? "None" : label));
+            }}
+          />
         ))}
       </SortPanel>
 
       {Object.entries(villagers).map(
-        ([group, villagers]) =>
+        ([group, villagers], index: number) =>
           (displayedNpcGroup === group || displayedNpcGroup === "None") && (
-            <>
+            <div key={index}>
               <div className="flex items-center">{getNpcHeadline(villagers ? villagers.length : 0, group)}</div>
 
               {group === "residents" &&
@@ -216,7 +214,7 @@ export const VillagersPanel = () => {
                     <VillagerComponent villager={villager} />
                   </div>
                 ))}
-            </>
+            </div>
           ),
       )}
     </div>

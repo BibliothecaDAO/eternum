@@ -81,7 +81,7 @@ export const DiscussionPanel = ({ type = "all" }: DiscussionPanelProps) => {
     }
   };
 
-  const setDate = (): string => {
+  const getDate = (): string => {
     const date = new Date(0);
     date.setUTCSeconds(selectedDiscussion!);
     return `${date.toLocaleDateString()} - ${date.toLocaleTimeString()}`;
@@ -90,12 +90,12 @@ export const DiscussionPanel = ({ type = "all" }: DiscussionPanelProps) => {
   return (
     <div className="flex flex-col h-[250px] relative">
       <div className="flex flex-row w-[100%] items-center justify-between" style={{ position: "relative", top: "2%" }}>
-        {selectedDiscussion! && (
+        {selectedDiscussion !== 0 && (
           <div className="flex relative">
             <Button onClick={() => setSelectedDiscussionFromDirection(-1)}>
               <ArrowPrev />
             </Button>
-            <div className="text-white">{setDate()}</div>
+            <div className="text-white">{getDate()}</div>
             <Button onClick={() => setSelectedDiscussionFromDirection(+1)} className="mr-2">
               <ArrowNext />
             </Button>

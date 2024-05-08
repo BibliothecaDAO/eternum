@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { SecondaryPopup } from "../../../../../../elements/SecondaryPopup";
 import Button from "../../../../../../elements/Button";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "../../../../../../utils/utils";

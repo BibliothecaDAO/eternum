@@ -72,7 +72,7 @@ fn unpack_characs(value: felt252) -> Characteristics {
     let packed = value.into();
     let (packed, age) = integer::U256DivRem::div_rem(packed, TWO_POW_8.try_into().unwrap());
     let (packed, role) = integer::U256DivRem::div_rem(packed, TWO_POW_8.try_into().unwrap());
-    let (packed, sex) = integer::U256DivRem::div_rem(packed, TWO_POW_2.try_into().unwrap());
+    let (_packed, sex) = integer::U256DivRem::div_rem(packed, TWO_POW_2.try_into().unwrap());
     Characteristics {
         age: age.try_into().unwrap(), role: role.try_into().unwrap(), sex: sex.try_into().unwrap()
     }

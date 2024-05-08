@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Npc } from "../../components/cityview/realm/villagers/types";
+import { Npc } from "../../ui/components/cityview/realm/villagers/types";
 
 const callLoreMachineJsonRpcMethod = async (method: string, params: any) => {
   const response = await fetch(import.meta.env.VITE_OVERLORE_RPC_URL, {
@@ -25,6 +25,10 @@ interface NpcState {
   setIsDiscussionLoading: (val: boolean) => void;
   initializedRealms: bigint[];
   setInitialisedRealms: (val: bigint[]) => void;
+  npcInInfoPopup: Npc | null;
+  setNpcInInfoPopup: (val: Npc | null) => void;
+  npcInTravelPopup: Npc | null;
+  setNpcInTravelPopup: (val: Npc | null) => void;
 }
 
 const useNpcStore = create<NpcState>((set) => ({
@@ -35,6 +39,10 @@ const useNpcStore = create<NpcState>((set) => ({
   setIsDiscussionLoading: (val: boolean) => set({ isDiscussionLoading: val }),
   initializedRealms: [],
   setInitialisedRealms: (val: bigint[]) => set({ initializedRealms: val }),
+  npcInInfoPopup: null,
+  setNpcInInfoPopup: (val: Npc | null) => set({ npcInInfoPopup: val }),
+  npcInTravelPopup: null,
+  setNpcInTravelPopup: (val: Npc | null) => set({ npcInTravelPopup: val }),
 }));
 
 export default useNpcStore;

@@ -15,11 +15,10 @@ use eternum::{
         },
         realm::{
             contracts::realm_systems,
-            interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,}
+            contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,}
         },
         config::{
-            contracts::config_systems, interface::{INpcConfigDispatcher, INpcConfigDispatcherTrait},
-            tests::npc_config_tests::{MAX_NUM_RESIDENT_NPCS, MAX_NUM_NATIVE_NPCS}
+            contracts::config_systems, contracts::{INpcConfigDispatcher, INpcConfigDispatcherTrait}
         },
     },
     utils::testing::{spawn_eternum, deploy_system},
@@ -105,6 +104,6 @@ fn test_invalid_trait() {
     // 'brave' -> 'Brave'
     npc_dispatcher
         .spawn_npc(
-            world, from_realm_entity_id, characs, 'Brave', 'John', array![r_sign, s_sign].span()
+            from_realm_entity_id, characs, 'Brave', 'John', array![r_sign, s_sign].span()
         );
 }

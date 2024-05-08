@@ -567,40 +567,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    NpcConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.BigInt,
-          spawn_delay: RecsType.BigInt,
-          pub_key: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            name: "NpcConfig",
-            types: ["u128", "u64", "felt252"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    RealmRegistry: (() => {
-      return defineComponent(
-        world,
-        {
-          realm_entity_id: RecsType.BigInt,
-          num_resident_npcs: RecsType.BigInt,
-          num_native_npcs: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            name: "RealmRegistry",
-            types: ["u128", "u8", "u8"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     LastSpawned: (() => {
       return defineComponent(
         world,

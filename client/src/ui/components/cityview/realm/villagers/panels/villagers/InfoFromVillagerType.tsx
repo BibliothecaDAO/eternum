@@ -6,7 +6,7 @@ import { Npc, Villager, VillagerType } from "../../types";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 
-export function getVillagerTypeInfo(villager: Villager) {
+export const InfoFromVillagerType = (villager: Villager) => {
   const {
     setup: {
       components: { ArrivalTime, EntityOwner, Realm, Position },
@@ -141,4 +141,4 @@ export function getVillagerTypeInfo(villager: Villager) {
   };
 
   return getInfoByType();
-}
+};

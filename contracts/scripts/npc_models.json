@@ -1,0 +1,4 @@
+{
+  "NPC_SYSTEMS": ["Npc", "RealmRegistry", "LastSpawned", "Owner", "EntityOwner", "Position", "Movable", "ArrivalTime"],
+  "CONFIG_SYSTEMS": ["NpcConfig"]
+}

@@ -6,7 +6,15 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
-import { banks, leaderboard, military, resources, trade, construction } from "../../components/navigation/Config";
+import {
+  banks,
+  leaderboard,
+  military,
+  resources,
+  trade,
+  construction,
+  villagers,
+} from "../../components/navigation/Config";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 
 export enum MenuEnum {
@@ -19,6 +27,7 @@ export enum MenuEnum {
   bank = "bank",
   hyperstructures = "hyperstructures",
   leaderboard = "leaderboard",
+  villagers = "villagers",
 }
 
 export const BottomNavigation = () => {
@@ -39,7 +48,7 @@ export const BottomNavigation = () => {
   const navigation = useMemo(() => {
     const navigation = [
       {
-        name: "realm",
+        name: MenuEnum.realm,
         button: (
           <CircleButton
             image="/images/buildings/thumb/realm.png"
@@ -55,7 +64,7 @@ export const BottomNavigation = () => {
         ),
       },
       {
-        name: "world-map",
+        name: MenuEnum.worldMap,
         button: (
           <CircleButton
             className="third-step"
@@ -85,7 +94,7 @@ export const BottomNavigation = () => {
         ),
       },
       {
-        name: "military",
+        name: MenuEnum.military,
         button: (
           <CircleButton
             image={BuildingThumbs.military}
@@ -98,7 +107,7 @@ export const BottomNavigation = () => {
         ),
       },
       {
-        name: "construction",
+        name: MenuEnum.construction,
         button: (
           <CircleButton
             image={BuildingThumbs.construction}
@@ -114,7 +123,7 @@ export const BottomNavigation = () => {
         ),
       },
       {
-        name: "trade",
+        name: MenuEnum.trade,
         button: (
           <CircleButton
             image={BuildingThumbs.trade}
@@ -127,7 +136,7 @@ export const BottomNavigation = () => {
         ),
       },
       {
-        name: "resources",
+        name: MenuEnum.resources,
         button: (
           <CircleButton
             tooltipLocation="top"
@@ -140,7 +149,7 @@ export const BottomNavigation = () => {
         ),
       },
       {
-        name: "bank",
+        name: MenuEnum.bank,
         button: (
           <CircleButton
             image={BuildingThumbs.banks}
@@ -153,6 +162,7 @@ export const BottomNavigation = () => {
         ),
       },
       {
+        name: MenuEnum.leaderboard,
         button: (
           <CircleButton
             image={BuildingThumbs.leaderboard}
@@ -164,6 +174,19 @@ export const BottomNavigation = () => {
           />
         ),
       },
+      {
+        name: MenuEnum.villagers,
+        button: (
+          <CircleButton
+            image={BuildingThumbs.villagers}
+            tooltipLocation="top"
+            label={villagers}
+            active={isPopupOpen(villagers)}
+            size="xl"
+            onClick={() => togglePopup(villagers)}
+          ></CircleButton>
+        ),
+      },
     ];
 
     return location === "/map"
@@ -172,7 +195,8 @@ export const BottomNavigation = () => {
             item.name !== MenuEnum.construction &&
             item.name !== MenuEnum.resources &&
             item.name !== MenuEnum.worldMap &&
-            item.name !== MenuEnum.trade,
+            item.name !== MenuEnum.trade &&
+            item.name !== MenuEnum.villagers,
         )
       : navigation;
   }, [location]);

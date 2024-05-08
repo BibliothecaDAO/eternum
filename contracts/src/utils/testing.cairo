@@ -6,7 +6,7 @@ use eternum::models::capacity::{capacity, Capacity};
 
 use eternum::models::config::{
     world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,
-    weight_config, WeightConfig, road_config, RoadConfig
+    weight_config, WeightConfig, road_config, RoadConfig, npc_config, NpcConfig
 };
 use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};

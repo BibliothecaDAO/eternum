@@ -18,14 +18,13 @@ use eternum::{
         },
         realm::{
             contracts::realm_systems,
-            interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,}
+            contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,}
         },
         config::{
-            interface::{
+            contracts::{
                 ITransportConfigDispatcher, ITransportConfigDispatcherTrait, INpcConfigDispatcher,
                 INpcConfigDispatcherTrait
             },
-            tests::npc_config_tests::{MAX_NUM_RESIDENT_NPCS, MAX_NUM_NATIVE_NPCS}
         }
     },
     constants::{NPC_ENTITY_TYPE}
@@ -37,7 +36,7 @@ fn test_npc_travel() {
     let (world, npc_dispatcher, from_realm_entity_id, to_realm_entity_id) = setup();
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
 
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
 
     assert(is_in_same_position(world, npc, to_realm_entity_id), 'npc not at correct position');
 
@@ -53,12 +52,12 @@ fn test_npc_travel_twice() {
     let (world, npc_dispatcher, from_realm_entity_id, to_realm_entity_id) = setup();
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
 
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
 
     let npc_arrival_time = get!(world, npc.entity_id, (ArrivalTime)).arrives_at;
     starknet::testing::set_block_timestamp(npc_arrival_time);
 
-    npc_dispatcher.npc_travel(world, npc.entity_id, from_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, from_realm_entity_id);
 
     assert(is_in_same_position(world, npc, from_realm_entity_id), 'npc not at correct position');
     assert(
@@ -74,7 +73,7 @@ fn test_npc_travel_to_invalid_realm() {
     let (world, npc_dispatcher, from_realm_entity_id, to_realm_entity_id) = setup();
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
-    npc_dispatcher.npc_travel(world, npc.entity_id, 1000);
+    npc_dispatcher.npc_travel(npc.entity_id, 1000);
 }
 
 #[test]
@@ -84,8 +83,8 @@ fn test_npc_travel_while_traveling() {
     let (world, npc_dispatcher, from_realm_entity_id, to_realm_entity_id) = setup();
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
 }
 
 #[test]
@@ -95,7 +94,7 @@ fn test_npc_travel_to_current_realm() {
     let (world, npc_dispatcher, from_realm_entity_id, to_realm_entity_id) = setup();
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
-    npc_dispatcher.npc_travel(world, npc.entity_id, from_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, from_realm_entity_id);
 }
 
 #[test]
@@ -104,12 +103,12 @@ fn test_welcome_npc_success() {
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
 
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
 
     let npc_arrival_time = get!(world, npc.entity_id, (ArrivalTime)).arrives_at;
     starknet::testing::set_block_timestamp(npc_arrival_time);
 
-    npc_dispatcher.welcome_npc(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.welcome_npc(npc.entity_id, to_realm_entity_id);
 
     assert(
         realms_have_correct_number_of_npcs(world, from_realm_entity_id, 0, to_realm_entity_id, 1),
@@ -124,13 +123,13 @@ fn test_welcome_npc_wrong_caller() {
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
 
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
 
     let npc_arrival_time = get!(world, npc.entity_id, (ArrivalTime)).arrives_at;
     starknet::testing::set_block_timestamp(npc_arrival_time);
 
     starknet::testing::set_contract_address(starknet::contract_address_const::<'wrong caller'>());
-    npc_dispatcher.welcome_npc(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.welcome_npc(npc.entity_id, to_realm_entity_id);
 }
 
 #[test]
@@ -140,12 +139,12 @@ fn test_welcome_npc_invalid_into_realm_entity_id() {
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
 
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
 
     let npc_arrival_time = get!(world, npc.entity_id, (ArrivalTime)).arrives_at;
     starknet::testing::set_block_timestamp(npc_arrival_time);
 
-    npc_dispatcher.welcome_npc(world, npc.entity_id, 0);
+    npc_dispatcher.welcome_npc(npc.entity_id, 0);
 }
 
 #[test]
@@ -153,7 +152,7 @@ fn test_welcome_npc_invalid_into_realm_entity_id() {
 fn test_welcome_npc_invalid_npc_entity_id() {
     let (world, npc_dispatcher, _from_realm_entity_id, to_realm_entity_id) = setup();
 
-    npc_dispatcher.welcome_npc(world, 0, to_realm_entity_id);
+    npc_dispatcher.welcome_npc(0, to_realm_entity_id);
 }
 
 #[test]
@@ -163,12 +162,12 @@ fn test_welcome_npc_invalid_npc_position() {
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
 
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
 
     let npc_arrival_time = get!(world, npc.entity_id, (ArrivalTime)).arrives_at;
     starknet::testing::set_block_timestamp(npc_arrival_time);
 
-    npc_dispatcher.welcome_npc(world, npc.entity_id, from_realm_entity_id);
+    npc_dispatcher.welcome_npc(npc.entity_id, from_realm_entity_id);
 }
 
 #[test]
@@ -178,9 +177,9 @@ fn test_welcome_npc_still_traveling() {
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
 
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
 
-    npc_dispatcher.welcome_npc(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.welcome_npc(npc.entity_id, to_realm_entity_id);
 }
 
 
@@ -191,13 +190,13 @@ fn test_welcome_npc_welcome_twice() {
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
 
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
 
     let npc_arrival_time = get!(world, npc.entity_id, (ArrivalTime)).arrives_at;
     starknet::testing::set_block_timestamp(npc_arrival_time);
 
-    npc_dispatcher.welcome_npc(world, npc.entity_id, to_realm_entity_id);
-    npc_dispatcher.welcome_npc(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.welcome_npc(npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.welcome_npc(npc.entity_id, to_realm_entity_id);
 }
 
 #[test]
@@ -207,7 +206,7 @@ fn test_welcome_npc_too_many_residents() {
 
     let traveling_npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
 
-    npc_dispatcher.npc_travel(world, traveling_npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(traveling_npc.entity_id, to_realm_entity_id);
 
     let npc_arrival_time = get!(world, traveling_npc.entity_id, (ArrivalTime)).arrives_at;
     starknet::testing::set_block_timestamp(npc_arrival_time);
@@ -218,7 +217,7 @@ fn test_welcome_npc_too_many_residents() {
     let _npc = spawn_npc_util(world, to_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 3);
     let _npc = spawn_npc_util(world, to_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 4);
 
-    npc_dispatcher.welcome_npc(world, traveling_npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.welcome_npc(traveling_npc.entity_id, to_realm_entity_id);
 }
 
 #[test]
@@ -227,14 +226,14 @@ fn test_kick_out_npc() {
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
 
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
 
     let npc_arrival_time = get!(world, npc.entity_id, (ArrivalTime)).arrives_at;
     starknet::testing::set_block_timestamp(npc_arrival_time);
 
-    npc_dispatcher.welcome_npc(world, npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.welcome_npc(npc.entity_id, to_realm_entity_id);
 
-    npc_dispatcher.kick_out_npc(world, npc.entity_id);
+    npc_dispatcher.kick_out_npc(npc.entity_id);
     assert(
         realms_have_correct_number_of_npcs(world, from_realm_entity_id, 0, to_realm_entity_id, 0),
         'incorrect number of residents'
@@ -247,14 +246,14 @@ fn test_kick_out_npc() {
 #[should_panic(expected: ('npc_entity_id is 0', 'ENTRYPOINT_FAILED'))]
 fn test_kick_out_invalid_npc_entity_id() {
     let (world, npc_dispatcher, _from_realm_entity_id, _to_realm_entity_id) = setup();
-    npc_dispatcher.kick_out_npc(world, 0);
+    npc_dispatcher.kick_out_npc(0);
 }
 
 #[test]
 #[should_panic(expected: ('invalid npc_entity_id', 'ENTRYPOINT_FAILED'))]
 fn test_kick_out_non_existent_npc() {
     let (world, npc_dispatcher, _from_realm_entity_id, _to_realm_entity_id) = setup();
-    npc_dispatcher.kick_out_npc(world, 100);
+    npc_dispatcher.kick_out_npc(100);
 }
 
 
@@ -265,6 +264,6 @@ fn test_kick_out_traveler_npc() {
 
     let npc = spawn_npc_util(world, from_realm_entity_id, npc_dispatcher, SPAWN_DELAY, 0);
 
-    npc_dispatcher.npc_travel(world, npc.entity_id, to_realm_entity_id);
-    npc_dispatcher.kick_out_npc(world, npc.entity_id);
+    npc_dispatcher.npc_travel(npc.entity_id, to_realm_entity_id);
+    npc_dispatcher.kick_out_npc(npc.entity_id);
 }

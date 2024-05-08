@@ -102,7 +102,12 @@ trait IPopulationConfig {
 
 #[dojo::interface]
 trait INpcConfig {
-    fn set_spawn_config(spawn_delay: u128);
+    fn set_npc_config(
+        spawn_delay: u64,
+        pub_key: felt252,
+        max_num_resident_npcs: u8,
+        max_num_native_npcs: u8
+    );
 }
 
 
@@ -201,10 +206,9 @@ mod config_systems {
         }
     }
 
-    #[external(v0)]
-    impl NpcConfigImpl of INpcConfig<ContractState> {
+    #[abi(embed_v0)]
+    impl NpcConfigImpl of super::INpcConfig<ContractState> {
         fn set_npc_config(
-            self: @ContractState,
             world: IWorldDispatcher,
             spawn_delay: u64,
             pub_key: felt252,

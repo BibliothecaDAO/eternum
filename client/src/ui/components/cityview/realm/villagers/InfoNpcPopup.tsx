@@ -9,7 +9,7 @@ type NpcPopupProps = {
   onClose: () => void;
 };
 
-export const NpcPopup = ({ onClose }: NpcPopupProps) => {
+export const InfoNpcPopup = ({ onClose }: NpcPopupProps) => {
   const [backstory, setBackstory] = useState<string>("");
   const { loreMachineJsonRpcCall, npcInInfoPopup } = useNpcStore();
 

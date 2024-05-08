@@ -3,10 +3,8 @@ import { ReactComponent as Mars } from "../../../../../assets/icons/npc/mars.svg
 import { ReactComponent as Venus } from "../../../../../assets/icons/npc/venus.svg";
 import { ReactComponent as Info } from "../../../../../assets/icons/common/info.svg";
 import { getNpcImagePath } from "./utils";
-import { useState } from "react";
-import { getVillagerTypeInfo } from "./panels/villagers/GetVillagerTypeInfo";
-import { getVillagerButtons } from "./panels/villagers/GetVillagerButtons";
-import { TravelNpcPopup } from "./panels/villagers/TravelNpcPopup";
+import { InfoFromVillagerType } from "./panels/villagers/InfoFromVillagerType";
+import { ButtonFromVillagerType } from "./panels/villagers/ButtonFromVillagerType";
 import useNpcStore from "@/hooks/store/useNpcStore";
 
 type VillagerComponentProps = {
@@ -15,8 +13,8 @@ type VillagerComponentProps = {
 
 export const VillagerComponent = ({ villager }: VillagerComponentProps) => {
   const { setNpcInInfoPopup } = useNpcStore();
-  const villagerInfo = getVillagerTypeInfo(villager);
-  const buttons = getVillagerButtons({ villager });
+  const villagerInfo = InfoFromVillagerType(villager);
+  const villagerButton = ButtonFromVillagerType({ villager });
 
   return (
     <>
@@ -53,7 +51,7 @@ export const VillagerComponent = ({ villager }: VillagerComponentProps) => {
             </div>
           </div>
 
-          <div className="ml-auto mt-auto p-2">{buttons.map((button: any) => button as any)}</div>
+          <div className="ml-auto mt-auto p-2">{villagerButton}</div>
         </div>
       </div>
     </>

@@ -41,7 +41,6 @@ mod npc_systems {
 
     #[derive(Drop, starknet::Event)]
     struct NpcSpawned {
-        #[key]
         realm_entity_id: u128,
         entity_id: u128,
     }
@@ -55,7 +54,6 @@ mod npc_systems {
     #[generate_trait]
     impl InternalFunctions of InternalFunctionsTrait {
         fn change_characteristics(
-            self: @ContractState,
             world: IWorldDispatcher,
             realm_entity_id: u128,
             entity_id: u128,
@@ -81,10 +79,9 @@ mod npc_systems {
         }
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl NpcImpl of INpc<ContractState> {
         fn spawn_npc(
-            self: @ContractState,
             world: IWorldDispatcher,
             realm_entity_id: u128,
             characteristics: felt252,
@@ -141,6 +138,8 @@ mod npc_systems {
                     sec_per_km: speed,
                     blocked: false,
                     round_trip: false,
+                    start_coord_x: realm_position.x,
+                    start_coord_y: realm_position.y,
                     intermediate_coord_x: 0,
                     intermediate_coord_y: 0,
                 })
@@ -165,13 +164,12 @@ mod npc_systems {
                 }
             );
 
-            emit!(world, NpcSpawned { realm_entity_id, entity_id });
+            emit!(world, (Event::NpcSpawned(NpcSpawned{ realm_entity_id, entity_id }), ));
 
             entity_id
         }
 
         fn change_character_trait(
-            self: @ContractState,
             world: IWorldDispatcher,
             realm_entity_id: u128,
             entity_id: u128,
@@ -180,7 +178,6 @@ mod npc_systems {
             assert_realm_existance_and_ownership(world, realm_entity_id);
             assert(entity_id != 0, 'npc inexistant');
 
-            let caller_address = get_caller_address();
             let old_npc = get!(world, entity_id, (Npc));
 
             let entity_owner = get!(world, (entity_id), (EntityOwner));
@@ -201,7 +198,6 @@ mod npc_systems {
         }
 
         fn npc_travel(
-            self: @ContractState,
             world: IWorldDispatcher,
             npc_entity_id: u128,
             to_realm_entity_id: u128
@@ -260,7 +256,6 @@ mod npc_systems {
         }
 
         fn welcome_npc(
-            self: @ContractState,
             world: IWorldDispatcher,
             npc_entity_id: u128,
             into_realm_entity_id: u128,
@@ -311,7 +306,7 @@ mod npc_systems {
             );
         }
 
-        fn kick_out_npc(self: @ContractState, world: IWorldDispatcher, npc_entity_id: u128) {
+        fn kick_out_npc(world: IWorldDispatcher, npc_entity_id: u128) {
             assert(npc_entity_id != 0, 'npc_entity_id is 0');
 
             let npc = get!(world, npc_entity_id, (Npc));

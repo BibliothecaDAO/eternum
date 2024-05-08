@@ -28,4 +28,5 @@ mod bank {
     mod liquidity;
     mod market;
 }
+mod last_spawned;
 mod npc;
