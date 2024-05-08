@@ -281,6 +281,7 @@ export const StepThree = () => {
         In a universe where ancient hyperstructures lie shattered, the Orders must{" "}
         <span className="text-white">rise from the cosmic ruins</span> and forge a new future.
       </p>
+      <p className="leading-loose text-2xl text-center mb-8">They who rule the Earthenshards rule the world...</p>
       <div className="flex w-full justify-center">
         <NavigateToRealm text={"begin"} />
       </div>
