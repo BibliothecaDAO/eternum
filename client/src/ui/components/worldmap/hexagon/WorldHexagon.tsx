@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 // @ts-ignore
 import { Flags } from "@/ui/components/worldmap/Flags.jsx";
 import useUIStore from "../../../../hooks/store/useUIStore.js";
@@ -62,24 +62,28 @@ export const WorldMap = () => {
   const setExploredHexes = useExploredHexesStore((state) => state.setExploredHexes);
   const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
 
-  useEffect(() => {
-    let subscription: Subscription | undefined;
+  const subscriptionRef = useRef<Subscription | undefined>();
+  const isComponentMounted = useRef(true);
 
+  useEffect(() => {
     const subscribeToExploreEvents = async () => {
       const observable = await exploreMapEvents();
-      const sub = observable.subscribe((event) => {
+      const subscription = observable.subscribe((event) => {
+        if (!isComponentMounted.current) return;
         if (event && hexData) {
           const col = Number(event.keys[2]) - FELT_CENTER;
           const row = Number(event.keys[3]) - FELT_CENTER;
           setExploredHexes(col, row);
         }
       });
-      subscription = sub;
+      subscriptionRef.current = subscription;
     };
+
     subscribeToExploreEvents();
 
     return () => {
-      subscription?.unsubscribe();
+      isComponentMounted.current = false;
+      subscriptionRef.current?.unsubscribe(); // Ensure to unsubscribe on component unmount
     };
   }, [hexData, setExploredHexes]);
 

@@ -6,7 +6,7 @@ import useUIStore from "../../../../hooks/store/useUIStore";
 import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../../utils/utils";
 import { Position, UIPosition } from "@bibliothecadao/eternum";
 // @ts-ignore
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Subscription } from "rxjs";
 import { Army } from "./Army";
 import { getRealmOrderNameById } from "../../../utils/realms";
@@ -111,12 +111,16 @@ const useUpdateAnimationPaths = () => {
   const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
   const animationPaths = useUIStore((state) => state.animationPaths);
 
+  const subscriptionRef = useRef<Subscription | undefined>();
+  const isComponentMounted = useRef(true);
+
   useEffect(() => {
     let subscription: Subscription | undefined;
 
     const subscribeToTravelEvents = async () => {
       const observable = await createTravelHexEvents();
-      const sub = observable.subscribe((event) => {
+      const subscription = observable.subscribe((event) => {
+        if (!isComponentMounted.current) return;
         if (event) {
           const path = [];
           const owner = BigInt(event.keys[3]);
@@ -132,7 +136,7 @@ const useUpdateAnimationPaths = () => {
           setAnimationPaths([...animationPaths, { id, path, enemy }]);
         }
       });
-      subscription = sub;
+      subscriptionRef.current = subscription;
     };
     subscribeToTravelEvents();
 

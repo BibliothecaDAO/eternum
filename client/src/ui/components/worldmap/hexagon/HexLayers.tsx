@@ -148,7 +148,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     });
 
     return { group: filteredGroup };
-  }, [startRow, endRow, startCol, endCol, HEX_RADIUS, hexData]);
+  }, [startRow, endRow, startCol, endCol, hexData]);
 
   const revealedHexes = useMemo(() => {
     const revealed: Hexagon[] = [];
