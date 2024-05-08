@@ -62,7 +62,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     },
   } = useDojo();
 
-  const { setTooltip } = useUIStore((state) => state);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
