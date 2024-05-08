@@ -1,5 +1,5 @@
 import { MapControls } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import gsap from "gsap";
 import { useEffect, useRef, useMemo, useCallback } from "react";
 import { Vector3 } from "three";
@@ -99,31 +99,16 @@ const CameraControls = ({ position, target }: Props) => {
     playFly();
   }, [target, position]);
 
-  const updateCompassDirection = useCallback(
-    throttle((cameraPosition, cameraTarget) => {
-      const { x: posX, z: posZ } = cameraPosition;
-      const { x: targetX, z: targetZ } = cameraTarget;
-
-      const dx = targetX - posX;
-      const dz = targetZ - posZ;
-      const angleRadians = Math.atan2(dz, dx);
-      const angleDegrees = angleRadians * (180 / Math.PI);
-      const normalizedNewAngle = (angleDegrees + 360) % 360;
-
-      // Determine the shortest path between the old and new angles
-      const deltaAngle = normalizedNewAngle - direction;
-      const shortestDelta = (deltaAngle + 360) % 360;
-      const correctedDelta = shortestDelta > 180 ? shortestDelta - 360 : shortestDelta;
-      const correctedDirection = direction + correctedDelta;
-
-      setCompassDirection(correctedDirection);
-    }, 32),
-    [],
-  );
+  // move compass direction
+  // useFrame(
+  //   throttle(() => {
+  //     const cameraDirection = camera.rotation.y * (180 / Math.PI);
+  //     setCompassDirection(cameraDirection >= 0 ? cameraDirection : 360 + cameraDirection);
+  //   }, 100),
+  // );
 
   const handleChange = useCallback((e: any) => {
     clampPan(e);
-    updateCompassDirection(camera.position, ref.current.target);
   }, []);
 
   const clampPan = useCallback(
