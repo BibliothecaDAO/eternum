@@ -16,6 +16,8 @@ import { useMemo } from "react";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
+import { useModal } from "@/hooks/store/useModal";
+import { HintModal } from "@/ui/components/hints/HintModal";
 
 export const TopMiddleNavigation = () => {
   const {
@@ -49,6 +51,8 @@ export const TopMiddleNavigation = () => {
 
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
   }, []);
+
+  const { toggleModal } = useModal();
 
   if (!nextBlockTimestamp) {
     return null;
@@ -89,7 +93,7 @@ export const TopMiddleNavigation = () => {
           image={BuildingThumbs.squire}
           label={assistant}
           active={isPopupOpen(assistant)}
-          size="xl"
+          size="sm"
           onClick={() => togglePopup(assistant)}
         /> */}
         <CircleButton
@@ -98,6 +102,16 @@ export const TopMiddleNavigation = () => {
           active={isPopupOpen(quests)}
           size="sm"
           onClick={() => togglePopup(quests)}
+          className="forth-step"
+        />
+
+        <CircleButton
+          image={BuildingThumbs.question}
+          label={"Hints"}
+          // active={isPopupOpen(quests)}
+          className="fifth-step"
+          size="sm"
+          onClick={() => toggleModal(<HintModal />)}
         />
         {population && (
           <div

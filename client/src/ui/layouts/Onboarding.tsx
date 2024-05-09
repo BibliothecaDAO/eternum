@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { MAX_REALMS } from "../components/cityview/realm/SettleRealmComponent";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { Naming, StepOne, StepThree, StepTwo } from "../modules/onboarding/Steps";
+import { Naming, StepOne, StepThree, StepTwo, StepFour, StepFive, StepSix } from "../modules/onboarding/Steps";
 
 export const Onboarding = () => {
   const { playerRealms } = useEntities();
@@ -35,7 +35,10 @@ export const Onboarding = () => {
         {currentStep === 1 && <StepOne onNext={nextStep} />}
         {currentStep === 2 && <Naming onNext={handleNamingNext} />}
         {currentStep === 3 && <StepTwo onPrev={prevStep} onNext={nextStep} />}
-        {currentStep === 4 && <StepThree />}
+        {currentStep === 4 && <StepThree onPrev={prevStep} onNext={nextStep} />}
+        {currentStep === 5 && <StepFour onPrev={prevStep} onNext={nextStep} />}
+        {currentStep === 6 && <StepFive onPrev={prevStep} onNext={nextStep} />}
+        {currentStep === 7 && <StepSix onPrev={prevStep} onNext={nextStep} />}
       </div>
     </div>
   );

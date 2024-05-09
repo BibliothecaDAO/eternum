@@ -186,28 +186,30 @@ export const BottomNavigation = () => {
 
   return (
     <div className="flex  py-3  justify-center flex-wrap first-step relative w-full duration-300 transition-all">
-      <div className=" w-full mr-4  h-full mt-4 absolute bottom-8 left-20">
-        <div
-          className={`w-full transition-all duration-300 overflow-auto pb-2 ${
-            activeBar === MenuEnum.realm ? "h-auto" : "h-0 hidden"
-          }`}
-        >
-          <RealmListBoxes />
-        </div>
-        <div
-          className={`w-full transition-all duration-300  pb-2 ${
-            activeBar === MenuEnum.construction ? "h-auto" : "h-0 hidden"
-          }`}
-        >
-          <SelectPreviewBuildingMenu />
-        </div>
-      </div>
-      <div className="w-full flex space-x-2 justify-start  pl-24">
-        {navigation.map((item, index) => (
-          <div className="duration-300 transition-all" key={index}>
-            {item.button}
+      <div>
+        <div className=" w-full mr-4  h-full mt-4 absolute bottom-8 left-20">
+          <div
+            className={`w-full transition-all duration-300 overflow-auto pb-2 justify-center flex ${
+              activeBar === MenuEnum.realm ? "h-auto" : "h-0 hidden"
+            }`}
+          >
+            <RealmListBoxes />
           </div>
-        ))}
+          <div
+            className={` transition-all duration-300 justify-center flex pb-2 ${
+              activeBar === MenuEnum.construction ? "h-auto" : "h-0 hidden"
+            }`}
+          >
+            <SelectPreviewBuildingMenu />
+          </div>
+        </div>
+        <div className="w-full flex space-x-2 justify-start  pl-24">
+          {navigation.map((item, index) => (
+            <div className="duration-300 transition-all" key={index}>
+              {item.button}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
