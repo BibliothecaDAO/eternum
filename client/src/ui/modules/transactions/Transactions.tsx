@@ -44,7 +44,7 @@ export const Transactions = () => {
   }, [provider]);
 
   return (
-    <div>
+    <div style={{ zIndex: 100 }}>
       {transactions.map((transaction, index) => (
         <div className={`${transaction.execution_status == "REVERTED" ? "text-red/40" : "text-green/70"}`} key={index}>
           Status: {transaction.execution_status} {shortenHex(transaction.transaction_hash)}
