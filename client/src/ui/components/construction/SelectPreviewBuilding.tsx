@@ -249,16 +249,21 @@ export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
 
   return (
     <div className="flex flex-col text-gold text-sm p-1 space-y-1">
-      <h5 className="text-center">
-        <ResourceIcon resource={findResourceById(resourceId)?.trait || ""} size="md" /> +10 per cycle
-      </h5>
-
-      <Headline className="py-3">Building</Headline>
+      <Headline className="py-3"> Building </Headline>
 
       {population !== 0 && <div>Increases Population: +{population}</div>}
 
       {capacity !== 0 && <div>Increases Capacity: +{capacity}</div>}
-      <Headline className="py-3">Input Costs</Headline>
+
+      {findResourceById(resourceId)?.trait && (
+        <div className=" flex">
+          <div>Produces: +10</div>
+          <ResourceIcon className="self-center ml-1" resource={findResourceById(resourceId)?.trait || ""} size="md" />
+          {findResourceById(resourceId)?.trait || ""} every cycle
+        </div>
+      )}
+
+      <Headline className="py-3">COST PER CYCLE</Headline>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
           return (
@@ -269,7 +274,8 @@ export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
           );
         })}
       </div>
-      <Headline className="py-3">Fixed Costs</Headline>
+
+      <Headline className="py-3">ONE TIME COST</Headline>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
@@ -302,7 +308,7 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
   return (
     <div className="p-2 text-sm text-gold">
       {/* <div className="w-32 my-2">{information}</div> */}
-      <Headline className="py-3">Building </Headline>
+      <Headline className="py-3"> Building </Headline>
 
       {population !== 0 && <div>Increases Population: +{population}</div>}
 
@@ -311,15 +317,15 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
       {resourceProduced !== 0 && (
         <div className=" flex">
           <div>Produces: +{perTick}</div>
-
           <ResourceIcon
-            className="self-center ml-3"
+            className="self-center ml-1"
             resource={findResourceById(resourceProduced)?.trait || ""}
             size="md"
           />
+          {findResourceById(resourceProduced)?.trait || ""} every cycle
         </div>
       )}
-      <Headline className="py-3">Cost</Headline>
+      <Headline className="py-3"> One time cost</Headline>
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(cost).map((resourceId, index) => {
           return (
@@ -496,8 +502,8 @@ export const BuildingCard = ({
       )}
     >
       {!canBuild && (
-        <div className="absolute w-full h-full bg-black/50 text-white/60 p-4 text-xs pt-4 flex justify-center">
-          <div className="self-center">no resources</div>
+        <div className="absolute w-full h-full bg-black/50 text-white/60 p-4 text-xs pt-4 flex justify-center mt-1">
+          <div className="self-center">insufficient fund</div>
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50 ">
