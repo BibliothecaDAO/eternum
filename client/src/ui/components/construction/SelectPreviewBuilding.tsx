@@ -306,6 +306,10 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
 
   const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
 
+  const ongoingCost = RESOURCE_INPUTS[resourceProduced];
+
+  console.log(ongoingCost);
+
   return (
     <div className="p-2 text-sm text-gold">
       {/* <div className="w-32 my-2">{information}</div> */}
@@ -326,6 +330,26 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
           {findResourceById(resourceProduced)?.trait || ""} every cycle
         </div>
       )}
+
+      {resourceProduced && (
+        <>
+          <Headline className="py-3">COST PER CYCLE</Headline>
+          <div className="grid grid-cols-2 gap-2">
+            {resourceProduced !== 0 &&
+              ongoingCost &&
+              Object.keys(ongoingCost).map((resourceId, index) => {
+                return (
+                  <ResourceCost
+                    key={index}
+                    resourceId={ongoingCost[Number(resourceId)].resource}
+                    amount={ongoingCost[Number(resourceId)].amount / 1000}
+                  />
+                );
+              })}
+          </div>
+        </>
+      )}
+
       <Headline className="py-3"> One time cost</Headline>
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(cost).map((resourceId, index) => {
