@@ -21,9 +21,39 @@ async function init() {
   inject();
   const steps: StepType[] = [
     {
-      selector: ".first-step",
-      content: "This is the main navigation. You can find all the important features here.",
-      position: "center",
+      selector: ".realm-selector",
+      content: "Navigate to your Realms here to manage your territories.",
+      position: "bottom",
+    },
+    {
+      selector: ".world-selector",
+      content: "Explore the World map and discover new areas.",
+      position: "bottom",
+    },
+    {
+      selector: ".military-selector",
+      content: "Access your Military options to manage troops and defenses.",
+      position: "bottom",
+    },
+    {
+      selector: ".construction-selector",
+      content: "Navigate to Construction to build and upgrade structures.",
+      position: "bottom",
+    },
+    {
+      selector: ".trade-selector",
+      content: "Visit the Trade center to engage in commerce and trade resources.",
+      position: "bottom",
+    },
+    {
+      selector: ".resources-selector",
+      content: "Manage and see the state of your production and resources here.",
+      position: "bottom",
+    },
+    {
+      selector: ".banking-selector",
+      content: "Manage your finances in the Banking section.",
+      position: "bottom",
     },
     {
       selector: ".second-step",

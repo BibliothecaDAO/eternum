@@ -157,9 +157,9 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   return (
     <StepContainer>
-      <div className="flex flex-col items-center p-3">
+      <div className="flex flex-col items-center p-3 ">
         <h3>Select Account</h3>
-        <div className="flex space-x-6 pt-4 w-full justify-center">
+        <div className="flex space-x-6 pt-4 w-full justify-center uppercase">
           <div>
             <div className=" border-gold border p-2 w-full">
               {loading ? (
@@ -190,7 +190,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                 value={account.address}
                 onChange={select}
               />
-              <Button variant={"primary"} onClick={create} disabled={isDeploying} isLoading={isDeploying}>
+              <Button variant={"default"} onClick={create} disabled={isDeploying} isLoading={isDeploying}>
                 {isDeploying ? "" : "Create New"}
               </Button>
             </div>

@@ -9,7 +9,7 @@ import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
-import { assistant, quests } from "@/ui/components/navigation/Config";
+import { assistant, leaderboard, quests } from "@/ui/components/navigation/Config";
 import { Compass } from "@/ui/components/worldmap/Compass";
 import { Headline } from "@/ui/elements/Headline";
 import { useMemo } from "react";
@@ -18,6 +18,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { useModal } from "@/hooks/store/useModal";
 import { HintModal } from "@/ui/components/hints/HintModal";
+import { ArrowUp } from "lucide-react";
 
 export const TopMiddleNavigation = () => {
   const {
@@ -60,27 +61,49 @@ export const TopMiddleNavigation = () => {
 
   return (
     <div className="flex">
-      {/* {location === "/map" && (
-        <div className="flex mr-4">
-          <Compass />
+      <div className="self-center px-3 flex space-x-2">
+        <CircleButton
+          image={BuildingThumbs.leaderboard}
+          label={leaderboard}
+          active={isPopupOpen(leaderboard)}
+          size="sm"
+          onClick={() => togglePopup(leaderboard)}
+        />
+        <div className="relative">
+          <CircleButton
+            image={BuildingThumbs.squire}
+            label={quests}
+            active={isPopupOpen(quests)}
+            size="sm"
+            onClick={() => togglePopup(quests)}
+            className="forth-step"
+          />
+
+          {population?.population == null && (
+            <div className="absolute bg-brown text-gold border-gradient border top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
+              <ArrowUp className="text-gold w-4 mr-3" />
+              <div>Start here</div>
+            </div>
+          )}
         </div>
-      )} */}
-      <div
-        onMouseEnter={() => {
-          setTooltip({
-            position: "bottom",
-            content: (
-              <span className="whitespace-nowrap pointer-events-none">
-                <span>A day in Eternum is {TIME_PER_TICK / 60}m</span>
-              </span>
-            ),
-          });
-        }}
-        onMouseLeave={() => setTooltip(null)}
-        className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient m-2 h5"
-      >
-        {progress.toFixed()}% in cycle
+        <div
+          onMouseEnter={() => {
+            setTooltip({
+              position: "bottom",
+              content: (
+                <span className="whitespace-nowrap pointer-events-none">
+                  <span>A day in Eternum is {TIME_PER_TICK / 60}m</span>
+                </span>
+              ),
+            });
+          }}
+          onMouseLeave={() => setTooltip(null)}
+          className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5"
+        >
+          {progress.toFixed()}% in cycle
+        </div>
       </div>
+
       <div className="flex bg-brown/90  border-gradient py-2  px-24 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center">
         <div className="self-center ">
           <Headline>
@@ -89,22 +112,6 @@ export const TopMiddleNavigation = () => {
         </div>
       </div>
       <div className="self-center px-3 flex space-x-2">
-        {/* <CircleButton
-          image={BuildingThumbs.squire}
-          label={assistant}
-          active={isPopupOpen(assistant)}
-          size="sm"
-          onClick={() => togglePopup(assistant)}
-        /> */}
-        <CircleButton
-          image={BuildingThumbs.squire}
-          label={quests}
-          active={isPopupOpen(quests)}
-          size="sm"
-          onClick={() => togglePopup(quests)}
-          className="forth-step"
-        />
-
         <CircleButton
           image={BuildingThumbs.question}
           label={"Hints"}

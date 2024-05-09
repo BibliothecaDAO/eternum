@@ -6,6 +6,7 @@ import Button from "@/ui/elements/Button";
 import { BuildingType } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { Check, ShieldQuestion } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export const STARTING_ID_FOOD = 1;
@@ -77,7 +78,10 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
 
   return (
     <div className={`p-2 border border-white/30  text-gold  ${quest.completed ? "bg-green/5" : " "}`}>
-      <h5 className="mb-3">{quest.name}</h5>
+      <div className="flex justify-between">
+        <h5 className="mb-3">{quest.name}</h5>
+        {quest.completed ? <Check /> : <ShieldQuestion />}
+      </div>
 
       <p>{quest.description}</p>
 

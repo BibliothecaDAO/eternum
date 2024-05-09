@@ -38,26 +38,10 @@ export const BottomNavigation = () => {
   const navigation = useMemo(() => {
     const navigation = [
       {
-        name: "realm",
-        button: (
-          <CircleButton
-            image="/images/buildings/thumb/realm.png"
-            label="Realms"
-            tooltipLocation="top"
-            className="forth-step"
-            active={activeBar === MenuEnum.realm}
-            size="xl"
-            onClick={() => toggleBar(MenuEnum.realm)}
-          >
-            {/* <City className="w-6 fill-current" /> */}
-          </CircleButton>
-        ),
-      },
-      {
         name: "world-map",
         button: (
           <CircleButton
-            className="third-step"
+            className="world-selector"
             tooltipLocation="top"
             image={BuildingThumbs.worldMap}
             label="world map"
@@ -84,9 +68,27 @@ export const BottomNavigation = () => {
         ),
       },
       {
+        name: "realm",
+        button: (
+          <CircleButton
+            className="realm-selector"
+            image="/images/buildings/thumb/realm.png"
+            label="Realms"
+            tooltipLocation="top"
+            active={activeBar === MenuEnum.realm}
+            size="xl"
+            onClick={() => toggleBar(MenuEnum.realm)}
+          >
+            {/* <City className="w-6 fill-current" /> */}
+          </CircleButton>
+        ),
+      },
+
+      {
         name: "military",
         button: (
           <CircleButton
+            className="military-selector"
             image={BuildingThumbs.military}
             tooltipLocation="top"
             label={military}
@@ -100,6 +102,7 @@ export const BottomNavigation = () => {
         name: "construction",
         button: (
           <CircleButton
+            className="construction-selector"
             image={BuildingThumbs.construction}
             tooltipLocation="top"
             label={construction}
@@ -116,6 +119,7 @@ export const BottomNavigation = () => {
         name: "trade",
         button: (
           <CircleButton
+            className="trade-selector"
             image={BuildingThumbs.trade}
             tooltipLocation="top"
             label={trade}
@@ -129,6 +133,7 @@ export const BottomNavigation = () => {
         name: "resources",
         button: (
           <CircleButton
+            className="resources-selector"
             tooltipLocation="top"
             image={BuildingThumbs.resources}
             label={resources}
@@ -142,6 +147,7 @@ export const BottomNavigation = () => {
         name: "bank",
         button: (
           <CircleButton
+            className="banking-selector"
             image={BuildingThumbs.banks}
             tooltipLocation="top"
             label={banks}
@@ -149,18 +155,6 @@ export const BottomNavigation = () => {
             size="xl"
             onClick={() => togglePopup(banks)}
           ></CircleButton>
-        ),
-      },
-      {
-        button: (
-          <CircleButton
-            image={BuildingThumbs.leaderboard}
-            tooltipLocation="top"
-            label={leaderboard}
-            active={isPopupOpen(leaderboard)}
-            size="xl"
-            onClick={() => togglePopup(leaderboard)}
-          />
         ),
       },
     ];
