@@ -27,7 +27,14 @@ export const ResourceChip = ({
   }, [productionManager, production, currentTick]);
 
   const netRate = useMemo(() => {
-    return productionManager.netRate(currentTick)[1];
+    let netRate = productionManager.netRate(currentTick);
+    if (netRate[1] < 0) {
+      // net rate is negative
+      if (Math.abs(netRate[1]) > productionManager.balance(currentTick)) {
+        return 0;
+      }
+    }
+    return netRate[1];
   }, [productionManager, production]);
 
   return (
