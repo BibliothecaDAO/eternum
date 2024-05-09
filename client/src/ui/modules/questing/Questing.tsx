@@ -9,7 +9,7 @@ export const Questing = ({ entityId }: { entityId: bigint | undefined }) => {
 
   return (
     <OSWindow width="600px" onClick={() => togglePopup(quests)} show={isOpen} title={quests}>
-      <QuestList />
+      <QuestList entityId={entityId} />
     </OSWindow>
   );
 };

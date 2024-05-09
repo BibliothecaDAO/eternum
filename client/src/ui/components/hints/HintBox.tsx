@@ -105,38 +105,34 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
   );
 };
 
-export const QuestList = () => {
+export const QuestList = ({ entityId }: { entityId: bigint | undefined }) => {
   const {
     setup: {
       components: { BuildingQuantityv2 },
     },
   } = useDojo();
 
-  const { realm } = useHexPosition();
-
   const farms = useMemo(() => {
     const quantity =
-      getComponentValue(
-        BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(realm?.entity_id || "0"), BigInt(BuildingType.Farm)]),
-      )?.value || 0;
+      getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(BuildingType.Farm)]))
+        ?.value || 0;
 
     return quantity;
-  }, [realm]);
+  }, [entityId]);
 
   const resource = useMemo(() => {
     const quantity =
       getComponentValue(
         BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(realm?.entity_id || "0"), BigInt(BuildingType.Resource)]),
+        getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(BuildingType.Resource)]),
       )?.value || 0;
 
     return quantity;
-  }, [realm]);
+  }, [entityId]);
 
   const orders = useGetMyOffers();
 
-  const { entityArmies } = useEntityArmies({ entity_id: realm?.entity_id || BigInt("0") });
+  const { entityArmies } = useEntityArmies({ entity_id: entityId || BigInt("0") });
 
   const quests = useMemo(() => {
     return [
@@ -261,7 +257,7 @@ export const QuestList = () => {
   return (
     <div className="p-8 flex flex-col gap-2">
       {quests.map((quest, index) => (
-        <HintBox key={index} quest={quest} entityId={realm?.entity_id || BigInt("0")} />
+        <HintBox key={index} quest={quest} entityId={entityId || BigInt("0")} />
       ))}
     </div>
   );

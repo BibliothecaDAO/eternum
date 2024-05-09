@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { MAX_REALMS } from "../components/cityview/realm/SettleRealmComponent";
-import { useLocation } from "wouter";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { Naming, StepOne, StepThree, StepTwo } from "../modules/onboarding/Steps";
 
 export const Onboarding = () => {
   const { playerRealms } = useEntities();
-  const [_location, setLocation] = useLocation();
 
   const [currentStep, setCurrentStep] = useState(1);
 

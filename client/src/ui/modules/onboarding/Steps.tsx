@@ -11,7 +11,6 @@ import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
-import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
