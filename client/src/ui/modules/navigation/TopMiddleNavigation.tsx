@@ -26,10 +26,8 @@ export const TopMiddleNavigation = () => {
       components: { Population, BuildingQuantityv2 },
     },
   } = useDojo();
-  const { hexPosition } = useQuery();
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const { highlightPositions, moveCameraToColRow, isPopupOpen, togglePopup } = useUIStore();
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const { isPopupOpen, togglePopup } = useUIStore();
   const { realmId } = useRealmStore();
   const [location, setLocation] = useLocation();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
@@ -79,7 +77,7 @@ export const TopMiddleNavigation = () => {
             className="forth-step"
           />
 
-          {population?.population == null && (
+          {population?.population == null && location !== "/map" && (
             <div className="absolute bg-brown text-gold border-gradient border top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
               <ArrowUp className="text-gold w-4 mr-3" />
               <div>Start here</div>
