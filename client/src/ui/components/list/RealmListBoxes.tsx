@@ -22,7 +22,9 @@ export const RealmListBoxes = ({ className }: RealmSwitchProps) => {
         {playerRealms().map((realm) => (
           <div
             className={`${
-              isLocation(realm?.position?.x ?? 0, realm?.position?.y ?? 0) ? "border-gradient bg-brown" : ""
+              isLocation(realm?.position?.x ?? 0, realm?.position?.y ?? 0)
+                ? "border-gradient bg-brown"
+                : "border-transparent"
             } w-32 h-8 px-2 bg-brown/80 text-gold border-gold border-2 hover:border-gradient duration-300 transition-all flex`}
             key={realm?.realm_id}
             onClick={() => {

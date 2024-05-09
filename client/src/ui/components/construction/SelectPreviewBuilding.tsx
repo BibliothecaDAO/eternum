@@ -2,6 +2,7 @@ import clsx from "clsx";
 
 import useUIStore from "@/hooks/store/useUIStore";
 import {
+  BASE_POPULATION_CAPACITY,
   BUILDING_CAPACITY,
   BUILDING_INFORMATION,
   BUILDING_POPULATION,
@@ -362,7 +363,7 @@ export const SelectPreviewBuildingMenu = () => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const { realm } = useGetRealm(realmEntityId);
 
-  let realmResourceIds = useMemo(() => {
+  const realmResourceIds = useMemo(() => {
     if (realm) {
       return unpackResources(BigInt(realm.resourceTypesPacked), realm.resourceTypesCount);
     } else {
@@ -384,8 +385,8 @@ export const SelectPreviewBuildingMenu = () => {
     });
 
   return (
-    <div className="flex flex-col -mt-44">
-      <div className="grid grid-cols-7 gap-2 p-2">
+    <div className="flex flex-col -mt-44 bg-brown/80 border-gradient border">
+      <div className="grid grid-cols-8 gap-2 p-2">
         {realmResourceIds.map((resourceId) => {
           const resource = findResourceById(resourceId)!;
 
@@ -417,7 +418,7 @@ export const SelectPreviewBuildingMenu = () => {
               active={selectedResource === resourceId}
               name={resource?.trait}
               toolTip={<ResourceInfo resourceId={resourceId} />}
-              canBuild={hasBalance}
+              canBuild={hasBalance && realm.hasCapacity}
             />
           );
         })}
@@ -445,13 +446,13 @@ export const SelectPreviewBuildingMenu = () => {
               active={false}
               name={BuildingEnumToString[building]}
               toolTip={<BuildingInfo buildingId={building} />}
-              canBuild={hasBalance}
+              canBuild={BuildingType.WorkersHut == building ? hasBalance : hasBalance && realm.hasCapacity}
             />
           );
         })}
         <div
           className={clsx(
-            "border border-order-giants/50 text-white hover:border-order-giants/85 hover:text-order-giants/85 flex justify-center items-center transition-all duration-20 bg-order-giants/80 overflow-hidden text-ellipsis  cursor-pointer h-24 relative p-2 ",
+            "border border-order-giants/50 text-white hover:border-order-giants/85 hover:text-order-giants/85 flex justify-center items-center transition-all duration-20 bg-order-giants/80 overflow-hidden text-ellipsis  cursor-pointer h-24 relative p-2 w-24 ",
             {
               "!text-order-giants !border-order-giants": isDestroyMode,
             },
@@ -495,7 +496,7 @@ export const BuildingCard = ({
       }}
       onClick={onClick}
       className={clsx(
-        " hover:border-gold border border-transparent transition-all duration-200 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-24 ",
+        " hover:border-gold border border-transparent transition-all duration-200 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-24 w-24 ",
         {
           "!border-lightest !text-lightest": active,
         },

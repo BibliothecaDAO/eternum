@@ -44,6 +44,7 @@ export const BuildingThumbs = {
   leaderboard: "/images/buildings/thumb/leaderboard.png",
   worldMap: "/images/buildings/thumb/world-map.png",
   squire: "/images/buildings/thumb/squire.png",
+  question: "/images/buildings/thumb/question-wood.png",
 };
 
 export const LeftNavigationModule = () => {
@@ -118,7 +119,7 @@ export const LeftNavigationModule = () => {
 
   return (
     <>
-      <div className="flex flex-col space-y-2 py-2">
+      <div className="flex flex-col space-y-2 py-2 sixth-step">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
