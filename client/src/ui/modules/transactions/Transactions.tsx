@@ -27,7 +27,17 @@ export const Transactions = () => {
     };
 
     const handleTransactionFailed = (data: any) => {
-      setFailedTransactions(data.toString());
+      let rawErrorString = data.toString();
+      // Regex to capture exact error message
+      const regex = /\('([^']+)'\)/;
+      const match = rawErrorString.match(regex);
+      if (match) {
+        const errorMessage = match[1];
+        setFailedTransactions(errorMessage);
+        console.log(errorMessage);
+      } else {
+        setFailedTransactions(rawErrorString);
+      }
 
       setTimeout(() => {
         setFailedTransactions(null);
@@ -51,7 +61,7 @@ export const Transactions = () => {
         </div>
       ))}
 
-      {failedTransactions && <div className="w-72 text-white text-xs p-3">Failed: {failedTransactions}</div>}
+      {failedTransactions && <div className="w-72 text-red text-xxl p-3 text-bold">Failed: {failedTransactions}</div>}
     </div>
   );
 };
