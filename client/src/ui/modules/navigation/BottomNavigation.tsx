@@ -29,9 +29,10 @@ export const BottomNavigation = () => {
   };
 
   const { hexPosition } = useQuery();
-  const { moveCameraToColRow } = useUIStore();
+  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const { togglePopup, closeAllPopups, openAllPopups, isPopupOpen } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const [location, setLocation] = useLocation();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 

@@ -51,7 +51,10 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
     (type) => isNaN(Number(type)) && type !== "None" && type !== "Settlement" && type !== "Hyperstructure",
   );
 
-  const { worldMapBuilding, setWorldMapBuilding, clickedHex, setTooltip } = useUIStore();
+  const worldMapBuilding = useUIStore((state) => state.worldMapBuilding);
+  const setWorldMapBuilding = useUIStore((state) => state.setWorldMapBuilding);
+  const clickedHex = useUIStore((state) => state.clickedHex);
+  const setTooltip = useUIStore((state) => state.setTooltip);
   const {
     account: { account },
     setup: {

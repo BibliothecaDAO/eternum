@@ -4,7 +4,7 @@ import { quests } from "@/ui/components/navigation/Config";
 import { QuestList } from "@/ui/components/hints/HintBox";
 
 export const Questing = ({ entityId }: { entityId: bigint | undefined }) => {
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(quests));
 
   return (

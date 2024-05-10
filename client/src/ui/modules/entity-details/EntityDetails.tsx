@@ -4,7 +4,7 @@ import { entityDetails } from "../../components/navigation/Config";
 import HexagonInformationPanel from "@/ui/components/worldmap/hexagon/HexagonInformationPanel";
 
 export const EntityDetails = () => {
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
 
   // const isOpen = useUIStore((state) => state.isPopupOpen(entityDetails));
   const setClickedHex = useUIStore((state) => state.setClickedHex);
