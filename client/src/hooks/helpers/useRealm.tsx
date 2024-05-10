@@ -183,6 +183,7 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
   };
 }
 
+// todo: rerenders all the time
 export function useGetRealms(): RealmExtended[] {
   const {
     setup: {
@@ -225,7 +226,7 @@ export function useGetRealms(): RealmExtended[] {
           }
         })
         .filter(Boolean) as RealmExtended[],
-    [realmEntityIds],
+    [realmEntityIds.length], // Only recompute if the size of realmEntityIds has changed
   );
 
   return realms;
