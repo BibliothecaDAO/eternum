@@ -92,7 +92,7 @@ export const WorldMap = () => {
       <>
         {hexData && <MyCastles hexData={hexData} />}
         {hexData && <OtherCastles hexData={hexData} />}
-        <Banks />
+        {/* <Banks /> */}
         <Armies />
       </>
     );

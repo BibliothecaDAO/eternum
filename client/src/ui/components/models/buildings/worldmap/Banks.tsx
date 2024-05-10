@@ -8,29 +8,37 @@ Title: Medieval House
 */
 
 import { useGetBanks } from "@/hooks/helpers/useBanks";
-import { getUIPositionFromColRow, pseudoRandom } from "@/ui/utils/utils";
+import useUIStore from "@/hooks/store/useUIStore";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { useGLTF } from "@react-three/drei";
 import { useMemo } from "react";
+import { banks as bankModule } from "@/ui/components/navigation/Config";
 
 export const Banks = () => {
   const banks = useGetBanks();
+
+  const { togglePopup } = useUIStore();
+
+  const handleBankClick = (bankEntityId: any) => {
+    togglePopup(bankModule);
+  };
 
   return (
     <group>
       {banks.map((bank, index) => {
         const { x, y } = getUIPositionFromColRow(bank.position.x, bank.position.y, false);
-        return <BankModel key={index} position={[x, 0.31, -y]} />;
+        return <BankModel key={index} position={[x, 0.31, -y]} onClick={() => handleBankClick(bank.entityId)} />;
       })}
     </group>
   );
 };
 
-export const BankModel = ({ position }: { position: any }) => {
+export const BankModel = ({ position, onClick }: { position: any; onClick: () => void }) => {
   const bankModel = useGLTF("/models/buildings/bank.glb");
   const clone = useMemo(() => {
     const clone = bankModel.scene.clone();
     return clone;
   }, [bankModel]);
 
-  return <primitive scale={3} object={clone} position={position} />;
+  return <primitive scale={3} object={clone} position={position} onClick={onClick} />;
 };

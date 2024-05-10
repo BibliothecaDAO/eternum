@@ -1,13 +1,11 @@
-import { HyperStructureInterface, Position, WorldBuildingType } from "@bibliothecadao/eternum";
+import { HyperStructureInterface, Position, StructureType } from "@bibliothecadao/eternum";
 import { ClickedHex, Hexagon, HighlightPosition } from "../../types";
 
 export interface MapStore {
-  worldMapBuilding: WorldBuildingType | null;
-  setWorldMapBuilding: (building: WorldBuildingType | null) => void;
+  worldMapBuilding: StructureType | null;
+  setWorldMapBuilding: (building: StructureType | null) => void;
   clickedHex: ClickedHex | undefined;
   setClickedHex: (hex: ClickedHex | undefined) => void;
-  setClickedHyperstructure: (hyperstructure: HyperStructureInterface | undefined) => void;
-  clickedHyperstructure: HyperStructureInterface | undefined;
   hexData: Hexagon[] | undefined;
   setHexData: (hexData: Hexagon[]) => void;
   selectedEntity: { id: bigint; position: Position } | undefined;
@@ -27,16 +25,13 @@ export interface MapStore {
 }
 export const createMapStoreSlice = (set: any) => ({
   worldMapBuilding: null,
-  setWorldMapBuilding: (building: WorldBuildingType | null) => {
+  setWorldMapBuilding: (building: StructureType | null) => {
     set({ worldMapBuilding: building });
   },
   clickedHex: undefined,
   setClickedHex: (hex: ClickedHex | undefined) => {
     set({ clickedHex: hex });
   },
-  setClickedHyperstructure: (hyperstructure: HyperStructureInterface | undefined) =>
-    set({ clickedHyperstructure: hyperstructure }),
-  clickedHyperstructure: undefined,
   hexData: undefined,
   setHexData: (hexData: Hexagon[]) => {
     set({ hexData });

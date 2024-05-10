@@ -36,7 +36,8 @@ export const useNotifications = () => {
   const { realmEntityIds, realmEntityId } = useRealmStore();
   const realmsResources = useRealmsResource(realmEntityIds);
   const realmPositions = useRealmsPosition(realmEntityIds);
-  const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
+  // const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
+  const conqueredHyperstructureNumber = 0;
 
   // const hyperstructure = useMemo(() => {
   //   const hyperstructureId = getHyperstructureIdByRealmEntityId(realmEntityId);
