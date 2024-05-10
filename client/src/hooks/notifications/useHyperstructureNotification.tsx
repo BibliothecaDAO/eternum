@@ -15,7 +15,6 @@ import {
 import { ResourceCost } from "../../ui/elements/ResourceCost";
 import Button from "../../ui/elements/Button";
 import { useState } from "react";
-import { useRefreshHyperstructure } from "../store/useRefreshHyperstructure";
 
 export const useCaravanHasArrivedAtHyperstructureNotification = (
   notification: NotificationType,
@@ -40,8 +39,6 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { refreshHyperstructure } = useRefreshHyperstructure();
-
   const time = nextBlockTimestamp?.toString() || "";
 
   const { realm_id } = getComponentValue(Realm, getEntityIdFromKeys([BigInt(data.realmEntityId)])) || {};
@@ -52,18 +49,12 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
     deleteNotification([data.caravanId.toString()], EventType.ArrivedAtHyperstructure);
   };
 
-  const updateHyperStructure = (hyperstructureId: bigint | undefined) => {
-    if (hyperstructureId) {
-      refreshHyperstructure(hyperstructureId);
-    }
-  };
-
-  const onTransfer = async () => {
-    setIsLoading(true);
-    await transferAndReturn();
-    updateHyperStructure(data.hyperstructureId);
-    setIsLoading(false);
-  };
+  // const onTransfer = async () => {
+  //   setIsLoading(true);
+  //   await transferAndReturn();
+  //   updateHyperStructure(data.hyperstructureId);
+  //   setIsLoading(false);
+  // };
 
   return {
     type: "success",
@@ -103,7 +94,7 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
         <Button
           isLoading={isLoading}
           onClick={async () => {
-            await onTransfer();
+            // await onTransfer();
             onClose();
           }}
           className="mt-2 w-full"

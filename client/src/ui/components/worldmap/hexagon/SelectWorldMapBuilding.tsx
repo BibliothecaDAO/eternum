@@ -4,7 +4,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { InfoIcon } from "lucide-react";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ResourcesIds, WorldBuildingType } from "@bibliothecadao/eternum";
+import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import Button from "@/ui/elements/Button";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
@@ -16,38 +16,37 @@ const BANK_OWNER_FEE = 922337203685477580n;
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 const BUILDING_IMAGES_PATH = {
-  [WorldBuildingType.Bank]: BUILD_IMAGES_PREFIX + "banks.png",
-  [WorldBuildingType.Settlement]: BUILD_IMAGES_PREFIX + "hyperstructure.png",
-  [WorldBuildingType.Hyperstructure]: BUILD_IMAGES_PREFIX + "hyperstructure.png",
+  [StructureType.Bank]: BUILD_IMAGES_PREFIX + "banks.png",
+  [StructureType.Settlement]: BUILD_IMAGES_PREFIX + "hyperstructure.png",
+  [StructureType.Hyperstructure]: BUILD_IMAGES_PREFIX + "hyperstructure.png",
 };
 
 const RESTRICTION_INFO = {
-  [WorldBuildingType.Bank]: "Only on explored hexes. Cannot build on top of other buildings",
-  [WorldBuildingType.Settlement]: "TBD",
-  [WorldBuildingType.Hyperstructure]: "TBD",
+  [StructureType.Bank]: "Only on explored hexes. Cannot build on top of other buildings",
+  [StructureType.Settlement]: "TBD",
+  [StructureType.Hyperstructure]: "TBD",
 };
 
 const BUILDING_COST = {
-  [WorldBuildingType.Bank]: 100,
-  [WorldBuildingType.Settlement]: 100,
-  [WorldBuildingType.Hyperstructure]: 100,
+  [StructureType.Bank]: 100,
+  [StructureType.Settlement]: 100,
+  [StructureType.Hyperstructure]: 100,
 };
 
 const BUILDING_UNBLOCKED = {
-  [WorldBuildingType.Bank]: true,
-  [WorldBuildingType.Settlement]: false,
-  [WorldBuildingType.Hyperstructure]: false,
+  [StructureType.Bank]: true,
+  [StructureType.Settlement]: false,
+  [StructureType.Hyperstructure]: false,
 };
 
 const BUILDING_DESCRIPTION = {
-  [WorldBuildingType.Bank]:
-    "Creates an AMM at location, allowing players to trade resources. You are in control of this.",
-  [WorldBuildingType.Settlement]: "Expands your Base, and allows leasing of land to other players",
-  [WorldBuildingType.Hyperstructure]: "Allows the creation of new lands",
+  [StructureType.Bank]: "Creates an AMM at location, allowing players to trade resources. You are in control of this.",
+  [StructureType.Settlement]: "Expands your Base, and allows leasing of land to other players",
+  [StructureType.Hyperstructure]: "Allows the creation of new lands",
 };
 
 export const SelectWorldMapBuilding = ({ entityId }: any) => {
-  const buildingTypes = Object.keys(WorldBuildingType).filter(
+  const buildingTypes = Object.keys(StructureType).filter(
     (type) => isNaN(Number(type)) && type !== "None" && type !== "Settlement" && type !== "Hyperstructure",
   );
 
@@ -65,7 +64,7 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSelectBuilding = (buildingType: WorldBuildingType) => {
+  const handleSelectBuilding = (buildingType: StructureType) => {
     setWorldMapBuilding(buildingType);
   };
 
@@ -86,10 +85,10 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
   const { isExplored } = useExplore();
   const { hasStructures } = useStructures();
 
-  const canBuild = (worldBuildingType: WorldBuildingType) => {
+  const canBuild = (StructureType: StructureType) => {
     return (
-      BUILDING_UNBLOCKED[worldBuildingType] &&
-      multiplyByPrecision(BUILDING_COST[worldBuildingType]) <= lordsBalance &&
+      BUILDING_UNBLOCKED[StructureType] &&
+      multiplyByPrecision(BUILDING_COST[StructureType]) <= lordsBalance &&
       clickedHex &&
       isExplored(clickedHex.contractPos.col, clickedHex.contractPos.row) &&
       !hasStructures(clickedHex.contractPos.col, clickedHex.contractPos.row)
@@ -100,7 +99,7 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
     <div className="flex flex-col overflow-hidden">
       <div className="grid grid-cols-2 gap-2">
         {buildingTypes.map((buildingType, index) => {
-          const building = WorldBuildingType[buildingType as keyof typeof WorldBuildingType];
+          const building = StructureType[buildingType as keyof typeof StructureType];
           const isCanBuild = canBuild(building);
           return (
             <div

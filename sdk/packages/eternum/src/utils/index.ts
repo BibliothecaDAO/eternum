@@ -1,7 +1,7 @@
 import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
 
-export enum WorldBuildingType {
+export enum StructureType {
   Bank = 1,
   Settlement = 2,
   Hyperstructure = 3,
