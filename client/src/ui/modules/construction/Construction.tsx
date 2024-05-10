@@ -5,7 +5,7 @@ import { SelectPreviewBuilding } from "@/ui/components/construction/SelectPrevie
 import { EntityPopulation } from "@/ui/components/entities/EntityPopulation";
 
 export const Construction = ({ entityId }: { entityId: bigint | undefined }) => {
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
 
   const isOpen = useUIStore((state) => state.isPopupOpen(construction));
 

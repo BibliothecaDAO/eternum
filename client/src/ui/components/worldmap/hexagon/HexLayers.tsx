@@ -260,19 +260,17 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 };
 
 const useEventHandlers = (explored: Map<number, Set<number>>) => {
-  const {
-    hexData,
-    highlightPositions,
-    isTravelMode,
-    isExploreMode,
-    selectedPath,
-    selectedEntity,
-    isAttackMode,
-    setIsAttackMode,
-    setIsTravelMode,
-    setIsExploreMode,
-    setSelectedEntity,
-  } = useUIStore();
+  const hexData = useUIStore((state) => state.hexData);
+  const highlightPositions = useUIStore((state) => state.highlightPositions);
+  const isTravelMode = useUIStore((state) => state.isTravelMode);
+  const isExploreMode = useUIStore((state) => state.isExploreMode);
+  const selectedPath = useUIStore((state) => state.selectedPath);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const isAttackMode = useUIStore((state) => state.isAttackMode);
+  const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
+  const setIsTravelMode = useUIStore((state) => state.setIsTravelMode);
+  const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
+  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const setClickedHex = useUIStore((state) => state.setClickedHex);
   const clickedHex = useUIStore((state) => state.clickedHex);
   const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);

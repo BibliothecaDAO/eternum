@@ -225,7 +225,7 @@ export function useGetRealms(): RealmExtended[] {
           }
         })
         .filter(Boolean) as RealmExtended[],
-    [realmEntityIds],
+    [realmEntityIds.length], // Only recompute if the size of realmEntityIds has changed
   );
 
   return realms;

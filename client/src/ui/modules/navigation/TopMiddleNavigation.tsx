@@ -27,17 +27,11 @@ export const TopMiddleNavigation = () => {
     },
   } = useDojo();
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const { isPopupOpen, togglePopup } = useUIStore();
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const togglePopup = useUIStore((state) => state.togglePopup);
   const { realmId } = useRealmStore();
   const [location, setLocation] = useLocation();
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
   const { realm } = useHexPosition();
-
-  const { timeLeftBeforeNextTick, progress } = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % TIME_PER_TICK;
-    const progressValue = (timeLeft / TIME_PER_TICK) * 100;
-    return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
-  }, [nextBlockTimestamp]);
 
   const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realm?.entity_id || "0")]));
 
@@ -52,10 +46,6 @@ export const TopMiddleNavigation = () => {
   }, []);
 
   const { toggleModal } = useModal();
-
-  if (!nextBlockTimestamp) {
-    return null;
-  }
 
   return (
     <div className="flex">
@@ -84,22 +74,7 @@ export const TopMiddleNavigation = () => {
             </div>
           )}
         </div>
-        <div
-          onMouseEnter={() => {
-            setTooltip({
-              position: "bottom",
-              content: (
-                <span className="whitespace-nowrap pointer-events-none">
-                  <span>A day in Eternum is {TIME_PER_TICK / 60}m</span>
-                </span>
-              ),
-            });
-          }}
-          onMouseLeave={() => setTooltip(null)}
-          className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5"
-        >
-          {progress.toFixed()}% in cycle
-        </div>
+        <TickProgress />
       </div>
 
       <div className="flex bg-brown/90  border-gradient py-2  px-24 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center">
@@ -166,6 +141,37 @@ export const TopMiddleNavigation = () => {
           </div>
         )}
       </div>
+    </div>
+  );
+};
+
+const TickProgress = () => {
+  const setTooltip = useUIStore((state) => state.setTooltip);
+
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
+
+  const { timeLeftBeforeNextTick, progress } = useMemo(() => {
+    const timeLeft = nextBlockTimestamp % TIME_PER_TICK;
+    const progressValue = (timeLeft / TIME_PER_TICK) * 100;
+    return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
+  }, [nextBlockTimestamp]);
+
+  return (
+    <div
+      onMouseEnter={() => {
+        setTooltip({
+          position: "bottom",
+          content: (
+            <span className="whitespace-nowrap pointer-events-none">
+              <span>A day in Eternum is {TIME_PER_TICK / 60}m</span>
+            </span>
+          ),
+        });
+      }}
+      onMouseLeave={() => setTooltip(null)}
+      className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5"
+    >
+      {progress.toFixed()}% in cycle
     </div>
   );
 };

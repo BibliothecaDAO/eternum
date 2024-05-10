@@ -48,7 +48,10 @@ export const BuildingThumbs = {
 };
 
 export const LeftNavigationModule = () => {
-  const { togglePopup, closeAllPopups, openAllPopups, isPopupOpen } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
+  const closeAllPopups = useUIStore((state) => state.closeAllPopups);
+  const openAllPopups = useUIStore((state) => state.openAllPopups);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
 
   const { realmEntityId } = useRealmStore();
   const { setIsOpen } = useTour();

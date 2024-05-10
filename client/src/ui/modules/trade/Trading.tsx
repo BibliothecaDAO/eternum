@@ -13,7 +13,7 @@ import { EntityList } from "@/ui/components/list/EntityList";
 import { useEntities } from "@/hooks/helpers/useEntities";
 
 export const Trading = () => {
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
   const [selectedTab, setSelectedTab] = useState(0);
   const isOpen = useUIStore((state) => state.isPopupOpen(trade));
   const [selectedResource, setSelectedResource] = useState<number | null>(null);

@@ -8,7 +8,7 @@ import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
 import { useEntities } from "@/hooks/helpers/useEntities";
 
 export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
   const [selectedTab, setSelectedTab] = useState(0);
   const isOpen = useUIStore((state) => state.isPopupOpen(military));
 

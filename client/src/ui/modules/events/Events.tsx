@@ -3,7 +3,7 @@ import { OSWindow } from "../../components/navigation/OSWindow";
 import { eventLog } from "../../components/navigation/Config";
 
 export const EventLog = () => {
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
 
   const isOpen = useUIStore((state) => state.isPopupOpen(eventLog));
 

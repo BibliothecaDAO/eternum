@@ -6,7 +6,7 @@ import { Tabs } from "@/ui/elements/tab";
 import { useMemo, useState } from "react";
 
 export const Resources = ({ entityId }: { entityId: bigint | undefined }) => {
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
   const [selectedTab, setSelectedTab] = useState(0);
   const isOpen = useUIStore((state) => state.isPopupOpen(resources));
 
