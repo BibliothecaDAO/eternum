@@ -183,7 +183,6 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
   };
 }
 
-// todo: rerenders all the time
 export function useGetRealms(): RealmExtended[] {
   const {
     setup: {

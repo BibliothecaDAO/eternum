@@ -1,6 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntityArmies } from "@/hooks/helpers/useArmies";
-import { useHexPosition } from "@/hooks/helpers/useHexPosition";
 import { useGetMyOffers } from "@/hooks/helpers/useTrade";
 import Button from "@/ui/elements/Button";
 import { BuildingType } from "@bibliothecadao/eternum";
