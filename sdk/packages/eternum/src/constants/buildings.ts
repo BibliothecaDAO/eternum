@@ -1,14 +1,13 @@
 import { BuildingType } from "../utils";
 import { ResourcesIds } from "./resources";
 
+// Contract constants
 export const BASE_POPULATION_CAPACITY = 5;
 export const STOREHOUSE_CAPACITY = 10000;
 
-interface ResourceDescription {
+export const BUILDING_INFORMATION: {
   [key: number]: string;
-}
-
-export const BUILDING_INFORMATION: ResourceDescription = {
+} = {
   [BuildingType.Castle]: "Where the heart of your realm beats, the Castle is the foundation of your kingdom.",
   [BuildingType.Resource]: "Resource buildings, harnessing the land's magic, produce essential resources.",
   [BuildingType.Farm]: "Enchanted Farms, blessed by Gaia, yield golden wheat.",

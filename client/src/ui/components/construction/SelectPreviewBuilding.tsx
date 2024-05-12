@@ -268,10 +268,7 @@ export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
           return (
-            <ResourceCost
-              resourceId={cost[Number(resourceId)].resource}
-              amount={cost[Number(resourceId)].amount / 1000}
-            />
+            <ResourceCost resourceId={cost[Number(resourceId)].resource} amount={cost[Number(resourceId)].amount} />
           );
         })}
       </div>
@@ -284,7 +281,7 @@ export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
             <ResourceCost
               key={index}
               resourceId={buildingCost[Number(resourceId)].resource}
-              amount={buildingCost[Number(resourceId)].amount / 1000}
+              amount={buildingCost[Number(resourceId)].amount}
             />
           );
         })}
@@ -342,7 +339,7 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
                   <ResourceCost
                     key={index}
                     resourceId={ongoingCost[Number(resourceId)].resource}
-                    amount={ongoingCost[Number(resourceId)].amount / 1000}
+                    amount={ongoingCost[Number(resourceId)].amount}
                   />
                 );
               })}
@@ -357,7 +354,7 @@ export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
             <ResourceCost
               key={index}
               resourceId={cost[Number(resourceId)].resource}
-              amount={cost[Number(resourceId)].amount / 1000}
+              amount={cost[Number(resourceId)].amount}
             />
           );
         })}
