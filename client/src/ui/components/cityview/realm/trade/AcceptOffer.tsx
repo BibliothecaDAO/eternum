@@ -4,7 +4,7 @@ import { useDojo } from "../../../../../hooks/context/DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
 import { divideByPrecision } from "../../../../utils/utils";
-import { MarketInterface, SPEED_PER_DONKEY } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, MarketInterface } from "@bibliothecadao/eternum";
 import useMarketStore from "../../../../../hooks/store/useMarketStore";
 import { EventType, useNotificationsStore } from "../../../../../hooks/store/useNotificationsStore";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
@@ -44,7 +44,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
   const selectedResourceIdsGive = selectedTrade.makerGets.map((resource) => resource.resourceId);
 
   const travelTime = useMemo(
-    () => computeTravelTime(realmEntityId, selectedTrade.makerId, SPEED_PER_DONKEY),
+    () => computeTravelTime(realmEntityId, selectedTrade.makerId, EternumGlobalConfig.speed.donkey),
     [realmEntityId, selectedTrade],
   );
 

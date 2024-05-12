@@ -1,5 +1,5 @@
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { Resource, ResourcesIds, WEIGHTS, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { useEffect, useState } from "react";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
@@ -19,7 +19,7 @@ export const TravelInfo = ({
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
   const [sendingDonkeys, setSendingDonkeys] = useState(0);
-  const neededDonkeys = Math.ceil(divideByPrecision(resourceWeight) / WEIGHT_PER_DONKEY_KG);
+  const neededDonkeys = Math.ceil(divideByPrecision(resourceWeight) / EternumGlobalConfig.carryCapacity.donkey);
 
   const { getBalance } = useResourceBalance();
 

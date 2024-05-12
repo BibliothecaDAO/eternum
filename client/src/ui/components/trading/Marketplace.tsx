@@ -5,9 +5,9 @@ import Button from "../../elements/Button";
 import { SortPanel } from "../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../elements/SortButton";
 import {
+  EternumGlobalConfig,
   MarketInterface,
   ResourcesIds,
-  SPEED_PER_DONKEY,
   findResourceById,
   orderNameDict,
   resources,
@@ -665,7 +665,7 @@ const ResourceOfferRow = ({
   };
 
   const travelTime = useMemo(
-    () => computeTravelTime(realmEntityId, offer.makerId, SPEED_PER_DONKEY),
+    () => computeTravelTime(realmEntityId, offer.makerId, EternumGlobalConfig.speed.donkey),
     [realmEntityId, offer],
   );
 

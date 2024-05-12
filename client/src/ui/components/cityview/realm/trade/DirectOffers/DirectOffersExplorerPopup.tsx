@@ -2,9 +2,9 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import { Headline } from "../../../../../elements/Headline";
 import {
+  EternumGlobalConfig,
   RealmInterface,
   ResourcesIds,
-  SPEED_PER_DONKEY,
   findResourceById,
   getOrderName,
   resources,
@@ -275,7 +275,7 @@ const RealmResourceRow = ({
       <div className="flex items-center justify-between text-lightest">
         <div className="w-[40px] text-left">{distance.toFixed(0)} km </div>
         <div className="text-light-pink inline-block ml-2">{`(${formatTimeLeft(
-          (distance / SPEED_PER_DONKEY) * 3600,
+          (distance / EternumGlobalConfig.speed.donkey) * 3600,
         )})`}</div>
         <Button
           className="ml-2"

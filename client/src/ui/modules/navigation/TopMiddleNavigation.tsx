@@ -3,7 +3,12 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { getRealmNameById } from "@/ui/utils/realms";
-import { BASE_POPULATION_CAPACITY, BuildingType, STOREHOUSE_CAPACITY, TIME_PER_TICK } from "@bibliothecadao/eternum";
+import {
+  BASE_POPULATION_CAPACITY,
+  BuildingType,
+  EternumGlobalConfig,
+  STOREHOUSE_CAPACITY,
+} from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
@@ -151,8 +156,8 @@ const TickProgress = () => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % TIME_PER_TICK;
-    const progressValue = (timeLeft / TIME_PER_TICK) * 100;
+    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.tickIntervalInSeconds;
+    const progressValue = (timeLeft / EternumGlobalConfig.tick.tickIntervalInSeconds) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
@@ -163,7 +168,7 @@ const TickProgress = () => {
           position: "bottom",
           content: (
             <span className="whitespace-nowrap pointer-events-none">
-              <span>A day in Eternum is {TIME_PER_TICK / 60}m</span>
+              <span>A day in Eternum is {EternumGlobalConfig.tick.tickIntervalInSeconds / 60}m</span>
             </span>
           ),
         });

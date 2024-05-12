@@ -6,7 +6,7 @@ import {
   type Resource,
   ResourcesIds,
   type BankInterface,
-  TIME_PER_TICK,
+  EternumGlobalConfig,
 } from "@bibliothecadao/eternum";
 import { type Components, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import {
@@ -321,7 +321,9 @@ export const generateYourRaidersHaveArrivedNotifications = (
       // and also that notfication close is smaller than arrival (not seen yet by user)
       const timestamps = getLastLoginTimestamp();
 
-      const currentTick = nextBlockTimestamp ? Math.floor(nextBlockTimestamp / TIME_PER_TICK) : 0;
+      const currentTick = nextBlockTimestamp
+        ? Math.floor(nextBlockTimestamp / EternumGlobalConfig.tick.tickIntervalInSeconds)
+        : 0;
       const isActiveTravel = tickMove !== undefined ? tickMove.tick >= currentTick : false;
 
       const hasArrivedAndNotSeen =
