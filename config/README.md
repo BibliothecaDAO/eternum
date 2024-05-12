@@ -12,4 +12,10 @@ To run:
 bun run index.ts
 ```
 
-This project was created using `bun init` in bun v1.0.25. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+<!-- dev -->
+
+`bun --env-file=../client/.env.development index.ts`
+
+<!-- prod -->
+
+`bun --env-file=../client/.env.production index.ts`
