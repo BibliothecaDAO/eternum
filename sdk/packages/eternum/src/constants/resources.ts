@@ -34,7 +34,7 @@ export const EternumGlobalConfig = {
   },
   carryCapacity: {
     donkey: 100,
-    army: 1,
+    army: 100,
   },
   speed: {
     donkey: 1,

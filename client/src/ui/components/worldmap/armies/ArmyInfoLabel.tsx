@@ -93,7 +93,7 @@ const RaiderInfo = ({
   const isTraveling = isPassiveTravel || isActiveTravel;
 
   return (
-    <div className={clsx("w-[300px] flex flex-col p-2 mb-1 bg-brown/80  border-gold text-xs text-gray-gold")}>
+    <div className={clsx("w-[300px] flex flex-col p-2 mb-1 bg-brown  border-gold text-xs text-gold")}>
       <div className="flex items-center text-xs">
         {entityId.toString() && (
           <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
