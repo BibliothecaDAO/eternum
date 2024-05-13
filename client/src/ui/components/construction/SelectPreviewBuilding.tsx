@@ -229,7 +229,7 @@ export const SelectPreviewBuildingMenu = () => {
         ),
       },
     ],
-    [],
+    [realmEntityId, realmResourceIds, selectedTab],
   );
 
   return (
