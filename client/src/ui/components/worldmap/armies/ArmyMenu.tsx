@@ -17,7 +17,7 @@ import { useCombat } from "../../../../hooks/helpers/useCombat";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
 import { Html } from "@react-three/drei";
-import { useResources } from "../../../../hooks/helpers/useResources";
+import { useResourceBalance, useResources } from "../../../../hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 
 interface ArmyMenuProps {
@@ -99,11 +99,8 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     : undefined;
 
   const weight = selectedEntity ? getComponentValue(Weight, getEntityIdFromKeys([selectedEntity.id])) : undefined;
-
   const quantity = selectedEntity ? getComponentValue(Quantity, getEntityIdFromKeys([selectedEntity.id])) : undefined;
-
   const capacity = selectedEntity ? getComponentValue(Capacity, getEntityIdFromKeys([selectedEntity.id])) : undefined;
-
   const entityOwner = selectedEntity
     ? getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntity.id]))
     : undefined;
@@ -125,10 +122,10 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   // const canCarryNewReward = totalCapacityInKg >= entityWeightInKg + sampleRewardResourceWeightKg;
   const canCarryNewReward = true;
 
-  const { getResourcesFromBalance } = useResources();
+  const { getFoodResources } = useResourceBalance();
 
   const explorationCosts = useMemo(() => {
-    const foodBalance = entityOwner ? getResourcesFromBalance(entityOwner.entity_owner_id) : [];
+    const foodBalance = entityOwner ? getFoodResources(entityOwner.entity_owner_id) : [];
     return EXPLORATION_COSTS.map((res) => {
       return {
         ...res,
@@ -137,7 +134,9 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     });
   }, [entityOwner]);
 
-  const hasEnoughResourcesToExplore = explorationCosts.every((res) => res.hasEnough);
+  const hasEnoughResourcesToExplore = useMemo(() => {
+    return explorationCosts.every((res) => res.hasEnough);
+  }, [explorationCosts]);
 
   useEffect(() => {
     setTimeout(() => {

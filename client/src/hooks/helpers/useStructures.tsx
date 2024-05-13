@@ -1,6 +1,6 @@
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
-import { Position, SPEED_PER_DONKEY } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { useMemo } from "react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -9,6 +9,7 @@ import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm, getRealmNameById } from "@/ui/utils/realms";
 import { useCaravan } from "./useCaravans";
 import { calculateDistance } from "@/ui/utils/utils";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 export type Structure = ClientComponents["Realm"]["schema"] &
   ClientComponents["Loyalty"]["schema"] & { resources: number[] } & { self: boolean } & { name: string };
@@ -106,7 +107,7 @@ export function useStructuresFromPosition({ position }: { position: Position }) 
 
           const distanceFromPosition = calculateDistance(position, realmData.position) ?? 0;
 
-          const timeToTravel = Math.floor(((distanceFromPosition / SPEED_PER_DONKEY) * 3600) / 60 / 60);
+          const timeToTravel = Math.floor(((distanceFromPosition / EternumGlobalConfig.speed.donkey) * 3600) / 60 / 60);
 
           return {
             ...realm,

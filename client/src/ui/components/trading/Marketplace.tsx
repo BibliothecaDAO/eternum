@@ -5,9 +5,9 @@ import Button from "../../elements/Button";
 import { SortPanel } from "../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../elements/SortButton";
 import {
+  EternumGlobalConfig,
   MarketInterface,
   ResourcesIds,
-  SPEED_PER_DONKEY,
   findResourceById,
   orderNameDict,
   resources,
@@ -28,6 +28,7 @@ import { useDojo } from "../../../hooks/context/DojoContext";
 import useMarketStore from "../../../hooks/store/useMarketStore";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { useTravel } from "@/hooks/helpers/useTravel";
+import { useProductionManager, useResourceBalance } from "@/hooks/helpers/useResources";
 
 interface MarketplaceProps {
   onCreateOffer: (resourceId: number | null, isBuy: boolean) => void;
@@ -346,10 +347,11 @@ const OverviewResourceRow = ({
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const realmResource = getComponentValue(
-    Resource,
-    getEntityIdFromKeys([realmEntityId!, BigInt(askSummary?.resourceId || 0n)]),
-  );
+  const { getBalance } = useResourceBalance();
+
+  const realmResource = useMemo(() => {
+    return getBalance(realmEntityId!, askSummary?.resourceId || 0);
+  }, [realmEntityId, askSummary?.resourceId]);
 
   const depthOfMarketBids = useMemo(() => {
     const lastFive = bidSummary?.depthOfMarket.slice(0, 5) || [];
@@ -665,7 +667,7 @@ const ResourceOfferRow = ({
   };
 
   const travelTime = useMemo(
-    () => computeTravelTime(realmEntityId, offer.makerId, SPEED_PER_DONKEY),
+    () => computeTravelTime(realmEntityId, offer.makerId, EternumGlobalConfig.speed.donkey),
     [realmEntityId, offer],
   );
 

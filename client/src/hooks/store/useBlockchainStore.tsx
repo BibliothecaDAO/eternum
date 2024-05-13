@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { useEffect } from "react";
-
-export const TIME_PER_TICK = 900;
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 interface BlockchainState {
   nextBlockTimestamp: number | undefined;
@@ -31,7 +30,7 @@ export const useFetchBlockchainData = () => {
       if (timestamp && timestamp !== currentTimestamp) {
         // Check if fetched timestamp is different from current state
         setNextBlockTimestamp(timestamp);
-        setCurrentTick(Math.floor(timestamp / TIME_PER_TICK));
+        setCurrentTick(Math.floor(timestamp / EternumGlobalConfig.tick.tickIntervalInSeconds));
       }
     };
 

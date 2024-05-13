@@ -1,5 +1,6 @@
 import { Account, AccountInterface, CairoOption, num } from "starknet";
 import { BuildingType } from "../utils";
+import { ResourcesIds } from "../constants";
 
 interface SystemSigner {
   signer: AccountInterface | Account;
@@ -287,4 +288,80 @@ export interface BattleClaimProps extends SystemSigner {
 export interface CreateStartingResources extends SystemSigner {
   config_id: num.BigNumberish;
   realm_entity_id: num.BigNumberish;
+}
+
+interface ResourceCosts {
+  resource: ResourcesIds;
+  amount: num.BigNumberish;
+}
+
+export interface SetMintConfigProps extends SystemSigner {
+  config_id: num.BigNumberish;
+  resources: ResourceCosts[];
+}
+
+export interface SetExplorationConfigProps extends SystemSigner {
+  wheat_burn_amount: num.BigNumberish;
+  fish_burn_amount: num.BigNumberish;
+  reward_amount: num.BigNumberish;
+}
+
+export interface SetCapacityConfigProps extends SystemSigner {
+  entity_type: num.BigNumberish;
+  weight_gram: num.BigNumberish;
+}
+
+export interface SetWeightConfigProps extends SystemSigner {
+  entity_type: num.BigNumberish;
+  weight_gram: num.BigNumberish;
+}
+
+export interface SetTickConfigProps extends SystemSigner {
+  max_moves_per_tick: num.BigNumberish;
+  tick_interval_in_seconds: num.BigNumberish;
+}
+
+export interface SetProductionConfigProps extends SystemSigner {
+  resource_type: num.BigNumberish;
+  amount: num.BigNumberish;
+  cost: ResourceCosts[];
+}
+
+export interface SetBankConfigProps extends SystemSigner {
+  lords_cost: num.BigNumberish;
+  lp_fee_scaled: num.BigNumberish;
+}
+
+export interface SetTroopConfigProps extends SystemSigner {
+  config_id: num.BigNumberish;
+  knight_health: num.BigNumberish;
+  paladin_health: num.BigNumberish;
+  crossbowman_health: num.BigNumberish;
+  knight_strength: num.BigNumberish;
+  paladin_strength: num.BigNumberish;
+  crossbowman_strength: num.BigNumberish;
+  advantage_percent: num.BigNumberish;
+  disadvantage_percent: num.BigNumberish;
+}
+
+export interface SetPopulationConfigProps extends SystemSigner {
+  building_category: BuildingType;
+  population: num.BigNumberish;
+  capacity: num.BigNumberish;
+}
+
+export interface SetBuildingConfigProps extends SystemSigner {
+  building_category: BuildingType;
+  building_resource_type: ResourcesIds;
+  cost_of_building: ResourceCosts[];
+}
+
+export interface SetWorldConfigProps extends SystemSigner {
+  admin_address: num.BigNumberish;
+  realm_l2_contract: num.BigNumberish;
+}
+
+export interface SetSpeedConfigProps extends SystemSigner {
+  entity_type: num.BigNumberish;
+  sec_per_km: num.BigNumberish;
 }

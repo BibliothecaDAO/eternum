@@ -5,7 +5,7 @@ import ListSelect from "@/ui/elements/ListSelect";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { SPEED_PER_DONKEY, resources } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
@@ -54,7 +54,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
   useEffect(() => {
     selectedEntityIdFrom &&
       selectedEntityIdTo &&
-      setTravelTime(computeTravelTime(selectedEntityIdFrom, selectedEntityIdTo, SPEED_PER_DONKEY));
+      setTravelTime(computeTravelTime(selectedEntityIdFrom, selectedEntityIdTo, EternumGlobalConfig.speed.donkey));
   }, [selectedEntityIdFrom, selectedEntityIdTo]);
 
   const onSendResources = () => {

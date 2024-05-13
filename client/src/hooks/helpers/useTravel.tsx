@@ -1,4 +1,4 @@
-import { Position, SPEED_PER_DONKEY } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
 import { useDojo } from "../context/DojoContext";
 import useUIStore from "../store/useUIStore";
 import { getComponentValue } from "@dojoengine/recs";
