@@ -32,7 +32,7 @@ export const LoadingScreen = () => {
 
   return (
     <div className="relative h-screen w-screen bg-black">
-      <img className="absolute h-screen w-screen object-cover" src="/images/cover-3.jpeg" alt="" />
+      <img className="absolute h-screen w-screen object-cover" src="/images/cover.jpeg" alt="" />
       <div
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-brown p-10 text-gold border-y-2 border-gradient ${
           fade ? "fade-in" : "fade-out"
