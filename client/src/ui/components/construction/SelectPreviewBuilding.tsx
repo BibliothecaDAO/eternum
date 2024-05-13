@@ -16,10 +16,11 @@ import {
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
+import { Tabs } from "@/ui/elements/tab";
 
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { unpackResources } from "@/ui/utils/packedData";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
@@ -28,6 +29,7 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { BUILDING_COSTS } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
+import Button from "@/ui/elements/Button";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -50,320 +52,6 @@ const BUILDING_IMAGES_PATH = {
   [BuildingType.Storehouse]: BUILD_IMAGES_PREFIX + "storehouse.png",
 };
 
-export const SelectPreviewBuilding = () => {
-  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
-  const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const selectedResource = useUIStore((state) => state.selectedResource);
-  const setResourceId = useUIStore((state) => state.setResourceId);
-  const setTooltip = useUIStore((state) => state.setTooltip);
-  const isDestroyMode = useUIStore((state) => state.isDestroyMode);
-  const setIsDestroyMode = useUIStore((state) => state.setIsDestroyMode);
-
-  const { playResourceSound } = usePlayResourceSound();
-
-  const buildingTypes = Object.keys(BuildingType).filter(
-    (key) =>
-      isNaN(Number(key)) &&
-      key !== "Resource" &&
-      key !== "Castle" &&
-      key !== "None" &&
-      key !== "DonkeyFarm" &&
-      key !== "TradingPost" &&
-      key !== "WatchTower" &&
-      key !== "Walls",
-  );
-
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const { realm } = useGetRealm(realmEntityId);
-
-  let realmResourceIds = useMemo(() => {
-    if (realm) {
-      return unpackResources(BigInt(realm.resourceTypesPacked), realm.resourceTypesCount);
-    } else {
-      return [];
-    }
-  }, [realm]);
-
-  const handleSelectBuilding = (buildingType: BuildingType) => {
-    setPreviewBuilding(buildingType);
-  };
-
-  const { getBalance } = useResourceBalance();
-
-  const checkBalance = (cost: any) =>
-    Object.keys(cost).every((resourceId) => {
-      const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(realmEntityId, resourceCost.resource);
-      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
-    });
-
-  return (
-    <div className="flex flex-col">
-      <div className="grid grid-cols-2 gap-2 p-2">
-        {realmResourceIds.map((resourceId) => {
-          const resource = findResourceById(resourceId)!;
-
-          const cost = BUILDING_COSTS[BuildingType.Resource];
-
-          const hasBalance = checkBalance(cost);
-
-          return (
-            <div
-              style={{
-                backgroundImage: `url(${BUILDING_IMAGES_PATH[BuildingType.Resource]})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-              key={resourceId}
-              onClick={() => {
-                if (!hasBalance) {
-                  return;
-                }
-                if (selectedResource === resourceId) {
-                  setResourceId(null);
-                } else {
-                  setResourceId(resourceId);
-                  playResourceSound(resourceId);
-                }
-
-                if (previewBuilding === BuildingType.Resource && selectedResource === resourceId) {
-                  setPreviewBuilding(null);
-                } else {
-                  handleSelectBuilding(BuildingType.Resource);
-                }
-              }}
-              className={clsx(
-                "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis  cursor-pointer relative h-24 ",
-                {
-                  "!border-lightest !text-lightest": selectedResource === resourceId,
-                },
-              )}
-            >
-              {!hasBalance && <div className="absolute w-full h-full bg-black/50 text-red p-4 text-xs"></div>}
-              <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50">
-                <span>{resource?.trait}</span>
-              </div>
-              <div className="flex relative flex-col items-start text-xs font-bold p-2">
-                <ResourceIcon resource={resource?.trait} size="lg" />
-
-                <InfoIcon
-                  onMouseEnter={() => {
-                    setTooltip({
-                      content: <ResourceInfo resourceId={resourceId} />,
-                      position: "right",
-                    });
-                  }}
-                  onMouseLeave={() => {
-                    setTooltip(null);
-                  }}
-                  className="w-4 h-4 absolute top-2 right-2"
-                />
-              </div>
-            </div>
-          );
-        })}
-        {buildingTypes.map((buildingType, index) => {
-          const building = BuildingType[buildingType as keyof typeof BuildingType];
-
-          const cost = BUILDING_COSTS[building];
-          const hasBalance = checkBalance(cost);
-
-          return (
-            <div
-              key={index}
-              className={clsx(
-                "border-2 border-gold hover:border-gold/50 transition-all duration-200 text-gold rounded-lg overflow-hidden text-ellipsis  cursor-pointer h-24 relative  ",
-                {
-                  "!border-lightest !text-lightest": previewBuilding === building,
-                },
-                {
-                  " cursor-not-allowed": (previewBuilding && previewBuilding !== building) || !hasBalance,
-                },
-              )}
-              style={{
-                backgroundImage: `url(${BUILDING_IMAGES_PATH[building]})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-              onClick={() => {
-                if (!hasBalance) {
-                  return;
-                }
-                if (previewBuilding === building) {
-                  setPreviewBuilding(null);
-                } else {
-                  setResourceId(null);
-                  handleSelectBuilding(building);
-                }
-              }}
-            >
-              {!hasBalance && <div className="absolute w-full h-full bg-black/50 text-red p-4 text-xs"></div>}
-
-              <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50">
-                {BuildingEnumToString[building]}
-              </div>
-              <InfoIcon
-                onMouseEnter={() => {
-                  setTooltip({
-                    content: <BuildingInfo buildingId={building} />,
-                    position: "right",
-                  });
-                }}
-                onMouseLeave={() => {
-                  setTooltip(null);
-                }}
-                className="w-4 h-4 absolute top-2 right-2"
-              />
-            </div>
-          );
-        })}
-        <div
-          className={clsx(
-            "border-2 border-order-giants/50 text-order-giants/50 hover:border-order-giants/85 hover:text-order-giants/85 flex justify-center items-center transition-all duration-20 rounded-lg overflow-hidden text-ellipsis  cursor-pointer h-24 relative",
-            {
-              "!text-order-giants !border-order-giants": isDestroyMode,
-            },
-          )}
-          onClick={() => {
-            if (previewBuilding) {
-              setPreviewBuilding(null);
-            }
-            setIsDestroyMode(!isDestroyMode);
-          }}
-        >
-          Destroy Building
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export const ResourceInfo = ({ resourceId }: { resourceId: number }) => {
-  const cost = RESOURCE_INPUTS[resourceId];
-
-  const buildingCost = BUILDING_COSTS[BuildingType.Resource];
-
-  const population = BUILDING_POPULATION[BuildingType.Resource];
-
-  const capacity = BUILDING_CAPACITY[BuildingType.Resource];
-
-  const information = RESOURCE_INFORMATION[resourceId];
-
-  return (
-    <div className="flex flex-col text-gold text-sm p-1 space-y-1">
-      <Headline className="py-3"> Building </Headline>
-
-      {population !== 0 && <div>Increases Population: +{population}</div>}
-
-      {capacity !== 0 && <div>Increases Capacity: +{capacity}</div>}
-
-      {findResourceById(resourceId)?.trait && (
-        <div className=" flex">
-          <div>Produces: +10</div>
-          <ResourceIcon className="self-center ml-1" resource={findResourceById(resourceId)?.trait || ""} size="md" />
-          {findResourceById(resourceId)?.trait || ""} every cycle
-        </div>
-      )}
-
-      <Headline className="py-3">COST PER CYCLE</Headline>
-      <div className="grid grid-cols-2 gap-2">
-        {Object.keys(cost).map((resourceId) => {
-          return (
-            <ResourceCost resourceId={cost[Number(resourceId)].resource} amount={cost[Number(resourceId)].amount} />
-          );
-        })}
-      </div>
-
-      <Headline className="py-3">ONE TIME COST</Headline>
-
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        {Object.keys(buildingCost).map((resourceId, index) => {
-          return (
-            <ResourceCost
-              key={index}
-              resourceId={buildingCost[Number(resourceId)].resource}
-              amount={buildingCost[Number(resourceId)].amount}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-export const BuildingInfo = ({ buildingId }: { buildingId: number }) => {
-  const cost = BUILDING_COSTS[buildingId];
-
-  const information = BUILDING_INFORMATION[buildingId];
-
-  const population = BUILDING_POPULATION[buildingId];
-
-  const capacity = BUILDING_CAPACITY[buildingId];
-
-  const perTick = BUILDING_PRODUCTION_PER_TICK[buildingId];
-
-  const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
-
-  const ongoingCost = RESOURCE_INPUTS[resourceProduced];
-
-  console.log(ongoingCost);
-
-  return (
-    <div className="p-2 text-sm text-gold">
-      {/* <div className="w-32 my-2">{information}</div> */}
-      <Headline className="py-3"> Building </Headline>
-
-      {population !== 0 && <div>Increases Population: +{population}</div>}
-
-      {capacity !== 0 && <div>Increases Capacity: +{capacity}</div>}
-
-      {resourceProduced !== 0 && (
-        <div className=" flex">
-          <div>Produces: +{perTick}</div>
-          <ResourceIcon
-            className="self-center ml-1"
-            resource={findResourceById(resourceProduced)?.trait || ""}
-            size="md"
-          />
-          {findResourceById(resourceProduced)?.trait || ""} every cycle
-        </div>
-      )}
-
-      {resourceProduced && (
-        <>
-          <Headline className="py-3">COST PER CYCLE</Headline>
-          <div className="grid grid-cols-2 gap-2">
-            {resourceProduced !== 0 &&
-              ongoingCost &&
-              Object.keys(ongoingCost).map((resourceId, index) => {
-                return (
-                  <ResourceCost
-                    key={index}
-                    resourceId={ongoingCost[Number(resourceId)].resource}
-                    amount={ongoingCost[Number(resourceId)].amount}
-                  />
-                );
-              })}
-          </div>
-        </>
-      )}
-
-      <Headline className="py-3"> One time cost</Headline>
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        {Object.keys(cost).map((resourceId, index) => {
-          return (
-            <ResourceCost
-              key={index}
-              resourceId={cost[Number(resourceId)].resource}
-              amount={cost[Number(resourceId)].amount}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
@@ -372,6 +60,11 @@ export const SelectPreviewBuildingMenu = () => {
   const isDestroyMode = useUIStore((state) => state.isDestroyMode);
   const setIsDestroyMode = useUIStore((state) => state.setIsDestroyMode);
 
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
+  const { realm } = useGetRealm(realmEntityId);
+
+  const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
 
   const buildingTypes = Object.keys(BuildingType).filter(
@@ -385,9 +78,6 @@ export const SelectPreviewBuildingMenu = () => {
       key !== "WatchTower" &&
       key !== "Walls",
   );
-
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const { realm } = useGetRealm(realmEntityId);
 
   const realmResourceIds = useMemo(() => {
     if (realm) {
@@ -397,102 +87,165 @@ export const SelectPreviewBuildingMenu = () => {
     }
   }, [realm]);
 
-  const handleSelectBuilding = (buildingType: BuildingType) => {
-    setPreviewBuilding(buildingType);
-  };
-
-  const { getBalance } = useResourceBalance();
-
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(realmEntityId, resourceCost.resource);
-      return balance.balance >= resourceCost.amount;
+      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
     });
 
+  const [selectedTab, setSelectedTab] = useState(0);
+
+  const tabs = useMemo(
+    () => [
+      {
+        key: "resources",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Resources</div>
+          </div>
+        ),
+        component: (
+          <div className="grid grid-cols-8 gap-2 p-2">
+            {realmResourceIds.map((resourceId) => {
+              const resource = findResourceById(resourceId)!;
+              const cost = BUILDING_COSTS[BuildingType.Resource];
+              const hasBalance = checkBalance(cost);
+
+              return (
+                <BuildingCard
+                  key={resourceId}
+                  buildingId={BuildingType.Resource}
+                  onClick={() => {
+                    if (!hasBalance) {
+                      return;
+                    }
+                    if (selectedResource === resourceId) {
+                      setResourceId(null);
+                    } else {
+                      setResourceId(resourceId);
+                      playResourceSound(resourceId);
+                    }
+
+                    if (previewBuilding === BuildingType.Resource && selectedResource === resourceId) {
+                      setPreviewBuilding(null);
+                    } else {
+                      setPreviewBuilding(BuildingType.Resource);
+                    }
+                  }}
+                  active={selectedResource === resourceId}
+                  name={resource?.trait}
+                  toolTip={<ResourceInfo resourceId={resourceId} entityId={realmEntityId} />}
+                  canBuild={hasBalance && realm.hasCapacity}
+                />
+              );
+            })}
+          </div>
+        ),
+      },
+      {
+        key: "all",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Economic</div>
+          </div>
+        ),
+        component: (
+          <div className="grid grid-cols-8 gap-2 p-2">
+            {buildingTypes
+              .filter((a) => a !== "Barracks" && a !== "ArcheryRange" && a !== "Stable")
+              .map((buildingType, index) => {
+                const building = BuildingType[buildingType as keyof typeof BuildingType];
+
+                const cost = BUILDING_COSTS[building];
+                const hasBalance = checkBalance(cost);
+
+                return (
+                  <BuildingCard
+                    key={index}
+                    buildingId={building}
+                    onClick={() => {
+                      if (!hasBalance) {
+                        return;
+                      }
+                      if (previewBuilding === building) {
+                        setPreviewBuilding(null);
+                      } else {
+                        setResourceId(null);
+                        setPreviewBuilding(building);
+                      }
+                    }}
+                    active={false}
+                    name={BuildingEnumToString[building]}
+                    toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
+                    canBuild={BuildingType.WorkersHut == building ? hasBalance : hasBalance && realm.hasCapacity}
+                  />
+                );
+              })}
+          </div>
+        ),
+      },
+      {
+        key: "mine",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Military</div>
+          </div>
+        ),
+        component: (
+          <div className="grid grid-cols-8 gap-2 p-2">
+            {" "}
+            {buildingTypes
+              .filter((a) => a === "Barracks" || a === "ArcheryRange" || a === "Stable")
+              .map((buildingType, index) => {
+                const building = BuildingType[buildingType as keyof typeof BuildingType];
+
+                const cost = BUILDING_COSTS[building];
+                const hasBalance = checkBalance(cost);
+
+                return (
+                  <BuildingCard
+                    key={index}
+                    buildingId={building}
+                    onClick={() => {
+                      if (!hasBalance) {
+                        return;
+                      }
+                      if (previewBuilding === building) {
+                        setPreviewBuilding(null);
+                      } else {
+                        setResourceId(null);
+                        setPreviewBuilding(building);
+                      }
+                    }}
+                    active={false}
+                    name={BuildingEnumToString[building]}
+                    toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
+                    canBuild={BuildingType.WorkersHut == building ? hasBalance : hasBalance && realm.hasCapacity}
+                  />
+                );
+              })}
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
+
   return (
-    <div className="flex flex-col -mt-44 bg-brown/80 border-gradient border">
-      <div className="grid grid-cols-8 gap-2 p-2">
-        {realmResourceIds.map((resourceId) => {
-          const resource = findResourceById(resourceId)!;
-
-          const cost = BUILDING_COSTS[BuildingType.Resource];
-
-          const hasBalance = checkBalance(cost);
-
-          return (
-            <BuildingCard
-              key={resourceId}
-              buildingId={BuildingType.Resource}
-              onClick={() => {
-                if (!hasBalance) {
-                  return;
-                }
-                if (selectedResource === resourceId) {
-                  setResourceId(null);
-                } else {
-                  setResourceId(resourceId);
-                  playResourceSound(resourceId);
-                }
-
-                if (previewBuilding === BuildingType.Resource && selectedResource === resourceId) {
-                  setPreviewBuilding(null);
-                } else {
-                  handleSelectBuilding(BuildingType.Resource);
-                }
-              }}
-              active={selectedResource === resourceId}
-              name={resource?.trait}
-              toolTip={<ResourceInfo resourceId={resourceId} />}
-              canBuild={hasBalance && realm.hasCapacity}
-            />
-          );
-        })}
-        {buildingTypes.map((buildingType, index) => {
-          const building = BuildingType[buildingType as keyof typeof BuildingType];
-
-          const cost = BUILDING_COSTS[building];
-          const hasBalance = checkBalance(cost);
-
-          return (
-            <BuildingCard
-              key={index}
-              buildingId={building}
-              onClick={() => {
-                if (!hasBalance) {
-                  return;
-                }
-                if (previewBuilding === building) {
-                  setPreviewBuilding(null);
-                } else {
-                  setResourceId(null);
-                  handleSelectBuilding(building);
-                }
-              }}
-              active={false}
-              name={BuildingEnumToString[building]}
-              toolTip={<BuildingInfo buildingId={building} />}
-              canBuild={BuildingType.WorkersHut == building ? hasBalance : hasBalance && realm.hasCapacity}
-            />
-          );
-        })}
-        <div
-          className={clsx(
-            "border border-order-giants/50 text-white hover:border-order-giants/85 hover:text-order-giants/85 flex justify-center items-center transition-all duration-20 bg-order-giants/80 overflow-hidden text-ellipsis  cursor-pointer h-24 relative p-2 w-24 ",
-            {
-              "!text-order-giants !border-order-giants": isDestroyMode,
-            },
-          )}
-          onClick={() => {
-            if (previewBuilding) {
-              setPreviewBuilding(null);
-            }
-            setIsDestroyMode(!isDestroyMode);
-          }}
-        >
-          Destroy Building
-        </div>
-      </div>
+    <div className="flex flex-col -mt-40 bg-brown/90 border-gradient border">
+      <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
+        <Tabs.List>
+          {tabs.map((tab, index) => (
+            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+          ))}
+        </Tabs.List>
+        <Tabs.Panels className="overflow-hidden">
+          {tabs.map((tab, index) => (
+            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+          ))}
+        </Tabs.Panels>
+      </Tabs>
     </div>
   );
 };
@@ -522,14 +275,14 @@ export const BuildingCard = ({
       }}
       onClick={onClick}
       className={clsx(
-        " hover:border-gold border border-transparent transition-all duration-200 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-24 w-24 ",
+        " hover:border-gold border border-transparent transition-all duration-200 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 ",
         {
           "!border-lightest !text-lightest": active,
         },
       )}
     >
       {!canBuild && (
-        <div className="absolute w-full h-full bg-black/50 text-white/60 p-4 text-xs pt-4 flex justify-center mt-1">
+        <div className="absolute w-full h-full bg-black/50 text-white/60 p-4 text-xs  flex justify-center ">
           <div className="self-center">insufficient fund</div>
         </div>
       )}
@@ -551,6 +304,145 @@ export const BuildingCard = ({
           }}
           className="w-4 h-4 absolute top-2 right-2"
         />
+      </div>
+    </div>
+  );
+};
+
+export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; entityId: bigint | undefined }) => {
+  const cost = RESOURCE_INPUTS[resourceId];
+
+  const buildingCost = BUILDING_COSTS[BuildingType.Resource];
+
+  const population = BUILDING_POPULATION[BuildingType.Resource];
+
+  const capacity = BUILDING_CAPACITY[BuildingType.Resource];
+
+  const information = RESOURCE_INFORMATION[resourceId];
+
+  const { getBalance } = useResourceBalance();
+
+  return (
+    <div className="flex flex-col text-gold text-sm p-1 space-y-1">
+      <Headline className="py-3"> Building </Headline>
+
+      {population !== 0 && <div className="font-bold">Increases Population: +{population}</div>}
+
+      {capacity !== 0 && <div className=" pt-3 font-bold">Increases Capacity: +{capacity}</div>}
+
+      {findResourceById(resourceId)?.trait && (
+        <div className=" flex pt-3 font-bold">
+          <div>Produces: +10</div>
+          <ResourceIcon className="self-center ml-1" resource={findResourceById(resourceId)?.trait || ""} size="md" />
+          {findResourceById(resourceId)?.trait || ""} every cycle
+        </div>
+      )}
+
+      <div className="pt-3 font-bold">Cost Per Cycle</div>
+      <div className="grid grid-cols-2 gap-2">
+        {Object.keys(cost).map((resourceId) => {
+          const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
+
+          return (
+            <ResourceCost
+              resourceId={cost[Number(resourceId)].resource}
+              amount={cost[Number(resourceId)].amount}
+              balance={balance.balance}
+            />
+          );
+        })}
+      </div>
+
+      <div className="pt-3 font-bold">One Time Cost</div>
+
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        {Object.keys(buildingCost).map((resourceId, index) => {
+          const balance = getBalance(entityId || 0n, buildingCost[Number(resourceId)].resource);
+
+          return (
+            <ResourceCost
+              key={index}
+              resourceId={buildingCost[Number(resourceId)].resource}
+              amount={buildingCost[Number(resourceId)].amount}
+              balance={balance.balance}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export const BuildingInfo = ({ buildingId, entityId }: { buildingId: number; entityId: bigint | undefined }) => {
+  const cost = BUILDING_COSTS[buildingId];
+
+  const information = BUILDING_INFORMATION[buildingId];
+  const population = BUILDING_POPULATION[buildingId];
+  const capacity = BUILDING_CAPACITY[buildingId];
+  const perTick = BUILDING_PRODUCTION_PER_TICK[buildingId];
+  const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
+  const ongoingCost = RESOURCE_INPUTS[resourceProduced];
+
+  const { getBalance } = useResourceBalance();
+
+  return (
+    <div className="p-2 text-sm text-gold">
+      <Headline className="py-3"> {BuildingEnumToString[buildingId]} </Headline>
+
+      {resourceProduced !== 0 && (
+        <div className=" flex">
+          <div className="font-bold">Produces: +{perTick}</div>
+          <ResourceIcon
+            className="self-center mx-1"
+            resource={findResourceById(resourceProduced)?.trait || ""}
+            size="md"
+          />
+          {findResourceById(resourceProduced)?.trait || ""}
+        </div>
+      )}
+
+      {population !== 0 ? <div className="font-bold pt-3 ">Increases Population: +{population}</div> : ""}
+
+      {capacity !== 0 ? <div className="font-bold pt-3 ">Increases Capacity: +{capacity}</div> : ""}
+
+      {ongoingCost && ongoingCost.length ? (
+        <>
+          <div className="pt-3 font-bold">Cost per cycle</div>
+          <div className="grid grid-cols-2 gap-2">
+            {resourceProduced !== 0 &&
+              ongoingCost &&
+              Object.keys(ongoingCost).map((resourceId, index) => {
+                const balance = getBalance(entityId || 0n, ongoingCost[Number(resourceId)].resource);
+                return (
+                  <ResourceCost
+                    key={index}
+                    type="horizontal"
+                    resourceId={ongoingCost[Number(resourceId)].resource}
+                    amount={ongoingCost[Number(resourceId)].amount}
+                    balance={balance.balance}
+                  />
+                );
+              })}
+          </div>
+        </>
+      ) : (
+        ""
+      )}
+
+      <div className="pt-3 font-bold"> One time cost</div>
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        {Object.keys(cost).map((resourceId, index) => {
+          const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
+          return (
+            <ResourceCost
+              key={index}
+              type="horizontal"
+              resourceId={cost[Number(resourceId)].resource}
+              amount={cost[Number(resourceId)].amount}
+              balance={balance.balance}
+            />
+          );
+        })}
       </div>
     </div>
   );
