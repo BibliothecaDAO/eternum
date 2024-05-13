@@ -4,7 +4,6 @@ import {
   CREATE_ORDER_EVENT,
   MAP_EXPLORED_EVENT,
   PILLAGE_EVENT,
-  TRANSFER_EVENT,
   TRAVEL_EVENT,
 } from "@bibliothecadao/eternum";
 import { numberToHex } from "../ui/utils/utils";
