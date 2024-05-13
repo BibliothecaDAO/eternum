@@ -57,7 +57,7 @@ type ContextType = Record<
 type WarriorModelProps = {
   id: number;
   position?: Vector3;
-  rotationY?: number;
+  rotationY: number;
   onPointerEnter: (e: any) => void;
   onPointerOut: (e: any) => void;
   onContextMenu: (e: any) => void;
@@ -84,10 +84,6 @@ export function WarriorModel({
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes, materials } = useGraph(clone);
   const { play: playRunningSoud, stop: stopRunningSound } = useRunningSound();
-
-  useEffect(() => {
-    nodes.Root.rotation.y = rotationY || 0;
-  }, [rotationY, nodes.Root]);
 
   // add actions to onClick
   const onClickAction = useCallback((e: any) => {
@@ -141,7 +137,7 @@ export function WarriorModel({
       onPointerOut={onPointerOut}
       onContextMenu={onContextMenu}
     >
-      <group name="Scene">
+      <group name="Scene" rotation={[0, rotationY, 0]}>
         <group name="CharacterArmature">
           <primitive object={nodes.Root} />
         </group>

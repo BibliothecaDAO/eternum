@@ -139,8 +139,6 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
       const position = getComponentValue(Position, entityId);
       const population = getComponentValue(Population, entityId);
 
-      console.log("population", population);
-
       if (realm && owner && position) {
         const {
           realm_id,

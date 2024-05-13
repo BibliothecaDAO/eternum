@@ -24,7 +24,12 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
   const animationPath = animationPaths.find((path) => path.id === info.id);
 
   const startAnimationTimeRef = useRef<number | null>(null);
-  const rotationYRef = useRef<number | undefined>(); // useRef to store rotationY persistently
+
+  // Deterministic rotation based on the id
+  const deterministicRotation = useMemo(() => {
+    return (Number(info.id) % 12) * (Math.PI / 6); // Convert to one of 12 directions in radians
+  }, []);
+  const [rotationY, setRotationY] = useState(deterministicRotation);
 
   const [hovered, setHovered] = useState(false);
   const [position, setPosition] = useState<Vector3>(
@@ -74,7 +79,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
 
     if (!direction.equals(new Vector3(0, 0, 0))) {
       const rotation = Math.atan2(direction.x, direction.z);
-      rotationYRef.current = rotation;
+      setRotationY(rotation);
     }
   });
 
@@ -102,7 +107,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
         <WarriorModel
           {...props}
           id={Number(info.id)}
-          rotationY={rotationYRef.current}
+          rotationY={rotationY}
           onContextMenu={onClick}
           onPointerEnter={onPointerIn}
           onPointerOut={onPointerOut}

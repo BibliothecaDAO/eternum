@@ -52,7 +52,6 @@ export const Armies = ({}: ArmiesProps) => {
   return (
     <group>
       {armyInfo.map((info) => {
-        const key = `${info.contractPos.x},${info.contractPos.y}`;
         // Find the index of this army within its own group
         const index = Number(info.id) % 12;
         const offset = calculateOffset(index, 12);
