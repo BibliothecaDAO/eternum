@@ -46,8 +46,8 @@ name = "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x6440451cbba04c452fa7a295964b9c66ff4a904ce6d9fcc295eb1d91522486c"
-class_hash = "0x57e41cb5cad35b56ff358c451f595e3c3d72fd21e098ebc447ce8871f02e0a"
-original_class_hash = "0x57e41cb5cad35b56ff358c451f595e3c3d72fd21e098ebc447ce8871f02e0a"
+class_hash = "0x46f55d1f8d664e084c1f94c664d148b20f9d8d33ae552427380a70f936d84a6"
+original_class_hash = "0x46f55d1f8d664e084c1f94c664d148b20f9d8d33ae552427380a70f936d84a6"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_bank_contracts_swap_systems_swap_systems.json"
 reads = []
@@ -392,15 +392,10 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x6ae1405a3f117ae2579b9f5ac9273d3a6c43043c48accc9e69523d4525683d2"
-original_class_hash = "0x6ae1405a3f117ae2579b9f5ac9273d3a6c43043c48accc9e69523d4525683d2"
+class_hash = "0x23d9fe45eaa73d6b98176213873a4537442f397737974018f2dc710d07dd384"
+original_class_hash = "0x23d9fe45eaa73d6b98176213873a4537442f397737974018f2dc710d07dd384"
 abi = "abis/deployments/models/eternum_models_buildings_building_quantity.json"
 name = "eternum::models::buildings::building_quantity"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
 
 [[models.members]]
 name = "category"

@@ -2,8 +2,17 @@ import { Event, client, getEventsQuery } from "./graphqlClient";
 import { SWAP_EVENT } from "@bibliothecadao/eternum";
 
 export const MAX_EVENTS = 5000;
+export const ADMIN_BANK_ENTITY_ID = "0x0de0b6b3a763fffe";
 
-export async function computeBankStats(bankEntityId: bigint) {
+export interface BankStatsInterface {
+  ownerTotalLordsFees: number;
+  ownerTotalResourceFees: Map<string, number>;
+  poolTotalLordsFees: number;
+  poolTotalResourceFees: Map<string, number>;
+  dailyClosingPriceResults: Map<string, any>;
+}
+
+export async function computeBankStats() {
   const query = `
     query GetBankEvents($keys: [String!]!, $last: Int!) {
       events(keys: $keys, last: $last) {
@@ -19,7 +28,7 @@ export async function computeBankStats(bankEntityId: bigint) {
     }
   `;
   const variables = {
-    keys: [SWAP_EVENT, bankEntityId.toString()],
+    keys: [SWAP_EVENT, ADMIN_BANK_ENTITY_ID],
     last: MAX_EVENTS,
   };
 
@@ -65,6 +74,14 @@ export async function computeBankStats(bankEntityId: bigint) {
     }));
     dailyClosingPriceResults.set(key, dailyPrices);
   });
+
+  return {
+    ownerTotalLordsFees,
+    ownerTotalResourceFees,
+    poolTotalLordsFees,
+    poolTotalResourceFees,
+    dailyClosingPriceResults,
+  };
 }
 
 function parseSwapEventData(eventData: Event) {
