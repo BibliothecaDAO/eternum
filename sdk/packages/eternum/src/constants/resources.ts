@@ -30,7 +30,7 @@ export const EternumGlobalConfig = {
   },
   tick: {
     movesPerTick: 3,
-    tickIntervalInSeconds: 900,
+    tickIntervalInSeconds: 1,
   },
   carryCapacity: {
     donkey: 100,

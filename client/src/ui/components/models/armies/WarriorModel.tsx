@@ -57,14 +57,12 @@ type ContextType = Record<
 type WarriorModelProps = {
   id: number;
   position?: Vector3;
-  rotationY: number;
-  onClick: () => void;
+  rotationY?: number;
   onPointerEnter: (e: any) => void;
   onPointerOut: (e: any) => void;
   onContextMenu: (e: any) => void;
   hovered: boolean;
   isRunning: boolean;
-  isDead: boolean;
   isFriendly: boolean;
 };
 
@@ -72,13 +70,11 @@ export function WarriorModel({
   id,
   position,
   rotationY,
-  onClick,
   onPointerEnter,
   onPointerOut,
   onContextMenu,
   hovered,
   isRunning,
-  isDead,
   isFriendly,
   ...props
 }: WarriorModelProps) {
@@ -89,38 +85,23 @@ export function WarriorModel({
   const { nodes, materials } = useGraph(clone);
   const { play: playRunningSoud, stop: stopRunningSound } = useRunningSound();
 
-  // Deterministic rotation based on the id
-  const deterministicRotation = useMemo(() => {
-    return Number(id % 360) * (Math.PI / 180); // Convert degrees to radians
-  }, [id]);
-
   useEffect(() => {
-    if (isDead) {
-      nodes.Root.rotation.y = deterministicRotation;
-    } else {
-      nodes.Root.rotation.y = rotationY;
-    }
-  }, [deterministicRotation, rotationY, nodes.Root, isDead]);
+    nodes.Root.rotation.y = rotationY || 0;
+  }, [rotationY, nodes.Root]);
 
   // add actions to onClick
-  const onClickAction = useCallback(
-    (e: any) => {
-      e.stopPropagation();
-      if (!isDead && isFriendly) {
-        const action = actions["Sword_Attack"];
-        if (action) {
-          action.reset();
-          action.setLoop(THREE.LoopOnce, 1);
-          action.clampWhenFinished = true;
-          action.play();
-        }
+  const onClickAction = useCallback((e: any) => {
+    e.stopPropagation();
+    if (isFriendly) {
+      const action = actions["Sword_Attack"];
+      if (action) {
+        action.reset();
+        action.setLoop(THREE.LoopOnce, 1);
+        action.clampWhenFinished = true;
+        action.play();
       }
-      if (onClick) {
-        onClick();
-      }
-    },
-    [isDead, onClick],
-  );
+    }
+  }, []);
 
   useEffect(() => {
     const runAction = actions["Run"];
@@ -132,31 +113,9 @@ export function WarriorModel({
     } else {
       runAction?.stop();
       stopRunningSound();
-      const randomDelay = Math.random() * 2; // Generate a random delay between 0 and 2 seconds
-      setTimeout(() => {
-        idleAction?.play();
-      }, randomDelay * 1000); // Convert the delay to milliseconds
+      idleAction?.play();
     }
   }, [isRunning, actions]);
-
-  useEffect(() => {
-    if (isDead) {
-      const action = actions["Death"];
-      if (action) {
-        action.play();
-        action.paused = true; // Immediately pause the action
-        action.time = action.getClip().duration; // Set to the last frame
-        action.enabled = true;
-        // // Ensure the action's transformations are applied
-        requestAnimationFrame(() => {
-          action.getMixer().update(0);
-          // Apply the random rotation after the animation has been updated
-          const randomRotation = Math.random() * 2 * Math.PI;
-          nodes.Root.rotation.y = randomRotation;
-        });
-      }
-    }
-  }, [isDead, isDead, actions, nodes.Root]);
 
   const hoverMaterial = useMemo(() => {
     const material = new THREE.MeshStandardMaterial();

@@ -21,86 +21,60 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
 
-  const animationPath = useMemo(() => animationPaths.find((path) => path.id === info.id), [animationPaths]);
+  const animationPath = animationPaths.find((path) => path.id === info.id);
 
   const startAnimationTimeRef = useRef<number | null>(null);
+  const rotationYRef = useRef<number | undefined>(); // useRef to store rotationY persistently
 
   const [hovered, setHovered] = useState(false);
   const [position, setPosition] = useState<Vector3>(
     new Vector3(info.uiPos.x + offset.x, 0.32, -info.uiPos.y - offset.y),
   );
-  const [rotationY, setRotationY] = useState<number>(0);
   const [isRunning, setIsRunning] = useState(false);
 
   useFrame(() => {
-    // animate
-    if (animationPath) {
-      const uiPath = animationPath.path.map((pos) => getUIPositionFromColRow(pos.x, pos.y));
-      const now = Date.now();
-      let timeElapsed = 0;
-      const startTime = startAnimationTimeRef.current;
-      const timeToComplete = uiPath.length * 1000;
-      if (!startTime) {
-        setIsRunning(true);
-        startAnimationTimeRef.current = now;
-      } else {
-        timeElapsed = now - startTime;
-      }
-      const progress = Math.min(timeElapsed / timeToComplete, 1);
+    if (!animationPath) return;
 
-      const pathIndex = Math.floor(progress * uiPath.length);
-      const currentPath: Position[] = uiPath.slice(pathIndex, pathIndex + 2);
+    const now = Date.now();
+    const startTime = startAnimationTimeRef.current ?? now;
+    if (!startAnimationTimeRef.current) {
+      setIsRunning(true);
+      startAnimationTimeRef.current = now;
+    }
 
-      // stop if progress is >= 1
-      if (progress >= 1 || currentPath.length < 2) {
-        setIsRunning(false);
-        // reset all
-        const paths = [...animationPaths];
-        const index = paths.indexOf(animationPath);
-        if (index > -1) {
-          paths.splice(index, 1);
-        }
-        setAnimationPaths(paths);
-        // reset time
-        startAnimationTimeRef.current = null;
-        return;
-      }
+    const uiPath = animationPath.path.map((pos) => getUIPositionFromColRow(pos.x, pos.y));
+    const timeElapsed = now - startTime;
+    const timeToComplete = uiPath.length * 1000;
+    const progress = Math.min(timeElapsed / timeToComplete, 1);
+    const pathIndex = Math.floor(progress * uiPath.length);
+    const currentPath = uiPath.slice(pathIndex, pathIndex + 2);
 
-      // calculate progress between 2 points
-      const progressBetweenPoints = (progress - (1 / uiPath.length) * pathIndex) / (1 / uiPath.length);
+    if (progress >= 1 || currentPath.length < 2) {
+      setIsRunning(false);
+      setAnimationPaths(animationPaths.filter((path) => path.id !== animationPath.id));
+      startAnimationTimeRef.current = null;
+      return;
+    }
 
-      // add offset if currentPath[1] is the last point
-      if (pathIndex === uiPath.length - 2) {
-        currentPath[1].x += offset.x;
-        currentPath[1].y += offset.y;
-      }
+    const progressBetweenPoints = (progress - (1 / uiPath.length) * pathIndex) * uiPath.length;
+    const applyOffset = (point: { x: number; y: number }, isFirstOrLast: boolean) => ({
+      x: point.x + (isFirstOrLast ? offset.x : 0),
+      y: point.y + (isFirstOrLast ? offset.y : 0),
+    });
 
-      // add offset if currentPath[0] is the first point
-      if (pathIndex === 0) {
-        currentPath[0].x += offset.x;
-        currentPath[0].y += offset.y;
-      }
+    const startPoint = applyOffset(currentPath[0], pathIndex === 0);
+    const endPoint = applyOffset(currentPath[1], pathIndex === uiPath.length - 2);
+    const currentPos = {
+      x: startPoint.x + (endPoint.x - startPoint.x) * progressBetweenPoints,
+      y: startPoint.y + (endPoint.y - startPoint.y) * progressBetweenPoints,
+    };
 
-      const currentPos = {
-        x: currentPath[0].x + (currentPath[1].x - currentPath[0].x) * progressBetweenPoints,
-        y: currentPath[0].y + (currentPath[1].y - currentPath[0].y) * progressBetweenPoints,
-      };
+    const direction = new Vector3(endPoint.x - startPoint.x, 0, -(endPoint.y - startPoint.y)).normalize();
+    setPosition(new Vector3(currentPos.x, 0.32, -currentPos.y));
 
-      // Determine the direction of movement
-      const direction = new Vector3(
-        currentPath[1].x - currentPath[0].x,
-        0,
-        -(currentPath[1].y - currentPath[0].y), // Negate Y to match the Three.js coordinate system
-      ).normalize();
-
-      const z = 0.32;
-      setPosition(new Vector3(currentPos.x, z, -currentPos.y));
-
-      // Calculate and update rotation to face the direction of movement
-      if (!direction.equals(new Vector3(0, 0, 0))) {
-        const angle = Math.atan2(direction.x, direction.z);
-        setRotationY(angle);
-      }
+    if (!direction.equals(new Vector3(0, 0, 0))) {
+      const rotation = Math.atan2(direction.x, direction.z);
+      rotationYRef.current = rotation;
     }
   });
 
@@ -128,14 +102,12 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
         <WarriorModel
           {...props}
           id={Number(info.id)}
-          rotationY={rotationY}
-          onClick={() => {}}
+          rotationY={rotationYRef.current}
           onContextMenu={onClick}
           onPointerEnter={onPointerIn}
           onPointerOut={onPointerOut}
           isRunning={isRunning}
           hovered={hovered}
-          isDead={false}
           isFriendly={info.isMine}
         />
       </group>

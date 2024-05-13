@@ -3468,8 +3468,8 @@
     {
       "kind": "DojoContract",
       "address": "0xe41bb92d0734340f4d6ad423426f5bf2f611fa13b3c94d325c5f3b64c7ddea",
-      "class_hash": "0x20eab92d8aef364b08eda15391ba4d28ed45235153c6238af84567ae9e194ef",
-      "original_class_hash": "0x20eab92d8aef364b08eda15391ba4d28ed45235153c6238af84567ae9e194ef",
+      "class_hash": "0x587eb4d25dd385310963a234c09cc1c2ddeb9bf2d57bbc892ecdfd99d67ed65",
+      "original_class_hash": "0x587eb4d25dd385310963a234c09cc1c2ddeb9bf2d57bbc892ecdfd99d67ed65",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -4961,8 +4961,8 @@
     {
       "kind": "DojoContract",
       "address": "0xe1f49815a807210be14ca3310a70cadcea3b4093c48b7303494adcffcf2715",
-      "class_hash": "0x1b3718857777933cbf59566727cee9c53109ddfadcb5251b616d153163407ce",
-      "original_class_hash": "0x1b3718857777933cbf59566727cee9c53109ddfadcb5251b616d153163407ce",
+      "class_hash": "0x291dfcc91936893a62825c5fa21b7104c5c14861e675151ef154cb3a1a19a0f",
+      "original_class_hash": "0x291dfcc91936893a62825c5fa21b7104c5c14861e675151ef154cb3a1a19a0f",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -6656,11 +6656,6 @@
       "kind": "DojoModel",
       "members": [
         {
-          "name": "entity_id",
-          "type": "u128",
-          "key": true
-        },
-        {
           "name": "category",
           "type": "BuildingCategory",
           "key": true
@@ -6671,8 +6666,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x6ae1405a3f117ae2579b9f5ac9273d3a6c43043c48accc9e69523d4525683d2",
-      "original_class_hash": "0x6ae1405a3f117ae2579b9f5ac9273d3a6c43043c48accc9e69523d4525683d2",
+      "class_hash": "0x23d9fe45eaa73d6b98176213873a4537442f397737974018f2dc710d07dd384",
+      "original_class_hash": "0x23d9fe45eaa73d6b98176213873a4537442f397737974018f2dc710d07dd384",
       "abi": [
         {
           "type": "impl",
@@ -6917,10 +6912,6 @@
           "type": "struct",
           "name": "eternum::models::buildings::BuildingQuantity",
           "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
             {
               "name": "category",
               "type": "eternum::models::buildings::BuildingCategory"

@@ -110,14 +110,16 @@ export function useExplore() {
 
   const exploreHex = async ({ explorerId, direction, path }: ExploreHexProps) => {
     if (!explorerId || direction === undefined) return;
-    setAnimationPaths([...animationPaths, { id: explorerId, path, enemy: false }]);
+    const newPath = { id: explorerId, path, enemy: false };
+    const prevPaths = animationPaths.filter((p) => p.id !== explorerId);
+    setAnimationPaths([...prevPaths, newPath]);
     await explore({
       unit_id: explorerId,
       direction,
       signer: account,
     }).catch(() => {
       // revert animation so that it goes back to the original position
-      setAnimationPaths([...animationPaths, { id: explorerId, path: path.reverse(), enemy: false }]);
+      setAnimationPaths([...prevPaths, { id: explorerId, path: path.reverse(), enemy: false }]);
     });
   };
   return { isExplored, exploredColsRows, useFoundResources, getExplorationInput, exploreHex };
