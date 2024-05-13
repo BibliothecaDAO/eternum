@@ -196,7 +196,7 @@ mod travel_systems {
             );
 
             // emit travel event 
-            let owner = get!(world, transport_id, Owner);
+            let entityOwner = get!(world, transport_id, EntityOwner);
             emit!(
                 world,
                 (
@@ -206,7 +206,7 @@ mod travel_systems {
                             destination_coord_y: to_coord.y,
                             travel_time: 0,
                             travel_path: travel_path.span(),
-                            owner: owner.address,
+                            owner: entityOwner.owner_address(world),
                             entity_id: transport_id
                         }
                     ),
