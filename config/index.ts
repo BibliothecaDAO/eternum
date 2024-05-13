@@ -34,13 +34,13 @@ const nodeUrl = process.env.VITE_PUBLIC_DEV === "true" ? "http://127.0.0.1:5050/
 const provider = new EternumProvider(manifest, nodeUrl);
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
-await setProductionConfig(account, provider);
-await setPopulationConfig(account, provider);
-await setBuildingConfig(account, provider);
-await setResourceBuildingConfig(account, provider);
-await setWeightConfig(account, provider);
-await setCombatConfig(account, provider);
+// await setProductionConfig(account, provider);
+// await setPopulationConfig(account, provider);
+// await setBuildingConfig(account, provider);
+// await setResourceBuildingConfig(account, provider);
+// await setWeightConfig(account, provider);
+// await setCombatConfig(account, provider);
 await setCapacityConfig(account, provider);
-await setSpeedConfig(account, provider);
-await setQuestConfig(account, provider);
-await setupGlobals(account, provider);
+// await setSpeedConfig(account, provider);
+// await setQuestConfig(account, provider);
+// await setupGlobals(account, provider);

@@ -124,7 +124,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     <>
       {hovered && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />}
       <group position={position}>
-        {selectedEntity && selectedEntity.id == info.id && <ArmyMenu entityId={info.id} />}
+        {selectedEntity && selectedEntity.id == info.id && <ArmyMenu />}
         <WarriorModel
           {...props}
           id={Number(info.id)}
