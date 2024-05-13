@@ -181,10 +181,10 @@ export const setSpeedConfig = async (account: Account, provider: EternumProvider
 
   console.log(`Configuring speed Donkey config ${txDonkey.statusReceipt}...`);
 
-  const txArmy = await provider.set_capacity_config({
+  const txArmy = await provider.set_speed_config({
     signer: account,
     entity_type: ARMY_ENTITY_TYPE,
-    weight_gram: EternumGlobalConfig.speed.army,
+    sec_per_km: EternumGlobalConfig.speed.army,
   });
 
   console.log(`Configuring speed Army config ${txArmy.statusReceipt}...`);

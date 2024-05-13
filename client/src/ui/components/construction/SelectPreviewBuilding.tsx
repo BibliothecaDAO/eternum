@@ -10,6 +10,7 @@ import {
   BUILDING_RESOURCE_PRODUCED,
   BuildingEnumToString,
   BuildingType,
+  EternumGlobalConfig,
   RESOURCE_INFORMATION,
   RESOURCE_INPUTS,
   ResourcesIds,
@@ -93,7 +94,7 @@ export const SelectPreviewBuilding = () => {
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(realmEntityId, resourceCost.resource);
-      return balance.balance >= resourceCost.amount;
+      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
     });
 
   return (

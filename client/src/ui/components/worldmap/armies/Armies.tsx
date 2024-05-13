@@ -35,6 +35,8 @@ export const Armies = ({}: ArmiesProps) => {
     return orderName.charAt(0).toUpperCase() + orderName.slice(1);
   }, []);
 
+  console.log(armiesList);
+
   const armyInfo = useMemo(() => {
     return (
       [...armiesList]
