@@ -10,10 +10,10 @@ const useBankStore = create<BankStore>((set) => {
   return {
     bankStats: {
       ownerTotalLordsFees: 0,
-      ownerTotalResourceFees: new Map<string, number>(),
+      ownerTotalResourceFees: new Map<number, number>(),
       poolTotalLordsFees: 0,
-      poolTotalResourceFees: new Map<string, number>(),
-      dailyClosingPriceResults: new Map<string, any>(),
+      poolTotalResourceFees: new Map<number, number>(),
+      dailyClosingPriceResults: new Map<number, any>(),
     },
     setBankStats: (bankStats: BankStatsInterface) => {
       set({ bankStats });

@@ -3,12 +3,10 @@ import { useFetchBlockchainData } from "../../hooks/store/useBlockchainStore";
 import { useComputeMarket } from "../../hooks/store/useMarketStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Hexagon } from "@/types";
-import { useComputeBankStats } from "@/hooks/store/useBankStore";
 
 export const HooksComponent = () => {
   useFetchBlockchainData();
   useComputeMarket();
-  useComputeBankStats();
 
   const setHexData = useUIStore((state) => state.setHexData);
 

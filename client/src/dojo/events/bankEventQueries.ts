@@ -1,21 +1,22 @@
+import { numberToHex } from "@/ui/utils/utils";
 import { Event, client, getEventsQuery } from "./graphqlClient";
 import { SWAP_EVENT } from "@bibliothecadao/eternum";
 
 export const MAX_EVENTS = 5000;
-export const ADMIN_BANK_ENTITY_ID = "0x0de0b6b3a763fffe";
+export const ADMIN_BANK_ENTITY_ID = "0xde0b6b3a763fffe"; //999999999999999998n;
 
 export interface BankStatsInterface {
   ownerTotalLordsFees: number;
-  ownerTotalResourceFees: Map<string, number>;
+  ownerTotalResourceFees: Map<number, number>;
   poolTotalLordsFees: number;
-  poolTotalResourceFees: Map<string, number>;
-  dailyClosingPriceResults: Map<string, any>;
+  poolTotalResourceFees: Map<number, number>;
+  dailyClosingPriceResults: Map<number, any>;
 }
 
 export async function computeBankStats() {
   const query = `
-    query GetBankEvents($keys: [String!]!, $last: Int!) {
-      events(keys: $keys, last: $last) {
+    query GetBankEvents {
+      events(keys: ["${SWAP_EVENT}","${ADMIN_BANK_ENTITY_ID}"], last: ${MAX_EVENTS}) {
         edges {
           node {
             id
@@ -27,19 +28,15 @@ export async function computeBankStats() {
       }
     }
   `;
-  const variables = {
-    keys: [SWAP_EVENT, ADMIN_BANK_ENTITY_ID],
-    last: MAX_EVENTS,
-  };
 
-  const response = await client.request<getEventsQuery>(query, variables);
+  const response = await client.request<getEventsQuery>(query);
   const { events } = response;
 
   let ownerTotalLordsFees = 0;
-  let ownerTotalResourceFees = new Map<string, number>();
+  let ownerTotalResourceFees = new Map<number, number>();
   let poolTotalLordsFees = 0;
-  let poolTotalResourceFees = new Map<string, number>();
-  let dailyClosingPrices = new Map<string, { date: string; prices: number[] }[]>();
+  let poolTotalResourceFees = new Map<number, number>();
+  let dailyClosingPrices = new Map<number, { date: string; prices: number[] }[]>();
 
   events.edges.forEach(({ node }) => {
     const eventData = parseSwapEventData(node);
@@ -49,7 +46,7 @@ export async function computeBankStats() {
     updateResourceFees(poolTotalResourceFees, eventData.resourceId, eventData.fees.poolResourceFees);
 
     const date = new Date(eventData.timestamp).toDateString();
-    const { resourceId, lordsAmount } = parseSwapEventData(node.data);
+    const { resourceId, resourcePrice } = eventData;
 
     if (!dailyClosingPrices.has(resourceId)) {
       dailyClosingPrices.set(resourceId, []);
@@ -59,14 +56,14 @@ export async function computeBankStats() {
     if (pricesForId) {
       const existingEntry = pricesForId.find((entry) => entry.date === date);
       if (existingEntry) {
-        existingEntry.prices.push(lordsAmount);
+        existingEntry.prices.push(resourcePrice);
       } else {
-        pricesForId.push({ date, prices: [lordsAmount] });
+        pricesForId.push({ date, prices: [resourcePrice] });
       }
     }
   });
 
-  const dailyClosingPriceResults = new Map<string, any>();
+  const dailyClosingPriceResults = new Map<number, any>();
   dailyClosingPrices.forEach((values, key) => {
     const dailyPrices = values.map(({ date, prices }) => ({
       date,
@@ -87,27 +84,27 @@ export async function computeBankStats() {
 function parseSwapEventData(eventData: Event) {
   const [resourceId, lordsAmount, resourceAmount, bankOwnerFees, lpFees, resourcePrice, buyFlag, timestamp] =
     eventData.data;
-  const buy = Boolean(buyFlag);
+  const buy = Boolean(Number(buyFlag));
 
   return {
-    resourceId,
-    lordsAmount,
-    resourceAmount,
-    bankOwnerFees,
-    lpFees,
-    resourcePrice,
+    resourceId: Number(resourceId),
+    lordsAmount: Number(lordsAmount),
+    resourceAmount: Number(resourceAmount),
+    bankOwnerFees: Number(bankOwnerFees),
+    lpFees: Number(lpFees),
+    resourcePrice: Number(resourcePrice),
     buy,
     fees: {
-      ownerLordsFees: buy ? bankOwnerFees : 0,
-      ownerResourceFees: buy ? 0 : bankOwnerFees,
-      poolLordsFees: buy ? 0 : lpFees,
-      poolResourceFees: buy ? lpFees : 0,
+      ownerLordsFees: buy ? Number(bankOwnerFees) : 0,
+      ownerResourceFees: buy ? 0 : Number(bankOwnerFees),
+      poolLordsFees: buy ? Number(lpFees) : 0,
+      poolResourceFees: buy ? 0 : Number(lpFees),
     },
-    timestamp,
+    timestamp: Number(timestamp),
   };
 }
 
-function updateResourceFees(feesMap: Map<string, number>, resourceId: string, amount: number) {
+function updateResourceFees(feesMap: Map<number, number>, resourceId: number, amount: number) {
   const currentAmount = feesMap.get(resourceId) || 0;
   feesMap.set(resourceId, currentAmount + amount);
 }
