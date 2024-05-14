@@ -23,12 +23,12 @@ export const setProductionConfig = async (account: Account, provider: EternumPro
   for (const resourceId of Object.keys(RESOURCE_INPUTS) as unknown as ResourcesIds[]) {
     const tx = await provider.set_production_config({
       signer: account,
-      amount: RESOURCE_OUTPUTS[resourceId] * EternumGlobalConfig.resources.resourcePrecision,
+      amount: RESOURCE_OUTPUTS[resourceId],
       resource_type: resourceId,
       cost: RESOURCE_INPUTS[resourceId].map((cost) => {
         return {
           ...cost,
-          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
+          amount: cost.amount * 10,
         };
       }),
     });
