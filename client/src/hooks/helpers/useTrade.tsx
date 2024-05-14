@@ -1,4 +1,4 @@
-import { HasValue, getComponentValue, runQuery, Entity } from "@dojoengine/recs";
+import { HasValue, getComponentValue, runQuery, Entity, NotValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import { MarketInterface, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
@@ -9,6 +9,7 @@ import { SortInterface } from "../../ui/elements/SortButton";
 import useBlockchainStore from "../store/useBlockchainStore";
 import useMarketStore, { isLordsMarket } from "../store/useMarketStore";
 import { useEntityQuery } from "@dojoengine/react";
+import { useEntities } from "./useEntities";
 
 type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -26,8 +27,6 @@ export function useTrade() {
       components: { Resource, Trade, Realm, DetachedResource },
     },
   } = useDojo();
-
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const getDetachedResources = (entityId: bigint): Resource[] => {
     let resources = [];
@@ -71,14 +70,14 @@ export function useTrade() {
     return { resourcesGet, resourcesGive };
   };
 
-  function computeTrades(entityIds: Entity[]) {
+  function computeTrades(entityIds: Entity[], nextBlockTimestamp: number) {
     const trades = entityIds
       .map((id) => {
         let trade = getComponentValue(Trade, id);
         if (trade) {
           const { takerGets, makerGets } = getTradeResources(trade.trade_id);
           const makerRealm = getComponentValue(Realm, getEntityIdFromKeys([trade.maker_id]));
-          if (nextBlockTimestamp && trade.expires_at > nextBlockTimestamp) {
+          if (trade.expires_at > nextBlockTimestamp) {
             return {
               tradeId: trade.trade_id,
               makerId: trade.maker_id,
@@ -134,16 +133,18 @@ export function useGetMyOffers(): MarketInterface[] {
   const { computeTrades } = useTrade();
 
   const { realmEntityId } = useRealmStore();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);
 
   const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { maker_id: realmEntityId })]);
 
   useMemo((): any => {
-    const trades = computeTrades(entityIds);
+    if (!nextBlockTimestamp) return;
+    const trades = computeTrades(entityIds, nextBlockTimestamp);
     setMyOffers(trades);
     // only recompute when different number of orders
-  }, [entityIds]);
+  }, [entityIds, nextBlockTimestamp]);
 
   return myOffers;
 }
@@ -155,6 +156,8 @@ export function useSetMarket() {
     },
   } = useDojo();
 
+  const { playerRealms } = useEntities();
+  const realmEntityIds = playerRealms().map((realm: any) => realm.entity_id);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const refresh = useMarketStore((state) => state.refresh);
   const setRefresh = useMarketStore((state) => state.setRefresh);
@@ -164,16 +167,19 @@ export function useSetMarket() {
 
   // note: market should only be computed once at the beginning and can be reloaded
   useEffect(() => {
-    if ((nextBlockTimestamp && !isComputed) || refresh) {
+    if ((nextBlockTimestamp && realmEntityIds.length > 0 && !isComputed) || refresh) {
       const entityIds = Array.from(runQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: 0n })]));
-      const trades = computeTrades(entityIds);
+      // comptue trades and filter out player trades
+      const trades = computeTrades(entityIds, nextBlockTimestamp!).filter(
+        (trade) => !realmEntityIds.includes(trade.makerId),
+      );
       const generalMarket = trades.filter((order) => !isLordsMarket(order));
       const lordsMarket = trades.filter((order) => isLordsMarket(order));
       setMarkets([...generalMarket], [...lordsMarket]);
       setIsComputed(true);
       setRefresh(false);
     }
-  }, [nextBlockTimestamp, refresh]);
+  }, [nextBlockTimestamp, realmEntityIds, refresh]);
 }
 
 export function useSetDirectOffers() {
@@ -192,7 +198,8 @@ export function useSetDirectOffers() {
   const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: realmEntityId })]);
 
   useEffect(() => {
-    const trades = computeTrades(entityIds);
+    if (!nextBlockTimestamp) return;
+    const trades = computeTrades(entityIds, nextBlockTimestamp);
     setDirectOffers(trades);
   }, [entityIds, nextBlockTimestamp]);
 }

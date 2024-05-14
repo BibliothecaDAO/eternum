@@ -15,7 +15,10 @@ export enum HexType {
 }
 
 export const useHexPosition = () => {
-  const { setIsLoadingScreenEnabled, hexData, moveCameraToRealmView } = useUIStore((state) => state);
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const hexData = useUIStore((state) => state.hexData);
+  const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
+
   const { setRealmId, setRealmEntityId } = useRealmStore();
 
   const {

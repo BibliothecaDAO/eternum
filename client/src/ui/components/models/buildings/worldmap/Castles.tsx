@@ -31,8 +31,6 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
-  const [hoveredCastleId, setHoveredCastleId] = useState<bigint | null>(null);
-
   const realmPositions = realmHexPositions as HexPositions;
 
   let castles = useMemo(() => {
@@ -53,33 +51,19 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
       .filter(Boolean) as Castle[];
   }, []);
 
-  // don't make castles clickable for now
-  // const onClick = (e: any, castle: Castle) => {
-  //   e.stopPropagation();
-  //   setSelectedEntity({ id: castle.id, position: castle.contractPos });
-  // };
-
   return (
     <group>
       {castles.map((castle) => {
         const { uiPos: position, index, depth } = castle;
         if (index === -1) return null;
-        const isHovered = hoveredCastleId === castle.id;
         return (
           <group key={index} position={[position.x, 0.31, -position.y]}>
-            {selectedEntity && selectedEntity.id == castle.id && <ArmyMenu entityId={castle.id} />}
+            {/* {selectedEntity && selectedEntity.id == castle.id && <ArmyMenu entityId={castle.id} />} */}
             <primitive
               object={model.scene.clone()}
               scale={4}
               name="castle"
               castShadow
-              // onClick={(e: any) => onClick(e, castle)}
-              onPointerEnter={() => {
-                setHoveredCastleId(castle.id);
-              }}
-              onPointerOut={() => {
-                setHoveredCastleId(null);
-              }}
               rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
             />
           </group>

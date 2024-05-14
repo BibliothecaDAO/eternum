@@ -1,7 +1,7 @@
 import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
 
-export enum WorldBuildingType {
+export enum StructureType {
   Bank = 1,
   Settlement = 2,
   Hyperstructure = 3,
@@ -71,7 +71,7 @@ export const CombinedBuildingTypes = {
 // export BUILDING_WALLS=13
 // export BUILDING_STOREHOUSE=14
 
-export const BuildingEnumToString = {
+export const BuildingEnumToString: { [index: number]: string } = {
   0: "None",
   1: "Castle",
   2: "Resource",

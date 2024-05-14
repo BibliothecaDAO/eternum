@@ -37,37 +37,21 @@ export const BottomNavigation = () => {
     setActiveBar((currentBar) => (currentBar === barName ? null : barName));
   };
 
-  console.log("activeBar", activeBar);
   const { hexPosition } = useQuery();
-  const { moveCameraToColRow } = useUIStore();
+  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const { togglePopup, closeAllPopups, openAllPopups, isPopupOpen } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const [location, setLocation] = useLocation();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const navigation = useMemo(() => {
     const navigation = [
       {
-        name: MenuEnum.realm,
-        button: (
-          <CircleButton
-            image="/images/buildings/thumb/realm.png"
-            label="Realms"
-            tooltipLocation="top"
-            className="forth-step"
-            active={activeBar === MenuEnum.realm}
-            size="xl"
-            onClick={() => toggleBar(MenuEnum.realm)}
-          >
-            {/* <City className="w-6 fill-current" /> */}
-          </CircleButton>
-        ),
-      },
-      {
         name: MenuEnum.worldMap,
         button: (
           <CircleButton
-            className="third-step"
+            className="world-selector"
             tooltipLocation="top"
             image={BuildingThumbs.worldMap}
             label="world map"
@@ -94,9 +78,27 @@ export const BottomNavigation = () => {
         ),
       },
       {
+        name: MenuEnum.realm,
+        button: (
+          <CircleButton
+            className="realm-selector"
+            image="/images/buildings/thumb/realm.png"
+            label="Realms"
+            tooltipLocation="top"
+            active={activeBar === MenuEnum.realm}
+            size="xl"
+            onClick={() => toggleBar(MenuEnum.realm)}
+          >
+            {/* <City className="w-6 fill-current" /> */}
+          </CircleButton>
+        ),
+      },
+
+      {
         name: MenuEnum.military,
         button: (
           <CircleButton
+            className="military-selector"
             image={BuildingThumbs.military}
             tooltipLocation="top"
             label={military}
@@ -110,6 +112,7 @@ export const BottomNavigation = () => {
         name: MenuEnum.construction,
         button: (
           <CircleButton
+            className="construction-selector"
             image={BuildingThumbs.construction}
             tooltipLocation="top"
             label={construction}
@@ -126,6 +129,7 @@ export const BottomNavigation = () => {
         name: MenuEnum.trade,
         button: (
           <CircleButton
+            className="trade-selector"
             image={BuildingThumbs.trade}
             tooltipLocation="top"
             label={trade}
@@ -139,6 +143,7 @@ export const BottomNavigation = () => {
         name: MenuEnum.resources,
         button: (
           <CircleButton
+            className="resources-selector"
             tooltipLocation="top"
             image={BuildingThumbs.resources}
             label={resources}
@@ -152,6 +157,7 @@ export const BottomNavigation = () => {
         name: MenuEnum.bank,
         button: (
           <CircleButton
+            className="banking-selector"
             image={BuildingThumbs.banks}
             tooltipLocation="top"
             label={banks}
@@ -159,19 +165,6 @@ export const BottomNavigation = () => {
             size="xl"
             onClick={() => togglePopup(banks)}
           ></CircleButton>
-        ),
-      },
-      {
-        name: MenuEnum.leaderboard,
-        button: (
-          <CircleButton
-            image={BuildingThumbs.leaderboard}
-            tooltipLocation="top"
-            label={leaderboard}
-            active={isPopupOpen(leaderboard)}
-            size="xl"
-            onClick={() => togglePopup(leaderboard)}
-          />
         ),
       },
       {
@@ -211,28 +204,30 @@ export const BottomNavigation = () => {
 
   return (
     <div className="flex  py-3  justify-center flex-wrap first-step relative w-full duration-300 transition-all">
-      <div className=" w-full mr-4  h-full mt-4 absolute bottom-8 left-20">
-        <div
-          className={`w-full transition-all duration-300 overflow-auto pb-2 ${
-            activeBar === MenuEnum.realm ? "h-auto" : "h-0 hidden"
-          }`}
-        >
-          <RealmListBoxes />
-        </div>
-        <div
-          className={`w-full transition-all duration-300  pb-2 ${
-            activeBar === MenuEnum.construction ? "h-auto" : "h-0 hidden"
-          }`}
-        >
-          <SelectPreviewBuildingMenu />
-        </div>
-      </div>
-      <div className="w-full flex space-x-2 justify-start  pl-24">
-        {navigation.map((item, index) => (
-          <div className="duration-300 transition-all" key={index}>
-            {item.button}
+      <div>
+        <div className=" w-full mr-4  h-full mt-4 absolute bottom-8 left-20">
+          <div
+            className={`w-full transition-all duration-300 overflow-auto pb-2 justify-center flex ${
+              activeBar === MenuEnum.realm ? "h-auto" : "h-0 hidden"
+            }`}
+          >
+            <RealmListBoxes />
           </div>
-        ))}
+          <div
+            className={` transition-all duration-300 justify-center flex pb-2 ${
+              activeBar === MenuEnum.construction ? "h-auto" : "h-0 hidden"
+            }`}
+          >
+            <SelectPreviewBuildingMenu />
+          </div>
+        </div>
+        <div className="w-full flex space-x-2 justify-start  pl-24">
+          {navigation.map((item, index) => (
+            <div className="duration-300 transition-all" key={index}>
+              {item.button}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

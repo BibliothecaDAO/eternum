@@ -11,11 +11,11 @@ import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
-import { ReactComponent as ArrowLeft } from "@/assets/icons/common/arrow-left.svg";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { useTour } from "@reactour/tour";
 
 export const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -40,9 +40,7 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
         <div className="mx-auto flex mb-8">
           <img src="/images/eternum-logo.svg" className="w-48 mx-auto" alt="Eternum Logo" />
         </div>
-        <h2 className="">
-          Forge your empire, conquer the hex, and <span className="text-white">shape the onchain world</span>...
-        </h2>
+        <h2 className="">A world awaits you...</h2>
       </div>
       <div className="flex space-x-2 mt-8 justify-center">
         <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
@@ -62,7 +60,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     },
   } = useDojo();
 
-  const { setTooltip } = useUIStore((state) => state);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
@@ -159,9 +157,9 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   return (
     <StepContainer>
-      <div className="flex flex-col items-center p-3">
+      <div className="flex flex-col items-center p-3 ">
         <h3>Select Account</h3>
-        <div className="flex space-x-6 pt-4 w-full justify-center">
+        <div className="flex space-x-6 pt-4 w-full justify-center uppercase">
           <div>
             <div className=" border-gold border p-2 w-full">
               {loading ? (
@@ -192,7 +190,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                 value={account.address}
                 onChange={select}
               />
-              <Button variant={"primary"} onClick={create} disabled={isDeploying} isLoading={isDeploying}>
+              <Button variant={"default"} onClick={create} disabled={isDeploying} isLoading={isDeploying}>
                 {isDeploying ? "" : "Create New"}
               </Button>
             </div>
@@ -274,24 +272,91 @@ export const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) 
   );
 };
 
-export const StepThree = () => {
+export const StepThree = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
+  const {
+    account: { account },
+  } = useDojo();
+
+  const { getAddressName } = useRealm();
+  const name = getAddressName(account.address);
+
   return (
     <StepContainer>
-      <p className="leading-loose text-2xl text-center mb-8">
-        In a universe where ancient hyperstructures lie shattered, the Orders must{" "}
-        <span className="text-white">rise from the cosmic ruins</span> and forge a new future.
-      </p>
+      <ContainerWithSquire>
+        <h2 className="mb-4">Welcome {name}...</h2>
+        <p className="mb-4">
+          Before you begin your Lord, here are some important things you need to understand about this world.
+        </p>
+
+        <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
+          Continue <ArrowRight className="w-2 fill-current ml-3" />
+        </Button>
+      </ContainerWithSquire>
+    </StepContainer>
+  );
+};
+
+export const StepFour = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
+  return (
+    <StepContainer>
+      <ContainerWithSquire>
+        <h2 className="mb-4">Everything is fungible...</h2>
+
+        <p className="mb-4 text-xl">Resources, Troops, Donkeys all exist and are tradable until you use them...</p>
+
+        <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
+          next <ArrowRight className="w-2 fill-current ml-3" />
+        </Button>
+      </ContainerWithSquire>
+    </StepContainer>
+  );
+};
+
+export const ContainerWithSquire = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="gap-10 grid grid-cols-12">
+      <div className="rounded-full border  self-center col-span-4">
+        <img src="/images/buildings/thumb/squire.png" className="rounded-full border" alt="" />
+      </div>
+      <div className="col-span-8">{children}</div>
+    </div>
+  );
+};
+
+export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
+  return (
+    <StepContainer>
+      <ContainerWithSquire>
+        <div>
+          <h2 className="mb-4">Eternum runs in 15 minute cycles</h2>
+          <p className="mb-4 text-xl">
+            Your villagers and troops all work on a 15 minute cycle. Act accordingly and plan your moves wisely.
+          </p>
+          <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
+            Continue <ArrowRight className="w-2 fill-current ml-3" />
+          </Button>
+        </div>
+      </ContainerWithSquire>
+    </StepContainer>
+  );
+};
+
+export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
+  return (
+    <StepContainer>
+      <p className="leading-loose text-2xl text-center mb-8">They who rule the Earthenshards rule the world...</p>
       <div className="flex w-full justify-center">
-        <NavigateToRealm text={"begin"} />
+        <NavigateToRealm text={"begin"} showWalkthrough={true} />
       </div>
     </StepContainer>
   );
 };
 
-export const NavigateToRealm = ({ text }: { text: string }) => {
+export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: string; showWalkthrough?: boolean }) => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const [_location, setLocation] = useLocation();
   const { playerRealms } = useEntities();
+  const { setIsOpen } = useTour();
   return (
     <Button
       size="md"
@@ -299,6 +364,7 @@ export const NavigateToRealm = ({ text }: { text: string }) => {
       onClick={() => {
         showBlankOverlay(false);
         setLocation(`/hex?col=${playerRealms()[0]?.position.x}&row=${playerRealms()[0]?.position.y}`);
+        setIsOpen(showWalkthrough);
       }}
     >
       {text}

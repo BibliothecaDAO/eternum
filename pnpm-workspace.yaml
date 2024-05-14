@@ -2,3 +2,4 @@ packages:
   - "sdk/packages/*"
   - "client"
   - "eternum-docs"
+  - "config"

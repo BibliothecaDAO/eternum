@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { createPopupsSlice, PopupsStore } from "./_popups";
 import { Vector3 } from "three";
-import { createDataStoreSlice, DataStore } from "./_dataStore";
 import { createMapStoreSlice, MapStore } from "./_mapStore";
 import React from "react";
 import { getRealmUIPosition, getUIPositionFromColRow } from "../../ui/utils/utils";
@@ -56,7 +55,7 @@ interface UIStore {
   showModal: boolean;
 }
 
-const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore & BuildModeStore>((set, get) => ({
+const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((set, get) => ({
   theme: "light",
   setTheme: (theme) => set({ theme }),
   showBlurOverlay: false,
@@ -179,7 +178,6 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore & BuildMo
   toggleModal: (content) => set({ modalContent: content, showModal: !get().showModal }),
   showModal: false,
   ...createPopupsSlice(set, get),
-  ...createDataStoreSlice(set),
   ...createMapStoreSlice(set),
   ...createBuildModeStoreSlice(set),
 }));

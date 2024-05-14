@@ -27,7 +27,17 @@ export const Transactions = () => {
     };
 
     const handleTransactionFailed = (data: any) => {
-      setFailedTransactions(data.toString());
+      let rawErrorString = data.toString();
+      // Regex to capture exact error message
+      const regex = /\('([^']+)'\)/;
+      const match = rawErrorString.match(regex);
+      if (match) {
+        const errorMessage = match[1];
+        setFailedTransactions(errorMessage);
+        console.log(errorMessage);
+      } else {
+        setFailedTransactions(rawErrorString);
+      }
 
       setTimeout(() => {
         setFailedTransactions(null);
@@ -44,14 +54,14 @@ export const Transactions = () => {
   }, [provider]);
 
   return (
-    <div>
+    <div style={{ zIndex: 100 }}>
       {transactions.map((transaction, index) => (
         <div className={`${transaction.execution_status == "REVERTED" ? "text-red/40" : "text-green/70"}`} key={index}>
           Status: {transaction.execution_status} {shortenHex(transaction.transaction_hash)}
         </div>
       ))}
 
-      {failedTransactions && <div className="w-72 text-white text-xs p-3">Failed: {failedTransactions}</div>}
+      {failedTransactions && <div className="w-72 text-red text-xxl p-3 text-bold">Failed: {failedTransactions}</div>}
     </div>
   );
 };

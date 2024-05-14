@@ -9,7 +9,7 @@ import { EntityList } from "@/ui/components/list/EntityList";
 import { useGetBanks } from "@/hooks/helpers/useBanks";
 
 export const Banks = () => {
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
   const [selectedTab, setSelectedTab] = useState(0);
   const isOpen = useUIStore((state) => state.isPopupOpen(banks));
 

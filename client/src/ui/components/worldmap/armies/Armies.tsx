@@ -1,12 +1,9 @@
-import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../../hooks/context/DojoContext";
-import { useCombat } from "../../../../hooks/helpers/useCombat";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useUIStore from "../../../../hooks/store/useUIStore";
-import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../../utils/utils";
-import { Position, UIPosition } from "@bibliothecadao/eternum";
+import { getUIPositionFromColRow } from "../../../utils/utils";
 // @ts-ignore
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Subscription } from "rxjs";
 import { Army } from "./Army";
 import { getRealmOrderNameById } from "../../../utils/realms";
@@ -23,11 +20,11 @@ export const Armies = ({}: ArmiesProps) => {
 
   const realms = useRealmStore((state) => state.realmEntityIds);
 
-  const { armies } = useArmies();
-  const armiesList = armies();
-
   // set animation path for enemies
   useUpdateAnimationPaths();
+
+  const { armies } = useArmies();
+  const armiesList = armies();
 
   const realmOrder = useMemo(() => {
     const realmId = realms[0]?.realmId || BigInt(0);
@@ -55,7 +52,6 @@ export const Armies = ({}: ArmiesProps) => {
   return (
     <group>
       {armyInfo.map((info) => {
-        const key = `${info.contractPos.x},${info.contractPos.y}`;
         // Find the index of this army within its own group
         const index = Number(info.id) % 12;
         const offset = calculateOffset(index, 12);
@@ -107,16 +103,19 @@ const useUpdateAnimationPaths = () => {
     },
   } = useDojo();
 
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
   const animationPaths = useUIStore((state) => state.animationPaths);
+
+  const subscriptionRef = useRef<Subscription | undefined>();
+  const isComponentMounted = useRef(true);
 
   useEffect(() => {
     let subscription: Subscription | undefined;
 
     const subscribeToTravelEvents = async () => {
       const observable = await createTravelHexEvents();
-      const sub = observable.subscribe((event) => {
+      const subscription = observable.subscribe((event) => {
+        if (!isComponentMounted.current) return;
         if (event) {
           const path = [];
           const owner = BigInt(event.keys[3]);
@@ -132,7 +131,7 @@ const useUpdateAnimationPaths = () => {
           setAnimationPaths([...animationPaths, { id, path, enemy }]);
         }
       });
-      subscription = sub;
+      subscriptionRef.current = subscription;
     };
     subscribeToTravelEvents();
 

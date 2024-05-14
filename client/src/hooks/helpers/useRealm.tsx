@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import { getEntityIdFromKeys, hexToAscii, numberToHex } from "../../ui/utils/utils";
-import { getOrderName } from "@bibliothecadao/eternum";
+import { BASE_POPULATION_CAPACITY, getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import { unpackResources } from "../../ui/utils/packedData";
 import { useEntityQuery } from "@dojoengine/react";
@@ -127,18 +127,17 @@ export function useRealm() {
 export function useGetRealm(realmEntityId: bigint | undefined) {
   const {
     setup: {
-      components: { Realm, Position, Owner },
+      components: { Realm, Position, Owner, Population },
     },
   } = useDojo();
 
-  const [realm, setRealm] = useState<RealmInterface | undefined>(undefined);
-
-  useMemo((): any => {
+  const realm = useMemo((): any => {
     if (realmEntityId !== undefined) {
       let entityId = getEntityIdFromKeys([realmEntityId]);
       const realm = getComponentValue(Realm, entityId);
       const owner = getComponentValue(Owner, entityId);
       const position = getComponentValue(Position, entityId);
+      const population = getComponentValue(Population, entityId);
 
       if (realm && owner && position) {
         const {
@@ -156,7 +155,8 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
         const name = getRealmNameById(realm_id);
 
         const { address } = owner;
-        setRealm({
+
+        return {
           realmId: realm_id,
           name,
           cities,
@@ -168,8 +168,10 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
           resourceTypesPacked: resource_types_packed,
           order,
           position,
+          ...population,
+          hasCapacity: !population || population.capacity + BASE_POPULATION_CAPACITY > population.population,
           owner: address,
-        });
+        };
       }
     }
   }, [realmEntityId]);
@@ -221,7 +223,7 @@ export function useGetRealms(): RealmExtended[] {
           }
         })
         .filter(Boolean) as RealmExtended[],
-    [realmEntityIds],
+    [realmEntityIds.length], // Only recompute if the size of realmEntityIds has changed
   );
 
   return realms;

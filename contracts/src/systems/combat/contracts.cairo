@@ -28,7 +28,7 @@ mod combat_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, LOYALTY_MAX_VALUE, MAX_PILLAGE_TRIAL_COUNT
     };
-    use eternum::models::buildings::{Building, BuildingImpl};
+    use eternum::models::buildings::{Building, BuildingImpl, BuildingCategory};
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
@@ -64,6 +64,25 @@ mod combat_systems {
     use eternum::utils::math::{min};
     use eternum::utils::random;
     use super::ICombatContract;
+
+    #[derive(Drop, starknet::Event)]
+    struct PillageEvent {
+        #[key]
+        structure_id: ID,
+        #[key]
+        attacker_realm_entity_id: ID,
+        #[key]
+        army_id: u128,
+        winner: BattleSide,
+        pillaged_resources: Span<(u8, u128)>,
+        destroyed_building_category: BuildingCategory
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        PillageEvent: PillageEvent,
+    }
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
@@ -578,6 +597,8 @@ mod combat_systems {
                 true
             )[0];
 
+            let mut pillaged_resources: Array<(u8, u128)> = array![];
+
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
                     * PercentageValueImpl::_100().into()
@@ -626,6 +647,9 @@ mod combat_systems {
                                         max_carriable, resource_amount_stolen
                                     );
 
+                                    pillaged_resources
+                                        .append((*chosen_resource_type, resource_amount_stolen));
+
                                     InternalResourceSystemsImpl::transfer(
                                         world,
                                         structure_id,
@@ -645,6 +669,8 @@ mod combat_systems {
                     }
                 };
             }
+
+            let mut destroyed_building_category = BuildingCategory::None;
 
             if structure.category == StructureCategory::Realm {
                 // all buildings are at most 4 directions from the center
@@ -736,7 +762,10 @@ mod combat_systems {
                     );
                     if pillaged_building.entity_id.is_non_zero() {
                         // destroy building if it exists
-                        BuildingImpl::destroy(world, structure_id, final_coord);
+                        let building_category = BuildingImpl::destroy(
+                            world, structure_id, final_coord
+                        );
+                        destroyed_building_category = building_category;
                     }
                 }
             }
@@ -771,6 +800,27 @@ mod combat_systems {
 
             InternalTravelSystemsImpl::travel(
                 world, army_id, army_movable, army_position.into(), army_owner_position.into()
+            );
+
+            // emit pillage event
+            emit!(
+                world,
+                (
+                    Event::PillageEvent(
+                        PillageEvent {
+                            structure_id,
+                            attacker_realm_entity_id: army_owner_entity_id,
+                            army_id,
+                            winner: if *attack_successful {
+                                BattleSide::Attack
+                            } else {
+                                BattleSide::Defence
+                            },
+                            pillaged_resources: pillaged_resources.span(),
+                            destroyed_building_category
+                        }
+                    ),
+                )
             );
         }
     }

@@ -52,7 +52,7 @@ export const SettingsWindow = () => {
 
   const { trackName, next } = useMusicPlayer();
 
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
 
   const isOpen = useUIStore((state) => state.isPopupOpen(settings));
 

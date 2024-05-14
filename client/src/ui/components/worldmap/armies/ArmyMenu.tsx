@@ -17,17 +17,12 @@ import { useCombat } from "../../../../hooks/helpers/useCombat";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
 import { Html } from "@react-three/drei";
-import { useResources } from "../../../../hooks/helpers/useResources";
+import { useResourceBalance, useResources } from "../../../../hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 
-interface ArmyMenuProps {
-  entityId: bigint;
-}
-
-export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
+export const ArmyMenu = () => {
   const {
     account: { account },
-    network: { provider },
     setup: {
       components: { TickMove, ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Owner, Position, Health, Realm },
     },
@@ -99,11 +94,8 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     : undefined;
 
   const weight = selectedEntity ? getComponentValue(Weight, getEntityIdFromKeys([selectedEntity.id])) : undefined;
-
   const quantity = selectedEntity ? getComponentValue(Quantity, getEntityIdFromKeys([selectedEntity.id])) : undefined;
-
   const capacity = selectedEntity ? getComponentValue(Capacity, getEntityIdFromKeys([selectedEntity.id])) : undefined;
-
   const entityOwner = selectedEntity
     ? getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntity.id]))
     : undefined;
@@ -120,15 +112,16 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     resourceId: ResourcesIds.Ignium,
     amount: multiplyByPrecision(EXPLORATION_REWARD_RESOURCE_AMOUNT),
   };
+
   const sampleRewardResourceWeightKg = getTotalResourceWeight([sampleRewardResource]);
   const entityWeightInKg = divideByPrecision(Number(weight?.value || 0));
   // const canCarryNewReward = totalCapacityInKg >= entityWeightInKg + sampleRewardResourceWeightKg;
   const canCarryNewReward = true;
 
-  const { getResourcesFromBalance } = useResources();
+  const { getFoodResources } = useResourceBalance();
 
   const explorationCosts = useMemo(() => {
-    const foodBalance = entityOwner ? getResourcesFromBalance(entityOwner.entity_owner_id) : [];
+    const foodBalance = entityOwner ? getFoodResources(entityOwner.entity_owner_id) : [];
     return EXPLORATION_COSTS.map((res) => {
       return {
         ...res,
@@ -137,7 +130,9 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
     });
   }, [entityOwner]);
 
-  const hasEnoughResourcesToExplore = explorationCosts.every((res) => res.hasEnough);
+  const hasEnoughResourcesToExplore = useMemo(() => {
+    return explorationCosts.every((res) => res.hasEnough);
+  }, [explorationCosts]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -151,6 +146,66 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   return (
     <Html position={[0, 3, -0.5]}>
       <div
+        className={clsx(
+          "flex flex-col  -translate-x-1/2 transition-all duration-100 bg-brown",
+          appeared ? "opacity-100" : "opacity-0 translate-y-1/2",
+        )}
+      >
+        {!playerOwnsSelectedEntity && (
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAttackMode(true);
+            }}
+            variant="primary"
+          >
+            Attack
+          </Button>
+        )}
+
+        <Button
+          disabled={isAttackMode || isTravelMode || isTraveling || !canCarryNewReward || !hasEnoughResourcesToExplore}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isAttackMode && !isTravelMode && !isTraveling && canCarryNewReward && hasEnoughResourcesToExplore) {
+              if (isExploreMode) {
+                setIsTravelMode(false);
+                setIsExploreMode(false);
+                setIsAttackMode(false);
+              } else {
+                setIsTravelMode(false);
+                setIsExploreMode(true);
+                setIsAttackMode(false);
+              }
+            }
+          }}
+          variant="primary"
+        >
+          {isAttackMode || isTravelMode || isTraveling ? "Exploring..." : "Explore"}
+        </Button>
+
+        {playerOwnsSelectedEntity && (
+          <Button
+            disabled={isAttackMode || isExploreMode || isTraveling}
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+              e.stopPropagation();
+              if (isTravelMode) {
+                setIsTravelMode(false);
+                setIsExploreMode(false);
+                setIsAttackMode(false);
+              } else {
+                setIsTravelMode(true);
+                setIsExploreMode(false);
+                setIsAttackMode(false);
+              }
+            }}
+            variant="primary"
+          >
+            {isAttackMode || isExploreMode || isTraveling ? "Traveling..." : "Travel"}
+          </Button>
+        )}
+      </div>
+      {/* <div
         className={clsx(
           "flex  -translate-x-1/2 transition-all duration-100",
           appeared ? "opacity-100" : "opacity-0 translate-y-1/2",
@@ -253,7 +308,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
                       type="vertical"
                       resourceId={res.resourceId}
                       className={res.hasEnough ? "text-gold" : "text-order-giants"}
-                      amount={divideByPrecision(res.amount)}
+                      amount={res.amount}
                     />
                   );
                 })}
@@ -261,7 +316,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             </div>
           </div>
         )}
-      </div>
+      </div> */}
     </Html>
   );
 };

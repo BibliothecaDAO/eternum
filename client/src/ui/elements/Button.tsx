@@ -2,7 +2,7 @@ import React from "react";
 import { soundSelector, useUiSounds } from "../../hooks/useUISound";
 
 type ButtonProps = {
-  onClick: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   children: React.ReactNode;
   className?: string;
   isPulsing?: boolean;
@@ -51,9 +51,9 @@ const Button: React.FC<ButtonProps> = ({
   return (
     <button
       type="button"
-      onClick={() => {
-        if (!disabled && !isLoading) {
-          onClick();
+      onClick={(e) => {
+        if (!disabled && !isLoading && onClick) {
+          onClick(e);
           !withoutSound && playClick();
         }
       }}

@@ -51,10 +51,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  private async executeAndCheckTransaction(
-    signer: Account | AccountInterface,
-    transactionDetails: AllowArray<Call>,
-  ): Promise<any> {
+  private async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
     const tx = await this.executeMulti(signer, transactionDetails);
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
     this.emit("transactionComplete", transactionResult);
@@ -524,6 +521,142 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, "realm_systems"),
       entrypoint: "mint_starting_resources",
       calldata: [config_id, realm_entity_id],
+    });
+  }
+
+  public async set_mint_config(props: SystemProps.SetMintConfigProps) {
+    const { config_id, resources, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_mint_config",
+      calldata: [config_id, resources.length, ...resources.flatMap(({ resource, amount }) => [resource, amount])],
+    });
+  }
+
+  public async set_explore_config(props: SystemProps.SetExplorationConfigProps) {
+    const { wheat_burn_amount, fish_burn_amount, reward_amount, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_exploration_config",
+      calldata: [wheat_burn_amount, fish_burn_amount, reward_amount],
+    });
+  }
+
+  public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
+    const { entity_type, weight_gram, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_capacity_config",
+      calldata: [entity_type, weight_gram],
+    });
+  }
+
+  public async set_speed_config(props: SystemProps.SetSpeedConfigProps) {
+    const { entity_type, sec_per_km, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_speed_config",
+      calldata: [entity_type, sec_per_km],
+    });
+  }
+
+  public async set_weight_config(props: SystemProps.SetWeightConfigProps) {
+    const { entity_type, weight_gram, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_weight_config",
+      calldata: [entity_type, weight_gram],
+    });
+  }
+
+  public async set_tick_config(props: SystemProps.SetTickConfigProps) {
+    const { max_moves_per_tick, tick_interval_in_seconds, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_tick_config",
+      calldata: [max_moves_per_tick, tick_interval_in_seconds],
+    });
+  }
+
+  public async set_production_config(props: SystemProps.SetProductionConfigProps) {
+    const { resource_type, amount, cost, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_production_config",
+      calldata: [resource_type, amount, cost.length, ...cost.flatMap(({ resource, amount }) => [resource, amount])],
+    });
+  }
+
+  public async set_bank_config(props: SystemProps.SetBankConfigProps) {
+    const { lords_cost, lp_fee_scaled, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_bank_config",
+      calldata: [lords_cost, lp_fee_scaled],
+    });
+  }
+
+  public async set_troop_config(props: SystemProps.SetTroopConfigProps) {
+    const {
+      signer,
+      config_id,
+      knight_health,
+      paladin_health,
+      crossbowman_health,
+      knight_strength,
+      paladin_strength,
+      crossbowman_strength,
+      advantage_percent,
+      disadvantage_percent,
+    } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_troop_config",
+      calldata: [
+        config_id,
+        knight_health,
+        paladin_health,
+        crossbowman_health,
+        knight_strength,
+        paladin_strength,
+        crossbowman_strength,
+        advantage_percent,
+        disadvantage_percent,
+      ],
+    });
+  }
+
+  public async set_population_config(props: SystemProps.SetPopulationConfigProps) {
+    const { building_category, population, capacity, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_population_config",
+      calldata: [building_category, population, capacity],
+    });
+  }
+
+  public async set_building_config(props: SystemProps.SetBuildingConfigProps) {
+    const { building_category, building_resource_type, cost_of_building, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_building_config",
+      calldata: [
+        building_category,
+        building_resource_type,
+        cost_of_building.length,
+        ...cost_of_building.flatMap(({ resource, amount }) => [resource, amount]),
+      ],
     });
   }
 }

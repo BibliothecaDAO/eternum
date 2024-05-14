@@ -76,7 +76,8 @@ Install dojo via
 
 Make sure install the same version within the `Scarb.toml` file. Currently this is `0.6.1-alpha.4`
 
-Eternum uses a pnpm workspace to allow easy npm packages to be created. So you will need pnpm installed also.
+Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. So you will need pnpm
+installed also.
 
 `npm install -g pnpm`
 

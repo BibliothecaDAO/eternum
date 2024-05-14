@@ -4,6 +4,7 @@ import { BuildQuantityType, ProductionType, ResourceType } from "./types";
 import { BuildingType, RESOURCE_INPUTS, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
 import { ClientComponents } from "../createClientComponents";
 import { ContractComponents } from "../contractComponents";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 export class ProductionManager {
   productionModel: Component<ProductionType> | OverridableComponent<ProductionType>;
@@ -66,9 +67,10 @@ export class ProductionManager {
       getComponentValue(
         this.buildingQuantity,
         getEntityIdFromKeys([BigInt(this.entityId || "0"), BigInt(BuildingType.Storehouse)]),
-      )?.value || "0n";
-
-    return (Number(quantity) * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY) * 100;
+      )?.value || "0";
+    return (
+      (Number(quantity) * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY) * EternumGlobalConfig.resources.resourcePrecision
+    );
   }
 
   private _balance(currentTick: number, resourceId: bigint): number {

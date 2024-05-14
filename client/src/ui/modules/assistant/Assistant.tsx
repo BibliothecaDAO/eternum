@@ -6,7 +6,7 @@ import Button from "@/ui/elements/Button";
 import { Textarea } from "@/ui/elements/TextArea";
 
 export const Assistant = () => {
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(assistant));
   const [chunks, setChunks] = useState<{ answer: string }[]>([]);
   const [ws, setWs] = useState<WebSocket | null>(null);

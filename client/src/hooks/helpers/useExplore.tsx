@@ -6,6 +6,7 @@ import { Position, Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bi
 import useRealmStore from "../store/useRealmStore";
 import { findDirection } from "../../ui/utils/utils";
 import useUIStore from "../store/useUIStore";
+import { Subscription } from "rxjs";
 
 interface ExploreHexProps {
   explorerId: bigint | undefined;
@@ -55,29 +56,29 @@ export function useExplore() {
   const useFoundResources = (entityId: bigint | undefined) => {
     const [foundResources, setFoundResources] = useState<Resource | undefined>();
 
-    const subscriptionRef = useRef(null);
+    const subscriptionRef = useRef<Subscription | undefined>();
+    const isComponentMounted = useRef(true);
 
     useEffect(() => {
       if (!entityId) return;
       const subscribeToFoundResources = async () => {
         const observable = await exploreEntityMapEvents(entityId);
         const subscription = observable.subscribe((event) => {
+          if (!isComponentMounted.current) return;
           if (event) {
             const resourceId = Number(event.data[3]);
             const amount = Number(event.data[4]);
             setFoundResources({ resourceId, amount });
           }
         });
-        return subscription;
+        subscriptionRef.current = subscription;
       };
       subscribeToFoundResources();
 
       // Cleanup function
       return () => {
-        if (subscriptionRef.current) {
-          // @ts-ignore
-          subscriptionRef.current.unsubscribe();
-        }
+        isComponentMounted.current = false;
+        subscriptionRef.current?.unsubscribe(); // Ensure to unsubscribe on component unmount
       };
     }, [entityId]);
 
@@ -109,14 +110,16 @@ export function useExplore() {
 
   const exploreHex = async ({ explorerId, direction, path }: ExploreHexProps) => {
     if (!explorerId || direction === undefined) return;
-    setAnimationPaths([...animationPaths, { id: explorerId, path, enemy: false }]);
+    const newPath = { id: explorerId, path, enemy: false };
+    const prevPaths = animationPaths.filter((p) => p.id !== explorerId);
+    setAnimationPaths([...prevPaths, newPath]);
     await explore({
       unit_id: explorerId,
       direction,
       signer: account,
     }).catch(() => {
       // revert animation so that it goes back to the original position
-      setAnimationPaths([...animationPaths, { id: explorerId, path: path.reverse(), enemy: false }]);
+      setAnimationPaths([...prevPaths, { id: explorerId, path: path.reverse(), enemy: false }]);
     });
   };
   return { isExplored, exploredColsRows, useFoundResources, getExplorationInput, exploreHex };

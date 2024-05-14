@@ -12,7 +12,7 @@ const exampleHyperstructures = [
 ];
 
 export const HyperStructures = () => {
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
 
   const isOpen = useUIStore((state) => state.isPopupOpen(hyperstructures));
 

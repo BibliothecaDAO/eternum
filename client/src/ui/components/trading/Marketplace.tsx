@@ -5,9 +5,9 @@ import Button from "../../elements/Button";
 import { SortPanel } from "../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../elements/SortButton";
 import {
+  EternumGlobalConfig,
   MarketInterface,
   ResourcesIds,
-  SPEED_PER_DONKEY,
   findResourceById,
   orderNameDict,
   resources,
@@ -28,6 +28,7 @@ import { useDojo } from "../../../hooks/context/DojoContext";
 import useMarketStore from "../../../hooks/store/useMarketStore";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { useTravel } from "@/hooks/helpers/useTravel";
+import { useProductionManager, useResourceBalance } from "@/hooks/helpers/useResources";
 
 interface MarketplaceProps {
   onCreateOffer: (resourceId: number | null, isBuy: boolean) => void;
@@ -279,7 +280,7 @@ const MarketplaceOverviewPanel = ({
 
   return (
     <div className="flex flex-col p-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between ">
         <TextInput
           className="border border-gold !w-auto !w-34 !flex-grow-0 text-xs"
           value={search}
@@ -346,10 +347,11 @@ const OverviewResourceRow = ({
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const realmResource = getComponentValue(
-    Resource,
-    getEntityIdFromKeys([realmEntityId!, BigInt(askSummary?.resourceId || 0n)]),
-  );
+  const { getBalance } = useResourceBalance();
+
+  const realmResource = useMemo(() => {
+    return getBalance(realmEntityId!, askSummary?.resourceId || 0);
+  }, [realmEntityId, askSummary?.resourceId]);
 
   const depthOfMarketBids = useMemo(() => {
     const lastFive = bidSummary?.depthOfMarket.slice(0, 5) || [];
@@ -358,7 +360,7 @@ const OverviewResourceRow = ({
 
     return (
       lastFive.length && (
-        <div className="flex flex-col w-[300px]">
+        <div className="flex flex-col w-[300px] ">
           {resource && (
             <div className="flex items-center mb-2">
               <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
@@ -442,7 +444,7 @@ const OverviewResourceRow = ({
   }, [askSummary?.depthOfMarket]);
 
   return (
-    <div className="grid hover:bg-white/10 items-center border-b h-8 border-gold/30 px-1 grid-cols-[100px,50px,1fr,100px,100px,100px] gap-4 text-lightest text-xs">
+    <div className="grid hover:bg-white/10 font-bold items-center border-b h-8 border-gold/30 px-1 grid-cols-[100px,50px,1fr,100px,100px,100px] gap-4  text-xs">
       {resource && (
         <div className="flex items-center">
           <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
@@ -463,7 +465,7 @@ const OverviewResourceRow = ({
         onMouseLeave={() => setTooltip(null)}
       >
         {askSummary && askSummary.bestPrice !== Infinity ? askSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
-        <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" />
+        <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" withTooltip={false} />
       </div>
       <div
         className="flex justify-end items-center"
@@ -503,7 +505,7 @@ const OverviewResourceRow = ({
         onMouseLeave={() => setTooltip(null)}
       >
         {bidSummary && bidSummary.bestPrice !== Infinity ? bidSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
-        <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" />
+        <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" withTooltip={false} />
       </div>
       <div
         className="flex justify-end items-center"
@@ -665,7 +667,7 @@ const ResourceOfferRow = ({
   };
 
   const travelTime = useMemo(
-    () => computeTravelTime(realmEntityId, offer.makerId, SPEED_PER_DONKEY),
+    () => computeTravelTime(realmEntityId, offer.makerId, EternumGlobalConfig.speed.donkey),
     [realmEntityId, offer],
   );
 

@@ -4,7 +4,7 @@ import { leaderboard } from "../../components/navigation/Config";
 import { LeaderboardPanel } from "@/ui/components/worldmap/leaderboard/LeaderboardPanel";
 
 export const Leaderboard = () => {
-  const { togglePopup } = useUIStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
 
   const isOpen = useUIStore((state) => state.isPopupOpen(leaderboard));
 

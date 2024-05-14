@@ -6,7 +6,7 @@ import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { AdaptiveDpr, Bvh, BakeShadows, CameraShake, Stats } from "@react-three/drei";
 import { Suspense, useMemo } from "react";
-import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast } from "@react-three/postprocessing";
+import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast, ToneMapping } from "@react-three/postprocessing";
 // @ts-ignore
 import { useControls } from "leva";
 import { CameraControls } from "../../utils/Camera";
@@ -180,7 +180,7 @@ export const MainScene = () => {
           {/* <Pixelation granularity={3} /> */}
           <BrightnessContrast brightness={brightness} contrast={contrast} />
           <Bloom luminanceThreshold={0.9} intensity={0.1} mipmapBlur />
-          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.4} />
+          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.1} />
           <SMAA />
         </EffectComposer>
         <fog attach="fog" color={fogColor} near={fogDistance.near} far={fogDistance.far} />

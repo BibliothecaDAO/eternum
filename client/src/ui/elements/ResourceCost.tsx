@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { findResourceById } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "./ResourceIcon";
 import clsx from "clsx";
+import { currencyFormat } from "../utils/utils";
 
 type ResourceCostProps = {
   isLabor?: boolean;
@@ -12,6 +13,7 @@ type ResourceCostProps = {
   className?: string;
   withTooltip?: boolean;
   onClick?: (e: any) => void;
+  balance?: number;
 };
 
 export const ResourceCost = ({
@@ -41,17 +43,20 @@ export const ResourceCost = ({
       <div
         className={clsx(
           "relative flex flex-col shrink-0  self-center ml-2",
-          type === "horizontal" ? "ml-1 font-bold  text-left" : "items-center",
+          type === "horizontal" ? "ml-1  text-left" : "items-center",
         )}
       >
-        <div onClick={onClick} className={clsx("relative text-xs", props.color)}>
+        <div onClick={onClick} className={clsx("relative text-xs font-bold", props.color)}>
           {props.color && props.amount > 0 ? "+" : ""}
           {Intl.NumberFormat("en-US", {
             notation: "compact",
             maximumFractionDigits: 1,
-          }).format(props.amount || 0)}
+          }).format(props.amount || 0)}{" "}
+          <span className="text-green/90 font-normal">{props.balance && `(${currencyFormat(props.balance, 0)})`} </span>
         </div>
-        {type === "horizontal" && <div className="text-xxs leading-[10px] self-start relative">{trait}</div>}
+        {type === "horizontal" && (
+          <div className="text-xs leading-[10px] self-start relative mt-1 font-normal">{trait}</div>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,8 @@ import useUIStore from "../../../../hooks/store/useUIStore";
 import { getColRowFromUIPosition } from "../../../utils/utils";
 
 export const FixedHexagonInformation = () => {
-  const { hexData, highlightPositions } = useUIStore();
+  const hexData = useUIStore((state) => state.hexData);
+  const highlightPositions = useUIStore((state) => state.highlightPositions);
   const colRow = getColRowFromUIPosition(highlightPositions[0]?.pos[0], -highlightPositions[0]?.pos[1]);
 
   const biome = hexData?.find((hex) => hex.col === colRow.col && hex.row === colRow.row)?.biome;

@@ -21,24 +21,58 @@ async function init() {
   inject();
   const steps: StepType[] = [
     {
-      selector: ".first-step",
-      content: "Your Navigation Bar to Control the Game. Open and move the windows around to suit your needs.",
-      position: "right",
-    },
-    {
-      selector: ".second-step",
-      content:
-        "Eternum Works in Cycles. Every Cycle is 6 minutes Long. You can see the Current Cycle Time Progress here.",
+      selector: ".realm-selector",
+      content: "Navigate to your Realms here to manage your territories.",
       position: "bottom",
     },
     {
-      selector: ".third-step",
-      content: "Navigate to the World Map here. You can see the Entire World and the Realms in it.",
+      selector: ".world-selector",
+      content: "Explore the World map and discover new areas.",
+      position: "bottom",
+    },
+    {
+      selector: ".military-selector",
+      content: "Access your Military options to manage troops and defenses.",
+      position: "bottom",
+    },
+    {
+      selector: ".construction-selector",
+      content: "Navigate to Construction to build and upgrade structures.",
+      position: "bottom",
+    },
+    {
+      selector: ".trade-selector",
+      content: "Visit the Trade center to engage in commerce and trade resources.",
+      position: "bottom",
+    },
+    {
+      selector: ".resources-selector",
+      content: "Manage and see the state of your production and resources here.",
+      position: "bottom",
+    },
+    {
+      selector: ".banking-selector",
+      content: "Manage your finances in the Banking section.",
+      position: "bottom",
+    },
+    {
+      selector: ".second-step",
+      content: "Eternum Works in 15 minute Cycles.  You can see the Current Cycle Time progress here.",
       position: "bottom",
     },
     {
       selector: ".forth-step",
-      content: "Navigate your Realms here.",
+      content: "Find quests here. Complete these first and earn resources.",
+      position: "bottom",
+    },
+    {
+      selector: ".fifth-step",
+      content: "Find hints here about the game. If this is your first time playing, this is a good place to start.",
+      position: "bottom",
+    },
+    {
+      selector: ".sixth-step",
+      content: "Settings and see this walkthrough again.",
       position: "bottom",
     },
   ];
@@ -51,11 +85,13 @@ async function init() {
             ...base,
             "--reactour-accent": "#24130A",
             borderRadius: 4,
+            backgroundColor: "#24130A",
+            color: "#F3C99F",
           }),
           maskArea: (base) => ({ ...base, rx: 4, color: "#24130A" }),
           maskWrapper: (base) => ({ ...base, color: "#24130A" }),
           badge: (base) => ({ ...base, left: "auto", right: "-0.8125em" }),
-          controls: (base) => ({ ...base, marginTop: 100 }),
+          controls: (base) => ({ ...base, marginTop: 100, color: "#F3C99F" }),
           close: (base) => ({ ...base, right: "auto", left: 8, top: 8 }),
         }}
       >

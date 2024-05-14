@@ -67,7 +67,8 @@ const redColor = new THREE.Color("red");
 
 export const ExistingBuildings = () => {
   const { hexPosition: globalHex } = useQuery();
-  const { existingBuildings, setExistingBuildings } = useUIStore((state) => state);
+  const existingBuildings = useUIStore((state) => state.existingBuildings);
+  const setExistingBuildings = useUIStore((state) => state.setExistingBuildings);
   const { hexType } = useHexPosition();
 
   const {
@@ -159,7 +160,7 @@ export const BuiltBuilding = ({
   resource?: ResourcesIds;
 }) => {
   const lightRef = useRef<any>();
-  const { isDestroyMode } = useUIStore();
+  const isDestroyMode = useUIStore((state) => state.isDestroyMode);
   const { destroyBuilding } = useBuildings();
   const { realmEntityId } = useRealmStore();
 
@@ -193,7 +194,7 @@ export const BuiltBuilding = ({
         if (hover) {
           child.material = child.material.clone();
           child.material.transparent = true;
-          child.material.opacity = 0.2; // Adjust opacity level as needed
+          child.material.opacity = 0.8; // Adjust opacity level as needed
         } else {
           child.material = child.material.clone();
           child.material.transparent = false;
@@ -213,7 +214,7 @@ export const BuiltBuilding = ({
         node.material = node.material.clone();
         node.material.color.set(redColor);
         node.material.transparent = true;
-        node.material.opacity = 0.3;
+        node.material.opacity = 0.8;
       }
     });
     return newModel;
@@ -232,8 +233,7 @@ export const BuiltBuilding = ({
   const handleClick = useCallback(() => {
     if (!isDestroyMode) {
       setHover(true);
-    }
-    else if (isDestroyable) {
+    } else if (isDestroyable) {
       destroyBuilding(realmEntityId, position.col, position.row);
     }
   }, [destroyBuilding, position.col, position.row]);
@@ -242,24 +242,25 @@ export const BuiltBuilding = ({
     <group
       onPointerEnter={() => isDestroyMode && setHover(true)}
       onPointerLeave={() => setHover(false)}
-      onClick={handleClick}
-      position={[x, 2.33, -y]}
+      // onClick={handleClick}
+      onContextMenu={handleClick}
+      position={[x, 2.8, -y]}
       rotation={rotation}
     >
       <primitive dropShadow scale={3} object={isDestroyable ? redModel : model} />
-      {!isDestroyMode && hover && <HoverBuilding building={buildingCategory} />}
+      {!isDestroyMode && hover && <HoverBuilding building={buildingCategory} entityId={realmEntityId} />}
     </group>
   );
 };
 
-const HoverBuilding = ({ building }: { building: BuildingType }) => {
+const HoverBuilding = ({ building, entityId }: { building: BuildingType; entityId: bigint }) => {
   return (
     <BaseThreeTooltip distanceFactor={30}>
       <div className="flex flex-col  text-sm p-1 space-y-1">
         <div className="font-bold text-center">
           {BuildingEnumToString[building as keyof typeof BuildingEnumToString]}
         </div>
-        <BuildingInfo buildingId={building} />
+        <BuildingInfo buildingId={building} entityId={entityId} />
       </div>
     </BaseThreeTooltip>
   );

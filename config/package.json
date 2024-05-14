@@ -1,0 +1,13 @@
+{
+  "name": "config",
+  "module": "index.ts",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0",
+    "@bibliothecadao/eternum": "workspace:^",
+    "@dojoengine/core": "^0.6.125",
+    "starknet": "6.7.0"
+  }
+}
