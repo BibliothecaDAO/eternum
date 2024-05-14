@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { useGetRealms } from "@/hooks/helpers/useRealm";
-import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { getNeighborHexes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { useSearch } from "wouter/use-location";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue } from "@dojoengine/recs";
@@ -61,19 +61,14 @@ export const useHexPosition = () => {
   const { neighborHexes, mainHex } = useMemo(() => {
     const mainHex = hexData?.find((hex) => hex.col === hexPosition.col && hex.row === hexPosition.row);
 
-    const neighborOffsets = hexPosition.row % 2 !== 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-    const neighborHexes = neighborOffsets.map((neighbor: { i: number; j: number; direction: number }) => {
-      const tmpCol = hexPosition.col + neighbor.i;
-      const tmpRow = hexPosition.row + neighbor.j;
-      return { col: tmpCol, row: tmpRow };
-    });
+    const neighborHexes = getNeighborHexes(hexPosition.col, hexPosition.row);
     return { neighborHexes, mainHex };
   }, [hexPosition]);
 
   const neighborHexesInsideView = useMemo(() => {
-    return hexData?.filter((hex) =>
-      neighborHexes?.some((neighborHex: any) => neighborHex.col === hex.col && neighborHex.row === hex.row),
-    );
+    return neighborHexes.map((neighborHex) => {
+      return hexData?.find((hex) => hex.col === neighborHex.col && hex.row === neighborHex.row);
+    });
   }, [hexData, neighborHexes]);
 
   useEffect(() => {

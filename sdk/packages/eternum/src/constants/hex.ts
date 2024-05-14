@@ -45,3 +45,12 @@ export const neighborOffsetsOdd = [
   { i: -1, j: -1, direction: DIRECTION.SOUTH_WEST },
   { i: 0, j: -1, direction: DIRECTION.SOUTH_EAST },
 ];
+
+export const getNeighborHexes = (col: number, row: number) => {
+  const offsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+  return offsets.map((offset) => ({
+    col: col + offset.i,
+    row: row + offset.j,
+    direction: offset.direction,
+  }));
+};

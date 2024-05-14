@@ -7,11 +7,12 @@ import { useEffect, useMemo } from "react";
 import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { BuildingType } from "@bibliothecadao/eternum";
+import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { placeholderMaterial } from "@/shaders/placeholderMaterial";
 import { Text, useGLTF } from "@react-three/drei";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
+import { getNeighbors } from "../worldmap/hexagon/utils";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row) || (col === 4 && row === 4);
@@ -51,9 +52,9 @@ const GroundGrid = () => {
               />
             )}
 
-            {/* {!isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) && (
+            {!isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) && (
               <EmptyCell position={hexPosition} />
-            )} */}
+            )}
 
             <Hexagon
               position={hexPosition}
@@ -133,31 +134,39 @@ const EmptyCell = ({ position }: { position: any }) => {
 export const generateHexPositions = () => {
   const _color = new THREE.Color("gray");
   const center = { col: 4, row: 4 };
-  const addOffset = center.row % 2 === 0 && center.row > 0 ? 0 : 1;
-  const radius = 4;
+  const RADIUS = 4;
   const positions = [] as any[];
-  const normalizedCenter = { col: 4, row: 4 };
-  const shifted = { col: center.col - normalizedCenter.col, row: center.row - normalizedCenter.row };
-  for (let _row = normalizedCenter.row - radius; _row <= normalizedCenter.row + radius; _row++) {
-    const basicCount = 9;
-    const decrease = Math.abs(_row - radius);
-    const colsCount = basicCount - decrease;
-    let startOffset = _row % 2 === 0 ? (decrease > 0 ? Math.floor(decrease / 2) : 0) : Math.floor(decrease / 2);
-    if (addOffset > 0 && _row % 2 !== 0) {
-      if (center.row < 0 && center.row % 2 === 0) startOffset += 1;
-    }
-    for (
-      let _col = startOffset + normalizedCenter.col - radius;
-      _col < normalizedCenter.col - radius + colsCount + startOffset;
-      _col++
-    ) {
+  for (let i = 0; i < RADIUS; i++) {
+    if (i === 0) {
       positions.push({
-        ...getUIPositionFromColRow(_col + shifted.col, _row + shifted.row, true),
+        ...getUIPositionFromColRow(center.col, center.row, true),
         z: 0.315,
         color: _color,
-        col: _col + shifted.col,
-        row: _row + shifted.row,
-        startOffset: startOffset,
+        col: center.col,
+        row: center.row,
+      });
+      getNeighborHexes(center.col, center.row).forEach((neighbor) => {
+        positions.push({
+          ...getUIPositionFromColRow(neighbor.col - (neighbor.row % 2 === 0 ? 0 : 1), neighbor.row, true),
+          z: 0.315,
+          color: _color,
+          col: neighbor.col,
+          row: neighbor.row,
+        });
+      });
+    } else {
+      positions.forEach((position) => {
+        getNeighborHexes(position.col, position.row).forEach((neighbor) => {
+          if (!positions.find((p) => p.col === neighbor.col && p.row === neighbor.row)) {
+            positions.push({
+              ...getUIPositionFromColRow(neighbor.col - (neighbor.row % 2 === 0 ? 0 : 1), neighbor.row, true),
+              z: 0.315,
+              color: _color,
+              col: neighbor.col,
+              row: neighbor.row,
+            });
+          }
+        });
       });
     }
   }
