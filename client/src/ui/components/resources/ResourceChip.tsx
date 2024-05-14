@@ -44,14 +44,12 @@ export const ResourceChip = ({
       setDisplayBalance((prevDisplayBalance) => {
         const difference = balance - prevDisplayBalance;
         if (Math.abs(difference) > 0) {
-          // Calculate step size as a fraction of the difference, e.g., 10% of the remaining difference
           const stepSize = difference * 0.1;
-          // Update the display balance by adding the step size, but ensure it doesn't overshoot
           return prevDisplayBalance + stepSize;
         }
         return prevDisplayBalance;
       });
-    }, 2); // Adjust interval speed as needed
+    }, 2);
     return () => clearInterval(interval);
   }, [balance]);
 
