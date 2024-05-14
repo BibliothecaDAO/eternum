@@ -159,7 +159,7 @@ export const setCapacityConfig = async (account: Account, provider: EternumProvi
   const txDonkey = await provider.set_capacity_config({
     signer: account,
     entity_type: DONKEY_ENTITY_TYPE,
-    weight_gram: EternumGlobalConfig.carryCapacity.donkey,
+    weight_gram: EternumGlobalConfig.carryCapacity.donkey * EternumGlobalConfig.resources.resourcePrecision,
   });
 
   console.log(`Configuring capacity Donkey config ${txDonkey.statusReceipt}...`);
@@ -167,7 +167,7 @@ export const setCapacityConfig = async (account: Account, provider: EternumProvi
   const txArmy = await provider.set_capacity_config({
     signer: account,
     entity_type: ARMY_ENTITY_TYPE,
-    weight_gram: EternumGlobalConfig.carryCapacity.army,
+    weight_gram: EternumGlobalConfig.carryCapacity.army * EternumGlobalConfig.resources.resourcePrecision,
   });
 
   console.log(`Configuring capacity Army config ${txArmy.statusReceipt}...`);
