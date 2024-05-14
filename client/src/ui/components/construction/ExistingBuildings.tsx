@@ -166,7 +166,7 @@ export const BuiltBuilding = ({
 
   useHelper(lightRef, THREE.PointLightHelper, 1, "green");
 
-  const { x, y } = getUIPositionFromColRow(position.col - (position.row % 2 === 0 ? 0 : 1), position.row, true);
+  const { x, y } = getUIPositionFromColRow(position.col, position.row, true);
 
   const modelIndex = useMemo(() => {
     if (buildingCategory === BuildingType.Resource && resource) {

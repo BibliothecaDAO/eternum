@@ -15,8 +15,8 @@ export interface OriginalModels {
 const BuildArea = () => {
   return (
     <group>
-      <BuildingPreview />
-      <ExistingBuildings />
+      {/* <BuildingPreview />
+      <ExistingBuildings /> */}
       <GroundGrid />
     </group>
   );
@@ -31,11 +31,7 @@ const BuildingPreview = () => {
 
   const previewCoords = useMemo(() => {
     if (!hoveredBuildHex) return null;
-    return getUIPositionFromColRow(
-      hoveredBuildHex.col - (hoveredBuildHex.row % 2 === 0 ? 0 : 1),
-      hoveredBuildHex.row,
-      true,
-    );
+    return getUIPositionFromColRow(hoveredBuildHex.col, hoveredBuildHex.row, true);
   }, [hoveredBuildHex]);
 
   const originalModels: OriginalModels = useMemo(

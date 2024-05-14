@@ -52,9 +52,9 @@ const GroundGrid = () => {
               />
             )}
 
-            {!isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) && (
+            {/* {!isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) && (
               <EmptyCell position={hexPosition} />
-            )}
+            )} */}
 
             <Hexagon
               position={hexPosition}
@@ -147,7 +147,7 @@ export const generateHexPositions = () => {
       });
       getNeighborHexes(center.col, center.row).forEach((neighbor) => {
         positions.push({
-          ...getUIPositionFromColRow(neighbor.col - (neighbor.row % 2 === 0 ? 0 : 1), neighbor.row, true),
+          ...getUIPositionFromColRow(neighbor.col, neighbor.row, true),
           z: 0.315,
           color: _color,
           col: neighbor.col,
@@ -159,7 +159,7 @@ export const generateHexPositions = () => {
         getNeighborHexes(position.col, position.row).forEach((neighbor) => {
           if (!positions.find((p) => p.col === neighbor.col && p.row === neighbor.row)) {
             positions.push({
-              ...getUIPositionFromColRow(neighbor.col - (neighbor.row % 2 === 0 ? 0 : 1), neighbor.row, true),
+              ...getUIPositionFromColRow(neighbor.col, neighbor.row, true),
               z: 0.315,
               color: _color,
               col: neighbor.col,

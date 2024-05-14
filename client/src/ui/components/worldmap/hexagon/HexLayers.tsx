@@ -104,22 +104,22 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
       }
     };
 
-    explored.forEach((rowSet, col) => {
-      if (col < startCol || col > endCol) return;
-      rowSet.forEach((row) => {
-        if (row < startRow || row > endRow) return;
-        const tmpCol = col + FELT_CENTER;
-        const tmpRow = row + FELT_CENTER;
-        const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
-        if (group[hexIndex]) {
-          addHexToBiomeAccumulator(group[hexIndex]);
-        }
-      });
-    });
-
-    // Object.keys(biomeComponents).forEach((biome) => {
-    //   biomesAccumulator[biome] = group.filter((hex) => hex.biome === biome);
+    // explored.forEach((rowSet, col) => {
+    //   if (col < startCol || col > endCol) return;
+    //   rowSet.forEach((row) => {
+    //     if (row < startRow || row > endRow) return;
+    //     const tmpCol = col + FELT_CENTER;
+    //     const tmpRow = row + FELT_CENTER;
+    //     const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
+    //     if (group[hexIndex]) {
+    //       addHexToBiomeAccumulator(group[hexIndex]);
+    //     }
+    //   });
     // });
+
+    Object.keys(biomeComponents).forEach((biome) => {
+      biomesAccumulator[biome] = group.filter((hex) => hex.biome === biome);
+    });
 
     return biomesAccumulator;
   }, [explored]);
@@ -164,7 +164,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
         const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
         if (group[hexIndex]) {
           revealed.push(group[hexIndex]);
-          const neighborOffsets = row % 2 !== 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+          const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
           neighborOffsets.forEach((neighbor: { i: number; j: number; direction: number }) => {
             const tmpCol = col + neighbor.i + FELT_CENTER;
             const tmpRow = row + neighbor.j + FELT_CENTER;
