@@ -56,7 +56,11 @@ export const ResourceChip = ({
   }, [balance]);
 
   return (
-    <div className={`flex relative group items-center text-xs border border-gold/10 px-2 p-1 hover:bg-gold/20 `}>
+    <div
+      className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20  ${
+        netRate && netRate < 0 ? "bg-red/20" : "bg-green/20"
+      } `}
+    >
       <ResourceIcon
         isLabor={isLabor}
         withTooltip={true}
@@ -67,7 +71,7 @@ export const ResourceChip = ({
 
       <div className="flex justify-between w-full">
         <div className=" self-center text-sm font-bold">
-          {currencyFormat(displayBalance ? Number(displayBalance) : 0, 2)}
+          {currencyFormat(displayBalance ? Number(displayBalance) : 0, 0)}
         </div>
 
         {/* <div className="text-xs w-full self-center text-opacity-65 px-1">{findResourceById(resourceId)?.trait}</div> */}
