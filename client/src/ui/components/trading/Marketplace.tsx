@@ -280,7 +280,7 @@ const MarketplaceOverviewPanel = ({
 
   return (
     <div className="flex flex-col p-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between ">
         <TextInput
           className="border border-gold !w-auto !w-34 !flex-grow-0 text-xs"
           value={search}
@@ -360,7 +360,7 @@ const OverviewResourceRow = ({
 
     return (
       lastFive.length && (
-        <div className="flex flex-col w-[300px]">
+        <div className="flex flex-col w-[300px] ">
           {resource && (
             <div className="flex items-center mb-2">
               <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
@@ -444,7 +444,7 @@ const OverviewResourceRow = ({
   }, [askSummary?.depthOfMarket]);
 
   return (
-    <div className="grid hover:bg-white/10 items-center border-b h-8 border-gold/30 px-1 grid-cols-[100px,50px,1fr,100px,100px,100px] gap-4 text-lightest text-xs">
+    <div className="grid hover:bg-white/10 font-bold items-center border-b h-8 border-gold/30 px-1 grid-cols-[100px,50px,1fr,100px,100px,100px] gap-4  text-xs">
       {resource && (
         <div className="flex items-center">
           <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
@@ -465,7 +465,7 @@ const OverviewResourceRow = ({
         onMouseLeave={() => setTooltip(null)}
       >
         {askSummary && askSummary.bestPrice !== Infinity ? askSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
-        <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" />
+        <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" withTooltip={false} />
       </div>
       <div
         className="flex justify-end items-center"
@@ -505,7 +505,7 @@ const OverviewResourceRow = ({
         onMouseLeave={() => setTooltip(null)}
       >
         {bidSummary && bidSummary.bestPrice !== Infinity ? bidSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
-        <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" />
+        <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" withTooltip={false} />
       </div>
       <div
         className="flex justify-end items-center"

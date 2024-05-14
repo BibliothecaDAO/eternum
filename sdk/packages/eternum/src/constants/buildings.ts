@@ -3,7 +3,7 @@ import { ResourcesIds } from "./resources";
 
 // Contract constants
 export const BASE_POPULATION_CAPACITY = 5;
-export const STOREHOUSE_CAPACITY = 10000;
+export const STOREHOUSE_CAPACITY = 10000000;
 
 export const BUILDING_INFORMATION: {
   [key: number]: string;
