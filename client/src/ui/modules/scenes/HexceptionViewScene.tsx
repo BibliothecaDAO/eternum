@@ -14,12 +14,12 @@ import * as THREE from "three";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 
 const mainPosition = getUIPositionFromColRow(0, 0, true);
-const pos = getUIPositionFromColRow(7, 4, true);
-const pos2 = getUIPositionFromColRow(-7, 5, true);
-const pos3 = getUIPositionFromColRow(-7, -4, true);
-const pos4 = getUIPositionFromColRow(7, -5, true);
-const pos5 = getUIPositionFromColRow(0, 9, true);
-const pos6 = getUIPositionFromColRow(0, -9, true);
+const posEast = getUIPositionFromColRow(7, 4, true);
+const posNorthWest = getUIPositionFromColRow(-7, 5, true);
+const posWest = getUIPositionFromColRow(-7, -4, true);
+const posSouthEast = getUIPositionFromColRow(7, -5, true);
+const posNorthEast = getUIPositionFromColRow(0, 9, true);
+const posSouthWest = getUIPositionFromColRow(0, -9, true);
 
 export const HexceptionViewScene = () => {
   const { realm, mainHex, neighborHexesInsideView, hexType } = useHexPosition();
@@ -43,23 +43,23 @@ export const HexceptionViewScene = () => {
       </group>
       {neighborHexesInsideView && neighborHexesInsideView.length > 0 && (
         <group>
-          <group position={[pos.x, 0, -pos.y]} rotation={[0, 0, 0]}>
-            <BigHexBiome biome={neighborHexesInsideView[0].biome as any} />
+          <group position={[posEast.x, 0, -posEast.y]} rotation={[0, 0, 0]}>
+            <BigHexBiome biome={neighborHexesInsideView[0]!.biome as any} />
           </group>
-          <group position={[pos2.x, 0, -pos2.y]}>
-            <BigHexBiome biome={neighborHexesInsideView[1].biome as any} />
+          <group position={[posNorthEast.x, 0, -posNorthEast.y]}>
+            <BigHexBiome biome={neighborHexesInsideView[1]!.biome as any} />
           </group>
-          <group position={[pos3.x, 0, -pos3.y]}>
-            <BigHexBiome biome={neighborHexesInsideView[2].biome as any} />
+          <group position={[posNorthWest.x, 0, -posNorthWest.y]}>
+            <BigHexBiome biome={neighborHexesInsideView[2]!.biome as any} />
           </group>
-          <group position={[pos4.x, 0, -pos4.y]}>
-            <BigHexBiome biome={neighborHexesInsideView[3].biome as any} />
+          <group position={[posWest.x, 0, -posWest.y]}>
+            <BigHexBiome biome={neighborHexesInsideView[3]!.biome as any} />
           </group>
-          <group position={[pos5.x, 0, -pos5.y]}>
-            <BigHexBiome biome={neighborHexesInsideView[4].biome as any} />
+          <group position={[posSouthWest.x, 0, -posSouthWest.y]}>
+            <BigHexBiome biome={neighborHexesInsideView[4]!.biome as any} />
           </group>
-          <group position={[pos6.x, 0, -pos6.y]}>
-            <BigHexBiome biome={neighborHexesInsideView[5].biome as any} />
+          <group position={[posSouthEast.x, 0, -posSouthEast.y]}>
+            <BigHexBiome biome={neighborHexesInsideView[5]!.biome as any} />
           </group>
         </group>
       )}
