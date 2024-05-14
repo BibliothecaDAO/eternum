@@ -10,7 +10,7 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingType } from "@bibliothecadao/eternum";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { placeholderMaterial } from "@/shaders/placeholderMaterial";
-import { useGLTF } from "@react-three/drei";
+import { Text, useGLTF } from "@react-three/drei";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
@@ -51,9 +51,9 @@ const GroundGrid = () => {
               />
             )}
 
-            {!isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) && (
+            {/* {!isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) && (
               <EmptyCell position={hexPosition} />
-            )}
+            )} */}
 
             <Hexagon
               position={hexPosition}
@@ -100,6 +100,9 @@ export const Hexagon = ({
 }) => {
   return (
     <group position={[position.x, position.y, position.z]} onPointerEnter={onPointerEnter} onClick={onClick}>
+      <Text color="black" anchorX="center" anchorY="middle">
+        {position.col}, {position.row}
+      </Text>
       <mesh receiveShadow geometry={hexagonGeometry} material={mainMaterial} />
       <mesh receiveShadow geometry={invisibleHexagonGeometry} material={invisibleMaterial} />
     </group>

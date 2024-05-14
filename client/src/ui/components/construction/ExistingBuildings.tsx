@@ -244,7 +244,7 @@ export const BuiltBuilding = ({
       onPointerLeave={() => setHover(false)}
       // onClick={handleClick}
       onContextMenu={handleClick}
-      position={[x, 2.8, -y]}
+      position={[x, 2.31, -y]}
       rotation={rotation}
     >
       <primitive dropShadow scale={3} object={isDestroyable ? redModel : model} />
