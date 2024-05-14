@@ -4,7 +4,7 @@ import Button from "@/ui/elements/Button";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Check, ShieldQuestion } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 interface Quest {
   name: string;
@@ -49,14 +49,24 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
     }
   };
 
-  return (
-    <div className={`p-2 border border-white/30  text-gold  ${quest.completed ? "bg-green/5" : " "}`}>
+  const hasClaimed = useMemo(() => {
+    return quest.prizes.every((prize) => {
+      const value = getComponentValue(
+        HasClaimedStartingResources,
+        getEntityIdFromKeys([BigInt(entityId), BigInt(prize.id)]),
+      );
+      return value?.claimed;
+    });
+  }, [quest.prizes, entityId]);
+
+  return !hasClaimed ? (
+    <div className={`p-2 border border-white/30  text-gold  ${quest.completed ? "bg-green/5" : " bg-green/40 "}`}>
       <div className="flex justify-between">
-        <h5 className="mb-3">{quest.name}</h5>
+        <h5 className="mb-3 font-bold">{quest.name}</h5>
         {quest.completed ? <Check /> : <ShieldQuestion />}
       </div>
 
-      <p>{quest.description}</p>
+      <p className="text-xl">{quest.description}</p>
 
       <div className="mt-1 grid grid-cols-3">
         {quest.completed &&
@@ -79,6 +89,8 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
           })}
       </div>
     </div>
+  ) : (
+    ""
   );
 };
 

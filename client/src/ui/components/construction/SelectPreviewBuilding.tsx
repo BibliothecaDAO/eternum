@@ -91,7 +91,7 @@ export const SelectPreviewBuildingMenu = () => {
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(realmEntityId, resourceCost.resource);
-      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
+      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision * 1000;
     });
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -338,7 +338,7 @@ export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; ent
         </div>
       )}
 
-      <div className="pt-3 font-bold">Cost Per Cycle</div>
+      <div className="pt-3 font-bold">consumed per/s</div>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
           const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
@@ -363,7 +363,7 @@ export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; ent
             <ResourceCost
               key={index}
               resourceId={buildingCost[Number(resourceId)].resource}
-              amount={buildingCost[Number(resourceId)].amount}
+              amount={buildingCost[Number(resourceId)].amount * 1000}
               balance={balance.balance}
             />
           );

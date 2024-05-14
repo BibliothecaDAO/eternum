@@ -58,7 +58,7 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
         if (index === -1) return null;
         return (
           <group key={index} position={[position.x, 0.31, -position.y]}>
-            {selectedEntity && selectedEntity.id == castle.id && <ArmyMenu entityId={castle.id} />}
+            {/* {selectedEntity && selectedEntity.id == castle.id && <ArmyMenu entityId={castle.id} />} */}
             <primitive
               object={model.scene.clone()}
               scale={4}

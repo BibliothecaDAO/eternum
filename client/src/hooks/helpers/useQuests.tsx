@@ -58,7 +58,7 @@ export const useQuests = ({ entityId }: { entityId: bigint | undefined }) => {
       },
       {
         name: "Build a Farm",
-        description: "Wheat is the lifeblood of your people. Build a farm to feed them.",
+        description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm.",
         completed: farms > 0,
         steps: [
           {

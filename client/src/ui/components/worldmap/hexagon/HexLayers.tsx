@@ -259,7 +259,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   );
 };
 
-const useEventHandlers = (explored: Map<number, Set<number>>) => {
+export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const hexData = useUIStore((state) => state.hexData);
   const highlightPositions = useUIStore((state) => state.highlightPositions);
   const isTravelMode = useUIStore((state) => state.isTravelMode);

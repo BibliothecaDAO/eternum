@@ -1,12 +1,9 @@
-import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../../hooks/context/DojoContext";
-import { useCombat } from "../../../../hooks/helpers/useCombat";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useUIStore from "../../../../hooks/store/useUIStore";
-import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../../utils/utils";
-import { Position, UIPosition } from "@bibliothecadao/eternum";
+import { getUIPositionFromColRow } from "../../../utils/utils";
 // @ts-ignore
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Subscription } from "rxjs";
 import { Army } from "./Army";
 import { getRealmOrderNameById } from "../../../utils/realms";
@@ -23,19 +20,17 @@ export const Armies = ({}: ArmiesProps) => {
 
   const realms = useRealmStore((state) => state.realmEntityIds);
 
-  const { armies } = useArmies();
-  const armiesList = armies();
-
   // set animation path for enemies
   useUpdateAnimationPaths();
+
+  const { armies } = useArmies();
+  const armiesList = armies();
 
   const realmOrder = useMemo(() => {
     const realmId = realms[0]?.realmId || BigInt(0);
     const orderName = getRealmOrderNameById(realmId);
     return orderName.charAt(0).toUpperCase() + orderName.slice(1);
   }, []);
-
-  console.log(armiesList);
 
   const armyInfo = useMemo(() => {
     return (
@@ -57,7 +52,6 @@ export const Armies = ({}: ArmiesProps) => {
   return (
     <group>
       {armyInfo.map((info) => {
-        const key = `${info.contractPos.x},${info.contractPos.y}`;
         // Find the index of this army within its own group
         const index = Number(info.id) % 12;
         const offset = calculateOffset(index, 12);
@@ -109,7 +103,6 @@ const useUpdateAnimationPaths = () => {
     },
   } = useDojo();
 
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
   const animationPaths = useUIStore((state) => state.animationPaths);
 
