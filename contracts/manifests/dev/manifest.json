@@ -6656,6 +6656,11 @@
       "kind": "DojoModel",
       "members": [
         {
+          "name": "entity_id",
+          "type": "u128",
+          "key": true
+        },
+        {
           "name": "category",
           "type": "BuildingCategory",
           "key": true
@@ -6666,8 +6671,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x23d9fe45eaa73d6b98176213873a4537442f397737974018f2dc710d07dd384",
-      "original_class_hash": "0x23d9fe45eaa73d6b98176213873a4537442f397737974018f2dc710d07dd384",
+      "class_hash": "0x6ae1405a3f117ae2579b9f5ac9273d3a6c43043c48accc9e69523d4525683d2",
+      "original_class_hash": "0x6ae1405a3f117ae2579b9f5ac9273d3a6c43043c48accc9e69523d4525683d2",
       "abi": [
         {
           "type": "impl",
@@ -6912,6 +6917,10 @@
           "type": "struct",
           "name": "eternum::models::buildings::BuildingQuantity",
           "members": [
+            {
+              "name": "entity_id",
+              "type": "core::integer::u128"
+            },
             {
               "name": "category",
               "type": "eternum::models::buildings::BuildingCategory"
