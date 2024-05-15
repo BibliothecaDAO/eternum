@@ -7,11 +7,12 @@ import { useEffect, useMemo } from "react";
 import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { BuildingType } from "@bibliothecadao/eternum";
+import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import { CairoOption, CairoOptionVariant } from "starknet";
 import { placeholderMaterial } from "@/shaders/placeholderMaterial";
-import { useGLTF } from "@react-three/drei";
+import { Text, useGLTF } from "@react-three/drei";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
+import { getNeighbors } from "../worldmap/hexagon/utils";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row) || (col === 4 && row === 4);
@@ -100,6 +101,9 @@ export const Hexagon = ({
 }) => {
   return (
     <group position={[position.x, position.y, position.z]} onPointerEnter={onPointerEnter} onClick={onClick}>
+      {/* <Text color="black" anchorX="center" anchorY="middle">
+        {position.col}, {position.row}
+      </Text> */}
       <mesh receiveShadow geometry={hexagonGeometry} material={mainMaterial} />
       <mesh receiveShadow geometry={invisibleHexagonGeometry} material={invisibleMaterial} />
     </group>
@@ -128,35 +132,44 @@ const EmptyCell = ({ position }: { position: any }) => {
 };
 
 export const generateHexPositions = () => {
-  const _color = new THREE.Color("gray");
-  const center = { col: 4, row: 4 };
-  const addOffset = center.row % 2 === 0 && center.row > 0 ? 0 : 1;
-  const radius = 4;
-  const positions = [] as any[];
-  const normalizedCenter = { col: 4, row: 4 };
-  const shifted = { col: center.col - normalizedCenter.col, row: center.row - normalizedCenter.row };
-  for (let _row = normalizedCenter.row - radius; _row <= normalizedCenter.row + radius; _row++) {
-    const basicCount = 9;
-    const decrease = Math.abs(_row - radius);
-    const colsCount = basicCount - decrease;
-    let startOffset = _row % 2 === 0 ? (decrease > 0 ? Math.floor(decrease / 2) : 0) : Math.floor(decrease / 2);
-    if (addOffset > 0 && _row % 2 !== 0) {
-      if (center.row < 0 && center.row % 2 === 0) startOffset += 1;
-    }
-    for (
-      let _col = startOffset + normalizedCenter.col - radius;
-      _col < normalizedCenter.col - radius + colsCount + startOffset;
-      _col++
-    ) {
-      positions.push({
-        ...getUIPositionFromColRow(_col + shifted.col, _row + shifted.row, true),
+  const color = new THREE.Color("gray");
+  const center = { col: 10, row: 10 };
+  const RADIUS = 4;
+  const positions: any[] = [];
+  const positionSet = new Set(); // To track existing positions
+
+  // Helper function to add position if not already added
+  const addPosition = (col: number, row: number) => {
+    const key = `${col},${row}`;
+    if (!positionSet.has(key)) {
+      const position = {
+        ...getUIPositionFromColRow(col, row, true),
         z: 0.315,
-        color: _color,
-        col: _col + shifted.col,
-        row: _row + shifted.row,
-        startOffset: startOffset,
-      });
+        color,
+        col,
+        row,
+      };
+      positions.push(position);
+      positionSet.add(key);
     }
+  };
+
+  // Add center position
+  addPosition(center.col, center.row);
+
+  // Generate positions in expanding hexagonal layers
+  let currentLayer = [center];
+  for (let i = 0; i < RADIUS; i++) {
+    const nextLayer: any = [];
+    currentLayer.forEach((pos) => {
+      getNeighborHexes(pos.col, pos.row).forEach((neighbor) => {
+        if (!positionSet.has(`${neighbor.col},${neighbor.row}`)) {
+          addPosition(neighbor.col, neighbor.row);
+          nextLayer.push({ col: neighbor.col, row: neighbor.row });
+        }
+      });
+    });
+    currentLayer = nextLayer; // Move to the next layer
   }
 
   return positions;
