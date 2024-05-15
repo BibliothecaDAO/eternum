@@ -547,17 +547,15 @@ impl BuildingImpl of BuildingTrait {
         let mut population = get!(world, outer_entity_id, Population);
         let population_config = PopulationConfigTrait::get(world, building.category);
 
-        // [check] If Workers hut
-
-        // [check] Population
-        population.assert_within_capacity();
-
         // increase population
         population.increase_population(population_config.population);
 
         // increase capacity
         // Only worker huts do this right now.
         population.increase_capacity(population_config.capacity);
+
+        // [check] Population
+        population.assert_within_capacity();
 
         // set population
         set!(world, (population));
@@ -595,12 +593,6 @@ impl BuildingImpl of BuildingTrait {
         building_quantity.value -= 1;
         set!(world, (building_quantity));
 
-        // remove building 
-        building.entity_id = 0;
-        building.category = BuildingCategory::None;
-        building.outer_entity_id = 0;
-
-        set!(world, (building));
 
         // decrease population
         let mut population = get!(world, outer_entity_id, Population);
@@ -620,7 +612,16 @@ impl BuildingImpl of BuildingTrait {
         // set population
         set!(world, (population));
 
-        building.category
+        
+        // remove building
+        let destroyed_building_category = building.category;
+        building.entity_id = 0;
+        building.category = BuildingCategory::None;
+        building.outer_entity_id = 0;
+
+        set!(world, (building));
+
+        destroyed_building_category
     }
 
     fn make_payment(
