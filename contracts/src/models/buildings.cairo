@@ -593,7 +593,6 @@ impl BuildingImpl of BuildingTrait {
         building_quantity.value -= 1;
         set!(world, (building_quantity));
 
-
         // decrease population
         let mut population = get!(world, outer_entity_id, Population);
         let population_config = PopulationConfigTrait::get(world, building.category);
@@ -612,7 +611,6 @@ impl BuildingImpl of BuildingTrait {
         // set population
         set!(world, (population));
 
-        
         // remove building
         let destroyed_building_category = building.category;
         building.entity_id = 0;
