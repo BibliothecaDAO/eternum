@@ -19,12 +19,12 @@ impl PopulationImpl of PopulationTrait {
         self.population
     }
     fn decrease_population(ref self: Population, amount: u32) -> u32 {
-        self.population -= amount;
-
-        // sanity
-        if (self.population < 0) {
+        if amount > self.population {
             self.population = 0;
+        } else {
+            self.population -= amount;
         }
+
         self.population
     }
     fn assert_within_capacity(ref self: Population) {
