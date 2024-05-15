@@ -36,6 +36,7 @@ mod swap_systems {
         // price in lords for 1000 resource
         resource_price: u128,
         buy: bool,
+        timestamp: u64,
     }
 
     #[event]
@@ -237,6 +238,7 @@ mod swap_systems {
                     lp_fees,
                     resource_price: market.quote_amount(1000),
                     buy,
+                    timestamp: starknet::get_block_timestamp()
                 }
             );
 
