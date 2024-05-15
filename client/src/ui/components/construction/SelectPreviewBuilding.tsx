@@ -282,7 +282,7 @@ export const BuildingCard = ({
     >
       {!canBuild && (
         <div className="absolute w-full h-full bg-black/50 text-white/60 p-4 text-xs  flex justify-center ">
-          <div className="self-center">insufficient fund</div>
+          <div className="self-center">insufficient fund or population</div>
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50 ">
