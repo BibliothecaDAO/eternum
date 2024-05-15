@@ -25,9 +25,9 @@ interface Props {
   };
 }
 
-const maxMapDistance = 1000;
+const maxMapDistance = 300;
 const maxHexceptionDistance = 150;
-const minDistance = 50;
+const minDistance = 100;
 const maxPolarAngle = Math.PI / 3;
 const minPolarAngle = 0;
 const upVector = new Vector3(0, 1, 0);

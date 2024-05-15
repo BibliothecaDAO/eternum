@@ -11,6 +11,7 @@ import { useControls } from "leva";
 import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
 import HoveredHex from "@/ui/components/worldmap/hexagon/HoveredHexes.js";
 import { CSG } from "three-csg-ts";
+import { useFrame } from "@react-three/fiber";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();
@@ -39,21 +40,36 @@ export const WorldMapScene = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
+  const cloudMatRef = useRef<THREE.MeshLambertMaterial>(new THREE.MeshLambertMaterial());
+
   const texture = useTexture({
-    map: "/textures/paper/paper-color.jpg",
+    map: "/textures/ground/small1.png",
     displacementMap: "/textures/paper/paper-height.jpg",
     roughnessMap: "/textures/paper/paper-roughness.jpg",
     normalMap: "/textures/paper/paper-normal.jpg",
   });
+
+  const textureFog = useTexture({
+    map: "/textures/fog.jpg",
+    alphaMap: "/textures/fog-mask.jpg",
+    cloudMap: "/textures/clouds.jpg"
+  })
 
   useMemo(() => {
     Object.keys(texture).forEach((key) => {
       const _texture = texture[key as keyof typeof texture];
       _texture.wrapS = THREE.RepeatWrapping;
       _texture.wrapT = THREE.RepeatWrapping;
-      _texture.repeat.set(20, 20);
+      _texture.repeat.set(400, 400);
     });
   }, [texture]);
+
+  useMemo(() => {
+    const _texture = textureFog.cloudMap;
+    _texture.wrapS = THREE.RepeatWrapping;
+    _texture.wrapT = THREE.RepeatWrapping;
+    _texture.repeat.set(40, 20);
+  }, [textureFog])
 
   useEffect(() => {
     setTimeout(() => {
@@ -61,15 +77,38 @@ export const WorldMapScene = () => {
     }, 300);
   }, []);
 
+  useFrame((state, delta, xrFrame) => {
+    if( cloudMatRef.current ) {
+      cloudMatRef.current.map!.offset.x -= 0.001;
+      cloudMatRef.current.needsUpdate = true;
+    }
+  })
+
   return (
     <>
       {!showBlankOverlay && isMapView && <WorldMap />}
       <HighlightedHexes />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]} receiveShadow>
         <planeGeometry args={[2668, 1390.35]} />
-        <meshPhongMaterial {...texture} />
+        <meshStandardMaterial {...texture} side={ THREE.DoubleSide } />
       </mesh>
-      <WorldMapLight />
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 40.05, -695.175]}>
+        <planeGeometry args={[2668, 1390.35]} />
+        <meshLambertMaterial 
+          ref={ cloudMatRef }
+          map={textureFog.cloudMap}
+          color={0xffffff} 
+          alphaMap={textureFog.cloudMap}
+          alphaMap-needsUpdate={true} 
+          fog={true}
+          side={ THREE.DoubleSide }
+          transparent={true}
+          opacity={0.4}
+          blending={1}
+          needsUpdate={true}
+        />
+      </mesh>
     </>
   );
 };

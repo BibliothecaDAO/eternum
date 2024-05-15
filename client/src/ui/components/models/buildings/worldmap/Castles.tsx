@@ -56,9 +56,25 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
       {castles.map((castle) => {
         const { uiPos: position, index, depth } = castle;
         if (index === -1) return null;
+
         return (
           <group key={index} position={[position.x, 0.31, -position.y]}>
             {/* {selectedEntity && selectedEntity.id == castle.id && <ArmyMenu entityId={castle.id} />} */}
+            <directionalLight
+              castShadow
+              shadow-mapSize={[2048, 2048]}
+              shadow-camera-near={10}
+              shadow-camera-far={2500}
+              shadow-camera-left={-75}
+              shadow-camera-right={75}
+              shadow-camera-top={75}
+              shadow-camera-bottom={-75}
+              shadow-bias={0.04}
+              position={[0, 2000, 0]}
+              color={"#fff"}
+              intensity={1.35}
+            ></directionalLight>
+
             <primitive
               object={model.scene.clone()}
               scale={4}
@@ -102,15 +118,37 @@ export const MyCastles = ({ hexData }: CastlesProps) => {
 
         if (index === -1) return null;
         return (
-          <primitive
-            key={index}
-            scale={3}
-            name="castle"
-            object={model.scene.clone()}
-            // rotate the castle in a random manner based on a seed
-            rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
-            position={[position.x, 0.31, -position.y]}
-          />
+          <group>
+            <directionalLight
+              castShadow
+              shadow-mapSize={[2048, 2048]}
+              shadow-camera-far={75}
+              shadow-camera-left={-75}
+              shadow-camera-right={75}
+              shadow-camera-top={75}
+              shadow-camera-bottom={-75}
+              shadow-bias={0.04}
+              position={[position.x, 20, position.y]}
+              color={"#fff"}
+              intensity={1.65}
+            ></directionalLight>
+            <pointLight
+              position={[position.x, 12, position.y - 18]}
+              color="#fff"
+              intensity={75}
+              power={2000}
+            />
+
+            <primitive
+              key={index}
+              scale={3}
+              name="castle"
+              object={model.scene.clone()}
+              // rotate the castle in a random manner based on a seed
+              rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
+              position={[position.x, 0.31, -position.y]}
+            />
+          </group>
         );
       })}
     </group>

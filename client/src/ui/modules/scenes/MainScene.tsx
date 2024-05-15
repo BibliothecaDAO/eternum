@@ -7,6 +7,9 @@ import { useLocation, Switch, Route } from "wouter";
 import { AdaptiveDpr, Bvh, BakeShadows, CameraShake, Stats } from "@react-three/drei";
 import { Suspense, useMemo } from "react";
 import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast, ToneMapping } from "@react-three/postprocessing";
+import * as THREE from 'three'
+import { Lensflare, LensflareElement } from 'three/examples/jsm/objects/Lensflare.js';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 // @ts-ignore
 import { useControls } from "leva";
 import { CameraControls } from "../../utils/Camera";
@@ -41,7 +44,7 @@ export const MainScene = () => {
     mapFogFar: { value: 1426, min: 0, max: 3000, step: 1 },
     realmFogNear: { value: 1885, min: 0, max: 1000, step: 1 },
     realmFogFar: { value: 2300, min: 0, max: 1000, step: 1 },
-    fogColor: { value: "#fff", label: "Color" },
+    fogColor: { value: "#cccccc", label: "Color" },
   });
 
   const fogDistance = useMemo(
@@ -107,6 +110,26 @@ export const MainScene = () => {
     [],
   );
 
+  const onCreatedCanvas = ({ scene }: { scene: THREE.Scene }) => {
+    /**
+     * Add SkyBOX to the scene
+     */
+    const loader = new RGBELoader(new THREE.LoadingManager());
+    const texturePath = '/textures/kloppenheim_06_puresky_4k.hdr';
+
+    loader.load(texturePath, (texture: THREE.Texture) => {
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+      scene.background = texture;
+    });
+    /**** ****/
+
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x437e49, 1.2);
+    hemiLight.color.setHSL(0.6, 1, 0.6);
+    hemiLight.groundColor.setHSL(0.095, 1, 0.75);
+
+    scene.add(hemiLight)
+  };
+  
   return (
     <Canvas
       frameloop="demand" // for fps limiter
@@ -139,6 +162,7 @@ export const MainScene = () => {
         depth: false,
         logarithmicDepthBuffer: true,
       }}
+      onCreated={onCreatedCanvas}
     >
       {import.meta.env.VITE_PUBLIC_GRAPHICS_DEV === "true" && (
         <>
@@ -148,7 +172,6 @@ export const MainScene = () => {
       )}
 
       <FPSLimiter>
-        <ambientLight color={ambientColor} intensity={ambientIntensity} />
         <Camera />
 
         <Bvh firstHitOnly>

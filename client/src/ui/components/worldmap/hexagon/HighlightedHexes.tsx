@@ -28,6 +28,7 @@ const HighlightedHexes = () => {
     if (meshRef.current?.material) {
       meshRef.current.material.emissiveIntensity = pulseFactor;
       meshRef.current.scale.set(pulseFactor, pulseFactor, pulseFactor);
+      meshRef.current.castShadow = true;
     }
   });
 
@@ -41,6 +42,7 @@ const HighlightedHexes = () => {
             geometry={hexagonGeometry}
             rotation={[0, 0, 0]}
             position={[highlightPosition[0], 0.3, highlightPosition[1]]}
+            castShadow={true}
           >
             <meshPhongMaterial color={highlightColor} emissive={"green"} />
           </mesh>
