@@ -132,43 +132,44 @@ const EmptyCell = ({ position }: { position: any }) => {
 };
 
 export const generateHexPositions = () => {
-  const _color = new THREE.Color("gray");
+  const color = new THREE.Color("gray");
   const center = { col: 10, row: 10 };
   const RADIUS = 4;
-  const positions = [] as any[];
-  for (let i = 0; i < RADIUS; i++) {
-    if (i === 0) {
-      positions.push({
-        ...getUIPositionFromColRow(center.col, center.row, true),
+  const positions: any[] = [];
+  const positionSet = new Set(); // To track existing positions
+
+  // Helper function to add position if not already added
+  const addPosition = (col: number, row: number) => {
+    const key = `${col},${row}`;
+    if (!positionSet.has(key)) {
+      const position = {
+        ...getUIPositionFromColRow(col, row, true),
         z: 0.315,
-        color: _color,
-        col: center.col,
-        row: center.row,
-      });
-      getNeighborHexes(center.col, center.row).forEach((neighbor) => {
-        positions.push({
-          ...getUIPositionFromColRow(neighbor.col, neighbor.row, true),
-          z: 0.315,
-          color: _color,
-          col: neighbor.col,
-          row: neighbor.row,
-        });
-      });
-    } else {
-      positions.forEach((position) => {
-        getNeighborHexes(position.col, position.row).forEach((neighbor) => {
-          if (!positions.find((p) => p.col === neighbor.col && p.row === neighbor.row)) {
-            positions.push({
-              ...getUIPositionFromColRow(neighbor.col, neighbor.row, true),
-              z: 0.315,
-              color: _color,
-              col: neighbor.col,
-              row: neighbor.row,
-            });
-          }
-        });
-      });
+        color,
+        col,
+        row,
+      };
+      positions.push(position);
+      positionSet.add(key);
     }
+  };
+
+  // Add center position
+  addPosition(center.col, center.row);
+
+  // Generate positions in expanding hexagonal layers
+  let currentLayer = [center];
+  for (let i = 0; i < RADIUS; i++) {
+    const nextLayer: any = [];
+    currentLayer.forEach((pos) => {
+      getNeighborHexes(pos.col, pos.row).forEach((neighbor) => {
+        if (!positionSet.has(`${neighbor.col},${neighbor.row}`)) {
+          addPosition(neighbor.col, neighbor.row);
+          nextLayer.push({ col: neighbor.col, row: neighbor.row });
+        }
+      });
+    });
+    currentLayer = nextLayer; // Move to the next layer
   }
 
   return positions;

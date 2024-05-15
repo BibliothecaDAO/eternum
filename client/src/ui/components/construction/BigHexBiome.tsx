@@ -13,68 +13,42 @@ const generateHexPositions = (biome: keyof typeof biomes) => {
   const _color = new THREE.Color("gray");
   const center = { col: 10, row: 10 };
   const RADIUS = 4;
-  const positions = [] as any[];
-  const hexColRows = [] as Hexagon[];
-  const borderHexes = [] as Hexagon[];
+  const positions: { x: number; y: number; z: number; color: THREE.Color; col: number; row: number }[] = [];
+  const hexColRows: any[] = [];
+  const borderHexes: any[] = [];
+  const existingPositions = new Set<string>();
+
+  const addPosition = (col: number, row: number, x: number, y: number, z: number, isBorder: boolean) => {
+    const key = `${col},${row}`;
+    if (!existingPositions.has(key)) {
+      existingPositions.add(key);
+      positions.push({ x, y, z, color: _color, col, row });
+      if (isBorder) {
+        borderHexes.push({ col: col + FELT_CENTER, row: row + FELT_CENTER });
+      } else {
+        hexColRows.push({ col: col + FELT_CENTER, row: row + FELT_CENTER });
+      }
+    }
+  };
+
   for (let i = 0; i < RADIUS; i++) {
     if (i === 0) {
       const { x, y, z } = getUIPositionFromColRow(center.col, center.row, true);
-
-      positions.push({
-        x,
-        y,
-        z: !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32,
-        color: _color,
-        col: center.col,
-        row: center.row,
-      });
-      hexColRows.push({
-        col: center.col + FELT_CENTER,
-        row: center.row + FELT_CENTER,
-      } as Hexagon);
+      const adjustedZ = !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32;
+      addPosition(center.col, center.row, x, y, adjustedZ, false);
 
       getNeighborHexes(center.col, center.row).forEach((neighbor) => {
         const { x, y, z } = getUIPositionFromColRow(neighbor.col, neighbor.row, true);
-
-        positions.push({
-          x,
-          y,
-          z: !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32,
-          color: _color,
-          col: neighbor.col,
-          row: neighbor.row,
-        });
-        hexColRows.push({
-          col: neighbor.col + FELT_CENTER,
-          row: neighbor.row + FELT_CENTER,
-        } as Hexagon);
+        const adjustedZ = !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32;
+        addPosition(neighbor.col, neighbor.row, x, y, adjustedZ, false);
       });
     } else {
       positions.forEach((position) => {
         getNeighborHexes(position.col, position.row).forEach((neighbor) => {
-          if (!positions.find((p) => p.col === neighbor.col && p.row === neighbor.row)) {
-            const isBorderHex = i === 3;
-            const { x, y, z } = getUIPositionFromColRow(neighbor.col, neighbor.row, true);
-            positions.push({
-              x,
-              y,
-              z: !isBorderHex && !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32,
-              color: _color,
-              col: neighbor.col,
-              row: neighbor.row,
-            });
-            if (isBorderHex) {
-              borderHexes.push({
-                col: neighbor.col + FELT_CENTER,
-                row: neighbor.row + FELT_CENTER,
-              } as Hexagon);
-            } else {
-              hexColRows.push({
-                col: neighbor.col + FELT_CENTER,
-                row: neighbor.row + FELT_CENTER,
-              } as Hexagon);
-            }
-          }
+          const { x, y, z } = getUIPositionFromColRow(neighbor.col, neighbor.row, true);
+          const isBorderHex = i === RADIUS - 1;
+          const adjustedZ = !isBorderHex && !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32;
+          addPosition(neighbor.col, neighbor.row, x, y, adjustedZ, isBorderHex);
         });
       });
     }
