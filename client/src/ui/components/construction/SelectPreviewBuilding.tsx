@@ -34,7 +34,7 @@ import Button from "@/ui/elements/Button";
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
-const BUILDING_IMAGES_PATH = {
+export const BUILDING_IMAGES_PATH = {
   [BuildingType.None]: "",
   [BuildingType.Castle]: "",
   [BuildingType.Resource]: BUILD_IMAGES_PREFIX + "mine.png",
