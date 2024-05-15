@@ -20,6 +20,7 @@ import { BuildingInfo } from "./SelectPreviewBuilding";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
+import { useControls } from "leva";
 
 enum ModelsIndexes {
   Castle = BuildingType.Castle,
@@ -70,6 +71,7 @@ export const ExistingBuildings = () => {
   const existingBuildings = useUIStore((state) => state.existingBuildings);
   const setExistingBuildings = useUIStore((state) => state.setExistingBuildings);
   const { hexType } = useHexPosition();
+  const sLightRef = useRef<any>();
 
   const {
     setup: {
@@ -122,6 +124,12 @@ export const ExistingBuildings = () => {
 
   const { x, y } = getUIPositionFromColRow(10, 10, true);
 
+  const { sLightPosition, sLightIntensity, power } = useControls("Spot Light", {
+    sLightPosition: { value: { x, y: 12, z: -y }, label: "Position" },
+    sLightIntensity: { value: 75, min: 0, max: 100, step: 0.01 },
+    power: { value: 2000, min: 0, max: 10000, step: 1 },
+  });
+
   return (
     <>
       {existingBuildings.map((building, index) => (
@@ -133,12 +141,21 @@ export const ExistingBuildings = () => {
           resource={building.resource}
         />
       ))}
-      <BuiltBuilding
-        models={models}
-        buildingCategory={hexType === HexType.BANK ? ModelsIndexes.Bank : BuildingType.Castle}
-        position={{ col: 10, row: 10 }}
-        rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
-      />
+      <group>
+        <BuiltBuilding
+          models={models}
+          buildingCategory={hexType === HexType.BANK ? ModelsIndexes.Bank : BuildingType.Castle}
+          position={{ col: 10, row: 10 }}
+          rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
+        />
+        <pointLight
+          ref={sLightRef}
+          position={[sLightPosition.x, sLightPosition.y, sLightPosition.z]}
+          color="#fff"
+          intensity={sLightIntensity}
+          power={power}
+        />
+      </group>
       <group position={[x - 1.65, 3.5, -y]}>
         <BannerFlag />
       </group>

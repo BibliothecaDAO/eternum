@@ -75,7 +75,6 @@ export const HexceptionViewScene = () => {
 
 const HexceptionLight = () => {
   const dLightRef = useRef<any>();
-  const sLightRef = useRef<any>();
   // if (import.meta.env.DEV) {
   //   useHelper(dLightRef, THREE.DirectionalLightHelper, 10, "hotpink");
   //   useHelper(sLightRef, THREE.PointLightHelper, 10, "green");
@@ -100,12 +99,6 @@ const HexceptionLight = () => {
       max: 0.05,
       step: 0.001,
     },
-  });
-
-  const { sLightPosition, sLightIntensity, power } = useControls("Spot Light", {
-    sLightPosition: { value: { x: 21, y: 12, z: -18 }, label: "Position" },
-    sLightIntensity: { value: 75, min: 0, max: 100, step: 0.01 },
-    power: { value: 2000, min: 0, max: 10000, step: 1 },
   });
 
   const target = useMemo(() => {
@@ -134,13 +127,6 @@ const HexceptionLight = () => {
         color={"#fff"}
         intensity={intensity}
       ></directionalLight>
-      <pointLight
-        ref={sLightRef}
-        position={[sLightPosition.x, sLightPosition.y, sLightPosition.z]}
-        color="#fff"
-        intensity={sLightIntensity}
-        power={power}
-      />
     </group>
   );
 };
