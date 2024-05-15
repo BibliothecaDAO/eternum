@@ -82,11 +82,19 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
     if (!hexData) return { group: [], colors: [] };
 
     return {
-      group: hexData.filter(({ col, row }) => {
-        const adjustedCol = col - FELT_CENTER;
-        const adjustedRow = row - FELT_CENTER;
-        return adjustedCol >= startCol && adjustedCol <= endCol && adjustedRow >= startRow && adjustedRow <= endRow;
-      }),
+      group: hexData
+        .filter(({ col, row }) => {
+          const adjustedCol = col - FELT_CENTER;
+          const adjustedRow = row - FELT_CENTER;
+          return adjustedCol >= startCol && adjustedCol <= endCol && adjustedRow >= startRow && adjustedRow <= endRow;
+        })
+        .map((hex) => {
+          return {
+            ...hex,
+            col: hex.col + (hex.row % 2 !== 0 ? 0 : 1),
+            row: hex.row,
+          };
+        }),
       colors: [],
     };
   }, [startRow, endRow, startCol, endCol, hexData]);
