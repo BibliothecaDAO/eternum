@@ -11,7 +11,8 @@ import { useControls } from "leva";
 import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
 import HoveredHex from "@/ui/components/worldmap/hexagon/HoveredHexes.js";
 import { CSG } from "three-csg-ts";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
+import { getMapTerrain } from "./Terrain.js";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();
@@ -42,8 +43,11 @@ export const WorldMapScene = () => {
 
   const cloudMatRef = useRef<THREE.MeshLambertMaterial>(new THREE.MeshLambertMaterial());
 
+  const { scene } = useThree()
+
   const texture = useTexture({
-    map: "/textures/ground/small1.png",
+    // map: "/textures/ground/small1.png",
+    map: "/textures/terrain/terrain_z1.jpg",
     displacementMap: "/textures/paper/paper-height.jpg",
     roughnessMap: "/textures/paper/paper-roughness.jpg",
     normalMap: "/textures/paper/paper-normal.jpg",
@@ -60,7 +64,7 @@ export const WorldMapScene = () => {
       const _texture = texture[key as keyof typeof texture];
       _texture.wrapS = THREE.RepeatWrapping;
       _texture.wrapT = THREE.RepeatWrapping;
-      _texture.repeat.set(400, 400);
+      _texture.repeat.set(3, 3);
     });
   }, [texture]);
 
@@ -68,10 +72,23 @@ export const WorldMapScene = () => {
     const _texture = textureFog.cloudMap;
     _texture.wrapS = THREE.RepeatWrapping;
     _texture.wrapT = THREE.RepeatWrapping;
-    _texture.repeat.set(40, 20);
+    _texture.repeat.set(20, 8);
   }, [textureFog])
 
+  const addTerrainToMap = async () => {
+    const mesh = new THREE.Mesh()
+    const terrain = await getMapTerrain() as any
+
+    mesh.geometry = terrain.mesh.geometry;
+    mesh.material = terrain.mesh.material;
+
+    console.error(terrain)
+    // scene.add(mesh)
+  }
+
   useEffect(() => {
+    addTerrainToMap()
+
     setTimeout(() => {
       setIsLoadingScreenEnabled(false);
     }, 300);
@@ -79,7 +96,7 @@ export const WorldMapScene = () => {
 
   useFrame((state, delta, xrFrame) => {
     if( cloudMatRef.current ) {
-      cloudMatRef.current.map!.offset.x -= 0.001;
+      cloudMatRef.current.map!.offset.y -= 0.001;
       cloudMatRef.current.needsUpdate = true;
     }
   })
@@ -89,7 +106,7 @@ export const WorldMapScene = () => {
       {!showBlankOverlay && isMapView && <WorldMap />}
       <HighlightedHexes />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]} receiveShadow>
-        <planeGeometry args={[2668, 1390.35]} />
+        <planeGeometry args={[2048, 2048]} />
         <meshStandardMaterial {...texture} side={ THREE.DoubleSide } />
       </mesh>
 

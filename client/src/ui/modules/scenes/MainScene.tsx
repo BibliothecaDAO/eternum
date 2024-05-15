@@ -8,7 +8,6 @@ import { AdaptiveDpr, Bvh, BakeShadows, CameraShake, Stats } from "@react-three/
 import { Suspense, useMemo } from "react";
 import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast, ToneMapping } from "@react-three/postprocessing";
 import * as THREE from 'three'
-import { Lensflare, LensflareElement } from 'three/examples/jsm/objects/Lensflare.js';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 // @ts-ignore
 import { useControls } from "leva";
