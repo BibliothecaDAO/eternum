@@ -16,8 +16,8 @@ export const HexagonInformationPanel = () => {
           </div>
         </div>
 
-        <ArmiesAtLocation />
         <Battle />
+        <ArmiesAtLocation />
       </div>
     </>
   );
