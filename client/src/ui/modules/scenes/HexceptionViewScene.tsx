@@ -14,10 +14,10 @@ import * as THREE from "three";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 
 const mainPosition = getUIPositionFromColRow(0, 0, true);
-const posEast = getUIPositionFromColRow(7, 4, true);
-const posNorthWest = getUIPositionFromColRow(-7, 5, true);
-const posWest = getUIPositionFromColRow(-7, -4, true);
-const posSouthEast = getUIPositionFromColRow(7, -5, true);
+const posEast = getUIPositionFromColRow(7, 5, true);
+const posNorthWest = getUIPositionFromColRow(-7, 4, true);
+const posWest = getUIPositionFromColRow(-7, -5, true);
+const posSouthEast = getUIPositionFromColRow(7, -4, true);
 const posNorthEast = getUIPositionFromColRow(0, 9, true);
 const posSouthWest = getUIPositionFromColRow(0, -9, true);
 

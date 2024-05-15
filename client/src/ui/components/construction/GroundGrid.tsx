@@ -52,9 +52,9 @@ const GroundGrid = () => {
               />
             )}
 
-            {/* {!isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) && (
+            {!isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) && (
               <EmptyCell position={hexPosition} />
-            )} */}
+            )}
 
             <Hexagon
               position={hexPosition}
@@ -101,9 +101,9 @@ export const Hexagon = ({
 }) => {
   return (
     <group position={[position.x, position.y, position.z]} onPointerEnter={onPointerEnter} onClick={onClick}>
-      <Text color="black" anchorX="center" anchorY="middle">
+      {/* <Text color="black" anchorX="center" anchorY="middle">
         {position.col}, {position.row}
-      </Text>
+      </Text> */}
       <mesh receiveShadow geometry={hexagonGeometry} material={mainMaterial} />
       <mesh receiveShadow geometry={invisibleHexagonGeometry} material={invisibleMaterial} />
     </group>
@@ -133,7 +133,7 @@ const EmptyCell = ({ position }: { position: any }) => {
 
 export const generateHexPositions = () => {
   const _color = new THREE.Color("gray");
-  const center = { col: 4, row: 4 };
+  const center = { col: 10, row: 10 };
   const RADIUS = 4;
   const positions = [] as any[];
   for (let i = 0; i < RADIUS; i++) {

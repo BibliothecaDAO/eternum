@@ -179,7 +179,7 @@ export const getColRowFromUIPosition = (x: number, y: number, normalized?: boole
   const horizDist = hexWidth;
 
   const rowNorm = Math.round(y / vertDist);
-  const colNorm = Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);
+  const colNorm = Math.round((x + ((rowNorm % 2) * horizDist) / 2) / horizDist);
 
   const col = colNorm + (!normalized ? 2147483647 : 0);
   const row = rowNorm + (!normalized ? 2147483647 : 0);

@@ -120,7 +120,7 @@ export const ExistingBuildings = () => {
     setExistingBuildings(_tmp);
   }, [builtBuildings]);
 
-  const { x, y } = getUIPositionFromColRow(4, 4, true);
+  const { x, y } = getUIPositionFromColRow(10, 10, true);
 
   return (
     <>
@@ -136,7 +136,7 @@ export const ExistingBuildings = () => {
       <BuiltBuilding
         models={models}
         buildingCategory={hexType === HexType.BANK ? ModelsIndexes.Bank : BuildingType.Castle}
-        position={{ col: 4, row: 4 }}
+        position={{ col: 10, row: 10 }}
         rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
       />
       <group position={[x - 1.65, 3.5, -y]}>

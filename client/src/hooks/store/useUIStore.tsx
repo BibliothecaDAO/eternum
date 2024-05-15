@@ -145,15 +145,16 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   },
   moveCameraToRealmView: () => {
     const pos = {
-      x: 129.4417459968961,
-      y: 78.04975423254507,
-      z: 48.91298881770161,
+      x: 155.23467522775934,
+      y: 88.15219668432883,
+      z: 16.20047786526456,
       transitionDuration: 0.01,
     };
+
     const target = {
-      x: 21.103373637682033,
-      y: -0.06254476354386523,
-      z: -19.36047544496302,
+      x: 51.295281133975934,
+      y: -0.042119342580460455,
+      z: -46.39636690298946,
       transitionDuration: 0.01,
     };
     set({ cameraPosition: pos, cameraTarget: target });

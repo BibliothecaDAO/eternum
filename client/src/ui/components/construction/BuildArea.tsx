@@ -15,8 +15,8 @@ export interface OriginalModels {
 const BuildArea = () => {
   return (
     <group>
-      {/* <BuildingPreview />
-      <ExistingBuildings /> */}
+      <BuildingPreview />
+      <ExistingBuildings />
       <GroundGrid />
     </group>
   );

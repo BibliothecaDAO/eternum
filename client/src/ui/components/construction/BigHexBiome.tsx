@@ -2,55 +2,81 @@ import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { FELT_CENTER, HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
 import { getUIPositionFromColRow } from "../../utils/utils";
-import { biomes } from "@bibliothecadao/eternum";
+import { biomes, getNeighborHexes } from "@bibliothecadao/eternum";
 import { Hexagon } from "../../../types";
 import { biomeComponents } from "../worldmap/hexagon/HexLayers";
 import { useMemo } from "react";
 
-const center = { col: 4, row: 4 };
 const hexagonGeometry = new THREE.ExtrudeGeometry(createHexagonShape(HEX_RADIUS), { depth: 2, bevelEnabled: false });
 
-const generateHexPositions = (center: { col: number; row: number }, biome: keyof typeof biomes) => {
-  const addOffset = center.row % 2 === 0 && center.row > 0 ? 0 : 1;
-  const radius = 4;
+const generateHexPositions = (biome: keyof typeof biomes) => {
+  const _color = new THREE.Color("gray");
+  const center = { col: 10, row: 10 };
+  const RADIUS = 4;
   const positions = [] as any[];
   const hexColRows = [] as Hexagon[];
   const borderHexes = [] as Hexagon[];
-  const normalizedCenter = { col: 4, row: 4 };
-  const shifted = { col: center.col - normalizedCenter.col, row: center.row - normalizedCenter.row };
-  for (let _row = normalizedCenter.row - radius; _row <= normalizedCenter.row + radius; _row++) {
-    const basicCount = 9;
-    const decrease = Math.abs(_row - radius);
-    const colsCount = basicCount - decrease;
-    let startOffset = _row % 2 === 0 ? (decrease > 0 ? Math.floor(decrease / 2) : 0) : Math.floor(decrease / 2);
-    if (addOffset > 0 && _row % 2 !== 0) {
-      if (center.row < 0 && center.row % 2 === 0) startOffset += 1;
-    }
-    for (
-      let _col = startOffset + normalizedCenter.col - radius;
-      _col < normalizedCenter.col - radius + colsCount + startOffset;
-      _col++
-    ) {
-      // Randomly increase z for inner hexes, disable it if hex is placed on border
-      const isBorderHex =
-        _row === normalizedCenter.row - radius ||
-        _row === normalizedCenter.row + radius ||
-        _col === startOffset + normalizedCenter.col - radius ||
-        _col === normalizedCenter.col - radius + colsCount + startOffset - 1;
-      const { x, y, z } = getUIPositionFromColRow(_col + shifted.col + FELT_CENTER, _row + shifted.row + FELT_CENTER);
+  for (let i = 0; i < RADIUS; i++) {
+    if (i === 0) {
+      const { x, y, z } = getUIPositionFromColRow(center.col, center.row, true);
+
       positions.push({
         x,
         y,
-        z: !isBorderHex && !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32,
-        col: _col + shifted.col,
-        row: _row + shifted.row,
-        startOffset: startOffset,
+        z: !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32,
+        color: _color,
+        col: center.col,
+        row: center.row,
       });
-      if (!isBorderHex) {
-        hexColRows.push({ col: _col + shifted.col + FELT_CENTER, row: _row + shifted.row + FELT_CENTER } as Hexagon);
-      } else {
-        borderHexes.push({ col: _col + shifted.col + FELT_CENTER, row: _row + shifted.row + FELT_CENTER } as Hexagon);
-      }
+      hexColRows.push({
+        col: center.col + FELT_CENTER,
+        row: center.row + FELT_CENTER,
+      } as Hexagon);
+
+      getNeighborHexes(center.col, center.row).forEach((neighbor) => {
+        const { x, y, z } = getUIPositionFromColRow(neighbor.col, neighbor.row, true);
+
+        positions.push({
+          x,
+          y,
+          z: !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32,
+          color: _color,
+          col: neighbor.col,
+          row: neighbor.row,
+        });
+        hexColRows.push({
+          col: neighbor.col + FELT_CENTER,
+          row: neighbor.row + FELT_CENTER,
+        } as Hexagon);
+      });
+    } else {
+      positions.forEach((position) => {
+        getNeighborHexes(position.col, position.row).forEach((neighbor) => {
+          if (!positions.find((p) => p.col === neighbor.col && p.row === neighbor.row)) {
+            const isBorderHex = i === 3;
+            const { x, y, z } = getUIPositionFromColRow(neighbor.col, neighbor.row, true);
+            positions.push({
+              x,
+              y,
+              z: !isBorderHex && !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32,
+              color: _color,
+              col: neighbor.col,
+              row: neighbor.row,
+            });
+            if (isBorderHex) {
+              borderHexes.push({
+                col: neighbor.col + FELT_CENTER,
+                row: neighbor.row + FELT_CENTER,
+              } as Hexagon);
+            } else {
+              hexColRows.push({
+                col: neighbor.col + FELT_CENTER,
+                row: neighbor.row + FELT_CENTER,
+              } as Hexagon);
+            }
+          }
+        });
+      });
     }
   }
 
@@ -65,11 +91,7 @@ const BigHexBiome = ({ biome }: { biome: keyof typeof biomes }) => {
     };
   }, [biome]);
 
-  const {
-    positions: hexPositions,
-    hexColRows,
-    borderHexes,
-  } = useMemo(() => generateHexPositions(center, biome), [biome]);
+  const { positions: hexPositions, hexColRows, borderHexes } = useMemo(() => generateHexPositions(biome), [biome]);
 
   const hexesInstancedMesh = useMemo(() => {
     const _tmp = new THREE.InstancedMesh(hexagonGeometry, material, hexPositions.length);
