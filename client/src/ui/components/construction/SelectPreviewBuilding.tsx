@@ -91,7 +91,7 @@ export const SelectPreviewBuildingMenu = () => {
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(realmEntityId, resourceCost.resource);
-      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision * 1000;
+      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
     });
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -111,7 +111,6 @@ export const SelectPreviewBuildingMenu = () => {
               const resource = findResourceById(resourceId)!;
               const cost = BUILDING_COSTS[BuildingType.Resource];
               const hasBalance = checkBalance(cost);
-
               return (
                 <BuildingCard
                   key={resourceId}
