@@ -478,7 +478,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 #[generate_trait]
 impl BuildingImpl of BuildingTrait {
     fn center() -> Coord {
-        Coord { x: 4, y: 4 }
+        Coord { x: 10, y: 10 }
     }
 
     fn create(
