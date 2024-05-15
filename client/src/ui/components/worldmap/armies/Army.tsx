@@ -8,6 +8,7 @@ import { Vector3 } from "three";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import { ArmyInfoLabel } from "./ArmyInfoLabel";
 import { ArmyMenu } from "./ArmyMenu";
+import { BannerFlag } from "../BannerFlag";
 
 type ArmyProps = {
   info: { contractPos: Position; uiPos: UIPosition; id: bigint; order: string; isMine: boolean };
@@ -104,6 +105,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
       {hovered && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />}
       <group position={position}>
         {selectedEntity && selectedEntity.id == info.id && <ArmyMenu />}
+        {info.isMine && <ArmyFlag rotationY={rotationY} position={position} order={info.order} />}
         <WarriorModel
           {...props}
           id={Number(info.id)}
@@ -119,3 +121,11 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     </>
   );
 }
+
+export const ArmyFlag = ({ position, order, rotationY }: { position: Vector3; order: string; rotationY: number }) => {
+  return (
+    <group position={[0, 2.5, 0]} rotation={[0, rotationY - Math.PI / 2, 0]} scale={0.7}>
+      <BannerFlag angle={rotationY} order={order} position={[position.x, position.y, position.z + 10]}></BannerFlag>
+    </group>
+  );
+};
