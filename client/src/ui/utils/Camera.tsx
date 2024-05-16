@@ -96,7 +96,11 @@ const CameraControls = ({ position, target }: Props) => {
 
   useEffect(() => {
     cameraAnimate();
-    playFly();
+
+    // dont play if transition is instant
+    if (!position.transitionDuration || position.transitionDuration > 0.1) {
+      playFly();
+    }
   }, [target, position]);
 
   // move compass direction

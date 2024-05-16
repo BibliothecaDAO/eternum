@@ -18,6 +18,7 @@ import { Event } from "@/dojo/events/graphqlClient";
 import { BuildingType, Resource } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Subscription } from "rxjs";
+import { BUILDING_IMAGES_PATH } from "../construction/SelectPreviewBuilding";
 
 export const ArmiesAtLocation = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
@@ -318,9 +319,9 @@ export const PillageHistory = ({
 
   useEffect(() => {
     const subscribeToFoundResources = async () => {
+      if (!isComponentMounted.current) return;
       const observable = await eventUpdates.createPillageHistoryEvents(structureId, attackerRealmEntityId);
       const subscription = observable.subscribe((event) => {
-        if (!isComponentMounted.current) return;
         if (event) {
           // Check if component is still mounted
           setPillageHistory((prev) => [formatPillageEvent(event), ...prev]);
@@ -338,38 +339,52 @@ export const PillageHistory = ({
   }, [structureId, attackerRealmEntityId, eventUpdates]);
 
   return (
-    <div className="border p-2 ">
-      <div className="m-3">
-        <Headline> Pillage History </Headline>
+    <div className="border p-2">
+      <div className="m-3 text-center">
+        <Headline>Pillage History</Headline>
       </div>
       <div className="overflow-auto max-h-[300px]">
         {pillageHistory.map((history, index) => (
-          <div key={index} className={`group hover:bg-gold/10 border relative bg-gold/5 text-gold`}>
-            <div className="flex">
-              <div className="flex items-center p-1 border-t-0 border-l-0 border pr-3 h5">
-                <div>Army ID: {history.armyId.toString()}</div>
+          <div key={index} className="group hover:bg-gold/10 border relative bg-gold/5 text-gold my-3">
+            <div className="absolute top-0 left-0 p-2 text-sm">Army ID: {history.armyId.toString()}</div>
+            <div className="flex justify-center items-center p-3">
+              <div className="text-center">
+                <Headline>Outcome</Headline>
+                <div className={`text-xl font-bold ${history.winner === 0 ? "text-blue-500" : "text-red-500"}`}>
+                  {history.winner === 0 ? "No Winner" : history.winner === 1 ? "Attacker Won" : "Defender Won"}
+                </div>
               </div>
             </div>
             <div className="p-2">
-              <div className="my-2">
-                <Headline>Winner </Headline>
-                {history.winner === 0 ? "Defender" : "Attacker"}
-              </div>
-              <div className="flex flex-col space-y-2 items-center">
-                <Headline> Pillaged Resources</Headline>
-                <div className="flex flex-wrap justify-center gap-4">
-                  {history.pillagedResources.map((resource: Resource) => (
-                    <ResourceCost
-                      key={resource.resourceId}
-                      resourceId={resource.resourceId}
-                      amount={divideByPrecision(resource.amount)}
-                    />
-                  ))}
+              <div className="flex justify-around items-start my-2">
+                <div className="text-center">
+                  <Headline>Pillaged Resources</Headline>
+                  <div className="flex flex-wrap justify-center gap-4">
+                    {history.pillagedResources.length > 0
+                      ? history.pillagedResources.map((resource: Resource) => (
+                          <ResourceCost
+                            key={resource.resourceId}
+                            resourceId={resource.resourceId}
+                            amount={divideByPrecision(resource.amount)}
+                          />
+                        ))
+                      : "None"}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <Headline> Destroyed Building</Headline>
-                <div>{history.destroyedBuildingType}</div>
+                <div className="text-center">
+                  <Headline>Destroyed Building</Headline>
+                  {history.destroyedBuildingType !== "None" && (
+                    <img
+                      src={`${
+                        BUILDING_IMAGES_PATH[BuildingType[history.destroyedBuildingType as keyof typeof BuildingType]]
+                      }`}
+                      alt="Destroyed Building"
+                      className="w-24 h-24 mx-auto"
+                    />
+                  )}
+                  {/* Placeholder for Building Image */}
+                  <div>{history.destroyedBuildingType}</div>
+                </div>
               </div>
             </div>
           </div>

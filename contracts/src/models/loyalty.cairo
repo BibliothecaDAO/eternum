@@ -20,10 +20,6 @@ struct Loyalty {
 #[generate_trait]
 impl LoyaltyImpl of LoyaltyTrait {
     fn value(self: Loyalty, tick: TickConfig) -> u64 {
-        if self.last_updated_tick == 0 {
-            return 0;
-        }
-
         let ticks_passed: u64 = tick.current() - self.last_updated_tick;
         let value: u64 = (ticks_passed / LOYALTY_TICK_INTERVAL) * LOYALTY_PER_TICK_INTERVAL;
         return min(value, LOYALTY_MAX_VALUE);

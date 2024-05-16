@@ -6,7 +6,6 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { HexPositions, getRealmUIPosition, pseudoRandom } from "../../../../utils/utils";
 import { biomes } from "@bibliothecadao/eternum";
 import useUIStore from "../../../../../hooks/store/useUIStore";
-import { ArmyMenu } from "../../../worldmap/armies/ArmyMenu";
 import { Hexagon } from "../../../../../types";
 
 type Castle = {

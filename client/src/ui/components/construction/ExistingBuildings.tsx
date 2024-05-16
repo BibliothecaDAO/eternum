@@ -2,7 +2,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
-import { getUIPositionFromColRow } from "@/ui/utils/utils";
+import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow } from "@/ui/utils/utils";
 import {
   BuildingEnumToString,
   BuildingStringToEnum,
@@ -20,48 +20,20 @@ import { BuildingInfo } from "./SelectPreviewBuilding";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
+import { useControls } from "leva";
 
-enum ModelsIndexes {
+export enum ModelsIndexes {
   Castle = BuildingType.Castle,
-  Mine = 21,
   Farm = BuildingType.Farm,
   Fishery = BuildingType.FishingVillage,
   Barracks = BuildingType.Barracks,
   Market = BuildingType.Market,
   ArcheryRange = BuildingType.ArcheryRange,
   Stable = BuildingType.Stable,
-  Forge = 22,
-  LumberMill = 23,
-  Dragonhide = 24,
   WorkersHut = BuildingType.WorkersHut,
   Storehouse = BuildingType.Storehouse,
   Bank = 25,
 }
-
-const ResourceIdToModelIndex: Partial<Record<ResourcesIds, ModelsIndexes>> = {
-  [ResourcesIds.Copper]: ModelsIndexes.Forge,
-  [ResourcesIds.ColdIron]: ModelsIndexes.Forge,
-  [ResourcesIds.Ignium]: ModelsIndexes.Forge,
-  [ResourcesIds.Gold]: ModelsIndexes.Forge,
-  [ResourcesIds.Silver]: ModelsIndexes.Forge,
-  [ResourcesIds.Diamonds]: ModelsIndexes.Mine,
-  [ResourcesIds.Sapphire]: ModelsIndexes.Mine,
-  [ResourcesIds.Ruby]: ModelsIndexes.Mine,
-  [ResourcesIds.DeepCrystal]: ModelsIndexes.Mine,
-  [ResourcesIds.TwilightQuartz]: ModelsIndexes.Mine,
-  [ResourcesIds.EtherealSilica]: ModelsIndexes.Mine,
-  [ResourcesIds.Stone]: ModelsIndexes.Mine,
-  [ResourcesIds.Coal]: ModelsIndexes.Mine,
-  [ResourcesIds.Obsidian]: ModelsIndexes.Mine,
-  [ResourcesIds.TrueIce]: ModelsIndexes.Mine,
-  [ResourcesIds.Wood]: ModelsIndexes.LumberMill,
-  [ResourcesIds.Hartwood]: ModelsIndexes.LumberMill,
-  [ResourcesIds.Ironwood]: ModelsIndexes.LumberMill,
-  [ResourcesIds.Mithral]: ModelsIndexes.Forge,
-  [ResourcesIds.Dragonhide]: ModelsIndexes.Dragonhide,
-  [ResourcesIds.AlchemicalSilver]: ModelsIndexes.Forge,
-  [ResourcesIds.Adamantine]: ModelsIndexes.Forge,
-};
 
 const redColor = new THREE.Color("red");
 
@@ -70,6 +42,7 @@ export const ExistingBuildings = () => {
   const existingBuildings = useUIStore((state) => state.existingBuildings);
   const setExistingBuildings = useUIStore((state) => state.setExistingBuildings);
   const { hexType } = useHexPosition();
+  const sLightRef = useRef<any>();
 
   const {
     setup: {
@@ -80,7 +53,6 @@ export const ExistingBuildings = () => {
   const models = useMemo(
     () => ({
       [ModelsIndexes.Castle]: useGLTF("/models/buildings/castle.glb"),
-      [ModelsIndexes.Mine]: useGLTF("/models/buildings/mine.glb"),
       [ModelsIndexes.Farm]: useGLTF("/models/buildings/farm.glb"),
       [ModelsIndexes.Fishery]: useGLTF("/models/buildings/fishery.glb"),
       [ModelsIndexes.Barracks]: useGLTF("/models/buildings/barracks.glb"),
@@ -89,10 +61,11 @@ export const ExistingBuildings = () => {
       [ModelsIndexes.Stable]: useGLTF("/models/buildings/stable.glb"),
       [ModelsIndexes.WorkersHut]: useGLTF("/models/buildings/workers_hut.glb"),
       [ModelsIndexes.Storehouse]: useGLTF("/models/buildings/storehouse.glb"),
-      [ModelsIndexes.Forge]: useGLTF("/models/buildings/forge.glb"),
-      [ModelsIndexes.LumberMill]: useGLTF("/models/buildings/lumber_mill.glb"),
-      [ModelsIndexes.Dragonhide]: useGLTF("/models/buildings/dragonhide.glb"),
       [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb"),
+      [ResourceMiningTypes.Forge]: useGLTF("/models/buildings/forge.glb"),
+      [ResourceMiningTypes.Mine]: useGLTF("/models/buildings/mine.glb"),
+      [ResourceMiningTypes.LumberMill]: useGLTF("/models/buildings/lumber_mill.glb"),
+      [ResourceMiningTypes.Dragonhide]: useGLTF("/models/buildings/dragonhide.glb"),
     }),
     [],
   );
@@ -122,6 +95,12 @@ export const ExistingBuildings = () => {
 
   const { x, y } = getUIPositionFromColRow(10, 10, true);
 
+  const { sLightPosition, sLightIntensity, power } = useControls("Spot Light", {
+    sLightPosition: { value: { x, y: 12, z: -y }, label: "Position" },
+    sLightIntensity: { value: 75, min: 0, max: 100, step: 0.01 },
+    power: { value: 2000, min: 0, max: 10000, step: 1 },
+  });
+
   return (
     <>
       {existingBuildings.map((building, index) => (
@@ -133,12 +112,21 @@ export const ExistingBuildings = () => {
           resource={building.resource}
         />
       ))}
-      <BuiltBuilding
-        models={models}
-        buildingCategory={hexType === HexType.BANK ? ModelsIndexes.Bank : BuildingType.Castle}
-        position={{ col: 10, row: 10 }}
-        rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
-      />
+      <group>
+        <BuiltBuilding
+          models={models}
+          buildingCategory={hexType === HexType.BANK ? ModelsIndexes.Bank : BuildingType.Castle}
+          position={{ col: 10, row: 10 }}
+          rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
+        />
+        <pointLight
+          ref={sLightRef}
+          position={[sLightPosition.x, sLightPosition.y, sLightPosition.z]}
+          color="#fff"
+          intensity={sLightIntensity}
+          power={power}
+        />
+      </group>
       <group position={[x - 1.65, 3.5, -y]}>
         <BannerFlag />
       </group>
@@ -170,7 +158,7 @@ export const BuiltBuilding = ({
 
   const modelIndex = useMemo(() => {
     if (buildingCategory === BuildingType.Resource && resource) {
-      return ResourceIdToModelIndex[resource] || ModelsIndexes.Mine;
+      return ResourceIdToMiningType[resource] || ResourceMiningTypes.Mine;
     }
     return buildingCategory;
   }, [buildingCategory, resource]);
