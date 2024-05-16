@@ -131,6 +131,8 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
     },
   } = useDojo();
 
+  const query = useEntityQuery([HasValue(Realm, { entity_id: realmEntityId })]);
+
   const realm = useMemo((): any => {
     if (realmEntityId !== undefined) {
       let entityId = getEntityIdFromKeys([realmEntityId]);
@@ -174,7 +176,7 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
         };
       }
     }
-  }, [realmEntityId]);
+  }, [realmEntityId, query]);
 
   return {
     realm,
@@ -188,6 +190,7 @@ export function useGetRealms(): RealmExtended[] {
     },
   } = useDojo();
 
+  // will force update the values when they change in the contract
   const realmEntityIds = useEntityQuery([Has(Realm)]);
 
   const realms: RealmExtended[] = useMemo(
