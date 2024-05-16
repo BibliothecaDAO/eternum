@@ -39,6 +39,11 @@ export const ResourceChip = ({
     return netRate[1];
   }, [productionManager, production]);
 
+  const isGettingConsumedWithoutProduction = useMemo(() => {
+    if (!production?.consumption_rate) return false;
+    return productionManager.isGettingConsumedWithoutProduction(currentTick);
+  }, [productionManager, production, currentTick]);
+
   const [displayBalance, setDisplayBalance] = useState(balance);
 
   useEffect(() => {
@@ -91,6 +96,8 @@ export const ResourceChip = ({
             <div>{parseFloat(netRate.toString()) < 0 ? "" : "+"}</div>
 
             <div>{netRate / 1000} / s</div>
+
+            <div className="ml-2">{isGettingConsumedWithoutProduction ? "⚠️" : ""}</div>
           </div>
         ) : (
           <div className="self-center ml-2"></div>
