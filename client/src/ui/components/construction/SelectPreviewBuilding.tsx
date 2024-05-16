@@ -112,7 +112,7 @@ export const SelectPreviewBuildingMenu = () => {
           <div className="grid grid-cols-8 gap-2 p-2">
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
-              const cost = BUILDING_COSTS[BuildingType.Resource];
+              const cost = [...BUILDING_COSTS[BuildingType.Resource], ...RESOURCE_INPUTS[resourceId]];
               const hasBalance = checkBalance(cost);
               return (
                 <BuildingCard
