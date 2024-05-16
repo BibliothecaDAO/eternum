@@ -3,16 +3,13 @@ import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
 import { getUIPositionFromColRow, pseudoRandom } from "../../utils/utils";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
-import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
-import { CairoOption, CairoOptionVariant } from "starknet";
 import { placeholderMaterial } from "@/shaders/placeholderMaterial";
 import { Text, useGLTF } from "@react-three/drei";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
-import { getNeighbors } from "../worldmap/hexagon/utils";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row) || (col === 4 && row === 4);
@@ -29,9 +26,20 @@ const GroundGrid = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const { realmEntityId } = useRealmStore();
   const { placeBuilding } = useBuildings();
+  const [isLoading, setIsLoading] = useState(false); // Loading state renamed to isLoading
 
   const handlePlacement = async (col: number, row: number, previewBuilding: BuildingType) => {
-    await placeBuilding(realmEntityId, col, row, previewBuilding, selectedResource ?? 0);
+    if (isLoading) return; // Prevent multiple submissions
+    setIsLoading(true);
+    try {
+      await placeBuilding(realmEntityId, col, row, previewBuilding, selectedResource ?? 0);
+      setPreviewBuilding(null);
+      setHoveredBuildHex(null);
+      playBuildingSound(previewBuilding);
+    } catch (error) {
+      console.error("Failed to place building:", error);
+    }
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -59,17 +67,18 @@ const GroundGrid = () => {
             <Hexagon
               position={hexPosition}
               onPointerEnter={() => {
-                if (previewBuilding) {
+                if (previewBuilding && !isLoading) {
                   setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row });
                   playShovel();
                 }
               }}
               onClick={() => {
-                if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
+                if (
+                  previewBuilding &&
+                  !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) &&
+                  !isLoading
+                ) {
                   handlePlacement(hexPosition.col, hexPosition.row, previewBuilding);
-                  setPreviewBuilding(null);
-                  setHoveredBuildHex(null);
-                  playBuildingSound(previewBuilding);
                 }
               }}
             />
@@ -101,9 +110,6 @@ export const Hexagon = ({
 }) => {
   return (
     <group position={[position.x, position.y, position.z]} onPointerEnter={onPointerEnter} onClick={onClick}>
-      {/* <Text color="black" anchorX="center" anchorY="middle">
-        {position.col}, {position.row}
-      </Text> */}
       <mesh receiveShadow geometry={hexagonGeometry} material={mainMaterial} />
       <mesh receiveShadow geometry={invisibleHexagonGeometry} material={invisibleMaterial} />
     </group>
