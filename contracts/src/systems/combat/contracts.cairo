@@ -591,6 +591,11 @@ mod combat_systems {
                 * attacking_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
 
+            // prevent `weights sum is zero` error 
+            if attacking_army_strength == 0 {
+                panic!("attacking army strength too low");
+            }
+
             let attack_successful: @bool = random::choices(
                 array![true, false].span(),
                 array![attacking_army_strength, structure_army_strength].span(),
@@ -600,7 +605,6 @@ mod combat_systems {
             )[0];
 
             let mut pillaged_resources: Array<(u8, u128)> = array![];
-
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
                     * PercentageValueImpl::_100().into()
