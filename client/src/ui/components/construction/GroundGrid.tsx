@@ -2,17 +2,14 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
-import { getUIPositionFromColRow, pseudoRandom } from "../../utils/utils";
-import { useEffect, useMemo } from "react";
+import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow, pseudoRandom } from "../../utils/utils";
+import { useEffect, useMemo, useState } from "react";
 import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
-import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
-import { CairoOption, CairoOptionVariant } from "starknet";
+import { BuildingType, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
 import { placeholderMaterial } from "@/shaders/placeholderMaterial";
 import { Text, useGLTF } from "@react-three/drei";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
-import { getNeighbors } from "../worldmap/hexagon/utils";
 
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
   return buildings.some((building) => building.col === col && building.row === row) || (col === 4 && row === 4);
@@ -25,13 +22,31 @@ const GroundGrid = () => {
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
   const existingBuildings = useUIStore((state) => state.existingBuildings);
-  const selectedResource = useUIStore((state) => state.selectedResource);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const { realmEntityId } = useRealmStore();
   const { placeBuilding } = useBuildings();
+  const [isLoading, setIsLoading] = useState(false); // Loading state renamed to isLoading
 
-  const handlePlacement = async (col: number, row: number, previewBuilding: BuildingType) => {
-    await placeBuilding(realmEntityId, col, row, previewBuilding, selectedResource ?? 0);
+  const handlePlacement = async (
+    col: number,
+    row: number,
+    previewBuilding: { type: BuildingType; resource?: ResourcesIds },
+  ) => {
+    if (isLoading) return; // Prevent multiple submissions
+    setIsLoading(true);
+    try {
+      await placeBuilding(realmEntityId, col, row, previewBuilding.type, previewBuilding.resource ?? 0);
+      setPreviewBuilding(null);
+      setHoveredBuildHex(null);
+      playBuildingSound(
+        previewBuilding.resource
+          ? (ResourceIdToMiningType[previewBuilding.resource as ResourcesIds] as ResourceMiningTypes)
+          : previewBuilding.type,
+      );
+    } catch (error) {
+      console.error("Failed to place building:", error);
+    }
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -59,17 +74,18 @@ const GroundGrid = () => {
             <Hexagon
               position={hexPosition}
               onPointerEnter={() => {
-                if (previewBuilding) {
+                if (previewBuilding && !isLoading) {
                   setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row });
                   playShovel();
                 }
               }}
               onClick={() => {
-                if (previewBuilding && !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings)) {
+                if (
+                  previewBuilding &&
+                  !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) &&
+                  !isLoading
+                ) {
                   handlePlacement(hexPosition.col, hexPosition.row, previewBuilding);
-                  setPreviewBuilding(null);
-                  setHoveredBuildHex(null);
-                  playBuildingSound(previewBuilding);
                 }
               }}
             />
@@ -80,12 +96,13 @@ const GroundGrid = () => {
   );
 };
 
+const holeHexagonShape = createHexagonShape(HEX_RADIUS);
 const bigHexagonShape = createHexagonShape(HEX_RADIUS);
 const smallHexagonShape = createHexagonShape(HEX_RADIUS * 0.5);
-bigHexagonShape.holes.push(smallHexagonShape);
+holeHexagonShape.holes.push(smallHexagonShape);
 
-const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
-const invisibleHexagonGeometry = new THREE.ShapeGeometry(smallHexagonShape);
+const hexagonGeometry = new THREE.ShapeGeometry(holeHexagonShape);
+const invisibleHexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
 const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
 const mainMaterial = new THREE.MeshStandardMaterial({ color: mainColor });
 const invisibleMaterial = new THREE.MeshStandardMaterial({ color: mainColor, transparent: true, opacity: 0 });
@@ -100,12 +117,15 @@ export const Hexagon = ({
   onPointerEnter: any;
 }) => {
   return (
-    <group position={[position.x, position.y, position.z]} onPointerEnter={onPointerEnter} onClick={onClick}>
-      {/* <Text color="black" anchorX="center" anchorY="middle">
-        {position.col}, {position.row}
-      </Text> */}
+    <group position={[position.x, position.y, position.z]}>
       <mesh receiveShadow geometry={hexagonGeometry} material={mainMaterial} />
-      <mesh receiveShadow geometry={invisibleHexagonGeometry} material={invisibleMaterial} />
+      <mesh
+        receiveShadow
+        geometry={invisibleHexagonGeometry}
+        material={invisibleMaterial}
+        onPointerEnter={onPointerEnter}
+        onClick={onClick}
+      />
     </group>
   );
 };

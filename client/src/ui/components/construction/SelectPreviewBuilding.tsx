@@ -30,6 +30,7 @@ import { BUILDING_COSTS } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
 import Button from "@/ui/elements/Button";
+import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -50,13 +51,15 @@ export const BUILDING_IMAGES_PATH = {
   [BuildingType.WatchTower]: BUILD_IMAGES_PREFIX + "watch_tower.png",
   [BuildingType.Walls]: BUILD_IMAGES_PREFIX + "walls.png",
   [BuildingType.Storehouse]: BUILD_IMAGES_PREFIX + "storehouse.png",
+  [ResourceMiningTypes.Forge]: BUILD_IMAGES_PREFIX + "forge.png",
+  [ResourceMiningTypes.Mine]: BUILD_IMAGES_PREFIX + "mine.png",
+  [ResourceMiningTypes.LumberMill]: BUILD_IMAGES_PREFIX + "lumber_mill.png",
+  [ResourceMiningTypes.Dragonhide]: BUILD_IMAGES_PREFIX + "dragonhide.png",
 };
 
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const selectedResource = useUIStore((state) => state.selectedResource);
-  const setResourceId = useUIStore((state) => state.setResourceId);
   const isDestroyMode = useUIStore((state) => state.isDestroyMode);
   const setIsDestroyMode = useUIStore((state) => state.setIsDestroyMode);
 
@@ -115,24 +118,19 @@ export const SelectPreviewBuildingMenu = () => {
                 <BuildingCard
                   key={resourceId}
                   buildingId={BuildingType.Resource}
+                  resourceId={resourceId}
                   onClick={() => {
                     if (!hasBalance) {
                       return;
                     }
-                    if (selectedResource === resourceId) {
-                      setResourceId(null);
-                    } else {
-                      setResourceId(resourceId);
-                      playResourceSound(resourceId);
-                    }
-
-                    if (previewBuilding === BuildingType.Resource && selectedResource === resourceId) {
+                    if (previewBuilding?.type === BuildingType.Resource && previewBuilding?.resource === resourceId) {
                       setPreviewBuilding(null);
                     } else {
-                      setPreviewBuilding(BuildingType.Resource);
+                      setPreviewBuilding({ type: BuildingType.Resource, resource: resourceId });
+                      playResourceSound(resourceId);
                     }
                   }}
-                  active={selectedResource === resourceId}
+                  active={previewBuilding?.resource === resourceId}
                   name={resource?.trait}
                   toolTip={<ResourceInfo resourceId={resourceId} entityId={realmEntityId} />}
                   canBuild={hasBalance && realm.hasCapacity}
@@ -167,14 +165,19 @@ export const SelectPreviewBuildingMenu = () => {
                       if (!hasBalance) {
                         return;
                       }
-                      if (previewBuilding === building) {
+                      if (previewBuilding?.type === building) {
                         setPreviewBuilding(null);
                       } else {
-                        setResourceId(null);
-                        setPreviewBuilding(building);
+                        setPreviewBuilding({ type: building });
+                        if (building === BuildingType.Farm) {
+                          playResourceSound(ResourcesIds.Wheat);
+                        }
+                        if (building === BuildingType.FishingVillage) {
+                          playResourceSound(ResourcesIds.Fish);
+                        }
                       }
                     }}
-                    active={false}
+                    active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
                     canBuild={BuildingType.WorkersHut == building ? hasBalance : hasBalance && realm.hasCapacity}
@@ -210,14 +213,13 @@ export const SelectPreviewBuildingMenu = () => {
                       if (!hasBalance) {
                         return;
                       }
-                      if (previewBuilding === building) {
+                      if (previewBuilding?.type === building) {
                         setPreviewBuilding(null);
                       } else {
-                        setResourceId(null);
-                        setPreviewBuilding(building);
+                        setPreviewBuilding({ type: building });
                       }
                     }}
-                    active={false}
+                    active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
                     canBuild={BuildingType.WorkersHut == building ? hasBalance : hasBalance && realm.hasCapacity}
@@ -228,7 +230,7 @@ export const SelectPreviewBuildingMenu = () => {
         ),
       },
     ],
-    [realmEntityId, realmResourceIds, selectedTab],
+    [realmEntityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
   );
 
   return (
@@ -256,6 +258,7 @@ export const BuildingCard = ({
   name,
   toolTip,
   canBuild,
+  resourceId,
 }: {
   buildingId: BuildingType;
   onClick: () => void;
@@ -263,12 +266,17 @@ export const BuildingCard = ({
   name: string;
   toolTip: React.ReactElement;
   canBuild?: boolean;
+  resourceId?: ResourcesIds;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   return (
     <div
       style={{
-        backgroundImage: `url(${BUILDING_IMAGES_PATH[buildingId as BuildingType]})`,
+        backgroundImage: `url(${
+          resourceId
+            ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
+            : BUILDING_IMAGES_PATH[buildingId as BuildingType]
+        })`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -344,6 +352,7 @@ export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; ent
 
           return (
             <ResourceCost
+              key={resourceId}
               resourceId={cost[Number(resourceId)].resource}
               amount={cost[Number(resourceId)].amount}
               balance={balance.balance}

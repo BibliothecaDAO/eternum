@@ -5,6 +5,7 @@ import { currencyFormat } from "../../utils/utils";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import { useEffect, useMemo, useState } from "react";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import useUIStore from "@/hooks/store/useUIStore";
 
 export const ResourceChip = ({
   isLabor = false,
@@ -17,6 +18,7 @@ export const ResourceChip = ({
 }) => {
   const currentTick = useBlockchainStore((state) => state.currentTick);
   const productionManager = useProductionManager(entityId, resourceId);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const production = useMemo(() => {
     return productionManager.getProduction();
@@ -58,10 +60,19 @@ export const ResourceChip = ({
       className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20  ${
         netRate && netRate < 0 ? "bg-red/20" : "bg-green/20"
       } `}
+      onMouseEnter={() => {
+        setTooltip({
+          position: "top",
+          content: <>{findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}</>,
+        });
+      }}
+      onMouseLeave={() => {
+        setTooltip(null);
+      }}
     >
       <ResourceIcon
         isLabor={isLabor}
-        withTooltip={true}
+        withTooltip={false}
         resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}
         size="sm"
         className="mr-3 self-center"

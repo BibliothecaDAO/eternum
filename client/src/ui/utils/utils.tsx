@@ -3,7 +3,7 @@ import { Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
 import { Entity } from "@dojoengine/recs";
-import { Position, UIPosition, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { Position, ResourcesIds, UIPosition, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import realmHexPositions from "../../data/geodata/hex/realmHexPositions.json";
@@ -233,3 +233,35 @@ export function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
 
   return resourceIds;
 }
+
+export enum ResourceMiningTypes {
+  Forge = "forge",
+  Mine = "mine",
+  LumberMill = "lumber_mill",
+  Dragonhide = "dragonhide",
+}
+
+export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMiningTypes>> = {
+  [ResourcesIds.Copper]: ResourceMiningTypes.Forge,
+  [ResourcesIds.ColdIron]: ResourceMiningTypes.Forge,
+  [ResourcesIds.Ignium]: ResourceMiningTypes.Forge,
+  [ResourcesIds.Gold]: ResourceMiningTypes.Forge,
+  [ResourcesIds.Silver]: ResourceMiningTypes.Forge,
+  [ResourcesIds.Diamonds]: ResourceMiningTypes.Mine,
+  [ResourcesIds.Sapphire]: ResourceMiningTypes.Mine,
+  [ResourcesIds.Ruby]: ResourceMiningTypes.Mine,
+  [ResourcesIds.DeepCrystal]: ResourceMiningTypes.Mine,
+  [ResourcesIds.TwilightQuartz]: ResourceMiningTypes.Mine,
+  [ResourcesIds.EtherealSilica]: ResourceMiningTypes.Mine,
+  [ResourcesIds.Stone]: ResourceMiningTypes.Mine,
+  [ResourcesIds.Coal]: ResourceMiningTypes.Mine,
+  [ResourcesIds.Obsidian]: ResourceMiningTypes.Mine,
+  [ResourcesIds.TrueIce]: ResourceMiningTypes.Mine,
+  [ResourcesIds.Wood]: ResourceMiningTypes.LumberMill,
+  [ResourcesIds.Hartwood]: ResourceMiningTypes.LumberMill,
+  [ResourcesIds.Ironwood]: ResourceMiningTypes.LumberMill,
+  [ResourcesIds.Mithral]: ResourceMiningTypes.Forge,
+  [ResourcesIds.Dragonhide]: ResourceMiningTypes.Dragonhide,
+  [ResourcesIds.AlchemicalSilver]: ResourceMiningTypes.Forge,
+  [ResourcesIds.Adamantine]: ResourceMiningTypes.Forge,
+};
