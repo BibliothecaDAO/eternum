@@ -57,11 +57,14 @@ const generateHexPositions = (biome: keyof typeof biomes) => {
   return { positions, hexColRows, borderHexes };
 };
 
+const defaultBiome = "snow";
 const BigHexBiome = ({ biome }: { biome: keyof typeof biomes }) => {
   const { BiomeComponent, material } = useMemo(() => {
+    const _biome = biome && biomes[biome] ? biome : defaultBiome;
+
     return {
-      BiomeComponent: biomeComponents[biome],
-      material: new THREE.MeshMatcapMaterial({ color: new THREE.Color(biomes[biome]?.color) }),
+      BiomeComponent: biomeComponents[_biome],
+      material: new THREE.MeshBasicMaterial({ color: new THREE.Color(biomes[_biome]!.color) }),
     };
   }, [biome]);
 

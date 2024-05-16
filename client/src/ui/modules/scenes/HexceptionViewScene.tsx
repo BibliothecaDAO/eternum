@@ -38,7 +38,7 @@ export const HexceptionViewScene = () => {
           <BuildArea />
         </group>
         <group visible={hexType === HexType.EMPTY}>
-          <BigHexBiome biome={mainHex?.biome as any} />
+          <BigHexBiome biome={mainHex!.biome as any} />
         </group>
       </group>
       {neighborHexesInsideView && neighborHexesInsideView.length > 0 && (
