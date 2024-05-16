@@ -135,17 +135,23 @@ export class ProductionManager {
     // If there is no production or resource, return current tick
     if (!production || !resource) return currentTick;
 
-    const [sign, value] = this.netRate(currentTick);
-    if (value > BigInt(0)) {
-      if (!sign) {
-        const lossPerTick = value;
-        const numTicksLeft = Number(resource.balance) / lossPerTick;
+    const [_, value] = this.netRate(currentTick);
+    const balance = this.balance(currentTick);
+
+    if (value != 0) {
+      if (value < 0) {
+        const lossPerTick = Math.abs(value);
+        const numTicksLeft = balance / lossPerTick;
         return currentTick + Number(numTicksLeft);
       } else {
         return Number.MAX_SAFE_INTEGER;
       }
     } else {
-      return Number.MAX_SAFE_INTEGER;
+      if (balance > 0) {
+        return Number.MAX_SAFE_INTEGER;
+      } else {
+        return currentTick;
+      }
     }
   }
 
