@@ -89,12 +89,13 @@ const GroundGrid = () => {
   );
 };
 
+const holeHexagonShape = createHexagonShape(HEX_RADIUS);
 const bigHexagonShape = createHexagonShape(HEX_RADIUS);
 const smallHexagonShape = createHexagonShape(HEX_RADIUS * 0.5);
-bigHexagonShape.holes.push(smallHexagonShape);
+holeHexagonShape.holes.push(smallHexagonShape);
 
-const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
-const invisibleHexagonGeometry = new THREE.ShapeGeometry(smallHexagonShape);
+const hexagonGeometry = new THREE.ShapeGeometry(holeHexagonShape);
+const invisibleHexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
 const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06926480680704117);
 const mainMaterial = new THREE.MeshStandardMaterial({ color: mainColor });
 const invisibleMaterial = new THREE.MeshStandardMaterial({ color: mainColor, transparent: true, opacity: 0 });
@@ -109,9 +110,15 @@ export const Hexagon = ({
   onPointerEnter: any;
 }) => {
   return (
-    <group position={[position.x, position.y, position.z]} onPointerEnter={onPointerEnter} onClick={onClick}>
+    <group position={[position.x, position.y, position.z]}>
       <mesh receiveShadow geometry={hexagonGeometry} material={mainMaterial} />
-      <mesh receiveShadow geometry={invisibleHexagonGeometry} material={invisibleMaterial} />
+      <mesh
+        receiveShadow
+        geometry={invisibleHexagonGeometry}
+        material={invisibleMaterial}
+        onPointerEnter={onPointerEnter}
+        onClick={onClick}
+      />
     </group>
   );
 };
