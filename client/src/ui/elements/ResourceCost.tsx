@@ -25,6 +25,8 @@ export const ResourceCost = ({
   ...props
 }: ResourceCostProps) => {
   const trait = useMemo(() => findResourceById(props.resourceId)?.trait, [props.resourceId]);
+  const balanceColor = props.balance !== undefined && props.balance < props.amount ? "text-red/90" : "text-green/90";
+  console.log({ balance: props.balance, amount: props.amount, balanceColor });
   return (
     <div
       className={clsx(
@@ -42,8 +44,8 @@ export const ResourceCost = ({
       />
       <div
         className={clsx(
-          "relative flex flex-col shrink-0  self-center ml-2",
-          type === "horizontal" ? "ml-1  text-left" : "items-center",
+          "relative flex flex-col shrink-0 self-center ml-2",
+          type === "horizontal" ? "ml-1 text-left" : "items-center",
         )}
       >
         <div onClick={onClick} className={clsx("relative text-xs font-bold", props.color)}>
@@ -52,7 +54,9 @@ export const ResourceCost = ({
             notation: "compact",
             maximumFractionDigits: 1,
           }).format(props.amount || 0)}{" "}
-          <span className="text-green/90 font-normal">{props.balance && `(${currencyFormat(props.balance, 0)})`} </span>
+          <span className={clsx(balanceColor, "font-normal")}>
+            {props.balance !== undefined && `(${currencyFormat(props.balance, 0)})`}{" "}
+          </span>
         </div>
         {type === "horizontal" && (
           <div className="text-xs leading-[10px] self-start relative mt-1 font-normal">{trait}</div>
