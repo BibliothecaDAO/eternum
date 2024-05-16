@@ -564,6 +564,8 @@ mod combat_systems {
             // get structure army and health
 
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
+            assert!(structure_army_id != army_id, "self attack");
+
             let mut structure_army: Army = Default::default();
             let mut structure_army_health: Health = Default::default();
             if structure_army_id.is_non_zero() {
@@ -573,13 +575,13 @@ mod combat_systems {
             }
 
             // a percentage of it's full strength depending on structure army's health
-            let structure_army_strength = structure_army.troops.full_strength(troop_config)
+            let mut structure_army_strength = structure_army.troops.full_strength(troop_config)
                 * structure_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
 
             // a percentage of its relative strength depending on loyalty
             let structure_loyalty: Loyalty = get!(world, structure_id, Loyalty);
-            let structure_army_strength = structure_army_strength
+            structure_army_strength += structure_army_strength
                 * structure_loyalty.value(tick).into()
                 / LOYALTY_MAX_VALUE.into();
 
@@ -588,6 +590,11 @@ mod combat_systems {
             let attacking_army_strength = attacking_army.troops.full_strength(troop_config)
                 * attacking_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
+
+            // prevent `weights sum is zero` error 
+            if attacking_army_strength == 0 {
+                panic!("attacking army strength too low");
+            }
 
             let attack_successful: @bool = random::choices(
                 array![true, false].span(),
@@ -598,11 +605,10 @@ mod combat_systems {
             )[0];
 
             let mut pillaged_resources: Array<(u8, u128)> = array![];
-
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
                     * PercentageValueImpl::_100().into()
-                    / (structure_army_strength + 1);
+                    / (attacking_army_strength + structure_army_strength + 1);
 
                 // choose x random resource to be stolen
                 let mut chosen_resource_types: Span<u8> = random::choices(

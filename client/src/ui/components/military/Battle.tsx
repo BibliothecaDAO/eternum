@@ -351,7 +351,7 @@ export const PillageHistory = ({
               <div className="text-center">
                 <Headline>Outcome</Headline>
                 <div className={`text-xl font-bold ${history.winner === 0 ? "text-blue-500" : "text-red-500"}`}>
-                  {history.winner === 0 ? "Defender Wins" : "Attacker Wins"}
+                  {history.winner === 0 ? "No Winner" : history.winner === 1 ? "Attacker Won" : "Defender Won"}
                 </div>
               </div>
             </div>
@@ -375,7 +375,9 @@ export const PillageHistory = ({
                   <Headline>Destroyed Building</Headline>
                   {history.destroyedBuildingType !== "None" && (
                     <img
-                      src={`${BUILDING_IMAGES_PATH[history.destroyedBuildingType as BuildingType]})`}
+                      src={`${
+                        BUILDING_IMAGES_PATH[BuildingType[history.destroyedBuildingType as keyof typeof BuildingType]]
+                      }`}
                       alt="Destroyed Building"
                       className="w-24 h-24 mx-auto"
                     />
