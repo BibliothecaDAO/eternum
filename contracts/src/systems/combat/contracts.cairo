@@ -573,13 +573,13 @@ mod combat_systems {
             }
 
             // a percentage of it's full strength depending on structure army's health
-            let structure_army_strength = structure_army.troops.full_strength(troop_config)
+            let mut structure_army_strength = structure_army.troops.full_strength(troop_config)
                 * structure_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
 
             // a percentage of its relative strength depending on loyalty
             let structure_loyalty: Loyalty = get!(world, structure_id, Loyalty);
-            let structure_army_strength = structure_army_strength
+            structure_army_strength += structure_army_strength
                 * structure_loyalty.value(tick).into()
                 / LOYALTY_MAX_VALUE.into();
 
