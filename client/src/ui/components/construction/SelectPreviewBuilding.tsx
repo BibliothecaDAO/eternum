@@ -112,15 +112,21 @@ export const SelectPreviewBuildingMenu = () => {
           <div className="grid grid-cols-8 gap-2 p-2">
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
-              const cost = BUILDING_COSTS[BuildingType.Resource];
+
+              const cost = [...BUILDING_COSTS[BuildingType.Resource], ...RESOURCE_INPUTS[resourceId]];
               const hasBalance = checkBalance(cost);
+              const hasEnoughPopulation =
+                (realm?.population || 0) + BUILDING_POPULATION[BuildingType.Resource] <= BASE_POPULATION_CAPACITY;
+
+              const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
+
               return (
                 <BuildingCard
                   key={resourceId}
                   buildingId={BuildingType.Resource}
                   resourceId={resourceId}
                   onClick={() => {
-                    if (!hasBalance) {
+                    if (!canBuild) {
                       return;
                     }
                     if (previewBuilding?.type === BuildingType.Resource && previewBuilding?.resource === resourceId) {
@@ -133,7 +139,7 @@ export const SelectPreviewBuildingMenu = () => {
                   active={previewBuilding?.resource === resourceId}
                   name={resource?.trait}
                   toolTip={<ResourceInfo resourceId={resourceId} entityId={realmEntityId} />}
-                  canBuild={hasBalance && realm.hasCapacity}
+                  canBuild={canBuild}
                 />
               );
             })}
@@ -141,7 +147,7 @@ export const SelectPreviewBuildingMenu = () => {
         ),
       },
       {
-        key: "all",
+        key: "economic",
         label: (
           <div className="flex relative group flex-col items-center">
             <div>Economic</div>
@@ -156,13 +162,20 @@ export const SelectPreviewBuildingMenu = () => {
 
                 const cost = BUILDING_COSTS[building];
                 const hasBalance = checkBalance(cost);
+                const hasEnoughPopulation =
+                  (realm?.population || 0) + BUILDING_POPULATION[building] <= BASE_POPULATION_CAPACITY;
+
+                const canBuild =
+                  BuildingType.WorkersHut == building
+                    ? hasBalance
+                    : hasBalance && realm.hasCapacity && hasEnoughPopulation;
 
                 return (
                   <BuildingCard
                     key={index}
                     buildingId={building}
                     onClick={() => {
-                      if (!hasBalance) {
+                      if (!canBuild) {
                         return;
                       }
                       if (previewBuilding?.type === building) {
@@ -180,7 +193,7 @@ export const SelectPreviewBuildingMenu = () => {
                     active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
-                    canBuild={BuildingType.WorkersHut == building ? hasBalance : hasBalance && realm.hasCapacity}
+                    canBuild={canBuild}
                   />
                 );
               })}
@@ -188,7 +201,7 @@ export const SelectPreviewBuildingMenu = () => {
         ),
       },
       {
-        key: "mine",
+        key: "military",
         label: (
           <div className="flex relative group flex-col items-center">
             <div>Military</div>
@@ -204,13 +217,17 @@ export const SelectPreviewBuildingMenu = () => {
 
                 const cost = BUILDING_COSTS[building];
                 const hasBalance = checkBalance(cost);
+                const hasEnoughPopulation =
+                  realm?.population + BUILDING_POPULATION[building] <= BASE_POPULATION_CAPACITY;
+
+                const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
 
                 return (
                   <BuildingCard
                     key={index}
                     buildingId={building}
                     onClick={() => {
-                      if (!hasBalance) {
+                      if (!canBuild) {
                         return;
                       }
                       if (previewBuilding?.type === building) {
@@ -222,7 +239,7 @@ export const SelectPreviewBuildingMenu = () => {
                     active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
-                    canBuild={BuildingType.WorkersHut == building ? hasBalance : hasBalance && realm.hasCapacity}
+                    canBuild={canBuild}
                   />
                 );
               })}
@@ -230,7 +247,7 @@ export const SelectPreviewBuildingMenu = () => {
         ),
       },
     ],
-    [realmEntityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
+    [realm, realmEntityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
   );
 
   return (
