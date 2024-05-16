@@ -564,6 +564,8 @@ mod combat_systems {
             // get structure army and health
 
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
+            assert!(structure_army_id != army_id, "self attack");
+
             let mut structure_army: Army = Default::default();
             let mut structure_army_health: Health = Default::default();
             if structure_army_id.is_non_zero() {
