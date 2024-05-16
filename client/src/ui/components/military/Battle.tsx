@@ -351,7 +351,7 @@ export const PillageHistory = ({
               <div className="text-center">
                 <Headline>Outcome</Headline>
                 <div className={`text-xl font-bold ${history.winner === 0 ? "text-blue-500" : "text-red-500"}`}>
-                  {history.winner === 0 ? "No Winner" : history.winner === 1 ? "Attacker Wins" : "Defender Wins"}
+                  {history.winner === 0 ? "No Winner" : history.winner === 1 ? "Attacker Won" : "Defender Won"}
                 </div>
               </div>
             </div>
