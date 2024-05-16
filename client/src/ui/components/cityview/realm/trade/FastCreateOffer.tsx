@@ -119,7 +119,11 @@ export const FastCreateOfferPopup = ({
       <div className="flex justify-between m-2  text-xxs">
         <Button
           className="!px-[6px] !py-[2px] w-full"
-          disabled={!canCarry}
+          disabled={
+            !canCarry ||
+            selectedResourceIdsGive.some((id) => selectedResourcesGiveAmounts[id] === 0) ||
+            selectedResourceIdsGet.some((id) => selectedResourcesGetAmounts[id] === 0)
+          }
           isLoading={isLoading}
           onClick={() => {
             createOrder();

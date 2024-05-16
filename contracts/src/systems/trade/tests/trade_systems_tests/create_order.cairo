@@ -353,3 +353,37 @@ fn test_transport_not_enough_capacity() {
             100
         );
 }
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ('maker resource amount is 0', 'ENTRYPOINT_FAILED'))]
+fn test_create_order_amount_give_0() {
+    let (world, maker_id, _, taker_id, trade_systems_dispatcher) = setup();
+
+    trade_systems_dispatcher
+        .create_order(
+            maker_id,
+            array![(ResourceTypes::STONE, 0),].span(),
+            maker_transport_id,
+            taker_id,
+            array![(ResourceTypes::STONE, 200),].span(),
+            100
+        );
+}
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ('taker resource amount is 0', 'ENTRYPOINT_FAILED'))]
+fn test_create_order_amount_take_0() {
+    let (world, maker_id, _, taker_id, trade_systems_dispatcher) = setup();
+
+    trade_systems_dispatcher
+        .create_order(
+            maker_id,
+            array![(ResourceTypes::STONE, 200),].span(),
+            maker_transport_id,
+            taker_id,
+            array![(ResourceTypes::STONE, 0),].span(),
+            100
+        );
+}

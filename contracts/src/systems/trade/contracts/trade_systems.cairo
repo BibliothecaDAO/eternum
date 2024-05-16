@@ -90,6 +90,7 @@ mod trade_systems {
                     Option::Some((
                         resource_type, resource_amount
                     )) => {
+                        assert(*resource_amount != 0, 'maker resource amount is 0');
                         // burn offered resource from maker balance
                         let mut maker_resource: Resource = ResourceImpl::get(
                             world, (maker_id, *resource_type)
@@ -136,6 +137,7 @@ mod trade_systems {
                     Option::Some((
                         resource_type, resource_amount
                     )) => {
+                        assert(*resource_amount != 0, 'taker resource amount is 0');
                         // save taker's traded resources
                         set!(
                             world,
