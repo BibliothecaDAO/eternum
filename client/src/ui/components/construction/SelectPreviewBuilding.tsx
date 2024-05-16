@@ -52,11 +52,41 @@ const BUILDING_IMAGES_PATH = {
   [BuildingType.Storehouse]: BUILD_IMAGES_PREFIX + "storehouse.png",
 };
 
+const RESOURCE_IMAGE_TYPES = {
+  Forge: BUILD_IMAGES_PREFIX + "forge.png",
+  Mine: BUILD_IMAGES_PREFIX + "mine.png",
+  LumberMill: BUILD_IMAGES_PREFIX + "lumber_mill.png",
+  Dragonhide: BUILD_IMAGES_PREFIX + "dragonhide.png",
+};
+
+const RESOURCES_IMAGES_PATH: Partial<Record<ResourcesIds, string>> = {
+  [ResourcesIds.Copper]: RESOURCE_IMAGE_TYPES.Forge,
+  [ResourcesIds.ColdIron]: RESOURCE_IMAGE_TYPES.Forge,
+  [ResourcesIds.Ignium]: RESOURCE_IMAGE_TYPES.Forge,
+  [ResourcesIds.Gold]: RESOURCE_IMAGE_TYPES.Forge,
+  [ResourcesIds.Silver]: RESOURCE_IMAGE_TYPES.Forge,
+  [ResourcesIds.Diamonds]: RESOURCE_IMAGE_TYPES.Mine,
+  [ResourcesIds.Sapphire]: RESOURCE_IMAGE_TYPES.Mine,
+  [ResourcesIds.Ruby]: RESOURCE_IMAGE_TYPES.Mine,
+  [ResourcesIds.DeepCrystal]: RESOURCE_IMAGE_TYPES.Mine,
+  [ResourcesIds.TwilightQuartz]: RESOURCE_IMAGE_TYPES.Mine,
+  [ResourcesIds.EtherealSilica]: RESOURCE_IMAGE_TYPES.Mine,
+  [ResourcesIds.Stone]: RESOURCE_IMAGE_TYPES.Mine,
+  [ResourcesIds.Coal]: RESOURCE_IMAGE_TYPES.Mine,
+  [ResourcesIds.Obsidian]: RESOURCE_IMAGE_TYPES.Mine,
+  [ResourcesIds.TrueIce]: RESOURCE_IMAGE_TYPES.Mine,
+  [ResourcesIds.Wood]: RESOURCE_IMAGE_TYPES.LumberMill,
+  [ResourcesIds.Hartwood]: RESOURCE_IMAGE_TYPES.LumberMill,
+  [ResourcesIds.Ironwood]: RESOURCE_IMAGE_TYPES.LumberMill,
+  [ResourcesIds.Mithral]: RESOURCE_IMAGE_TYPES.Forge,
+  [ResourcesIds.Dragonhide]: RESOURCE_IMAGE_TYPES.Dragonhide,
+  [ResourcesIds.AlchemicalSilver]: RESOURCE_IMAGE_TYPES.Forge,
+  [ResourcesIds.Adamantine]: RESOURCE_IMAGE_TYPES.Forge,
+};
+
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const selectedResource = useUIStore((state) => state.selectedResource);
-  const setResourceId = useUIStore((state) => state.setResourceId);
   const isDestroyMode = useUIStore((state) => state.isDestroyMode);
   const setIsDestroyMode = useUIStore((state) => state.setIsDestroyMode);
 
@@ -115,24 +145,19 @@ export const SelectPreviewBuildingMenu = () => {
                 <BuildingCard
                   key={resourceId}
                   buildingId={BuildingType.Resource}
+                  resourceId={resourceId}
                   onClick={() => {
                     if (!hasBalance) {
                       return;
                     }
-                    if (selectedResource === resourceId) {
-                      setResourceId(null);
-                    } else {
-                      setResourceId(resourceId);
-                      playResourceSound(resourceId);
-                    }
-
-                    if (previewBuilding === BuildingType.Resource && selectedResource === resourceId) {
+                    if (previewBuilding?.type === BuildingType.Resource && previewBuilding?.resource === resourceId) {
                       setPreviewBuilding(null);
                     } else {
-                      setPreviewBuilding(BuildingType.Resource);
+                      setPreviewBuilding({ type: BuildingType.Resource, resource: resourceId });
+                      playResourceSound(resourceId);
                     }
                   }}
-                  active={selectedResource === resourceId}
+                  active={previewBuilding?.resource === resourceId}
                   name={resource?.trait}
                   toolTip={<ResourceInfo resourceId={resourceId} entityId={realmEntityId} />}
                   canBuild={hasBalance && realm.hasCapacity}
@@ -167,14 +192,19 @@ export const SelectPreviewBuildingMenu = () => {
                       if (!hasBalance) {
                         return;
                       }
-                      if (previewBuilding === building) {
+                      if (previewBuilding?.type === building) {
                         setPreviewBuilding(null);
                       } else {
-                        setResourceId(null);
-                        setPreviewBuilding(building);
+                        setPreviewBuilding({ type: building });
+                        if (building === BuildingType.Farm) {
+                          playResourceSound(ResourcesIds.Wheat);
+                        }
+                        if (building === BuildingType.FishingVillage) {
+                          playResourceSound(ResourcesIds.Fish);
+                        }
                       }
                     }}
-                    active={false}
+                    active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
                     canBuild={BuildingType.WorkersHut == building ? hasBalance : hasBalance && realm.hasCapacity}
@@ -210,14 +240,13 @@ export const SelectPreviewBuildingMenu = () => {
                       if (!hasBalance) {
                         return;
                       }
-                      if (previewBuilding === building) {
+                      if (previewBuilding?.type === building) {
                         setPreviewBuilding(null);
                       } else {
-                        setResourceId(null);
-                        setPreviewBuilding(building);
+                        setPreviewBuilding({ type: building });
                       }
                     }}
-                    active={false}
+                    active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
                     canBuild={BuildingType.WorkersHut == building ? hasBalance : hasBalance && realm.hasCapacity}
@@ -228,7 +257,7 @@ export const SelectPreviewBuildingMenu = () => {
         ),
       },
     ],
-    [realmEntityId, realmResourceIds, selectedTab],
+    [realmEntityId, realmResourceIds, selectedTab, previewBuilding, playResourceSound],
   );
 
   return (
@@ -256,6 +285,7 @@ export const BuildingCard = ({
   name,
   toolTip,
   canBuild,
+  resourceId,
 }: {
   buildingId: BuildingType;
   onClick: () => void;
@@ -263,12 +293,15 @@ export const BuildingCard = ({
   name: string;
   toolTip: React.ReactElement;
   canBuild?: boolean;
+  resourceId?: ResourcesIds;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   return (
     <div
       style={{
-        backgroundImage: `url(${BUILDING_IMAGES_PATH[buildingId as BuildingType]})`,
+        backgroundImage: `url(${
+          resourceId ? RESOURCES_IMAGES_PATH[resourceId] : BUILDING_IMAGES_PATH[buildingId as BuildingType]
+        })`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}

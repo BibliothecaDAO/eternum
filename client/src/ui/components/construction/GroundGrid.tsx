@@ -6,7 +6,7 @@ import { getUIPositionFromColRow, pseudoRandom } from "../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
 import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
+import { BuildingType, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
 import { placeholderMaterial } from "@/shaders/placeholderMaterial";
 import { Text, useGLTF } from "@react-three/drei";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
@@ -22,20 +22,23 @@ const GroundGrid = () => {
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
   const existingBuildings = useUIStore((state) => state.existingBuildings);
-  const selectedResource = useUIStore((state) => state.selectedResource);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const { realmEntityId } = useRealmStore();
   const { placeBuilding } = useBuildings();
   const [isLoading, setIsLoading] = useState(false); // Loading state renamed to isLoading
 
-  const handlePlacement = async (col: number, row: number, previewBuilding: BuildingType) => {
+  const handlePlacement = async (
+    col: number,
+    row: number,
+    previewBuilding: { type: BuildingType; resource?: ResourcesIds },
+  ) => {
     if (isLoading) return; // Prevent multiple submissions
     setIsLoading(true);
     try {
-      await placeBuilding(realmEntityId, col, row, previewBuilding, selectedResource ?? 0);
+      await placeBuilding(realmEntityId, col, row, previewBuilding.type, previewBuilding.resource ?? 0);
       setPreviewBuilding(null);
       setHoveredBuildHex(null);
-      playBuildingSound(previewBuilding);
+      playBuildingSound(previewBuilding.type);
     } catch (error) {
       console.error("Failed to place building:", error);
     }

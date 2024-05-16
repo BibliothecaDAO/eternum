@@ -4,7 +4,7 @@ import GroundGrid, { isHexOccupied } from "./GroundGrid";
 import * as THREE from "three";
 import { getUIPositionFromColRow } from "../../utils/utils";
 import { useEffect, useMemo } from "react";
-import { ExistingBuildings } from "./ExistingBuildings";
+import { ExistingBuildings, ModelsIndexes, ResourceIdToModelIndex } from "./ExistingBuildings";
 import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
 import { BuildingEnumToString, BuildingType } from "@bibliothecadao/eternum";
 
@@ -36,24 +36,35 @@ const BuildingPreview = () => {
 
   const originalModels: OriginalModels = useMemo(
     () => ({
-      [BuildingType.Castle]: useGLTF("/models/buildings/castle.glb").scene.clone(),
-      [BuildingType.Resource]: useGLTF("/models/buildings/mine.glb").scene.clone(),
-      [BuildingType.Farm]: useGLTF("/models/buildings/farm.glb").scene.clone(),
-      [BuildingType.FishingVillage]: useGLTF("/models/buildings/fishery.glb").scene.clone(),
-      [BuildingType.Barracks]: useGLTF("/models/buildings/barracks.glb").scene.clone(),
-      [BuildingType.Market]: useGLTF("/models/buildings/market.glb").scene.clone(),
-      [BuildingType.ArcheryRange]: useGLTF("/models/buildings/archer_range.glb").scene.clone(),
-      [BuildingType.Stable]: useGLTF("/models/buildings/stable.glb").scene.clone(),
-      [BuildingType.WorkersHut]: useGLTF("/models/buildings/workers_hut.glb").scene.clone(),
-      [BuildingType.Storehouse]: useGLTF("/models/buildings/storehouse.glb").scene.clone(),
+      [ModelsIndexes.Castle]: useGLTF("/models/buildings/castle.glb").scene.clone(),
+      [ModelsIndexes.Mine]: useGLTF("/models/buildings/mine.glb").scene.clone(),
+      [ModelsIndexes.Farm]: useGLTF("/models/buildings/farm.glb").scene.clone(),
+      [ModelsIndexes.Fishery]: useGLTF("/models/buildings/fishery.glb").scene.clone(),
+      [ModelsIndexes.Barracks]: useGLTF("/models/buildings/barracks.glb").scene.clone(),
+      [ModelsIndexes.Market]: useGLTF("/models/buildings/market.glb").scene.clone(),
+      [ModelsIndexes.ArcheryRange]: useGLTF("/models/buildings/archer_range.glb").scene.clone(),
+      [ModelsIndexes.Stable]: useGLTF("/models/buildings/stable.glb").scene.clone(),
+      [ModelsIndexes.WorkersHut]: useGLTF("/models/buildings/workers_hut.glb").scene.clone(),
+      [ModelsIndexes.Storehouse]: useGLTF("/models/buildings/storehouse.glb").scene.clone(),
+      [ModelsIndexes.Forge]: useGLTF("/models/buildings/forge.glb").scene.clone(),
+      [ModelsIndexes.LumberMill]: useGLTF("/models/buildings/lumber_mill.glb").scene.clone(),
+      [ModelsIndexes.Dragonhide]: useGLTF("/models/buildings/dragonhide.glb").scene.clone(),
+      [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb").scene.clone(),
     }),
     [],
   );
 
+  const modelIndex = useMemo(() => {
+    if (previewBuilding?.type === BuildingType.Resource && previewBuilding.resource) {
+      return ResourceIdToModelIndex[previewBuilding.resource] || ModelsIndexes.Mine;
+    }
+    return previewBuilding?.type || 1;
+  }, [previewBuilding]);
+
   useEffect(() => {
-    if (!previewBuilding || !hoveredBuildHex) return;
+    if (!hoveredBuildHex) return;
     const newColor = isHexOccupied(hoveredBuildHex.col, hoveredBuildHex.row, existingBuildings) ? "red" : "green";
-    originalModels[Number(previewBuilding)].traverse((node) => {
+    originalModels[modelIndex].traverse((node) => {
       if (node instanceof THREE.Mesh) {
         node.material = node.material.clone();
         node.material.color.set(newColor);
@@ -61,12 +72,12 @@ const BuildingPreview = () => {
         node.material.opacity = 0.8;
       }
     });
-  }, [previewBuilding, hoveredBuildHex, existingBuildings, originalModels]);
+  }, [modelIndex, hoveredBuildHex, existingBuildings, originalModels]);
 
   const previewModel = useMemo(() => {
     if (!previewBuilding) return null;
-    return originalModels[previewBuilding];
-  }, [previewBuilding, originalModels]);
+    return originalModels[modelIndex];
+  }, [modelIndex, originalModels]);
 
   return previewModel && previewCoords ? (
     <>

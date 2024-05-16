@@ -22,7 +22,7 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 import { useControls } from "leva";
 
-enum ModelsIndexes {
+export enum ModelsIndexes {
   Castle = BuildingType.Castle,
   Mine = 21,
   Farm = BuildingType.Farm,
@@ -39,7 +39,7 @@ enum ModelsIndexes {
   Bank = 25,
 }
 
-const ResourceIdToModelIndex: Partial<Record<ResourcesIds, ModelsIndexes>> = {
+export const ResourceIdToModelIndex: Partial<Record<ResourcesIds, ModelsIndexes>> = {
   [ResourcesIds.Copper]: ModelsIndexes.Forge,
   [ResourcesIds.ColdIron]: ModelsIndexes.Forge,
   [ResourcesIds.Ignium]: ModelsIndexes.Forge,
