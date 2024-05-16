@@ -30,6 +30,7 @@ import { BUILDING_COSTS } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
 import Button from "@/ui/elements/Button";
+import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -50,38 +51,10 @@ const BUILDING_IMAGES_PATH = {
   [BuildingType.WatchTower]: BUILD_IMAGES_PREFIX + "watch_tower.png",
   [BuildingType.Walls]: BUILD_IMAGES_PREFIX + "walls.png",
   [BuildingType.Storehouse]: BUILD_IMAGES_PREFIX + "storehouse.png",
-};
-
-const RESOURCE_IMAGE_TYPES = {
-  Forge: BUILD_IMAGES_PREFIX + "forge.png",
-  Mine: BUILD_IMAGES_PREFIX + "mine.png",
-  LumberMill: BUILD_IMAGES_PREFIX + "lumber_mill.png",
-  Dragonhide: BUILD_IMAGES_PREFIX + "dragonhide.png",
-};
-
-const RESOURCES_IMAGES_PATH: Partial<Record<ResourcesIds, string>> = {
-  [ResourcesIds.Copper]: RESOURCE_IMAGE_TYPES.Forge,
-  [ResourcesIds.ColdIron]: RESOURCE_IMAGE_TYPES.Forge,
-  [ResourcesIds.Ignium]: RESOURCE_IMAGE_TYPES.Forge,
-  [ResourcesIds.Gold]: RESOURCE_IMAGE_TYPES.Forge,
-  [ResourcesIds.Silver]: RESOURCE_IMAGE_TYPES.Forge,
-  [ResourcesIds.Diamonds]: RESOURCE_IMAGE_TYPES.Mine,
-  [ResourcesIds.Sapphire]: RESOURCE_IMAGE_TYPES.Mine,
-  [ResourcesIds.Ruby]: RESOURCE_IMAGE_TYPES.Mine,
-  [ResourcesIds.DeepCrystal]: RESOURCE_IMAGE_TYPES.Mine,
-  [ResourcesIds.TwilightQuartz]: RESOURCE_IMAGE_TYPES.Mine,
-  [ResourcesIds.EtherealSilica]: RESOURCE_IMAGE_TYPES.Mine,
-  [ResourcesIds.Stone]: RESOURCE_IMAGE_TYPES.Mine,
-  [ResourcesIds.Coal]: RESOURCE_IMAGE_TYPES.Mine,
-  [ResourcesIds.Obsidian]: RESOURCE_IMAGE_TYPES.Mine,
-  [ResourcesIds.TrueIce]: RESOURCE_IMAGE_TYPES.Mine,
-  [ResourcesIds.Wood]: RESOURCE_IMAGE_TYPES.LumberMill,
-  [ResourcesIds.Hartwood]: RESOURCE_IMAGE_TYPES.LumberMill,
-  [ResourcesIds.Ironwood]: RESOURCE_IMAGE_TYPES.LumberMill,
-  [ResourcesIds.Mithral]: RESOURCE_IMAGE_TYPES.Forge,
-  [ResourcesIds.Dragonhide]: RESOURCE_IMAGE_TYPES.Dragonhide,
-  [ResourcesIds.AlchemicalSilver]: RESOURCE_IMAGE_TYPES.Forge,
-  [ResourcesIds.Adamantine]: RESOURCE_IMAGE_TYPES.Forge,
+  [ResourceMiningTypes.Forge]: BUILD_IMAGES_PREFIX + "forge.png",
+  [ResourceMiningTypes.Mine]: BUILD_IMAGES_PREFIX + "mine.png",
+  [ResourceMiningTypes.LumberMill]: BUILD_IMAGES_PREFIX + "lumber_mill.png",
+  [ResourceMiningTypes.Dragonhide]: BUILD_IMAGES_PREFIX + "dragonhide.png",
 };
 
 export const SelectPreviewBuildingMenu = () => {
@@ -300,7 +273,9 @@ export const BuildingCard = ({
     <div
       style={{
         backgroundImage: `url(${
-          resourceId ? RESOURCES_IMAGES_PATH[resourceId] : BUILDING_IMAGES_PATH[buildingId as BuildingType]
+          resourceId
+            ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
+            : BUILDING_IMAGES_PATH[buildingId as BuildingType]
         })`,
         backgroundSize: "cover",
         backgroundPosition: "center",

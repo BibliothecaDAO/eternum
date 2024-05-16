@@ -2,7 +2,7 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
-import { getUIPositionFromColRow, pseudoRandom } from "../../utils/utils";
+import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow, pseudoRandom } from "../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
 import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
 import useRealmStore from "@/hooks/store/useRealmStore";
@@ -38,7 +38,11 @@ const GroundGrid = () => {
       await placeBuilding(realmEntityId, col, row, previewBuilding.type, previewBuilding.resource ?? 0);
       setPreviewBuilding(null);
       setHoveredBuildHex(null);
-      playBuildingSound(previewBuilding.type);
+      playBuildingSound(
+        previewBuilding.resource
+          ? (ResourceIdToMiningType[previewBuilding.resource as ResourcesIds] as ResourceMiningTypes)
+          : previewBuilding.type,
+      );
     } catch (error) {
       console.error("Failed to place building:", error);
     }

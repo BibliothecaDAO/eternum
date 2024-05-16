@@ -2,6 +2,7 @@ import useSound from "use-sound";
 import useUIStore from "./store/useUIStore";
 import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
 import { useCallback, useState } from "react";
+import { ResourceMiningTypes } from "@/ui/utils/utils";
 
 const dir = "/sound/";
 
@@ -28,6 +29,7 @@ export const soundSelector = {
   buildMine: "buildings/mine.mp3",
   buildMarket: "buildings/market.mp3",
   buildStables: "buildings/stables.mp3",
+  buildLumberMill: "buildings/lumber_mill.mp3",
   addWheat: "resources/wheat.mp3",
   addFish: "resources/fish.mp3",
   addWood: "resources/wood.mp3",
@@ -245,8 +247,9 @@ export const useBuildingSound = () => {
   const { play: playBuildBarracks } = useUiSounds(soundSelector.buildBarracks);
   const { play: playBuildMarket } = useUiSounds(soundSelector.buildMarket);
   const { play: playBuildStorehouse } = useUiSounds(soundSelector.buildStorehouse);
+  const { play: playLumberMill } = useUiSounds(soundSelector.buildLumberMill);
 
-  const playBuildingSound = (buildingType: BuildingType) => {
+  const playBuildingSound = (buildingType: BuildingType | ResourceMiningTypes) => {
     switch (buildingType) {
       case BuildingType.Castle:
         playBuildCastle();
@@ -272,7 +275,9 @@ export const useBuildingSound = () => {
       case BuildingType.Market:
         playBuildMarket();
         break;
-
+      case ResourceMiningTypes.LumberMill:
+        playLumberMill();
+        break;
       default:
         break;
     }
