@@ -344,6 +344,7 @@ export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; ent
 
           return (
             <ResourceCost
+              key={resourceId}
               resourceId={cost[Number(resourceId)].resource}
               amount={cost[Number(resourceId)].amount}
               balance={balance.balance}
