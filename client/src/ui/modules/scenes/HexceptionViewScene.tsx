@@ -1,28 +1,24 @@
 import { useEffect, useMemo, useRef } from "react";
-import useUIStore from "../../../hooks/store/useUIStore";
 import { useTexture } from "@react-three/drei";
 import BuildArea from "../../components/construction/BuildArea";
 import { getUIPositionFromColRow } from "../../utils/utils";
 import BigHexBiome from "../../components/construction/BigHexBiome";
-import useRealmStore from "../../../hooks/store/useRealmStore";
-import { useGetRealms } from "../../../hooks/helpers/useRealm";
-import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { useSearch } from "wouter/use-location";
-import { useThree } from "@react-three/fiber";
 import { useControls } from "leva";
 import * as THREE from "three";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 
-const mainPosition = getUIPositionFromColRow(0, 0, true);
-const posEast = getUIPositionFromColRow(7, 5, true);
-const posNorthWest = getUIPositionFromColRow(-7, 4, true);
-const posWest = getUIPositionFromColRow(-7, -5, true);
-const posSouthEast = getUIPositionFromColRow(7, -4, true);
-const posNorthEast = getUIPositionFromColRow(0, 9, true);
-const posSouthWest = getUIPositionFromColRow(0, -9, true);
+const positions = {
+  main: getUIPositionFromColRow(0, 0, true),
+  east: getUIPositionFromColRow(7, 5, true),
+  northEast: getUIPositionFromColRow(0, 9, true),
+  northWest: getUIPositionFromColRow(-7, 4, true),
+  west: getUIPositionFromColRow(-7, -5, true),
+  southWest: getUIPositionFromColRow(0, -9, true),
+  southEast: getUIPositionFromColRow(7, -4, true),
+};
 
 export const HexceptionViewScene = () => {
-  const { realm, mainHex, neighborHexesInsideView, hexType } = useHexPosition();
+  const { mainHex, neighborHexesInsideView, hexType } = useHexPosition();
 
   const texture = useTexture({
     map: "/textures/paper/paper-color.jpg",
@@ -33,34 +29,26 @@ export const HexceptionViewScene = () => {
 
   return (
     <>
-      <group position={[mainPosition.x, 0, -mainPosition.y]} rotation={[0, 0, 0]}>
+      <group position={[positions.main.x, 0, -positions.main.y]} rotation={[0, 0, 0]}>
         <group visible={hexType === HexType.REALM || hexType === HexType.BANK}>
           <BuildArea />
         </group>
-        <group visible={hexType === HexType.EMPTY}>
-          <BigHexBiome biome={mainHex!.biome as any} />
-        </group>
+        <group visible={hexType === HexType.EMPTY}>{mainHex && <BigHexBiome biome={mainHex.biome as any} />}</group>
       </group>
-      {neighborHexesInsideView && neighborHexesInsideView.length > 0 && (
+      {neighborHexesInsideView && (
         <group>
-          <group position={[posEast.x, 0, -posEast.y]} rotation={[0, 0, 0]}>
-            <BigHexBiome biome={neighborHexesInsideView[0]!.biome as any} />
-          </group>
-          <group position={[posNorthEast.x, 0, -posNorthEast.y]}>
-            <BigHexBiome biome={neighborHexesInsideView[1]!.biome as any} />
-          </group>
-          <group position={[posNorthWest.x, 0, -posNorthWest.y]}>
-            <BigHexBiome biome={neighborHexesInsideView[2]!.biome as any} />
-          </group>
-          <group position={[posWest.x, 0, -posWest.y]}>
-            <BigHexBiome biome={neighborHexesInsideView[3]!.biome as any} />
-          </group>
-          <group position={[posSouthWest.x, 0, -posSouthWest.y]}>
-            <BigHexBiome biome={neighborHexesInsideView[4]!.biome as any} />
-          </group>
-          <group position={[posSouthEast.x, 0, -posSouthEast.y]}>
-            <BigHexBiome biome={neighborHexesInsideView[5]!.biome as any} />
-          </group>
+          {Object.values(positions)
+            .slice(0)
+            .map((position, index) => {
+              const hex = neighborHexesInsideView[index - 1];
+              return (
+                hex?.biome && (
+                  <group position={[position.x, 0, -position.y]} rotation={[0, 0, 0]}>
+                    <BigHexBiome biome={hex.biome as any} />
+                  </group>
+                )
+              );
+            })}
         </group>
       )}
 
