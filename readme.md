@@ -146,9 +146,11 @@ For local setup and execution on Katana, follow these steps:
    ```
 7. **Configure Settings:**
 
-   ```bash
-   # Make sure to set a delay in seconds of at least 0.1 seconds between each transaction
-   ./scripts/set_config.sh
+   ```
+   # Install all necessary packages in the config directory
+   pnpm install
+   # Run the bun command with the specified environment file and target index file
+   bun --env-file=../client/.env.development ../config/index.ts
    ```
 
 ## License
