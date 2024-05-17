@@ -73,10 +73,10 @@ export class ProductionManager {
     );
   }
 
-  public isGettingConsumedWithoutProduction(currentTick: number): boolean {
+  public isConsumingInputsWithoutOutput(currentTick: number): boolean {
     const production = this._getProduction(this.resourceId);
     if (!production) return false;
-    return production?.consumption_rate > 0 && !this._outputs_producing(currentTick);
+    return production?.production_rate > 0n && !this._inputs_available(currentTick, this.resourceId);
   }
 
   private _balance(currentTick: number, resourceId: bigint): number {
@@ -176,34 +176,6 @@ export class ProductionManager {
       }
     }
     return true;
-  }
-
-  private _outputs_producing(currentTick: number): boolean {
-    const production = this._getProduction(this.resourceId);
-    if (!production) return false;
-
-    const outputs: bigint[] = [];
-    for (const resourceId in RESOURCE_INPUTS) {
-      const inputs = RESOURCE_INPUTS[resourceId];
-      for (const input of inputs) {
-        if (input.resource === Number(this.resourceId.toString())) {
-          outputs.push(BigInt(resourceId));
-        }
-      }
-    }
-
-    // Ensure outputs is an array before proceeding
-    if (outputs.length == 0) {
-      return false;
-    }
-
-    for (const output of outputs) {
-      const production = this._getProduction(output);
-      if (this._balance(currentTick, output) > 0) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private _getProduction(resourceId: bigint) {
