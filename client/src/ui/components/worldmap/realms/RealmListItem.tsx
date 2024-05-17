@@ -13,8 +13,6 @@ type RealmListItemProps = {
 };
 
 export const RealmListItem = ({ realm, onClick }: RealmListItemProps) => {
-  const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
-
   const { getRealmAddressName } = useRealm();
 
   const addressName = getRealmAddressName(BigInt(realm.entity_id));
@@ -69,7 +67,7 @@ export const RealmListItem = ({ realm, onClick }: RealmListItemProps) => {
           Regions: <span className="">{realm.regions}</span>
         </div>
       </div>
-      <InventoryResources entityId={BigInt(realm.entity_id)} />
+      <InventoryResources entityId={BigInt(realm.entity_id)} title="Balance" />
     </div>
   );
 };

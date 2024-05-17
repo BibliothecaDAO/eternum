@@ -14,6 +14,8 @@ type ResourceCostProps = {
   withTooltip?: boolean;
   onClick?: (e: any) => void;
   balance?: number;
+  size?: "xs" | "sm" | "md" | "lg";
+  textSize?: "xxs" | "xs" | "sm" | "md" | "lg"; // Added text size option
 };
 
 export const ResourceCost = ({
@@ -22,6 +24,8 @@ export const ResourceCost = ({
   className,
   withTooltip = false,
   onClick,
+  size = "md",
+  textSize = "xs", // Added text size option
   ...props
 }: ResourceCostProps) => {
   const trait = useMemo(() => findResourceById(props.resourceId)?.trait, [props.resourceId]);
@@ -40,7 +44,7 @@ export const ResourceCost = ({
         isLabor={isLabor}
         withTooltip={withTooltip}
         resource={trait || ""}
-        size="md"
+        size={size}
       />
       <div
         className={clsx(
@@ -48,7 +52,8 @@ export const ResourceCost = ({
           type === "horizontal" ? "ml-1 text-left" : "items-center",
         )}
       >
-        <div onClick={onClick} className={clsx("relative text-xs font-bold", props.color)}>
+        <div onClick={onClick} className={clsx(`relative text-${textSize} font-bold`, props.color)}>
+          {" "}
           {props.color && props.amount > 0 ? "+" : ""}
           {Intl.NumberFormat("en-US", {
             notation: "compact",
@@ -59,7 +64,7 @@ export const ResourceCost = ({
           </span>
         </div>
         {type === "horizontal" && (
-          <div className="text-xs leading-[10px] self-start relative mt-1 font-normal">{trait}</div>
+          <div className={`text-${textSize} leading-[10px] self-start relative mt-1 font-normal`}>{trait}</div> // Applied text size option
         )}
       </div>
     </div>

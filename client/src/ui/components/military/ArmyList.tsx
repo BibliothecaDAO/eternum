@@ -69,7 +69,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
         panel={({ entity }) => (
           <React.Fragment key={entity.entity_id}>
             <ArmyManagementCard owner_entity={entity_id?.entity_id} entity={entity} />
-            <InventoryResources entityId={entity.entity_id} />
+            <InventoryResources entityId={entity.entity_id} title="Balance" />
             <DepositResources entityId={entity.entity_id} />
           </React.Fragment>
         )}

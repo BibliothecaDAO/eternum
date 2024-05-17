@@ -202,7 +202,7 @@ const RaiderInfo = ({
             progress={(health / (10 * quantity)) * 100}
           />
         </div>
-        <InventoryResources entityId={raider.entityId} />
+        <InventoryResources entityId={raider.entityId} title="Balance" />
       </div>
     </div>
   );

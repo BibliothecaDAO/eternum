@@ -3,17 +3,15 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { Position, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { useComponentValue } from "@dojoengine/react";
-import { shortString } from "starknet";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import useUIStore from "@/hooks/store/useUIStore";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { getComponentValue } from "@dojoengine/recs";
 import { formatSecondsInHoursMinutes } from "../cityview/realm/labor/laborUtils";
 import { useLocation } from "wouter";
-import { RealmSelect, RealmsListComponent } from "../worldmap/realms/RealmsListComponent";
 import {
   Select,
   SelectContent,
@@ -49,7 +47,6 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
   } = useDojo();
 
   const { getBalance } = useResourceBalance();
-  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const currentTick = useBlockchainStore((state) => state.currentTick);
 
@@ -171,9 +168,6 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
     },
   ];
 
-  const [location, setLocation] = useLocation();
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-
   const [travelLocation, setTravelLocation] = useState({ x: 0, y: 0 });
 
   const { realms } = useStructuresFromPosition({ position });
@@ -203,30 +197,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
             )}
           </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => {
-            if (location !== "/map") {
-              setIsLoadingScreenEnabled(true);
-              setTimeout(() => {
-                setLocation("/map");
-                if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-                  moveCameraToColRow(position.x, position.y, 0.01, true);
-                  setTimeout(() => {
-                    moveCameraToColRow(position.x, position.y, 1.5);
-                  }, 10);
-                }
-              }, 100);
-            } else {
-              if (Number(position.x) !== 0 && Number(position.y) !== 0) {
-                moveCameraToColRow(position.x, position.y);
-              }
-            }
-            moveCameraToColRow(position.x, position.y, 1.5);
-          }}
-        >
-          <span> view on map</span>
-        </Button>
+        <ViewOnMapButton position={position} />
       </div>
 
       <div className="flex justify-between border-b py-2">
@@ -396,5 +367,39 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
         {checkSamePosition ? "Buy Troops" : "Must be at Base to Purchase"}
       </Button>
     </div>
+  );
+};
+
+export const ViewOnMapButton = ({ position, className }: { position: Position; className?: string }) => {
+  const [location, setLocation] = useLocation();
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
+
+  return (
+    <Button
+      className={className}
+      variant="outline"
+      onClick={() => {
+        if (location !== "/map") {
+          setIsLoadingScreenEnabled(true);
+          setTimeout(() => {
+            setLocation("/map");
+            if (Number(position.x) !== 0 && Number(position.y) !== 0) {
+              moveCameraToColRow(position.x, position.y, 0.01, true);
+              setTimeout(() => {
+                moveCameraToColRow(position.x, position.y, 1.5);
+              }, 10);
+            }
+          }, 100);
+        } else {
+          if (Number(position.x) !== 0 && Number(position.y) !== 0) {
+            moveCameraToColRow(position.x, position.y);
+          }
+        }
+        moveCameraToColRow(position.x, position.y, 1.5);
+      }}
+    >
+      <span> view on map</span>
+    </Button>
   );
 };
