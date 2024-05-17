@@ -12,7 +12,7 @@ import {
   BuildingType,
   EternumGlobalConfig,
   RESOURCE_INFORMATION,
-  RESOURCE_INPUTS,
+  RESOURCE_INPUTS_SCALED,
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
@@ -26,10 +26,9 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { BUILDING_COSTS } from "@bibliothecadao/eternum";
+import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
-import Button from "@/ui/elements/Button";
 import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
@@ -60,8 +59,6 @@ export const BUILDING_IMAGES_PATH = {
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-  const isDestroyMode = useUIStore((state) => state.isDestroyMode);
-  const setIsDestroyMode = useUIStore((state) => state.setIsDestroyMode);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
@@ -113,7 +110,7 @@ export const SelectPreviewBuildingMenu = () => {
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
-              const cost = [...BUILDING_COSTS[BuildingType.Resource], ...RESOURCE_INPUTS[resourceId]];
+              const cost = [...BUILDING_COSTS_SCALED[BuildingType.Resource], ...RESOURCE_INPUTS_SCALED[resourceId]];
               const hasBalance = checkBalance(cost);
               const hasEnoughPopulation =
                 (realm?.population || 0) + BUILDING_POPULATION[BuildingType.Resource] <= BASE_POPULATION_CAPACITY;
@@ -160,7 +157,7 @@ export const SelectPreviewBuildingMenu = () => {
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
 
-                const cost = BUILDING_COSTS[building];
+                const cost = BUILDING_COSTS_SCALED[building];
                 const hasBalance = checkBalance(cost);
                 const hasEnoughPopulation =
                   (realm?.population || 0) + BUILDING_POPULATION[building] <= BASE_POPULATION_CAPACITY;
@@ -215,7 +212,7 @@ export const SelectPreviewBuildingMenu = () => {
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
 
-                const cost = BUILDING_COSTS[building];
+                const cost = BUILDING_COSTS_SCALED[building];
                 const hasBalance = checkBalance(cost);
                 const hasEnoughPopulation =
                   realm?.population + BUILDING_POPULATION[building] <= BASE_POPULATION_CAPACITY;
@@ -334,9 +331,9 @@ export const BuildingCard = ({
 };
 
 export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; entityId: bigint | undefined }) => {
-  const cost = RESOURCE_INPUTS[resourceId];
+  const cost = RESOURCE_INPUTS_SCALED[resourceId];
 
-  const buildingCost = BUILDING_COSTS[BuildingType.Resource];
+  const buildingCost = BUILDING_COSTS_SCALED[BuildingType.Resource];
 
   const population = BUILDING_POPULATION[BuildingType.Resource];
 
@@ -383,12 +380,11 @@ export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; ent
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
           const balance = getBalance(entityId || 0n, buildingCost[Number(resourceId)].resource);
-
           return (
             <ResourceCost
               key={index}
               resourceId={buildingCost[Number(resourceId)].resource}
-              amount={buildingCost[Number(resourceId)].amount * 1000}
+              amount={buildingCost[Number(resourceId)].amount}
               balance={balance.balance}
             />
           );
@@ -399,14 +395,14 @@ export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; ent
 };
 
 export const BuildingInfo = ({ buildingId, entityId }: { buildingId: number; entityId: bigint | undefined }) => {
-  const cost = BUILDING_COSTS[buildingId];
+  const cost = BUILDING_COSTS_SCALED[buildingId];
 
   const information = BUILDING_INFORMATION[buildingId];
   const population = BUILDING_POPULATION[buildingId];
   const capacity = BUILDING_CAPACITY[buildingId];
   const perTick = BUILDING_PRODUCTION_PER_TICK[buildingId];
   const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
-  const ongoingCost = RESOURCE_INPUTS[resourceProduced];
+  const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced];
 
   const { getBalance } = useResourceBalance();
 
