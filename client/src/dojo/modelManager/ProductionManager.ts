@@ -71,6 +71,12 @@ export class ProductionManager {
     );
   }
 
+  public isConsumingInputsWithoutOutput(currentTick: number): boolean {
+    const production = this._getProduction(this.resourceId);
+    if (!production) return false;
+    return production?.production_rate > 0n && !this._inputs_available(currentTick, this.resourceId);
+  }
+
   private _balance(currentTick: number, resourceId: bigint): number {
     const resource = this._getResource(resourceId);
 
