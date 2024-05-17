@@ -2,16 +2,16 @@ import { Account } from "starknet";
 import {
   ARMY_ENTITY_TYPE,
   BUILDING_CAPACITY,
-  BUILDING_COSTS,
+  BUILDING_COSTS_SCALED,
   BUILDING_POPULATION,
   BUILDING_RESOURCE_PRODUCED,
   DONKEY_ENTITY_TYPE,
   EternumGlobalConfig,
-  QuestResources,
+  QUEST_RESOURCES_SCALED,
   QuestType,
-  RESOURCE_BUILDING_COSTS,
-  RESOURCE_INPUTS,
-  RESOURCE_OUTPUTS,
+  RESOURCE_BUILDING_COSTS_SCALED,
+  RESOURCE_INPUTS_SCALED,
+  RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
   WeightConfig,
 } from "../constants";
@@ -20,15 +20,15 @@ import { BuildingType } from "../utils";
 
 // Function to configure all resources
 export const setProductionConfig = async (account: Account, provider: EternumProvider) => {
-  for (const resourceId of Object.keys(RESOURCE_INPUTS) as unknown as ResourcesIds[]) {
+  for (const resourceId of Object.keys(RESOURCE_INPUTS_SCALED) as unknown as ResourcesIds[]) {
     const tx = await provider.set_production_config({
       signer: account,
-      amount: RESOURCE_OUTPUTS[resourceId] * 1000,
+      amount: RESOURCE_OUTPUTS_SCALED[resourceId],
       resource_type: resourceId,
-      cost: RESOURCE_INPUTS[resourceId].map((cost) => {
+      cost: RESOURCE_INPUTS_SCALED[resourceId].map((cost) => {
         return {
           ...cost,
-          amount: cost.amount * 1000,
+          amount: cost.amount,
         };
       }),
     });
@@ -56,10 +56,10 @@ export const setBuildingConfig = async (account: Account, provider: EternumProvi
       signer: account,
       building_category: buildingId,
       building_resource_type: BUILDING_RESOURCE_PRODUCED[buildingId],
-      cost_of_building: BUILDING_COSTS[buildingId].map((cost) => {
+      cost_of_building: BUILDING_COSTS_SCALED[buildingId].map((cost) => {
         return {
           ...cost,
-          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision * 1000,
+          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
         };
       }),
     });
@@ -69,15 +69,15 @@ export const setBuildingConfig = async (account: Account, provider: EternumProvi
 };
 
 export const setResourceBuildingConfig = async (account: Account, provider: EternumProvider) => {
-  for (const resourceId of Object.keys(RESOURCE_BUILDING_COSTS) as unknown as ResourcesIds[]) {
+  for (const resourceId of Object.keys(RESOURCE_BUILDING_COSTS_SCALED) as unknown as ResourcesIds[]) {
     const tx = await provider.set_building_config({
       signer: account,
       building_category: BuildingType.Resource,
       building_resource_type: resourceId,
-      cost_of_building: RESOURCE_BUILDING_COSTS[resourceId].map((cost) => {
+      cost_of_building: RESOURCE_BUILDING_COSTS_SCALED[resourceId].map((cost) => {
         return {
           ...cost,
-          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision * 1000,
+          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
         };
       }),
     });
@@ -130,7 +130,7 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
   // Set the bank config
   const txBank = await provider.set_bank_config({
     signer: account,
-    lords_cost: EternumGlobalConfig.resources.resourcePrecision * EternumGlobalConfig.banks.lordsCost * 1000,
+    lords_cost: EternumGlobalConfig.banks.lordsCost * EternumGlobalConfig.resources.resourcePrecision,
     lp_fee_scaled: EternumGlobalConfig.banks.lpFees,
   });
 
@@ -146,10 +146,9 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
 
   const txExplore = await provider.set_explore_config({
     signer: account,
-    wheat_burn_amount:
-      EternumGlobalConfig.exploration.wheatBurn * EternumGlobalConfig.resources.resourcePrecision * 1000,
-    fish_burn_amount: EternumGlobalConfig.exploration.fishBurn * EternumGlobalConfig.resources.resourcePrecision * 1000,
-    reward_amount: EternumGlobalConfig.exploration.reward * EternumGlobalConfig.resources.resourcePrecision * 1000,
+    wheat_burn_amount: EternumGlobalConfig.exploration.wheatBurn * EternumGlobalConfig.resources.resourcePrecision,
+    fish_burn_amount: EternumGlobalConfig.exploration.fishBurn * EternumGlobalConfig.resources.resourcePrecision,
+    reward_amount: EternumGlobalConfig.exploration.reward * EternumGlobalConfig.resources.resourcePrecision,
   });
 
   console.log(`Configuring bank config ${txExplore.statusReceipt}...`);
@@ -192,14 +191,14 @@ export const setSpeedConfig = async (account: Account, provider: EternumProvider
 };
 
 export const setQuestConfig = async (account: Account, provider: EternumProvider) => {
-  for (const type of Object.keys(QuestResources) as unknown as QuestType[]) {
+  for (const type of Object.keys(QUEST_RESOURCES_SCALED) as unknown as QuestType[]) {
     const tx = await provider.set_mint_config({
       signer: account,
       config_id: type,
-      resources: QuestResources[type].map((cost) => {
+      resources: QUEST_RESOURCES_SCALED[type].map((cost) => {
         return {
           ...cost,
-          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision * 1000,
+          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
         };
       }),
     });

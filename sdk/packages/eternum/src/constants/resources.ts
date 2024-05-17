@@ -4,6 +4,7 @@ import { BuildingType } from "../utils";
 export const EternumGlobalConfig = {
   resources: {
     resourcePrecision: 1000,
+    resourceMultiplier: 1000,
     resourceAmountPerTick: 10,
     foodPerTick: 30,
     donkeysPerTick: 3,
@@ -65,6 +66,28 @@ export const findResourceById = (value: number) => {
 export const findResourceIdByTrait = (trait: string) => {
   // @ts-ignore
   return resources.find((e) => e?.trait === trait).id;
+};
+
+const scaleResourceOutputs = (resourceOutputs: ResourceOutputs) => {
+  let multipliedCosts: ResourceOutputs = {};
+
+  for (let buildingType in resourceOutputs) {
+    multipliedCosts[buildingType] = resourceOutputs[buildingType] * EternumGlobalConfig.resources.resourceMultiplier;
+  }
+  return multipliedCosts;
+};
+
+const scaleResourceInputs = (resourceInputs: ResourceInputs) => {
+  let multipliedCosts: ResourceInputs = {};
+
+  for (let buildingType in resourceInputs) {
+    multipliedCosts[buildingType] = resourceInputs[buildingType].map((resourceInput) => ({
+      ...resourceInput,
+      amount: resourceInput.amount * EternumGlobalConfig.resources.resourceMultiplier,
+    }));
+  }
+
+  return multipliedCosts;
 };
 
 export const resources: Array<Resources> = [
@@ -368,7 +391,6 @@ export const resources: Array<Resources> = [
     img: "https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true",
     ticker: "$WHEAT",
   },
-
   {
     trait: "Fish",
     value: 255,
@@ -466,43 +488,11 @@ export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
   return isLabor ? resourceId - 28 : resourceId;
 };
 
-export const initialResources = [
-  872.17, 685.39, 666.61, 459.65, 385.39, 302.78, 205.04, 166.43, 158.96, 103.3, 52.17, 42.96, 41.57, 41.57, 29.91,
-  28.17, 24.17, 19.3, 16.17, 9.57, 6.43, 4,
-];
-
-export const resourceProb = [
-  0.2018109, 0.1585915, 0.1542455, 0.1063581, 0.0891751, 0.0700604, 0.0474447, 0.0385111, 0.0367807, 0.0239034,
-  0.0120724, 0.0099396, 0.0096177, 0.0096177, 0.0069215, 0.0065191, 0.0055936, 0.0044668, 0.0037425, 0.0022133,
-  0.0014889, 0.0009256,
-];
-
 // (1247400000 / 43608500) * 0.2018109
 // (415800000 / 43608500) * 0.2018109
 export const foodProb = [5.7727, 1.9242];
 
 const LEVELING_COST_MULTIPLIER = 1.25;
-
-// guild 1, 2, 3, 4
-export const getBuildingsCost = (guild: number) => {
-  const costs = [
-    [1, 126000, 2, 99016, 3, 96303, 7, 29622, 10, 14924, 17, 3492, 254, 1890000, 255, 630000], // guild 1
-    [4, 66404, 6, 43742, 8, 24044, 9, 22964, 19, 2337, 20, 1382, 254, 1890000, 255, 630000], // guild 2
-    [11, 7537, 12, 6206, 13, 6005, 14, 6005, 18, 2789, 254, 1890000, 255, 630000], // guild 3
-    [5, 55676, 15, 4321, 16, 4070, 21, 930, 22, 578, 254, 1890000, 255, 630000], // guild 4
-  ];
-
-  const baseAmounts = costs[guild - 1];
-
-  const costResources = [];
-  for (let i = 0; i < baseAmounts.length; i = i + 2) {
-    costResources.push({
-      resourceId: baseAmounts[i],
-      amount: Math.floor(baseAmounts[i + 1]),
-    });
-  }
-  return costResources;
-};
 
 export const getLevelingCost = (newLevel: number): { resourceId: number; amount: number }[] => {
   const costMultiplier = LEVELING_COST_MULTIPLIER ** Math.floor((newLevel - 1) / 4);
@@ -532,17 +522,6 @@ export const getLevelingCost = (newLevel: number): { resourceId: number; amount:
     });
   }
   return costResources;
-};
-
-// min number of realms that would be needed to collaborate to build a hyperstructure
-const HYPERSTRUCTURE_LEVELING_MULTIPLIER = 25;
-
-export const getHyperstructureResources = (currentLevel: number): { resourceId: number; amount: number }[] => {
-  let resourcesList = getLevelingCost(currentLevel + 1);
-  return resourcesList.map(({ resourceId, amount }) => ({
-    resourceId,
-    amount: Math.floor(amount * HYPERSTRUCTURE_LEVELING_MULTIPLIER),
-  }));
 };
 
 // weight in kg
@@ -599,17 +578,11 @@ interface ResourceInputs {
   [key: number]: { resource: ResourcesIds; amount: number }[];
 }
 
-export const TROOP_COSTS: ResourceInputs = {
-  [ResourcesIds.Knight]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
-  [ResourcesIds.Crossbowmen]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
-  [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Wheat, amount: 10 }],
-};
-
 interface ResourceOutputs {
   [key: number]: number;
 }
 
-export const RESOURCE_OUTPUTS: ResourceOutputs = {
+const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Wood]: 10,
   [ResourcesIds.Stone]: 10,
   [ResourcesIds.Coal]: 10,
@@ -642,7 +615,7 @@ export const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Earthenshard]: 10,
 };
 
-export const RESOURCE_INPUTS: ResourceInputs = {
+const RESOURCE_INPUTS: ResourceInputs = {
   [ResourcesIds.Wood]: [
     { resource: ResourcesIds.Stone, amount: 1.5 },
     { resource: ResourcesIds.Coal, amount: 1.6 },
@@ -779,7 +752,7 @@ export const RESOURCE_INPUTS: ResourceInputs = {
   [ResourcesIds.Earthenshard]: [],
 };
 
-export const BUILDING_COSTS: ResourceInputs = {
+const BUILDING_COSTS: ResourceInputs = {
   [BuildingType.Castle]: [{ resource: ResourcesIds.Wheat, amount: 5000 }],
   [BuildingType.Resource]: [
     { resource: ResourcesIds.Wheat, amount: 500 },
@@ -829,7 +802,7 @@ export const BUILDING_COSTS: ResourceInputs = {
   ],
 };
 
-export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
+const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Wood]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
   [ResourcesIds.Stone]: [{ resource: ResourcesIds.Fish, amount: 500 }],
   [ResourcesIds.Coal]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
@@ -934,7 +907,7 @@ export enum QuestType {
   Earthenshard = 10,
 }
 
-export const QuestResources = {
+const QUEST_RESOURCES = {
   [QuestType.Food]: [
     { resource: ResourcesIds.Wheat, amount: 2000 },
     { resource: ResourcesIds.Fish, amount: 2000 },
@@ -984,3 +957,9 @@ export const QuestResources = {
   ],
   [QuestType.Earthenshard]: [{ resource: ResourcesIds.Earthenshard, amount: 10 }],
 };
+
+export const RESOURCE_BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(RESOURCE_BUILDING_COSTS);
+export const RESOURCE_OUTPUTS_SCALED: ResourceOutputs = scaleResourceOutputs(RESOURCE_OUTPUTS);
+export const BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(BUILDING_COSTS);
+export const RESOURCE_INPUTS_SCALED: ResourceInputs = scaleResourceInputs(RESOURCE_INPUTS);
+export const QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(QUEST_RESOURCES);

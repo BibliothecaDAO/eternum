@@ -26,7 +26,7 @@ export const ResourceCost = ({
 }: ResourceCostProps) => {
   const trait = useMemo(() => findResourceById(props.resourceId)?.trait, [props.resourceId]);
   const balanceColor = props.balance !== undefined && props.balance < props.amount ? "text-red/90" : "text-green/90";
-  console.log({ balance: props.balance, amount: props.amount, balanceColor });
+
   return (
     <div
       className={clsx(
