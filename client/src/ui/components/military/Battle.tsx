@@ -1,10 +1,8 @@
 import useUIStore from "@/hooks/store/useUIStore";
-import { PositionArmyList } from "./ArmyList";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useStructuresPosition } from "@/hooks/helpers/useStructures";
 import { ArmyAndName, usePositionArmies } from "@/hooks/helpers/useArmies";
 import { ArmyViewCard } from "./ArmyViewCard";
-import { RealmViewCard } from "../structures/RealmViewCard";
 import Button from "@/ui/elements/Button";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RealmListItem } from "../worldmap/realms/RealmListItem";
@@ -50,11 +48,13 @@ export const ArmiesAtLocation = () => {
         <>
           <Headline className="my-3">Armies</Headline>
           <div className="grid grid-cols-2 gap-2">
-            {allArmies.map((entity, index) => (
+            {allArmies.map((entity: any, index) => (
               <ArmyViewCard
                 actions={structuresAtPosition}
                 onClick={() => {
-                  structuresAtPosition ? toggleModal(<ArmyActions army={entity} />) : console.log("no structures");
+                  structuresAtPosition
+                    ? toggleModal(<ArmyActions armyId={entity.entity_id} />)
+                    : console.log("no structures");
                 }}
                 key={index}
                 army={entity}
@@ -67,11 +67,13 @@ export const ArmiesAtLocation = () => {
   );
 };
 
-export const ArmyActions = ({ army }: { army: ArmyAndName }) => {
+export const ArmyActions = ({ armyId }: { armyId: bigint }) => {
   const clickedHex = useUIStore((state) => state.clickedHex);
   const { col: x, row: y } = clickedHex!.contractPos;
 
   const { allArmies, userArmies } = usePositionArmies({ position: { x, y } });
+
+  const army = allArmies.find((entity: any) => entity.entity_id === armyId) as ArmyAndName;
 
   const { formattedRealmAtPosition } = useStructuresPosition({ position: { x, y } });
 
@@ -101,7 +103,7 @@ export const ArmyActions = ({ army }: { army: ArmyAndName }) => {
     const health = getComponentValue(Health, getEntityIdFromKeys([BigInt(protectorArmy?.entity_id || 0n)]));
 
     return { ...protectorArmy, ...health };
-  }, []);
+  }, [allArmies]);
 
   const handleBattleStart = async () => {
     setLoading(true);
