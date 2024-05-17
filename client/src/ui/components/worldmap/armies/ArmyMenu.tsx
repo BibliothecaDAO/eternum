@@ -115,9 +115,7 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
   const entityWeightInKg = useMemo(() => divideByPrecision(Number(weight?.value || 0)), [weight]);
 
   const canCarryNewReward = useMemo(
-    () =>
-      totalCapacityInKg >=
-      entityWeightInKg + multiplyByPrecision(EXPLORATION_REWARD_RESOURCE_AMOUNT) * WeightConfig[ResourcesIds.Wood],
+    () => totalCapacityInKg >= entityWeightInKg + EXPLORATION_REWARD_RESOURCE_AMOUNT * WeightConfig[ResourcesIds.Wood],
     [totalCapacityInKg, entityWeightInKg],
   );
 

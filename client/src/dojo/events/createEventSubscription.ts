@@ -18,7 +18,7 @@ export async function createEventSubscription(
   if (addPast) {
     const queryBuilder = `
     query {
-      events(keys: [${formattedKeys}] last: ${maxEvents}) {
+      events(keys: [${formattedKeys}] first: ${maxEvents}) {
         edges {
           node {
             id
