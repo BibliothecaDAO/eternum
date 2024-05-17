@@ -78,7 +78,7 @@ export const ArmyViewCard = ({
             <div className="self-center px-2">Paladins</div>
           </div>
         </div>
-        <InventoryResources entityId={BigInt(army.entity_id)} />
+        <InventoryResources entityId={BigInt(army.entity_id)} title="Balance" />
       </div>
     </div>
   );

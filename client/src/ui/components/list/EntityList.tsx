@@ -27,7 +27,7 @@ export const EntityList = ({ title, panel, list, headerPanel, current }: EntityL
             &lt; Back to {title}
           </Button>
 
-          {panel({ entity: list.find(entity => entity.entity_id === selectedEntity.entity_id) })}
+          {panel({ entity: list.find((entity) => entity.entity_id === selectedEntity.entity_id) })}
         </div>
       ) : (
         <>
