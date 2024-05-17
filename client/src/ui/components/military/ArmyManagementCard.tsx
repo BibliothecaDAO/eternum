@@ -363,7 +363,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
               <div>Wk vs {troop.weak}</div>
             </div>
 
-            <div className="flex">
+            <div className="flex items-center">
               <NumberInput
                 max={Number(
                   currencyFormat(
@@ -377,15 +377,13 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
                 value={troopCounts[troop.name]}
                 onChange={(amount) => handleTroopCountChange(troop.name, amount)}
               />
-              <div className="px-2">
+              <div className="px-2 text-xs text-center">
                 [
-                {Number(
-                  currencyFormat(
-                    getBalance(owner_entity, troop.name).balance
-                      ? Number(getBalance(owner_entity, troop.name).balance)
-                      : 0,
-                    2,
-                  ),
+                {currencyFormat(
+                  getBalance(owner_entity, troop.name).balance
+                    ? Number(getBalance(owner_entity, troop.name).balance)
+                    : 0,
+                  2,
                 )}
                 ]
               </div>
