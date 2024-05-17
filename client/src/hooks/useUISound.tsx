@@ -236,6 +236,15 @@ export const useShovelSound = () => {
   };
 };
 
+// todo: add battle sounds
+export const useBattleSound = () => {
+  const { play: playPillageSucess } = useUiSounds(soundSelector.buildFarm);
+
+  return {
+    playPillageSucess,
+  };
+};
+
 export const useBuildingSound = () => {
   const { play: playBuildCastle } = useUiSounds(soundSelector.buildCastle);
   const { play: playBuildFarm } = useUiSounds(soundSelector.buildFarm);

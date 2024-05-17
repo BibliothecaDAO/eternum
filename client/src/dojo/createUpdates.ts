@@ -24,7 +24,7 @@ export const createUpdates = async () => {
       createEventSubscription(
         [PILLAGE_EVENT, numberToHex(Number(structureId)), numberToHex(Number(attackerRealmEntityId))],
         true,
-        5,
+        20,
         false,
       ),
   };

@@ -320,25 +320,31 @@ export const PillageHistory = ({
   const isComponentMounted = useRef(true);
 
   useEffect(() => {
-    const subscribeToFoundResources = async () => {
+    const subscribeToPillageHistory = async () => {
       if (!isComponentMounted.current) return;
       const observable = await eventUpdates.createPillageHistoryEvents(structureId, attackerRealmEntityId);
       const subscription = observable.subscribe((event) => {
         if (event) {
+          const newPillage = formatPillageEvent(event);
+          // todo: add battle sound
           // Check if component is still mounted
-          setPillageHistory((prev) => [formatPillageEvent(event), ...prev]);
+          setPillageHistory((prev) => [newPillage, ...prev]);
         }
       });
       subscriptionRef.current = subscription;
     };
 
-    subscribeToFoundResources();
+    subscribeToPillageHistory();
 
     return () => {
       isComponentMounted.current = false;
       subscriptionRef.current?.unsubscribe(); // Ensure to unsubscribe on component unmount
     };
   }, [structureId, attackerRealmEntityId, eventUpdates]);
+
+  const isPillageSucess = (history: any) => {
+    return history.pillagedResources.length > 0 || history.destroyedBuildingType !== "None";
+  };
 
   return (
     <div className="border p-2">
@@ -353,7 +359,7 @@ export const PillageHistory = ({
               <div className="text-center">
                 <Headline>Outcome</Headline>
                 <div className={`text-xl font-bold ${history.winner === 0 ? "text-blue-500" : "text-red-500"}`}>
-                  {history.winner === 0 ? "No Winner" : history.winner === 1 ? "Attacker Won" : "Defender Won"}
+                  {isPillageSucess(history) ? "Pillage Sucessful" : "Pillage Failed"}
                 </div>
               </div>
             </div>
