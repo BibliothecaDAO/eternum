@@ -68,7 +68,7 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
 
       <p className="text-xl">{quest.description}</p>
 
-      <div className="mt-1 grid grid-cols-3">
+      <div className="mt-1 grid grid-cols-3 gap-2">
         {quest.completed &&
           quest.prizes.map((prize, index) => {
             const hasClaimed = getComponentValue(

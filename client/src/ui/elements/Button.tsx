@@ -24,7 +24,7 @@ const STYLES = {
   success: "border border-green !text-brilliance bg-transparent hover:bg-green/10",
   red: "border border-danger !text-danger bg-transparent hover:bg-danger/10",
   outline: "border border-gold !text-gold bg-transparent hover:bg-gold/10",
-  danger: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
+  danger: "bg-red border-red text-white bg-transparent hover:bg-red/90 clip-angled",
   secondary: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
   loadingStyle: "relative",
 };

@@ -202,7 +202,7 @@ export const BuiltBuilding = ({
   const destroyButton = buildingCategory !== BuildingType.Castle && (
     <Button
       onClick={() => destroyBuilding(realmEntityId, position.col, position.row)}
-      variant="primary"
+      variant="danger"
       className="mt-3"
     >
       Destroy
@@ -238,9 +238,9 @@ const HoverBuilding = ({
   return (
     <BaseThreeTooltip distanceFactor={30} position={Position.BOTTOM_RIGHT}>
       <div className="flex flex-col  text-sm p-1 space-y-1">
-        <div className="font-bold text-center">
+        {/* <div className="font-bold text-center">
           {BuildingEnumToString[building as keyof typeof BuildingEnumToString]}
-        </div>
+        </div> */}
         <BuildingInfo buildingId={building} entityId={entityId} extraButtons={[destroyButton]} />
       </div>
     </BaseThreeTooltip>

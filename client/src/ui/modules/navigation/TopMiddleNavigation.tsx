@@ -82,7 +82,7 @@ export const TopMiddleNavigation = () => {
         <TickProgress />
       </div>
 
-      <div className="flex bg-brown/90  border-gradient py-2  px-24 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center">
+      <div className="flex bg-brown/90 clip-angled  border-gradient py-2  px-24 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center">
         <div className="self-center ">
           <Headline>
             <h5 className="self-center uppercase">{realmId ? getRealmNameById(realmId as any | "") : ""}</h5>
@@ -140,7 +140,7 @@ export const TopMiddleNavigation = () => {
               });
             }}
             onMouseLeave={() => setTooltip(null)}
-            className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5"
+            className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5 "
           >
             {storehouses.toLocaleString()} max
           </div>
@@ -174,9 +174,9 @@ const TickProgress = () => {
         });
       }}
       onMouseLeave={() => setTooltip(null)}
-      className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5"
+      className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5 clip-angled"
     >
-      {progress.toFixed()}% in cycle
+      {progress.toFixed()}%
     </div>
   );
 };

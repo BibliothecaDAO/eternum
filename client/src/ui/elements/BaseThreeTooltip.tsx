@@ -22,7 +22,7 @@ export const BaseThreeTooltip = ({
 }: BaseThreeTooltipProps) => {
   return (
     <DojoHtml distanceFactor={distanceFactor}>
-      <div className={`border min-w-[215px] relative border-gold p-2 bg-brown/70 text-gold ${position}`}>
+      <div className={` min-w-[215px] clip-angled relative  p-2 bg-brown/90 text-gold ${position}`}>
         {children}
         <svg
           className="absolute bottom-[1px] translate-y-full left-1/2 -translate-x-1/2"

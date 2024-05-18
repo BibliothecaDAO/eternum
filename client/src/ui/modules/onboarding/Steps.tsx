@@ -16,6 +16,8 @@ import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useTour } from "@reactour/tour";
+import { LucideArrowRight } from "lucide-react";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 export const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -159,13 +161,13 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     <StepContainer>
       <div className="flex flex-col items-center p-3 ">
         <h3>Select Account</h3>
-        <div className="flex space-x-6 pt-4 w-full justify-center uppercase">
+        <div className="flex space-x-6 pt-4 w-full justify-center">
           <div>
-            <div className=" border-gold border p-2 w-full">
+            <div className="w-full text-2xl">
               {loading ? (
-                <span>Loading...</span>
+                <div className="p-2">Loading...</div>
               ) : addressName ? (
-                <span>{addressName}</span>
+                <div className="p-2">{addressName}</div>
               ) : (
                 <div className="flex w-full h-full">
                   <TextInput placeholder="Your Name..." maxLength={12} value={inputName} onChange={setInputName} />
@@ -284,13 +286,15 @@ export const StepThree = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =
     <StepContainer>
       <ContainerWithSquire>
         <h2 className="mb-4">Welcome {name}...</h2>
-        <p className="mb-4">
-          Before you begin your Lord, here are some important things you need to understand about this world.
+        <p className="mb-4  text-xl">
+          Before you begin {name}, here are some important things you need to understand about this world.
         </p>
 
-        <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
-          Continue <ArrowRight className="w-2 fill-current ml-3" />
-        </Button>
+        <div className="mt-auto">
+          <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
+            Continue <LucideArrowRight className="w-4 fill-current ml-3" />
+          </Button>
+        </div>
       </ContainerWithSquire>
     </StepContainer>
   );
@@ -300,13 +304,17 @@ export const StepFour = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
   return (
     <StepContainer>
       <ContainerWithSquire>
-        <h2 className="mb-4">Everything is fungible...</h2>
+        <h2 className="mb-4">Resources rule the world...</h2>
 
-        <p className="mb-4 text-xl">Resources, Troops, Donkeys all exist and are tradable until you use them...</p>
+        <p className="mb-4 text-xl">
+          Resources, Troops, Donkeys all exist and are tradable until you use them. Use them wisely.
+        </p>
 
-        <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
-          next <ArrowRight className="w-2 fill-current ml-3" />
-        </Button>
+        <div className="mt-auto">
+          <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
+            Continue <LucideArrowRight className="w-4 fill-current ml-3" />
+          </Button>
+        </div>
       </ContainerWithSquire>
     </StepContainer>
   );
@@ -318,7 +326,7 @@ export const ContainerWithSquire = ({ children }: { children: React.ReactNode })
       <div className="rounded-full border  self-center col-span-4">
         <img src="/images/buildings/thumb/squire.png" className="rounded-full border" alt="" />
       </div>
-      <div className="col-span-8">{children}</div>
+      <div className="col-span-8 flex flex-col">{children}</div>
     </div>
   );
 };
@@ -327,13 +335,13 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
   return (
     <StepContainer>
       <ContainerWithSquire>
-        <div>
-          <h2 className="mb-4">Eternum runs in 15 minute cycles</h2>
-          <p className="mb-4 text-xl">
-            Your villagers and troops all work on a 15 minute cycle. Act accordingly and plan your moves wisely.
-          </p>
-          <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>
-            Continue <ArrowRight className="w-2 fill-current ml-3" />
+        <h2 className="mb-4">Days are 8hrs long</h2>
+        <p className="mb-4 text-xl">
+          Each 8hr period your Realms and Troops will regain energy and be able to travel again.
+        </p>
+        <div className="mt-auto">
+          <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
+            Continue <LucideArrowRight className="w-4 fill-current ml-3" />
           </Button>
         </div>
       </ContainerWithSquire>
@@ -344,7 +352,10 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
 export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
   return (
     <StepContainer>
-      <p className="leading-loose text-2xl text-center mb-8">They who rule the Earthenshards rule the world...</p>
+      <ResourceIcon resource="Earthenshard" size="xl" withTooltip={false} />
+      <p className="text-2xl text-center mb-8">
+        They who rule the Earthenshards <br /> rule the world...
+      </p>
       <div className="flex w-full justify-center">
         <NavigateToRealm text={"begin"} showWalkthrough={true} />
       </div>

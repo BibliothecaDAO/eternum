@@ -60,6 +60,30 @@ export class ProductionManager {
     return this._balance(currentTick, this.resourceId);
   }
 
+  public timeUntilValueReached(currentTick: number, value: number): number {
+    const production = this._getProduction(this.resourceId);
+    const resource = this._getResource(this.resourceId);
+
+    if (!production || !resource) return 0;
+
+    const [sign, rate] = this._netRate(this.resourceId);
+    const balance = this.balance(currentTick);
+
+    if (rate !== 0) {
+      if (sign) {
+        // Positive net rate, increase balance
+        const timeToValue = (value - balance) / rate;
+        return Math.round(timeToValue > 0 ? timeToValue : 0);
+      } else {
+        // Negative net rate, decrease balance but not below zero
+        const timeToValue = balance / -rate;
+        return Math.round(timeToValue > 0 ? timeToValue : 0);
+      }
+    } else {
+      return 0;
+    }
+  }
+
   public getStoreCapacity(): number {
     const quantity =
       getComponentValue(
