@@ -44,7 +44,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
                 First you must create an Army then you can enlist troops into it. You can only have one defensive army.
               </p>
             </div>
-            <div className=" w-full flex">
+            <div className=" w-full flex justify-between">
               <Button
                 isLoading={isLoading}
                 variant="primary"
@@ -60,7 +60,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
                 onClick={() => handleCreateArmy(true)}
                 disabled={isLoading || !canCreateProtector}
               >
-                Create Defense
+                Create Defense Army
               </Button>
             </div>
           </>

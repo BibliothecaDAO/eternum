@@ -1,6 +1,6 @@
 import { useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../context/DojoContext";
-import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
+import { Has, HasValue, NotValue, getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys, getPosition, numberToHex } from "@/ui/utils/utils";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { hexToAscii } from "@dojoengine/utils";
@@ -30,6 +30,8 @@ export const useEntities = () => {
 
   const playerRealms = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
   const otherRealms = useEntityQuery([Has(Realm), NotValue(Owner, { address: BigInt(account.address) })]);
+
+  const playerAccounts = useEntityQuery([HasValue(BankAccounts, { owner: BigInt(account.address) })]);
 
   const getEntityName = (entityId: bigint) => {
     const entityName = getComponentValue(EntityName, getEntityIdFromKeys([entityId]));
@@ -73,7 +75,19 @@ export const useEntities = () => {
     };
   };
 
-  const playerAccounts = useEntityQuery([HasValue(BankAccounts, { owner: BigInt(account.address) })]);
+  const allOwnedEntities = () => {
+    const realms = [...getEntitiesWithValue(Owner, { address: BigInt(account.address) })].map((id) => {
+      const realm = getComponentValue(Realm, id);
+      return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
+    });
+
+    const banks = [...getEntitiesWithValue(BankAccounts, { owner: BigInt(account.address) })].map((id) => {
+      const account = getComponentValue(BankAccounts, id);
+      return { entity_id: account?.entity_id, name: `Bank ${account?.bank_entity_id.toString()}` };
+    });
+
+    return [...realms, ...banks];
+  };
 
   return {
     playerRealms: () => {
@@ -96,5 +110,6 @@ export const useEntities = () => {
     },
     getEntityName,
     getEntityInfo,
+    allOwnedEntities,
   };
 };

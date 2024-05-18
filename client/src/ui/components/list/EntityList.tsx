@@ -35,7 +35,7 @@ export const EntityList = ({ title, panel, list, headerPanel, current }: EntityL
           <ul>
             {list.map((entity) => (
               <li
-                className="py-2 px-2 border-y-2 border-x border-gold flex justify-between hover:bg-gold/40 my-1"
+                className="py-2 px-2 border-y-2 border-x border-gold/50 flex justify-between hover:bg-gold/40 my-1 rounded"
                 key={entity.id}
                 onClick={() => setSelectedEntity(entity)}
               >

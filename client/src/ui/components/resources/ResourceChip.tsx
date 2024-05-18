@@ -63,7 +63,7 @@ export const ResourceChip = ({
   return (
     <div
       className={`flex relative group items-center text-xs px-2 p-1 hover:bg-gold/20  ${
-        netRate && netRate < 0 ? "bg-red/20" : "bg-green/20"
+        netRate && netRate < 0 ? "bg-red/10" : "bg-green/10"
       } `}
       onMouseEnter={() => {
         setTooltip({

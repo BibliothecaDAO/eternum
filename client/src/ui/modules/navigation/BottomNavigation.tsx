@@ -116,48 +116,48 @@ export const BottomNavigation = () => {
           ></CircleButton>
         ),
       },
-      {
-        name: "trade",
-        button: (
-          <CircleButton
-            className="trade-selector"
-            image={BuildingThumbs.trade}
-            tooltipLocation="top"
-            label={trade}
-            active={isPopupOpen(trade)}
-            size="xl"
-            onClick={() => togglePopup(trade)}
-          ></CircleButton>
-        ),
-      },
-      {
-        name: "resources",
-        button: (
-          <CircleButton
-            className="resources-selector"
-            tooltipLocation="top"
-            image={BuildingThumbs.resources}
-            label={resources}
-            active={isPopupOpen(resources)}
-            size="xl"
-            onClick={() => togglePopup(resources)}
-          ></CircleButton>
-        ),
-      },
-      {
-        name: "bank",
-        button: (
-          <CircleButton
-            className="banking-selector"
-            image={BuildingThumbs.banks}
-            tooltipLocation="top"
-            label={banks}
-            active={isPopupOpen(banks)}
-            size="xl"
-            onClick={() => togglePopup(banks)}
-          ></CircleButton>
-        ),
-      },
+      // {
+      //   name: "trade",
+      //   button: (
+      //     <CircleButton
+      //       className="trade-selector"
+      //       image={BuildingThumbs.trade}
+      //       tooltipLocation="top"
+      //       label={trade}
+      //       active={isPopupOpen(trade)}
+      //       size="xl"
+      //       onClick={() => togglePopup(trade)}
+      //     ></CircleButton>
+      //   ),
+      // },
+      // {
+      //   name: "resources",
+      //   button: (
+      //     <CircleButton
+      //       className="resources-selector"
+      //       tooltipLocation="top"
+      //       image={BuildingThumbs.resources}
+      //       label={resources}
+      //       active={isPopupOpen(resources)}
+      //       size="xl"
+      //       onClick={() => togglePopup(resources)}
+      //     ></CircleButton>
+      //   ),
+      // },
+      // {
+      //   name: "bank",
+      //   button: (
+      //     <CircleButton
+      //       className="banking-selector"
+      //       image={BuildingThumbs.banks}
+      //       tooltipLocation="top"
+      //       label={banks}
+      //       active={isPopupOpen(banks)}
+      //       size="xl"
+      //       onClick={() => togglePopup(banks)}
+      //     ></CircleButton>
+      //   ),
+      // },
     ];
 
     return location === "/map"

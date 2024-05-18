@@ -109,7 +109,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      " items-center relative cursor-move z-30 p-2 rounded-t  w-full whitespace-nowrap handle flex justify-between bg-brown/90  hover:bg-brown backdrop-blur-lg border-gradient border-y-2",
+      " items-center relative cursor-move z-30 p-2 rounded-t  w-full whitespace-nowrap handle flex justify-between bg-brown  hover:bg-brown backdrop-blur-lg border-gradient border-y-2",
       className,
     )}
   >
@@ -165,7 +165,7 @@ SecondaryPopup.Body = ({
         width ? "" : "min-w-[438px]",
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
-        `relative z-10 bg-brown/90 flex flex-col border-brown/50 border-2 rounded-b overflow-auto bg-map `,
+        `relative z-10 bg-brown flex flex-col border-brown/50 border-2 rounded-b overflow-auto bg-map `,
       )}
       style={{ width: width ? width : "", height: height ? height : "", maxHeight: maxHeight ? `${maxHeight}px` : "" }}
     >

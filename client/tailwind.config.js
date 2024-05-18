@@ -24,11 +24,12 @@ export default {
       },
       colors: {
         gold: "#F3C99F",
-        crimson: "#89192D",
+        crimson: "#582C4D",
         brilliance: "#7DFFBA",
         orange: "#FE993C",
         yellow: "#FAFF00",
-        red: "#FF0000",
+        red: "#F24236",
+        blueish: "#6B7FD7",
         "anger-light": "#CD8290",
         "gray-gold": "#776756",
         "light-pink": "#CAB1A6",
@@ -40,7 +41,7 @@ export default {
         danger: "#C84444",
         "dark-green": "#064105",
         "dark-green-accent": "#3A3D23",
-        green: "#33FF00",
+        green: "#06D6A0",
         lightest: "#FFF5EA",
         order: {
           power: "#F4B547",
@@ -176,6 +177,15 @@ export default {
         },
         ".clip-squared": {
           clipPath: "polygon(10% 0, 90% 0, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0 90%, 0 10%)",
+        },
+        ".clip-angled": {
+          clipPath:
+            "polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px)",
+        },
+        ".outline-gradient": {
+          outline: "2px solid transparent",
+          outlineOffset: "2px",
+          borderImage: "linear-gradient(to right, transparent, #F3C99F, transparent) 1",
         },
       };
       addUtilities(newUtilities, ["responsive", "hover"]);

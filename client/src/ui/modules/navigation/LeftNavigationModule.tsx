@@ -45,6 +45,7 @@ export const BuildingThumbs = {
   worldMap: "/images/buildings/thumb/world-map.png",
   squire: "/images/buildings/thumb/squire.png",
   question: "/images/buildings/thumb/question-wood.png",
+  scale: "/images/buildings/thumb/scale.png",
 };
 
 export const LeftNavigationModule = () => {

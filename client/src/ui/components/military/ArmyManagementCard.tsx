@@ -200,7 +200,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
         <ViewOnMapButton position={position} />
       </div>
 
-      <div className="flex justify-between border-b py-2">
+      <div className="flex justify-between border-b border-gold/20 py-2">
         {editName ? (
           <div className="flex space-x-2">
             <TextInput
@@ -319,15 +319,16 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
       </div>
       <div className="grid grid-cols-3 gap-2 my-2">
         {troops.map((troop) => (
-          <div className="p-2 border" key={troop.name}>
+          <div className="p-2 border  border-gold/20" key={troop.name}>
             {/* <img src={`/images/units/${nameMapping[troop.name]}.png`} alt={nameMapping[troop.name]} /> */}
-            <h5 className="font-bold">
-              {nameMapping[troop.name]} [{troop.current}]
-            </h5>
-            <div className="flex justify-between border px-2 uppercase my-2 font-bold">
+            <div className="font-bold">
+              <div className="text-xl">{nameMapping[troop.name]}</div>
+              <div className="text-green">x {troop.current}</div>
+            </div>
+            {/* <div className="flex justify-between border border-gold/20 px-2 my-2 font-bold">
               <div>Atk: {troop.attack}</div>
               <div>Def: {troop.defense}</div>
-            </div>
+            </div> */}
 
             <div className="my-3">
               <div>Str vs {troop.strong}</div>

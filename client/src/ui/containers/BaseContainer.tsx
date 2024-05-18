@@ -17,7 +17,7 @@ export const BaseContainer = forwardRef<HTMLDivElement, BaseContainerProps>(
       <div
         ref={ref}
         className={clsx(
-          "p-2 flex shadow-black/30 relative shadow-md flex-col transition-all duration-500 border border-gold rounded-xl  container-bg-gradient",
+          " flex shadow-black/30 relative flex-col transition-all duration-500 border-gold  bg-brown border-gradient border-2",
           className,
           expanded ? expandedClassName : collapsedClassName,
         )}

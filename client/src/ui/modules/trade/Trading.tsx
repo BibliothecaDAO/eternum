@@ -57,21 +57,21 @@ export const Trading = () => {
           />
         ),
       },
-      {
-        key: "arrivals",
-        label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Arrivals</div>
-          </div>
-        ),
-        component: (
-          <EntityList
-            list={[...playerRealms(), ...playerAccounts()]}
-            title="Entities"
-            panel={({ entity }) => <ResourceArrivals entityId={entity.entity_id} />}
-          />
-        ),
-      },
+      // {
+      //   key: "arrivals",
+      //   label: (
+      //     <div className="flex relative group flex-col items-center">
+      //       <div>Arrivals</div>
+      //     </div>
+      //   ),
+      //   component: (
+      //     <EntityList
+      //       list={[...playerRealms(), ...playerAccounts()]}
+      //       title="Entities"
+      //       panel={({ entity }) => <ResourceArrivals entityId={entity.entity_id} />}
+      //     />
+      //   ),
+      // },
     ],
     [selectedTab],
   );

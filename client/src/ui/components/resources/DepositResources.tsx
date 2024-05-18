@@ -48,7 +48,7 @@ export const DepositResources = ({ entityId }: DepositResourcesProps) => {
   };
 
   return (
-    <div className="w-full my-3">
+    <div className="w-full">
       {depositEntityId !== undefined && inventoryResources.length > 0 && (
         <Button
           size="md"
