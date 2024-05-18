@@ -178,6 +178,15 @@ export default {
         ".clip-squared": {
           clipPath: "polygon(10% 0, 90% 0, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0 90%, 0 10%)",
         },
+        ".clip-angled": {
+          clipPath:
+            "polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px)",
+        },
+        ".outline-gradient": {
+          outline: "2px solid transparent",
+          outlineOffset: "2px",
+          borderImage: "linear-gradient(to right, transparent, #F3C99F, transparent) 1",
+        },
       };
       addUtilities(newUtilities, ["responsive", "hover"]);
     }),

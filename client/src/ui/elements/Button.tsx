@@ -17,7 +17,7 @@ const STYLES = {
   baseStyle:
     "inline-flex whitespace-nowrap cursor-pointer white transition-all duration-300 items-center justify-center p-2 text-xs font-medium text-gold uppercase rounded",
   primary:
-    "px-6 py-2 bg-crimson from-yellow-600 to-yellow-700  font-semibold text-lg uppercase tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none  border-y-2 border-gold border-x hover:bg-gold hover:text-brown",
+    "px-6 py-2 bg-crimson from-yellow-600 to-yellow-700  font-semibold text-lg uppercase tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none outline-gradient  outline-gold hover:bg-gold hover:text-brown clip-angled ",
   default: "text-white/90 border border-transparent shadow-sm",
   enabledStyle: "bg-black/10 hover:bg-black/30 focus:outline-none",
   disabledStyle: "bg-gray-300 cursor-not-allowed !border-gray-gold !text-gray-gold",
@@ -57,7 +57,7 @@ const Button: React.FC<ButtonProps> = ({
           !withoutSound && playClick();
         }
       }}
-      className={`${STYLES.baseStyle} ${STYLES[variant]} ${disabled ? STYLES.disabledStyle : STYLES.enabledStyle} ${
+      className={` ${STYLES.baseStyle} ${STYLES[variant]} ${disabled ? STYLES.disabledStyle : STYLES.enabledStyle} ${
         isLoading ? STYLES.loadingStyle : ""
       } ${isPulsing ? "animate-pulse" : ""} ${className} ${SIZES[size]}`}
       disabled={disabled || isLoading}

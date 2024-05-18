@@ -47,21 +47,21 @@ export const TravelInfo = ({
     <>
       <Headline>Transfer Details</Headline>
       <table className="min-w-full divide-y divide-gray-200 text-sm mt-2 text-center">
-        <tbody className=" divide-y divide-gray-200 border">
+        <tbody className=" divide-y divide-gray-200 ">
           {travelTime && (
             <tr>
-              <td className="px-6 py-1 whitespace-nowrap border font-bold text-right">Travel Time</td>
+              <td className="px-6 py-1 whitespace-nowrap  font-bold text-right">Travel Time</td>
               <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${travelTime} hrs`}</td>
             </tr>
           )}
           <tr>
-            <td className="px-6 py-1 whitespace-nowrap border font-bold text-right">Total Weight</td>
+            <td className="px-6 py-1 whitespace-nowrap  font-bold text-right">Total Weight</td>
             <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${divideByPrecision(
               resourceWeight,
             )} kg`}</td>
           </tr>
           <tr>
-            <td className="px-6 py-1 whitespace-nowrap border font-bold  text-right">Donkeys Required</td>
+            <td className="px-6 py-1 whitespace-nowrap font-bold  text-right">Donkeys Required</td>
             <td
               className={`px-6 py-1 whitespace-nowrap text-gold text-left text-order-${
                 neededDonkeys > donkeyBalance ? "giants" : "brilliance"
