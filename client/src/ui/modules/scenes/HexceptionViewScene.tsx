@@ -26,7 +26,6 @@ export const HexceptionViewScene = () => {
     roughnessMap: "/textures/paper/paper-roughness.jpg",
     normalMap: "/textures/paper/paper-normal.jpg",
   });
-
   return (
     <>
       <group position={[positions.main.x, 0, -positions.main.y]} rotation={[0, 0, 0]}>
