@@ -1,7 +1,7 @@
 import { findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
 
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat } from "../../utils/utils";
+import { currencyFormat, formatTime } from "../../utils/utils";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import { useEffect, useMemo, useState } from "react";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
@@ -26,6 +26,10 @@ export const ResourceChip = ({
 
   const balance = useMemo(() => {
     return productionManager.balance(currentTick);
+  }, [productionManager, production, currentTick]);
+
+  const timeUntilValueReached = useMemo(() => {
+    return productionManager.timeUntilValueReached(currentTick, 0);
   }, [productionManager, production, currentTick]);
 
   const netRate = useMemo(() => {
@@ -86,6 +90,10 @@ export const ResourceChip = ({
       <div className="flex justify-between w-full">
         <div className=" self-center text-sm font-bold">
           {currencyFormat(displayBalance ? Number(displayBalance) : 0, 0)}
+        </div>
+
+        <div className="font-bold">
+          {timeUntilValueReached !== 0 ? formatTime(timeUntilValueReached) + " left" : ""}
         </div>
 
         {/* <div className="text-xs w-full self-center text-opacity-65 px-1">{findResourceById(resourceId)?.trait}</div> */}

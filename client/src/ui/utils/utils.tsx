@@ -265,3 +265,13 @@ export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMining
   [ResourcesIds.AlchemicalSilver]: ResourceMiningTypes.Forge,
   [ResourcesIds.Adamantine]: ResourceMiningTypes.Forge,
 };
+
+export const formatTime = (seconds: number): string => {
+  if (seconds >= 3600) {
+    const hours = (seconds / 3600).toFixed(2);
+    return `${hours} hrs`;
+  } else {
+    const minutes = (seconds / 60).toFixed(2);
+    return `${minutes} mins`;
+  }
+};

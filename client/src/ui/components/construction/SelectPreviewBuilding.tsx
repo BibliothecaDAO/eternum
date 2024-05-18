@@ -248,7 +248,7 @@ export const SelectPreviewBuildingMenu = () => {
   );
 
   return (
-    <div className="flex flex-col -mt-40 bg-brown/90 border-gradient border">
+    <div className="flex flex-col -mt-40 bg-brown border-gradient border clip-angled">
       <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
         <Tabs.List>
           {tabs.map((tab, index) => (
@@ -416,23 +416,40 @@ export const BuildingInfo = ({
 
   return (
     <div className="p-2 text-sm text-gold">
-      <Headline className="py-3"> {BuildingEnumToString[buildingId]} </Headline>
+      <Headline className="pb-3"> {BuildingEnumToString[buildingId]} </Headline>
 
       {resourceProduced !== 0 && (
-        <div className=" flex">
-          <div className="font-bold">Produces: +{perTick}</div>
-          <ResourceIcon
-            className="self-center mx-1"
-            resource={findResourceById(resourceProduced)?.trait || ""}
-            size="md"
-          />
-          {findResourceById(resourceProduced)?.trait || ""}
+        <div className=" flex flex-wrap">
+          <div className="font-bold uppercase w-full text-xs">Produces </div>
+          <div className="flex justify-between">
+            +{perTick}
+            <ResourceIcon
+              className="self-center mx-1"
+              resource={findResourceById(resourceProduced)?.trait || ""}
+              size="md"
+            />
+            {findResourceById(resourceProduced)?.trait || ""}
+          </div>
         </div>
       )}
 
-      {population !== 0 ? <div className="font-bold pt-3 ">Increases Population: +{population}</div> : ""}
+      {population !== 0 ? (
+        <div className="font-bold pt-3 ">
+          <span className="uppercase text-xs">Population</span>
+          <br /> +{population}
+        </div>
+      ) : (
+        ""
+      )}
 
-      {capacity !== 0 ? <div className="font-bold pt-3 ">Increases Capacity: +{capacity}</div> : ""}
+      {capacity !== 0 ? (
+        <div className="font-bold pt-3 ">
+          <span className="uppercase text-xs">Capacity</span>
+          <br /> +{capacity}
+        </div>
+      ) : (
+        ""
+      )}
 
       {ongoingCost && ongoingCost.length ? (
         <>
@@ -458,8 +475,8 @@ export const BuildingInfo = ({
         ""
       )}
 
-      <div className="pt-3 font-bold"> One time cost</div>
-      <div className="grid grid-cols-2 gap-2 text-sm">
+      <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
+      <div className="grid grid-cols-1 gap-2 text-sm">
         {Object.keys(cost).map((resourceId, index) => {
           const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
           return (

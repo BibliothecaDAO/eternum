@@ -58,7 +58,7 @@ const CircleButton = ({
         }
       }}
       className={clsx(
-        "flex relative transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold border-gold/40 rounded  bg-brown  shadow-2xl bg-no-repeat hover:bg-brown/75",
+        "flex relative transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold border-gold/40 rounded  bg-brown  shadow-2xl bg-no-repeat hover:bg-brown/75 clip-angled",
         className,
         sizes[size],
         { "opacity-50 cursor-not-allowed": disabled },
