@@ -116,20 +116,20 @@ export const BottomNavigation = () => {
           ></CircleButton>
         ),
       },
-      {
-        name: "trade",
-        button: (
-          <CircleButton
-            className="trade-selector"
-            image={BuildingThumbs.trade}
-            tooltipLocation="top"
-            label={trade}
-            active={isPopupOpen(trade)}
-            size="xl"
-            onClick={() => togglePopup(trade)}
-          ></CircleButton>
-        ),
-      },
+      // {
+      //   name: "trade",
+      //   button: (
+      //     <CircleButton
+      //       className="trade-selector"
+      //       image={BuildingThumbs.trade}
+      //       tooltipLocation="top"
+      //       label={trade}
+      //       active={isPopupOpen(trade)}
+      //       size="xl"
+      //       onClick={() => togglePopup(trade)}
+      //     ></CircleButton>
+      //   ),
+      // },
       // {
       //   name: "resources",
       //   button: (
@@ -144,20 +144,20 @@ export const BottomNavigation = () => {
       //     ></CircleButton>
       //   ),
       // },
-      {
-        name: "bank",
-        button: (
-          <CircleButton
-            className="banking-selector"
-            image={BuildingThumbs.banks}
-            tooltipLocation="top"
-            label={banks}
-            active={isPopupOpen(banks)}
-            size="xl"
-            onClick={() => togglePopup(banks)}
-          ></CircleButton>
-        ),
-      },
+      // {
+      //   name: "bank",
+      //   button: (
+      //     <CircleButton
+      //       className="banking-selector"
+      //       image={BuildingThumbs.banks}
+      //       tooltipLocation="top"
+      //       label={banks}
+      //       active={isPopupOpen(banks)}
+      //       size="xl"
+      //       onClick={() => togglePopup(banks)}
+      //     ></CircleButton>
+      //   ),
+      // },
     ];
 
     return location === "/map"

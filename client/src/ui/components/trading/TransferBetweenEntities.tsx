@@ -13,6 +13,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { Headline } from "@/ui/elements/Headline";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import { ToggleComponent } from "../toggle/ToggleComponent";
+import { LucideArrowRight } from "lucide-react";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -133,7 +134,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
           </div>
           <div className="flex justify-center w-full">
             <Button
-              className="w-full mt-2"
+              className="w-full mt-8"
               disabled={!selectedEntityIdFrom || !selectedEntityIdTo}
               variant="primary"
               size="md"
@@ -142,6 +143,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
               }}
             >
               Next - Select Resources
+              <LucideArrowRight className="ml-2" />
             </Button>
           </div>
         </>

@@ -82,10 +82,24 @@ export function useResources() {
     });
   };
 
+  const entititsAtPositionWithInventory = useEntityQuery([
+    Has(EntityOwner),
+    NotValue(OwnedResourcesTracker, { resource_types: 0n }),
+    Has(ArrivalTime),
+  ]);
+
+  const getAllArrivalsWithResources = () => {
+    return entititsAtPositionWithInventory.map((id) => {
+      const position = getComponentValue(Position, id);
+      return position!.entity_id;
+    });
+  };
+
   return {
     getRealmsWithSpecificResource,
     getResourcesFromBalance,
     getArrivalsWithResources,
+    getAllArrivalsWithResources,
     getResourceCosts,
   };
 }

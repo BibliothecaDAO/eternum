@@ -12,6 +12,7 @@ type CircleButtonProps = {
   label?: string;
   image?: string; // Added image prop
   tooltipLocation?: "top" | "bottom" | "left" | "right";
+  notification?: number;
 } & React.ComponentPropsWithRef<"button">;
 
 const sizes = {
@@ -32,6 +33,7 @@ const CircleButton = ({
   label,
   image,
   tooltipLocation = "bottom",
+  notification,
   ...props
 }: CircleButtonProps) => {
   const { play: hoverClick } = useUiSounds(soundSelector.hoverClick);
@@ -56,11 +58,11 @@ const CircleButton = ({
         }
       }}
       className={clsx(
-        "flex transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold border-gold/40 rounded  bg-brown  shadow-2xl bg-no-repeat hover:bg-brown/75",
+        "flex relative transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold border-gold/40 rounded  bg-brown  shadow-2xl bg-no-repeat hover:bg-brown/75",
         className,
         sizes[size],
         { "opacity-50 cursor-not-allowed": disabled },
-        { " border-gold sepia-0": active },
+        { " border-gold sepia-0 border-2": active },
         { " border-brown/30 sepia-[.50]": !active },
       )}
       style={{
@@ -72,6 +74,14 @@ const CircleButton = ({
       disabled={disabled}
       {...props}
     >
+      {notification ? (
+        <div className="absolute -top-1 -left-1 rounded-full border bg-green/90 text-brown px-1 text-xxs">
+          {notification}
+        </div>
+      ) : (
+        <></>
+      )}
+
       {children}
     </button>
   );

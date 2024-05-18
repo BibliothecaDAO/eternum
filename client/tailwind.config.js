@@ -24,11 +24,12 @@ export default {
       },
       colors: {
         gold: "#F3C99F",
-        crimson: "#89192D",
+        crimson: "#582C4D",
         brilliance: "#7DFFBA",
         orange: "#FE993C",
         yellow: "#FAFF00",
-        red: "#FF0000",
+        red: "#F24236",
+        blueish: "#6B7FD7",
         "anger-light": "#CD8290",
         "gray-gold": "#776756",
         "light-pink": "#CAB1A6",
@@ -40,7 +41,7 @@ export default {
         danger: "#C84444",
         "dark-green": "#064105",
         "dark-green-accent": "#3A3D23",
-        green: "#33FF00",
+        green: "#06D6A0",
         lightest: "#FFF5EA",
         order: {
           power: "#F4B547",

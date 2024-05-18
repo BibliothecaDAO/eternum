@@ -49,11 +49,11 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
 
   return (
     <div
-      className={clsx("flex flex-col p-2 border  border-gold text-xs text-gray-gold", props.className)}
+      className={clsx("flex flex-col p-2 border  border-gold/20 text-gray-gold", props.className)}
       onClick={props.onClick}
     >
       {showTravel && <TravelEntityPopup entityId={entityId} onClose={onCloseTravel} />}
-      <div className="flex items-center text-xxs">
+      <div className="flex items-center text-xs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
           #{Number(entityId)}
         </div>

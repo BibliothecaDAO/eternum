@@ -43,7 +43,7 @@ export const HexceptionViewScene = () => {
               const hex = neighborHexesInsideView[index - 1];
               return (
                 hex?.biome && (
-                  <group position={[position.x, 0, -position.y]} rotation={[0, 0, 0]}>
+                  <group key={index} position={[position.x, 0, -position.y]} rotation={[0, 0, 0]}>
                     <BigHexBiome biome={hex.biome as any} />
                   </group>
                 )

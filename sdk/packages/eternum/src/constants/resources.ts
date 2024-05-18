@@ -784,7 +784,7 @@ const BUILDING_COSTS: ResourceInputs = {
   [BuildingType.TradingPost]: [{ resource: ResourcesIds.Wheat, amount: 0 }],
   [BuildingType.WorkersHut]: [
     { resource: ResourcesIds.Wheat, amount: 500 },
-    { resource: ResourcesIds.Stone, amount: 100 },
+    { resource: ResourcesIds.Stone, amount: 10 },
   ],
   [BuildingType.WatchTower]: [
     { resource: ResourcesIds.Wheat, amount: 2000 },
@@ -792,13 +792,13 @@ const BUILDING_COSTS: ResourceInputs = {
   ],
   [BuildingType.Walls]: [
     { resource: ResourcesIds.Wheat, amount: 3000 },
-    { resource: ResourcesIds.Wood, amount: 100 },
-    { resource: ResourcesIds.Stone, amount: 100 },
+    { resource: ResourcesIds.Wood, amount: 10 },
+    { resource: ResourcesIds.Stone, amount: 10 },
   ],
   [BuildingType.Storehouse]: [
     { resource: ResourcesIds.Wheat, amount: 2000 },
-    { resource: ResourcesIds.Wood, amount: 100 },
-    { resource: ResourcesIds.Stone, amount: 100 },
+    { resource: ResourcesIds.Wood, amount: 10 },
+    { resource: ResourcesIds.Coal, amount: 10 },
   ],
 };
 
