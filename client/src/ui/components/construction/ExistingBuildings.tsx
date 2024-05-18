@@ -11,7 +11,7 @@ import {
   biomes,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useAnimations, useGLTF, useHelper } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -73,6 +73,7 @@ export const ExistingBuildings = () => {
   const builtBuildings = useEntityQuery([
     Has(Building),
     HasValue(Building, { outer_col: BigInt(globalHex.col), outer_row: BigInt(globalHex.row) }),
+    NotValue(Building, { entity_id: 0n }),
   ]);
 
   useEffect(() => {
@@ -90,7 +91,6 @@ export const ExistingBuildings = () => {
         resource: productionModelValue?.produced_resource_type,
       };
     });
-    _tmp = _tmp.filter((building) => building.type != BuildingType.None);
     setExistingBuildings(_tmp);
   }, [builtBuildings]);
 
