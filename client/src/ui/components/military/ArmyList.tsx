@@ -39,12 +39,10 @@ export const EntityArmyList = ({ entity_id }: any) => {
         headerPanel={
           <>
             {" "}
-            <div className="p-2 ">
-              <p>
-                First you must create an Army then you can enlist troops into it. You can only have one defensive army.
-              </p>
-            </div>
-            <div className=" w-full flex justify-between">
+            <p>
+              First you must create an Army then you can enlist troops into it. You can only have one defensive army.
+            </p>
+            <div className=" w-full flex justify-between my-4">
               <Button
                 isLoading={isLoading}
                 variant="primary"
