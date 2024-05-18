@@ -12,15 +12,7 @@ import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { getComponentValue } from "@dojoengine/recs";
 import { formatSecondsInHoursMinutes } from "../cityview/realm/labor/laborUtils";
 import { useLocation } from "wouter";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/ui/elements/Select";
+
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
 import { ArmyAndName } from "@/hooks/helpers/useArmies";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -44,7 +36,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { army_buy_troops, travel },
+      systemCalls: { army_buy_troops },
       components: { Position, TickMove },
     },
   } = useDojo();
@@ -55,7 +47,6 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
 
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
-  const [travelToBase, setTravelToBase] = useState(false);
 
   // TODO: Clean this up
   const position = { x: entity.x, y: entity.y };
@@ -171,17 +162,6 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
     },
   ];
 
-  const [travelLocation, setTravelLocation] = useState({ x: 0, y: 0 });
-
-  const { realms } = useStructuresFromPosition({ position });
-
-  const handleSetTravelLocation = (realmId: string) => {
-    const realm = realms.find((realm) => realm?.entity_id.toString() === realmId);
-    if (realm) {
-      setTravelLocation({ x: realm.position.x, y: realm.position.y });
-    }
-  };
-
   const [travelWindow, setSetTravelWindow] = useState(false);
 
   return (
@@ -251,87 +231,6 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
         </div>
         <ViewOnMapButton position={position} />
       </div>
-
-      {/* <div className="my-2 flex justify-between">
-        <div className="flex">
-         
-
-          <div className="flex">
-            <div>
-              {!isTraveling && !checkSamePosition && (
-                <div className="flex space-x-2">
-                  {travelToBase ? (
-                    <>
-                      <Button
-                        onClick={() =>
-                          travel({
-                            signer: account,
-                            travelling_entity_id: entity.entity_id,
-                            destination_coord_x: entityOwnerPosition.x,
-                            destination_coord_y: entityOwnerPosition.y,
-                          })
-                        }
-                        variant="outline"
-                      >
-                        Confirm
-                      </Button>
-                      <Button onClick={() => setTravelToBase(false)} variant="outline">
-                        Cancel
-                      </Button>
-                    </>
-                  ) : (
-                    <Button onClick={() => setTravelToBase(true)} variant="outline">
-                      Travel to Base
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {!entity.protectee_id && entity.lifetime > 0 && (
-          <div>
-            <div className="flex justify-between">
-              {!isTraveling && (
-                <div className="self-center">
-                  <div className="flex">
-                    <Select onValueChange={(value) => handleSetTravelLocation(value)}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select a Realm" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {realms.map((realm) => {
-                            return (
-                              <SelectItem key={realm?.entity_id} value={realm?.entity_id.toString() || ""}>
-                                {realm?.name} - {realm?.timeToTravel}hrs
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      onClick={() =>
-                        travel({
-                          signer: account,
-                          travelling_entity_id: entity.entity_id,
-                          destination_coord_x: travelLocation.x,
-                          destination_coord_y: travelLocation.y,
-                        })
-                      }
-                      variant="outline"
-                    >
-                      Travel
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div> */}
 
       <div className="grid grid-cols-3 gap-2 my-1">
         {troops.map((troop) => (
@@ -445,7 +344,7 @@ export const TravelToLocation = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { army_buy_troops, travel },
+      systemCalls: { travel },
     },
   } = useDojo();
 
