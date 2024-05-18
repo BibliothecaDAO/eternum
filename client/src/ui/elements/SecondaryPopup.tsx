@@ -116,8 +116,8 @@ SecondaryPopup.Head = ({
     <h5>{children}</h5>
 
     {onClose && (
-      <Button className="primary" onClick={onClose}>
-        <CloseIcon className="w-6 h-6 ml-1 cursor-pointer fill-gold" />
+      <Button className="outline" onClick={onClose}>
+        <CloseIcon className="w-5 h-5 cursor-pointer fill-gold mx-auto self-center" />
       </Button>
     )}
   </div>

@@ -23,6 +23,9 @@ import {
 } from "@/ui/elements/Select";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
 import { ArmyAndName } from "@/hooks/helpers/useArmies";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { resources } from "@bibliothecadao/eternum";
+import { LucideArrowRight } from "lucide-react";
 
 export const nameMapping: { [key: number]: string } = {
   [ResourcesIds.Knight]: "Knight",
@@ -179,36 +182,27 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
     }
   };
 
+  const [travelWindow, setSetTravelWindow] = useState(false);
+
   return (
-    <div className="flex flex-col">
-      <div className="flex justify-between">
-        <div className="flex">
-          <div className="my-2 uppercase mb-1 font-bold">Status:</div>
-          <div className="flex ml-2 italic self-center">
-            {isTraveling && nextBlockTimestamp ? (
-              <>
-                Traveling for{" "}
-                {isPassiveTravel
-                  ? formatSecondsInHoursMinutes(entity.arrives_at - nextBlockTimestamp)
-                  : "Arrives Next Tick"}
-              </>
-            ) : (
-              "Idle"
-            )}
-          </div>
-        </div>
-        <ViewOnMapButton position={position} />
-      </div>
+    <div className="flex flex-col relative">
+      {travelWindow && (
+        <>
+          <TravelToLocation
+            isTraveling={isTraveling}
+            checkSamePosition={checkSamePosition}
+            entityOwnerPosition={entityOwnerPosition}
+            entity={entity}
+            position={position}
+            onClose={() => setSetTravelWindow(false)}
+          />
+        </>
+      )}
 
       <div className="flex justify-between border-b border-gold/20 py-2">
         {editName ? (
           <div className="flex space-x-2">
-            <TextInput
-              placeholder="Type Name"
-              className="h-full border"
-              value={naming}
-              onChange={(name) => setNaming(name)}
-            />
+            <TextInput placeholder="Type Name" className="h-full" value={naming} onChange={(name) => setNaming(name)} />
             <Button
               variant="primary"
               isLoading={isLoading}
@@ -236,9 +230,31 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
         </Button>
       </div>
 
-      <div className="my-2 flex justify-between">
+      <div className="flex justify-between my-1">
+        <Button variant="outline" onClick={() => setSetTravelWindow(true)}>
+          travel
+        </Button>
+        <div className="self-center mr-auto px-3">
+          {checkSamePosition ? "At Base " : position ? `On Map` : "Unknown"}
+        </div>
+        <div className="flex ml-auto italic self-center  px-3">
+          {isTraveling && nextBlockTimestamp ? (
+            <>
+              Traveling for{" "}
+              {isPassiveTravel
+                ? formatSecondsInHoursMinutes(entity.arrives_at - nextBlockTimestamp)
+                : "Arrives Next Tick"}
+            </>
+          ) : (
+            "Idle"
+          )}
+        </div>
+        <ViewOnMapButton position={position} />
+      </div>
+
+      {/* <div className="my-2 flex justify-between">
         <div className="flex">
-          <div className="self-center mr-2">{checkSamePosition ? "At Base " : position ? `On Map` : "Unknown"}</div>
+         
 
           <div className="flex">
             <div>
@@ -315,9 +331,9 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
             </div>
           </div>
         )}
-        {/* <div className="mt-2 text-order-giants">{entity.lifetime && <div> Buy troops before traveling</div>}</div> */}
-      </div>
-      <div className="grid grid-cols-3 gap-2 my-2">
+      </div> */}
+
+      <div className="grid grid-cols-3 gap-2 my-1">
         {troops.map((troop) => (
           <div className="p-2 border  border-gold/20" key={troop.name}>
             {/* <img src={`/images/units/${nameMapping[troop.name]}.png`} alt={nameMapping[troop.name]} /> */}
@@ -349,13 +365,13 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
                 value={troopCounts[troop.name]}
                 onChange={(amount) => handleTroopCountChange(troop.name, amount)}
               />
-              <div className="px-2 text-xs text-center">
+              <div className="px-2 text-xs text-center text-green font-black">
                 [
                 {currencyFormat(
                   getBalance(owner_entity, troop.name).balance
                     ? Number(getBalance(owner_entity, troop.name).balance)
                     : 0,
-                  2,
+                  0,
                 )}
                 ]
               </div>
@@ -402,5 +418,148 @@ export const ViewOnMapButton = ({ position, className }: { position: Position; c
     >
       <span> view on map</span>
     </Button>
+  );
+};
+
+interface TravelToLocationProps {
+  isTraveling: boolean;
+  checkSamePosition: boolean;
+  entityOwnerPosition: Position;
+  entity: ArmyAndName;
+  position: Position;
+  onClose: () => void;
+}
+
+export const TravelToLocation = ({
+  isTraveling,
+  checkSamePosition,
+  entityOwnerPosition,
+  entity,
+  position,
+  onClose,
+}: TravelToLocationProps) => {
+  const [travelToBase, setTravelToBase] = useState(false);
+
+  const { realms } = useStructuresFromPosition({ position });
+
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { army_buy_troops, travel },
+    },
+  } = useDojo();
+
+  const handleSetTravelLocation = (realmId: string) => {
+    const realm = realms.find((realm) => realm?.entity_id.toString() === realmId);
+    if (realm) {
+      return { x: realm.position.x, y: realm.position.y };
+    }
+    return { x: 0, y: 0 };
+  };
+
+  return (
+    <div className="absolute h-full w-full bg-brown top-0 z-10 ">
+      <div className="flex justify-between mb-3">
+        <div className="flex">
+          <div className="my-2 uppercase mb-1 font-bold">Status:</div>
+          <div className="flex ml-2 italic self-center">
+            {isTraveling ? (
+              <>
+                Traveling for {entity.arrives_at ? formatSecondsInHoursMinutes(entity.arrives_at) : "Arrives Next Tick"}
+              </>
+            ) : (
+              "Idle"
+            )}
+          </div>
+        </div>
+        <div className="flex">
+          <div>
+            {!isTraveling && !checkSamePosition && (
+              <div className="flex space-x-2">
+                {travelToBase ? (
+                  <>
+                    <Button
+                      onClick={() => {
+                        travel({
+                          signer: account,
+                          travelling_entity_id: entity.entity_id,
+                          destination_coord_x: entityOwnerPosition.x,
+                          destination_coord_y: entityOwnerPosition.y,
+                        });
+
+                        onClose();
+                      }}
+                      variant="outline"
+                    >
+                      Confirm
+                    </Button>
+                    <Button onClick={() => setTravelToBase(false)} variant="outline">
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={() => setTravelToBase(true)} variant="primary">
+                    Travel to Back to Base
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <Button size="xs" variant="danger" onClick={onClose}>
+            management <LucideArrowRight className="w-3" />
+          </Button>
+        </div>
+      </div>
+      <div className="border p-2 ">
+        {!entity.protectee_id && entity.lifetime > 0 && (
+          <div>
+            <div className="flex justify-between">
+              {!isTraveling && (
+                <div className="self-center w-full h-48 overflow-y-scroll">
+                  {realms.map((realm) => {
+                    return (
+                      <div className="flex  my-1 hover:bg-crimson/20" key={realm?.entity_id}>
+                        <div className="uppercase self-center">{realm?.name}</div>
+
+                        <div className="flex space-x-2 justify-start px-3 ml-auto self-center">
+                          {realm?.resources.map((resource, index) => (
+                            <ResourceIcon
+                              key={index}
+                              size="sm"
+                              resource={resources.find((r) => r.id === resource)?.trait || ""}
+                            />
+                          ))}
+                        </div>
+
+                        <div className="ml-4">
+                          <Button
+                            onClick={() => {
+                              travel({
+                                signer: account,
+                                travelling_entity_id: entity.entity_id,
+                                destination_coord_x: handleSetTravelLocation(realm?.entity_id.toString() || "").x,
+                                destination_coord_y: handleSetTravelLocation(realm?.entity_id.toString() || "").y,
+                              });
+
+                              onClose();
+                            }}
+                            variant="primary"
+                          >
+                            Travel - {realm?.timeToTravel}hrs
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
