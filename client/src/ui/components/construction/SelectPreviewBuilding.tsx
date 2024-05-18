@@ -20,7 +20,7 @@ import { Tabs } from "@/ui/elements/tab";
 
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { unpackResources } from "@/ui/utils/packedData";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
@@ -394,7 +394,15 @@ export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; ent
   );
 };
 
-export const BuildingInfo = ({ buildingId, entityId }: { buildingId: number; entityId: bigint | undefined }) => {
+export const BuildingInfo = ({
+  buildingId,
+  entityId,
+  extraButtons = [],
+}: {
+  buildingId: number;
+  entityId: bigint | undefined;
+  extraButtons?: React.ReactNode[];
+}) => {
   const cost = BUILDING_COSTS_SCALED[buildingId];
 
   const information = BUILDING_INFORMATION[buildingId];
@@ -465,6 +473,7 @@ export const BuildingInfo = ({ buildingId, entityId }: { buildingId: number; ent
           );
         })}
       </div>
+      <div className="flex justify-center">{...extraButtons}</div>
     </div>
   );
 };

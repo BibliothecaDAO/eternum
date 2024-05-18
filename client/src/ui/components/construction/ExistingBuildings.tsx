@@ -1,7 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
-import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
+import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow } from "@/ui/utils/utils";
 import {
   BuildingEnumToString,
@@ -11,9 +11,9 @@ import {
   biomes,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useAnimations, useGLTF, useHelper } from "@react-three/drei";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { BannerFlag } from "../worldmap/BannerFlag";
 import { BuildingInfo } from "./SelectPreviewBuilding";
@@ -21,6 +21,7 @@ import { useBuildings } from "@/hooks/helpers/useBuildings";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 import { useControls } from "leva";
+import Button from "@/ui/elements/Button";
 
 export enum ModelsIndexes {
   Castle = BuildingType.Castle,
@@ -69,14 +70,14 @@ export const ExistingBuildings = () => {
     }),
     [],
   );
-
   const builtBuildings = useEntityQuery([
     Has(Building),
     HasValue(Building, { outer_col: BigInt(globalHex.col), outer_row: BigInt(globalHex.row) }),
+    NotValue(Building, { entity_id: 0n }),
   ]);
 
   useEffect(() => {
-    const _tmp = builtBuildings.map((entity) => {
+    let _tmp = builtBuildings.map((entity) => {
       const productionModelValue = getComponentValue(Building, entity);
       const type = productionModelValue?.category
         ? BuildingStringToEnum[productionModelValue.category as keyof typeof BuildingStringToEnum]
@@ -151,6 +152,7 @@ export const BuiltBuilding = ({
   const isDestroyMode = useUIStore((state) => state.isDestroyMode);
   const { destroyBuilding } = useBuildings();
   const { realmEntityId } = useRealmStore();
+  const [popupOpened, setPopupOpened] = useState(false);
 
   useHelper(lightRef, THREE.PointLightHelper, 1, "green");
 
@@ -163,12 +165,6 @@ export const BuiltBuilding = ({
     return buildingCategory;
   }, [buildingCategory, resource]);
 
-  const [hover, setHover] = useState(false);
-
-  const isDestroyable = useMemo(() => {
-    return buildingCategory !== BuildingType.Castle && isDestroyMode && hover;
-  }, [buildingCategory, isDestroyMode, hover]);
-
   const model = useMemo(() => {
     let model = models[modelIndex];
     if (!model) return new THREE.Mesh();
@@ -179,7 +175,7 @@ export const BuiltBuilding = ({
           child.castShadow = false;
           child.material.color.set(biomes["ocean"].color);
         }
-        if (hover) {
+        if (popupOpened) {
           child.material = child.material.clone();
           child.material.transparent = true;
           child.material.opacity = 0.8; // Adjust opacity level as needed
@@ -191,22 +187,7 @@ export const BuiltBuilding = ({
       }
     });
     return model.scene.clone();
-  }, [modelIndex, models, isDestroyable, hover]);
-
-  const redModel = useMemo(() => {
-    let model = models[modelIndex];
-    if (!model) return new THREE.Mesh();
-    const newModel = model.scene.clone();
-    newModel.traverse((node: any) => {
-      if (node instanceof THREE.Mesh) {
-        node.material = node.material.clone();
-        node.material.color.set(redColor);
-        node.material.transparent = true;
-        node.material.opacity = 0.8;
-      }
-    });
-    return newModel;
-  }, [modelIndex, models]);
+  }, [modelIndex, models, popupOpened]);
 
   const { actions } = useAnimations(models[modelIndex]?.animations || [], model);
 
@@ -218,37 +199,49 @@ export const BuiltBuilding = ({
     }, Math.random() * 1000);
   }, [actions]);
 
-  const handleClick = useCallback(() => {
-    if (!isDestroyMode) {
-      setHover(true);
-    } else if (isDestroyable) {
-      destroyBuilding(realmEntityId, position.col, position.row);
-    }
-  }, [destroyBuilding, position.col, position.row]);
-
+  const destroyButton = buildingCategory !== BuildingType.Castle && (
+    <Button
+      onClick={() => destroyBuilding(realmEntityId, position.col, position.row)}
+      variant="primary"
+      className="mt-3"
+    >
+      Destroy
+    </Button>
+  );
   return (
     <group
-      onPointerEnter={() => isDestroyMode && setHover(true)}
-      onPointerLeave={() => setHover(false)}
-      // onClick={handleClick}
-      onContextMenu={handleClick}
+      onClick={() => setPopupOpened(true)}
+      onContextMenu={() => setPopupOpened(true)}
       position={[x, 2.31, -y]}
       rotation={rotation}
+      onPointerMissed={(_e) => {
+        setPopupOpened(false);
+      }}
     >
-      <primitive dropShadow scale={3} object={isDestroyable ? redModel : model} />
-      {!isDestroyMode && hover && <HoverBuilding building={buildingCategory} entityId={realmEntityId} />}
+      <primitive dropShadow scale={3} object={model} />
+      {!isDestroyMode && popupOpened && (
+        <HoverBuilding destroyButton={destroyButton} building={buildingCategory} entityId={realmEntityId} />
+      )}
     </group>
   );
 };
 
-const HoverBuilding = ({ building, entityId }: { building: BuildingType; entityId: bigint }) => {
+const HoverBuilding = ({
+  building,
+  entityId,
+  destroyButton,
+}: {
+  destroyButton: React.ReactNode;
+  building: BuildingType;
+  entityId: bigint;
+}) => {
   return (
-    <BaseThreeTooltip distanceFactor={30}>
+    <BaseThreeTooltip distanceFactor={30} position={Position.BOTTOM_RIGHT}>
       <div className="flex flex-col  text-sm p-1 space-y-1">
         <div className="font-bold text-center">
           {BuildingEnumToString[building as keyof typeof BuildingEnumToString]}
         </div>
-        <BuildingInfo buildingId={building} entityId={entityId} />
+        <BuildingInfo buildingId={building} entityId={entityId} extraButtons={[destroyButton]} />
       </div>
     </BaseThreeTooltip>
   );

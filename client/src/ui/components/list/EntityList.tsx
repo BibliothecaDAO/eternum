@@ -33,10 +33,10 @@ export const EntityList = ({ title, panel, list, headerPanel, current }: EntityL
         <>
           {headerPanel}
           <ul>
-            {list.map((entity) => (
+            {list.map((entity, index) => (
               <li
                 className="py-2 px-2 border-y-2 border-x border-gold/50 flex justify-between hover:bg-crimson/40 my-1 rounded"
-                key={entity.id}
+                key={index}
                 onClick={() => setSelectedEntity(entity)}
               >
                 {entity.name} <ArrowRight className="w-2 fill-current" />

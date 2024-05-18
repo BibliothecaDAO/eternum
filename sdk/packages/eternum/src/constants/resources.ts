@@ -963,3 +963,7 @@ export const RESOURCE_OUTPUTS_SCALED: ResourceOutputs = scaleResourceOutputs(RES
 export const BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(BUILDING_COSTS);
 export const RESOURCE_INPUTS_SCALED: ResourceInputs = scaleResourceInputs(RESOURCE_INPUTS);
 export const QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(QUEST_RESOURCES);
+export const EXPLORATION_COSTS_SCALED: Resource[] = EXPLORATION_COSTS.map((resource) => ({
+  ...resource,
+  amount: resource.amount * EternumGlobalConfig.resources.resourceMultiplier,
+}));

@@ -1,15 +1,28 @@
 import React from "react";
-import { Html } from "@react-three/drei";
+import { DojoHtml } from "./DojoHtml";
 
 type BaseThreeTooltipProps = {
   children?: React.ReactNode;
+  position?: Position;
   distanceFactor?: number;
 };
 
-export const BaseThreeTooltip = ({ children, distanceFactor = 50 }: BaseThreeTooltipProps) => {
+export enum Position {
+  CENTER = "-left-1/2 -mt-[150px]",
+  BOTTOM_RIGHT = "rounded-bl-xl rounded-br-xl rounded-tr-xl -left-1",
+  TOP_RIGHT = "rounded-tl-xl rounded-br-xl rounded-tr-xl -left-1 -mt-[300px]",
+  TOP_LEFT = "rounded-tl-xl rounded-bl-xl rounded-tr-xl right-[220px] -mt-[280px]",
+  BOTTOM_LEFT = "rounded-tl-xl rounded-bl-xl rounded-br-xl right-[220px]",
+}
+
+export const BaseThreeTooltip = ({
+  children,
+  distanceFactor = 50,
+  position = Position.CENTER,
+}: BaseThreeTooltipProps) => {
   return (
-    <Html distanceFactor={distanceFactor}>
-      <div className="border min-w-[215px] relative border-gold p-2 rounded-xl bg-brown/70 pointer-events-none text-gold -left-1/2 -mt-[150px]">
+    <DojoHtml distanceFactor={distanceFactor}>
+      <div className={`border min-w-[215px] relative border-gold p-2 bg-brown/70 text-gold ${position}`}>
         {children}
         <svg
           className="absolute bottom-[1px] translate-y-full left-1/2 -translate-x-1/2"
@@ -22,6 +35,6 @@ export const BaseThreeTooltip = ({ children, distanceFactor = 50 }: BaseThreeToo
           <path d="M15.0003 12.75L0.751603 -3.445e-06L29.249 9.53674e-07L15.0003 12.75Z" fill="fill-dark-brown" />
         </svg>
       </div>
-    </Html>
+    </DojoHtml>
   );
 };

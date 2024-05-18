@@ -15,8 +15,8 @@ import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUt
 import ProgressBar from "../../../elements/ProgressBar";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { useResources } from "../../../../hooks/helpers/useResources";
-import { HoveringContainer } from "../HoveringContainer";
 import { InventoryResources } from "../../resources/InventoryResources";
+import { DojoHtml } from "@/ui/elements/DojoHtml";
 
 interface ArmyInfoLabelProps {
   position: UIPosition;
@@ -57,7 +57,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   );
 
   return (
-    <HoveringContainer position={[position.x, position.z, -position.y]}>
+    <DojoHtml position={[position.x, position.z, -position.y]}>
       <RaiderInfo
         key={raider.entityId}
         raider={raider}
@@ -66,7 +66,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
         isPassiveTravel={isPassiveTravel}
         isActiveTravel={isActiveTravel}
       />
-    </HoveringContainer>
+    </DojoHtml>
   );
 };
 

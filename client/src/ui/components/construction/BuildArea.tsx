@@ -83,21 +83,7 @@ const BuildingPreview = () => {
     <>
       <group position={[previewCoords.x, 2.33, -previewCoords.y]}>
         <primitive position={[0, 0, 0]} scale={3} object={previewModel} />
-        {/* {previewBuilding && <BuildingCostThree building={previewBuilding} />} */}
       </group>
     </>
   ) : null;
-};
-
-const BuildingCostThree = ({ building }: { building: BuildingType }) => {
-  return (
-    <BaseThreeTooltip distanceFactor={30}>
-      <div className="flex flex-col  text-sm p-1 space-y-1">
-        <div className="font-bold text-center">
-          {BuildingEnumToString[building as keyof typeof BuildingEnumToString]}
-        </div>
-        {/* <BuildingInfo buildingId={building} /> */}
-      </div>
-    </BaseThreeTooltip>
-  );
 };

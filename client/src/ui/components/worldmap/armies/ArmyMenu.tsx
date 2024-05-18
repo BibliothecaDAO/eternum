@@ -14,9 +14,9 @@ import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { Html } from "@react-three/drei";
 import { useResourceBalance } from "../../../../hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
+import { DojoHtml } from "@/ui/elements/DojoHtml";
 
 const EXPLORE_DESCRIPTION = "Explore the area to discover resources. Limit: 1 hex per tick.";
 const TRAVEL_DESCRIPTION = "Move to a new location. Limit: 5 hexes per tick.";
@@ -160,7 +160,7 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
   };
 
   return (
-    <Html position={[0, 3, -0.5]}>
+    <DojoHtml position={[0, 3, -0.5]}>
       <div
         className={clsx(
           "flex flex-col -translate-x-1/2 transition-all duration-100 bg-brown",
@@ -213,6 +213,6 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
           </Button>
         )}
       </div>
-    </Html>
+    </DojoHtml>
   );
 };
