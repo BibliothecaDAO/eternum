@@ -616,6 +616,8 @@ impl BuildingImpl of BuildingTrait {
         building.entity_id = 0;
         building.category = BuildingCategory::None;
         building.outer_entity_id = 0;
+        building.produced_resource_type = 0;
+        building.bonus_percent = 0;
 
         set!(world, (building));
 
