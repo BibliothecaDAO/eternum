@@ -130,20 +130,20 @@ export const BottomNavigation = () => {
           ></CircleButton>
         ),
       },
-      {
-        name: "resources",
-        button: (
-          <CircleButton
-            className="resources-selector"
-            tooltipLocation="top"
-            image={BuildingThumbs.resources}
-            label={resources}
-            active={isPopupOpen(resources)}
-            size="xl"
-            onClick={() => togglePopup(resources)}
-          ></CircleButton>
-        ),
-      },
+      // {
+      //   name: "resources",
+      //   button: (
+      //     <CircleButton
+      //       className="resources-selector"
+      //       tooltipLocation="top"
+      //       image={BuildingThumbs.resources}
+      //       label={resources}
+      //       active={isPopupOpen(resources)}
+      //       size="xl"
+      //       onClick={() => togglePopup(resources)}
+      //     ></CircleButton>
+      //   ),
+      // },
       {
         name: "bank",
         button: (

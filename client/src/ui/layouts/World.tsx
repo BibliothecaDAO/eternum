@@ -23,6 +23,9 @@ import { Transactions } from "../modules/transactions/Transactions";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import TopLeftContainer from "../containers/TopLeftContainer";
 import { QuestList } from "../components/hints/HintBox";
+import RightMiddleContainer from "../containers/RightMiddleContainer";
+import { SideBar } from "../components/navigation/SideBar";
+import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
 
 export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
@@ -97,6 +100,11 @@ export const World = () => {
       <BottomRightContainer>
         <Transactions />
       </BottomRightContainer>
+
+      {/* RIGHT */}
+      <RightMiddleContainer>
+        <RightNavigationModule />
+      </RightMiddleContainer>
 
       <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} />
       <Tooltip />
