@@ -1,6 +1,7 @@
 import { Account } from "starknet";
 import {
   ARMY_ENTITY_TYPE,
+  BASE_POPULATION_CAPACITY,
   BUILDING_CAPACITY,
   BUILDING_COSTS_SCALED,
   BUILDING_POPULATION,
@@ -37,17 +38,26 @@ export const setProductionConfig = async (account: Account, provider: EternumPro
   }
 };
 
-export const setPopulationConfig = async (account: Account, provider: EternumProvider) => {
+export const setBuildingCategoryPopConfig = async (account: Account, provider: EternumProvider) => {
   for (const buildingId of Object.keys(BUILDING_POPULATION) as unknown as BuildingType[]) {
-    const tx = await provider.set_population_config({
+    const tx = await provider.set_building_category_pop_config({
       signer: account,
       building_category: buildingId,
       population: BUILDING_POPULATION[buildingId],
       capacity: BUILDING_CAPACITY[buildingId],
     });
 
-    console.log(`Configuring building population ${buildingId} ${tx.statusReceipt}...`);
+    console.log(`Configuring building category population ${buildingId} ${tx.statusReceipt}...`);
   }
+};
+
+export const setPopulationConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_population_config({
+    signer: account,
+    base_population: BASE_POPULATION_CAPACITY,
+  });
+
+  console.log(`Configuring population config ${tx.statusReceipt}...`);
 };
 
 export const setBuildingConfig = async (account: Account, provider: EternumProvider) => {

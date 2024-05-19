@@ -1401,8 +1401,8 @@
     {
       "kind": "DojoContract",
       "address": "0x5e248d25812ebb9ffa35d7d15f37e37a84b7631d691b5c8191e359ef3071776",
-      "class_hash": "0x77b7c96118602865d822c227ca0b5c2467e36c2be09966eb2c44d47900dc195",
-      "original_class_hash": "0x77b7c96118602865d822c227ca0b5c2467e36c2be09966eb2c44d47900dc195",
+      "class_hash": "0x95ef4300230d35fb2df1706dd6924de22fbd75569cfaedea8650b2193a1894",
+      "original_class_hash": "0x95ef4300230d35fb2df1706dd6924de22fbd75569cfaedea8650b2193a1894",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -1672,8 +1672,8 @@
     {
       "kind": "DojoContract",
       "address": "0x490d8572029a070064c52d09d2fdb4d5a538bd26f723abfcdeeaff38e47dfeb",
-      "class_hash": "0x59bc29b2c90d80b0c8da71a585354ca487cbd5fd348fdd144b225cacf07dbe7",
-      "original_class_hash": "0x59bc29b2c90d80b0c8da71a585354ca487cbd5fd348fdd144b225cacf07dbe7",
+      "class_hash": "0x7cd47c6a5db6e804b9b3abc0b89e4d3be9a2c8903232aa6d0a52606009af388",
+      "original_class_hash": "0x7cd47c6a5db6e804b9b3abc0b89e4d3be9a2c8903232aa6d0a52606009af388",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -2117,8 +2117,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6e5d27950b7aa8eece851aecb7864b8efb9c1c90e7548b8fdd949b9963c6123",
-      "class_hash": "0x523e9561a0dacf3781522ce6c8d1f7cb8d811a599bcc79bb5c7b9a6d31c9b57",
-      "original_class_hash": "0x523e9561a0dacf3781522ce6c8d1f7cb8d811a599bcc79bb5c7b9a6d31c9b57",
+      "class_hash": "0x60e20f2dd87bccae3e6225c4ea548cf21c71a8085b3bf4110526a26266b289c",
+      "original_class_hash": "0x60e20f2dd87bccae3e6225c4ea548cf21c71a8085b3bf4110526a26266b289c",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -2631,8 +2631,8 @@
         },
         {
           "type": "impl",
-          "name": "PopulationConfigImpl",
-          "interface_name": "eternum::systems::config::contracts::IPopulationConfig"
+          "name": "BuildingCategoryPopulationConfigImpl",
+          "interface_name": "eternum::systems::config::contracts::IBuildingCategoryPopConfig"
         },
         {
           "type": "enum",
@@ -2702,11 +2702,11 @@
         },
         {
           "type": "interface",
-          "name": "eternum::systems::config::contracts::IPopulationConfig",
+          "name": "eternum::systems::config::contracts::IBuildingCategoryPopConfig",
           "items": [
             {
               "type": "function",
-              "name": "set_population_config",
+              "name": "set_building_category_pop_config",
               "inputs": [
                 {
                   "name": "building_category",
@@ -2718,6 +2718,29 @@
                 },
                 {
                   "name": "capacity",
+                  "type": "core::integer::u32"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "PopulationConfigImpl",
+          "interface_name": "eternum::systems::config::contracts::IPopulationConfig"
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::config::contracts::IPopulationConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_population_config",
+              "inputs": [
+                {
+                  "name": "base_population",
                   "type": "core::integer::u32"
                 }
               ],
@@ -9023,6 +9046,321 @@
           "key": true
         },
         {
+          "name": "building_category",
+          "type": "BuildingCategory",
+          "key": true
+        },
+        {
+          "name": "population",
+          "type": "u32",
+          "key": false
+        },
+        {
+          "name": "capacity",
+          "type": "u32",
+          "key": false
+        }
+      ],
+      "class_hash": "0x1b514b2432773892eb0c2443f8be32449899860f7f80d2b91e11a64d0a57426",
+      "original_class_hash": "0x1b514b2432773892eb0c2443f8be32449899860f7f80d2b91e11a64d0a57426",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoModelImpl",
+          "interface_name": "dojo::model::IDojoModel"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::introspect::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::introspect::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::introspect::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            },
+            {
+              "name": "Array",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::model::IDojoModel",
+          "items": [
+            {
+              "type": "function",
+              "name": "name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "unpacked_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "packed_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "layout",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::integer::u8>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "schema",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::database::introspect::Ty"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "building_category_pop_configImpl",
+          "interface_name": "eternum::models::config::Ibuilding_category_pop_config"
+        },
+        {
+          "type": "enum",
+          "name": "eternum::models::buildings::BuildingCategory",
+          "variants": [
+            {
+              "name": "None",
+              "type": "()"
+            },
+            {
+              "name": "Castle",
+              "type": "()"
+            },
+            {
+              "name": "Resource",
+              "type": "()"
+            },
+            {
+              "name": "Farm",
+              "type": "()"
+            },
+            {
+              "name": "FishingVillage",
+              "type": "()"
+            },
+            {
+              "name": "Barracks",
+              "type": "()"
+            },
+            {
+              "name": "Market",
+              "type": "()"
+            },
+            {
+              "name": "ArcheryRange",
+              "type": "()"
+            },
+            {
+              "name": "Stable",
+              "type": "()"
+            },
+            {
+              "name": "DonkeyFarm",
+              "type": "()"
+            },
+            {
+              "name": "TradingPost",
+              "type": "()"
+            },
+            {
+              "name": "WorkersHut",
+              "type": "()"
+            },
+            {
+              "name": "WatchTower",
+              "type": "()"
+            },
+            {
+              "name": "Walls",
+              "type": "()"
+            },
+            {
+              "name": "Storehouse",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::config::BuildingCategoryPopConfig",
+          "members": [
+            {
+              "name": "config_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "building_category",
+              "type": "eternum::models::buildings::BuildingCategory"
+            },
+            {
+              "name": "population",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "capacity",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::models::config::Ibuilding_category_pop_config",
+          "items": [
+            {
+              "type": "function",
+              "name": "ensure_abi",
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "eternum::models::config::BuildingCategoryPopConfig"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::config::building_category_pop_config::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "name": "eternum::models::config::building_category_pop_config"
+    },
+    {
+      "kind": "DojoModel",
+      "members": [
+        {
+          "name": "config_id",
+          "type": "u128",
+          "key": true
+        },
+        {
           "name": "category",
           "type": "BuildingCategory",
           "key": true
@@ -10438,23 +10776,13 @@
           "key": true
         },
         {
-          "name": "building_category",
-          "type": "BuildingCategory",
-          "key": true
-        },
-        {
-          "name": "population",
-          "type": "u32",
-          "key": false
-        },
-        {
-          "name": "capacity",
+          "name": "base_population",
           "type": "u32",
           "key": false
         }
       ],
-      "class_hash": "0x312985705dcef7231feda5c948eb203cc3fbe49415560a8e857b39d97bd3984",
-      "original_class_hash": "0x312985705dcef7231feda5c948eb203cc3fbe49415560a8e857b39d97bd3984",
+      "class_hash": "0x523fe80382be514bbfc912dfb5a25607f4c690bfbb130f1e1b63e40aef95427",
+      "original_class_hash": "0x523fe80382be514bbfc912dfb5a25607f4c690bfbb130f1e1b63e40aef95427",
       "abi": [
         {
           "type": "impl",
@@ -10630,72 +10958,6 @@
           "interface_name": "eternum::models::config::Ipopulation_config"
         },
         {
-          "type": "enum",
-          "name": "eternum::models::buildings::BuildingCategory",
-          "variants": [
-            {
-              "name": "None",
-              "type": "()"
-            },
-            {
-              "name": "Castle",
-              "type": "()"
-            },
-            {
-              "name": "Resource",
-              "type": "()"
-            },
-            {
-              "name": "Farm",
-              "type": "()"
-            },
-            {
-              "name": "FishingVillage",
-              "type": "()"
-            },
-            {
-              "name": "Barracks",
-              "type": "()"
-            },
-            {
-              "name": "Market",
-              "type": "()"
-            },
-            {
-              "name": "ArcheryRange",
-              "type": "()"
-            },
-            {
-              "name": "Stable",
-              "type": "()"
-            },
-            {
-              "name": "DonkeyFarm",
-              "type": "()"
-            },
-            {
-              "name": "TradingPost",
-              "type": "()"
-            },
-            {
-              "name": "WorkersHut",
-              "type": "()"
-            },
-            {
-              "name": "WatchTower",
-              "type": "()"
-            },
-            {
-              "name": "Walls",
-              "type": "()"
-            },
-            {
-              "name": "Storehouse",
-              "type": "()"
-            }
-          ]
-        },
-        {
           "type": "struct",
           "name": "eternum::models::config::PopulationConfig",
           "members": [
@@ -10704,15 +10966,7 @@
               "type": "core::integer::u128"
             },
             {
-              "name": "building_category",
-              "type": "eternum::models::buildings::BuildingCategory"
-            },
-            {
-              "name": "population",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "capacity",
+              "name": "base_population",
               "type": "core::integer::u32"
             }
           ]

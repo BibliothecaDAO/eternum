@@ -1,10 +1,10 @@
 use core::poseidon::poseidon_hash_span as hash;
 use core::zeroable::Zeroable;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::constants::ResourceTypes;
+use eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID};
 use eternum::models::config::{
     TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigImpl,
-    PopulationConfigTrait
+    BuildingCategoryPopConfigTrait, PopulationConfig
 };
 use eternum::models::owner::{Owner, OwnerTrait, EntityOwner};
 use eternum::models::population::{Population, PopulationTrait};
@@ -545,17 +545,23 @@ impl BuildingImpl of BuildingTrait {
         set!(world, (building_quantity));
 
         let mut population = get!(world, outer_entity_id, Population);
-        let population_config = PopulationConfigTrait::get(world, building.category);
+        let building_category_population_config = BuildingCategoryPopConfigTrait::get(
+            world, building.category
+        );
+        let population_config = get!(world, POPULATION_CONFIG_ID, PopulationConfig);
 
         // increase population
-        population.increase_population(population_config.population);
+        population
+            .increase_population(
+                building_category_population_config.population, population_config.base_population
+            );
 
         // increase capacity
         // Only worker huts do this right now.
-        population.increase_capacity(population_config.capacity);
+        population.increase_capacity(building_category_population_config.capacity);
 
         // [check] Population
-        population.assert_within_capacity();
+        population.assert_within_capacity(population_config.base_population);
 
         // set population
         set!(world, (population));
@@ -595,18 +601,21 @@ impl BuildingImpl of BuildingTrait {
 
         // decrease population
         let mut population = get!(world, outer_entity_id, Population);
-        let population_config = PopulationConfigTrait::get(world, building.category);
+        let building_category_population_config = BuildingCategoryPopConfigTrait::get(
+            world, building.category
+        );
 
         // [check] If Workers hut
         // You cannot delete a workers hut unless you have capacity
         // Otherwise there is an exploit where you can delete a workers hut and increase capacity
         if (building.category == BuildingCategory::WorkersHut) {
-            population.decrease_capacity(population_config.capacity);
-            population.assert_within_capacity();
+            let population_config = get!(world, POPULATION_CONFIG_ID, PopulationConfig);
+            population.decrease_capacity(building_category_population_config.capacity);
+            population.assert_within_capacity(population_config.base_population);
         }
 
         // decrease population
-        population.decrease_population(population_config.population);
+        population.decrease_population(building_category_population_config.population);
 
         // set population
         set!(world, (population));

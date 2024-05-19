@@ -96,8 +96,15 @@ trait IBuildingConfig {
 }
 
 #[dojo::interface]
+trait IBuildingCategoryPopConfig {
+    fn set_building_category_pop_config(
+        building_category: BuildingCategory, population: u32, capacity: u32
+    );
+}
+
+#[dojo::interface]
 trait IPopulationConfig {
-    fn set_population_config(building_category: BuildingCategory, population: u32, capacity: u32);
+    fn set_population_config(base_population: u32);
 }
 
 
@@ -109,7 +116,7 @@ mod config_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, COMBAT_CONFIG_ID,
         REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID,
-        BUILDING_CONFIG_ID, POPULATION_CONFIG_ID
+        BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, POPULATION_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
     use eternum::models::buildings::{BuildingCategory};
@@ -117,7 +124,7 @@ mod config_systems {
     use eternum::models::config::{
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig,
         RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
-        TroopConfig, BuildingConfig, PopulationConfig
+        TroopConfig, BuildingConfig, BuildingCategoryPopConfig, PopulationConfig
     };
 
     use eternum::models::hyperstructure::HyperStructure;
@@ -553,8 +560,8 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl PopulationConfigImpl of super::IPopulationConfig<ContractState> {
-        fn set_population_config(
+    impl BuildingCategoryPopulationConfigImpl of super::IBuildingCategoryPopConfig<ContractState> {
+        fn set_building_category_pop_config(
             world: IWorldDispatcher,
             building_category: BuildingCategory,
             population: u32,
@@ -564,10 +571,22 @@ mod config_systems {
 
             set!(
                 world,
-                PopulationConfig {
-                    config_id: POPULATION_CONFIG_ID, building_category, population, capacity
+                BuildingCategoryPopConfig {
+                    config_id: BUILDING_CATEGORY_POPULATION_CONFIG_ID,
+                    building_category,
+                    population,
+                    capacity
                 }
             )
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl PopulationConfigImpl of super::IPopulationConfig<ContractState> {
+        fn set_population_config(world: IWorldDispatcher, base_population: u32,) {
+            assert_caller_is_admin(world);
+
+            set!(world, PopulationConfig { config_id: POPULATION_CONFIG_ID, base_population })
         }
     }
 

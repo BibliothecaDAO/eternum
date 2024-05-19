@@ -344,10 +344,14 @@ export interface SetTroopConfigProps extends SystemSigner {
   disadvantage_percent: num.BigNumberish;
 }
 
-export interface SetPopulationConfigProps extends SystemSigner {
+export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
   building_category: BuildingType;
   population: num.BigNumberish;
   capacity: num.BigNumberish;
+}
+
+export interface SetPopulationConfigProps extends SystemSigner {
+  base_population: num.BigNumberish;
 }
 
 export interface SetBuildingConfigProps extends SystemSigner {

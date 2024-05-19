@@ -1,7 +1,9 @@
 use core::debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::constants::{WORLD_CONFIG_ID, POPULATION_CONFIG_ID, RESOURCE_PRECISION};
+use eternum::constants::{
+    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION
+};
 use eternum::models::buildings::BuildingCategory;
 use eternum::utils::unpack::unpack_resource_types;
 
@@ -251,7 +253,7 @@ impl BattleConfigImpl of BattleConfigTrait {
 
 
 #[derive(Model, Copy, Drop, Serde)]
-struct PopulationConfig {
+struct BuildingCategoryPopConfig {
     #[key]
     config_id: u128,
     #[key]
@@ -260,10 +262,19 @@ struct PopulationConfig {
     capacity: u32, // increase capacity by this amount
 }
 
+#[derive(Model, Copy, Drop, Serde)]
+struct PopulationConfig {
+    #[key]
+    config_id: u128,
+    base_population: u32,
+}
+
 #[generate_trait]
-impl PopulationConfigImpl of PopulationConfigTrait {
-    fn get(world: IWorldDispatcher, building_id: BuildingCategory) -> PopulationConfig {
-        get!(world, (POPULATION_CONFIG_ID, building_id), PopulationConfig)
+impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
+    fn get(world: IWorldDispatcher, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
+        get!(
+            world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig
+        )
     }
 }
 

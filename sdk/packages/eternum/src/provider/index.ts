@@ -626,13 +626,23 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_population_config(props: SystemProps.SetPopulationConfigProps) {
+  public async set_building_category_pop_config(props: SystemProps.SetBuildingCategoryPopConfigProps) {
     const { building_category, population, capacity, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "config_systems"),
-      entrypoint: "set_population_config",
+      entrypoint: "set_building_category_pop_config",
       calldata: [building_category, population, capacity],
+    });
+  }
+
+  public async set_population_config(props: SystemProps.SetPopulationConfigProps) {
+    const { base_population, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_population_config",
+      calldata: [base_population],
     });
   }
 

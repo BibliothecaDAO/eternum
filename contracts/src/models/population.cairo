@@ -1,6 +1,4 @@
-use eternum::constants::{BASE_POPULATION};
 use eternum::models::buildings::{BuildingCategory};
-use eternum::models::config::{PopulationConfig, PopulationConfigTrait};
 
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -13,9 +11,9 @@ struct Population {
 
 #[generate_trait]
 impl PopulationImpl of PopulationTrait {
-    fn increase_population(ref self: Population, amount: u32) -> u32 {
+    fn increase_population(ref self: Population, amount: u32, base_population: u32) -> u32 {
         self.population += amount;
-        self.assert_within_capacity();
+        self.assert_within_capacity(base_population);
         self.population
     }
     fn decrease_population(ref self: Population, amount: u32) -> u32 {
@@ -27,8 +25,8 @@ impl PopulationImpl of PopulationTrait {
 
         self.population
     }
-    fn assert_within_capacity(ref self: Population) {
-        assert(self.capacity + BASE_POPULATION >= self.population, 'Population exceeds capacity')
+    fn assert_within_capacity(ref self: Population, base_population: u32) {
+        assert(self.capacity + base_population >= self.population, 'Population exceeds capacity')
     }
     fn increase_capacity(ref self: Population, amount: u32) -> u32 {
         self.capacity += amount;
