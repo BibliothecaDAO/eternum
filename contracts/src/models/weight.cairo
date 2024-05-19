@@ -14,7 +14,7 @@ impl WeightImpl of WeightTrait {
             return;
         };
         if capacity.is_capped() {
-            assert(self.value >= amount, 'not enough weight');
+            assert(self.value >= amount, 'weight deducted>entity s weight');
             if amount > self.value {
                 self.value = 0;
             } else {
