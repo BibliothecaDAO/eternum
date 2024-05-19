@@ -51,7 +51,7 @@ export const WorldMapScene = () => {
       const _texture = texture[key as keyof typeof texture];
       _texture.wrapS = THREE.RepeatWrapping;
       _texture.wrapT = THREE.RepeatWrapping;
-      _texture.repeat.set(20, 20);
+      _texture.repeat.set(1, 1);
     });
   }, [texture]);
 
