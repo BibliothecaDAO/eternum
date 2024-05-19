@@ -30,6 +30,8 @@ export const soundSelector = {
   buildMarket: "buildings/market.mp3",
   buildStables: "buildings/stables.mp3",
   buildLumberMill: "buildings/lumber_mill.mp3",
+  destroyWooden: "buildings/destroy_wooden.mp3",
+  destroyStone: "buildings/destroy_stone.mp3",
   addWheat: "resources/wheat.mp3",
   addFish: "resources/fish.mp3",
   addWood: "resources/wood.mp3",

@@ -4,7 +4,7 @@ import { HexceptionViewScene } from "./HexceptionViewScene";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
-import { AdaptiveDpr, Bvh, BakeShadows, CameraShake, Stats } from "@react-three/drei";
+import { AdaptiveDpr, Bvh, BakeShadows, CameraShake, Stats, Clouds, Cloud } from "@react-three/drei";
 import { Suspense, useMemo } from "react";
 import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast, ToneMapping } from "@react-three/postprocessing";
 // @ts-ignore
@@ -14,6 +14,7 @@ import { BlendFunction } from "postprocessing";
 import FPSLimiter from "../../utils/FPSLimiter";
 import clsx from "clsx";
 import { DepthOfField, Pixelation, Vignette, ColorAverage } from "@react-three/postprocessing";
+import * as THREE from "three";
 
 export const Camera = () => {
   const cameraPosition = useUIStore((state) => state.cameraPosition);
@@ -48,13 +49,13 @@ export const MainScene = () => {
     () =>
       locationType === "map"
         ? {
-            near: mapFogNear,
-            far: mapFogFar,
-          }
+          near: mapFogNear,
+          far: mapFogFar,
+        }
         : {
-            near: realmFogNear,
-            far: realmFogFar,
-          },
+          near: realmFogNear,
+          far: realmFogFar,
+        },
     [locationType, mapFogFar, mapFogNear, realmFogFar, realmFogNear],
   );
 
@@ -72,10 +73,10 @@ export const MainScene = () => {
     mapCloudsOpacity: { value: 0.05, min: 0, max: 1, step: 0.01, label: "Map Clouds Opacity" },
     mapCloudsBounds: { value: [1500, 1, 700], label: "Map Clouds Bounds" },
     mapCloudsVolume: { value: 700, min: 0, max: 1000, step: 1, label: "Map Clouds Volume" },
-    hexceptionCloudsPosition: { value: [0, 255, -250], label: "Hexception Clouds Position" },
-    hexceptionCloudsOpacity: { value: 0.1, min: 0, max: 1, step: 0.01, label: "Hexception Clouds Opacity" },
-    hexceptionCloudsBounds: { value: [700, 10, 300], label: "Hexception Clouds Bounds" },
-    hexceptionCloudsVolume: { value: 200, min: 0, max: 1000, step: 1, label: "Hexception Clouds Volume" },
+    hexceptionCloudsPosition: { value: [45, 32, -39], label: "Hexception Clouds Position" },
+    hexceptionCloudsOpacity: { value: 0.05, min: 0, max: 1, step: 0.01, label: "Hexception Clouds Opacity" },
+    hexceptionCloudsBounds: { value: [30, 6, 45], label: "Hexception Clouds Bounds" },
+    hexceptionCloudsVolume: { value: 13, min: 0, max: 1000, step: 1, label: "Hexception Clouds Volume" },
   });
 
   const { ambientColor, ambientIntensityHexception, ambientIntensityMap } = useControls("Ambient Light", {
@@ -160,6 +161,30 @@ export const MainScene = () => {
               </Route>
               <Route path="hexception">
                 <CameraShake {...shakeConfig} />
+                <Clouds position={hexceptionCloudsPosition as any} material={THREE.MeshBasicMaterial}>
+                  <Cloud
+                    concentrate="random"
+                    seed={7331}
+                    speed={0.06}
+                    segments={100}
+                    castShadow={true}
+                    opacity={hexceptionCloudsOpacity}
+                    bounds={hexceptionCloudsBounds}
+                    volume={hexceptionCloudsVolume}
+                    color="white"
+                  />
+                  <Cloud
+                    concentrate="random"
+                    seed={1337}
+                    castShadow={true}
+                    speed={0.03}
+                    segments={100}
+                    opacity={hexceptionCloudsOpacity}
+                    bounds={hexceptionCloudsBounds}
+                    volume={hexceptionCloudsVolume}
+                    color="white"
+                  />
+                </Clouds>
                 <HexceptionViewScene />
               </Route>
             </Switch>

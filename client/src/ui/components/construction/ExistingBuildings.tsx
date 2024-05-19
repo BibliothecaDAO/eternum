@@ -22,6 +22,7 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 import { useControls } from "leva";
 import Button from "@/ui/elements/Button";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 
 export enum ModelsIndexes {
   Castle = BuildingType.Castle,
@@ -190,6 +191,8 @@ export const BuiltBuilding = ({
   }, [modelIndex, models, popupOpened]);
 
   const { actions } = useAnimations(models[modelIndex]?.animations || [], model);
+  const { play: playDestroyWooden } = useUiSounds(soundSelector.destroyWooden);
+  const { play: playDestroyStone } = useUiSounds(soundSelector.destroyStone);
 
   useEffect(() => {
     setTimeout(() => {
@@ -201,9 +204,17 @@ export const BuiltBuilding = ({
 
   const destroyButton = buildingCategory !== BuildingType.Castle && (
     <Button
-      onClick={() => destroyBuilding(realmEntityId, position.col, position.row)}
+      onClick={() => {
+        destroyBuilding(realmEntityId, position.col, position.row);
+        if (buildingCategory === BuildingType.Resource && (ResourceIdToMiningType[resource!] === ResourceMiningTypes.Forge || ResourceIdToMiningType[resource!] === ResourceMiningTypes.Mine)) {
+          playDestroyStone();
+        } else {
+          playDestroyWooden();
+        }
+      }}
       variant="danger"
       className="mt-3"
+      withoutSound
     >
       Destroy
     </Button>
@@ -237,7 +248,7 @@ const HoverBuilding = ({
 }) => {
   return (
     <BaseThreeTooltip distanceFactor={30} position={Position.BOTTOM_RIGHT}>
-      <div className="flex flex-col  text-sm p-1 space-y-1">
+      <div className="flex flex-col p-1 space-y-1 text-sm">
         {/* <div className="font-bold text-center">
           {BuildingEnumToString[building as keyof typeof BuildingEnumToString]}
         </div> */}
