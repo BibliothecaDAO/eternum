@@ -62,8 +62,8 @@ const CircleButton = ({
         className,
         sizes[size],
         { "opacity-50 cursor-not-allowed": disabled },
-        { " border-gold sepia-0 border-2": active },
-        { " border-brown/30 sepia-[.50]": !active },
+        { " !border-gold sepia-0 border-2": active },
+        { " border-brown/30 sepia-[.50] border-2": !active },
       )}
       style={{
         backgroundImage: image ? `url(${image})` : active ? "" : "",

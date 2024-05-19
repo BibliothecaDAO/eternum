@@ -6,8 +6,8 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 
 const HighlightedHexes = () => {
-  const tubeRadius = 0.01; // Adjust the tube radius (width) as needed
-  const radialSegments = 8; // Adjust for smoother or sharper corners
+  const tubeRadius = 0.1; // Adjust the tube radius (width) as needed
+  const radialSegments = 10; // Adjust for smoother or sharper corners
   const tubularSegments = 64; // Adjust for a smoother or more faceted tube
   const hexagonPath = createHexagonPath(HEX_RADIUS);
   const hexagonGeometry = new THREE.TubeGeometry(

@@ -12,6 +12,7 @@ import { banks, trade } from "@/ui/components/navigation/Config";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { AllResourceArrivals, ResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
 import { useResources } from "@/hooks/helpers/useResources";
+import { ArrowRight } from "lucide-react";
 
 enum View {
   ResourceTable,
@@ -41,42 +42,63 @@ export const RightNavigationModule = () => {
         }`}
       >
         <div className="gap-1 flex flex-col justify-center">
-          <CircleButton
-            image={BuildingThumbs.resources}
-            className="bg-brown"
-            size="xl"
-            tooltipLocation="top"
-            label={"Balance"}
-            onClick={() => setCurrentView(View.ResourceTable)}
-          />
-          <CircleButton
-            className="trade-selector"
-            image={BuildingThumbs.trade}
-            tooltipLocation="top"
-            label={"Resource Arrivals"}
-            // active={isPopupOpen(trade)}
-            size="xl"
-            onClick={() => setCurrentView(View.ResourceArrivals)}
-            notification={getAllArrivalsWithResources().length}
-          />
-          <CircleButton
-            className="trade-selector"
-            image={BuildingThumbs.scale}
-            tooltipLocation="top"
-            label={trade}
-            active={isPopupOpen(trade)}
-            size="xl"
-            onClick={() => togglePopup(trade)}
-          ></CircleButton>
-          <CircleButton
-            className="banking-selector"
-            image={BuildingThumbs.banks}
-            tooltipLocation="top"
-            label={banks}
-            active={isPopupOpen(banks)}
-            size="xl"
-            onClick={() => togglePopup(banks)}
-          ></CircleButton>
+          <div className="mb-auto">
+            <Button onClick={() => setIsOffscreen(!isOffscreen)} variant="primary">
+              <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen ? "rotate-180" : ""}`} />
+            </Button>
+          </div>
+          <div className="flex flex-col gap-1 mb-auto">
+            <CircleButton
+              image={BuildingThumbs.resources}
+              className="bg-brown"
+              size="xl"
+              tooltipLocation="top"
+              label={"Balance"}
+              active={currentView === View.ResourceTable}
+              onClick={() => {
+                if (isOffscreen) setIsOffscreen(false);
+                setCurrentView(View.ResourceTable);
+              }}
+            />
+            <CircleButton
+              className="trade-selector"
+              image={BuildingThumbs.trade}
+              tooltipLocation="top"
+              label={"Resource Arrivals"}
+              // active={isPopupOpen(trade)}
+              active={currentView === View.ResourceArrivals}
+              size="xl"
+              onClick={() => {
+                if (isOffscreen) setIsOffscreen(false);
+                setCurrentView(View.ResourceArrivals);
+              }}
+              notification={getAllArrivalsWithResources().length}
+            />
+            <CircleButton
+              className="trade-selector"
+              image={BuildingThumbs.scale}
+              tooltipLocation="top"
+              label={trade}
+              active={isPopupOpen(trade)}
+              size="xl"
+              onClick={() => {
+                if (isOffscreen) setIsOffscreen(false);
+                togglePopup(trade);
+              }}
+            ></CircleButton>
+            <CircleButton
+              className="banking-selector"
+              image={BuildingThumbs.banks}
+              tooltipLocation="top"
+              label={banks}
+              active={isPopupOpen(banks)}
+              size="xl"
+              onClick={() => {
+                if (isOffscreen) setIsOffscreen(false);
+                togglePopup(banks);
+              }}
+            ></CircleButton>
+          </div>
         </div>
 
         <BaseContainer className="w-full h-[80vh] overflow-y-scroll">
