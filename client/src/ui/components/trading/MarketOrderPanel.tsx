@@ -1,8 +1,31 @@
 import Button from "@/ui/elements/Button";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
+import { Resource, Resources } from "@bibliothecadao/eternum";
 
-export const MarketResource = () => {
-  return <div className="w-full border h-8"></div>;
+export const MarketResource = ({
+  resource,
+  active,
+  onClick,
+}: {
+  resource: Resources;
+  active: boolean;
+  onClick: (value: number) => void;
+}) => {
+  return (
+    <div
+      onClick={() => onClick(resource.id)}
+      className={`w-full border border-gold/20 h-8 p-1 flex gap-4 ${active ? "bg-gold text-brown" : ""}`}
+    >
+      <ResourceIcon size="sm" resource={resource.trait} />
+      {resource.trait}
+
+      <div className="ml-auto flex gap-3">
+        <div>0.12</div>
+        <div>0.12</div>
+      </div>
+    </div>
+  );
 };
 
 export const MarketOrderPanel = () => {

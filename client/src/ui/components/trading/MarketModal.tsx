@@ -1,8 +1,6 @@
 import { resources } from "@bibliothecadao/eternum";
 import { ModalContainer } from "../ModalContainer";
 import { useMemo, useState } from "react";
-import Button from "@/ui/elements/Button";
-import TextInput from "@/ui/elements/TextInput";
 import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { useEntities } from "@/hooks/helpers/useEntities";
@@ -12,6 +10,8 @@ export const MarketModal = () => {
   const { playerRealms } = useEntities();
 
   const { realmEntityId, setRealmEntityId } = useRealmStore();
+
+  const [selectedResource, setSelectedResource] = useState<number>(1);
 
   return (
     <ModalContainer>
@@ -33,10 +33,15 @@ export const MarketModal = () => {
           </div>
         </div>
 
-        <div className="col-span-2 border ">
-          <MarketResourceSidebar search={""} />
+        <div className="col-span-3 p-1">
+          {/* <TextInput value="Search Resource" onChange={() => console.log("s")} /> */}
+          <MarketResourceSidebar
+            search={""}
+            onClick={(value) => setSelectedResource(value)}
+            selectedResource={selectedResource}
+          />
         </div>
-        <div className="col-span-10">
+        <div className="col-span-9">
           <MarketOrderPanel />
         </div>
       </div>
@@ -44,7 +49,15 @@ export const MarketModal = () => {
   );
 };
 
-export const MarketResourceSidebar = ({ search }: { search: string }) => {
+export const MarketResourceSidebar = ({
+  search,
+  onClick,
+  selectedResource,
+}: {
+  search: string;
+  onClick: (value: number) => void;
+  selectedResource: number;
+}) => {
   const filteredResources = useMemo(() => {
     return resources.filter((resource) => {
       return resource.trait.toLowerCase().includes(search.toLowerCase());
@@ -54,7 +67,14 @@ export const MarketResourceSidebar = ({ search }: { search: string }) => {
   return (
     <div className="flex flex-col">
       {filteredResources.map((resource) => {
-        return <MarketResource key={resource.id} />;
+        return (
+          <MarketResource
+            key={resource.id}
+            resource={resource}
+            active={selectedResource == resource.id}
+            onClick={onClick}
+          />
+        );
       })}
     </div>
   );
