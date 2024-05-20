@@ -10,13 +10,7 @@ const HighlightedHexes = () => {
   const radialSegments = 10; // Adjust for smoother or sharper corners
   const tubularSegments = 64; // Adjust for a smoother or more faceted tube
   const hexagonPath = createHexagonPath(HEX_RADIUS);
-  const hexagonGeometry = new THREE.TubeGeometry(
-    hexagonPath as any,
-    tubularSegments,
-    tubeRadius,
-    radialSegments,
-    false,
-  );
+  const hexagonGeometry = new THREE.RingGeometry(2, 1.5, 6, 1);
 
   const highlightPositions = useUIStore((state) => state.highlightPositions);
 
@@ -27,7 +21,7 @@ const HighlightedHexes = () => {
     const pulseFactor = Math.sin(elapsedTime * Math.PI) * 0.2 + 0.5;
     if (meshRef.current?.material) {
       meshRef.current.material.emissiveIntensity = pulseFactor;
-      meshRef.current.scale.set(pulseFactor, pulseFactor, pulseFactor);
+      meshRef.current.rotation.z = elapsedTime * Math.PI;
     }
   });
 
@@ -39,7 +33,7 @@ const HighlightedHexes = () => {
             key={index}
             ref={meshRef}
             geometry={hexagonGeometry}
-            rotation={[0, 0, 0]}
+            rotation={[Math.PI / 2, 0, Math.PI / 2]}
             position={[highlightPosition[0], 0.3, highlightPosition[1]]}
           >
             <meshPhongMaterial color={highlightColor} emissive={"green"} />
