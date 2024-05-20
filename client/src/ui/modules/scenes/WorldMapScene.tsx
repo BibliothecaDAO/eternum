@@ -34,13 +34,14 @@ const StarsSky = () => {
   return <primitive object={points} />;
 };
 
+const scale = 20;
 export const WorldMapScene = () => {
   const [isMapView] = useRoute("/map");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const texture = useTexture({
-    map: "/textures/paper/paper-color.jpg",
+    map: "/textures/paper/worldmap-bg.png",
     displacementMap: "/textures/paper/paper-height.jpg",
     roughnessMap: "/textures/paper/paper-roughness.jpg",
     normalMap: "/textures/paper/paper-normal.jpg",
@@ -51,7 +52,8 @@ export const WorldMapScene = () => {
       const _texture = texture[key as keyof typeof texture];
       _texture.wrapS = THREE.RepeatWrapping;
       _texture.wrapT = THREE.RepeatWrapping;
-      _texture.repeat.set(1, 1);
+      _texture.repeat.set(scale, scale / 2.5);
+      // _texture.magFilter
     });
   }, [texture]);
 
