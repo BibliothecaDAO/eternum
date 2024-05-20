@@ -59,6 +59,7 @@ export const MarketModal = () => {
         <div className="col-span-3 p-1">
           {/* <TextInput value="Search Resource" onChange={() => console.log("s")} /> */}
           <MarketResourceSidebar
+            entityId={realmEntityId}
             search={""}
             onClick={(value) => setSelectedResource(value)}
             selectedResource={selectedResource}
@@ -80,12 +81,14 @@ export const MarketModal = () => {
 };
 
 export const MarketResourceSidebar = ({
+  entityId,
   search,
   onClick,
   selectedResource,
   resourceAskOffers,
   resourceBidOffers,
 }: {
+  entityId: bigint;
   search: string;
   onClick: (value: number) => void;
   selectedResource: number;
@@ -112,6 +115,7 @@ export const MarketResourceSidebar = ({
         return (
           <MarketResource
             key={resource.id}
+            entityId={entityId || BigInt("0")}
             resource={resource}
             active={selectedResource == resource.id}
             onClick={onClick}

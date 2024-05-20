@@ -5,7 +5,7 @@ import useMarketStore from "@/hooks/store/useMarketStore";
 import Button from "@/ui/elements/Button";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, multiplyByPrecision } from "@/ui/utils/utils";
+import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   EternumGlobalConfig,
   MarketInterface,
@@ -15,20 +15,35 @@ import {
   findResourceById,
 } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
+import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
+import { useProductionManager } from "@/hooks/helpers/useResources";
 
 export const MarketResource = ({
+  entityId,
   resource,
   active,
   onClick,
   askPrice,
   bidPrice,
 }: {
+  entityId: bigint;
   resource: Resources;
   active: boolean;
   onClick: (value: number) => void;
   askPrice: string;
   bidPrice: string;
 }) => {
+  const currentTick = useBlockchainStore((state) => state.currentTick);
+  const productionManager = useProductionManager(entityId, resource.id);
+
+  const production = useMemo(() => {
+    return productionManager.getProduction();
+  }, []);
+
+  const balance = useMemo(() => {
+    return productionManager.balance(currentTick);
+  }, [productionManager, production, currentTick]);
+
   return (
     <div
       onClick={() => onClick(resource.id)}
@@ -40,6 +55,7 @@ export const MarketResource = ({
       {resource.trait}
 
       <div className="ml-auto flex gap-3">
+        {currencyFormat(balance ? Number(balance) : 0, 0)}
         <div className="text-green">{bidPrice}</div>
         <div className="text-red">{askPrice}</div>
       </div>
@@ -238,15 +254,23 @@ export const OrderCreation = ({
 
   const takerGives = useMemo(() => {
     return isBuy ? [resourceId, multiplyByPrecision(resource)] : [ResourcesIds.Lords, multiplyByPrecision(lords)];
-  }, [resource, resourceId]);
+  }, [resource, resourceId, lords]);
 
   const makerGives = useMemo(() => {
     return isBuy ? [ResourcesIds.Lords, multiplyByPrecision(lords)] : [resourceId, multiplyByPrecision(resource)];
-  }, [resource, resourceId]);
+  }, [resource, resourceId, lords]);
 
   const createOrder = async () => {
     if (!nextBlockTimestamp) return;
     setLoading(true);
+
+    console.log({
+      maker_id: entityId,
+      maker_gives_resources: makerGives,
+      taker_id: 0,
+      taker_gives_resources: takerGives,
+      expires_at: nextBlockTimestamp + ONE_MONTH,
+    });
     await create_order({
       signer: account,
       maker_id: entityId,
@@ -266,6 +290,46 @@ export const OrderCreation = ({
     setResource(lords / initialBid);
   };
 
+  const orderWeight = useMemo(() => {
+    const totalWeight = getTotalResourceWeight([{ resourceId, amount: resource }]);
+    return multiplyByPrecision(totalWeight);
+  }, [resource, lords]);
+
+  const donkeysNeeded = useMemo(() => {
+    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacity.donkey);
+  }, [orderWeight]);
+
+  const currentTick = useBlockchainStore((state) => state.currentTick);
+  const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
+
+  const donkeyProduction = useMemo(() => {
+    return donkeyProductionManager.getProduction();
+  }, []);
+
+  const donkeyBalance = useMemo(() => {
+    return donkeyProductionManager.balance(currentTick);
+  }, [donkeyProductionManager, donkeyProduction, currentTick]);
+
+  const resourceProductionManager = useProductionManager(entityId, resourceId);
+
+  const resourceProduction = useMemo(() => {
+    return resourceProductionManager.getProduction();
+  }, [resourceId]);
+
+  const resourceBalance = useMemo(() => {
+    return resourceProductionManager.balance(currentTick);
+  }, [resourceProduction, resourceProduction, currentTick, resourceId]);
+
+  const lordsProductionManager = useProductionManager(entityId, ResourcesIds.Lords);
+
+  const lordsProduction = useMemo(() => {
+    return lordsProductionManager.getProduction();
+  }, []);
+
+  const lordsBalance = useMemo(() => {
+    return lordsProductionManager.balance(currentTick);
+  }, [lordsProductionManager, lordsProduction, currentTick]);
+
   return (
     <div className="flex justify-between p-4 text-xl flex-wrap mt-auto clip-angled-sm bg-white/10">
       <div className="flex w-full gap-8">
@@ -274,6 +338,11 @@ export const OrderCreation = ({
             <ResourceIcon size="xs" resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"} /> sell
           </div>
           <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
+          <div className="text-sm">
+            {!isBuy
+              ? currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)
+              : currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)}
+          </div>
         </div>
         <div className="self-center flex">
           <div className="uppercase self-center">
@@ -287,11 +356,18 @@ export const OrderCreation = ({
             <ResourceIcon size="xs" resource={isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"} /> Buy
           </div>
           <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
+          <div className="text-sm">
+            {!isBuy
+              ? currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)
+              : currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)}
+          </div>
         </div>
       </div>
       <div className="mt-8 ml-auto text-right">
-        <div>Donkeys needed 1000</div>
-        <div>Weight 2000</div>
+        <div>
+          Donkeys {donkeysNeeded} [{currencyFormat(donkeyBalance ? Number(donkeyBalance) : 0, 0)}]
+        </div>
+        <div>Weight {divideByPrecision(orderWeight)} kgs</div>
         <Button isLoading={loading} className="mt-4" onClick={createOrder} size="md" variant="primary">
           Create {isBuy ? "Buy" : "Sell"} Order
         </Button>
