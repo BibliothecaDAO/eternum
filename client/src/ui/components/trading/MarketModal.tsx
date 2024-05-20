@@ -7,6 +7,8 @@ import { useEntities } from "@/hooks/helpers/useEntities";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useMarketStore from "@/hooks/store/useMarketStore";
 import { useGetMyOffers } from "@/hooks/helpers/useTrade";
+import Button from "@/ui/elements/Button";
+import { TransferBetweenEntities } from "./TransferBetweenEntities";
 
 export const MarketModal = () => {
   const { playerRealms } = useEntities();
@@ -36,10 +38,12 @@ export const MarketModal = () => {
     );
   }, [marketOffers, myOffers]);
 
+  const [panel, setPanel] = useState<"market" | "transfer">("market");
+
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 my-8 bg-brown/90 border-gold/30 clip-angled">
-        <div className="col-span-12 border-b p-2">
+      <div className="container border mx-auto  grid grid-cols-12 my-8 bg-brown/90 border-gold/30 clip-angled overflow-y-scroll">
+        <div className="col-span-12 border-b p-2 flex justify-between">
           <div className="self-center">
             <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(BigInt(trait))}>
               <SelectTrigger className="w-[180px]">
@@ -53,6 +57,14 @@ export const MarketModal = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="self-center flex gap-4">
+            <Button onClick={() => setPanel("market")} variant={panel == "market" ? "primary" : "default"}>
+              Market
+            </Button>
+            <Button onClick={() => setPanel("transfer")} variant={panel == "transfer" ? "primary" : "default"}>
+              Transfers
+            </Button>
           </div>
         </div>
 
@@ -68,12 +80,16 @@ export const MarketModal = () => {
           />
         </div>
         <div className="col-span-9">
-          <MarketOrderPanel
-            resourceId={selectedResource}
-            entityId={realmEntityId}
-            resourceAskOffers={askOffers}
-            resourceBidOffers={bidOffers}
-          />
+          {panel === "market" ? (
+            <MarketOrderPanel
+              resourceId={selectedResource}
+              entityId={realmEntityId}
+              resourceAskOffers={askOffers}
+              resourceBidOffers={bidOffers}
+            />
+          ) : (
+            <TransferView />
+          )}
         </div>
       </div>
     </ModalContainer>
@@ -125,5 +141,18 @@ export const MarketResourceSidebar = ({
         );
       })}
     </div>
+  );
+};
+
+export const TransferView = () => {
+  const { playerRealms, playerAccounts, otherRealms } = useEntities();
+  return (
+    <TransferBetweenEntities
+      entitiesList={[
+        { entities: playerRealms(), name: "Player Realms" },
+        { entities: playerAccounts(), name: "Player Bank Accounts" },
+        { entities: otherRealms(), name: "Other Realms" },
+      ]}
+    />
   );
 };

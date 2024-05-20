@@ -118,12 +118,18 @@ export const MarketOrders = ({
   return (
     <div className=" h-full flex flex-col gap-8">
       {/* Market Price */}
-      <div className={`text-xl flex clip-angled-sm  justify-between p-3 ${!isBuy ? "bg-green/20" : "bg-red/20"}`}>
+      <div
+        className={`text-xl flex clip-angled-sm font-bold  justify-between p-3 px-8 ${
+          !isBuy ? "bg-green/20" : "bg-red/20"
+        }`}
+      >
         <div className="self-center flex gap-4">
           <ResourceIcon size="lg" resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"} />
           <div className="self-center">{lowestPrice.toFixed(2)}</div>
         </div>
-        <div>{offers.length}</div>
+        <div>
+          {offers.length} {isBuy ? "bid" : "ask"}
+        </div>
       </div>
 
       <div className=" p-4 bg-white/10  flex-col flex gap-1 clip-angled-sm">
@@ -264,13 +270,6 @@ export const OrderCreation = ({
     if (!nextBlockTimestamp) return;
     setLoading(true);
 
-    console.log({
-      maker_id: entityId,
-      maker_gives_resources: makerGives,
-      taker_id: 0,
-      taker_gives_resources: takerGives,
-      expires_at: nextBlockTimestamp + ONE_MONTH,
-    });
     await create_order({
       signer: account,
       maker_id: entityId,
@@ -333,9 +332,14 @@ export const OrderCreation = ({
   return (
     <div className="flex justify-between p-4 text-xl flex-wrap mt-auto clip-angled-sm bg-white/10">
       <div className="flex w-full gap-8">
-        <div>
-          <div className="uppercase text-xs flex gap-1">
-            <ResourceIcon size="xs" resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"} /> sell
+        <div className="w-1/3">
+          <div className="uppercase text-xs flex gap-1 font-bold">
+            <ResourceIcon
+              withTooltip={false}
+              size="xs"
+              resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
+            />{" "}
+            sell
           </div>
           <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
           <div className="text-sm">
@@ -344,16 +348,34 @@ export const OrderCreation = ({
               : currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)}
           </div>
         </div>
-        <div className="self-center flex">
-          <div className="uppercase self-center">
+        <div className="flex w-1/3 justify-start px-3">
+          <div className="uppercase">
+            <div className="uppercase text-xs flex gap-1 mb-4 ">
+              <ResourceIcon
+                withTooltip={false}
+                size="xs"
+                resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
+              />{" "}
+              per /{" "}
+              <ResourceIcon
+                withTooltip={false}
+                size="xs"
+                resource={isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
+              />
+            </div>
             {bid.toString()}
 
             {/* <Button onClick={setMarketBit}>{initialBid.toFixed(2)}</Button> */}
           </div>
         </div>
-        <div>
-          <div className="uppercase text-xs flex gap-1">
-            <ResourceIcon size="xs" resource={isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"} /> Buy
+        <div className="w-1/3">
+          <div className="uppercase text-xs flex gap-1 font-bold">
+            <ResourceIcon
+              withTooltip={false}
+              size="xs"
+              resource={isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
+            />{" "}
+            Buy
           </div>
           <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
           <div className="text-sm">
@@ -363,11 +385,24 @@ export const OrderCreation = ({
           </div>
         </div>
       </div>
-      <div className="mt-8 ml-auto text-right">
-        <div>
-          Donkeys {donkeysNeeded} [{currencyFormat(donkeyBalance ? Number(donkeyBalance) : 0, 0)}]
+      <div className="mt-8 ml-auto text-right w-56">
+        <div className="text-sm">
+          <div className="flex justify-between">
+            <div>Donkeys Used</div>
+            <div className="flex gap-2">
+              {donkeysNeeded}{" "}
+              <div className="text-green">[{currencyFormat(donkeyBalance ? Number(donkeyBalance) : 0, 0)}]</div>
+            </div>
+          </div>
+
+          <div className="flex justify-between">
+            <div>Weight</div>
+            <div className="flex gap-2">
+              <div>{divideByPrecision(orderWeight)} kgs</div>
+            </div>
+          </div>
         </div>
-        <div>Weight {divideByPrecision(orderWeight)} kgs</div>
+
         <Button isLoading={loading} className="mt-4" onClick={createOrder} size="md" variant="primary">
           Create {isBuy ? "Buy" : "Sell"} Order
         </Button>
