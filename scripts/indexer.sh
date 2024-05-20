@@ -34,4 +34,5 @@ if [[ "$setConfig" == "true" ]]; then
 fi
 
 echo "-----  Started indexer ----- "
-torii --world 0x177a3f3d912cf4b55f0f74eccf3b7def7c6144efeba033e9f21d9cdb0230c64
+rm torii.db
+torii --world 0x177a3f3d912cf4b55f0f74eccf3b7def7c6144efeba033e9f21d9cdb0230c64 --database torii.db
