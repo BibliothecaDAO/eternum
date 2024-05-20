@@ -32,7 +32,7 @@ import { useTravel } from "../../../../hooks/helpers/useTravel";
 import { useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useLocation } from "wouter";
-import { useFrame } from "@react-three/fiber";
+import { HexGrid } from "../../models/biomes/HexGrid";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
@@ -138,6 +138,7 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
         const BiomeComponent = biomeComponents[biome];
         return hexes.length ? <BiomeComponent key={biome} hexes={hexes} /> : null;
       })}
+      <HexGrid hexes={group} />
     </>
   );
 };

@@ -6,11 +6,7 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 
 const HighlightedHexes = () => {
-  const tubeRadius = 0.1; // Adjust the tube radius (width) as needed
-  const radialSegments = 10; // Adjust for smoother or sharper corners
-  const tubularSegments = 64; // Adjust for a smoother or more faceted tube
-  const hexagonPath = createHexagonPath(HEX_RADIUS);
-  const hexagonGeometry = new THREE.RingGeometry(2, 1.5, 8, 1);
+  const hexagonGeometry = new THREE.RingGeometry(2, 1.5, 6, 1);
 
   const highlightPositions = useUIStore((state) => state.highlightPositions);
 
@@ -18,11 +14,11 @@ const HighlightedHexes = () => {
 
   useFrame(({ clock }) => {
     const elapsedTime = clock.getElapsedTime();
-    const pulseFactor = Math.sin(elapsedTime * Math.PI) * 0.2 + 0.5;
+    const pulseFactor = Math.sin(elapsedTime * Math.PI * 1.5) * 0.3 + 1;
     meshRefs.current.forEach((mesh) => {
       if (mesh?.material) {
         mesh.material.emissiveIntensity = pulseFactor;
-        mesh.rotation.z = elapsedTime * Math.PI;
+        mesh.scale.set(pulseFactor, pulseFactor, pulseFactor);
       }
     });
   });
