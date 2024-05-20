@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
+import { useContext, useState } from "react";
 import { BaseContainer } from "../../containers/BaseContainer";
-import { HexagonInformationPanel } from "../../components/worldmap/hexagon/HexagonInformationPanel";
 
 import CircleButton from "@/ui/elements/CircleButton";
 import Button from "@/ui/elements/Button";
@@ -9,12 +8,12 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import useUIStore from "@/hooks/store/useUIStore";
 import { banks, trade } from "@/ui/components/navigation/Config";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { AllResourceArrivals, ResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
+import { AllResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
 import { useResources } from "@/hooks/helpers/useResources";
 import { ArrowRight } from "lucide-react";
 import { useModal } from "@/hooks/store/useModal";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
+import { RightModuleContext } from "@/ui/containers/RightMiddleContainer";
 
 enum View {
   ResourceTable,
@@ -22,15 +21,12 @@ enum View {
 }
 
 export const RightNavigationModule = () => {
-  const [isOffscreen, setIsOffscreen] = useState(false);
+  const { isOffscreen, setIsOffscreen } = useContext(RightModuleContext)!;
 
   const [currentView, setCurrentView] = useState(View.ResourceTable);
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const toggleOffscreen = () => {
-    setIsOffscreen(!isOffscreen);
-  };
 
   const { realmEntityId } = useRealmStore();
 
@@ -41,17 +37,15 @@ export const RightNavigationModule = () => {
   return (
     <>
       <div
-        className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] text-gold right-4 ${
-          isOffscreen ? "translate-x-[83%]" : ""
-        }`}
+        className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] text-gold right-4`}
       >
         <div className="gap-1 flex flex-col justify-center">
-          <div className="mb-auto">
+          <div className="pointer-events-auto mb-auto">
             <Button onClick={() => setIsOffscreen(!isOffscreen)} variant="primary">
               <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen ? "rotate-180" : ""}`} />
             </Button>
           </div>
-          <div className="flex flex-col gap-1 mb-auto">
+          <div className="pointer-events-auto flex flex-col gap-1 mb-auto">
             <CircleButton
               image={BuildingThumbs.resources}
               className="bg-brown"
@@ -105,7 +99,7 @@ export const RightNavigationModule = () => {
           </div>
         </div>
 
-        <BaseContainer className="w-full h-[80vh] overflow-y-scroll">
+        <BaseContainer className="pointer-events-auto w-full h-[80vh] overflow-y-scroll">
           {currentView === View.ResourceTable ? (
             <EntityResourceTable entityId={realmEntityId} />
           ) : (
