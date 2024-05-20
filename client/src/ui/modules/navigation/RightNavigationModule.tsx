@@ -13,6 +13,8 @@ import { useEntities } from "@/hooks/helpers/useEntities";
 import { AllResourceArrivals, ResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
 import { useResources } from "@/hooks/helpers/useResources";
 import { ArrowRight } from "lucide-react";
+import { useModal } from "@/hooks/store/useModal";
+import { MarketModal } from "@/ui/components/trading/MarketModal";
 
 enum View {
   ResourceTable,
@@ -33,6 +35,8 @@ export const RightNavigationModule = () => {
   const { realmEntityId } = useRealmStore();
 
   const { getAllArrivalsWithResources } = useResources();
+
+  const { toggleModal } = useModal();
 
   return (
     <>
@@ -83,7 +87,7 @@ export const RightNavigationModule = () => {
               size="xl"
               onClick={() => {
                 if (isOffscreen) setIsOffscreen(false);
-                togglePopup(trade);
+                toggleModal(<MarketModal />);
               }}
             ></CircleButton>
             <CircleButton

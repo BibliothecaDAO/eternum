@@ -32,7 +32,7 @@ function ListSelect(props: ListSelectProps) {
           <div className="relative  ">
             <Listbox.Button
               className={clsx(
-                "flex items-center relative justify-center w-full cursor-pointer text-xs py-1 min-h-[32px]",
+                "flex items-center relative w-full cursor-pointer text-xs py-1 min-h-[32px]",
                 props.style === "black"
                   ? open
                     ? "bg-brown/50 text-gold !justify-start"

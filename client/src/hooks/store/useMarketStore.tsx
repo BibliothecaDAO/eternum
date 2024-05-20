@@ -14,6 +14,8 @@ interface MarketStore {
   deleteTrade: (tradeId: bigint) => void;
   setMarkets: (lordsMarket: MarketInterface[], nonLordsMarket: MarketInterface[]) => void;
   setDirectOffers: (directOffers: MarketInterface[]) => void;
+  selectedResource: number;
+  setSelectedResource: (resource: number) => void;
 }
 
 const useMarketStore = create<MarketStore>((set, get) => {
@@ -37,6 +39,10 @@ const useMarketStore = create<MarketStore>((set, get) => {
       const directOffers = get().directOffers.filter((trade) => trade.tradeId !== tradeId);
 
       set({ lordsMarket: [...lordsMarket], generalMarket: [...generalMarket], directOffers: [...directOffers] });
+    },
+    selectedResource: 1,
+    setSelectedResource: (resource) => {
+      set({ selectedResource: resource });
     },
   };
 });

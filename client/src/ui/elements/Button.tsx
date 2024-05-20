@@ -17,20 +17,20 @@ const STYLES = {
   baseStyle:
     "inline-flex whitespace-nowrap cursor-pointer white transition-all duration-300 items-center justify-center p-2 text-xs font-medium text-gold uppercase rounded",
   primary:
-    "px-6 py-2 bg-crimson from-yellow-600 to-yellow-700  font-semibold text-lg uppercase tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none outline-gradient  outline-gold hover:bg-gold hover:text-brown clip-angled ",
-  default: "text-white/90 bg-crimson/60 border border-transparent shadow-sm clip-angled !text-gold",
+    "px-6 py-2 bg-crimson from-yellow-600 to-yellow-700  font-semibold text-lg uppercase tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none outline-gradient  outline-gold hover:bg-gold hover:text-brown clip-angled border-gradient border-y hover:border-crimson",
+  default: "text-white/90 bg-gold/20 border border-transparent shadow-sm clip-angled !text-gold px-6 py-2",
   enabledStyle: "bg-black/10 hover:bg-black/30 focus:outline-none",
   disabledStyle: "bg-gray-300 cursor-not-allowed !border-gray-gold !text-gray-gold",
   success: "border border-green !text-brilliance bg-transparent hover:bg-green/10",
   red: "border border-danger !text-danger bg-transparent hover:bg-danger/10",
   outline: "border border-gold !text-gold bg-transparent hover:bg-gold/10",
-  danger: "bg-red border-red text-white bg-transparent hover:bg-red/90 clip-angled",
+  danger: "bg-red border-red !text-gold bg-transparent hover:bg-red/90 ",
   secondary: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
   loadingStyle: "relative",
 };
 
 const SIZES = {
-  xs: "text-xxs h-4",
+  xs: "text-xxs h-4 clip-angled-sm",
   md: "",
 };
 

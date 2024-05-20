@@ -89,17 +89,8 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
   };
 
   return (
-    <div className="p-2">
+    <div className="p-2 h-full">
       <h4 className="text-center capitalize mb-5">{currentStep?.title}</h4>
-
-      {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
-        <div className="w-full flex justify-center">
-          {" "}
-          <Button className="m-2" variant="outline" size="xs" onClick={toggleDonkeyOrigin}>
-            Toggle Donkey Origin: {isOriginDonkeys ? "Origin" : "Destination"}
-          </Button>
-        </div>
-      )}
 
       {currentStep?.id === STEP_ID.SELECT_ENTITIES && (
         <>
@@ -148,37 +139,49 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
           </div>
         </>
       )}
+
       {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
-        <>
-          <SelectResources
-            selectedResourceIds={selectedResourceIds}
-            setSelectedResourceIds={setSelectedResourceIds}
-            selectedResourceAmounts={selectedResourceAmounts}
-            setSelectedResourceAmounts={setSelectedResourceAmounts}
-            entity_id={selectedEntityIdFrom!}
-          />
-          <div className="flex flex-col w-full items-center mt-4">
-            <TravelInfo
-              entityId={isOriginDonkeys ? selectedEntityIdFrom! : selectedEntityIdTo!}
-              resources={selectedResourceIds.map((resourceId: number) => ({
-                resourceId,
-                amount: selectedResourceAmounts[resourceId],
-              }))}
-              travelTime={travelTime}
-              setCanCarry={setCanCarry}
+        <div className="grid grid-cols-2 gap-32 px-16 h-full">
+          <div className="p-4  clip-angled-sm h-full">
+            <SelectResources
+              selectedResourceIds={selectedResourceIds}
+              setSelectedResourceIds={setSelectedResourceIds}
+              selectedResourceAmounts={selectedResourceAmounts}
+              setSelectedResourceAmounts={setSelectedResourceAmounts}
+              entity_id={selectedEntityIdFrom!}
             />
           </div>
-          <Button
-            className="w-full mt-2"
-            isLoading={isLoading}
-            disabled={!canCarry || selectedResourceIds.length === 0}
-            variant="primary"
-            size="md"
-            onClick={onSendResources}
-          >
-            Confirm
-          </Button>
-        </>
+
+          <div className=" p-4 bg-white/10 clip-angled-sm h-96">
+            <div className="w-full flex justify-center">
+              {" "}
+              <Button className="m-2" variant="default" onClick={toggleDonkeyOrigin}>
+                Toggle Origin: {isOriginDonkeys ? "Origin" : "Destination"}
+              </Button>
+            </div>
+            <div className="flex flex-col w-full items-center mt-4">
+              <TravelInfo
+                entityId={isOriginDonkeys ? selectedEntityIdFrom! : selectedEntityIdTo!}
+                resources={selectedResourceIds.map((resourceId: number) => ({
+                  resourceId,
+                  amount: selectedResourceAmounts[resourceId],
+                }))}
+                travelTime={travelTime}
+                setCanCarry={setCanCarry}
+              />
+            </div>
+            <Button
+              className="w-full mt-2"
+              isLoading={isLoading}
+              disabled={!canCarry || selectedResourceIds.length === 0}
+              variant="primary"
+              size="md"
+              onClick={onSendResources}
+            >
+              Confirm
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -275,10 +278,9 @@ const SelectResources = ({
           ];
         }
         return (
-          <div key={id} className="flex items-center w-[300px] gap-3">
+          <div key={id} className="flex items-center gap-3 w-64">
             <ListSelect
               className="ml-2 rounded-md overflow-hidden"
-              style="black"
               options={options}
               value={selectedResourceIds[index]}
               onChange={(value) => {
@@ -317,6 +319,7 @@ const SelectResources = ({
       })}
       <Button
         variant="primary"
+        className="mt-8"
         size="md"
         onClick={() => {
           addResourceGive();
