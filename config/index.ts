@@ -4,7 +4,7 @@ import productionManifest from "../contracts/manifests/prod/manifest.json";
 import {
   EternumProvider,
   setProductionConfig,
-  setPopulationConfig,
+  setBuildingCategoryPopConfig,
   setResourceBuildingConfig,
   setWeightConfig,
   setCombatConfig,
@@ -12,6 +12,7 @@ import {
   setCapacityConfig,
   setSpeedConfig,
   setQuestConfig,
+  setPopulationConfig,
 } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 import { setBuildingConfig } from "@bibliothecadao/eternum";
@@ -35,6 +36,7 @@ const provider = new EternumProvider(manifest, nodeUrl);
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
 await setProductionConfig(account, provider);
+await setBuildingCategoryPopConfig(account, provider);
 await setPopulationConfig(account, provider);
 await setBuildingConfig(account, provider);
 await setResourceBuildingConfig(account, provider);
