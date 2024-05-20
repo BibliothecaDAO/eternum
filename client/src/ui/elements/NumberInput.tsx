@@ -16,7 +16,7 @@ export const NumberInput = ({ value, onChange, className, step = 1, max = 0, min
   const { play: playClick } = useUiSounds(soundSelector.click);
 
   return (
-    <div className={clsx("flex items-center border  w-22 h-7 border-gold", className)}>
+    <div className={clsx("flex items-center border  h-10 text-lg border-gold/40", className)}>
       <div
         className="flex items-center justify-center h-full px-1 border-r cursor-pointer border-gold hover:bg-gold/30 "
         onClick={() => {
@@ -30,7 +30,7 @@ export const NumberInput = ({ value, onChange, className, step = 1, max = 0, min
       <input
         type="number"
         min={min}
-        className=" w-14 text-xs appearance-none !outline-none h-full text-center bg-transparent text-gold"
+        className=" w-16  appearance-none !outline-none h-full text-center bg-transparent text-gold"
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value))}
       />
