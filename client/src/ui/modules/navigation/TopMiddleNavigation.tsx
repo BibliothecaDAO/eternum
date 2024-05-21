@@ -26,27 +26,16 @@ import Button from "@/ui/elements/Button";
 export const TopMiddleNavigation = () => {
   const {
     setup: {
-      components: { Population, BuildingQuantityv2 },
+      components: { Population },
     },
   } = useDojo();
-  const setTooltip = useUIStore((state) => state.setTooltip);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const togglePopup = useUIStore((state) => state.togglePopup);
-  const { realmId } = useRealmStore();
+
   const [location, setLocation] = useLocation();
   const { realm } = useHexPosition();
 
   const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realm?.entity_id || "0")]));
-
-  const storehouses = useMemo(() => {
-    const quantity =
-      getComponentValue(
-        BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(realm?.entity_id || "0"), BigInt(BuildingType.Storehouse)]),
-      )?.value || 0;
-
-    return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
-  }, []);
 
   const { toggleModal } = useModal();
 

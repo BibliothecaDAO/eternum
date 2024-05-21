@@ -296,15 +296,15 @@ export const BuildingCard = ({
       }}
       onClick={onClick}
       className={clsx(
-        " hover:border-gold border border-transparent transition-all duration-200 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 ",
+        " border-transparent hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm hover:border-gradient hover:border-2",
         {
-          "!border-lightest !text-lightest": active,
+          "!border-lightest border-gradient border-2": active,
         },
       )}
     >
       {!canBuild && (
         <div className="absolute w-full h-full bg-black/50 text-white/60 p-4 text-xs  flex justify-center ">
-          <div className="self-center">insufficient fund or population</div>
+          <div className="self-center">insufficient funds or population</div>
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50 ">
