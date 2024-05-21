@@ -4,20 +4,13 @@ import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import {
-  BASE_POPULATION_CAPACITY,
-  BuildingType,
-  EternumGlobalConfig,
-  STOREHOUSE_CAPACITY,
-} from "@bibliothecadao/eternum";
+import { BuildingType, EternumGlobalConfig, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
-import { assistant, leaderboard, quests } from "@/ui/components/navigation/Config";
-import { Compass } from "@/ui/components/worldmap/Compass";
-import { Headline } from "@/ui/elements/Headline";
+import { leaderboard, quests } from "@/ui/components/navigation/Config";
 import { useMemo } from "react";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "@/hooks/context/DojoContext";
@@ -184,53 +177,6 @@ export const TopMiddleNavigation = () => {
           size="sm"
           onClick={() => toggleModal(<HintModal />)}
         />
-        {/* {population && (
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                position: "bottom",
-                content: (
-                  <span className="whitespace-nowrap pointer-events-none">
-                    <Headline>Population</Headline>
-
-                    <span>
-                      {population.population} population / {population.capacity + BASE_POPULATION_CAPACITY} capacity
-                    </span>
-                    <br />
-                    <span>Build Workers huts to expand population</span>
-                  </span>
-                ),
-              });
-            }}
-            onMouseLeave={() => setTooltip(null)}
-            className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5"
-          >
-            {population.population} / {population.capacity + BASE_POPULATION_CAPACITY} pop
-          </div>
-        )}
-        {storehouses && (
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                position: "bottom",
-                content: (
-                  <div className="whitespace-nowrap pointer-events-none">
-                    <Headline>Storehouses Capacity</Headline>
-
-                    <span>This is the max per resource you can store</span>
-
-                    <br />
-                    <span>Build Storehouses to increase this</span>
-                  </div>
-                ),
-              });
-            }}
-            onMouseLeave={() => setTooltip(null)}
-            className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5 "
-          >
-            {storehouses.toLocaleString()} max
-          </div>
-        )} */}
       </div>
     </div>
   );

@@ -15,6 +15,11 @@ import { useResources } from "@/hooks/helpers/useResources";
 import { ArrowRight } from "lucide-react";
 import { useModal } from "@/hooks/store/useModal";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
+import { useComponentValue } from "@dojoengine/react";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { getComponentValue } from "@dojoengine/recs";
+import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { BASE_POPULATION_CAPACITY, BuildingType, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
 
 enum View {
   ResourceTable,
@@ -25,7 +30,7 @@ export const RightNavigationModule = () => {
   const [isOffscreen, setIsOffscreen] = useState(false);
 
   const [currentView, setCurrentView] = useState(View.ResourceTable);
-
+  const setTooltip = useUIStore((state) => state.setTooltip);
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const toggleOffscreen = () => {
@@ -37,6 +42,24 @@ export const RightNavigationModule = () => {
   const { getAllArrivalsWithResources } = useResources();
 
   const { toggleModal } = useModal();
+
+  const {
+    setup: {
+      components: { Population, BuildingQuantityv2 },
+    },
+  } = useDojo();
+
+  const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
+
+  const storehouses = useMemo(() => {
+    const quantity =
+      getComponentValue(
+        BuildingQuantityv2,
+        getEntityIdFromKeys([BigInt(realmEntityId || "0"), BigInt(BuildingType.Storehouse)]),
+      )?.value || 0;
+
+    return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
+  }, []);
 
   return (
     <>
@@ -106,7 +129,55 @@ export const RightNavigationModule = () => {
 
         <BaseContainer className="w-full h-[80vh] overflow-y-scroll">
           {currentView === View.ResourceTable ? (
-            <EntityResourceTable entityId={realmEntityId} />
+            <>
+              <div className="flex justify-between">
+                {population && (
+                  <div
+                    onMouseEnter={() => {
+                      setTooltip({
+                        position: "bottom",
+                        content: (
+                          <span className="whitespace-nowrap pointer-events-none text-sm">
+                            <span>
+                              {population.population} population / {population.capacity + BASE_POPULATION_CAPACITY}{" "}
+                              capacity
+                            </span>
+                            <br />
+                            <span>Build Workers huts to expand population</span>
+                          </span>
+                        ),
+                      });
+                    }}
+                    onMouseLeave={() => setTooltip(null)}
+                    className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5"
+                  >
+                    {population.population} / {population.capacity + BASE_POPULATION_CAPACITY} pop
+                  </div>
+                )}
+                {storehouses && (
+                  <div
+                    onMouseEnter={() => {
+                      setTooltip({
+                        position: "bottom",
+                        content: (
+                          <div className="whitespace-nowrap pointer-events-none text-sm">
+                            <span>This is the max per resource you can store</span>
+
+                            <br />
+                            <span>Build Storehouses to increase this.</span>
+                          </div>
+                        ),
+                      });
+                    }}
+                    onMouseLeave={() => setTooltip(null)}
+                    className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5 "
+                  >
+                    {storehouses.toLocaleString()} capacity
+                  </div>
+                )}
+              </div>
+              <EntityResourceTable entityId={realmEntityId} />
+            </>
           ) : (
             <AllResourceArrivals entityIds={getAllArrivalsWithResources()} />
           )}
