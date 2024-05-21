@@ -89,6 +89,7 @@ mod map_systems {
             let current_coord: Coord = get!(world, unit_id, Position).into();
             let next_coord = current_coord.neighbor(direction);
             InternalMapSystemsImpl::explore(world, unit_id, next_coord, exploration_reward);
+            InternalMapSystemsImpl::discover_shards_mine(world, next_coord);
 
             // travel to explored tile location 
             InternalTravelSystemsImpl::travel_hex(
@@ -160,14 +161,14 @@ mod map_systems {
         }
 
         fn discover_shards_mine(world: IWorldDispatcher, coord: Coord) -> bool {
-            let is_shards_mine: @bool = random::choices(
-                array![true, false].span(), array![1, 5].span(), array![].span(), 1, true
+            let is_shards_mine: bool = *random::choices(
+                array![true, false].span(), array![1000, 5000].span(), array![].span(), 1, true
             )[0];
 
             let entity_id = world.uuid();
             let caller = starknet::get_caller_address();
 
-            if *is_shards_mine {
+            if is_shards_mine {
                 set!(
                     world,
                     (
@@ -189,10 +190,10 @@ mod map_systems {
                     entity_id.into(),
                     BuildingCategory::Resource,
                     Option::Some(ResourceTypes::EARTHEN_SHARD),
-                    coord
+                    BuildingImpl::center(),
                 );
             }
-            return *is_shards_mine;
+            is_shards_mine
         }
     }
 }

@@ -58,8 +58,8 @@ name = "eternum::systems::bank::contracts::swap_systems::swap_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x5e248d25812ebb9ffa35d7d15f37e37a84b7631d691b5c8191e359ef3071776"
-class_hash = "0x95ef4300230d35fb2df1706dd6924de22fbd75569cfaedea8650b2193a1894"
-original_class_hash = "0x95ef4300230d35fb2df1706dd6924de22fbd75569cfaedea8650b2193a1894"
+class_hash = "0x6fa06a2fc05b70a9b49c81df2c031feb3b6a2f2761be1934ca32a576476dc84"
+original_class_hash = "0x6fa06a2fc05b70a9b49c81df2c031feb3b6a2f2761be1934ca32a576476dc84"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_buildings_contracts_building_systems.json"
 reads = []
@@ -142,8 +142,8 @@ name = "eternum::systems::leveling::contracts::leveling_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0xe41bb92d0734340f4d6ad423426f5bf2f611fa13b3c94d325c5f3b64c7ddea"
-class_hash = "0xb8fb578a95dd719e39e4855d355c92434e07d7b81fd442b03e3880c9752adc"
-original_class_hash = "0xb8fb578a95dd719e39e4855d355c92434e07d7b81fd442b03e3880c9752adc"
+class_hash = "0x42779fa94c6381fe4b32df9218a6f96a1904288edd7f270d07e85b405a9d42"
+original_class_hash = "0x42779fa94c6381fe4b32df9218a6f96a1904288edd7f270d07e85b405a9d42"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_map_contracts_map_systems.json"
 reads = []

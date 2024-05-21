@@ -528,11 +528,6 @@ impl BuildingImpl of BuildingTrait {
 
         set!(world, (building));
 
-        // make payment for building
-        BuildingImpl::make_payment(
-            world, building.outer_entity_id, building.category, building.produced_resource_type
-        );
-
         // start production related to building
         building.start_production(world);
 
