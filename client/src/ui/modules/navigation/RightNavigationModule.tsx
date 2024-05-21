@@ -41,20 +41,19 @@ export const RightNavigationModule = () => {
   return (
     <>
       <div
-        className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] text-gold right-4 ${
+        className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] text-gold right-4 self-center pointer-events-auto ${
           isOffscreen ? "translate-x-[83%]" : ""
         }`}
       >
-        <div className="gap-1 flex flex-col justify-center">
-          <div className="mb-auto">
+        <div className="gap-2 flex flex-col justify-center self-center">
+          <div>
             <Button onClick={() => setIsOffscreen(!isOffscreen)} variant="primary">
               <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen ? "rotate-180" : ""}`} />
             </Button>
           </div>
-          <div className="flex flex-col gap-1 mb-auto">
+          <div className="flex flex-col gap-2 mb-auto">
             <CircleButton
               image={BuildingThumbs.resources}
-              className="bg-brown"
               size="xl"
               tooltipLocation="top"
               label={"Balance"}

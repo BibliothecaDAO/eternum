@@ -3,6 +3,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { getRealmNameById } from "@/ui/utils/realms";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
@@ -24,6 +25,10 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useModal } from "@/hooks/store/useModal";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import { ArrowUp } from "lucide-react";
+import { useEntities } from "@/hooks/helpers/useEntities";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import { Map } from "lucide-react";
+import Button from "@/ui/elements/Button";
 
 export const TopMiddleNavigation = () => {
   const {
@@ -51,6 +56,42 @@ export const TopMiddleNavigation = () => {
   }, []);
 
   const { toggleModal } = useModal();
+
+  const { playerRealms } = useEntities();
+
+  const { realmEntityId, setRealmEntityId } = useRealmStore();
+
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
+
+  const { getRealmIdFromRealmEntityId } = useRealm();
+
+  const isRealmView = location.includes(`/hex`);
+
+  const gotToRealmView = (entityId: any) => {
+    const realm = playerRealms().find((realm) => realm.entity_id?.toString() === entityId);
+
+    setIsLoadingScreenEnabled(true);
+    setTimeout(() => {
+      if (location.includes(`/hex`)) {
+        setIsLoadingScreenEnabled(false);
+      }
+      setLocation(`/hex?col=${realm?.position.x}&row=${realm?.position.y}`);
+    }, 300);
+
+    setRealmEntityId(BigInt(entityId));
+  };
+
+  const goToMapView = (entityId: any) => {
+    const realmId = getRealmIdFromRealmEntityId(BigInt(entityId));
+    if (!realmId) return;
+    moveCameraToRealm(Number(realmId));
+
+    setRealmEntityId(BigInt(entityId));
+  };
+
+  const { hexPosition } = useQuery();
+  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
 
   return (
     <div className="flex">
@@ -82,12 +123,57 @@ export const TopMiddleNavigation = () => {
         <TickProgress />
       </div>
 
-      <div className="flex bg-brown/90 clip-angled  border-gradient py-2  px-24 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center">
-        <div className="self-center ">
-          <Headline>
-            <h5 className="self-center uppercase">{realmId ? getRealmNameById(realmId as any | "") : ""}</h5>
-          </Headline>
+      <div className="flex min-w-96 bg-brown clip-angled  border-gradient py-2 px-4 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center">
+        <div className="self-center flex justify-between w-full">
+          <Select
+            value={realmEntityId.toString()}
+            onValueChange={(a) => {
+              !isRealmView ? goToMapView(a) : gotToRealmView(a);
+            }}
+          >
+            <SelectTrigger className="">
+              <SelectValue placeholder="Select Realm" />
+            </SelectTrigger>
+            <SelectContent className="bg-brown ">
+              {playerRealms().map((realm, index) => (
+                <SelectItem
+                  className="flex justify-between text-sm"
+                  key={index}
+                  value={realm.entity_id?.toString() || ""}
+                >
+                  {/* {realm.name} */}
+                  <h5 className="self-center flex gap-4">
+                    <Map className="self-center" />
+
+                    {realm.name}
+                  </h5>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+        <Button
+          onClick={() => {
+            if (location !== "/map") {
+              setIsLoadingScreenEnabled(true);
+              setTimeout(() => {
+                setLocation("/map");
+                if (hexPosition.col !== 0 && hexPosition.row !== 0) {
+                  moveCameraToColRow(hexPosition.col, hexPosition.row, 0.01, true);
+                  setTimeout(() => {
+                    moveCameraToColRow(hexPosition.col, hexPosition.row, 1.5);
+                  }, 10);
+                }
+              }, 100);
+            } else {
+              setTimeout(() => {
+                gotToRealmView(realmEntityId.toString());
+              }, 50);
+            }
+          }}
+        >
+          {location === "/map" ? "Realm" : "World"}
+        </Button>
       </div>
       <div className="self-center px-3 flex space-x-2">
         <CircleButton
@@ -98,7 +184,7 @@ export const TopMiddleNavigation = () => {
           size="sm"
           onClick={() => toggleModal(<HintModal />)}
         />
-        {population && (
+        {/* {population && (
           <div
             onMouseEnter={() => {
               setTooltip({
@@ -144,7 +230,7 @@ export const TopMiddleNavigation = () => {
           >
             {storehouses.toLocaleString()} max
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

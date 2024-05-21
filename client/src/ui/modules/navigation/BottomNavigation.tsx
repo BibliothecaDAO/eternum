@@ -39,53 +39,6 @@ export const BottomNavigation = () => {
   const navigation = useMemo(() => {
     const navigation = [
       {
-        name: "world-map",
-        button: (
-          <CircleButton
-            className="world-selector"
-            tooltipLocation="top"
-            image={BuildingThumbs.worldMap}
-            label="world map"
-            onClick={() => {
-              if (location !== "/map") {
-                setIsLoadingScreenEnabled(true);
-                setTimeout(() => {
-                  setLocation("/map");
-                  if (hexPosition.col !== 0 && hexPosition.row !== 0) {
-                    moveCameraToColRow(hexPosition.col, hexPosition.row, 0.01, true);
-                    setTimeout(() => {
-                      moveCameraToColRow(hexPosition.col, hexPosition.row, 1.5);
-                    }, 10);
-                  }
-                }, 100);
-              } else {
-                if (hexPosition.col !== 0 && hexPosition.row !== 0) {
-                  moveCameraToColRow(hexPosition.col, hexPosition.row);
-                }
-              }
-            }}
-            size="xl"
-          />
-        ),
-      },
-      {
-        name: "realm",
-        button: (
-          <CircleButton
-            className="realm-selector"
-            image="/images/buildings/thumb/realm.png"
-            label="Realms"
-            tooltipLocation="top"
-            active={activeBar === MenuEnum.realm}
-            size="xl"
-            onClick={() => toggleBar(MenuEnum.realm)}
-          >
-            {/* <City className="w-6 fill-current" /> */}
-          </CircleButton>
-        ),
-      },
-
-      {
         name: "military",
         button: (
           <CircleButton
@@ -116,48 +69,6 @@ export const BottomNavigation = () => {
           ></CircleButton>
         ),
       },
-      // {
-      //   name: "trade",
-      //   button: (
-      //     <CircleButton
-      //       className="trade-selector"
-      //       image={BuildingThumbs.trade}
-      //       tooltipLocation="top"
-      //       label={trade}
-      //       active={isPopupOpen(trade)}
-      //       size="xl"
-      //       onClick={() => togglePopup(trade)}
-      //     ></CircleButton>
-      //   ),
-      // },
-      // {
-      //   name: "resources",
-      //   button: (
-      //     <CircleButton
-      //       className="resources-selector"
-      //       tooltipLocation="top"
-      //       image={BuildingThumbs.resources}
-      //       label={resources}
-      //       active={isPopupOpen(resources)}
-      //       size="xl"
-      //       onClick={() => togglePopup(resources)}
-      //     ></CircleButton>
-      //   ),
-      // },
-      // {
-      //   name: "bank",
-      //   button: (
-      //     <CircleButton
-      //       className="banking-selector"
-      //       image={BuildingThumbs.banks}
-      //       tooltipLocation="top"
-      //       label={banks}
-      //       active={isPopupOpen(banks)}
-      //       size="xl"
-      //       onClick={() => togglePopup(banks)}
-      //     ></CircleButton>
-      //   ),
-      // },
     ];
 
     return location === "/map"
@@ -198,13 +109,13 @@ export const BottomNavigation = () => {
             <SelectPreviewBuildingMenu />
           </div>
         </div>
-        <div className="w-full flex space-x-2 justify-start  pl-24">
+        {/* <div className="w-full flex space-x-2 justify-start  pl-24">
           {navigation.map((item, index) => (
             <div className="duration-300 transition-all" key={index}>
               {item.button}
             </div>
           ))}
-        </div>
+        </div> */}
       </div>
     </div>
   );

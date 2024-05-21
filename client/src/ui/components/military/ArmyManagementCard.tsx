@@ -184,7 +184,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
           <div className="flex space-x-2">
             <TextInput placeholder="Type Name" className="h-full" value={naming} onChange={(name) => setNaming(name)} />
             <Button
-              variant="primary"
+              variant="default"
               isLoading={isLoading}
               onClick={async () => {
                 setIsLoading(true);
@@ -205,13 +205,13 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
         ) : (
           <h3>{entity.name}</h3>
         )}
-        <Button size="xs" variant="outline" onClick={() => setEditName(!editName)}>
+        <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
           edit name
         </Button>
       </div>
 
       <div className="flex justify-between my-1">
-        <Button variant="outline" onClick={() => setSetTravelWindow(true)}>
+        <Button variant="default" onClick={() => setSetTravelWindow(true)}>
           travel
         </Button>
         <div className="self-center mr-auto px-3">

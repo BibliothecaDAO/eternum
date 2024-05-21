@@ -106,7 +106,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-8 gap-2 p-2">
+          <div className="grid grid-cols-4 gap-2 p-2">
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
@@ -151,7 +151,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-8 gap-2 p-2">
+          <div className="grid grid-cols-4 gap-2 p-2">
             {buildingTypes
               .filter((a) => a !== "Barracks" && a !== "ArcheryRange" && a !== "Stable")
               .map((buildingType, index) => {
@@ -205,7 +205,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-8 gap-2 p-2">
+          <div className="grid grid-cols-4 gap-2 p-2">
             {" "}
             {buildingTypes
               .filter((a) => a === "Barracks" || a === "ArcheryRange" || a === "Stable")
@@ -248,7 +248,7 @@ export const SelectPreviewBuildingMenu = () => {
   );
 
   return (
-    <div className="flex flex-col -mt-40 bg-brown border-gradient border clip-angled">
+    <div className="flex flex-col  bg-brown border-gradient border clip-angled">
       <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
         <Tabs.List>
           {tabs.map((tab, index) => (

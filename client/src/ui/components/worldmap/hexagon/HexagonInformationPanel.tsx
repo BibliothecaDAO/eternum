@@ -3,21 +3,27 @@ import { ArmiesAtLocation, Battle } from "../../military/Battle";
 
 export const HexagonInformationPanel = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
-  const { col: x, row: y } = clickedHex!.contractPos;
+  // const { col: x, row: y } = clickedHex!.contractPos;
+
+  console.log(clickedHex);
 
   return (
     <>
       <div className="p-2">
-        <div className="p-2 flex justify-between">
-          <h5>Coordinates</h5>
-          <div className=" font-bold flex  space-x-2 justify-between self-center ">
-            <div>{`x: ${x?.toLocaleString()}`}</div>
-            <div>{`y: ${y?.toLocaleString()}`}</div>
-          </div>
-        </div>
+        {clickedHex && (
+          <>
+            <div className="p-2 flex justify-between">
+              <h5>Coordinates</h5>
+              <div className=" font-bold flex  space-x-2 justify-between self-center ">
+                <div>{`x: ${clickedHex!.contractPos.col?.toLocaleString()}`}</div>
+                <div>{`y: ${clickedHex!.contractPos.row?.toLocaleString()}`}</div>
+              </div>
+            </div>
 
-        <Battle />
-        <ArmiesAtLocation />
+            <Battle />
+            <ArmiesAtLocation />
+          </>
+        )}
       </div>
     </>
   );

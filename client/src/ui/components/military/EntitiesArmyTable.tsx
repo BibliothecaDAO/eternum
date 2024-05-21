@@ -1,6 +1,7 @@
 import { ArmyChip } from "./ArmyChip";
 import { ArmyAndName, useEntityArmies } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { Headline } from "@/ui/elements/Headline";
 
 type EntityArmyTableProps = {
   entityId: bigint | undefined;
@@ -17,7 +18,7 @@ export const EntityArmyTable = ({ entityId }: EntityArmyTableProps) => {
     });
   };
 
-  return <div>{armyElements()}</div>;
+  return <div className="flex flex-col gap-4">{armyElements()}</div>;
 };
 
 export const EntitiesArmyTable = () => {
@@ -25,8 +26,8 @@ export const EntitiesArmyTable = () => {
 
   return playerRealms().map((entity: any) => {
     return (
-      <div>
-        <div>{entity.name}</div>
+      <div className="p-2">
+        <Headline className="my-3">{entity.name}</Headline>
         <EntityArmyTable entityId={entity.entity_id} />
       </div>
     );

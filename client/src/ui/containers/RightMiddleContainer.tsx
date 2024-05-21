@@ -1,5 +1,5 @@
 export const RightMiddleContainer = ({ children }: { children: React.ReactNode }) => {
-  return <div className="absolute z-20 w-auto top-24 right-0 ">{children}</div>;
+  return <div className="absolute z-20 w-auto right-0 flex h-screen top-0 pointer-events-none">{children}</div>;
 };
 
 export default RightMiddleContainer;
