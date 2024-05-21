@@ -83,14 +83,12 @@ const CircleButton = ({
           backgroundPosition: "center", // Center the background image
           padding: image ? "5px" : "0",
         }}
-        className={`absolute w-full h-full bg-no-repeat z-10 clip-angled-sm  hover:bg-gold duration-300 ${
-          active ? "bg-gold/90" : "bg-brown/90"
+        className={`absolute w-[calc(100%-3px)] h-[calc(100%-3px)] bg-no-repeat z-10 clip-angled-sm  hover:bg-gold duration-300 ${
+          active ? "bg-gold/60" : "bg-brown/80"
         }`}
       ></div>
       <div
-        className={`absolute  w-[calc(100%+3px)] h-[calc(100%+3px)] clip-angled-sm ${
-          active ? "bg-brown/40" : " bg-gold/40 "
-        }`}
+        className={`absolute  w-[calc(100%+2px)] h-[calc(100%+2px)] clip-angled-sm ${active ? "bg-gold/40" : " "}`}
       ></div>
     </button>
   );

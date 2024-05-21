@@ -78,30 +78,6 @@ export const TopMiddleNavigation = () => {
   return (
     <div className="flex">
       <div className="self-center px-3 flex space-x-2">
-        <CircleButton
-          image={BuildingThumbs.leaderboard}
-          label={leaderboard}
-          active={isPopupOpen(leaderboard)}
-          size="sm"
-          onClick={() => togglePopup(leaderboard)}
-        />
-        <div className="relative">
-          <CircleButton
-            image={BuildingThumbs.squire}
-            label={quests}
-            active={isPopupOpen(quests)}
-            size="sm"
-            onClick={() => togglePopup(quests)}
-            className="forth-step"
-          />
-
-          {population?.population == null && location !== "/map" && (
-            <div className="absolute bg-brown text-gold border-gradient border top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
-              <ArrowUp className="text-gold w-4 mr-3" />
-              <div>Start here</div>
-            </div>
-          )}
-        </div>
         <TickProgress />
       </div>
 

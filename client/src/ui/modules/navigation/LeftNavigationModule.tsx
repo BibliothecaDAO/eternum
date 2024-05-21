@@ -60,12 +60,7 @@ enum View {
 }
 
 export const LeftNavigationModule = () => {
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const closeAllPopups = useUIStore((state) => state.closeAllPopups);
-  const openAllPopups = useUIStore((state) => state.openAllPopups);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const [isOffscreen, setIsOffscreen] = useState(false);
-
   const [view, setView] = useState<View>(View.ConstructionView);
 
   const { realmEntityId } = useRealmStore();
@@ -87,7 +82,7 @@ export const LeftNavigationModule = () => {
               setIsOffscreen(false);
               setView(View.EntityView);
             }}
-          ></CircleButton>
+          />
         ),
       },
       {
@@ -104,7 +99,7 @@ export const LeftNavigationModule = () => {
               setIsOffscreen(false);
               setView(View.MilitaryView);
             }}
-          ></CircleButton>
+          />
         ),
       },
       {
@@ -116,14 +111,12 @@ export const LeftNavigationModule = () => {
             tooltipLocation="top"
             label={construction}
             active={view === View.ConstructionView}
-            // active={activeBar === MenuEnum.construction}
             size="xl"
             onClick={() => {
               setIsOffscreen(false);
               setView(View.ConstructionView);
             }}
-            // onClick={() => togglePopup(construction)}
-          ></CircleButton>
+          />
         ),
       },
     ];
@@ -138,66 +131,6 @@ export const LeftNavigationModule = () => {
         )
       : navigation;
   }, [location, view]);
-
-  const secondaryNavigation = [
-    {
-      button: (
-        <CircleButton
-          label={"expand all popups"}
-          size="sm"
-          tooltipLocation="right"
-          onClick={() =>
-            openAllPopups([
-              entityDetails,
-              leaderboard,
-              settings,
-              hyperstructures,
-              banks,
-              resources,
-              eventLog,
-              military,
-              construction,
-            ])
-          }
-        >
-          <Expand className="w-4" />
-        </CircleButton>
-      ),
-    },
-    {
-      button: (
-        <CircleButton tooltipLocation="right" label={"close all popups"} size="sm" onClick={() => closeAllPopups()}>
-          <Close className="w-4" />
-        </CircleButton>
-      ),
-    },
-    {
-      button: (
-        <CircleButton
-          tooltipLocation="right"
-          active={isPopupOpen(settings)}
-          label={"settings"}
-          size="sm"
-          onClick={() => togglePopup(settings)}
-        >
-          <Settings className="w-4" />
-        </CircleButton>
-      ),
-    },
-    {
-      button: (
-        <CircleButton
-          tooltipLocation="right"
-          active={isPopupOpen(settings)}
-          label={"walkthrough"}
-          size="sm"
-          onClick={() => setIsOpen(true)}
-        >
-          <Refresh className="w-4 " />
-        </CircleButton>
-      ),
-    },
-  ];
 
   if (realmEntityId === undefined) {
     return null;
@@ -238,45 +171,6 @@ export const LeftNavigationModule = () => {
           </div>
         </div>
       </div>
-      <SettingsWindow />
-      <Questing entityId={realmEntityId} />
-      <Assistant />
-      <Leaderboard />
-      <Banks />
-      {/* <div className="flex flex-col justify-center">
-        <div className="flex flex-col space-y-2 py-2 sixth-step">
-          {secondaryNavigation.map((a, index) => (
-            <div key={index}>{a.button}</div>
-          ))}
-        </div>
-      </div> */}
     </>
-    // <div className="max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] text-gold left-4 ">
-    //   <div className="flex flex-col justify-center">
-    //     <div className="flex flex-col space-y-2 py-2 sixth-step">
-    //       {navigation.map((a, index) => (
-    //         <div key={index}>{a.button}</div>
-    //       ))}
-    //     </div>
-    //   </div>
-
-    //   {/* <div className="flex flex-col space-y-2 py-2 sixth-step">
-    //     {secondaryNavigation.map((a, index) => (
-    //       <div key={index}>{a.button}</div>
-    //     ))}
-    //   </div> */}
-    //   {/* <EventLog /> */}
-    //   <Banks />
-    //   <Leaderboard />
-    //   <HyperStructures />
-    //   <SettingsWindow />
-    //   <Resources entityId={realmEntityId} />
-    //   <Military entityId={realmEntityId} />
-    //   <EntityDetails />
-    //   <Trading />
-    //   <Construction entityId={realmEntityId} />
-    //   <Assistant />
-    //   <Questing entityId={realmEntityId} />
-    // </div>
   );
 };

@@ -1,13 +1,31 @@
 import CircleButton from "@/ui/elements/CircleButton";
 import { useMemo, useState } from "react";
 import { RealmListBoxes } from "@/ui/components/list/RealmListBoxes";
+import { ReactComponent as Settings } from "@/assets/icons/common/settings.svg";
+import { ReactComponent as Close } from "@/assets/icons/common/collapse.svg";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
-import { banks, leaderboard, military, resources, trade, construction } from "../../components/navigation/Config";
+import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
+import {
+  banks,
+  leaderboard,
+  military,
+  resources,
+  trade,
+  construction,
+  settings,
+  quests,
+} from "../../components/navigation/Config";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
+import { useTour } from "@reactour/tour";
+import { useComponentValue } from "@dojoengine/react";
+import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { useDojo } from "@/hooks/context/DojoContext";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import { ArrowDown } from "lucide-react";
 
 export enum MenuEnum {
   realm = "realm",
@@ -22,17 +40,28 @@ export enum MenuEnum {
 }
 
 export const BottomNavigation = () => {
+  const {
+    setup: {
+      components: { Population },
+    },
+  } = useDojo();
+
   const [activeBar, setActiveBar] = useState<MenuEnum | null>(MenuEnum.bank);
+
+  const { realmEntityId } = useRealmStore();
 
   const toggleBar = (barName: MenuEnum) => {
     setActiveBar((currentBar) => (currentBar === barName ? null : barName));
   };
-
+  const togglePopup = useUIStore((state) => state.togglePopup);
+  const closeAllPopups = useUIStore((state) => state.closeAllPopups);
+  const openAllPopups = useUIStore((state) => state.openAllPopups);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const { hexPosition } = useQuery();
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const { setIsOpen } = useTour();
+
   const [location, setLocation] = useLocation();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
@@ -82,6 +111,102 @@ export const BottomNavigation = () => {
       : navigation;
   }, [location]);
 
+  const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
+
+  const secondaryNavigation = [
+    // {
+    //   button: (
+    //     <CircleButton
+    //       label={"expand all popups"}
+    //       size="sm"
+    //       tooltipLocation="right"
+    //       onClick={() =>
+    //         openAllPopups([
+    //           entityDetails,
+    //           leaderboard,
+    //           settings,
+    //           hyperstructures,
+    //           banks,
+    //           resources,
+    //           eventLog,
+    //           military,
+    //           construction,
+    //         ])
+    //       }
+    //     >
+    //       <Expand className="w-4" />
+    //     </CircleButton>
+    //   ),
+    // },
+    // {
+    //   button: (
+    //     <CircleButton tooltipLocation="right" label={"close all popups"} size="sm" onClick={() => closeAllPopups()}>
+    //       <Close className="w-4" />
+    //     </CircleButton>
+    //   ),
+    // },
+    {
+      button: (
+        <CircleButton
+          tooltipLocation="top"
+          active={isPopupOpen(settings)}
+          label={"settings"}
+          size="lg"
+          onClick={() => togglePopup(settings)}
+        >
+          <Settings className="w-4" />
+        </CircleButton>
+      ),
+    },
+    {
+      button: (
+        <CircleButton
+          tooltipLocation="top"
+          active={isPopupOpen(settings)}
+          label={"walkthrough"}
+          size="lg"
+          onClick={() => setIsOpen(true)}
+        >
+          <Refresh className="w-4 " />
+        </CircleButton>
+      ),
+    },
+    {
+      button: (
+        <div className="relative">
+          <CircleButton
+            tooltipLocation="top"
+            image={BuildingThumbs.squire}
+            label={quests}
+            active={isPopupOpen(quests)}
+            size="lg"
+            onClick={() => togglePopup(quests)}
+            className="forth-step"
+          />
+
+          {population?.population == null && location !== "/map" && (
+            <div className="absolute bg-brown text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
+              <ArrowDown className="text-gold w-4 mr-3" />
+              <div>Start here</div>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      button: (
+        <CircleButton
+          tooltipLocation="top"
+          image={BuildingThumbs.leaderboard}
+          label={leaderboard}
+          active={isPopupOpen(leaderboard)}
+          size="lg"
+          onClick={() => togglePopup(leaderboard)}
+        />
+      ),
+    },
+  ];
+
   useMemo(() => {
     setActiveBar(null);
   }, [location]);
@@ -91,31 +216,11 @@ export const BottomNavigation = () => {
   }
 
   return (
-    <div className="flex  py-3  justify-center flex-wrap first-step relative w-full duration-300 transition-all">
-      <div>
-        <div className=" w-full mr-4  h-full mt-4 absolute bottom-8 left-20">
-          <div
-            className={`w-full transition-all duration-300 overflow-auto pb-2 justify-center flex ${
-              activeBar === MenuEnum.realm ? "h-auto" : "h-0 hidden"
-            }`}
-          >
-            <RealmListBoxes />
-          </div>
-          <div
-            className={` transition-all duration-300 justify-center flex pb-2 ${
-              activeBar === MenuEnum.construction ? "h-auto" : "h-0 hidden"
-            }`}
-          >
-            <SelectPreviewBuildingMenu />
-          </div>
-        </div>
-        {/* <div className="w-full flex space-x-2 justify-start  pl-24">
-          {navigation.map((item, index) => (
-            <div className="duration-300 transition-all" key={index}>
-              {item.button}
-            </div>
-          ))}
-        </div> */}
+    <div className="flex justify-center flex-wrap first-step relative w-full duration-300 transition-all">
+      <div className="flex py-2 sixth-step">
+        {secondaryNavigation.map((a, index) => (
+          <div key={index}>{a.button}</div>
+        ))}
       </div>
     </div>
   );
