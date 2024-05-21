@@ -6,6 +6,7 @@ trait IMapSystems {
 #[dojo::contract]
 mod map_systems {
     use core::traits::Into;
+    use core::option::OptionTrait;
     use eternum::alias::ID;
     use eternum::constants::ResourceTypes;
     use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
@@ -164,8 +165,9 @@ mod map_systems {
             )[0];
 
             let entity_id = world.uuid();
+            let caller = starknet::get_caller_address();
 
-            if (*is_shards_mine) {
+            if *is_shards_mine {
                 set!(
                     world,
                     (
@@ -184,13 +186,13 @@ mod map_systems {
                 // create shards production building
                 BuildingImpl::create(
                     world,
-                    entity_id,
+                    entity_id.into(),
                     BuildingCategory::Resource,
-                    ResourceTypes::EARTHEN_SHARD,
+                    Option::Some(ResourceTypes::EARTHEN_SHARD),
                     coord
                 );
             }
-            *is_shards_mine
+            return *is_shards_mine;
         }
     }
 }
