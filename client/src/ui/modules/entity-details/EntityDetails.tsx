@@ -17,8 +17,8 @@ export const EntityDetails = () => {
   };
 
   return (
-    <OSWindow width="600px" onClick={onClose} show={isOpen} title={"Location Details"}>
-      <HexagonInformationPanel />
-    </OSWindow>
+    // <OSWindow width="600px" onClick={onClose} show={isOpen} title={"Location Details"}>
+    <HexagonInformationPanel />
+    // </OSWindow>
   );
 };

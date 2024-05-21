@@ -21,7 +21,7 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
   }, [location]);
 
   return (
-    <OSWindow width="600px" onClick={() => togglePopup(military)} show={isOpen} title={military}>
+    <div>
       {isMap ? (
         // <EntityArmyTable entityId={entityId} />
         <EntitiesArmyTable />
@@ -33,6 +33,6 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
           panel={({ entity }) => <ArmyPanel entity={entity} />}
         />
       )}
-    </OSWindow>
+    </div>
   );
 };

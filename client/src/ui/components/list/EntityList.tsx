@@ -20,10 +20,10 @@ export const EntityList = ({ title, panel, list, headerPanel, current }: EntityL
   }, [current]);
 
   return (
-    <div>
+    <div className="">
       {selectedEntity ? (
         <div className="p-2">
-          <Button className="mb-3" variant="outline" size="xs" onClick={() => setSelectedEntity(null)}>
+          <Button className="mb-3" variant="default" size="xs" onClick={() => setSelectedEntity(null)}>
             &lt; Back to {title}
           </Button>
 
