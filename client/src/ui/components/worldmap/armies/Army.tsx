@@ -102,7 +102,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
 
   return (
     <>
-      {hovered && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />}
+      {/* {selectedEntity && selectedEntity.id == info.id && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />} */}
       <group position={position}>
         {info.isMine && <ArmyFlag rotationY={rotationY} position={position} order={info.order} />}
         {selectedEntity && selectedEntity.id == info.id && <ArmyMenu selectedEntityId={selectedEntity.id} />}
@@ -124,7 +124,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
 
 export const ArmyFlag = ({ position, order, rotationY }: { position: Vector3; order: string; rotationY: number }) => {
   return (
-    <group position={[0, 2.5, 0]} rotation={[0, rotationY - Math.PI / 2, 0]} scale={0.7}>
+    <group position={[0, 0, 0]} rotation={[0, rotationY - Math.PI / 2, 0]} scale={0.7}>
       <BannerFlag angle={rotationY} order={order} position={[position.x, position.y, position.z + 10]}></BannerFlag>
     </group>
   );

@@ -163,7 +163,7 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
     <DojoHtml position={[0, 3, -0.5]}>
       <div
         className={clsx(
-          "flex flex-col -translate-x-1/2 transition-all duration-100 bg-brown",
+          "flex flex-col -translate-x-1/2 transition-all duration-100 ",
           appeared ? "opacity-100" : "opacity-0 translate-y-1/2",
         )}
       >

@@ -127,7 +127,7 @@ export const RightNavigationModule = () => {
           </div>
         </div>
 
-        <BaseContainer className="w-full h-[80vh] overflow-y-scroll">
+        <BaseContainer className="w-full h-[80vh] overflow-y-scroll py-4">
           {currentView === View.ResourceTable ? (
             <>
               <div className="flex justify-between">
@@ -149,9 +149,10 @@ export const RightNavigationModule = () => {
                       });
                     }}
                     onMouseLeave={() => setTooltip(null)}
-                    className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5"
+                    className="   second-step bg-brown text-gold border-gradient px-3"
                   >
-                    {population.population} / {population.capacity + BASE_POPULATION_CAPACITY} pop
+                    <div className="uppercase font-bold">population</div>
+                    {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
                   </div>
                 )}
                 {storehouses && (
@@ -170,9 +171,10 @@ export const RightNavigationModule = () => {
                       });
                     }}
                     onMouseLeave={() => setTooltip(null)}
-                    className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5 "
+                    className="second-step bg-brown text-gold border-gradient px-3"
                   >
-                    {storehouses.toLocaleString()} capacity
+                    <div className="uppercase font-bold">capacity</div>
+                    {storehouses.toLocaleString()}
                   </div>
                 )}
               </div>

@@ -1,23 +1,19 @@
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { getRealmNameById } from "@/ui/utils/realms";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { BuildingType, EternumGlobalConfig, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
-import { useHexPosition } from "@/hooks/helpers/useHexPosition";
-import { leaderboard, quests } from "@/ui/components/navigation/Config";
 import { useMemo } from "react";
-import { useComponentValue } from "@dojoengine/react";
+
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getComponentValue } from "@dojoengine/recs";
+
 import { useModal } from "@/hooks/store/useModal";
 import { HintModal } from "@/ui/components/hints/HintModal";
-import { ArrowUp } from "lucide-react";
+
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { Map } from "lucide-react";
@@ -29,18 +25,10 @@ export const TopMiddleNavigation = () => {
       components: { Population },
     },
   } = useDojo();
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const togglePopup = useUIStore((state) => state.togglePopup);
 
   const [location, setLocation] = useLocation();
-  const { realm } = useHexPosition();
-
-  const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realm?.entity_id || "0")]));
-
   const { toggleModal } = useModal();
-
   const { playerRealms } = useEntities();
-
   const { realmEntityId, setRealmEntityId } = useRealmStore();
 
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);

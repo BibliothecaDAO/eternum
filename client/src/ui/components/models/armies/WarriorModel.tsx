@@ -128,6 +128,21 @@ export function WarriorModel({
     });
   }, [hovered, hoverMaterial, nodes, materials.Warrior_Texture]);
 
+  const part1Height = 0.4; // 1/3 of the total height
+  const part2Height = 0.33; // 1/3 of the total height
+  const part3Height = 0.34; // 1/3 of the total height
+
+  const part1TopRadius = 0.5;
+  const part1BottomRadius = 0.6;
+  const part2TopRadius = part1TopRadius;
+  const part2BottomRadius = 0.5;
+  const part3TopRadius = 0.4;
+  const part3BottomRadius = part2TopRadius;
+
+  const part1Color = "red";
+  const part2Color = "green";
+  const part3Color = "blue";
+
   return (
     <group
       {...props}
@@ -137,7 +152,29 @@ export function WarriorModel({
       onPointerOut={onPointerOut}
       onContextMenu={onContextMenu}
     >
-      <group name="Scene" rotation={[0, rotationY, 0]}>
+      <mesh
+        position={[0, part1Height / 2, 0]}
+        onPointerEnter={(e) => {
+          e.stopPropagation();
+          (e.object as THREE.Mesh).material = hoverMaterial;
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation();
+          (e.object as THREE.Mesh).material = new THREE.MeshStandardMaterial({ color: "#582C4D" });
+        }}
+      >
+        <cylinderGeometry args={[part1TopRadius, part1BottomRadius, part1Height, 10]} />
+        <meshStandardMaterial color={"#582C4D"} />
+      </mesh>
+      <mesh position={[0, part1Height + part2Height / 2, 0]}>
+        <cylinderGeometry args={[part2TopRadius, part2BottomRadius, part2Height, 10]} />
+        <meshStandardMaterial color={"#6B7FD7"} />
+      </mesh>
+      <mesh position={[0, part1Height + part2Height + part3Height / 2, 0]}>
+        <cylinderGeometry args={[part3TopRadius, part3BottomRadius, part3Height, 10]} />
+        <meshStandardMaterial color={"#F24236"} />
+      </mesh>
+      {/* <group name="Scene" rotation={[0, rotationY, 0]}>
         <group name="CharacterArmature">
           <primitive object={nodes.Root} />
         </group>
@@ -149,7 +186,7 @@ export function WarriorModel({
           // @ts-ignore
           skeleton={nodes.Warrior_Body.skeleton}
         />
-      </group>
+      </group> */}
     </group>
   );
 }

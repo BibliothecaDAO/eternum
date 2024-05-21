@@ -69,7 +69,7 @@ const CircleButton = ({
       {...props}
     >
       {notification ? (
-        <div className="absolute -top-1 -left-1 rounded-full border bg-green/90 text-brown px-1 text-xxs">
+        <div className="animate-pulse absolute -top-1 -left-1 rounded-full border border-green/30 bg-green/90 text-brown px-2 text-xxs z-[100] font-bold">
           {notification}
         </div>
       ) : (

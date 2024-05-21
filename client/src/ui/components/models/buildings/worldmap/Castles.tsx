@@ -60,7 +60,7 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
             {/* {selectedEntity && selectedEntity.id == castle.id && <ArmyMenu entityId={castle.id} />} */}
             <primitive
               object={model.scene.clone()}
-              scale={4}
+              scale={3}
               name="castle"
               castShadow
               rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
