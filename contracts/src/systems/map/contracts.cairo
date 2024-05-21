@@ -11,7 +11,10 @@ mod map_systems {
     use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
     use eternum::models::combat::{Health, HealthTrait};
     use eternum::models::config::{MapExploreConfig, LevelingConfig};
-    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::structure::{
+        Structure, StructureCategory, StructureCount, StructureCountTrait
+    };
+    use eternum::models::buildings::{BuildingCategory, Building, BuildingImpl};
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
@@ -153,6 +156,41 @@ mod map_systems {
                 .at(0);
             let reward_resource_amount: u128 = explore_config.reward_resource_amount;
             array![(reward_resource_id, reward_resource_amount)].span()
+        }
+
+        fn discover_shards_mine(world: IWorldDispatcher, coord: Coord) -> bool {
+            let is_shards_mine: @bool = random::choices(
+                array![true, false].span(), array![1, 5].span(), array![].span(), 1, true
+            )[0];
+
+            let entity_id = world.uuid();
+
+            if (*is_shards_mine) {
+                set!(
+                    world,
+                    (
+                        Owner { entity_id: entity_id.into(), address: caller },
+                        EntityOwner {
+                            entity_id: entity_id.into(), entity_owner_id: entity_id.into()
+                        },
+                        Structure {
+                            entity_id: entity_id.into(), category: StructureCategory::ShardsMine
+                        },
+                        StructureCount { coord, count: 1 },
+                        Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, },
+                    )
+                );
+
+                // create shards production building
+                BuildingImpl::create(
+                    world,
+                    entity_id,
+                    BuildingCategory::Resource,
+                    ResourceTypes::EARTHEN_SHARD,
+                    coord
+                );
+            }
+            *is_shards_mine
         }
     }
 }
