@@ -3,20 +3,14 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { getRealmNameById } from "@/ui/utils/realms";
-import {
-  BASE_POPULATION_CAPACITY,
-  BuildingType,
-  EternumGlobalConfig,
-  STOREHOUSE_CAPACITY,
-} from "@bibliothecadao/eternum";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { BuildingType, EternumGlobalConfig, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
-import { assistant, leaderboard, quests } from "@/ui/components/navigation/Config";
-import { Compass } from "@/ui/components/worldmap/Compass";
-import { Headline } from "@/ui/elements/Headline";
+import { leaderboard, quests } from "@/ui/components/navigation/Config";
 import { useMemo } from "react";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "@/hooks/context/DojoContext";
@@ -24,70 +18,120 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useModal } from "@/hooks/store/useModal";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import { ArrowUp } from "lucide-react";
+import { useEntities } from "@/hooks/helpers/useEntities";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import { Map } from "lucide-react";
+import Button from "@/ui/elements/Button";
 
 export const TopMiddleNavigation = () => {
   const {
     setup: {
-      components: { Population, BuildingQuantityv2 },
+      components: { Population },
     },
   } = useDojo();
-  const setTooltip = useUIStore((state) => state.setTooltip);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const togglePopup = useUIStore((state) => state.togglePopup);
-  const { realmId } = useRealmStore();
+
   const [location, setLocation] = useLocation();
   const { realm } = useHexPosition();
 
   const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realm?.entity_id || "0")]));
 
-  const storehouses = useMemo(() => {
-    const quantity =
-      getComponentValue(
-        BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(realm?.entity_id || "0"), BigInt(BuildingType.Storehouse)]),
-      )?.value || 0;
-
-    return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
-  }, []);
-
   const { toggleModal } = useModal();
+
+  const { playerRealms } = useEntities();
+
+  const { realmEntityId, setRealmEntityId } = useRealmStore();
+
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
+
+  const { getRealmIdFromRealmEntityId } = useRealm();
+
+  const isRealmView = location.includes(`/hex`);
+
+  const gotToRealmView = (entityId: any) => {
+    const realm = playerRealms().find((realm) => realm.entity_id?.toString() === entityId);
+
+    setIsLoadingScreenEnabled(true);
+    setTimeout(() => {
+      if (location.includes(`/hex`)) {
+        setIsLoadingScreenEnabled(false);
+      }
+      setLocation(`/hex?col=${realm?.position.x}&row=${realm?.position.y}`);
+    }, 300);
+
+    setRealmEntityId(BigInt(entityId));
+  };
+
+  const goToMapView = (entityId: any) => {
+    const realmId = getRealmIdFromRealmEntityId(BigInt(entityId));
+    if (!realmId) return;
+    moveCameraToRealm(Number(realmId));
+
+    setRealmEntityId(BigInt(entityId));
+  };
+
+  const { hexPosition } = useQuery();
+  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
 
   return (
     <div className="flex">
       <div className="self-center px-3 flex space-x-2">
-        <CircleButton
-          image={BuildingThumbs.leaderboard}
-          label={leaderboard}
-          active={isPopupOpen(leaderboard)}
-          size="sm"
-          onClick={() => togglePopup(leaderboard)}
-        />
-        <div className="relative">
-          <CircleButton
-            image={BuildingThumbs.squire}
-            label={quests}
-            active={isPopupOpen(quests)}
-            size="sm"
-            onClick={() => togglePopup(quests)}
-            className="forth-step"
-          />
-
-          {population?.population == null && location !== "/map" && (
-            <div className="absolute bg-brown text-gold border-gradient border top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
-              <ArrowUp className="text-gold w-4 mr-3" />
-              <div>Start here</div>
-            </div>
-          )}
-        </div>
         <TickProgress />
       </div>
 
-      <div className="flex bg-brown/90 clip-angled  border-gradient py-2  px-24 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center">
-        <div className="self-center ">
-          <Headline>
-            <h5 className="self-center uppercase">{realmId ? getRealmNameById(realmId as any | "") : ""}</h5>
-          </Headline>
+      <div className="flex min-w-96 bg-brown clip-angled  border-gradient py-2 px-4 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center">
+        <div className="self-center flex justify-between w-full">
+          <Select
+            value={realmEntityId.toString()}
+            onValueChange={(a) => {
+              !isRealmView ? goToMapView(a) : gotToRealmView(a);
+            }}
+          >
+            <SelectTrigger className="">
+              <SelectValue placeholder="Select Realm" />
+            </SelectTrigger>
+            <SelectContent className="bg-brown ">
+              {playerRealms().map((realm, index) => (
+                <SelectItem
+                  className="flex justify-between text-sm"
+                  key={index}
+                  value={realm.entity_id?.toString() || ""}
+                >
+                  {/* {realm.name} */}
+                  <h5 className="self-center flex gap-4">
+                    <Map className="self-center" />
+
+                    {realm.name}
+                  </h5>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+        <Button
+          onClick={() => {
+            if (location !== "/map") {
+              setIsLoadingScreenEnabled(true);
+              setTimeout(() => {
+                setLocation("/map");
+                if (hexPosition.col !== 0 && hexPosition.row !== 0) {
+                  moveCameraToColRow(hexPosition.col, hexPosition.row, 0.01, true);
+                  setTimeout(() => {
+                    moveCameraToColRow(hexPosition.col, hexPosition.row, 1.5);
+                  }, 10);
+                }
+              }, 100);
+            } else {
+              setTimeout(() => {
+                gotToRealmView(realmEntityId.toString());
+              }, 50);
+            }
+          }}
+        >
+          {location === "/map" ? "Realm" : "World"}
+        </Button>
       </div>
       <div className="self-center px-3 flex space-x-2">
         <CircleButton
@@ -98,53 +142,6 @@ export const TopMiddleNavigation = () => {
           size="sm"
           onClick={() => toggleModal(<HintModal />)}
         />
-        {population && (
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                position: "bottom",
-                content: (
-                  <span className="whitespace-nowrap pointer-events-none">
-                    <Headline>Population</Headline>
-
-                    <span>
-                      {population.population} population / {population.capacity + BASE_POPULATION_CAPACITY} capacity
-                    </span>
-                    <br />
-                    <span>Build Workers huts to expand population</span>
-                  </span>
-                ),
-              });
-            }}
-            onMouseLeave={() => setTooltip(null)}
-            className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5"
-          >
-            {population.population} / {population.capacity + BASE_POPULATION_CAPACITY} pop
-          </div>
-        )}
-        {storehouses && (
-          <div
-            onMouseEnter={() => {
-              setTooltip({
-                position: "bottom",
-                content: (
-                  <div className="whitespace-nowrap pointer-events-none">
-                    <Headline>Storehouses Capacity</Headline>
-
-                    <span>This is the max per resource you can store</span>
-
-                    <br />
-                    <span>Build Storehouses to increase this</span>
-                  </div>
-                ),
-              });
-            }}
-            onMouseLeave={() => setTooltip(null)}
-            className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5 "
-          >
-            {storehouses.toLocaleString()} max
-          </div>
-        )}
       </div>
     </div>
   );

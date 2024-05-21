@@ -106,7 +106,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-8 gap-2 p-2">
+          <div className="grid grid-cols-4 gap-2 p-2">
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
@@ -151,7 +151,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-8 gap-2 p-2">
+          <div className="grid grid-cols-4 gap-2 p-2">
             {buildingTypes
               .filter((a) => a !== "Barracks" && a !== "ArcheryRange" && a !== "Stable")
               .map((buildingType, index) => {
@@ -205,7 +205,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-8 gap-2 p-2">
+          <div className="grid grid-cols-4 gap-2 p-2">
             {" "}
             {buildingTypes
               .filter((a) => a === "Barracks" || a === "ArcheryRange" || a === "Stable")
@@ -248,7 +248,7 @@ export const SelectPreviewBuildingMenu = () => {
   );
 
   return (
-    <div className="flex flex-col -mt-40 bg-brown border-gradient border clip-angled">
+    <div className="flex flex-col  bg-brown border-gradient border clip-angled">
       <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
         <Tabs.List>
           {tabs.map((tab, index) => (
@@ -296,15 +296,15 @@ export const BuildingCard = ({
       }}
       onClick={onClick}
       className={clsx(
-        " hover:border-gold border border-transparent transition-all duration-200 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 ",
+        " border-transparent hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm hover:border-gradient hover:border-2",
         {
-          "!border-lightest !text-lightest": active,
+          "!border-lightest border-gradient border-2": active,
         },
       )}
     >
       {!canBuild && (
         <div className="absolute w-full h-full bg-black/50 text-white/60 p-4 text-xs  flex justify-center ">
-          <div className="self-center">insufficient fund or population</div>
+          <div className="self-center">insufficient funds or population</div>
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50 ">

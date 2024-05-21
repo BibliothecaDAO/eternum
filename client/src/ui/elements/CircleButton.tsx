@@ -58,19 +58,13 @@ const CircleButton = ({
         }
       }}
       className={clsx(
-        "flex relative transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold border-gold/40 rounded  bg-brown  shadow-2xl bg-no-repeat hover:bg-brown/75 clip-angled",
+        "flex relative transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold  rounded    shadow-2xl   group",
         className,
         sizes[size],
         { "opacity-50 cursor-not-allowed": disabled },
-        { " !border-gold sepia-0 border-2": active },
-        { " border-brown/30 sepia-[.50] border-2": !active },
+        { " !border-gold sepia-0 ": active },
+        { " border-brown/30 sepia-[.50] ": !active },
       )}
-      style={{
-        backgroundImage: image ? `url(${image})` : active ? "" : "",
-        backgroundSize: "calc(100% - 10px)", // Ensure the image covers the button
-        backgroundPosition: "center", // Center the background image
-        padding: image ? "5px" : "0",
-      }}
       disabled={disabled}
       {...props}
     >
@@ -81,8 +75,21 @@ const CircleButton = ({
       ) : (
         <></>
       )}
-
       {children}
+      <div
+        style={{
+          backgroundImage: image ? `url(${image})` : active ? "" : "",
+          backgroundSize: "calc(100% - 10px)", // Ensure the image covers the button
+          backgroundPosition: "center", // Center the background image
+          padding: image ? "5px" : "0",
+        }}
+        className={`absolute w-[calc(100%-3px)] h-[calc(100%-3px)] bg-no-repeat z-10 clip-angled-sm  hover:bg-gold duration-300 ${
+          active ? "bg-gold/60" : "bg-brown/80"
+        }`}
+      ></div>
+      <div
+        className={`absolute  w-[calc(100%+2px)] h-[calc(100%+2px)] clip-angled-sm ${active ? "bg-gold/40" : " "}`}
+      ></div>
     </button>
   );
 };

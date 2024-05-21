@@ -6,29 +6,21 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 
 const HighlightedHexes = () => {
-  const tubeRadius = 0.1; // Adjust the tube radius (width) as needed
-  const radialSegments = 10; // Adjust for smoother or sharper corners
-  const tubularSegments = 64; // Adjust for a smoother or more faceted tube
-  const hexagonPath = createHexagonPath(HEX_RADIUS);
-  const hexagonGeometry = new THREE.TubeGeometry(
-    hexagonPath as any,
-    tubularSegments,
-    tubeRadius,
-    radialSegments,
-    false,
-  );
+  const hexagonGeometry = new THREE.RingGeometry(2, 1.5, 6, 1);
 
   const highlightPositions = useUIStore((state) => state.highlightPositions);
 
-  const meshRef = useRef<any>();
+  const meshRefs = useRef<any[]>([]);
 
   useFrame(({ clock }) => {
     const elapsedTime = clock.getElapsedTime();
-    const pulseFactor = Math.sin(elapsedTime * Math.PI) * 0.2 + 0.5;
-    if (meshRef.current?.material) {
-      meshRef.current.material.emissiveIntensity = pulseFactor;
-      meshRef.current.scale.set(pulseFactor, pulseFactor, pulseFactor);
-    }
+    const pulseFactor = Math.sin(elapsedTime * Math.PI * 1.5) * 0.3 + 1;
+    meshRefs.current.forEach((mesh) => {
+      if (mesh?.material) {
+        mesh.material.emissiveIntensity = pulseFactor;
+        mesh.scale.set(pulseFactor, pulseFactor, pulseFactor);
+      }
+    });
   });
 
   return (
@@ -37,12 +29,12 @@ const HighlightedHexes = () => {
         return (
           <mesh
             key={index}
-            ref={meshRef}
+            ref={(el) => (meshRefs.current[index] = el)}
             geometry={hexagonGeometry}
-            rotation={[0, 0, 0]}
+            rotation={[Math.PI / 2, 0, Math.PI / 2]}
             position={[highlightPosition[0], 0.3, highlightPosition[1]]}
           >
-            <meshPhongMaterial color={highlightColor} emissive={"green"} />
+            <meshStandardMaterial color={highlightColor} emissive={"green"} />
           </mesh>
         );
       })}
