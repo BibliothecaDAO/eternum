@@ -350,10 +350,10 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       if (!selectedEntityRef.current) {
         const positions = [{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }];
         if (clickedHexRef.current) {
+          console.log(clickedHexRef.current);
           positions.push({ pos: clickedHexRef.current.uiPos, color: CLICKED_HEX_COLOR });
         }
-        setHighlightPositions(positions as HighlightPosition[]);
-        return;
+        return setHighlightPositions(positions as HighlightPosition[]);
       }
 
       const selectedEntityPosition = getUIPositionFromColRow(
@@ -391,8 +391,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         const hex = hexDataRef?.current?.find((h) => h.col === x && h.row === y);
         return { pos: [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0], color: TRAVEL_COLOUR };
       }) as HighlightPosition[];
-
-      console.log(uiPath);
       setHighlightPositions(uiPath);
     }
   }

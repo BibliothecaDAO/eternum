@@ -23,8 +23,6 @@ const HighlightedHexes = () => {
     });
   });
 
-  console.log("highlightPositions", highlightPositions);
-
   return (
     <>
       {highlightPositions.map(({ pos: highlightPosition, color: highlightColor }, index) => {
@@ -34,7 +32,7 @@ const HighlightedHexes = () => {
             ref={(el) => (meshRefs.current[index] = el)}
             geometry={hexagonGeometry}
             rotation={[Math.PI / 2, 0, Math.PI / 2]}
-            position={[highlightPosition[0], 0.3, highlightPosition[1]]}
+            position={[highlightPosition[0], 0.4, highlightPosition[1]]}
           >
             <meshStandardMaterial color={highlightColor} emissive={"green"} />
           </mesh>
