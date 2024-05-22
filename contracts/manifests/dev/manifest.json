@@ -2117,8 +2117,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6e5d27950b7aa8eece851aecb7864b8efb9c1c90e7548b8fdd949b9963c6123",
-      "class_hash": "0x60e20f2dd87bccae3e6225c4ea548cf21c71a8085b3bf4110526a26266b289c",
-      "original_class_hash": "0x60e20f2dd87bccae3e6225c4ea548cf21c71a8085b3bf4110526a26266b289c",
+      "class_hash": "0x6d2e1108c40aa737a1d8910d2fc7612e5dbbf336a043b9ec6541fed00b986e4",
+      "original_class_hash": "0x6d2e1108c40aa737a1d8910d2fc7612e5dbbf336a043b9ec6541fed00b986e4",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -2494,45 +2494,19 @@
           "interface_name": "eternum::systems::config::contracts::IHyperstructureConfig"
         },
         {
-          "type": "struct",
-          "name": "eternum::models::position::Coord",
-          "members": [
-            {
-              "name": "x",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "y",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
           "type": "interface",
           "name": "eternum::systems::config::contracts::IHyperstructureConfig",
           "items": [
             {
               "type": "function",
-              "name": "create_hyperstructure",
+              "name": "set_hyperstructure_config",
               "inputs": [
                 {
-                  "name": "hyperstructure_type",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "coord",
-                  "type": "eternum::models::position::Coord"
-                },
-                {
-                  "name": "completion_cost",
+                  "name": "resources_for_completion",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
-              "outputs": [
-                {
-                  "type": "core::integer::u128"
-                }
-              ],
+              "outputs": [],
               "state_mutability": "view"
             }
           ]
@@ -3182,8 +3156,8 @@
     {
       "kind": "DojoContract",
       "address": "0x8e44985380e607cbaad3dcc39a0a5033ca225df0f74d943c428b287e9898b9",
-      "class_hash": "0x53d1dd2675923b612e25a03bf15bd682dc657811db6b86fe11e7b467b1c3413",
-      "original_class_hash": "0x53d1dd2675923b612e25a03bf15bd682dc657811db6b86fe11e7b467b1c3413",
+      "class_hash": "0x7603a4281f0c70bf70d5cc9ef54862321644c2642b3d753ddc9ebb44a8780ef",
+      "original_class_hash": "0x7603a4281f0c70bf70d5cc9ef54862321644c2642b3d753ddc9ebb44a8780ef",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -3243,35 +3217,71 @@
         {
           "type": "impl",
           "name": "HyperstructureSystemsImpl",
-          "interface_name": "eternum::systems::hyperstructure::interface::IHyperstructureSystems"
+          "interface_name": "eternum::systems::hyperstructure::contracts::IHyperstructureSystems"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::position::Coord",
+          "members": [
+            {
+              "name": "x",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "y",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+            }
+          ]
         },
         {
           "type": "interface",
-          "name": "eternum::systems::hyperstructure::interface::IHyperstructureSystems",
+          "name": "eternum::systems::hyperstructure::contracts::IHyperstructureSystems",
           "items": [
             {
               "type": "function",
-              "name": "control",
+              "name": "create",
               "inputs": [
                 {
-                  "name": "hyperstructure_id",
+                  "name": "creator_entity_id",
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "order_id",
-                  "type": "core::integer::u8"
+                  "name": "coord",
+                  "type": "eternum::models::position::Coord"
                 }
               ],
-              "outputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
               "state_mutability": "view"
             },
             {
               "type": "function",
-              "name": "complete",
+              "name": "contribute_to_construction",
               "inputs": [
                 {
-                  "name": "hyperstructure_id",
+                  "name": "hyperstructure_entity_id",
                   "type": "core::integer::u128"
+                },
+                {
+                  "name": "contributor_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "contributions",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
               "outputs": [],
@@ -3328,12 +3338,34 @@
         },
         {
           "type": "event",
+          "name": "eternum::systems::hyperstructure::contracts::hyperstructure_systems::HyperstructureFinished",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "hyperstructure_entity_id",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
           "name": "eternum::systems::hyperstructure::contracts::hyperstructure_systems::Event",
           "kind": "enum",
           "variants": [
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "HyperstructureFinished",
+              "type": "eternum::systems::hyperstructure::contracts::hyperstructure_systems::HyperstructureFinished",
               "kind": "nested"
             }
           ]
@@ -6679,312 +6711,6 @@
         }
       ],
       "name": "eternum::models::buildings::building"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "entity_id",
-          "type": "u128",
-          "key": true
-        },
-        {
-          "name": "category",
-          "type": "BuildingCategory",
-          "key": true
-        },
-        {
-          "name": "value",
-          "type": "u8",
-          "key": false
-        }
-      ],
-      "class_hash": "0x6ae1405a3f117ae2579b9f5ac9273d3a6c43043c48accc9e69523d4525683d2",
-      "original_class_hash": "0x6ae1405a3f117ae2579b9f5ac9273d3a6c43043c48accc9e69523d4525683d2",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IDojoModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
-            },
-            {
-              "name": "Array",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IDojoModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u32"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u8>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "building_quantityImpl",
-          "interface_name": "eternum::models::buildings::Ibuilding_quantity"
-        },
-        {
-          "type": "enum",
-          "name": "eternum::models::buildings::BuildingCategory",
-          "variants": [
-            {
-              "name": "None",
-              "type": "()"
-            },
-            {
-              "name": "Castle",
-              "type": "()"
-            },
-            {
-              "name": "Resource",
-              "type": "()"
-            },
-            {
-              "name": "Farm",
-              "type": "()"
-            },
-            {
-              "name": "FishingVillage",
-              "type": "()"
-            },
-            {
-              "name": "Barracks",
-              "type": "()"
-            },
-            {
-              "name": "Market",
-              "type": "()"
-            },
-            {
-              "name": "ArcheryRange",
-              "type": "()"
-            },
-            {
-              "name": "Stable",
-              "type": "()"
-            },
-            {
-              "name": "DonkeyFarm",
-              "type": "()"
-            },
-            {
-              "name": "TradingPost",
-              "type": "()"
-            },
-            {
-              "name": "WorkersHut",
-              "type": "()"
-            },
-            {
-              "name": "WatchTower",
-              "type": "()"
-            },
-            {
-              "name": "Walls",
-              "type": "()"
-            },
-            {
-              "name": "Storehouse",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::buildings::BuildingQuantity",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "category",
-              "type": "eternum::models::buildings::BuildingCategory"
-            },
-            {
-              "name": "value",
-              "type": "core::integer::u8"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::buildings::Ibuilding_quantity",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::buildings::BuildingQuantity"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::buildings::building_quantity::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::buildings::building_quantity"
     },
     {
       "kind": "DojoModel",
@@ -10494,6 +10220,246 @@
           "key": true
         },
         {
+          "name": "resource_type",
+          "type": "u8",
+          "key": true
+        },
+        {
+          "name": "amount_for_completion",
+          "type": "u128",
+          "key": false
+        }
+      ],
+      "class_hash": "0x6ec705ee3bc22217194684e1f6a1ffdd24ef618b92ddc185fd6fb1072f44670",
+      "original_class_hash": "0x6ec705ee3bc22217194684e1f6a1ffdd24ef618b92ddc185fd6fb1072f44670",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoModelImpl",
+          "interface_name": "dojo::model::IDojoModel"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::introspect::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::introspect::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::introspect::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            },
+            {
+              "name": "Array",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::model::IDojoModel",
+          "items": [
+            {
+              "type": "function",
+              "name": "name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "unpacked_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "packed_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "layout",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::integer::u8>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "schema",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::database::introspect::Ty"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "hyperstructure_resource_configImpl",
+          "interface_name": "eternum::models::config::Ihyperstructure_resource_config"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::config::HyperstructureResourceConfig",
+          "members": [
+            {
+              "name": "config_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "resource_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "amount_for_completion",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::models::config::Ihyperstructure_resource_config",
+          "items": [
+            {
+              "type": "function",
+              "name": "ensure_abi",
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "eternum::models::config::HyperstructureResourceConfig"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::config::hyperstructure_resource_config::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "name": "eternum::models::config::hyperstructure_resource_config"
+    },
+    {
+      "kind": "DojoModel",
+      "members": [
+        {
+          "name": "config_id",
+          "type": "u128",
+          "key": true
+        },
+        {
           "name": "decay_interval",
           "type": "u64",
           "key": false
@@ -13318,38 +13284,28 @@
       "kind": "DojoModel",
       "members": [
         {
-          "name": "entity_id",
+          "name": "hyperstructure_entity_id",
           "type": "u128",
           "key": true
         },
         {
-          "name": "hyperstructure_type",
+          "name": "player_address",
+          "type": "ContractAddress",
+          "key": true
+        },
+        {
+          "name": "resource_type",
           "type": "u8",
-          "key": false
+          "key": true
         },
         {
-          "name": "controlling_order",
-          "type": "u8",
-          "key": false
-        },
-        {
-          "name": "completed",
-          "type": "bool",
-          "key": false
-        },
-        {
-          "name": "completion_cost_id",
+          "name": "amount",
           "type": "u128",
-          "key": false
-        },
-        {
-          "name": "completion_resource_count",
-          "type": "u32",
           "key": false
         }
       ],
-      "class_hash": "0x5c155bf1246b96b20a902f34eadefa15f2f8a6e701786ecd7828c11b465576c",
-      "original_class_hash": "0x5c155bf1246b96b20a902f34eadefa15f2f8a6e701786ecd7828c11b465576c",
+      "class_hash": "0x6f4a38756541bbd574e9c6ebe1294901d2411a9dad67a8b3b17c5617033af34",
+      "original_class_hash": "0x6f4a38756541bbd574e9c6ebe1294901d2411a9dad67a8b3b17c5617033af34",
       "abi": [
         {
           "type": "impl",
@@ -13521,56 +13477,34 @@
         },
         {
           "type": "impl",
-          "name": "hyper_structureImpl",
-          "interface_name": "eternum::models::hyperstructure::Ihyper_structure"
-        },
-        {
-          "type": "enum",
-          "name": "core::bool",
-          "variants": [
-            {
-              "name": "False",
-              "type": "()"
-            },
-            {
-              "name": "True",
-              "type": "()"
-            }
-          ]
+          "name": "contributionImpl",
+          "interface_name": "eternum::models::hyperstructure::Icontribution"
         },
         {
           "type": "struct",
-          "name": "eternum::models::hyperstructure::HyperStructure",
+          "name": "eternum::models::hyperstructure::Contribution",
           "members": [
             {
-              "name": "entity_id",
+              "name": "hyperstructure_entity_id",
               "type": "core::integer::u128"
             },
             {
-              "name": "hyperstructure_type",
+              "name": "player_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            },
+            {
+              "name": "resource_type",
               "type": "core::integer::u8"
             },
             {
-              "name": "controlling_order",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "completed",
-              "type": "core::bool"
-            },
-            {
-              "name": "completion_cost_id",
+              "name": "amount",
               "type": "core::integer::u128"
-            },
-            {
-              "name": "completion_resource_count",
-              "type": "core::integer::u32"
             }
           ]
         },
         {
           "type": "interface",
-          "name": "eternum::models::hyperstructure::Ihyper_structure",
+          "name": "eternum::models::hyperstructure::Icontribution",
           "items": [
             {
               "type": "function",
@@ -13578,7 +13512,7 @@
               "inputs": [
                 {
                   "name": "model",
-                  "type": "eternum::models::hyperstructure::HyperStructure"
+                  "type": "eternum::models::hyperstructure::Contribution"
                 }
               ],
               "outputs": [],
@@ -13588,44 +13522,34 @@
         },
         {
           "type": "event",
-          "name": "eternum::models::hyperstructure::hyper_structure::Event",
+          "name": "eternum::models::hyperstructure::contribution::Event",
           "kind": "enum",
           "variants": []
         }
       ],
-      "name": "eternum::models::hyperstructure::hyper_structure"
+      "name": "eternum::models::hyperstructure::contribution"
     },
     {
       "kind": "DojoModel",
       "members": [
         {
-          "name": "entity_id",
+          "name": "hyperstructure_entity_id",
           "type": "u128",
           "key": true
         },
         {
-          "name": "owner",
+          "name": "resource_type",
+          "type": "u8",
+          "key": true
+        },
+        {
+          "name": "amount",
           "type": "u128",
-          "key": false
-        },
-        {
-          "name": "completed",
-          "type": "bool",
-          "key": false
-        },
-        {
-          "name": "settlement_cost",
-          "type": "u32",
-          "key": false
-        },
-        {
-          "name": "settlment_tax",
-          "type": "u32",
           "key": false
         }
       ],
-      "class_hash": "0x6a27eefe89fbb233f297ab2e5437bea2a98f4992ead34ecfdecb76d8bb98d9b",
-      "original_class_hash": "0x6a27eefe89fbb233f297ab2e5437bea2a98f4992ead34ecfdecb76d8bb98d9b",
+      "class_hash": "0x2b591d11dc31ff00cde5fcb598b8872782985c3533f36ee0626bc5818ef34bb",
+      "original_class_hash": "0x2b591d11dc31ff00cde5fcb598b8872782985c3533f36ee0626bc5818ef34bb",
       "abi": [
         {
           "type": "impl",
@@ -13797,52 +13721,30 @@
         },
         {
           "type": "impl",
-          "name": "hyper_structure_v_2Impl",
-          "interface_name": "eternum::models::hyperstructure::Ihyper_structure_v_2"
-        },
-        {
-          "type": "enum",
-          "name": "core::bool",
-          "variants": [
-            {
-              "name": "False",
-              "type": "()"
-            },
-            {
-              "name": "True",
-              "type": "()"
-            }
-          ]
+          "name": "progressImpl",
+          "interface_name": "eternum::models::hyperstructure::Iprogress"
         },
         {
           "type": "struct",
-          "name": "eternum::models::hyperstructure::HyperStructureV2",
+          "name": "eternum::models::hyperstructure::Progress",
           "members": [
             {
-              "name": "entity_id",
+              "name": "hyperstructure_entity_id",
               "type": "core::integer::u128"
             },
             {
-              "name": "owner",
+              "name": "resource_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "amount",
               "type": "core::integer::u128"
-            },
-            {
-              "name": "completed",
-              "type": "core::bool"
-            },
-            {
-              "name": "settlement_cost",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "settlment_tax",
-              "type": "core::integer::u32"
             }
           ]
         },
         {
           "type": "interface",
-          "name": "eternum::models::hyperstructure::Ihyper_structure_v_2",
+          "name": "eternum::models::hyperstructure::Iprogress",
           "items": [
             {
               "type": "function",
@@ -13850,7 +13752,7 @@
               "inputs": [
                 {
                   "name": "model",
-                  "type": "eternum::models::hyperstructure::HyperStructureV2"
+                  "type": "eternum::models::hyperstructure::Progress"
                 }
               ],
               "outputs": [],
@@ -13860,12 +13762,12 @@
         },
         {
           "type": "event",
-          "name": "eternum::models::hyperstructure::hyper_structure_v_2::Event",
+          "name": "eternum::models::hyperstructure::progress::Event",
           "kind": "enum",
           "variants": []
         }
       ],
-      "name": "eternum::models::hyperstructure::hyper_structure_v_2"
+      "name": "eternum::models::hyperstructure::progress"
     },
     {
       "kind": "DojoModel",
