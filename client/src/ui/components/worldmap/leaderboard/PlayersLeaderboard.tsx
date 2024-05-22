@@ -78,9 +78,7 @@ export const PlayersLeaderboard = () => {
               return (
                 <div
                   key={i}
-                  className={`flex flex-col p-2 border rounded-md ${
-                    isYours ? "border-order-brilliance" : ""
-                  }  text-xxs text-gold`}
+                  className={`flex flex-col p-2  clip-angled-sm ${isYours ? "bg-green/20" : ""}  text-xxs text-gold`}
                 >
                   <div className="flex items-center justify-between text-xxs">
                     <div className="flex-none mr-5">{`#${i + 1}`}</div>

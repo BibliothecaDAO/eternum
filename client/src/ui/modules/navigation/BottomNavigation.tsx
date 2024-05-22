@@ -150,27 +150,25 @@ export const BottomNavigation = () => {
         <CircleButton
           tooltipLocation="top"
           active={isPopupOpen(settings)}
-          label={"settings"}
+          image={BuildingThumbs.settings}
+          label={"Settings"}
           size="lg"
           onClick={() => togglePopup(settings)}
-        >
-          <Settings className="w-4" />
-        </CircleButton>
+        />
       ),
     },
-    {
-      button: (
-        <CircleButton
-          tooltipLocation="top"
-          active={isPopupOpen(settings)}
-          label={"walkthrough"}
-          size="lg"
-          onClick={() => setIsOpen(true)}
-        >
-          <Refresh className="w-4 " />
-        </CircleButton>
-      ),
-    },
+    // {
+    //   button: (
+    //     <CircleButton
+    //       tooltipLocation="top"
+    //       image={BuildingThumbs.settings}
+    //       active={isPopupOpen(settings)}
+    //       label={"walkthrough"}
+    //       size="lg"
+    //       onClick={() => setIsOpen(true)}
+    //     />
+    //   ),
+    // },
     {
       button: (
         <div className="relative">

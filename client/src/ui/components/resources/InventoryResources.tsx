@@ -32,7 +32,7 @@ export const InventoryResources = ({
                   textSize="xxs"
                   key={resource.resourceId}
                   type="vertical"
-                  color="text-order-brilliance"
+                  color="text-green"
                   resourceId={resource.resourceId}
                   amount={divideByPrecision(Number(resource.amount))}
                 />

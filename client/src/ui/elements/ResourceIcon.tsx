@@ -63,10 +63,10 @@ const Components: { [key: string]: Resource } = Object.freeze({
   Fish: { component: <img src={`/images/resources/255.png`} />, name: "Fish" },
   Wheat: { component: <img src={`/images/resources/254.png`} />, name: "Wheat" },
   Donkeys: { component: <Donkey className="w-6 fill-current" />, name: "Donkeys" },
-  Knight: { component: <img src={`/images/icons/troop.png`} />, name: "Knight" },
-  Crossbowmen: { component: <img src={`/images/icons/troop.png`} />, name: "Crossbowmen" },
-  Paladin: { component: <img src={`/images/icons/troop.png`} />, name: "Paladin" },
-  Earthenshard: { component: <img src={`/images/resources/29.png`} />, name: "Earthenshard" },
+  Knight: { component: <img src={`/images/icons/knight.png`} />, name: "Knight" },
+  Crossbowmen: { component: <img src={`/images/icons/archer.png`} />, name: "Crossbowmen" },
+  Paladin: { component: <img src={`/images/icons/paladin.png`} />, name: "Paladin" },
+  AncientFragment: { component: <img src={`/images/resources/29.png`} />, name: "Ancient Fragment" },
 });
 
 const STYLES = {

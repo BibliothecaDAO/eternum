@@ -74,11 +74,6 @@ export const MarketOrderPanel = ({
   resourceAskOffers: MarketInterface[];
   resourceBidOffers: MarketInterface[];
 }) => {
-  // const marketOffers = useMarketStore((state) => state.lordsMarket);
-  // const myOffers = useGetMyOffers();
-
-  // console.log(myOffers);
-
   const selectedResourceBidOffers = useMemo(() => {
     return resourceBidOffers
       .filter((offer) => (resourceId ? offer.makerGets[0]?.resourceId === resourceId : true))
@@ -124,7 +119,11 @@ export const MarketOrders = ({
         }`}
       >
         <div className="self-center flex gap-4">
-          <ResourceIcon size="lg" resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"} />
+          <ResourceIcon
+            withTooltip={false}
+            size="lg"
+            resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
+          />
           <div className="self-center">{lowestPrice.toFixed(2)}</div>
         </div>
         <div>
@@ -132,10 +131,10 @@ export const MarketOrders = ({
         </div>
       </div>
 
-      <div className=" p-4 bg-white/10  flex-col flex gap-1 clip-angled-sm">
+      <div className=" p-4 bg-white/10  flex-col flex gap-1 clip-angled-sm   flex-grow ">
         <OrderRowHeader isBuy={isBuy} resourceId={resourceId} />
 
-        <div className=" overflow-y-scroll flex-col flex gap-1 h-96 ">
+        <div className="  flex-col flex gap-1 flex-grow overflow-y-auto">
           {offers.map((offer, index) => (
             <OrderRow key={index} offer={offer} entityId={entityId} isBuy={isBuy} />
           ))}
@@ -198,19 +197,23 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
       taker_gives_resources: [offer.makerGets[0].resourceId, offer.makerGets[0].amount],
     });
     deleteTrade(offer.tradeId);
-    // if (selectedTrade.takerId === realmEntityId) {
-    //   deleteNotification([selectedTrade.tradeId.toString()], EventType.DirectOffer);
-    // }
-    // onClose();
   };
 
+  const isSelf = useMemo(() => {
+    return entityId === offer.makerId;
+  }, []);
+
   return (
-    <div className="flex justify-between p-1 bg-white/10 px-2 clip-angled-sm hover:bg-white/15 duration-150">
+    <div
+      className={`flex justify-between p-1  px-2 clip-angled-sm hover:bg-white/15 duration-150 ${
+        isSelf ? "bg-blueish/10" : "bg-white/10"
+      }`}
+    >
       <div className="w-3/12">{currencyFormat(offer.takerGets[0].amount, 2)}</div>
       <div>{travelTime}hrs</div>
       <div>{offer.ratio.toFixed(2)}</div>
 
-      {entityId === offer.makerId ? (
+      {isSelf ? (
         <Button
           onClick={async () => {
             setLoading(true);
@@ -285,10 +288,6 @@ export const OrderCreation = ({
     return !isBuy ? (resource / lords).toFixed(2) : (lords / resource).toFixed(2);
   }, [resource, lords]);
 
-  const setMarketBit = () => {
-    setResource(lords / initialBid);
-  };
-
   const orderWeight = useMemo(() => {
     const totalWeight = getTotalResourceWeight([{ resourceId, amount: resource }]);
     return multiplyByPrecision(totalWeight);
@@ -328,6 +327,14 @@ export const OrderCreation = ({
   const lordsBalance = useMemo(() => {
     return lordsProductionManager.balance(currentTick);
   }, [lordsProductionManager, lordsProduction, currentTick]);
+
+  const canBuy = useMemo(() => {
+    return isBuy ? lordsBalance > lords : resourceBalance > resource;
+  }, [resource, lords, donkeyBalance, lordsBalance, resourceBalance]);
+
+  const enoughDonkeys = useMemo(() => {
+    return donkeyBalance > donkeysNeeded;
+  }, [donkeyBalance, donkeysNeeded]);
 
   return (
     <div className="flex justify-between p-4 text-xl flex-wrap mt-auto clip-angled-sm bg-white/10">
@@ -403,7 +410,14 @@ export const OrderCreation = ({
           </div>
         </div>
 
-        <Button isLoading={loading} className="mt-4" onClick={createOrder} size="md" variant="primary">
+        <Button
+          disabled={!enoughDonkeys || !canBuy}
+          isLoading={loading}
+          className="mt-4"
+          onClick={createOrder}
+          size="md"
+          variant="primary"
+        >
           Create {isBuy ? "Buy" : "Sell"} Order
         </Button>
       </div>

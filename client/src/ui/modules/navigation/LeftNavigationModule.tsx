@@ -51,6 +51,7 @@ export const BuildingThumbs = {
   squire: "/images/buildings/thumb/squire.png",
   question: "/images/buildings/thumb/question-wood.png",
   scale: "/images/buildings/thumb/scale.png",
+  settings: "/images/buildings/thumb/settings.png",
 };
 
 enum View {
