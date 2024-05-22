@@ -1,57 +1,49 @@
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { getColRowFromUIPosition, getEntityIdFromKeys, getUIPositionFromColRow } from "@/ui/utils/utils";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { getRealmNameById } from "@/ui/utils/realms";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { BuildingType, EternumGlobalConfig, Position, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
-import { useHexPosition } from "@/hooks/helpers/useHexPosition";
-import { leaderboard, quests } from "@/ui/components/navigation/Config";
 import { useMemo } from "react";
-import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { useModal } from "@/hooks/store/useModal";
 import { HintModal } from "@/ui/components/hints/HintModal";
-import { ArrowUp } from "lucide-react";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useRealm } from "@/hooks/helpers/useRealm";
-import { Map } from "lucide-react";
+import { Crown, Building, Warehouse, Factory } from "lucide-react";
 import Button from "@/ui/elements/Button";
 
+// use a different icon for each structure depending on their category
+const structureIcons: Record<string, JSX.Element> = {
+  None: <Building />,
+  Realm: <Crown />,
+  Bank: <Building />,
+  Hyperstructure: <Warehouse />,
+  ShardsMine: <Factory />,
+};
+
 export const TopMiddleNavigation = () => {
-  const {
-    setup: {
-      components: { Population, Position },
-    },
-  } = useDojo();
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const togglePopup = useUIStore((state) => state.togglePopup);
+  const { setup } = useDojo();
 
   const [location, setLocation] = useLocation();
-  const { realm } = useHexPosition();
-
-  const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realm?.entity_id || "0")]));
 
   const { toggleModal } = useModal();
 
-  const { playerRealms, playerStructures } = useEntities();
+  const { playerStructures } = useEntities();
+  const structures = playerStructures();
 
   const { realmEntityId, setRealmEntityId } = useRealmStore();
 
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
-
-  const { getRealmIdFromRealmEntityId } = useRealm();
 
   const isRealmView = location.includes(`/hex`);
 
   const gotToRealmView = (entityId: any) => {
-    const structure = playerStructures().find((structure) => structure.entity_id?.toString() === entityId);
+    const structure = structures.find((structure) => structure.entity_id?.toString() === entityId);
 
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
@@ -65,7 +57,7 @@ export const TopMiddleNavigation = () => {
   };
 
   const goToMapView = (entityId: any) => {
-    const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityId)])) as Position;
+    const position = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)])) as Position;
     console.log({ position });
     moveCameraToColRow(position.x, position.y);
 
@@ -94,16 +86,14 @@ export const TopMiddleNavigation = () => {
               <SelectValue placeholder="Select Realm" />
             </SelectTrigger>
             <SelectContent className="bg-brown ">
-              {playerStructures().map((structure, index) => (
+              {structures.map((structure, index) => (
                 <SelectItem
                   className="flex justify-between text-sm"
                   key={index}
                   value={structure.entity_id?.toString() || ""}
                 >
-                  {/* {realm.name} */}
                   <h5 className="self-center flex gap-4">
-                    <Map className="self-center" />
-
+                    {structureIcons[structure!.category!]}
                     {structure.name}
                   </h5>
                 </SelectItem>
