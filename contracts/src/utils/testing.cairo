@@ -6,9 +6,10 @@ use eternum::models::capacity::{capacity, Capacity};
 
 use eternum::models::config::{
     world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,
-    weight_config, WeightConfig, road_config, RoadConfig
+    weight_config, WeightConfig, road_config, RoadConfig, hyperstructure_resource_config,
+    HyperstructureResourceConfig,
 };
-use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
+use eternum::models::hyperstructure::{Progress, progress, Contribution, contribution};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
 use eternum::models::metadata::{foreign_key, ForeignKey};
 use eternum::models::movable::{movable, Movable, arrival_time, ArrivalTime};
@@ -48,7 +49,9 @@ fn spawn_eternum() -> IWorldDispatcher {
         weight_config::TEST_CLASS_HASH,
         road::TEST_CLASS_HASH,
         road_config::TEST_CLASS_HASH,
-        hyper_structure::TEST_CLASS_HASH,
+        progress::TEST_CLASS_HASH,
+        contribution::TEST_CLASS_HASH,
+        hyperstructure_resource_config::TEST_CLASS_HASH,
     ];
 
     spawn_test_world(models)

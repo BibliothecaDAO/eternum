@@ -11,7 +11,6 @@ mod map_systems {
     use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
     use eternum::models::combat::{Health, HealthTrait};
     use eternum::models::config::{MapExploreConfig, LevelingConfig};
-    use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};

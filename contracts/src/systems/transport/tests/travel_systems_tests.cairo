@@ -6,12 +6,9 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::LevelIndex;
 
 use eternum::constants::ResourceTypes;
-use eternum::constants::{
-    ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID, WORLD_CONFIG_ID
-};
+use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
 use eternum::models::config::LevelingConfig;
 use eternum::models::config::{RoadConfig, TickConfig};
-use eternum::models::hyperstructure::HyperStructure;
 use eternum::models::level::Level;
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable, ArrivalTime};

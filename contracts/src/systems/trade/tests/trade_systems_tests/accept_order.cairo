@@ -4,11 +4,8 @@ use core::traits::Into;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::constants::ResourceTypes;
-use eternum::constants::{
-    DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID
-};
+use eternum::constants::{DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID};
 use eternum::models::config::{LevelingConfig};
-use eternum::models::hyperstructure::HyperStructure;
 use eternum::models::level::{Level};
 use eternum::models::metadata::ForeignKey;
 use eternum::models::movable::{Movable, ArrivalTime};

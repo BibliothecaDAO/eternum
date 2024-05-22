@@ -8,7 +8,7 @@ const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
 const ROAD_CONFIG_ID: u128 = 999999999999999995;
 const COMBAT_CONFIG_ID: u128 = 999999999999999994;
 const REALM_LEVELING_CONFIG_ID: u128 = 999999999999999993;
-const HYPERSTRUCTURE_LEVELING_CONFIG_ID: u128 = 999999999999999992;
+const HYPERSTRUCTURE_CONFIG_ID: u128 = 999999999999999992;
 const REALM_FREE_MINT_CONFIG_ID: u128 = 999999999999999991;
 const BUILDING_CATEGORY_POPULATION_CONFIG_ID: u128 = 999999999999999990;
 const POPULATION_CONFIG_ID: u128 = 999999999999999989;
@@ -164,7 +164,7 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
 }
 
 
-fn get_resources_for_pillage() -> Span<u8> {
+fn get_resources_without_earthenshards() -> Span<u8> {
     return array![
         ResourceTypes::WOOD,
         ResourceTypes::STONE,
@@ -205,7 +205,7 @@ fn get_resources_for_pillage() -> Span<u8> {
         .span();
 }
 
-fn get_resources_for_pillage_probs() -> Span<u128> {
+fn get_resources_without_earthenshards_probs() -> Span<u128> {
     // 35 
     return array![
         1,

@@ -2,10 +2,10 @@ use core::debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{
-    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION
+    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION,
+    HYPERSTRUCTURE_CONFIG_ID
 };
 use eternum::models::buildings::BuildingCategory;
-use eternum::utils::unpack::unpack_resource_types;
 
 use starknet::ContractAddress;
 
@@ -39,6 +39,14 @@ struct RoadConfig {
     speed_up_by: u64
 }
 
+#[derive(Model, Copy, Drop, Serde)]
+struct HyperstructureResourceConfig {
+    #[key]
+    config_id: u128,
+    #[key]
+    resource_type: u8,
+    amount_for_completion: u128,
+}
 
 // capacity
 // TODO: should rename into something that shows
@@ -278,6 +286,12 @@ impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
     }
 }
 
+#[generate_trait]
+impl HyperstructureConfigImpl of HyperstructureConfigTrait {
+    fn get(world: IWorldDispatcher, resource_id: u8) -> HyperstructureResourceConfig {
+        get!(world, (HYPERSTRUCTURE_CONFIG_ID, resource_id), HyperstructureResourceConfig)
+    }
+}
 
 #[derive(Model, Copy, Drop, Serde)]
 struct HasClaimedStartingResources {
