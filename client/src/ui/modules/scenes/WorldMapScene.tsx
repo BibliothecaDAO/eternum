@@ -9,8 +9,6 @@ import { WorldMap } from "../../components/worldmap/hexagon/WorldHexagon.js";
 import { useHelper, useTexture } from "@react-three/drei";
 import { useControls } from "leva";
 import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
-import HoveredHex from "@/ui/components/worldmap/hexagon/HoveredHexes.js";
-import { CSG } from "three-csg-ts";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();

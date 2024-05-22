@@ -23,6 +23,8 @@ const HighlightedHexes = () => {
     });
   });
 
+  console.log("highlightPositions", highlightPositions);
+
   return (
     <>
       {highlightPositions.map(({ pos: highlightPosition, color: highlightColor }, index) => {

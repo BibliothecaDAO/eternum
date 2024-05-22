@@ -259,6 +259,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     },
     [moveCameraToTarget],
   );
+
   return (
     <Bvh firstHitOnly>
       <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
@@ -375,6 +376,8 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         const hex = hexDataRef?.current?.find((h) => h.col === x && h.row === y);
         return { pos: [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0], color: TRAVEL_COLOUR };
       }) as HighlightPosition[];
+
+      console.log(uiPath);
       setHighlightPositions(uiPath);
     }
   }
