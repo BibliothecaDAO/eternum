@@ -48,12 +48,12 @@ export const useHexPosition = () => {
     return HexType[category as keyof typeof HexType];
   }, [structure]);
 
-  useEffect(() => {
-    if (realm) {
-      setRealmId(realm.realmId);
-      setRealmEntityId(realm.entity_id);
-    }
-  }, [hexType, searchString, realms]);
+  // useEffect(() => {
+  //   if (realm) {
+  //     setRealmId(realm.realmId);
+  //     setRealmEntityId(realm.entity_id);
+  //   }
+  // }, [hexType, searchString, realm]);
 
   const { neighborHexes, mainHex } = useMemo(() => {
     const mainHex = hexData?.find((hex) => hex.col === hexPosition.col && hex.row === hexPosition.row);

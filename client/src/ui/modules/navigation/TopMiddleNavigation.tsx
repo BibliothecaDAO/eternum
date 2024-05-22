@@ -42,7 +42,7 @@ export const TopMiddleNavigation = () => {
 
   const isRealmView = location.includes(`/hex`);
 
-  const gotToRealmView = (entityId: any) => {
+  const goToEntityView = (entityId: any) => {
     const structure = structures.find((structure) => structure.entity_id?.toString() === entityId);
 
     setIsLoadingScreenEnabled(true);
@@ -55,6 +55,8 @@ export const TopMiddleNavigation = () => {
 
     setRealmEntityId(BigInt(entityId));
   };
+
+  console.log({ realmEntityId });
 
   const goToMapView = (entityId: any) => {
     const position = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)])) as Position;
@@ -79,7 +81,7 @@ export const TopMiddleNavigation = () => {
             value={realmEntityId.toString()}
             onValueChange={(a: any) => {
               console.log({ a });
-              !isRealmView ? goToMapView(a) : gotToRealmView(a);
+              !isRealmView ? goToMapView(a) : goToEntityView(a);
             }}
           >
             <SelectTrigger className="">
@@ -116,12 +118,12 @@ export const TopMiddleNavigation = () => {
               }, 100);
             } else {
               setTimeout(() => {
-                gotToRealmView(realmEntityId.toString());
+                goToEntityView(realmEntityId.toString());
               }, 50);
             }
           }}
         >
-          {location === "/map" ? "Realm" : "World"}
+          {location === "/map" ? "Hex" : "World"}
         </Button>
       </div>
       <div className="self-center px-3 flex space-x-2">
