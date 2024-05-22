@@ -5,7 +5,6 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
 use eternum::models::capacity::Capacity;
 use eternum::models::combat::{Health};
-use eternum::models::inventory::{Inventory, InventoryTrait};
 
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable};
@@ -18,22 +17,23 @@ use eternum::models::resources::{Resource, ResourceFoodImpl};
 use eternum::models::tick::TickConfig;
 use eternum::models::weight::Weight;
 
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{
-    IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait, IMapConfigDispatcher,
-    IMapConfigDispatcherTrait
+use eternum::systems::config::contracts::{
+    config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait,
+    IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
+    IWeightConfigDispatcherTrait
 };
-use eternum::systems::config::interface::{IWeightConfigDispatcher, IWeightConfigDispatcherTrait,};
+
 use eternum::systems::map::contracts::map_systems;
 
 use eternum::systems::map::contracts::{IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
 
-use eternum::systems::realm::contracts::realm_systems;
-use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
-use eternum::systems::transport::contracts::{travel_systems::travel_systems};
-use eternum::systems::transport::interface::{
-    travel_systems_interface::{ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait},
+use eternum::systems::realm::contracts::{
+    realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
 };
+use eternum::systems::transport::contracts::travel_systems::{
+    travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
+};
+
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 use starknet::contract_address_const;
 
@@ -62,8 +62,10 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
         (ResourceTypes::WHEAT, INITIAL_WHEAT_BALANCE), (ResourceTypes::FISH, INITIAL_FISH_BALANCE),
     ];
 
+    let mint_config_index = 0;
+
     IRealmFreeMintConfigDispatcher { contract_address: config_systems_address }
-        .set_mint_config(initial_resources.span());
+        .set_mint_config(mint_config_index, initial_resources.span());
 
     // set weight configuration for rewarded resource (silver)
     IWeightConfigDispatcher { contract_address: config_systems_address }
@@ -127,7 +129,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     let army_capacity_value_per_soldier: u128 = 7;
 
     // set army health value to make it alive
-    set!(world, (Health { entity_id: realm_army_unit_id, value: 1 }));
+    set!(world, (Health { entity_id: realm_army_unit_id, current: 1, lifetime: 1 }));
 
     set!(
         world,
@@ -136,9 +138,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
             EntityOwner { entity_id: realm_army_unit_id, entity_owner_id: realm_entity_id },
             Quantity { entity_id: realm_army_unit_id, value: army_quantity_value },
             Position { entity_id: realm_army_unit_id, x: realm_position.x, y: realm_position.y },
-            Inventory {
-                entity_id: realm_army_unit_id, items_key: world.uuid().into(), items_count: 0
-            },
             Capacity {
                 entity_id: realm_army_unit_id, weight_gram: army_capacity_value_per_soldier
             },
@@ -193,12 +192,6 @@ fn test_map_explore() {
     let (realm_wheat, realm_fish) = ResourceFoodImpl::get(world, realm_entity_id);
     assert_eq!(realm_wheat.balance, expected_wheat_balance, "wrong wheat balance");
     assert_eq!(realm_fish.balance, expected_fish_balance, "wrong wheat balance");
-
-    // ensure that item was added to realm_army's inventory
-    let realm_army_inventory: Inventory = get!(world, realm_army_unit_id, Inventory);
-    assert_eq!(realm_army_inventory.items_count, 1);
-    let item_id: u128 = realm_army_inventory.item_id(world, 0).into();
-    assert(item_id != 0, 'wrong inventory item id');
 
     army_coord = expected_explored_coord;
 }

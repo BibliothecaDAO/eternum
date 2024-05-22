@@ -10,9 +10,8 @@ use eternum::models::owner::Owner;
 use eternum::models::position::{Coord};
 use eternum::models::resources::{Resource, ResourceCost};
 use eternum::models::road::{Road, RoadImpl};
-use eternum::systems::transport::contracts::{road_systems::road_systems};
-use eternum::systems::transport::interface::{
-    road_systems_interface::{IRoadSystemsDispatcher, IRoadSystemsDispatcherTrait},
+use eternum::systems::transport::contracts::road_systems::{
+    road_systems, IRoadSystemsDispatcher, IRoadSystemsDispatcherTrait
 };
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};

@@ -1,3 +1,11 @@
+use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
+
+#[dojo::interface]
+trait ILevelingSystems {
+    fn level_up_realm(realm_entity_id: ID);
+}
+
 #[dojo::contract]
 mod leveling_systems {
     use eternum::alias::ID;
@@ -17,10 +25,9 @@ mod leveling_systems {
     use eternum::systems::leveling::contracts::leveling_systems::{
         InternalLevelingSystemsImpl as leveling
     };
-    use eternum::systems::leveling::interface::ILevelingSystems;
 
     #[abi(embed_v0)]
-    impl LevelingSystemsImpl of ILevelingSystems<ContractState> {
+    impl LevelingSystemsImpl of super::ILevelingSystems<ContractState> {
         fn level_up_realm(world: IWorldDispatcher, realm_entity_id: ID,) {
             // check that entity is a realm
             let realm = get!(world, realm_entity_id, Realm);

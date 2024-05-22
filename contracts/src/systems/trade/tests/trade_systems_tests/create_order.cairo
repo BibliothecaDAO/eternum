@@ -7,35 +7,23 @@ use eternum::constants::ResourceTypes;
 use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::owner::Owner;
 use eternum::models::position::Position;
-use eternum::models::resources::{Resource, ResourceChest};
+use eternum::models::resources::Resource;
 
 use eternum::models::trade::{Trade, Status, TradeStatus};
 use eternum::models::weight::Weight;
 
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{
-    ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher,
-    IWeightConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
+use eternum::systems::config::contracts::{
+    config_systems, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
+    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, ICapacityConfigDispatcher,
+    ICapacityConfigDispatcherTrait
 };
 
-use eternum::systems::realm::contracts::realm_systems;
-use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
-
-use eternum::systems::trade::contracts::trade_systems::trade_systems;
-use eternum::systems::trade::interface::{
-    trade_systems_interface::{ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait},
+use eternum::systems::realm::contracts::{
+    realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
 };
 
-
-use eternum::systems::transport::contracts::{
-    transport_unit_systems::transport_unit_systems, caravan_systems::caravan_systems
-};
-
-use eternum::systems::transport::interface::{
-    caravan_systems_interface::{ICaravanSystemsDispatcher, ICaravanSystemsDispatcherTrait},
-    transport_unit_systems_interface::{
-        ITransportUnitSystemsDispatcher, ITransportUnitSystemsDispatcherTrait
-    },
+use eternum::systems::trade::contracts::trade_systems::{
+    trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
@@ -43,14 +31,10 @@ use eternum::utils::testing::{spawn_eternum, deploy_system};
 use starknet::contract_address_const;
 
 
-fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, u128, u128, ITradeSystemsDispatcher) {
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
-
-    // set travel configuration
-    ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_travel_config(10); // 5 free transport per city
 
     // set weight configuration for stone
     IWeightConfigDispatcher { contract_address: config_systems_address }
@@ -113,41 +97,19 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
-    // create two free transport unit for the realm
-    let transport_unit_systems_address = deploy_system(
-        world, transport_unit_systems::TEST_CLASS_HASH
-    );
-    let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
-        contract_address: transport_unit_systems_address
-    };
-    let first_free_transport_unit_id = transport_unit_systems_dispatcher
-        .create_free_unit(maker_id, 10);
-    let second_free_transport_unit_id = transport_unit_systems_dispatcher
-        .create_free_unit(maker_id, 10);
-    let transport_units: Array<u128> = array![
-        first_free_transport_unit_id, second_free_transport_unit_id
-    ];
-
-    // create maker caravan
-    let caravan_systems_address = deploy_system(world, caravan_systems::TEST_CLASS_HASH);
-    let caravan_systems_dispatcher = ICaravanSystemsDispatcher {
-        contract_address: caravan_systems_address
-    };
-    let maker_transport_id = caravan_systems_dispatcher.create(transport_units);
-
     let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
     let trade_systems_dispatcher = ITradeSystemsDispatcher {
         contract_address: trade_systems_address
     };
 
-    (world, maker_id, maker_transport_id, taker_id, trade_systems_dispatcher)
+    (world, maker_id, taker_id, trade_systems_dispatcher)
 }
 
 
 #[test]
 #[available_gas(3000000000000)]
 fn test_create_order() {
-    let (world, maker_id, maker_transport_id, taker_id, trade_systems_dispatcher) = setup();
+    let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
@@ -155,7 +117,6 @@ fn test_create_order() {
         .create_order(
             maker_id,
             array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
-            maker_transport_id,
             taker_id,
             array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200),].span(),
             100
@@ -177,35 +138,11 @@ fn test_create_order() {
 
     let trade = get!(world, trade_id, Trade);
     assert(trade.maker_id == maker_id, 'wrong maker id');
-    assert(trade.maker_resource_chest_id != 0, 'wrong maker chest id');
-    assert(trade.maker_transport_id != 0, 'wrong maker transport id');
     assert(trade.taker_id == taker_id, 'wrong taker id');
-    assert(trade.taker_resource_chest_id != 0, 'wrong taker chest id');
-    assert(trade.taker_transport_id == 0, 'wrong taker transport id');
     assert(trade.expires_at == 100, 'expires at is wrong');
 
     let trade_status = get!(world, trade_id, Status);
     assert(trade_status.value == TradeStatus::OPEN, 'wrong trade status');
-
-    // check that maker transport is blocked
-    let caravan_movable = get!(world, maker_transport_id, Movable);
-    assert(caravan_movable.blocked, 'maker transport not blocked');
-
-    // check maker resource chest resource count
-    let maker_resource_chest = get!(world, trade.maker_resource_chest_id, ResourceChest);
-    assert(maker_resource_chest.resources_count == 2, 'wrong resource count');
-
-    // check that maker resource chest is empty
-    let maker_resource_chest_weight = get!(world, trade.maker_resource_chest_id, Weight);
-    assert(maker_resource_chest_weight.value == 0, 'chest should be empty');
-
-    // check taker resource chest resource count
-    let taker_resource_chest = get!(world, trade.taker_resource_chest_id, ResourceChest);
-    assert(taker_resource_chest.resources_count == 2, 'wrong resource count');
-
-    // check that taker resource chest is filled
-    let taker_resource_chest_weight = get!(world, trade.taker_resource_chest_id, Weight);
-    assert(taker_resource_chest_weight.value != 0, 'chest should be filled');
 }
 
 
@@ -213,7 +150,7 @@ fn test_create_order() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('caller not maker', 'ENTRYPOINT_FAILED'))]
 fn test_caller_not_maker() {
-    let (_, maker_id, maker_transport_id, taker_id, trade_systems_dispatcher) = setup();
+    let (_, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     // create order with a caller that isnt the owner of maker_id
     starknet::testing::set_contract_address(contract_address_const::<'some_unknown'>());
@@ -221,28 +158,6 @@ fn test_caller_not_maker() {
         .create_order(
             maker_id,
             array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
-            maker_transport_id,
-            taker_id,
-            array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200),].span(),
-            100
-        );
-}
-
-
-#[test]
-#[available_gas(3000000000000)]
-#[should_panic(expected: ('not caravan owner', 'ENTRYPOINT_FAILED'))]
-fn test_caller_not_owner_of_transport_id() {
-    let (_, maker_id, _, taker_id, trade_systems_dispatcher) = setup();
-
-    let maker_transport_id = 99999; // set some arbitray value
-
-    starknet::testing::set_contract_address(contract_address_const::<'maker'>());
-    trade_systems_dispatcher
-        .create_order(
-            maker_id,
-            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
-            maker_transport_id,
             taker_id,
             array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200),].span(),
             100
@@ -254,7 +169,7 @@ fn test_caller_not_owner_of_transport_id() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('mismatched positions', 'ENTRYPOINT_FAILED'))]
 fn test_different_transport_position() {
-    let (world, maker_id, maker_transport_id, taker_id, trade_systems_dispatcher) = setup();
+    let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     // set an arbitrary position
 
@@ -265,7 +180,6 @@ fn test_different_transport_position() {
         .create_order(
             maker_id,
             array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
-            maker_transport_id,
             taker_id,
             array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200),].span(),
             100
@@ -277,23 +191,22 @@ fn test_different_transport_position() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('transport has not arrived', 'ENTRYPOINT_FAILED'))]
 fn test_transport_in_transit() {
-    let (world, maker_id, maker_transport_id, taker_id, trade_systems_dispatcher) = setup();
+    let (_world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     // set arrival time to some time in future
 
-    set!(
-        world,
-        ArrivalTime {
-            entity_id: maker_transport_id, arrives_at: starknet::get_block_timestamp() + 40
-        }
-    );
+    // set!(
+    //     world,
+    //     ArrivalTime {
+    //         entity_id: trade_id, arrives_at: starknet::get_block_timestamp() + 40
+    //     }
+    // );
 
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     trade_systems_dispatcher
         .create_order(
             maker_id,
             array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
-            maker_transport_id,
             taker_id,
             array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200),].span(),
             100
@@ -305,7 +218,7 @@ fn test_transport_in_transit() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('not enough capacity', 'ENTRYPOINT_FAILED'))]
 fn test_transport_not_enough_capacity() {
-    let (world, maker_id, _, taker_id, trade_systems_dispatcher) = setup();
+    let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     //          note
     // all previous tests passed because they didn't have 
@@ -317,37 +230,12 @@ fn test_transport_not_enough_capacity() {
     ICapacityConfigDispatcher { contract_address: config_systems_address }
         .set_capacity_config(DONKEY_ENTITY_TYPE, 1);
 
-    // create two free transport unit for maker realm
-    let transport_unit_systems_address = deploy_system(
-        world, transport_unit_systems::TEST_CLASS_HASH
-    );
-    let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
-        contract_address: transport_unit_systems_address
-    };
-    let maker_first_free_transport_unit_id = transport_unit_systems_dispatcher
-        .create_free_unit(maker_id, 10);
-    let maker_second_free_transport_unit_id = transport_unit_systems_dispatcher
-        .create_free_unit(maker_id, 10);
-
-    let maker_transport_units: Array<u128> = array![
-        maker_first_free_transport_unit_id, maker_second_free_transport_unit_id
-    ];
-
-    // create maker caravan
-
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
-    let caravan_systems_address = deploy_system(world, caravan_systems::TEST_CLASS_HASH);
-    let caravan_systems_dispatcher = ICaravanSystemsDispatcher {
-        contract_address: caravan_systems_address
-    };
-
-    let maker_transport_id = caravan_systems_dispatcher.create(maker_transport_units);
 
     trade_systems_dispatcher
         .create_order(
             maker_id,
             array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
-            maker_transport_id,
             taker_id,
             array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200),].span(),
             100
@@ -358,13 +246,12 @@ fn test_transport_not_enough_capacity() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('maker resource amount is 0', 'ENTRYPOINT_FAILED'))]
 fn test_create_order_amount_give_0() {
-    let (world, maker_id, _, taker_id, trade_systems_dispatcher) = setup();
+    let (_world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     trade_systems_dispatcher
         .create_order(
             maker_id,
             array![(ResourceTypes::STONE, 0),].span(),
-            maker_transport_id,
             taker_id,
             array![(ResourceTypes::STONE, 200),].span(),
             100
@@ -375,13 +262,12 @@ fn test_create_order_amount_give_0() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('taker resource amount is 0', 'ENTRYPOINT_FAILED'))]
 fn test_create_order_amount_take_0() {
-    let (world, maker_id, _, taker_id, trade_systems_dispatcher) = setup();
+    let (_world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     trade_systems_dispatcher
         .create_order(
             maker_id,
             array![(ResourceTypes::STONE, 200),].span(),
-            maker_transport_id,
             taker_id,
             array![(ResourceTypes::STONE, 0),].span(),
             100

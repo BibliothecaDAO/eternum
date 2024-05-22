@@ -8,18 +8,17 @@ use eternum::models::level::Level;
 use eternum::models::position::Position;
 use eternum::models::resources::Resource;
 
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{
-    ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait,
+use eternum::systems::config::contracts::{
+    config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait
 };
 
-use eternum::systems::leveling::contracts::leveling_systems;
-use eternum::systems::leveling::interface::{
-    ILevelingSystemsDispatcher, ILevelingSystemsDispatcherTrait,
+use eternum::systems::leveling::contracts::{
+    leveling_systems, ILevelingSystemsDispatcher, ILevelingSystemsDispatcherTrait
 };
 
-use eternum::systems::realm::contracts::realm_systems;
-use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
+use eternum::systems::realm::contracts::{
+    realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
+};
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 

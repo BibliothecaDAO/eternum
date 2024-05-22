@@ -1,3 +1,12 @@
+use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
+
+#[dojo::interface]
+trait IHyperstructureSystems {
+    fn control(hyperstructure_id: ID, order_id: u8);
+    fn complete(hyperstructure_id: ID);
+}
+
 #[dojo::contract]
 mod hyperstructure_systems {
     use eternum::alias::ID;
@@ -9,11 +18,9 @@ mod hyperstructure_systems {
     use eternum::models::realm::{Realm};
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 
-    use eternum::systems::hyperstructure::interface::IHyperstructureSystems;
-
 
     #[abi(embed_v0)]
-    impl HyperstructureSystemsImpl of IHyperstructureSystems<ContractState> {
+    impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
         fn control(world: IWorldDispatcher, hyperstructure_id: ID, order_id: u8) {
             let mut hyperstructure = get!(world, hyperstructure_id, HyperStructure);
             assert(hyperstructure.completion_resource_count > 0, 'hyperstructure does not exist');

@@ -8,38 +8,23 @@ use eternum::constants::ResourceTypes;
 use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::owner::Owner;
 use eternum::models::position::{Position};
-use eternum::models::resources::{Resource, ResourceChest};
+use eternum::models::resources::Resource;
 
 use eternum::models::trade::{Trade, Status, TradeStatus};
 use eternum::models::weight::Weight;
 
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{
-    ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher,
-    IWeightConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
+use eternum::systems::config::contracts::{
+    config_systems, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
+    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, ICapacityConfigDispatcher,
+    ICapacityConfigDispatcherTrait
 };
 
-use eternum::systems::realm::contracts::realm_systems;
-use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
-use eternum::systems::resources::contracts::resource_systems::{
-    InternalInventorySystemsImpl as inventory
+use eternum::systems::realm::contracts::{
+    realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
 };
 
-use eternum::systems::trade::contracts::trade_systems::trade_systems;
-use eternum::systems::trade::interface::{
-    trade_systems_interface::{ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait},
-};
-
-
-use eternum::systems::transport::contracts::{
-    transport_unit_systems::transport_unit_systems, caravan_systems::caravan_systems
-};
-
-use eternum::systems::transport::interface::{
-    caravan_systems_interface::{ICaravanSystemsDispatcher, ICaravanSystemsDispatcherTrait},
-    transport_unit_systems_interface::{
-        ITransportUnitSystemsDispatcher, ITransportUnitSystemsDispatcherTrait
-    },
+use eternum::systems::trade::contracts::trade_systems::{
+    trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
@@ -51,10 +36,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
-
-    // set travel configuration
-    ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_travel_config(10); // 10 free transport per city
 
     // set speed configuration 
     ITransportConfigDispatcher { contract_address: config_systems_address }
@@ -148,28 +129,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
-    // create two free transport unit for maker realm
-    let transport_unit_systems_address = deploy_system(
-        world, transport_unit_systems::TEST_CLASS_HASH
-    );
-    let transport_unit_systems_dispatcher = ITransportUnitSystemsDispatcher {
-        contract_address: transport_unit_systems_address
-    };
-    let maker_first_free_transport_unit_id = transport_unit_systems_dispatcher
-        .create_free_unit(maker_id, 10);
-    let maker_second_free_transport_unit_id = transport_unit_systems_dispatcher
-        .create_free_unit(maker_id, 10);
-    let maker_transport_units: Array<u128> = array![
-        maker_first_free_transport_unit_id, maker_second_free_transport_unit_id
-    ];
-
-    // create maker caravan
-    let caravan_systems_address = deploy_system(world, caravan_systems::TEST_CLASS_HASH);
-    let caravan_systems_dispatcher = ICaravanSystemsDispatcher {
-        contract_address: caravan_systems_address
-    };
-    let maker_transport_id = caravan_systems_dispatcher.create(maker_transport_units);
-
     let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
     let trade_systems_dispatcher = ITradeSystemsDispatcher {
         contract_address: trade_systems_address
@@ -183,7 +142,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
         .create_order(
             maker_id,
             array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
-            maker_transport_id,
             taker_id,
             array![(ResourceTypes::WOOD, 200), (ResourceTypes::SILVER, 200),].span(),
             100
@@ -198,16 +156,14 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 fn test_cancel() {
     let (world, trade_id, maker_id, _, trade_systems_dispatcher) = setup();
 
+    let _trade = get!(world, trade_id, Trade);
+
     // cancel order 
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
-    trade_systems_dispatcher.cancel_order(trade_id);
-
-    let trade = get!(world, trade_id, Trade);
-
-    // check that items the maker added to the taker's chest 
-    // have been returned to the maker
-    let taker_resource_chest_weight = get!(world, trade.taker_resource_chest_id, Weight);
-    assert(taker_resource_chest_weight.value == 0, 'chest should be empty');
+    trade_systems_dispatcher
+        .cancel_order(
+            trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span()
+        );
 
     // check that maker balance is correct
     let maker_stone_resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
@@ -215,10 +171,6 @@ fn test_cancel() {
 
     let maker_gold_resource = get!(world, (maker_id, ResourceTypes::GOLD), Resource);
     assert(maker_gold_resource.balance == 100, 'wrong maker balance');
-
-    // check that transport is unblocked
-    let transport_movable = get!(world, trade.maker_transport_id, Movable);
-    assert(transport_movable.blocked == false, 'wrong movable value');
 
     // check that trade status is cancelled
     let trade_status = get!(world, trade_id, Status);
@@ -238,7 +190,10 @@ fn test_cancel_after_acceptance() {
 
     // cancel order 
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
-    trade_systems_dispatcher.cancel_order(trade_id);
+    trade_systems_dispatcher
+        .cancel_order(
+            trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span()
+        );
 }
 
 
@@ -252,5 +207,8 @@ fn test_cancel_caller_not_maker() {
     starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
     // cancel order 
-    trade_systems_dispatcher.cancel_order(trade_id);
+    trade_systems_dispatcher
+        .cancel_order(
+            trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span()
+        );
 }
