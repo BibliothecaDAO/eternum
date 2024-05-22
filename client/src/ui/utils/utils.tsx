@@ -161,7 +161,7 @@ export const getUIPositionFromColRow = (col: number, row: number, normalized?: b
 
   const colNorm = col - (!normalized ? 2147483647 : 0);
   const rowNorm = row - (!normalized ? 2147483647 : 0);
-  const x = colNorm * horizDist - ((rowNorm % 2) * horizDist) / 2;
+  const x = colNorm * horizDist + ((rowNorm % 2) * horizDist) / 2;
   const y = rowNorm * vertDist;
   const z = pseudoRandom(x, y) * 2;
   return {
@@ -179,7 +179,7 @@ export const getColRowFromUIPosition = (x: number, y: number, normalized?: boole
   const horizDist = hexWidth;
 
   const rowNorm = Math.round(y / vertDist);
-  const colNorm = Math.round((x + ((rowNorm % 2) * horizDist) / 2) / horizDist);
+  const colNorm = Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);
 
   const col = colNorm + (!normalized ? 2147483647 : 0);
   const row = rowNorm + (!normalized ? 2147483647 : 0);
