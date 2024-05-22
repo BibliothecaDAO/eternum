@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 
-export const Compass = () => {
+export const Compass = React.memo(() => {
   const direction = useUIStore((state) => state.compassDirection);
 
   return (
@@ -35,4 +35,4 @@ export const Compass = () => {
       </div>
     </div>
   );
-};
+});

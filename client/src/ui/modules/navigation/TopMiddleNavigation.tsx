@@ -18,6 +18,7 @@ import { useEntities } from "@/hooks/helpers/useEntities";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { Map } from "lucide-react";
 import Button from "@/ui/elements/Button";
+import { Compass } from "../../components/worldmap/Compass"
 
 export const TopMiddleNavigation = () => {
   const {
@@ -131,6 +132,7 @@ export const TopMiddleNavigation = () => {
           onClick={() => toggleModal(<HintModal />)}
         />
       </div>
+      < Compass />
     </div>
   );
 };

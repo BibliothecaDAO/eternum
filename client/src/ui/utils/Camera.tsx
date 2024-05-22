@@ -1,14 +1,13 @@
 import { MapControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import gsap from "gsap";
-import { useEffect, useRef, useMemo, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { Vector3 } from "three";
 import { useControls, button } from "leva";
 import { useRoute } from "wouter";
 import { soundSelector, useUiSounds } from "../../hooks/useUISound";
 import * as THREE from "three";
 import useUIStore from "@/hooks/store/useUIStore";
-import { throttle } from "lodash";
 
 interface Props {
   position: {
@@ -34,6 +33,7 @@ const upVector = new Vector3(0, 1, 0);
 const _v = new THREE.Vector3();
 const minPan = new THREE.Vector3(0, -Infinity, -1400);
 const maxPan = new THREE.Vector3(2700, Infinity, 0);
+const cameraMovementTreshold = 1;
 
 const CameraControls = ({ position, target }: Props) => {
   const direction = useUIStore((state) => state.compassDirection);
@@ -104,12 +104,15 @@ const CameraControls = ({ position, target }: Props) => {
   }, [target, position]);
 
   // move compass direction
-  // useFrame(
-  //   throttle(() => {
-  //     const cameraDirection = camera.rotation.y * (180 / Math.PI);
-  //     setCompassDirection(cameraDirection >= 0 ? cameraDirection : 360 + cameraDirection);
-  //   }, 100),
-  // );
+  const previousDirection = useRef(0);
+  useFrame(() => {
+    const cameraDirection = camera.rotation.z * (180 / Math.PI);
+
+    if (Math.abs(cameraDirection - previousDirection.current) > cameraMovementTreshold) {
+      setCompassDirection(cameraDirection);
+      previousDirection.current = cameraDirection;
+    }
+  });
 
   const handleChange = useCallback((e: any) => {
     clampPan(e);
