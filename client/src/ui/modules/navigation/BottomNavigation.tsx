@@ -26,6 +26,7 @@ import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { ArrowDown } from "lucide-react";
+import { useQuests } from "@/hooks/helpers/useQuests";
 
 export enum MenuEnum {
   realm = "realm",
@@ -113,6 +114,8 @@ export const BottomNavigation = () => {
 
   const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
 
+  const { claimableQuests } = useQuests({ entityId: realmEntityId || BigInt("0") });
+
   const secondaryNavigation = [
     // {
     //   button: (
@@ -180,6 +183,7 @@ export const BottomNavigation = () => {
             size="lg"
             onClick={() => togglePopup(quests)}
             className="forth-step"
+            notification={claimableQuests.length}
           />
 
           {population?.population == null && location !== "/map" && (

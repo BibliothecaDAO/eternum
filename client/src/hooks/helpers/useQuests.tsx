@@ -155,11 +155,16 @@ export const useQuests = ({ entityId }: { entityId: bigint | undefined }) => {
     ];
   }, [farms, resource, orders, entityArmies()]);
 
+  const claimableQuests = useMemo(() => {
+    return quests.filter((quest) => !quest.completed);
+  }, [quests, farms, resource, orders, entityArmies()]);
+
   return {
     quests,
     hasFarm: farms > 0,
     hasResource: resource > 0,
     hasTrade: orders.length > 0,
     hasArmy: entityArmies().length > 0,
+    claimableQuests,
   };
 };

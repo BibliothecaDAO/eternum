@@ -10,6 +10,7 @@ import { TravelEntityPopup } from "./TravelEntityPopup";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { ENTITY_TYPE, EntityState, determineEntityState } from "@bibliothecadao/eternum";
 import { DepositResources } from "../resources/DepositResources";
+import { useState } from "react";
 
 const entityIcon: Record<ENTITY_TYPE, string> = {
   [ENTITY_TYPE.DONKEY]: "🫏",
@@ -24,15 +25,14 @@ type EntityProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Entity = ({ entityId, ...props }: EntityProps) => {
+  const [showTravel, setShowTravel] = useState(false);
+
   const { getEntityInfo } = useEntities();
-  const entityInfo = getEntityInfo(entityId);
-  const { arrivalTime, blocked, resources } = entityInfo;
+  const { getResourcesFromBalance } = useResources();
+
+  const { arrivalTime, blocked, resources, entityType } = getEntityInfo(entityId);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-
-  const [showTravel, setShowTravel] = React.useState(false);
-
-  const { getResourcesFromBalance } = useResources();
 
   const entityResources = getResourcesFromBalance(entityId);
 
@@ -49,52 +49,46 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
 
   return (
     <div
-      className={clsx("flex flex-col p-2 border  border-gold/20 text-gray-gold", props.className)}
+      className={clsx("flex flex-col p-2 clip-angled-sm bg-green/20 text-gold", props.className)}
       onClick={props.onClick}
     >
       {showTravel && <TravelEntityPopup entityId={entityId} onClose={onCloseTravel} />}
+
       <div className="flex items-center text-xs">
-        <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
+        {/* <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0  rounded-br-md border-gray-gold">
           #{Number(entityId)}
-        </div>
-        <div className="flex items-center ml-1 -mt-2">
-          {entityState !== EntityState.Traveling && (
-            <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">{`Waiting`}</span>
-            </div>
-          )}
-          {entityState === EntityState.Traveling && (
-            <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">{`Traveling`}</span>
-            </div>
-          )}
+        </div> */}
+        <div className="text-2xl">{entityIcon[entityType]}</div>
+
+        <div className="flex items-center ml-1">
+          <span className="italic ">{entityState === EntityState.Traveling ? "Traveling" : "Waiting"}</span>
         </div>
         {entityState === EntityState.WaitingForDeparture && (
-          <div className="flex ml-auto -mt-2 italic text-gold">
+          <div className="flex ml-auto  italic text-gold">
             Trade Bound <Pen className="ml-1 fill-gold" />
           </div>
         )}
         {entityState === EntityState.WaitingToOffload && (
-          <div className="flex ml-auto -mt-2 italic text-gold">Waiting to offload</div>
+          <div className="flex ml-auto italic text-gold">Waiting to offload</div>
         )}
         {entityState === EntityState.Idle && (
-          <div className="flex ml-auto -mt-2 italic text-gold">
+          <div className="flex ml-auto  italic text-gold">
             Idle
             <Pen className="ml-1 fill-gold" />
           </div>
         )}
         {arrivalTime && entityState === EntityState.Traveling && nextBlockTimestamp && (
-          <div className="flex ml-auto -mt-2 italic text-light-pink">
+          <div className="flex ml-auto -mt-2 italic ">
             {formatSecondsLeftInDaysHours(arrivalTime - nextBlockTimestamp)}
           </div>
         )}
       </div>
-      <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
+      <div className="flex  items-center space-x-2 flex-wrap mt-2">
         {entityState !== EntityState.Idle &&
           entityState !== EntityState.WaitingForDeparture &&
           resources &&
           resources.map(
-            (resource) =>
+            (resource: any) =>
               resource && (
                 <ResourceCost
                   key={resource.resourceId}

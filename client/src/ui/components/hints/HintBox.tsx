@@ -60,13 +60,13 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
   }, [quest.prizes, entityId]);
 
   return !hasClaimed ? (
-    <div className={`p-2 border border-white/30  text-gold  ${quest.completed ? "bg-green/5" : " bg-green/40 "}`}>
+    <div className={`p-4  text-gold clip-angled-sm  ${quest.completed ? "bg-green/5" : " bg-green/40 "}`}>
       <div className="flex justify-between">
         <h5 className="mb-3 font-bold">{quest.name}</h5>
         {quest.completed ? <Check /> : <ShieldQuestion />}
       </div>
 
-      <p className="text-xl">{quest.description}</p>
+      <p className="text-xl mb-4">{quest.description}</p>
 
       <div className="mt-1 grid grid-cols-3 gap-2">
         {quest.completed &&
@@ -98,7 +98,7 @@ export const QuestList = ({ entityId }: { entityId: bigint | undefined }) => {
   const { quests } = useQuests({ entityId: entityId || BigInt("0") });
 
   return (
-    <div className="p-8 flex flex-col gap-2">
+    <div className="p-3 flex flex-col gap-2">
       {quests.map((quest, index) => (
         <HintBox key={index} quest={quest} entityId={entityId || BigInt("0")} />
       ))}
