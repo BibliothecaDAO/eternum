@@ -17,7 +17,6 @@ mod travel_systems {
     use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex};
     use eternum::models::capacity::{Capacity, CapacityTrait};
     use eternum::models::config::{RoadConfig, LevelingConfig};
-    use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime};

@@ -4,11 +4,8 @@ use core::traits::Into;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::constants::ResourceTypes;
-use eternum::constants::{
-    DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID
-};
+use eternum::constants::{DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID};
 use eternum::models::config::{LevelingConfig};
-use eternum::models::hyperstructure::HyperStructure;
 use eternum::models::level::{Level};
 use eternum::models::metadata::ForeignKey;
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -314,15 +311,15 @@ fn test_transport_not_enough_capacity() {
     ICapacityConfigDispatcher { contract_address: config_systems_address }
         .set_capacity_config(DONKEY_ENTITY_TYPE, 1);
 
-
     starknet::testing::set_contract_address(contract_address_const::<'taker'>());
 
     // accept order 
-    trade_systems_dispatcher.accept_order(
-        taker_id,
-        trade_id,
-        array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
-        array![(ResourceTypes::WOOD, 200), (ResourceTypes::SILVER, 200),].span()
-    );
+    trade_systems_dispatcher
+        .accept_order(
+            taker_id,
+            trade_id,
+            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
+            array![(ResourceTypes::WOOD, 200), (ResourceTypes::SILVER, 200),].span()
+        );
 }
 

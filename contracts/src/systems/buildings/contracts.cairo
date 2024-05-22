@@ -12,8 +12,8 @@ trait IBuildingContract<TContractState> {
 #[dojo::contract]
 mod building_systems {
     use eternum::models::{
-        resources::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
-        order::Orders, position::{Coord, Position, PositionTrait, Direction},
+        resources::{Resource, ResourceCost}, owner::Owner, order::Orders,
+        position::{Coord, Position, PositionTrait, Direction},
         buildings::{BuildingCategory, Building, BuildingImpl},
         production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
     };

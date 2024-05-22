@@ -72,7 +72,7 @@
   ],
   "SWAP_SYSTEMS": ["Market", "OwnedResourcesTracker", "Resource", "Production"],
   "LIQUIDITY_SYSTEMS": ["Market", "OwnedResourcesTracker", "Production", "Resource", "Liquidity"],
-  "HYPERSTRUCTURE_SYSTEMS": ["Orders", "HyperStructure"],
+  "HYPERSTRUCTURE_SYSTEMS": ["Structure", "StructureCount", "Position", "Owner", "Progress", "Contribution"],
   "BUILDINGS_SYSTEMS": [
     "Resource",
     "OwnedResourcesTracker",

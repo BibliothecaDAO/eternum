@@ -23,7 +23,8 @@ mod combat_systems {
     use core::traits::Into;
     use eternum::alias::ID;
     use eternum::constants::{
-        ResourceTypes, ErrorMessages, get_resources_for_pillage, get_resources_for_pillage_probs
+        ResourceTypes, ErrorMessages, get_resources_without_earthenshards,
+        get_resources_without_earthenshards_probs
     };
     use eternum::constants::{
         WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, LOYALTY_MAX_VALUE, MAX_PILLAGE_TRIAL_COUNT
@@ -612,8 +613,8 @@ mod combat_systems {
 
                 // choose x random resource to be stolen
                 let mut chosen_resource_types: Span<u8> = random::choices(
-                    get_resources_for_pillage(),
-                    get_resources_for_pillage_probs(),
+                    get_resources_without_earthenshards(),
+                    get_resources_without_earthenshards_probs(),
                     array![].span(),
                     MAX_PILLAGE_TRIAL_COUNT.try_into().unwrap(),
                     true
