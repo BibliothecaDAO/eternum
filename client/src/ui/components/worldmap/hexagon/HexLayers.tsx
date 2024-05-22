@@ -112,7 +112,8 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
         const tmpRow = row + FELT_CENTER;
         const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
         if (group[hexIndex]) {
-          addHexToBiomeAccumulator(group[hexIndex]);
+          const { x, y, z } = getUIPositionFromColRow(group[hexIndex].col, group[hexIndex].row);
+          addHexToBiomeAccumulator({ ...group[hexIndex], x, y, z });
         }
       });
     });
