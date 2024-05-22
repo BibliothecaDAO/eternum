@@ -22,7 +22,9 @@ export interface MapStore {
   setIsAttackMode: (isAttackMode: boolean) => void;
   highlightPositions: HighlightPosition[];
   setHighlightPositions: (positions: HighlightPosition[]) => void;
+  clearSelection: () => void;
 }
+
 export const createMapStoreSlice = (set: any) => ({
   worldMapBuilding: null,
   setWorldMapBuilding: (building: StructureType | null) => {
@@ -50,4 +52,13 @@ export const createMapStoreSlice = (set: any) => ({
   setIsAttackMode: (isAttackMode: boolean) => set({ isAttackMode }),
   highlightPositions: [],
   setHighlightPositions: (positions: HighlightPosition[]) => set({ highlightPositions: positions }),
+  clearSelection: () => {
+    set({
+      selectedEntity: undefined,
+      selectedPath: undefined,
+      isTravelMode: false,
+      isExploreMode: false,
+      isAttackMode: false,
+    });
+  },
 });
