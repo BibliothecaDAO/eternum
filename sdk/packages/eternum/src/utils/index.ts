@@ -89,6 +89,8 @@ export const BuildingEnumToString: { [index: number]: string } = {
   12: "Watch Tower",
   13: "Walls",
   14: "Storehouse",
+  15: "Bank",
+  16: "Shards Mine",
 };
 
 export const BuildingStringToEnum = {

@@ -5,12 +5,13 @@ import { useGetRealms } from "@/hooks/helpers/useRealm";
 import { getNeighborHexes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { useSearch } from "wouter/use-location";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue } from "@dojoengine/recs";
+import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 
 export enum HexType {
   BANK = "bank",
   REALM = "realm",
+  SHARDSMINE = "shardsmine",
   EMPTY = "empty",
 }
 
@@ -23,7 +24,7 @@ export const useHexPosition = () => {
 
   const {
     setup: {
-      components: { Bank, Position },
+      components: { Structure, Position },
     },
   } = useDojo();
 
@@ -37,26 +38,22 @@ export const useHexPosition = () => {
     return { col: Number(x), row: Number(y) };
   }, [searchString]);
 
-  const realm = useMemo(() => {
-    const _tmp = realms.find((realm) => realm.position.x === hexPosition.col && realm.position.y === hexPosition.row);
-    if (!_tmp) return undefined;
-    return _tmp;
-  }, [hexPosition, realms]);
-
-  const banks = useEntityQuery([Has(Bank), HasValue(Position, { x: hexPosition.col, y: hexPosition.row })]);
+  const structures = useEntityQuery([Has(Structure), HasValue(Position, { x: hexPosition.col, y: hexPosition.row })]);
+  const structure = structures[0] ? getComponentValue(Structure, structures[0]) : undefined;
+  const realm = structure ? realms.find((realm) => realm.entity_id === structure.entity_id) : undefined;
 
   const hexType: HexType = useMemo(() => {
-    if (banks.length > 0) return HexType.BANK;
-    if (realm) return HexType.REALM;
-    return HexType.EMPTY;
-  }, [banks, realm]);
+    if (!structure) return HexType.EMPTY;
+    const category = structure.category.toUpperCase();
+    return HexType[category as keyof typeof HexType];
+  }, [structure]);
 
   useEffect(() => {
     if (realm) {
       setRealmId(realm.realmId);
       setRealmEntityId(realm.entity_id);
     }
-  }, [realm, searchString, realms]);
+  }, [hexType, searchString, realms]);
 
   const { neighborHexes, mainHex } = useMemo(() => {
     const mainHex = hexData?.find((hex) => hex.col === hexPosition.col && hex.row === hexPosition.row);

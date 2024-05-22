@@ -37,6 +37,7 @@ import { useLocation } from "wouter";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import Button from "@/ui/elements/Button";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
+import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -62,6 +63,12 @@ enum View {
 export const LeftNavigationModule = () => {
   const [isOffscreen, setIsOffscreen] = useState(false);
   const [view, setView] = useState<View>(View.ConstructionView);
+
+  const { hexType } = useHexPosition();
+
+  const canConstruct = useMemo(() => {
+    return hexType === HexType.REALM;
+  }, [hexType]);
 
   const { realmEntityId } = useRealmStore();
   const { setIsOpen } = useTour();
@@ -129,8 +136,8 @@ export const LeftNavigationModule = () => {
             item.name !== MenuEnum.worldMap &&
             item.name !== MenuEnum.trade,
         )
-      : navigation;
-  }, [location, view]);
+      : navigation.filter((item) => item.name !== "construction" || (item.name === "construction" && canConstruct));
+  }, [location, view, canConstruct]);
 
   if (realmEntityId === undefined) {
     return null;

@@ -34,7 +34,8 @@ export enum ModelsIndexes {
   Stable = BuildingType.Stable,
   WorkersHut = BuildingType.WorkersHut,
   Storehouse = BuildingType.Storehouse,
-  Bank = 25,
+  Bank = BuildingType.Bank,
+  ShardsMine = BuildingType.ShardsMine,
 }
 
 const redColor = new THREE.Color("red");
@@ -64,6 +65,7 @@ export const ExistingBuildings = () => {
       [ModelsIndexes.WorkersHut]: useGLTF("/models/buildings/workers_hut.glb"),
       [ModelsIndexes.Storehouse]: useGLTF("/models/buildings/storehouse.glb"),
       [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb"),
+      [ModelsIndexes.ShardsMine]: useGLTF("/models/buildings/mine.glb"),
       [ResourceMiningTypes.Forge]: useGLTF("/models/buildings/forge.glb"),
       [ResourceMiningTypes.Mine]: useGLTF("/models/buildings/mine.glb"),
       [ResourceMiningTypes.LumberMill]: useGLTF("/models/buildings/lumber_mill.glb"),
@@ -117,7 +119,13 @@ export const ExistingBuildings = () => {
       <group>
         <BuiltBuilding
           models={models}
-          buildingCategory={hexType === HexType.BANK ? ModelsIndexes.Bank : BuildingType.Castle}
+          buildingCategory={
+            hexType === HexType.BANK
+              ? BuildingType.Bank
+              : hexType === HexType.SHARDSMINE
+              ? BuildingType.ShardsMine
+              : BuildingType.Castle
+          }
           position={{ col: 10, row: 10 }}
           rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
         />
@@ -129,9 +137,11 @@ export const ExistingBuildings = () => {
           power={power}
         />
       </group>
-      <group position={[x - 1.65, 3.5, -y]}>
-        <BannerFlag />
-      </group>
+      {hexType === HexType.REALM && (
+        <group position={[x - 1.65, 3.5, -y]}>
+          <BannerFlag />
+        </group>
+      )}
     </>
   );
 };
