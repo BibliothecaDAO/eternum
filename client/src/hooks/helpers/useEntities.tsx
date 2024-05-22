@@ -111,16 +111,18 @@ export const useEntities = () => {
       });
     },
     playerStructures: () => {
-      return playerStructures.map((id) => {
-        const structure = getComponentValue(Structure, id);
-        const realm = getComponentValue(Realm, id);
-        const position = getComponentValue(Position, id);
-        // console.log({posiiont})
-        const name = realm
-          ? getRealmNameById(realm.realm_id)
-          : structure?.category + " " + getEntityName(structure!.entity_id);
-        return { ...structure, position: position!, name };
-      });
+      return playerStructures
+        .map((id) => {
+          const structure = getComponentValue(Structure, id);
+          const realm = getComponentValue(Realm, id);
+          const position = getComponentValue(Position, id);
+          // console.log({posiiont})
+          const name = realm
+            ? getRealmNameById(realm.realm_id)
+            : structure?.category + " " + getEntityName(structure!.entity_id);
+          return { ...structure, position: position!, name };
+        })
+        .sort((a, b) => (a.category || "").localeCompare(b.category || ""));
     },
     getEntityName,
     getEntityInfo,

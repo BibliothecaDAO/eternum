@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
 import { useGetRealms } from "@/hooks/helpers/useRealm";
 import { getNeighborHexes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { useSearch } from "wouter/use-location";
@@ -19,8 +18,6 @@ export const useHexPosition = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const hexData = useUIStore((state) => state.hexData);
   const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
-
-  const { setRealmId, setRealmEntityId } = useRealmStore();
 
   const {
     setup: {
@@ -47,13 +44,6 @@ export const useHexPosition = () => {
     const category = structure.category.toUpperCase();
     return HexType[category as keyof typeof HexType];
   }, [structure]);
-
-  // useEffect(() => {
-  //   if (realm) {
-  //     setRealmId(realm.realmId);
-  //     setRealmEntityId(realm.entity_id);
-  //   }
-  // }, [hexType, searchString, realm]);
 
   const { neighborHexes, mainHex } = useMemo(() => {
     const mainHex = hexData?.find((hex) => hex.col === hexPosition.col && hex.row === hexPosition.row);

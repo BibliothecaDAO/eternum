@@ -1,14 +1,14 @@
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import useRealmStore from "@/hooks/store/useRealmStore";
+import useRealmStore, { STARTING_ENTITY_ID } from "@/hooks/store/useRealmStore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { useModal } from "@/hooks/store/useModal";
@@ -36,6 +36,12 @@ export const TopMiddleNavigation = () => {
   const { playerStructures } = useEntities();
   const structures = playerStructures();
 
+  useEffect(() => {
+    if (structures.length > 0 && realmEntityId === STARTING_ENTITY_ID) {
+      goToEntityView(structures[0].entity_id!);
+    }
+  }, [structures]);
+
   const { realmEntityId, setRealmEntityId } = useRealmStore();
 
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
@@ -56,11 +62,8 @@ export const TopMiddleNavigation = () => {
     setRealmEntityId(BigInt(entityId));
   };
 
-  console.log({ realmEntityId });
-
   const goToMapView = (entityId: any) => {
     const position = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)])) as Position;
-    console.log({ position });
     moveCameraToColRow(position.x, position.y);
 
     setRealmEntityId(BigInt(entityId));
@@ -80,7 +83,6 @@ export const TopMiddleNavigation = () => {
           <Select
             value={realmEntityId.toString()}
             onValueChange={(a: any) => {
-              console.log({ a });
               !isRealmView ? goToMapView(a) : goToEntityView(a);
             }}
           >
