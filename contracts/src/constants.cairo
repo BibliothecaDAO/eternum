@@ -64,11 +64,6 @@ mod ResourceTypes {
     const ADAMANTINE: u8 = 20;
     const MITHRAL: u8 = 21;
     const DRAGONHIDE: u8 = 22;
-    const DESERT_GLASS: u8 = 23;
-    const DIVINE_CLOTH: u8 = 24;
-    const CURIOUS_SPORE: u8 = 25;
-    const UNREFINED_ORE: u8 = 26;
-    const SUNKEN_SHEKEL: u8 = 27;
     const DEMONHIDE: u8 = 28;
     const EARTHEN_SHARD: u8 = 29;
 
@@ -132,18 +127,10 @@ fn resource_type_name(resource_type: u8) -> ByteArray {
         "MITHRAL"
     } else if resource_type == 22 {
         "DRAGONHIDE"
-    } else if resource_type == 23 {
-        "DESERT GLASS"
-    } else if resource_type == 24 {
-        "DIVINE CLOTH"
-    } else if resource_type == 25 {
-        "CURIOUS SPORE"
-    } else if resource_type == 26 {
-        "UNREFINED ORE"
-    } else if resource_type == 27 {
-        "SUNKEN SHEKEL"
     } else if resource_type == 28 {
         "DEMONHIDE"
+    } else if resource_type == 29 {
+        "EARTHEN SHARD"
     } else if resource_type == 249 {
         "DONKEY"
     } else if resource_type == 250 {
@@ -188,11 +175,6 @@ fn get_resources_without_earthenshards() -> Span<u8> {
         ResourceTypes::ADAMANTINE,
         ResourceTypes::MITHRAL,
         ResourceTypes::DRAGONHIDE,
-        ResourceTypes::DESERT_GLASS,
-        ResourceTypes::DIVINE_CLOTH,
-        ResourceTypes::CURIOUS_SPORE,
-        ResourceTypes::UNREFINED_ORE,
-        ResourceTypes::SUNKEN_SHEKEL,
         ResourceTypes::DEMONHIDE,
         ResourceTypes::DONKEY,
         ResourceTypes::KNIGHT,
@@ -208,11 +190,6 @@ fn get_resources_without_earthenshards() -> Span<u8> {
 fn get_resources_without_earthenshards_probs() -> Span<u128> {
     // 35 
     return array![
-        1,
-        1,
-        1,
-        1,
-        1,
         1,
         1,
         1,

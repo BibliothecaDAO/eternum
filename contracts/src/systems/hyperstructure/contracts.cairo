@@ -26,6 +26,7 @@ mod hyperstructure_systems {
     use eternum::models::structure::{
         Structure, StructureCount, StructureCountTrait, StructureCategory
     };
+    use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
 
     #[derive(Drop, starknet::Event)]
     struct HyperstructureFinished {
@@ -44,6 +45,8 @@ mod hyperstructure_systems {
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
         fn create(world: IWorldDispatcher, creator_entity_id: u128, coord: Coord) -> u128 {
             get!(world, creator_entity_id, Owner).assert_caller_owner();
+
+            InternalTravelSystemsImpl::assert_tile_explored(world, coord);
 
             // assert no structure is already built on the coords
             let structure_count: StructureCount = get!(world, coord, StructureCount);
