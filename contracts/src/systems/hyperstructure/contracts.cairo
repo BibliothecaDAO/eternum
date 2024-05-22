@@ -26,7 +26,9 @@ mod hyperstructure_systems {
     use eternum::models::structure::{
         Structure, StructureCount, StructureCountTrait, StructureCategory
     };
-    use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
+    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
+        InternalTravelSystemsImpl
+    };
 
     #[derive(Drop, starknet::Event)]
     struct HyperstructureFinished {
