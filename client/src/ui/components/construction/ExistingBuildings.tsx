@@ -206,7 +206,11 @@ export const BuiltBuilding = ({
     <Button
       onClick={() => {
         destroyBuilding(realmEntityId, position.col, position.row);
-        if (buildingCategory === BuildingType.Resource && (ResourceIdToMiningType[resource!] === ResourceMiningTypes.Forge || ResourceIdToMiningType[resource!] === ResourceMiningTypes.Mine)) {
+        if (
+          buildingCategory === BuildingType.Resource &&
+          (ResourceIdToMiningType[resource!] === ResourceMiningTypes.Forge ||
+            ResourceIdToMiningType[resource!] === ResourceMiningTypes.Mine)
+        ) {
           playDestroyStone();
         } else {
           playDestroyWooden();

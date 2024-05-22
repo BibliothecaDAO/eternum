@@ -1,10 +1,10 @@
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getColRowFromUIPosition, getEntityIdFromKeys, getUIPositionFromColRow } from "@/ui/utils/utils";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { BuildingType, EternumGlobalConfig, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
+import { BuildingType, EternumGlobalConfig, Position, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
@@ -26,7 +26,7 @@ import Button from "@/ui/elements/Button";
 export const TopMiddleNavigation = () => {
   const {
     setup: {
-      components: { Population },
+      components: { Population, Position },
     },
   } = useDojo();
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
@@ -39,7 +39,7 @@ export const TopMiddleNavigation = () => {
 
   const { toggleModal } = useModal();
 
-  const { playerRealms } = useEntities();
+  const { playerRealms, playerStructures } = useEntities();
 
   const { realmEntityId, setRealmEntityId } = useRealmStore();
 
@@ -51,23 +51,23 @@ export const TopMiddleNavigation = () => {
   const isRealmView = location.includes(`/hex`);
 
   const gotToRealmView = (entityId: any) => {
-    const realm = playerRealms().find((realm) => realm.entity_id?.toString() === entityId);
+    const structure = playerStructures().find((structure) => structure.entity_id?.toString() === entityId);
 
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
       if (location.includes(`/hex`)) {
         setIsLoadingScreenEnabled(false);
       }
-      setLocation(`/hex?col=${realm?.position.x}&row=${realm?.position.y}`);
+      setLocation(`/hex?col=${structure!.position.x}&row=${structure!.position.y}`);
     }, 300);
 
     setRealmEntityId(BigInt(entityId));
   };
 
   const goToMapView = (entityId: any) => {
-    const realmId = getRealmIdFromRealmEntityId(BigInt(entityId));
-    if (!realmId) return;
-    moveCameraToRealm(Number(realmId));
+    const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityId)])) as Position;
+    console.log({ position });
+    moveCameraToColRow(position.x, position.y);
 
     setRealmEntityId(BigInt(entityId));
   };
@@ -85,7 +85,8 @@ export const TopMiddleNavigation = () => {
         <div className="self-center flex justify-between w-full">
           <Select
             value={realmEntityId.toString()}
-            onValueChange={(a) => {
+            onValueChange={(a: any) => {
+              console.log({ a });
               !isRealmView ? goToMapView(a) : gotToRealmView(a);
             }}
           >
@@ -93,17 +94,17 @@ export const TopMiddleNavigation = () => {
               <SelectValue placeholder="Select Realm" />
             </SelectTrigger>
             <SelectContent className="bg-brown ">
-              {playerRealms().map((realm, index) => (
+              {playerStructures().map((structure, index) => (
                 <SelectItem
                   className="flex justify-between text-sm"
                   key={index}
-                  value={realm.entity_id?.toString() || ""}
+                  value={structure.entity_id?.toString() || ""}
                 >
                   {/* {realm.name} */}
                   <h5 className="self-center flex gap-4">
                     <Map className="self-center" />
 
-                    {realm.name}
+                    {structure.name}
                   </h5>
                 </SelectItem>
               ))}

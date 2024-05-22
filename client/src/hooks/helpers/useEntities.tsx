@@ -22,6 +22,7 @@ export const useEntities = () => {
         Capacity,
         Position,
         Army,
+        Structure,
       },
     },
   } = useDojo();
@@ -30,12 +31,13 @@ export const useEntities = () => {
 
   const playerRealms = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
   const otherRealms = useEntityQuery([Has(Realm), NotValue(Owner, { address: BigInt(account.address) })]);
+  const playerStructures = useEntityQuery([Has(Structure), HasValue(Owner, { address: BigInt(account.address) })]);
 
   const playerAccounts = useEntityQuery([HasValue(BankAccounts, { owner: BigInt(account.address) })]);
 
   const getEntityName = (entityId: bigint) => {
     const entityName = getComponentValue(EntityName, getEntityIdFromKeys([entityId]));
-    return entityName ? hexToAscii(numberToHex(Number(entityName.name))) : undefined;
+    return entityName ? hexToAscii(numberToHex(Number(entityName.name))) : entityId.toString();
   };
 
   const getEntityInfo = (entityId: bigint): EntityInterface => {
@@ -106,6 +108,18 @@ export const useEntities = () => {
       return playerAccounts.map((id) => {
         const account = getComponentValue(BankAccounts, id);
         return { entity_id: account?.entity_id, name: `Bank ${account?.bank_entity_id.toString()}` };
+      });
+    },
+    playerStructures: () => {
+      return playerStructures.map((id) => {
+        const structure = getComponentValue(Structure, id);
+        const realm = getComponentValue(Realm, id);
+        const position = getComponentValue(Position, id);
+        // console.log({posiiont})
+        const name = realm
+          ? getRealmNameById(realm.realm_id)
+          : structure?.category + " " + getEntityName(structure!.entity_id);
+        return { ...structure, position: position!, name };
       });
     },
     getEntityName,
