@@ -23,14 +23,12 @@ use eternum::models::realm::Realm;
 use eternum::models::resources::{Resource, ResourceCost};
 use eternum::models::road::{Road, RoadImpl};
 
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{
-    ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait,
+use eternum::systems::config::contracts::{
+    config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait
 };
 
-use eternum::systems::transport::contracts::{travel_systems::travel_systems};
-use eternum::systems::transport::interface::{
-    travel_systems_interface::{ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait},
+use eternum::systems::transport::contracts::travel_systems::{
+    travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
