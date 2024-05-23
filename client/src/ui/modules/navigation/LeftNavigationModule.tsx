@@ -143,7 +143,12 @@ export const LeftNavigationModule = () => {
     ];
 
     return location === "/map"
-      ? navigation.filter((item) => item.name === MenuEnum.military || item.name === MenuEnum.entityDetails)
+      ? navigation.filter(
+          (item) =>
+            item.name === MenuEnum.military ||
+            item.name === MenuEnum.entityDetails ||
+            item.name === MenuEnum.structures,
+        )
       : navigation.filter(
           (item) =>
             item.name === MenuEnum.military || item.name === MenuEnum.construction || item.name != MenuEnum.structures,
