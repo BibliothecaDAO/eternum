@@ -91,7 +91,7 @@ export function useResources() {
   const getAllArrivalsWithResources = () => {
     return entititsAtPositionWithInventory.map((id) => {
       const position = getComponentValue(Position, id);
-      return position!.entity_id;
+      return position?.entity_id ? position!.entity_id : BigInt("");
     });
   };
 

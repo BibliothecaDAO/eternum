@@ -70,13 +70,13 @@ export const LeftNavigationModule = () => {
   const navigation = useMemo(() => {
     const navigation = [
       {
-        name: "entity",
+        name: "entityDetails",
         button: (
           <CircleButton
             className="construction-selector"
             image={BuildingThumbs.hex}
             tooltipLocation="top"
-            label={construction}
+            label={"Details"}
             active={view === View.EntityView}
             size="xl"
             onClick={() => {
@@ -123,14 +123,8 @@ export const LeftNavigationModule = () => {
     ];
 
     return location === "/map"
-      ? navigation.filter(
-          (item) =>
-            item.name !== MenuEnum.construction &&
-            item.name !== MenuEnum.resources &&
-            item.name !== MenuEnum.worldMap &&
-            item.name !== MenuEnum.trade,
-        )
-      : navigation;
+      ? navigation.filter((item) => item.name === MenuEnum.military || item.name === MenuEnum.entityDetails)
+      : navigation.filter((item) => item.name === MenuEnum.military || item.name === MenuEnum.construction);
   }, [location, view]);
 
   if (realmEntityId === undefined) {
@@ -160,7 +154,7 @@ export const LeftNavigationModule = () => {
         <div className="gap-2 flex flex-col justify-center self-center">
           <div>
             <Button onClick={() => setIsOffscreen(!isOffscreen)} variant="primary">
-              <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen ? "rotate-180" : ""}`} />
+              <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen ? "" : "rotate-180"}`} />
             </Button>
           </div>
           <div className="flex flex-col gap-2 mb-auto">

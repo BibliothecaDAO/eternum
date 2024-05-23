@@ -32,6 +32,7 @@ export const DepositResources = ({ entityId }: DepositResourcesProps) => {
     arrivalTime?.arrives_at,
     inventoryResources.length > 0,
   );
+  console.log(inventoryResources.length);
 
   const onOffload = async (receiverEntityId: bigint) => {
     setIsLoading(true);
@@ -56,7 +57,7 @@ export const DepositResources = ({ entityId }: DepositResourcesProps) => {
           isLoading={isLoading}
           disabled={entityState === EntityState.Traveling}
           onClick={() => onOffload(depositEntityId)}
-          variant="success"
+          variant="primary"
           withoutSound
         >
           {`Deposit Resources`}

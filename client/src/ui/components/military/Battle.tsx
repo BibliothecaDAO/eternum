@@ -17,6 +17,7 @@ import { BuildingType, Resource } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Subscription } from "rxjs";
 import { BUILDING_IMAGES_PATH } from "../construction/SelectPreviewBuilding";
+import { ArmyChip } from "./ArmyChip";
 
 export const ArmiesAtLocation = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
@@ -47,18 +48,19 @@ export const ArmiesAtLocation = () => {
       {allArmies.length !== 0 && (
         <>
           <Headline className="my-3">Armies</Headline>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             {allArmies.map((entity: any, index) => (
-              <ArmyViewCard
-                actions={structuresAtPosition}
-                onClick={() => {
-                  structuresAtPosition
-                    ? toggleModal(<ArmyActions armyId={entity.entity_id} />)
-                    : console.log("no structures");
-                }}
-                key={index}
-                army={entity}
-              />
+              <ArmyChip key={index} army={entity} />
+              // <ArmyViewCard
+              //   actions={structuresAtPosition}
+              //   onClick={() => {
+              //     structuresAtPosition
+              //       ? toggleModal(<ArmyActions armyId={entity.entity_id} />)
+              //       : console.log("no structures");
+              //   }}
+              //   key={index}
+              //   army={entity}
+              // />
             ))}
           </div>
         </>
@@ -142,7 +144,7 @@ export const ArmyActions = ({ armyId }: { armyId: bigint }) => {
           <div className="border p-8 text-center col-span-6 space-y-8 flex flex-col justify-between">
             <div className="w-64">
               <Headline>
-                <h5>{army.name}</h5>
+                <h5>{army?.name}</h5>
               </Headline>
               <p>
                 You have a fighting chance to steal some resources. If victorious you will steal resources and return

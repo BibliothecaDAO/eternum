@@ -201,7 +201,7 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
 
   const isSelf = useMemo(() => {
     return entityId === offer.makerId;
-  }, []);
+  }, [entityId, offer.makerId, offer.tradeId]);
 
   return (
     <div

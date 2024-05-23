@@ -234,24 +234,31 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
 
       <div className="grid grid-cols-3 gap-2 my-1">
         {troops.map((troop) => (
-          <div className="p-2 border  border-gold/20" key={troop.name}>
+          <div className="p-2 border  border-gold/20 flex flex-col" key={troop.name}>
             {/* <img src={`/images/units/${nameMapping[troop.name]}.png`} alt={nameMapping[troop.name]} /> */}
             <div className="font-bold">
-              <div className="text-xl">{nameMapping[troop.name]}</div>
+              <div className="text-md">{nameMapping[troop.name]}</div>
               <div className="text-green">x {troop.current}</div>
             </div>
-            {/* <div className="flex justify-between border border-gold/20 px-2 my-2 font-bold">
-              <div>Atk: {troop.attack}</div>
-              <div>Def: {troop.defense}</div>
-            </div> */}
 
             <div className="my-3">
               <div>Str vs {troop.strong}</div>
               <div>Wk vs {troop.weak}</div>
             </div>
 
-            <div className="flex items-center">
+            <div className="flex items-center mt-auto flex-col">
+              <div className="px-2 text-xs text-center text-green font-black">
+                [
+                {currencyFormat(
+                  getBalance(owner_entity, troop.name).balance
+                    ? Number(getBalance(owner_entity, troop.name).balance)
+                    : 0,
+                  0,
+                )}
+                ]
+              </div>
               <NumberInput
+                className=""
                 max={Number(
                   currencyFormat(
                     getBalance(owner_entity, troop.name).balance
@@ -264,16 +271,6 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
                 value={troopCounts[troop.name]}
                 onChange={(amount) => handleTroopCountChange(troop.name, amount)}
               />
-              <div className="px-2 text-xs text-center text-green font-black">
-                [
-                {currencyFormat(
-                  getBalance(owner_entity, troop.name).balance
-                    ? Number(getBalance(owner_entity, troop.name).balance)
-                    : 0,
-                  0,
-                )}
-                ]
-              </div>
             </div>
           </div>
         ))}
@@ -294,7 +291,8 @@ export const ViewOnMapButton = ({ position, className }: { position: Position; c
   return (
     <Button
       className={className}
-      variant="outline"
+      variant="primary"
+      size="xs"
       onClick={() => {
         if (location !== "/map") {
           setIsLoadingScreenEnabled(true);

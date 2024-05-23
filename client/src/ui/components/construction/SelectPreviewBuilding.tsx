@@ -94,7 +94,7 @@ export const SelectPreviewBuildingMenu = () => {
       return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
     });
 
-  const [selectedTab, setSelectedTab] = useState(0);
+  const [selectedTab, setSelectedTab] = useState(1);
 
   const tabs = useMemo(
     () => [

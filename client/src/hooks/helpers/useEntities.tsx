@@ -38,11 +38,14 @@ export const useEntities = () => {
     return entityName ? hexToAscii(numberToHex(Number(entityName.name))) : undefined;
   };
 
-  const getEntityInfo = (entityId: bigint): EntityInterface => {
+  const getEntityInfo = (entityId: bigint) => {
     const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([entityId]));
     const movable = getComponentValue(Movable, getEntityIdFromKeys([entityId]));
     const capacity = getComponentValue(Capacity, getEntityIdFromKeys([entityId]));
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([entityId]));
+
+    const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityId]));
+    const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || BigInt("")]));
+
     const resources = getResourcesFromBalance(entityId);
     const army = getComponentValue(Army, getEntityIdFromKeys([entityId]));
     const rawIntermediateDestination = movable
@@ -54,9 +57,8 @@ export const useEntities = () => {
 
     const position = getComponentValue(Position, getEntityIdFromKeys([entityId]));
 
-    const ownerEntity = getComponentValue(EntityOwner, getEntityIdFromKeys([entityId]))?.entity_owner_id;
-    const homePosition = ownerEntity
-      ? getComponentValue(Position, getEntityIdFromKeys([BigInt(ownerEntity)]))
+    const homePosition = entityOwner
+      ? getComponentValue(Position, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || BigInt(""))]))
       : undefined;
 
     return {
@@ -68,7 +70,7 @@ export const useEntities = () => {
       position: position ? { x: position.x, y: position.y } : undefined,
       homePosition: homePosition ? { x: homePosition.x, y: homePosition.y } : undefined,
       owner: owner?.address,
-      isMine: owner?.address === BigInt(account.address),
+      isMine: BigInt(owner?.address || "") === BigInt(account.address),
       isRoundTrip: movable?.round_trip || false,
       resources,
       entityType: army ? ENTITY_TYPE.TROOP : ENTITY_TYPE.DONKEY,
