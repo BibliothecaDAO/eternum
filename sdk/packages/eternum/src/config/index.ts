@@ -40,14 +40,16 @@ export const setProductionConfig = async (account: Account, provider: EternumPro
 
 export const setBuildingCategoryPopConfig = async (account: Account, provider: EternumProvider) => {
   for (const buildingId of Object.keys(BUILDING_POPULATION) as unknown as BuildingType[]) {
-    const tx = await provider.set_building_category_pop_config({
-      signer: account,
-      building_category: buildingId,
-      population: BUILDING_POPULATION[buildingId],
-      capacity: BUILDING_CAPACITY[buildingId],
-    });
-
-    console.log(`Configuring building category population ${buildingId} ${tx.statusReceipt}...`);
+    // if both 0, tx will fail
+    if (BUILDING_POPULATION[buildingId] !== 0 || BUILDING_CAPACITY[buildingId] !== 0) {
+      const tx = await provider.set_building_category_pop_config({
+        signer: account,
+        building_category: buildingId,
+        population: BUILDING_POPULATION[buildingId],
+        capacity: BUILDING_CAPACITY[buildingId],
+      });
+      console.log(`Configuring building category population ${buildingId} ${tx.statusReceipt}...`);
+    }
   }
 };
 
@@ -62,19 +64,21 @@ export const setPopulationConfig = async (account: Account, provider: EternumPro
 
 export const setBuildingConfig = async (account: Account, provider: EternumProvider) => {
   for (const buildingId of Object.keys(BUILDING_RESOURCE_PRODUCED) as unknown as BuildingType[]) {
-    const tx = await provider.set_building_config({
-      signer: account,
-      building_category: buildingId,
-      building_resource_type: BUILDING_RESOURCE_PRODUCED[buildingId],
-      cost_of_building: BUILDING_COSTS_SCALED[buildingId].map((cost) => {
-        return {
-          ...cost,
-          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
-        };
-      }),
-    });
+    if (BUILDING_COSTS_SCALED[buildingId].length !== 0) {
+      const tx = await provider.set_building_config({
+        signer: account,
+        building_category: buildingId,
+        building_resource_type: BUILDING_RESOURCE_PRODUCED[buildingId],
+        cost_of_building: BUILDING_COSTS_SCALED[buildingId].map((cost) => {
+          return {
+            ...cost,
+            amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
+          };
+        }),
+      });
 
-    console.log(`Configuring building cost config ${buildingId} ${tx.statusReceipt}...`);
+      console.log(`Configuring building cost config ${buildingId} ${tx.statusReceipt}...`);
+    }
   }
 };
 
