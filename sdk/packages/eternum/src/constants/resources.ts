@@ -28,6 +28,7 @@ export const EternumGlobalConfig = {
     wheatBurn: 50,
     fishBurn: 50,
     reward: 20,
+    shardsMinesFailProbability: 10000,
   },
   tick: {
     movesPerTick: 3,

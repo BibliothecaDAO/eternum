@@ -304,6 +304,7 @@ export interface SetExplorationConfigProps extends SystemSigner {
   wheat_burn_amount: num.BigNumberish;
   fish_burn_amount: num.BigNumberish;
   reward_amount: num.BigNumberish;
+  shards_mines_fail_probability: num.BigNumberish;
 }
 
 export interface SetCapacityConfigProps extends SystemSigner {
