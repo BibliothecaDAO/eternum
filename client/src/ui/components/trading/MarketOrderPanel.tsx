@@ -348,7 +348,12 @@ export const OrderCreation = ({
             />{" "}
             sell
           </div>
-          <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
+          {!isBuy ? (
+            <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
+          ) : (
+            <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
+          )}
+
           <div className="text-sm">
             {!isBuy
               ? currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)
@@ -384,7 +389,12 @@ export const OrderCreation = ({
             />{" "}
             Buy
           </div>
-          <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
+          {!isBuy ? (
+            <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
+          ) : (
+            <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
+          )}
+
           <div className="text-sm">
             {!isBuy
               ? currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)
