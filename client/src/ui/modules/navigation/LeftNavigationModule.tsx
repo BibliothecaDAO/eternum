@@ -64,12 +64,6 @@ export const LeftNavigationModule = () => {
   const [isOffscreen, setIsOffscreen] = useState(false);
   const [view, setView] = useState<View>(View.ConstructionView);
 
-  const { hexType } = useHexPosition();
-
-  const canConstruct = useMemo(() => {
-    return hexType === HexType.REALM;
-  }, [hexType]);
-
   const { realmEntityId } = useRealmStore();
   const { setIsOpen } = useTour();
   const [location, setLocation] = useLocation();
@@ -136,8 +130,8 @@ export const LeftNavigationModule = () => {
             item.name !== MenuEnum.worldMap &&
             item.name !== MenuEnum.trade,
         )
-      : navigation.filter((item) => item.name !== "construction" || (item.name === "construction" && canConstruct));
-  }, [location, view, canConstruct]);
+      : navigation;
+  }, [location, view]);
 
   if (realmEntityId === undefined) {
     return null;
