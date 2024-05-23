@@ -42,6 +42,8 @@ export const STRUCTURE_IMAGE_PATHS = {
   [StructureType.Bank]: STRUCTURE_IMAGE_PREFIX + "mine.png",
   [StructureType.Settlement]: STRUCTURE_IMAGE_PREFIX + "mine.png",
   [StructureType.Hyperstructure]: STRUCTURE_IMAGE_PREFIX + "mine.png",
+  [StructureType.Realm]: STRUCTURE_IMAGE_PREFIX + "mine.png",
+  [StructureType.ShardsMine]: STRUCTURE_IMAGE_PREFIX + "mine.png",
 };
 
 export const StructureConstructionMenu = () => {

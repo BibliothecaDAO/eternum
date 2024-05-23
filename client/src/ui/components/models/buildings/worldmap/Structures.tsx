@@ -10,22 +10,14 @@ import { StructureStringToEnum, StructureType } from "@bibliothecadao/eternum";
 import useUIStore from "@/hooks/store/useUIStore";
 
 export const Structures = () => {
-  //   const models = useMemo(
-  //     () => ({
-  //       [ModelsIndexes.Castle]: useGLTF("/models/buildings/castle.glb"),
-  //       [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb"),
-  //       [ModelsIndexes.Hyperstructure]: useGLTF("/models/buildings/bank.glb"),
-  //       [ModelsIndexes.Settlement]: useGLTF("/models/buildings/barracks.glb"),
-  //     }),
-  //     [],
-  //   );
-
   const models = useMemo(
     () => [
+      null,
       useGLTF("/models/buildings/castle.glb"),
       useGLTF("/models/buildings/bank.glb"),
       useGLTF("/models/buildings/bank.glb"),
-      useGLTF("/models/buildings/barracks.glb"),
+      useGLTF("/models/buildings/mine.glb"),
+      useGLTF("/models/buildings/castle.glb"),
     ],
     [],
   );
@@ -40,7 +32,8 @@ export const Structures = () => {
   useEffect(() => {
     let _tmp = builtStructures.map((entity) => {
       const position = getComponentValue(setup.components.Position, entity);
-      const type = StructureStringToEnum["Realm"];
+      const structure = getComponentValue(setup.components.Structure, entity);
+      const type = StructureType[structure!.category as keyof typeof StructureType];
       return {
         col: position!.x,
         row: position!.y,
@@ -50,7 +43,6 @@ export const Structures = () => {
     });
     setExistingStructures(_tmp);
   }, [builtStructures]);
-  console.log({ existingStructures });
 
   return existingStructures.map((structure, index) => {
     return <BuiltStructure key={index} position={structure} models={models} structureCategory={structure.type} />;
@@ -83,8 +75,6 @@ const BuiltStructure = ({
     });
     return model.scene.clone();
   }, [models]);
-
-  console.log({ model });
 
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>
