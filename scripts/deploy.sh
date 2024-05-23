@@ -17,9 +17,6 @@ slot deployments create eternum-12 torii --version 0.6.1-alpha.4 --world 0x2c301
 
 bun --env-file=../client/.env.production ../config/index.ts
 
-echo "----- Auth and World Contracts: Set 0.1s ----- "
-source scripts/env_variables.sh dev
-
 echo "Setting up config..."
 ./scripts/set_writer.sh --interval 1  --mode prod 
 
