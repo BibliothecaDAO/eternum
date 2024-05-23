@@ -20,7 +20,7 @@ export const InventoryResources = ({
 
   return (
     <div className={className}>
-      {title && <Headline className="my-2">{title}</Headline>}
+      <div className="w-full uppercase font-bold mb-2">{title && title}</div>
       {inventoryResources &&
         inventoryResources
           .slice(0, max)

@@ -38,6 +38,7 @@ export enum MenuEnum {
   bank = "bank",
   hyperstructures = "hyperstructures",
   leaderboard = "leaderboard",
+  entityDetails = "entityDetails",
 }
 
 export const BottomNavigation = () => {

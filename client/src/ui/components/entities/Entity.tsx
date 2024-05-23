@@ -30,7 +30,9 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const { getEntityInfo } = useEntities();
   const { getResourcesFromBalance } = useResources();
 
-  const { arrivalTime, blocked, resources, entityType } = getEntityInfo(entityId);
+  console.log(getEntityInfo(entityId));
+
+  const { arrivalTime, blocked, resources, entityType, isMine } = getEntityInfo(entityId);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
@@ -53,30 +55,29 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
       onClick={props.onClick}
     >
       {showTravel && <TravelEntityPopup entityId={entityId} onClose={onCloseTravel} />}
+      <div className="text-xs">{isMine ? "Incoming" : "Outgoing"}</div>
 
       <div className="flex items-center text-xs">
-        {/* <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0  rounded-br-md border-gray-gold">
-          #{Number(entityId)}
-        </div> */}
         <div className="text-2xl">{entityIcon[entityType]}</div>
 
         <div className="flex items-center ml-1">
           <span className="italic ">{entityState === EntityState.Traveling ? "Traveling" : "Waiting"}</span>
         </div>
+
         {entityState === EntityState.WaitingForDeparture && (
-          <div className="flex ml-auto  italic text-gold">
+          <div className="flex ml-auto  italic ">
             Trade Bound <Pen className="ml-1 fill-gold" />
           </div>
         )}
-        {entityState === EntityState.WaitingToOffload && (
-          <div className="flex ml-auto italic text-gold">Waiting to offload</div>
-        )}
+        {entityState === EntityState.WaitingToOffload && <div className="flex ml-auto italic ">Waiting to offload</div>}
+
         {entityState === EntityState.Idle && (
-          <div className="flex ml-auto  italic text-gold">
+          <div className="flex ml-auto  italic ">
             Idle
             <Pen className="ml-1 fill-gold" />
           </div>
         )}
+
         {arrivalTime && entityState === EntityState.Traveling && nextBlockTimestamp && (
           <div className="flex ml-auto -mt-2 italic ">
             {formatSecondsLeftInDaysHours(arrivalTime - nextBlockTimestamp)}
