@@ -36,8 +36,13 @@ mod building_systems {
             }
 
             // todo: check that entity is a realm
-            BuildingImpl::create(
+            let building: Building = BuildingImpl::create(
                 world, entity_id, building_category, produce_resource_type, building_coord
+            );
+
+            // make payment for building
+            BuildingImpl::make_payment(
+                world, building.outer_entity_id, building.category, building.produced_resource_type
             );
         }
 

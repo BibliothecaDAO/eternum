@@ -111,7 +111,13 @@
     "EntityOwner",
     "Position",
     "Owner",
-    "Capacity"
+    "Capacity",
+    "Structure",
+    "StructureCount",
+    "Building",
+    "Production",
+    "BuildingQuantityv2",
+    "Population"
   ],
   "COMBAT_SYSTEMS": [
     "Health",

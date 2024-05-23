@@ -6,6 +6,7 @@ import BigHexBiome from "../../components/construction/BigHexBiome";
 import { useControls } from "leva";
 import * as THREE from "three";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
+import { ExistingBuildings } from "@/ui/components/construction/ExistingBuildings";
 
 const positions = {
   main: getUIPositionFromColRow(0, 0, true),
@@ -26,13 +27,18 @@ export const HexceptionViewScene = () => {
     roughnessMap: "/textures/paper/paper-roughness.jpg",
     normalMap: "/textures/paper/paper-normal.jpg",
   });
+
+  // only realm can build
+  const canConstruct = hexType === HexType.REALM;
+
   return (
     <>
       <group position={[positions.main.x, 0, -positions.main.y]} rotation={[0, 0, 0]}>
-        <group visible={hexType === HexType.REALM || hexType === HexType.BANK}>
+        <group visible={canConstruct}>
           <BuildArea />
         </group>
-        <group visible={hexType === HexType.EMPTY}>{mainHex && <BigHexBiome biome={mainHex.biome as any} />}</group>
+        <ExistingBuildings />
+        <group visible={!canConstruct}>{mainHex && <BigHexBiome biome={mainHex.biome as any} />}</group>
       </group>
       {neighborHexesInsideView && (
         <group>

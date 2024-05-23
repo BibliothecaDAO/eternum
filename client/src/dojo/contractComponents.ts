@@ -6,6 +6,22 @@ export type ContractComponents = ReturnType<typeof defineContractComponents>;
 
 export function defineContractComponents(world: World) {
   return {
+    Structure: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.BigInt,
+          category: RecsType.String,
+        },
+        {
+          metadata: {
+            name: "Structure",
+            types: ["u128", "enum"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Production: (() => {
       return defineComponent(
         world,

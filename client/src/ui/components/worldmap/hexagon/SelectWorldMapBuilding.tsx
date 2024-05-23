@@ -88,22 +88,12 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
   const { isExplored } = useExplore();
   const { hasStructures } = useStructures();
 
-  const canBuild = (StructureType: StructureType) => {
-    return (
-      BUILDING_UNBLOCKED[StructureType] &&
-      multiplyByPrecision(BUILDING_COST[StructureType]) <= lordsBalance &&
-      clickedHex &&
-      isExplored(clickedHex.contractPos.col, clickedHex.contractPos.row) &&
-      !hasStructures(clickedHex.contractPos.col, clickedHex.contractPos.row)
-    );
-  };
-
   return (
     <div className="flex flex-col overflow-hidden">
       <div className="grid grid-cols-2 gap-2">
         {buildingTypes.map((buildingType, index) => {
           const building = StructureType[buildingType as keyof typeof StructureType];
-          const isCanBuild = canBuild(building);
+          const isCanBuild = true;
           return (
             <div
               key={index}
@@ -117,7 +107,6 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
                 },
               )}
               style={{
-                backgroundImage: `url(${BUILDING_IMAGES_PATH[building]})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
@@ -132,24 +121,6 @@ export const SelectWorldMapBuilding = ({ entityId }: any) => {
               <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50">
                 {buildingType}
               </div>
-              <InfoIcon
-                onMouseEnter={() => {
-                  setTooltip({
-                    content: (
-                      <div className="w-48 p-2">
-                        <div className="text-sm ">{BUILDING_DESCRIPTION[building]}</div>
-                        <CostInfo cost={BUILDING_COST[building]} lordsBalance={lordsBalance} />
-                        <RestrictionInfo restriction={RESTRICTION_INFO[building]} />
-                      </div>
-                    ),
-                    position: "right",
-                  });
-                }}
-                onMouseLeave={() => {
-                  setTooltip(null);
-                }}
-                className="w-4 h-4 absolute top-0 right-0"
-              />
             </div>
           );
         })}

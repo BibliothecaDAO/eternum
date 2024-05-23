@@ -526,12 +526,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_explore_config(props: SystemProps.SetExplorationConfigProps) {
-    const { wheat_burn_amount, fish_burn_amount, reward_amount, signer } = props;
+    const { wheat_burn_amount, fish_burn_amount, reward_amount, shards_mines_fail_probability, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "config_systems"),
       entrypoint: "set_exploration_config",
-      calldata: [wheat_burn_amount, fish_burn_amount, reward_amount],
+      calldata: [wheat_burn_amount, fish_burn_amount, reward_amount, shards_mines_fail_probability],
     });
   }
 

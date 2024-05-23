@@ -1,16 +1,16 @@
 import { useEffect, useMemo } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
-import useRealmStore from "@/hooks/store/useRealmStore";
-import { useGetRealms } from "@/hooks/helpers/useRealm";
-import { getNeighborHexes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { getNeighborHexes } from "@bibliothecadao/eternum";
 import { useSearch } from "wouter/use-location";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue } from "@dojoengine/recs";
+import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
+import useRealmStore, { STARTING_ENTITY_ID } from "../store/useRealmStore";
 
 export enum HexType {
   BANK = "bank",
   REALM = "realm",
+  SHARDSMINE = "shardsmine",
   EMPTY = "empty",
 }
 
@@ -19,16 +19,16 @@ export const useHexPosition = () => {
   const hexData = useUIStore((state) => state.hexData);
   const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
 
-  const { setRealmId, setRealmEntityId } = useRealmStore();
-
   const {
+    account,
     setup: {
-      components: { Bank, Position },
+      components: { Structure, Position, Owner },
     },
   } = useDojo();
 
-  const realms = useGetRealms();
   const searchString = useSearch();
+  const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const hexPosition = useMemo(() => {
     const params = new URLSearchParams(searchString);
@@ -37,26 +37,29 @@ export const useHexPosition = () => {
     return { col: Number(x), row: Number(y) };
   }, [searchString]);
 
-  const realm = useMemo(() => {
-    const _tmp = realms.find((realm) => realm.position.x === hexPosition.col && realm.position.y === hexPosition.row);
-    if (!_tmp) return undefined;
-    return _tmp;
-  }, [hexPosition, realms]);
+  const structures = useEntityQuery([Has(Structure), HasValue(Position, { x: hexPosition.col, y: hexPosition.row })]);
 
-  const banks = useEntityQuery([Has(Bank), HasValue(Position, { x: hexPosition.col, y: hexPosition.row })]);
+  const structure = useMemo(() => {
+    if (structures?.length === 0) return null;
+    return getComponentValue(Structure, structures[0]);
+  }, [structures]);
 
   const hexType: HexType = useMemo(() => {
-    if (banks.length > 0) return HexType.BANK;
-    if (realm) return HexType.REALM;
-    return HexType.EMPTY;
-  }, [banks, realm]);
+    if (!structure) return HexType.EMPTY;
+    const category = structure.category.toUpperCase();
+    return HexType[category as keyof typeof HexType];
+  }, [structure]);
 
   useEffect(() => {
-    if (realm) {
-      setRealmId(realm.realmId);
-      setRealmEntityId(realm.entity_id);
+    const owner = getComponentValue(Owner, structures[0]);
+    if (owner) {
+      if (owner.address === BigInt(account.account.address) && realmEntityId !== owner.entity_id) {
+        setRealmEntityId(owner.entity_id);
+      } else if (owner.address !== BigInt(account.account.address)) {
+        setRealmEntityId(STARTING_ENTITY_ID);
+      }
     }
-  }, [realm, searchString, realms]);
+  }, [structure]);
 
   const { neighborHexes, mainHex } = useMemo(() => {
     const mainHex = hexData?.find((hex) => hex.col === hexPosition.col && hex.row === hexPosition.row);
@@ -77,7 +80,6 @@ export const useHexPosition = () => {
   }, []);
 
   return {
-    realm,
     mainHex,
     neighborHexesInsideView,
     hexType,

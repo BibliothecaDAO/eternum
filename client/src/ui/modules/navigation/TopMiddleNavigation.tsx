@@ -2,7 +2,7 @@ import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
@@ -13,49 +13,61 @@ import { useDojo } from "@/hooks/context/DojoContext";
 
 import { useModal } from "@/hooks/store/useModal";
 import { HintModal } from "@/ui/components/hints/HintModal";
-
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useRealm } from "@/hooks/helpers/useRealm";
-import { Map } from "lucide-react";
+import { Crown, Landmark, Sparkles, Pickaxe } from "lucide-react";
 import Button from "@/ui/elements/Button";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+
+// use a different icon for each structure depending on their category
+const structureIcons: Record<string, JSX.Element> = {
+  None: <div />,
+  Realm: <Crown />,
+  Bank: <Landmark />,
+  Hyperstructure: <Sparkles />,
+  ShardsMine: <Pickaxe />,
+};
 
 export const TopMiddleNavigation = () => {
-  const {
-    setup: {
-      components: { Population },
-    },
-  } = useDojo();
+  const { setup } = useDojo();
 
   const [location, setLocation] = useLocation();
+
   const { toggleModal } = useModal();
-  const { playerRealms } = useEntities();
-  const { realmEntityId, setRealmEntityId } = useRealmStore();
+
+  const { playerStructures } = useEntities();
+
+  // realms always first
+  const structures = playerStructures().sort((a, b) => {
+    if (a.category === "Realm") return -1;
+    if (b.category === "Realm") return 1;
+    return a.category!.localeCompare(b.category!);
+  });
+
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
 
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
 
-  const { getRealmIdFromRealmEntityId } = useRealm();
+  const isHexView = location.includes(`/hex`);
 
-  const isRealmView = location.includes(`/hex`);
-
-  const gotToRealmView = (entityId: any) => {
-    const realm = playerRealms().find((realm) => realm.entity_id?.toString() === entityId);
+  const goToHexView = (entityId: any) => {
+    const structure = structures.find((structure) => structure.entity_id?.toString() === entityId);
 
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
       if (location.includes(`/hex`)) {
         setIsLoadingScreenEnabled(false);
       }
-      setLocation(`/hex?col=${realm?.position.x}&row=${realm?.position.y}`);
+      setLocation(`/hex?col=${structure!.position.x}&row=${structure!.position.y}`);
     }, 300);
 
     setRealmEntityId(BigInt(entityId));
   };
 
   const goToMapView = (entityId: any) => {
-    const realmId = getRealmIdFromRealmEntityId(BigInt(entityId));
-    if (!realmId) return;
-    moveCameraToRealm(Number(realmId));
+    const position = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)])) as Position;
+    moveCameraToColRow(position.x, position.y);
 
     setRealmEntityId(BigInt(entityId));
   };
@@ -73,25 +85,23 @@ export const TopMiddleNavigation = () => {
         <div className="self-center flex justify-between w-full">
           <Select
             value={realmEntityId.toString()}
-            onValueChange={(a) => {
-              !isRealmView ? goToMapView(a) : gotToRealmView(a);
+            onValueChange={(a: any) => {
+              !isHexView ? goToMapView(a) : goToHexView(a);
             }}
           >
             <SelectTrigger className="">
               <SelectValue placeholder="Select Realm" />
             </SelectTrigger>
             <SelectContent className="bg-brown ">
-              {playerRealms().map((realm, index) => (
+              {structures.map((structure, index) => (
                 <SelectItem
                   className="flex justify-between text-sm"
                   key={index}
-                  value={realm.entity_id?.toString() || ""}
+                  value={structure.entity_id?.toString() || ""}
                 >
-                  {/* {realm.name} */}
                   <h5 className="self-center flex gap-4">
-                    <Map className="self-center" />
-
-                    {realm.name}
+                    {structureIcons[structure!.category!]}
+                    {structure.name}
                   </h5>
                 </SelectItem>
               ))}
@@ -113,12 +123,12 @@ export const TopMiddleNavigation = () => {
               }, 100);
             } else {
               setTimeout(() => {
-                gotToRealmView(realmEntityId.toString());
+                goToHexView(realmEntityId.toString());
               }, 50);
             }
           }}
         >
-          {location === "/map" ? "Realm" : "World"}
+          {location === "/map" ? "Hex" : "World"}
         </Button>
       </div>
       <div className="self-center px-3 flex space-x-2">
