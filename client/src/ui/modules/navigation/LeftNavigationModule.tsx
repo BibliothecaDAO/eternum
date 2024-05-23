@@ -14,6 +14,7 @@ import {
   trade,
   construction,
   assistant,
+  structures,
 } from "../../components/navigation/Config";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useMemo, useState } from "react";
@@ -37,7 +38,7 @@ import { useLocation } from "wouter";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import Button from "@/ui/elements/Button";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
-import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
+import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -59,6 +60,7 @@ enum View {
   MilitaryView,
   EntityView,
   ConstructionView,
+  StructureView,
 }
 
 export const LeftNavigationModule = () => {
@@ -105,6 +107,23 @@ export const LeftNavigationModule = () => {
         ),
       },
       {
+        name: "structures",
+        button: (
+          <CircleButton
+            className="structure-selector"
+            image={BuildingThumbs.construction}
+            tooltipLocation="top"
+            label={structures}
+            active={view === View.StructureView}
+            size="xl"
+            onClick={() => {
+              setIsOffscreen(false);
+              setView(View.StructureView);
+            }}
+          />
+        ),
+      },
+      {
         name: "construction",
         button: (
           <CircleButton
@@ -125,7 +144,10 @@ export const LeftNavigationModule = () => {
 
     return location === "/map"
       ? navigation.filter((item) => item.name === MenuEnum.military || item.name === MenuEnum.entityDetails)
-      : navigation.filter((item) => item.name === MenuEnum.military || item.name === MenuEnum.construction);
+      : navigation.filter(
+          (item) =>
+            item.name === MenuEnum.military || item.name === MenuEnum.construction || item.name != MenuEnum.structures,
+        );
   }, [location, view]);
 
   if (realmEntityId === undefined) {
@@ -151,6 +173,7 @@ export const LeftNavigationModule = () => {
           {view === View.EntityView && <EntityDetails />}
           {view === View.MilitaryView && <Military entityId={realmEntityId} />}
           {view === View.ConstructionView && <SelectPreviewBuildingMenu />}
+          {view === View.StructureView && <StructureConstructionMenu />}
         </BaseContainer>
         <div className="gap-2 flex flex-col justify-center self-center">
           <div>

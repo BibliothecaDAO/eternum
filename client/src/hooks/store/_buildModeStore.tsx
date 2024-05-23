@@ -1,11 +1,11 @@
-import { BuildingType, ResourcesIds } from "@bibliothecadao/eternum";
+import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/eternum";
 import { Entity } from "@dojoengine/recs";
 
 export interface BuildModeStore {
   isDestroyMode: boolean;
   setIsDestroyMode: (isDestroyMode: boolean) => void;
-  previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null;
-  setPreviewBuilding: (previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null) => void;
+  previewBuilding: { type: BuildingType | StructureType; resource?: ResourcesIds } | null;
+  setPreviewBuilding: (previewBuilding: { type: BuildingType | StructureType; resource?: ResourcesIds } | null) => void;
   hoveredBuildHex: { col: number; row: number } | null;
   setHoveredBuildHex: (hoveredBuildHex: { col: number; row: number } | null) => void;
   existingBuildings: { col: number; row: number; type: BuildingType; entity?: Entity; resource?: ResourcesIds }[];

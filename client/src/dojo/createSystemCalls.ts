@@ -133,6 +133,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.mint_starting_resources(props);
   };
 
+  const create_hyperstructure = async (props: SystemProps.CreateHyperstructure) => {
+    await provider.create_hyperstructure(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -171,6 +175,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_army,
     uuid,
     mint_starting_resources,
+    create_hyperstructure,
 
     army_buy_troops,
     army_merge_troops,

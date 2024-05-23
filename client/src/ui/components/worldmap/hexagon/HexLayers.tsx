@@ -1,7 +1,7 @@
 import { Bvh } from "@react-three/drei";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Color, InstancedMesh, Matrix4 } from "three";
-import { Resource, biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { createHexagonGeometry } from "./HexagonGeometry";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { findDirection, getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
@@ -33,6 +33,8 @@ import { useNotificationsStore } from "../../../../hooks/store/useNotificationsS
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useLocation } from "wouter";
 import { HexGrid } from "../../models/biomes/HexGrid";
+import { useStructures } from "@/hooks/helpers/useStructures";
+import useRealmStore from "@/hooks/store/useRealmStore";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
@@ -141,6 +143,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const previewBuilding = useUIStore((state) => state.previewBuilding);
 
   const { hoverHandler, clickHandler } = useEventHandlers(explored);
 
@@ -255,7 +258,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   return (
     <Bvh firstHitOnly>
-      <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
+      <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={(e) => clickHandler(e, previewBuilding)}>
         <primitive object={mesh} onDoubleClick={goToHex} />
       </group>
     </Bvh>
@@ -266,6 +269,9 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const { exploreHex } = useExplore();
   const { travelToHex } = useTravel();
   const { play: playExplore } = useUiSounds(soundSelector.explore);
+  const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
+  const { createHyperstructure } = useStructures();
+  const { realmEntityId } = useRealmStore();
 
   const {
     hexData,
@@ -339,6 +345,12 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       const mesh = intersect.object;
       const pos = getPositionsAtIndex(mesh, instanceId);
       if (!pos || !hexDataRef.current || !exploredHexesRef.current) return;
+
+      const coord = getColRowFromUIPosition(pos.x, pos.y, true);
+      setHoveredBuildHex({
+        col: coord.col,
+        row: coord.row,
+      });
 
       if (!selectedEntityRef.current) {
         const positions = [{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }];
@@ -414,7 +426,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   }
 
   const clickHandler = useCallback(
-    (e: any) => {
+    (e: any, previewBuilding: any | null) => {
       // Logic for click event
       const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
       if (intersect) {
@@ -423,6 +435,10 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         const pos = getPositionsAtIndex(mesh, instanceId);
         if (pos && !selectedEntityRef.current) {
           const clickedColRow = getColRowFromUIPosition(pos.x, pos.y);
+          console.log(realmEntityId);
+          if (previewBuilding) {
+            createHyperstructure(Number(realmEntityId), clickedColRow.col, clickedColRow.row);
+          }
           setClickedHex({
             contractPos: { col: clickedColRow.col, row: clickedColRow.row },
             uiPos: [pos.x, -pos.y, pos.z],

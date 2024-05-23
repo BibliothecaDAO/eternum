@@ -18,6 +18,8 @@ export const useStructures = () => {
   const {
     setup: {
       components: { Position, Bank, Realm },
+      account: { account },
+      systemCalls: { create_hyperstructure },
     },
   } = useDojo();
 
@@ -31,8 +33,13 @@ export const useStructures = () => {
     return Array.from(bankEntities).length > 0 || Array.from(realmEntities).length > 0;
   };
 
+  const createHyperstructure = async (creator_entity_id: number, col: number, row: number) => {
+    await create_hyperstructure({ signer: account, coords: { x: col, y: row }, creator_entity_id });
+  };
+
   return {
     hasStructures,
+    createHyperstructure,
   };
 };
 

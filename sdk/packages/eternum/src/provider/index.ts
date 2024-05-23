@@ -660,4 +660,22 @@ export class EternumProvider extends EnhancedDojoProvider {
       ],
     });
   }
+
+  public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
+    const { resources_for_completion, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_hyperstructure_config",
+      calldata: [resources_for_completion],
+    });
+  }
+
+  public async create_hyperstructure(props: SystemProps.CreateHyperstructure) {
+    const { creator_entity_id, coords, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
+      entrypoint: "create",
+      calldata: [creator_entity_id, coords],
+    });
+  }
 }

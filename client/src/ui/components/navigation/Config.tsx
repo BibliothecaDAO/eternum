@@ -3,6 +3,7 @@ export type OSWindows =
   | "Banks"
   | "Leaderboard"
   | "Hyperstructures"
+  | "Structures"
   | "Settings"
   | "Resources"
   | "Military"
@@ -26,6 +27,7 @@ export const eventLog: OSWindows = "Event Log";
 export const banks: OSWindows = "Banks";
 export const leaderboard: OSWindows = "Leaderboard";
 export const hyperstructures: OSWindows = "Hyperstructures";
+export const structures: OSWindows = "Structures";
 export const settings: OSWindows = "Settings";
 export const resources: OSWindows = "Resources";
 export const military: OSWindows = "Military";

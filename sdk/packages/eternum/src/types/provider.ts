@@ -370,3 +370,12 @@ export interface SetSpeedConfigProps extends SystemSigner {
   entity_type: num.BigNumberish;
   sec_per_km: num.BigNumberish;
 }
+
+export interface SetHyperstructureConfig extends SystemSigner {
+  resources_for_completion: { resource: number; amount: number }[];
+}
+
+export interface CreateHyperstructure extends SystemSigner {
+  creator_entity_id: num.BigNumberish;
+  coords: { x: num.BigNumberish; y: num.BigNumberish };
+}

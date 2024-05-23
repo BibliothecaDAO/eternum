@@ -13,9 +13,10 @@ import {
   setSpeedConfig,
   setQuestConfig,
   setPopulationConfig,
+  setHyperstructureConfig,
+  setBuildingConfig,
 } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
-import { setBuildingConfig } from "@bibliothecadao/eternum";
 
 if (
   !process.env.VITE_PUBLIC_MASTER_ADDRESS ||
@@ -46,3 +47,4 @@ await setCapacityConfig(account, provider);
 await setSpeedConfig(account, provider);
 await setQuestConfig(account, provider);
 await setupGlobals(account, provider);
+await setHyperstructureConfig(account, provider);

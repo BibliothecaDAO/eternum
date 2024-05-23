@@ -28,7 +28,10 @@ export enum BuildingType {
   Storehouse = 14,
   Bank = 15,
   ShardsMine = 16,
+  Settlement = 17,
+  Hyperstructure = 18,
 }
+export const MAX_BUILDING_TYPE = 14;
 
 export enum ResourceBuildingType {
   Wood = 1,

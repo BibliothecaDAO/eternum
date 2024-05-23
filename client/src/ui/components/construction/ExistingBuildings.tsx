@@ -7,7 +7,9 @@ import {
   BuildingEnumToString,
   BuildingStringToEnum,
   BuildingType,
+  MAX_BUILDING_TYPE,
   ResourcesIds,
+  StructureType,
   biomes,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
@@ -36,7 +38,13 @@ export enum ModelsIndexes {
   Storehouse = BuildingType.Storehouse,
   Bank = BuildingType.Bank,
   ShardsMine = BuildingType.ShardsMine,
+  Settlement = BuildingType.Settlement,
+  Hyperstructure = BuildingType.Hyperstructure,
 }
+
+export const structureTypeToModelsIndex = (structureType: StructureType): ModelsIndexes => {
+  return structureType + MAX_BUILDING_TYPE;
+};
 
 const redColor = new THREE.Color("red");
 
