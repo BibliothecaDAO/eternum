@@ -16,7 +16,7 @@ export interface OriginalModels {
 export const StructurePreview = () => {
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const hoveredBuildHex = useUIStore((state) => state.hoveredBuildHex);
-  const existingBuildings = useUIStore((state) => state.existingBuildings);
+  const existingStructures = useUIStore((state) => state.existingStructures);
 
   const previewCoords = useMemo(() => {
     if (!hoveredBuildHex) return null;
@@ -40,7 +40,7 @@ export const StructurePreview = () => {
 
   useEffect(() => {
     if (!hoveredBuildHex) return;
-    const newColor = isHexOccupied(hoveredBuildHex.col, hoveredBuildHex.row, existingBuildings) ? "red" : "green";
+    const newColor = isHexOccupied(hoveredBuildHex.col, hoveredBuildHex.row, existingStructures) ? "red" : "green";
     originalModels[modelIndex].traverse((node) => {
       if (node instanceof THREE.Mesh) {
         node.material = node.material.clone();
@@ -49,7 +49,7 @@ export const StructurePreview = () => {
         node.material.opacity = 0.8;
       }
     });
-  }, [modelIndex, hoveredBuildHex, existingBuildings, originalModels]);
+  }, [modelIndex, hoveredBuildHex, existingStructures, originalModels]);
 
   const previewModel = useMemo(() => {
     if (!previewBuilding) return null;

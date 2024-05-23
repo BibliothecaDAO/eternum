@@ -23,6 +23,8 @@ export interface MapStore {
   highlightPositions: HighlightPosition[];
   setHighlightPositions: (positions: HighlightPosition[]) => void;
   clearSelection: () => void;
+  existingStructures: { col: number; row: number; type: StructureType }[];
+  setExistingStructures: (existingStructures: { col: number; row: number; type: StructureType }[]) => void;
 }
 
 export const createMapStoreSlice = (set: any) => ({
@@ -61,4 +63,7 @@ export const createMapStoreSlice = (set: any) => ({
       isAttackMode: false,
     });
   },
+  existingStructures: [],
+  setExistingStructures: (existingStructures: { col: number; row: number; type: StructureType }[]) =>
+    set({ existingStructures }),
 });

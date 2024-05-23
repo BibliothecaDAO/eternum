@@ -74,12 +74,16 @@ export const StructureConstructionMenu = () => {
             key={index}
             structureId={building}
             onClick={() => {
-              //   if (!hasBalance) {
-              //     return;
-              //   }
-              setPreviewBuilding({ type: building });
+              if (!hasBalance) {
+                return;
+              }
+              if (previewBuilding && previewBuilding.type === building) {
+                setPreviewBuilding(null);
+              } else {
+                setPreviewBuilding({ type: building });
+              }
             }}
-            active={true}
+            active={previewBuilding !== null && previewBuilding.type === building}
             name={StructureType[building]}
             toolTip={<StructureInfo structureId={building} entityId={realmEntityId} />}
             canBuild={hasBalance}

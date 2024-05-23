@@ -165,7 +165,8 @@ export const LeftNavigationModule = () => {
           (item) =>
             item.name === MenuEnum.military ||
             item.name === MenuEnum.entityDetails ||
-            item.name === MenuEnum.structures,
+            item.name === MenuEnum.structures ||
+            item.name === MenuEnum.hyperstructures,
         )
       : navigation.filter(
           (item) =>
