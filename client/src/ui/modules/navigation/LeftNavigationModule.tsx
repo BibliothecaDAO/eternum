@@ -61,6 +61,7 @@ enum View {
   EntityView,
   ConstructionView,
   StructureView,
+  HyperstructuresView,
 }
 
 export const LeftNavigationModule = () => {
@@ -140,6 +141,23 @@ export const LeftNavigationModule = () => {
           />
         ),
       },
+      {
+        name: "hyperstructures",
+        button: (
+          <CircleButton
+            className="hyperstructures-selector"
+            image={BuildingThumbs.hyperstructures}
+            tooltipLocation="top"
+            label={hyperstructures}
+            active={view === View.HyperstructuresView}
+            size="xl"
+            onClick={() => {
+              setIsOffscreen(false);
+              setView(View.HyperstructuresView);
+            }}
+          />
+        ),
+      },
     ];
 
     return location === "/map"
@@ -179,6 +197,7 @@ export const LeftNavigationModule = () => {
           {view === View.MilitaryView && <Military entityId={realmEntityId} />}
           {view === View.ConstructionView && <SelectPreviewBuildingMenu />}
           {view === View.StructureView && <StructureConstructionMenu />}
+          {view === View.HyperstructuresView && <HyperStructures />}
         </BaseContainer>
         <div className="gap-2 flex flex-col justify-center self-center">
           <div>
