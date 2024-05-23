@@ -551,6 +551,7 @@ export const WEIGHTS: {
   [ResourcesIds.Adamantine]: 1,
   [ResourcesIds.Mithral]: 1,
   [ResourcesIds.Dragonhide]: 1,
+  [ResourcesIds.Earthenshard]: 1,
   [ResourcesIds.Lords]: 0.001,
   [ResourcesIds.Wheat]: 0.1,
   [ResourcesIds.Fish]: 0.1,

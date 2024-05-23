@@ -14,16 +14,16 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useModal } from "@/hooks/store/useModal";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { Crown, Building, Warehouse, Factory } from "lucide-react";
+import { Crown, Landmark, Sparkles, Pickaxe } from "lucide-react";
 import Button from "@/ui/elements/Button";
 
 // use a different icon for each structure depending on their category
 const structureIcons: Record<string, JSX.Element> = {
-  None: <Building />,
+  None: <div />,
   Realm: <Crown />,
-  Bank: <Building />,
-  Hyperstructure: <Warehouse />,
-  ShardsMine: <Factory />,
+  Bank: <Landmark />,
+  Hyperstructure: <Sparkles />,
+  ShardsMine: <Pickaxe />,
 };
 
 export const TopMiddleNavigation = () => {
@@ -34,7 +34,13 @@ export const TopMiddleNavigation = () => {
   const { toggleModal } = useModal();
 
   const { playerStructures } = useEntities();
-  const structures = playerStructures();
+
+  // realms always first
+  const structures = playerStructures().sort((a, b) => {
+    if (a.category === "Realm") return -1;
+    if (b.category === "Realm") return 1;
+    return a.category!.localeCompare(b.category!);
+  });
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
