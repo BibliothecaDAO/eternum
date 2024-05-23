@@ -36,19 +36,14 @@ export const TopMiddleNavigation = () => {
   const { playerStructures } = useEntities();
   const structures = playerStructures();
 
-  useEffect(() => {
-    if (structures.length > 0 && realmEntityId === STARTING_ENTITY_ID) {
-      goToEntityView(structures[0].entity_id!);
-    }
-  }, [structures]);
-
-  const { realmEntityId, setRealmEntityId } = useRealmStore();
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
 
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
-  const isRealmView = location.includes(`/hex`);
+  const isHexView = location.includes(`/hex`);
 
-  const goToEntityView = (entityId: any) => {
+  const goToHexView = (entityId: any) => {
     const structure = structures.find((structure) => structure.entity_id?.toString() === entityId);
 
     setIsLoadingScreenEnabled(true);
@@ -83,7 +78,7 @@ export const TopMiddleNavigation = () => {
           <Select
             value={realmEntityId.toString()}
             onValueChange={(a: any) => {
-              !isRealmView ? goToMapView(a) : goToEntityView(a);
+              !isHexView ? goToMapView(a) : goToHexView(a);
             }}
           >
             <SelectTrigger className="">
@@ -120,7 +115,7 @@ export const TopMiddleNavigation = () => {
               }, 100);
             } else {
               setTimeout(() => {
-                goToEntityView(realmEntityId.toString());
+                goToHexView(realmEntityId.toString());
               }, 50);
             }
           }}
