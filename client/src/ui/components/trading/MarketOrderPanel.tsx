@@ -231,7 +231,7 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
           {loading ? "cancelling" : "cancel"}
         </Button>
       ) : (
-        <Button onClick={onAccept} size="xs" className="self-center">
+        <Button isLoading={loading} onClick={onAccept} size="xs" className="self-center">
           accept
         </Button>
       )}
