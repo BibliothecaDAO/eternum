@@ -9,22 +9,18 @@ mod resource_transfer_system_tests {
     use eternum::constants::WORLD_CONFIG_ID;
     use eternum::models::capacity::Capacity;
     use eternum::models::config::WeightConfig;
-    use eternum::models::inventory::Inventory;
     use eternum::models::metadata::ForeignKey;
     use eternum::models::owner::Owner;
     use eternum::models::position::Position;
     use eternum::models::quantity::Quantity;
     use eternum::models::resources::{Resource, ResourceAllowance};
 
-    use eternum::systems::config::contracts::config_systems;
-    use eternum::systems::config::interface::{
-        IWeightConfigDispatcher, IWeightConfigDispatcherTrait,
+    use eternum::systems::config::contracts::{
+        config_systems, IWeightConfigDispatcher, IWeightConfigDispatcherTrait
     };
-    use eternum::systems::resources::contracts::resource_systems::{InternalInventorySystemsImpl};
 
-    use eternum::systems::resources::contracts::resource_systems;
-    use eternum::systems::resources::interface::{
-        IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
+    use eternum::systems::resources::contracts::{
+        resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
     };
 
     use eternum::utils::testing::{spawn_eternum, deploy_system};
@@ -89,15 +85,6 @@ mod resource_transfer_system_tests {
 
         // call world.uuid() to ensure next id isn't 0
         world.uuid();
-
-        set!(
-            world,
-            (Inventory {
-                entity_id: receiver_entity_id.into(),
-                items_key: world.uuid().into(),
-                items_count: 0,
-            })
-        );
     }
 
 
@@ -118,7 +105,7 @@ mod resource_transfer_system_tests {
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
 
         resource_systems_dispatcher
-            .transfer(
+            .send(
                 sender_entity_id.into(),
                 receiver_entity_id.into(),
                 array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span()
@@ -133,17 +120,6 @@ mod resource_transfer_system_tests {
         );
         assert(sender_entity_resource_stone.balance == 600, 'stone balance mismatch');
         assert(sender_entity_resource_wood.balance == 300, 'wood balance mismatch');
-
-        // check that items were added to receiver's inventory
-        let receiver_inventory = get!(world, receiver_entity_id, Inventory);
-        assert(receiver_inventory.items_count == 1, 'wrong inventory item count');
-
-        let received_item_foreign_key = InternalInventorySystemsImpl::get_foreign_key(
-            receiver_inventory, 0
-        );
-
-        let received_item_foreign_key = get!(world, received_item_foreign_key, ForeignKey);
-        assert(received_item_foreign_key.entity_id != 0, 'wrong foreign key');
     }
 
 
@@ -183,7 +159,7 @@ mod resource_transfer_system_tests {
         // should fail because total capacity 
         // is 10,000 and total weight is 11,000 
         resource_systems_dispatcher
-            .transfer(
+            .send(
                 sender_entity_id.into(),
                 receiver_entity_id.into(),
                 array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span()
@@ -201,9 +177,7 @@ mod resource_transfer_system_tests {
         starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
         resource_systems_dispatcher
-            .transfer(
-                1, 2, array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span()
-            );
+            .send(1, 2, array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span());
     }
 
 
@@ -239,7 +213,7 @@ mod resource_transfer_system_tests {
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
 
         resource_systems_dispatcher
-            .transfer(
+            .send(
                 sender_entity_id.into(),
                 receiver_entity_id.into(),
                 array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span()
@@ -261,7 +235,7 @@ mod resource_transfer_system_tests {
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
 
         resource_systems_dispatcher
-            .transfer(
+            .send(
                 sender_entity_id.into(),
                 receiver_entity_id.into(),
                 array![
@@ -309,10 +283,9 @@ mod resource_transfer_system_tests {
         starknet::testing::set_contract_address(contract_address_const::<'approved_entity'>());
 
         resource_systems_dispatcher
-            .transfer_from(
-                approved_entity_id.into(),
-                owner_entity_id.into(),
+            .pickup(
                 receiver_entity_id.into(),
+                owner_entity_id.into(),
                 array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span()
             );
 
@@ -335,17 +308,6 @@ mod resource_transfer_system_tests {
         );
         assert(owner_entity_resource_stone.balance == 600, 'stone balance mismatch');
         assert(owner_entity_resource_wood.balance == 300, 'wood balance mismatch');
-
-        // check that items were added to receiver's inventory
-        let receiver_inventory = get!(world, receiver_entity_id, Inventory);
-        assert(receiver_inventory.items_count == 1, 'wrong inventory item count');
-
-        let received_item_foreign_key = InternalInventorySystemsImpl::get_foreign_key(
-            receiver_inventory, 0
-        );
-
-        let received_item_foreign_key = get!(world, received_item_foreign_key, ForeignKey);
-        assert(received_item_foreign_key.entity_id != 0, 'wrong foreign key');
     }
 
 
@@ -385,10 +347,9 @@ mod resource_transfer_system_tests {
         starknet::testing::set_contract_address(contract_address_const::<'approved_entity'>());
 
         resource_systems_dispatcher
-            .transfer_from(
-                approved_entity_id.into(),
-                owner_entity_id.into(),
+            .pickup(
                 receiver_entity_id.into(),
+                owner_entity_id.into(),
                 array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span()
             );
 
@@ -415,16 +376,5 @@ mod resource_transfer_system_tests {
         );
         assert(owner_entity_resource_stone.balance == 600, 'stone balance mismatch');
         assert(owner_entity_resource_wood.balance == 300, 'wood balance mismatch');
-
-        // check that items were added to receiver's inventory
-        let receiver_inventory = get!(world, receiver_entity_id, Inventory);
-        assert(receiver_inventory.items_count == 1, 'wrong inventory item count');
-
-        let received_item_foreign_key = InternalInventorySystemsImpl::get_foreign_key(
-            receiver_inventory, 0
-        );
-
-        let received_item_foreign_key = get!(world, received_item_foreign_key, ForeignKey);
-        assert(received_item_foreign_key.entity_id != 0, 'wrong foreign key');
     }
 }

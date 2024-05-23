@@ -21,6 +21,9 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
   const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const isExploreMode = useUIStore((state) => state.isExploreMode);
+  const isAttackMode = useUIStore((state) => state.isAttackMode);
+  const isTravelMode = useUIStore((state) => state.isTravelMode);
 
   const animationPath = animationPaths.find((path) => path.id === info.id);
 
@@ -100,12 +103,16 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     setHovered(false);
   }, []);
 
+  const showArmyMenu = useMemo(() => {
+    return selectedEntity && selectedEntity.id == info.id && !isExploreMode && !isAttackMode && !isTravelMode;
+  }, [selectedEntity, info.id, isExploreMode, isAttackMode]);
+
   return (
     <>
-      {hovered && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />}
+      {/* {selectedEntity && selectedEntity.id == info.id && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />} */}
       <group position={position}>
         {info.isMine && <ArmyFlag rotationY={rotationY} position={position} order={info.order} />}
-        {selectedEntity && selectedEntity.id == info.id && <ArmyMenu selectedEntityId={selectedEntity.id} />}
+        {selectedEntity && showArmyMenu && <ArmyMenu selectedEntityId={selectedEntity.id} />}
         <WarriorModel
           {...props}
           id={Number(info.id)}
@@ -124,7 +131,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
 
 export const ArmyFlag = ({ position, order, rotationY }: { position: Vector3; order: string; rotationY: number }) => {
   return (
-    <group position={[0, 2.5, 0]} rotation={[0, rotationY - Math.PI / 2, 0]} scale={0.7}>
+    <group position={[0, 0, 0]} rotation={[0, rotationY - Math.PI / 2, 0]} scale={0.7}>
       <BannerFlag angle={rotationY} order={order} position={[position.x, position.y, position.z + 10]}></BannerFlag>
     </group>
   );

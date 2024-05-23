@@ -8,15 +8,15 @@ use eternum::models::map::Tile;
 use eternum::models::owner::Owner;
 use eternum::models::position::Position;
 use eternum::models::realm::Realm;
-use eternum::models::resources::{Resource, ResourceChest};
+use eternum::models::resources::Resource;
 
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{
-    IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait,
+use eternum::systems::config::contracts::{
+    config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait
 };
 
-use eternum::systems::realm::contracts::realm_systems;
-use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
+use eternum::systems::realm::contracts::{
+    realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
+};
 
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
@@ -42,8 +42,14 @@ fn setup() -> IWorldDispatcher {
         (INITIAL_RESOURCE_2_TYPE, INITIAL_RESOURCE_2_AMOUNT)
     ];
 
-    IRealmFreeMintConfigDispatcher { contract_address: config_systems_address }
-        .set_mint_config(initial_resources.span());
+    let realm_free_mint_config_dispatcher = IRealmFreeMintConfigDispatcher {
+        contract_address: config_systems_address
+    };
+
+    let config_index = 0;
+
+    realm_free_mint_config_dispatcher
+        .set_mint_config(config_id: config_index, resources: initial_resources.span());
 
     world
 }

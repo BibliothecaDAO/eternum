@@ -403,7 +403,7 @@ export const resources: Array<Resources> = [
     ticker: "$FISH",
   },
   {
-    trait: "Earthenshard",
+    trait: "Ancient Fragment",
     value: 29,
     colour: "#ec4899",
     colourClass: "",

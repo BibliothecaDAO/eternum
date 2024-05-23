@@ -1,88 +1,273 @@
+use eternum::models::position::Coord;
+
+#[dojo::interface]
+trait IHyperstructureSystems {
+    fn create(creator_entity_id: u128, coord: Coord) -> u128;
+    fn contribute_to_construction(
+        hyperstructure_entity_id: u128, contributor_entity_id: u128, contributions: Span<(u8, u128)>
+    );
+}
+
+
 #[dojo::contract]
 mod hyperstructure_systems {
+    use core::array::ArrayIndex;
     use eternum::alias::ID;
-    use eternum::constants::WORLD_CONFIG_ID;
-    use eternum::models::hyperstructure::{HyperStructure};
+    use eternum::constants::{
+        HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards
+    };
+    use eternum::models::config::HyperstructureConfigTrait;
+    use eternum::models::hyperstructure::{Progress, Contribution};
     use eternum::models::order::{Orders};
-    use eternum::models::owner::Owner;
-    use eternum::models::position::{Coord, Position, PositionTrait};
+    use eternum::models::owner::{Owner, OwnerTrait};
+    use eternum::models::position::{Coord, Position, PositionIntoCoord};
     use eternum::models::realm::{Realm};
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+    use eternum::models::structure::{
+        Structure, StructureCount, StructureCountTrait, StructureCategory
+    };
+    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
+        InternalTravelSystemsImpl
+    };
 
-    use eternum::systems::hyperstructure::interface::IHyperstructureSystems;
+    #[derive(Drop, starknet::Event)]
+    struct HyperstructureFinished {
+        hyperstructure_entity_id: u128,
+        timestamp: u64,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        HyperstructureFinished: HyperstructureFinished,
+    }
 
 
     #[abi(embed_v0)]
-    impl HyperstructureSystemsImpl of IHyperstructureSystems<ContractState> {
-        fn control(world: IWorldDispatcher, hyperstructure_id: ID, order_id: u8) {
-            let mut hyperstructure = get!(world, hyperstructure_id, HyperStructure);
-            assert(hyperstructure.completion_resource_count > 0, 'hyperstructure does not exist');
+    impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
+        fn create(world: IWorldDispatcher, creator_entity_id: u128, coord: Coord) -> u128 {
+            get!(world, creator_entity_id, Owner).assert_caller_owner();
 
-            if hyperstructure.controlling_order != 0 {
-                // ensure that the hyperstructure has been completely
-                // conquered by checking that it has no resources
+            InternalTravelSystemsImpl::assert_tile_explored(world, coord);
 
-                let completion_cost_id = hyperstructure.completion_cost_id;
-                let mut index = 0;
-                loop {
-                    if index == hyperstructure.completion_resource_count {
-                        break;
+            // assert no structure is already built on the coords
+            let structure_count: StructureCount = get!(world, coord, StructureCount);
+            structure_count.assert_none();
+
+            let hyperstructure_shards_config = HyperstructureConfigTrait::get(
+                world, ResourceTypes::EARTHEN_SHARD
+            );
+
+            let mut creator_resources = ResourceImpl::get(
+                world, (creator_entity_id, ResourceTypes::EARTHEN_SHARD)
+            );
+
+            creator_resources.burn(hyperstructure_shards_config.amount_for_completion);
+            creator_resources.save(world);
+
+            let new_uuid: u128 = world.uuid().into();
+
+            set!(
+                world,
+                (
+                    Structure { entity_id: new_uuid, category: StructureCategory::Hyperstructure },
+                    StructureCount { coord, count: 1 },
+                    Position { entity_id: new_uuid, x: coord.x, y: coord.y },
+                    Owner { entity_id: new_uuid, address: starknet::get_caller_address() },
+                    Progress {
+                        hyperstructure_entity_id: new_uuid,
+                        resource_type: ResourceTypes::EARTHEN_SHARD,
+                        amount: hyperstructure_shards_config.amount_for_completion
+                    },
+                    Contribution {
+                        hyperstructure_entity_id: new_uuid,
+                        player_address: starknet::get_caller_address(),
+                        resource_type: ResourceTypes::EARTHEN_SHARD,
+                        amount: hyperstructure_shards_config.amount_for_completion
                     }
+                )
+            );
 
-                    let resource_cost = get!(world, (completion_cost_id, index), ResourceCost);
-                    let resource = ResourceImpl::get(
-                        world, (hyperstructure_id, resource_cost.resource_type)
-                    );
-                    assert(resource.balance == 0, 'not conquered');
-
-                    index += 1;
-                };
-
-                // update controlling order's hyperstructure count 
-                // if it completed the hyperstructure
-                if hyperstructure.completed {
-                    let mut order = get!(world, hyperstructure.controlling_order, Orders);
-                    order.hyperstructure_count -= 1;
-                    set!(world, (order));
-                }
-            }
-
-            // set the controlling order to the new order
-            hyperstructure.controlling_order = order_id;
-            hyperstructure.completed = false;
-            set!(world, (hyperstructure));
+            new_uuid
         }
 
+        fn contribute_to_construction(
+            world: IWorldDispatcher,
+            hyperstructure_entity_id: u128,
+            contributor_entity_id: u128,
+            contributions: Span<(u8, u128)>
+        ) {
+            get!(world, contributor_entity_id, Owner).assert_caller_owner();
 
-        fn complete(world: IWorldDispatcher, hyperstructure_id: ID) {
-            let mut hyperstructure = get!(world, hyperstructure_id, HyperStructure);
-            assert(hyperstructure.completion_resource_count > 0, 'hyperstructure does not exist');
-            assert(hyperstructure.controlling_order != 0, 'not controlled by any order');
+            let structure = get!(world, hyperstructure_entity_id, Structure);
+            assert(structure.category == StructureCategory::Hyperstructure, 'not a hyperstructure');
 
-            let completion_cost_id = hyperstructure.completion_cost_id;
-            let mut index = 0;
-            loop {
-                if index == hyperstructure.completion_resource_count {
-                    break;
-                }
+            let mut i = 0;
+            let mut resource_was_completed = false;
+            while (i < contributions.len()) {
+                let contribution = *contributions.at(i);
 
-                let resource_cost = get!(world, (completion_cost_id, index), ResourceCost);
-                let resource: Resource = ResourceImpl::get(
-                    world, (hyperstructure_id, resource_cost.resource_type)
-                );
-                assert(resource.balance >= resource_cost.amount, 'not enough resources');
-
-                index += 1;
+                resource_was_completed = resource_was_completed
+                    | InternalHyperstructureSystemsImpl::handle_contribution(
+                        world, hyperstructure_entity_id, contribution, contributor_entity_id
+                    );
+                i += 1;
             };
 
-            // set hyperstructure to completed
-            hyperstructure.completed = true;
-            set!(world, (hyperstructure));
+            if (resource_was_completed
+                && InternalHyperstructureSystemsImpl::check_if_construction_done(
+                    world, hyperstructure_entity_id
+                )) {
+                let timestamp = starknet::get_block_timestamp();
+                emit!(
+                    world,
+                    (
+                        Event::HyperstructureFinished(
+                            HyperstructureFinished { hyperstructure_entity_id, timestamp }
+                        ),
+                    )
+                );
+            }
+        }
+    }
 
-            // update order hyperstructure count
-            let mut order = get!(world, hyperstructure.controlling_order, Orders);
-            order.hyperstructure_count += 1;
-            set!(world, (order));
+
+    #[generate_trait]
+    impl InternalHyperstructureSystemsImpl of InternalHyperstructureSystemsTrait {
+        fn handle_contribution(
+            world: IWorldDispatcher,
+            hyperstructure_entity_id: u128,
+            contribution: (u8, u128),
+            contributor_entity_id: u128
+        ) -> bool {
+            let (resource_type, contribution_amount) = contribution;
+
+            let (max_contributable_amount, will_complete_resource) =
+                InternalHyperstructureSystemsImpl::get_max_contribution_size(
+                world, hyperstructure_entity_id, resource_type, contribution_amount
+            );
+
+            if (max_contributable_amount == 0) {
+                return false;
+            }
+
+            InternalHyperstructureSystemsImpl::add_contribution(
+                world, hyperstructure_entity_id, resource_type, max_contributable_amount,
+            );
+            InternalHyperstructureSystemsImpl::burn_player_resources(
+                world, resource_type, max_contributable_amount, contributor_entity_id
+            );
+
+            InternalHyperstructureSystemsImpl::update_progress(
+                world, hyperstructure_entity_id, resource_type, max_contributable_amount
+            );
+
+            return will_complete_resource;
+        }
+
+        fn burn_player_resources(
+            world: IWorldDispatcher,
+            resource_type: u8,
+            resource_amount: u128,
+            contributor_entity_id: u128
+        ) {
+            let mut creator_resources = ResourceImpl::get(
+                world, (contributor_entity_id, resource_type)
+            );
+
+            creator_resources.burn(resource_amount);
+            creator_resources.save(world);
+        }
+
+        fn get_max_contribution_size(
+            world: IWorldDispatcher,
+            hyperstructure_entity_id: u128,
+            resource_type: u8,
+            resource_amount: u128
+        ) -> (u128, bool) {
+            let resource_progress = get!(
+                world, (hyperstructure_entity_id, resource_type), Progress
+            );
+            let hyperstructure_resource_config = HyperstructureConfigTrait::get(
+                world, resource_type
+            );
+            let resource_amount_for_completion = hyperstructure_resource_config
+                .amount_for_completion;
+
+            let amount_left_for_completion = resource_amount_for_completion
+                - resource_progress.amount;
+
+            let max_contributable_amount = core::cmp::min(
+                amount_left_for_completion, resource_amount
+            );
+
+            let will_complete_resource = resource_amount >= amount_left_for_completion;
+            (max_contributable_amount, will_complete_resource)
+        }
+
+        fn add_contribution(
+            world: IWorldDispatcher,
+            hyperstructure_entity_id: u128,
+            resource_type: u8,
+            resource_amount: u128,
+        ) {
+            let player_address = starknet::get_caller_address();
+            let mut contribution = get!(
+                world, (hyperstructure_entity_id, player_address, resource_type), Contribution
+            );
+            contribution.amount += resource_amount;
+
+            set!(world, (contribution,));
+        }
+
+        fn update_progress(
+            world: IWorldDispatcher,
+            hyperstructure_entity_id: u128,
+            resource_type: u8,
+            resource_amount: u128,
+        ) {
+            let mut resource_progress = get!(
+                world, (hyperstructure_entity_id, resource_type), Progress
+            );
+            resource_progress.amount += resource_amount;
+            set!(world, (resource_progress,));
+        }
+
+        fn check_if_construction_done(
+            world: IWorldDispatcher, hyperstructure_entity_id: u128
+        ) -> bool {
+            let mut done = true;
+            let all_resources = get_resources_without_earthenshards();
+
+            let mut i = 0;
+            while (i < all_resources.len()) {
+                done =
+                    InternalHyperstructureSystemsImpl::check_if_resource_completed(
+                        world, hyperstructure_entity_id, *all_resources.at(i)
+                    );
+                if (done == false) {
+                    break;
+                }
+                i += 1;
+            };
+
+            return done;
+        }
+
+        fn check_if_resource_completed(
+            world: IWorldDispatcher, hyperstructure_entity_id: u128, resource_type: u8
+        ) -> bool {
+            let mut resource_progress = get!(
+                world, (hyperstructure_entity_id, resource_type), Progress
+            );
+
+            let hyperstructure_resource_config = HyperstructureConfigTrait::get(
+                world, resource_type
+            );
+            let resource_amount_for_completion = hyperstructure_resource_config
+                .amount_for_completion;
+
+            resource_progress.amount == resource_amount_for_completion
         }
     }
 }

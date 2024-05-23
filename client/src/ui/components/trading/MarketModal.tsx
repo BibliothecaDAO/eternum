@@ -42,8 +42,8 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 my-8 bg-brown/90 border-gold/30 clip-angled overflow-y-scroll">
-        <div className="col-span-12 border-b p-2 flex justify-between">
+      <div className="container border mx-auto  grid grid-cols-12 bg-brown/90 border-gold/30 clip-angled h-full row-span-12">
+        <div className="col-span-12 border-b p-2 flex justify-between row-span-2">
           <div className="self-center">
             <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(BigInt(trait))}>
               <SelectTrigger className="w-[180px]">
@@ -68,8 +68,7 @@ export const MarketModal = () => {
           </div>
         </div>
 
-        <div className="col-span-3 p-1">
-          {/* <TextInput value="Search Resource" onChange={() => console.log("s")} /> */}
+        <div className="col-span-3 p-1  row-span-10 overflow-y-auto ">
           <MarketResourceSidebar
             entityId={realmEntityId}
             search={""}
@@ -79,7 +78,7 @@ export const MarketModal = () => {
             resourceBidOffers={bidOffers}
           />
         </div>
-        <div className="col-span-9">
+        <div className="col-span-9   h-full row-span-10">
           {panel === "market" ? (
             <MarketOrderPanel
               resourceId={selectedResource}
@@ -118,7 +117,7 @@ export const MarketResourceSidebar = ({
   }, []);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full">
       {filteredResources.map((resource) => {
         const askPrice = resourceBidOffers
           .filter((offer) => (resource.id ? offer.makerGets[0]?.resourceId === resource.id : true))

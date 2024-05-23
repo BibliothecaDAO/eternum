@@ -41,9 +41,7 @@ trait ITransportConfig {
 
 #[dojo::interface]
 trait IHyperstructureConfig {
-    fn create_hyperstructure(
-        hyperstructure_type: u8, coord: Coord, completion_cost: Span<(u8, u128)>
-    ) -> ID;
+    fn set_hyperstructure_config(resources_for_completion: Span<(u8, u128)>);
 }
 
 #[dojo::interface]
@@ -118,7 +116,7 @@ mod config_systems {
 
     use eternum::constants::{
         WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, COMBAT_CONFIG_ID,
-        REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID,
+        REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID,
         BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, POPULATION_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
@@ -127,10 +125,10 @@ mod config_systems {
     use eternum::models::config::{
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig,
         RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
-        TroopConfig, BuildingConfig, BuildingCategoryPopConfig, PopulationConfig
+        TroopConfig, BuildingConfig, BuildingCategoryPopConfig, PopulationConfig,
+        HyperstructureResourceConfig
     };
 
-    use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::position::{Position, PositionTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
@@ -492,59 +490,26 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl HyperstructureConfigImpl of super::IHyperstructureConfig<ContractState> {
-        fn create_hyperstructure(
-            world: IWorldDispatcher,
-            hyperstructure_type: u8,
-            coord: Coord,
-            completion_cost: Span<(u8, u128)>,
-        ) -> ID {
+        fn set_hyperstructure_config(
+            world: IWorldDispatcher, resources_for_completion: Span<(u8, u128)>
+        ) {
             assert_caller_is_admin(world);
+            let mut i = 0;
+            while (i < resources_for_completion.len()) {
+                let (resource_type, amount_for_completion) = *resources_for_completion.at(i);
 
-            let hyperstructure_id: ID = world.uuid().into();
-
-            let completion_cost_id: ID = world.uuid().into();
-            let completion_resource_count = completion_cost.len();
-            let mut completion_cost = completion_cost;
-            let mut index = 0;
-            loop {
-                match completion_cost.pop_front() {
-                    Option::Some((
-                        resource_type, resource_amount
-                    )) => {
-                        assert(*resource_amount > 0, 'amount must not be 0');
-
-                        set!(
-                            world,
-                            (ResourceCost {
-                                entity_id: completion_cost_id,
-                                index,
-                                resource_type: *resource_type,
-                                amount: *resource_amount
-                            })
-                        );
-
-                        index += 1;
-                    },
-                    Option::None => { break; }
-                };
+                set!(
+                    world,
+                    (
+                        HyperstructureResourceConfig {
+                            config_id: HYPERSTRUCTURE_CONFIG_ID,
+                            resource_type,
+                            amount_for_completion
+                        },
+                    )
+                );
+                i += 1;
             };
-
-            set!(
-                world,
-                (
-                    HyperStructure {
-                        entity_id: hyperstructure_id,
-                        hyperstructure_type,
-                        controlling_order: 0,
-                        completed: false,
-                        completion_cost_id,
-                        completion_resource_count
-                    },
-                    Position { entity_id: hyperstructure_id, x: coord.x, y: coord.y },
-                )
-            );
-
-            hyperstructure_id
         }
     }
 

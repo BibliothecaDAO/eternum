@@ -14,11 +14,9 @@ mod resource_approval_system_tests {
     use eternum::models::quantity::Quantity;
     use eternum::models::resources::{Resource, ResourceAllowance};
 
-    use eternum::systems::resources::contracts::resource_systems;
-    use eternum::systems::resources::interface::{
-        IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
+    use eternum::systems::resources::contracts::{
+        resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
     };
-
 
     use eternum::utils::testing::{spawn_eternum, deploy_system};
     use starknet::contract_address_const;

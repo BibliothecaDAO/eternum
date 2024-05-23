@@ -82,19 +82,11 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
     if (!hexData) return { group: [], colors: [] };
 
     return {
-      group: hexData
-        .filter(({ col, row }) => {
-          const adjustedCol = col - FELT_CENTER;
-          const adjustedRow = row - FELT_CENTER;
-          return adjustedCol >= startCol && adjustedCol <= endCol && adjustedRow >= startRow && adjustedRow <= endRow;
-        })
-        .map((hex) => {
-          return {
-            ...hex,
-            col: hex.col + (hex.row % 2 !== 0 ? 0 : 1),
-            row: hex.row,
-          };
-        }),
+      group: hexData.filter(({ col, row }) => {
+        const adjustedCol = col - FELT_CENTER;
+        const adjustedRow = row - FELT_CENTER;
+        return adjustedCol >= startCol && adjustedCol <= endCol && adjustedRow >= startRow && adjustedRow <= endRow;
+      }),
       colors: [],
     };
   }, [startRow, endRow, startCol, endCol, hexData]);
@@ -120,7 +112,8 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
         const tmpRow = row + FELT_CENTER;
         const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
         if (group[hexIndex]) {
-          addHexToBiomeAccumulator(group[hexIndex]);
+          const { x, y, z } = getUIPositionFromColRow(group[hexIndex].col, group[hexIndex].row);
+          addHexToBiomeAccumulator({ ...group[hexIndex], x, y, z });
         }
       });
     });
@@ -173,7 +166,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
         const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
         if (group[hexIndex]) {
           revealed.push(group[hexIndex]);
-          const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+          const neighborOffsets = row % 2 !== 0 ? neighborOffsetsEven : neighborOffsetsOdd;
           neighborOffsets.forEach((neighbor: { i: number; j: number; direction: number }) => {
             const tmpCol = col + neighbor.i + FELT_CENTER;
             const tmpRow = row + neighbor.j + FELT_CENTER;
@@ -259,6 +252,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     },
     [moveCameraToTarget],
   );
+
   return (
     <Bvh firstHitOnly>
       <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
@@ -269,24 +263,42 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 };
 
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {
-  const hexData = useUIStore((state) => state.hexData);
-  const highlightPositions = useUIStore((state) => state.highlightPositions);
-  const isTravelMode = useUIStore((state) => state.isTravelMode);
-  const isExploreMode = useUIStore((state) => state.isExploreMode);
-  const selectedPath = useUIStore((state) => state.selectedPath);
-  const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const isAttackMode = useUIStore((state) => state.isAttackMode);
-  const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
-  const setIsTravelMode = useUIStore((state) => state.setIsTravelMode);
-  const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
-  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
-  const setClickedHex = useUIStore((state) => state.setClickedHex);
-  const clickedHex = useUIStore((state) => state.clickedHex);
-  const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
-  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
-  const setTravelingEntity = useUIStore((state) => state.setSelectedEntity);
-  const setExploreNotification = useNotificationsStore((state) => state.setExploreNotification);
+  const { exploreHex } = useExplore();
+  const { travelToHex } = useTravel();
   const { play: playExplore } = useUiSounds(soundSelector.explore);
+
+  const {
+    hexData,
+    highlightPositions,
+    isTravelMode,
+    isExploreMode,
+    selectedPath,
+    selectedEntity,
+    isAttackMode,
+    setSelectedEntity,
+    setClickedHex,
+    clickedHex,
+    setHighlightPositions,
+    setSelectedPath,
+    clearSelection,
+  } = useUIStore((state) => ({
+    hexData: state.hexData,
+    highlightPositions: state.highlightPositions,
+    isTravelMode: state.isTravelMode,
+    isExploreMode: state.isExploreMode,
+    selectedPath: state.selectedPath,
+    selectedEntity: state.selectedEntity,
+    isAttackMode: state.isAttackMode,
+    setSelectedEntity: state.setSelectedEntity,
+    setClickedHex: state.setClickedHex,
+    clickedHex: state.clickedHex,
+    setHighlightPositions: state.setHighlightPositions,
+    setSelectedPath: state.setSelectedPath,
+    clearSelection: state.clearSelection,
+  }));
+
+  const setExploreNotification = useNotificationsStore((state) => state.setExploreNotification);
+
   // refs
   const isTravelModeRef = useRef(false);
   const isExploreModeRef = useRef(false);
@@ -296,9 +308,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const exploredHexesRef = useRef(explored);
   const highlightPositionsRef = useRef(highlightPositions);
   const clickedHexRef = useRef(clickedHex);
-
-  const { exploreHex } = useExplore();
-  const { travelToHex } = useTravel();
 
   useEffect(() => {
     isTravelModeRef.current = isTravelMode;
@@ -334,10 +343,10 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       if (!selectedEntityRef.current) {
         const positions = [{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }];
         if (clickedHexRef.current) {
+          console.log(clickedHexRef.current);
           positions.push({ pos: clickedHexRef.current.uiPos, color: CLICKED_HEX_COLOR });
         }
-        setHighlightPositions(positions as HighlightPosition[]);
-        return;
+        return setHighlightPositions(positions as HighlightPosition[]);
       }
 
       const selectedEntityPosition = getUIPositionFromColRow(
@@ -403,13 +412,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       }
     }
   }
-  const clearSelection = () => {
-    setIsAttackMode(false);
-    setIsExploreMode(false);
-    setIsTravelMode(false);
-    setSelectedEntity(undefined);
-    setSelectedPath(undefined);
-  };
 
   const clickHandler = useCallback(
     (e: any) => {

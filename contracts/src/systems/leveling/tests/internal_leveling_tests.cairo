@@ -10,9 +10,8 @@ mod internal_leveling_systems {
     use eternum::models::resources::Resource;
 
 
-    use eternum::systems::config::contracts::config_systems;
-    use eternum::systems::config::interface::{
-        ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait,
+    use eternum::systems::config::contracts::{
+        config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait
     };
 
     use eternum::systems::leveling::contracts::leveling_systems::{

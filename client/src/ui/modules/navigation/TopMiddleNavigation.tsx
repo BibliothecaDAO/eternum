@@ -1,21 +1,23 @@
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import useRealmStore, { STARTING_ENTITY_ID } from "@/hooks/store/useRealmStore";
+import useRealmStore from "@/hooks/store/useRealmStore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
 import { useQuery } from "@/hooks/helpers/useQuery";
 import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
+
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getComponentValue } from "@dojoengine/recs";
+
 import { useModal } from "@/hooks/store/useModal";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { Crown, Landmark, Sparkles, Pickaxe } from "lucide-react";
 import Button from "@/ui/elements/Button";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 // use a different icon for each structure depending on their category
 const structureIcons: Record<string, JSX.Element> = {

@@ -6,6 +6,7 @@ import useUIStore from "../../../../hooks/store/useUIStore";
 import { RealmExtended, useRealm } from "../../../../hooks/helpers/useRealm";
 import { InventoryResources } from "../../resources/InventoryResources";
 import { Structure } from "@/hooks/helpers/useStructures";
+import { Headline } from "@/ui/elements/Headline";
 
 type RealmListItemProps = {
   realm: Structure | RealmExtended;
@@ -18,17 +19,21 @@ export const RealmListItem = ({ realm, onClick }: RealmListItemProps) => {
   const addressName = getRealmAddressName(BigInt(realm.entity_id));
 
   return (
-    <div className="flex flex-col p-2 border  ">
+    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3  ">
       <div className="flex items-center">
         {realm && (
-          <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0  border-gold">
-            {realm.order && <OrderIcon order={orderNameDict[realm.order]} size="xs" className="mr-1" />}
-            {realm.name}
+          <div className="flex items-center p-1  border-gold font-bold  w-full">
+            <Headline className="text-gold ">
+              <div className="flex">
+                {realm.order && <OrderIcon order={orderNameDict[realm.order]} size="xs" className="mr-1" />}
+                <div>{realm.name}</div>
+              </div>
+            </Headline>
           </div>
         )}
-        <div className="-mt-2 ml-2 italic text-xs">
+        {/* <div className="-mt-2 ml-2 italic text-xs">
           {addressName && <span className="text-gold ml-1 mr-1">{addressName}</span>}
-        </div>
+        </div> */}
         {/* <div className=" text-gold flex ml-auto ">
           <Button
             onClick={() => moveCameraToRealm(Number(realm?.realmId))}
@@ -43,7 +48,8 @@ export const RealmListItem = ({ realm, onClick }: RealmListItemProps) => {
       <div className="flex items-end mt-2">
         <div className={clsx("flex items-center justify-around flex-1")}>
           <div className="flex-1 text-gold flex items-center flex-wrap">
-            Produces:
+            <div className="uppercase w-full font-bold mb-1">Produces</div>
+
             {realm.resources &&
               realm.resources.map((resourceId: number) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
@@ -53,7 +59,7 @@ export const RealmListItem = ({ realm, onClick }: RealmListItemProps) => {
           </div>
         </div>
       </div>
-      <div className="mt-2 grid grid-cols-2">
+      {/* <div className="mt-2 grid grid-cols-2">
         <div className="text-gold border p-1">
           Cities: <span className="">{realm.cities}</span>
         </div>
@@ -66,7 +72,7 @@ export const RealmListItem = ({ realm, onClick }: RealmListItemProps) => {
         <div className="text-gold  border p-1">
           Regions: <span className="">{realm.regions}</span>
         </div>
-      </div>
+      </div> */}
       <InventoryResources entityId={BigInt(realm.entity_id)} title="Balance" />
     </div>
   );

@@ -11,7 +11,7 @@ export function useResources() {
   const {
     account: { account },
     setup: {
-      components: { Resource, Position, ResourceCost, Realm, EntityOwner, ArrivalTime, OwnedResourcesTracker },
+      components: { Resource, Position, ResourceCost, Realm, EntityOwner, ArrivalTime, OwnedResourcesTracker, Owner },
     },
   } = useDojo();
 
@@ -66,7 +66,7 @@ export function useResources() {
   const getArrivalsWithResources = (entityId: bigint) => {
     const entityPosition = getComponentValue(Position, getEntityIdFromKeys([entityId]));
 
-    const entititsAtPositionWithInventory = useEntityQuery([
+    const atPositionWithInventory = useEntityQuery([
       Has(EntityOwner),
       NotValue(OwnedResourcesTracker, { resource_types: 0n }),
       HasValue(Position, {
@@ -76,23 +76,31 @@ export function useResources() {
       Has(ArrivalTime),
     ]);
 
-    return entititsAtPositionWithInventory.map((id) => {
+    return atPositionWithInventory.map((id) => {
       const position = getComponentValue(Position, id);
       return position!.entity_id;
     });
   };
 
-  const entititsAtPositionWithInventory = useEntityQuery([
+  const atPositionWithInventory = useEntityQuery([
     Has(EntityOwner),
     NotValue(OwnedResourcesTracker, { resource_types: 0n }),
     Has(ArrivalTime),
   ]);
 
+  // Get all owned entities with resources
   const getAllArrivalsWithResources = () => {
-    return entititsAtPositionWithInventory.map((id) => {
-      const position = getComponentValue(Position, id);
-      return position!.entity_id;
-    });
+    return atPositionWithInventory
+      .map((id) => {
+        const position = getComponentValue(Position, id);
+        const entityOwner = getComponentValue(EntityOwner, id);
+        const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || BigInt(0)]));
+
+        if (BigInt(owner?.address || "") === BigInt(account.address)) {
+          return position?.entity_id ? position.entity_id : BigInt("");
+        }
+      })
+      .filter(Boolean) as bigint[];
   };
 
   return {

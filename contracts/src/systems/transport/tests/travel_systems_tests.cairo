@@ -6,12 +6,9 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::LevelIndex;
 
 use eternum::constants::ResourceTypes;
-use eternum::constants::{
-    ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID, WORLD_CONFIG_ID
-};
+use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
 use eternum::models::config::LevelingConfig;
 use eternum::models::config::{RoadConfig, TickConfig};
-use eternum::models::hyperstructure::HyperStructure;
 use eternum::models::level::Level;
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -23,14 +20,12 @@ use eternum::models::realm::Realm;
 use eternum::models::resources::{Resource, ResourceCost};
 use eternum::models::road::{Road, RoadImpl};
 
-use eternum::systems::config::contracts::config_systems;
-use eternum::systems::config::interface::{
-    ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait,
+use eternum::systems::config::contracts::{
+    config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait
 };
 
-use eternum::systems::transport::contracts::{travel_systems::travel_systems};
-use eternum::systems::transport::interface::{
-    travel_systems_interface::{ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait},
+use eternum::systems::transport::contracts::travel_systems::{
+    travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};

@@ -352,9 +352,9 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
 export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
   return (
     <StepContainer>
-      <ResourceIcon resource="Earthenshard" size="xl" withTooltip={false} />
+      <ResourceIcon resource="Ancient Fragment" size="xl" withTooltip={false} />
       <p className="text-2xl text-center mb-8">
-        They who rule the Earthenshards <br /> rule the world...
+        They who rule the Ancient Fragments <br /> rule the world...
       </p>
       <div className="flex w-full justify-center">
         <NavigateToRealm text={"begin"} showWalkthrough={true} />
