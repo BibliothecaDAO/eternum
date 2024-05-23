@@ -77,6 +77,7 @@ export const ExistingBuildings = () => {
     Has(Building),
     HasValue(Building, { outer_col: BigInt(globalHex.col), outer_row: BigInt(globalHex.row) }),
     NotValue(Building, { entity_id: 0n }),
+    NotValue(Building, { produced_resource_type: 29 }),
   ]);
 
   useEffect(() => {
@@ -105,6 +106,13 @@ export const ExistingBuildings = () => {
     power: { value: 2000, min: 0, max: 10000, step: 1 },
   });
 
+  const middleBuidingCategory =
+    hexType === HexType.BANK
+      ? ModelsIndexes.Bank
+      : hexType === HexType.SHARDSMINE
+      ? ModelsIndexes.ShardsMine
+      : BuildingType.Castle;
+
   return (
     <>
       {existingBuildings.map((building, index) => (
@@ -116,27 +124,23 @@ export const ExistingBuildings = () => {
           resource={building.resource}
         />
       ))}
-      <group>
-        <BuiltBuilding
-          models={models}
-          buildingCategory={
-            hexType === HexType.BANK
-              ? BuildingType.Bank
-              : hexType === HexType.SHARDSMINE
-              ? BuildingType.ShardsMine
-              : BuildingType.Castle
-          }
-          position={{ col: 10, row: 10 }}
-          rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
-        />
-        <pointLight
-          ref={sLightRef}
-          position={[sLightPosition.x, sLightPosition.y, sLightPosition.z]}
-          color="#fff"
-          intensity={sLightIntensity}
-          power={power}
-        />
-      </group>
+      {hexType !== HexType.EMPTY && (
+        <group>
+          <BuiltBuilding
+            models={models}
+            buildingCategory={middleBuidingCategory}
+            position={{ col: 10, row: 10 }}
+            rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
+          />
+          <pointLight
+            ref={sLightRef}
+            position={[sLightPosition.x, sLightPosition.y, sLightPosition.z]}
+            color="#fff"
+            intensity={sLightIntensity}
+            power={power}
+          />
+        </group>
+      )}
       {hexType === HexType.REALM && (
         <group position={[x - 1.65, 3.5, -y]}>
           <BannerFlag />
@@ -212,7 +216,12 @@ export const BuiltBuilding = ({
     }, Math.random() * 1000);
   }, [actions]);
 
-  const destroyButton = buildingCategory !== BuildingType.Castle && (
+  const canBeDestroyed =
+    buildingCategory !== BuildingType.Castle &&
+    buildingCategory !== BuildingType.Bank &&
+    buildingCategory! !== BuildingType.ShardsMine;
+
+  const destroyButton = canBeDestroyed && (
     <Button
       onClick={() => {
         destroyBuilding(realmEntityId, position.col, position.row);

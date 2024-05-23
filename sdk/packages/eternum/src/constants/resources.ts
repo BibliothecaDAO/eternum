@@ -753,7 +753,9 @@ const RESOURCE_INPUTS: ResourceInputs = {
 };
 
 const BUILDING_COSTS: ResourceInputs = {
-  [BuildingType.Castle]: [{ resource: ResourcesIds.Wheat, amount: 5000 }],
+  [BuildingType.Castle]: [],
+  [BuildingType.Bank]: [],
+  [BuildingType.ShardsMine]: [],
   [BuildingType.Resource]: [
     { resource: ResourcesIds.Wheat, amount: 500 },
     { resource: ResourcesIds.Fish, amount: 500 },
