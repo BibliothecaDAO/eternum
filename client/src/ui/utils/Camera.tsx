@@ -136,6 +136,8 @@ const CameraControls = ({ position, target }: Props) => {
       minDistance={minDistance}
       maxPolarAngle={maxPolarAngle}
       minPolarAngle={minPolarAngle}
+      minAzimuthAngle={isMapView ? Math.PI * 2 : undefined}
+      maxAzimuthAngle={isMapView ? Math.PI * 2 : undefined}
       zoomToCursor={isMapView}
       makeDefault
       onChange={handleChange}
