@@ -28,6 +28,7 @@ export const EternumGlobalConfig = {
     wheatBurn: 50,
     fishBurn: 50,
     reward: 20,
+    shardsMinesFailProbability: 10000,
   },
   tick: {
     movesPerTick: 3,
@@ -550,6 +551,7 @@ export const WEIGHTS: {
   [ResourcesIds.Adamantine]: 1,
   [ResourcesIds.Mithral]: 1,
   [ResourcesIds.Dragonhide]: 1,
+  [ResourcesIds.Earthenshard]: 1,
   [ResourcesIds.Lords]: 0.001,
   [ResourcesIds.Wheat]: 0.1,
   [ResourcesIds.Fish]: 0.1,
@@ -753,7 +755,9 @@ const RESOURCE_INPUTS: ResourceInputs = {
 };
 
 const BUILDING_COSTS: ResourceInputs = {
-  [BuildingType.Castle]: [{ resource: ResourcesIds.Wheat, amount: 5000 }],
+  [BuildingType.Castle]: [],
+  [BuildingType.Bank]: [],
+  [BuildingType.ShardsMine]: [],
   [BuildingType.Resource]: [
     { resource: ResourcesIds.Wheat, amount: 500 },
     { resource: ResourcesIds.Fish, amount: 500 },

@@ -37,6 +37,7 @@ import { useLocation } from "wouter";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import Button from "@/ui/elements/Button";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
+import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",

@@ -5,10 +5,12 @@ trait IMapSystems {
 
 #[dojo::contract]
 mod map_systems {
+    use core::option::OptionTrait;
     use core::traits::Into;
     use eternum::alias::ID;
     use eternum::constants::ResourceTypes;
     use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
+    use eternum::models::buildings::{BuildingCategory, Building, BuildingImpl};
     use eternum::models::combat::{Health, HealthTrait};
     use eternum::models::config::{MapExploreConfig, LevelingConfig};
     use eternum::models::level::{Level, LevelTrait};
@@ -19,6 +21,9 @@ mod map_systems {
     use eternum::models::quantity::Quantity;
     use eternum::models::realm::{Realm};
     use eternum::models::resources::{Resource, ResourceCost, ResourceTrait, ResourceFoodImpl};
+    use eternum::models::structure::{
+        Structure, StructureCategory, StructureCount, StructureCountTrait
+    };
     use eternum::models::tick::{TickMove, TickMoveTrait};
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
@@ -84,6 +89,7 @@ mod map_systems {
             let current_coord: Coord = get!(world, unit_id, Position).into();
             let next_coord = current_coord.neighbor(direction);
             InternalMapSystemsImpl::explore(world, unit_id, next_coord, exploration_reward);
+            InternalMapSystemsImpl::discover_shards_mine(world, next_coord);
 
             // travel to explored tile location 
             InternalTravelSystemsImpl::travel_hex(
@@ -152,6 +158,48 @@ mod map_systems {
                 .at(0);
             let reward_resource_amount: u128 = explore_config.reward_resource_amount;
             array![(reward_resource_id, reward_resource_amount)].span()
+        }
+
+        fn discover_shards_mine(world: IWorldDispatcher, coord: Coord) -> bool {
+            let exploration_config = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
+
+            let is_shards_mine: bool = *random::choices(
+                array![true, false].span(),
+                array![1000, exploration_config.shards_mines_fail_probability].span(),
+                array![].span(),
+                1,
+                true
+            )[0];
+
+            let entity_id = world.uuid();
+            let caller = starknet::get_caller_address();
+
+            if is_shards_mine {
+                set!(
+                    world,
+                    (
+                        Owner { entity_id: entity_id.into(), address: caller },
+                        EntityOwner {
+                            entity_id: entity_id.into(), entity_owner_id: entity_id.into()
+                        },
+                        Structure {
+                            entity_id: entity_id.into(), category: StructureCategory::ShardsMine
+                        },
+                        StructureCount { coord, count: 1 },
+                        Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, },
+                    )
+                );
+
+                // create shards production building
+                BuildingImpl::create(
+                    world,
+                    entity_id.into(),
+                    BuildingCategory::Resource,
+                    Option::Some(ResourceTypes::EARTHEN_SHARD),
+                    BuildingImpl::center(),
+                );
+            }
+            is_shards_mine
         }
     }
 }
