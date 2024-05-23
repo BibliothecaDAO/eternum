@@ -10,6 +10,7 @@ import { Banks } from "../../models/buildings/worldmap/Banks.js";
 import { Armies } from "../armies/Armies.js";
 import { create } from "zustand";
 import { ShardsMines } from "../../models/buildings/worldmap/ShardsMines.js";
+import { Structures } from "../../models/buildings/worldmap/Structures.js";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -91,11 +92,11 @@ export const WorldMap = () => {
   const models = useMemo(() => {
     return (
       <>
-        {hexData && <MyCastles hexData={hexData} />}
+        {/* {hexData && <MyCastles hexData={hexData} />}
         {hexData && <OtherCastles hexData={hexData} />}
         {/* <Banks /> */}
         <Armies />
-        <ShardsMines />
+        <Structures />
       </>
     );
   }, [hexData]);

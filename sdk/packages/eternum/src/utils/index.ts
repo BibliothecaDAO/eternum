@@ -79,6 +79,20 @@ export const CombinedBuildingTypes = {
 // export BUILDING_WALLS=13
 // export BUILDING_STOREHOUSE=14
 
+export const StructureEnumToString: { [index: number]: string } = {
+  0: "Realm",
+  1: "Bank",
+  2: "Settlement",
+  3: "Hyperstructure",
+};
+
+export const StructureStringToEnum = {
+  Realm: 0,
+  Bank: 1,
+  Settlement: 2,
+  Hyperstructure: 3,
+};
+
 export const BuildingEnumToString: { [index: number]: string } = {
   0: "None",
   1: "Castle",
