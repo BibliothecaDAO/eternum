@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { useMemo } from "react";
 import { Hexagon } from "../../../../types";
 
-export function OceanBiome({ hexes, zOffsets }: { hexes: Hexagon[]; zOffsets?: boolean }) {
+export function OceanBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boolean }) {
   const { nodes, materials } = useGLTF("/models/biomes/ocean.glb") as any;
 
   const defaultTransform = new THREE.Matrix4()
@@ -18,10 +18,10 @@ export function OceanBiome({ hexes, zOffsets }: { hexes: Hexagon[]; zOffsets?: b
     const instancedMesh = new THREE.InstancedMesh(geometry, materials["Ocean Water"], hexes.length);
     let idx = 0;
     let matrix = new THREE.Matrix4();
-    hexes.forEach((hex: Hexagon) => {
-      const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
+    hexes.forEach((hex: any) => {
+      const { x, y, z } = hex;
       // rotate hex randomly on 60 * n degrees
-      const seededRandom = pseudoRandom(hex.col, hex.row);
+      const seededRandom = pseudoRandom(hex.x, hex.y);
       matrix.makeRotationZ((Math.PI / 3) * Math.floor(seededRandom * 6));
       matrix.setPosition(x, y, zOffsets ? 0.32 + z : 0.32);
       instancedMesh.setMatrixAt(idx, matrix);
