@@ -24,9 +24,9 @@ const generateHexPositions = (biome: keyof typeof biomes) => {
       existingPositions.add(key);
       positions.push({ x, y, z, color: _color, col, row });
       if (isBorder) {
-        borderHexes.push({ col: col + FELT_CENTER, row: row + FELT_CENTER });
+        borderHexes.push({ x, y, z });
       } else {
-        hexColRows.push({ col: col + FELT_CENTER, row: row + FELT_CENTER });
+        hexColRows.push({ x, y, z });
       }
     }
   };

@@ -82,19 +82,11 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
     if (!hexData) return { group: [], colors: [] };
 
     return {
-      group: hexData
-        .filter(({ col, row }) => {
-          const adjustedCol = col - FELT_CENTER;
-          const adjustedRow = row - FELT_CENTER;
-          return adjustedCol >= startCol && adjustedCol <= endCol && adjustedRow >= startRow && adjustedRow <= endRow;
-        })
-        .map((hex) => {
-          return {
-            ...hex,
-            col: hex.col + (hex.row % 2 !== 0 ? 0 : 1),
-            row: hex.row,
-          };
-        }),
+      group: hexData.filter(({ col, row }) => {
+        const adjustedCol = col - FELT_CENTER;
+        const adjustedRow = row - FELT_CENTER;
+        return adjustedCol >= startCol && adjustedCol <= endCol && adjustedRow >= startRow && adjustedRow <= endRow;
+      }),
       colors: [],
     };
   }, [startRow, endRow, startCol, endCol, hexData]);
@@ -120,7 +112,8 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
         const tmpRow = row + FELT_CENTER;
         const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
         if (group[hexIndex]) {
-          addHexToBiomeAccumulator(group[hexIndex]);
+          const { x, y, z } = getUIPositionFromColRow(group[hexIndex].col, group[hexIndex].row);
+          addHexToBiomeAccumulator({ ...group[hexIndex], x, y, z });
         }
       });
     });
@@ -173,7 +166,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
         const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
         if (group[hexIndex]) {
           revealed.push(group[hexIndex]);
-          const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+          const neighborOffsets = row % 2 !== 0 ? neighborOffsetsEven : neighborOffsetsOdd;
           neighborOffsets.forEach((neighbor: { i: number; j: number; direction: number }) => {
             const tmpCol = col + neighbor.i + FELT_CENTER;
             const tmpRow = row + neighbor.j + FELT_CENTER;
