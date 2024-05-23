@@ -161,8 +161,14 @@ mod map_systems {
         }
 
         fn discover_shards_mine(world: IWorldDispatcher, coord: Coord) -> bool {
+            let exploration_config = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
+
             let is_shards_mine: bool = *random::choices(
-                array![true, false].span(), array![1000, 5000].span(), array![].span(), 1, true
+                array![true, false].span(),
+                array![1000, exploration_config.shards_mines_fail_probability].span(),
+                array![].span(),
+                1,
+                true
             )[0];
 
             let entity_id = world.uuid();

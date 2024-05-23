@@ -72,7 +72,10 @@ trait IBankConfig {
 #[dojo::interface]
 trait IMapConfig {
     fn set_exploration_config(
-        wheat_burn_amount: u128, fish_burn_amount: u128, reward_resource_amount: u128
+        wheat_burn_amount: u128,
+        fish_burn_amount: u128,
+        reward_resource_amount: u128,
+        shards_mines_fail_probability: u128
     );
 }
 
@@ -210,7 +213,12 @@ mod config_systems {
             world: IWorldDispatcher,
             wheat_burn_amount: u128,
             fish_burn_amount: u128,
-            reward_resource_amount: u128
+            reward_resource_amount: u128,
+            // weight of fail
+            // the higher, the less likely to find a mine
+            // weight of sucess = 1000
+            // ex: if set to 5000
+            shards_mines_fail_probability: u128,
         ) {
             assert_caller_is_admin(world);
 
@@ -220,7 +228,8 @@ mod config_systems {
                     config_id: WORLD_CONFIG_ID,
                     wheat_burn_amount,
                     fish_burn_amount,
-                    reward_resource_amount
+                    reward_resource_amount,
+                    shards_mines_fail_probability
                 })
             );
         }

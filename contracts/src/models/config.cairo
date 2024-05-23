@@ -80,7 +80,8 @@ struct MapExploreConfig {
     config_id: u128,
     wheat_burn_amount: u128,
     fish_burn_amount: u128,
-    reward_resource_amount: u128
+    reward_resource_amount: u128,
+    shards_mines_fail_probability: u128,
 }
 
 
