@@ -77,7 +77,7 @@ export const ExistingBuildings = () => {
     Has(Building),
     HasValue(Building, { outer_col: BigInt(globalHex.col), outer_row: BigInt(globalHex.row) }),
     NotValue(Building, { entity_id: 0n }),
-    NotValue(Building, { produced_resource_type: 29 }),
+    NotValue(Building, { produced_resource_type: ResourcesIds.Earthenshard }),
   ]);
 
   useEffect(() => {

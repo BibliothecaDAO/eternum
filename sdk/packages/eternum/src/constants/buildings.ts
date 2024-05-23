@@ -9,8 +9,8 @@ export const BUILDING_INFORMATION: {
   [key: number]: string;
 } = {
   [BuildingType.Castle]: "Where the heart of your realm beats, the Castle is the foundation of your kingdom.",
-  [BuildingType.Bank]: " Banks, where the wealth of the land flows, store the riches of your realm.",
-  [BuildingType.ShardsMine]: " Shards Mines, where the earth's magic is harnessed, produce Earthenshards.",
+  [BuildingType.Bank]: "Banks, where the wealth of the land flows, store the riches of your realm.",
+  [BuildingType.ShardsMine]: "Shards Mines, where the earth's magic is harnessed, produce Earthenshards.",
   [BuildingType.Resource]: "Resource buildings, harnessing the land's magic, produce essential resources.",
   [BuildingType.Farm]: "Enchanted Farms, blessed by Gaia, yield golden wheat.",
   [BuildingType.FishingVillage]: "Mystical Fishing Villages, guided by the Moon, harvest the bounty of the seas.",
