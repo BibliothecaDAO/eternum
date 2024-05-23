@@ -167,6 +167,10 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ Bank: {} });
     case BuildingType.ShardsMine:
       return new CairoCustomEnum({ ShardsMine: {} });
+    case BuildingType.Settlement:
+      return new CairoCustomEnum({ Settlement: {} });
+    case BuildingType.Hyperstructure:
+      return new CairoCustomEnum({ Hyperstructure: {} });
     case BuildingType.None:
       return new CairoCustomEnum({ None: {} });
   }
@@ -205,6 +209,10 @@ export function getProducedResource(name: BuildingType): number {
     case BuildingType.Bank:
       return 0;
     case BuildingType.ShardsMine:
+      return 0;
+    case BuildingType.Settlement:
+      return 0;
+    case BuildingType.Hyperstructure:
       return 0;
     case BuildingType.None:
       return 0;
