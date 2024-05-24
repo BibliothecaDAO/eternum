@@ -35,7 +35,6 @@ import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 export const BUILDING_IMAGES_PATH = {
-  [BuildingType.None]: "",
   [BuildingType.Castle]: "",
   [BuildingType.Bank]: "",
   [BuildingType.ShardsMine]: "",

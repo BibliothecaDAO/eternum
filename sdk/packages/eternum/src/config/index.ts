@@ -167,7 +167,7 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
     shards_mines_fail_probability: EternumGlobalConfig.exploration.shardsMinesFailProbability,
   });
 
-  console.log(`Configuring bank config ${txExplore.statusReceipt}...`);
+  console.log(`Configuring exploration config ${txExplore.statusReceipt}...`);
 };
 
 export const setCapacityConfig = async (account: Account, provider: EternumProvider) => {

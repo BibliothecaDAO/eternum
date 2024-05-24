@@ -1,28 +1,30 @@
-import useUIStore from "../../../hooks/store/useUIStore";
-import { OSWindow } from "../../components/navigation/OSWindow";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { hyperstructures } from "../../components/navigation/Config";
-import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructureList";
+import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
 import { EntityList } from "@/ui/components/list/EntityList";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
+import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 
-const exampleHyperstructures = [
-  { id: 1, name: "Loaf", location: { x: 1, y: 1 } },
-  { id: 2, name: "Rashel", location: { x: 1, y: 1 } },
-  { id: 3, name: "Credence", location: { x: 1, y: 1 } },
-  { id: 4, name: "1337", location: { x: 1, y: 1 } },
-];
+export const HyperStructures = ({}: any) => {
+  const {
+    setup: {
+      components: { Structure },
+    },
+  } = useDojo();
 
-export const HyperStructures = () => {
-  const togglePopup = useUIStore((state) => state.togglePopup);
-
-  const isOpen = useUIStore((state) => state.isPopupOpen(hyperstructures));
-
+  const hyperstructures = useHyperstructures();
   return (
-    <OSWindow width="600px" onClick={() => togglePopup(hyperstructures)} show={isOpen} title={hyperstructures}>
+    <>
       <EntityList
         title="Hyperstructures"
         panel={({ entity }) => <HyperstructurePanel entity={entity} />}
-        list={exampleHyperstructures}
+        list={hyperstructures.map((hyperstructure) => ({
+          id: hyperstructure.entity_id,
+          name: `Hyperstructure ${hyperstructure.entity_id}`,
+          ...hyperstructure,
+        }))}
       />
-    </OSWindow>
+    </>
   );
 };
