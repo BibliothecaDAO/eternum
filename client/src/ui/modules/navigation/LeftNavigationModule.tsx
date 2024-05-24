@@ -47,7 +47,7 @@ export const BuildingThumbs = {
   trade: "/images/buildings/thumb/trade.png",
   resources: "/images/buildings/thumb/resources.png",
   banks: "/images/buildings/thumb/banks.png",
-  hyperstructures: "/images/buildings/thumb/hyperstructure.png",
+  hyperstructures: "/images/buildings/thumb/world-map.png",
   leaderboard: "/images/buildings/thumb/leaderboard.png",
   worldMap: "/images/buildings/thumb/world-map.png",
   squire: "/images/buildings/thumb/squire.png",
@@ -71,6 +71,9 @@ export const LeftNavigationModule = () => {
   const { realmEntityId } = useRealmStore();
   const { setIsOpen } = useTour();
   const [location, setLocation] = useLocation();
+
+  const isWorldView = useMemo(() => location === "/map", [location]);
+
   const navigation = useMemo(() => {
     const navigation = [
       {
@@ -103,23 +106,6 @@ export const LeftNavigationModule = () => {
             onClick={() => {
               setIsOffscreen(false);
               setView(View.MilitaryView);
-            }}
-          />
-        ),
-      },
-      {
-        name: "structures",
-        button: (
-          <CircleButton
-            className="structure-selector"
-            image={BuildingThumbs.construction}
-            tooltipLocation="top"
-            label={structures}
-            active={view === View.StructureView}
-            size="xl"
-            onClick={() => {
-              setIsOffscreen(false);
-              setView(View.StructureView);
             }}
           />
         ),
@@ -160,17 +146,20 @@ export const LeftNavigationModule = () => {
       },
     ];
 
-    return location === "/map"
+    return isWorldView
       ? navigation.filter(
           (item) =>
-            item.name === MenuEnum.military ||
             item.name === MenuEnum.entityDetails ||
-            item.name === MenuEnum.structures ||
+            item.name === MenuEnum.military ||
+            item.name === MenuEnum.construction ||
             item.name === MenuEnum.hyperstructures,
         )
       : navigation.filter(
           (item) =>
-            item.name === MenuEnum.military || item.name === MenuEnum.construction || item.name != MenuEnum.structures,
+            item.name === MenuEnum.entityDetails ||
+            item.name === MenuEnum.military ||
+            item.name === MenuEnum.construction ||
+            item.name === MenuEnum.hyperstructures,
         );
   }, [location, view]);
 
@@ -196,8 +185,8 @@ export const LeftNavigationModule = () => {
         <BaseContainer className="w-full h-[60vh] overflow-y-scroll">
           {view === View.EntityView && <EntityDetails />}
           {view === View.MilitaryView && <Military entityId={realmEntityId} />}
-          {view === View.ConstructionView && <SelectPreviewBuildingMenu />}
-          {view === View.StructureView && <StructureConstructionMenu />}
+          {!isWorldView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
+          {isWorldView && view === View.ConstructionView && <StructureConstructionMenu />}
           {view === View.HyperstructuresView && <HyperStructures />}
         </BaseContainer>
         <div className="gap-2 flex flex-col justify-center self-center">
