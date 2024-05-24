@@ -9,23 +9,18 @@ import { ViewOnMapButton } from "@/ui/components/military/ArmyManagementCard";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export const HyperStructures = ({}: any) => {
-  const hyperstructures = useHyperstructures();
+  const { hyperstructures } = useHyperstructures();
 
   const viewOnMapButton = (entityId: any) => {
     // const position = getComponentValue(useDojo().setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
     const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === BigInt(entityId));
     if (!hyperstructure) return null;
-    const progress = hyperstructure.progress.reduce((acc, progress) => acc + progress.amount, 0);
     return (
-      <div className="flex space-x-2 items-center">
-        <span className="text-lg font-semibold">{progress}</span>
-        <ViewOnMapButton
-          position={{
-            x: hyperstructure.x!,
-            y: hyperstructure.y!,
-          }}
-        />
-      </div>
+      <ViewHyperstructureOnMapButton
+        hyperstructureEntityId={hyperstructure.entity_id!}
+        x={hyperstructure.x!}
+        y={hyperstructure.y!}
+      />
     );
   };
   return (
@@ -41,5 +36,29 @@ export const HyperStructures = ({}: any) => {
         }))}
       />
     </>
+  );
+};
+
+const ViewHyperstructureOnMapButton = ({
+  hyperstructureEntityId,
+  x,
+  y,
+}: {
+  hyperstructureEntityId: bigint;
+  x: number;
+  y: number;
+}) => {
+  const { useProgress } = useHyperstructures();
+  const progress = useProgress(hyperstructureEntityId);
+  return (
+    <div className="flex space-x-2 items-center">
+      <span className="text-lg font-semibold"></span>
+      <ViewOnMapButton
+        position={{
+          x: x,
+          y: y,
+        }}
+      />
+    </div>
   );
 };

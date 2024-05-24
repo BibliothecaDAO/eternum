@@ -375,7 +375,13 @@ export interface SetHyperstructureConfig extends SystemSigner {
   resources_for_completion: { resource: number; amount: number }[];
 }
 
-export interface CreateHyperstructure extends SystemSigner {
+export interface CreateHyperstructureProps extends SystemSigner {
   creator_entity_id: num.BigNumberish;
   coords: { x: num.BigNumberish; y: num.BigNumberish };
+}
+
+export interface ContributeToConstructionProps extends SystemSigner {
+  hyperstructure_entity_id: num.BigNumberish;
+  contributor_entity_id: num.BigNumberish;
+  contributions: { resource: number; amount: number }[];
 }
