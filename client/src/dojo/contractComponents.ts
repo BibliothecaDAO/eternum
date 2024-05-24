@@ -501,6 +501,24 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Contribution: (() => {
+      return defineComponent(
+        world,
+        {
+          hyperstructure_entity_id: RecsType.BigInt,
+          player_address: RecsType.BigInt,
+          resource_type: RecsType.BigInt,
+          amount: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "Contribution",
+            types: ["u128", "u128", "u8", "u128"],
+            customTypes: [],
+          },
+        }
+      )
+    })(),
     EntityName: (() => {
       return defineComponent(
         world,

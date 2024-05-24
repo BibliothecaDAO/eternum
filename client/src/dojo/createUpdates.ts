@@ -5,6 +5,7 @@ import {
   MAP_EXPLORED_EVENT,
   PILLAGE_EVENT,
   TRAVEL_EVENT,
+  HYPERSTRUCTURE_FINISHED_EVENT
 } from "@bibliothecadao/eternum";
 import { numberToHex } from "../ui/utils/utils";
 
@@ -27,6 +28,8 @@ export const createUpdates = async () => {
         20,
         false,
       ),
+    createHyperstructureFinishedEvents: async () => 
+      createEventSubscription([HYPERSTRUCTURE_FINISHED_EVENT], true, 1000),
   };
 
   return {
