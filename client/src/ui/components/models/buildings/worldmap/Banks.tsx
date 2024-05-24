@@ -33,7 +33,7 @@ export const Banks = () => {
   );
 };
 
-export const BankModel = ({ position, onClick }: { position: any; onClick: () => void }) => {
+const BankModel = ({ position, onClick }: { position: any; onClick: () => void }) => {
   const bankModel = useGLTF("/models/buildings/bank.glb");
   const clone = useMemo(() => {
     const clone = bankModel.scene.clone();

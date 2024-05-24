@@ -2,13 +2,14 @@ import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
 
 export enum StructureType {
-  Bank = 1,
-  Settlement = 2,
-  Hyperstructure = 3,
+  Realm = 1,
+  Hyperstructure = 2,
+  Bank = 3,
+  ShardsMine = 4,
+  Settlement = 5,
 }
 
 export enum BuildingType {
-  None = 0,
   Castle = 1,
   Resource = 2,
   Farm = 3,
@@ -23,7 +24,12 @@ export enum BuildingType {
   WatchTower = 12,
   Walls = 13,
   Storehouse = 14,
+  Bank = 15,
+  ShardsMine = 16,
+  //   Settlement = 17,
+  //   Hyperstructure = 18,
 }
+export const MAX_BUILDING_TYPE = 14;
 
 export enum ResourceBuildingType {
   Wood = 1,
@@ -87,6 +93,8 @@ export const BuildingEnumToString: { [index: number]: string } = {
   12: "Watch Tower",
   13: "Walls",
   14: "Storehouse",
+  15: "Bank",
+  16: "Shards Mine",
 };
 
 export const BuildingStringToEnum = {
@@ -105,6 +113,8 @@ export const BuildingStringToEnum = {
   WatchTower: 12,
   Walls: 13,
   Storehouse: 14,
+  Bank: 15,
+  ShardsMine: 16,
 };
 
 export function getBuildingType(name: BuildingType): CairoCustomEnum {
@@ -137,8 +147,10 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ Walls: {} });
     case BuildingType.Storehouse:
       return new CairoCustomEnum({ Storehouse: {} });
-    case BuildingType.None:
-      return new CairoCustomEnum({ None: {} });
+    case BuildingType.Bank:
+      return new CairoCustomEnum({ Bank: {} });
+    case BuildingType.ShardsMine:
+      return new CairoCustomEnum({ ShardsMine: {} });
   }
 }
 
@@ -172,7 +184,9 @@ export function getProducedResource(name: BuildingType): number {
       return 0;
     case BuildingType.Storehouse:
       return 0;
-    case BuildingType.None:
+    case BuildingType.Bank:
+      return 0;
+    case BuildingType.ShardsMine:
       return 0;
   }
 }

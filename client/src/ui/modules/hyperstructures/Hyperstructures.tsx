@@ -1,28 +1,64 @@
-import useUIStore from "../../../hooks/store/useUIStore";
-import { OSWindow } from "../../components/navigation/OSWindow";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { hyperstructures } from "../../components/navigation/Config";
-import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructureList";
+import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
 import { EntityList } from "@/ui/components/list/EntityList";
+import { useEntityQuery } from "@dojoengine/react";
+import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
+import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
+import { ViewOnMapButton } from "@/ui/components/military/ArmyManagementCard";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
-const exampleHyperstructures = [
-  { id: 1, name: "Loaf", location: { x: 1, y: 1 } },
-  { id: 2, name: "Rashel", location: { x: 1, y: 1 } },
-  { id: 3, name: "Credence", location: { x: 1, y: 1 } },
-  { id: 4, name: "1337", location: { x: 1, y: 1 } },
-];
+export const HyperStructures = ({}: any) => {
+  const { hyperstructures } = useHyperstructures();
 
-export const HyperStructures = () => {
-  const togglePopup = useUIStore((state) => state.togglePopup);
-
-  const isOpen = useUIStore((state) => state.isPopupOpen(hyperstructures));
-
+  const viewOnMapButton = (entityId: any) => {
+    // const position = getComponentValue(useDojo().setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+    const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === BigInt(entityId));
+    if (!hyperstructure) return null;
+    return (
+      <ViewHyperstructureOnMapButton
+        hyperstructureEntityId={hyperstructure.entity_id!}
+        x={hyperstructure.x!}
+        y={hyperstructure.y!}
+      />
+    );
+  };
   return (
-    <OSWindow width="600px" onClick={() => togglePopup(hyperstructures)} show={isOpen} title={hyperstructures}>
+    <>
       <EntityList
         title="Hyperstructures"
         panel={({ entity }) => <HyperstructurePanel entity={entity} />}
-        list={exampleHyperstructures}
+        entityContent={viewOnMapButton}
+        list={hyperstructures.map((hyperstructure) => ({
+          id: hyperstructure.entity_id,
+          name: `Hyperstructure ${hyperstructure.entity_id}`,
+          ...hyperstructure,
+        }))}
       />
-    </OSWindow>
+    </>
+  );
+};
+
+const ViewHyperstructureOnMapButton = ({
+  hyperstructureEntityId,
+  x,
+  y,
+}: {
+  hyperstructureEntityId: bigint;
+  x: number;
+  y: number;
+}) => {
+  const { useProgress } = useHyperstructures();
+  const progress = useProgress(hyperstructureEntityId);
+  return (
+    <div className="flex space-x-2 items-center">
+      <span className="text-lg font-semibold"></span>
+      <ViewOnMapButton
+        position={{
+          x: x,
+          y: y,
+        }}
+      />
+    </div>
   );
 };

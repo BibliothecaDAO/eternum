@@ -7,7 +7,9 @@ import {
   BuildingEnumToString,
   BuildingStringToEnum,
   BuildingType,
+  MAX_BUILDING_TYPE,
   ResourcesIds,
+  StructureType,
   biomes,
 } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
@@ -34,8 +36,15 @@ export enum ModelsIndexes {
   Stable = BuildingType.Stable,
   WorkersHut = BuildingType.WorkersHut,
   Storehouse = BuildingType.Storehouse,
-  Bank = 25,
+  Bank = BuildingType.Bank,
+  ShardsMine = BuildingType.ShardsMine,
+  Settlement = BuildingType.Settlement,
+  Hyperstructure = BuildingType.Hyperstructure,
 }
+
+export const structureTypeToModelsIndex = (structureType: StructureType): ModelsIndexes => {
+  return structureType + MAX_BUILDING_TYPE;
+};
 
 const redColor = new THREE.Color("red");
 
@@ -64,6 +73,8 @@ export const ExistingBuildings = () => {
       [ModelsIndexes.WorkersHut]: useGLTF("/models/buildings/workers_hut.glb"),
       [ModelsIndexes.Storehouse]: useGLTF("/models/buildings/storehouse.glb"),
       [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb"),
+      [ModelsIndexes.ShardsMine]: useGLTF("/models/buildings/mine.glb"),
+      [ModelsIndexes.Hyperstructure]: useGLTF("/models/buildings/hyperstructure.glb"),
       [ResourceMiningTypes.Forge]: useGLTF("/models/buildings/forge.glb"),
       [ResourceMiningTypes.Mine]: useGLTF("/models/buildings/mine.glb"),
       [ResourceMiningTypes.LumberMill]: useGLTF("/models/buildings/lumber_mill.glb"),
@@ -75,6 +86,7 @@ export const ExistingBuildings = () => {
     Has(Building),
     HasValue(Building, { outer_col: BigInt(globalHex.col), outer_row: BigInt(globalHex.row) }),
     NotValue(Building, { entity_id: 0n }),
+    NotValue(Building, { produced_resource_type: ResourcesIds.Earthenshard }),
   ]);
 
   useEffect(() => {
@@ -103,6 +115,15 @@ export const ExistingBuildings = () => {
     power: { value: 2000, min: 0, max: 10000, step: 1 },
   });
 
+  const middleBuidingCategory =
+    hexType === HexType.BANK
+      ? ModelsIndexes.Bank
+      : hexType === HexType.SHARDSMINE
+      ? ModelsIndexes.ShardsMine
+      : hexType === HexType.HYPERSTRUCTURE
+      ? ModelsIndexes.Hyperstructure
+      : BuildingType.Castle;
+
   return (
     <>
       {existingBuildings.map((building, index) => (
@@ -114,24 +135,28 @@ export const ExistingBuildings = () => {
           resource={building.resource}
         />
       ))}
-      <group>
-        <BuiltBuilding
-          models={models}
-          buildingCategory={hexType === HexType.BANK ? ModelsIndexes.Bank : BuildingType.Castle}
-          position={{ col: 10, row: 10 }}
-          rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
-        />
-        <pointLight
-          ref={sLightRef}
-          position={[sLightPosition.x, sLightPosition.y, sLightPosition.z]}
-          color="#fff"
-          intensity={sLightIntensity}
-          power={power}
-        />
-      </group>
-      <group position={[x - 1.65, 3.5, -y]}>
-        <BannerFlag />
-      </group>
+      {hexType !== HexType.EMPTY && (
+        <group>
+          <BuiltBuilding
+            models={models}
+            buildingCategory={middleBuidingCategory}
+            position={{ col: 10, row: 10 }}
+            rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
+          />
+          <pointLight
+            ref={sLightRef}
+            position={[sLightPosition.x, sLightPosition.y, sLightPosition.z]}
+            color="#fff"
+            intensity={sLightIntensity}
+            power={power}
+          />
+        </group>
+      )}
+      {hexType === HexType.REALM && (
+        <group position={[x - 1.65, 3.5, -y]}>
+          <BannerFlag />
+        </group>
+      )}
     </>
   );
 };
@@ -202,11 +227,20 @@ export const BuiltBuilding = ({
     }, Math.random() * 1000);
   }, [actions]);
 
-  const destroyButton = buildingCategory !== BuildingType.Castle && (
+  const canBeDestroyed =
+    buildingCategory !== BuildingType.Castle &&
+    buildingCategory !== BuildingType.Bank &&
+    buildingCategory! !== BuildingType.ShardsMine;
+
+  const destroyButton = canBeDestroyed && (
     <Button
       onClick={() => {
         destroyBuilding(realmEntityId, position.col, position.row);
-        if (buildingCategory === BuildingType.Resource && (ResourceIdToMiningType[resource!] === ResourceMiningTypes.Forge || ResourceIdToMiningType[resource!] === ResourceMiningTypes.Mine)) {
+        if (
+          buildingCategory === BuildingType.Resource &&
+          (ResourceIdToMiningType[resource!] === ResourceMiningTypes.Forge ||
+            ResourceIdToMiningType[resource!] === ResourceMiningTypes.Mine)
+        ) {
           playDestroyStone();
         } else {
           playDestroyWooden();

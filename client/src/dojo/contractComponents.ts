@@ -6,6 +6,57 @@ export type ContractComponents = ReturnType<typeof defineContractComponents>;
 
 export function defineContractComponents(world: World) {
   return {
+    Structure: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.BigInt,
+          category: RecsType.String,
+        },
+        {
+          metadata: {
+            name: "Structure",
+            types: ["u128", "enum"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Progress: (() => {
+      return defineComponent(
+        world,
+        {
+          hyperstructure_entity_id: RecsType.BigInt,
+          resource_type: RecsType.Number,
+          amount: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "Progress",
+            types: ["u128", "u8", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Contribution: (() => {
+      return defineComponent(
+        world,
+        {
+          hyperstructure_entity_id: RecsType.BigInt,
+          player_address: RecsType.BigInt,
+          resource_type: RecsType.BigInt,
+          amount: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "Contribution",
+            types: ["u128", "u128", "u8", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Production: (() => {
       return defineComponent(
         world,
@@ -480,44 +531,6 @@ export function defineContractComponents(world: World) {
           },
         },
       );
-    })(),
-    HyperStructure: (() => {
-      return defineComponent(
-        world,
-        {
-          entity_id: RecsType.BigInt,
-          hyperstructure_type: RecsType.Number,
-          controlling_order: RecsType.Number,
-          completed: RecsType.Boolean,
-          completion_cost_id: RecsType.BigInt,
-          completion_resource_count: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: "HyperStructure",
-            types: ["u128", "u8", "u8", "bool", "u128", "u32"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    Contribution: (() => {
-      return defineComponent(
-        world,
-        {
-          hyperstructure_entity_id: RecsType.BigInt,
-          player_address: RecsType.BigInt,
-          resource_type: RecsType.BigInt,
-          amount: RecsType.BigInt,
-        },
-        {
-          metadata: {
-            name: "Contribution",
-            types: ["u128", "u128", "u8", "u128"],
-            customTypes: [],
-          },
-        }
-      )
     })(),
     EntityName: (() => {
       return defineComponent(

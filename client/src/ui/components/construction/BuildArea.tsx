@@ -16,7 +16,6 @@ const BuildArea = () => {
   return (
     <group>
       <BuildingPreview />
-      <ExistingBuildings />
       <GroundGrid />
     </group>
   );

@@ -526,12 +526,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_explore_config(props: SystemProps.SetExplorationConfigProps) {
-    const { wheat_burn_amount, fish_burn_amount, reward_amount, signer } = props;
+    const { wheat_burn_amount, fish_burn_amount, reward_amount, shards_mines_fail_probability, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "config_systems"),
       entrypoint: "set_exploration_config",
-      calldata: [wheat_burn_amount, fish_burn_amount, reward_amount],
+      calldata: [wheat_burn_amount, fish_burn_amount, reward_amount, shards_mines_fail_probability],
     });
   }
 
@@ -658,6 +658,33 @@ export class EternumProvider extends EnhancedDojoProvider {
         cost_of_building.length,
         ...cost_of_building.flatMap(({ resource, amount }) => [resource, amount]),
       ],
+    });
+  }
+
+  public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
+    const { resources_for_completion, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_hyperstructure_config",
+      calldata: [resources_for_completion],
+    });
+  }
+
+  public async create_hyperstructure(props: SystemProps.CreateHyperstructureProps) {
+    const { creator_entity_id, coords, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
+      entrypoint: "create",
+      calldata: [creator_entity_id, coords],
+    });
+  }
+
+  public async contribute_to_construction(props: SystemProps.ContributeToConstructionProps) {
+    const { hyperstructure_entity_id, contributor_entity_id, contributions, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
+      entrypoint: "contribute_to_construction",
+      calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
     });
   }
 }

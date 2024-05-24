@@ -15,6 +15,7 @@ import {
   RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
   WeightConfig,
+  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
 } from "../constants";
 import { EternumProvider } from "../provider";
 import { BuildingType } from "../utils";
@@ -40,14 +41,16 @@ export const setProductionConfig = async (account: Account, provider: EternumPro
 
 export const setBuildingCategoryPopConfig = async (account: Account, provider: EternumProvider) => {
   for (const buildingId of Object.keys(BUILDING_POPULATION) as unknown as BuildingType[]) {
-    const tx = await provider.set_building_category_pop_config({
-      signer: account,
-      building_category: buildingId,
-      population: BUILDING_POPULATION[buildingId],
-      capacity: BUILDING_CAPACITY[buildingId],
-    });
-
-    console.log(`Configuring building category population ${buildingId} ${tx.statusReceipt}...`);
+    // if both 0, tx will fail
+    if (BUILDING_POPULATION[buildingId] !== 0 || BUILDING_CAPACITY[buildingId] !== 0) {
+      const tx = await provider.set_building_category_pop_config({
+        signer: account,
+        building_category: buildingId,
+        population: BUILDING_POPULATION[buildingId],
+        capacity: BUILDING_CAPACITY[buildingId],
+      });
+      console.log(`Configuring building category population ${buildingId} ${tx.statusReceipt}...`);
+    }
   }
 };
 
@@ -62,19 +65,21 @@ export const setPopulationConfig = async (account: Account, provider: EternumPro
 
 export const setBuildingConfig = async (account: Account, provider: EternumProvider) => {
   for (const buildingId of Object.keys(BUILDING_RESOURCE_PRODUCED) as unknown as BuildingType[]) {
-    const tx = await provider.set_building_config({
-      signer: account,
-      building_category: buildingId,
-      building_resource_type: BUILDING_RESOURCE_PRODUCED[buildingId],
-      cost_of_building: BUILDING_COSTS_SCALED[buildingId].map((cost) => {
-        return {
-          ...cost,
-          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
-        };
-      }),
-    });
+    if (BUILDING_COSTS_SCALED[buildingId].length !== 0) {
+      const tx = await provider.set_building_config({
+        signer: account,
+        building_category: buildingId,
+        building_resource_type: BUILDING_RESOURCE_PRODUCED[buildingId],
+        cost_of_building: BUILDING_COSTS_SCALED[buildingId].map((cost) => {
+          return {
+            ...cost,
+            amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
+          };
+        }),
+      });
 
-    console.log(`Configuring building cost config ${buildingId} ${tx.statusReceipt}...`);
+      console.log(`Configuring building cost config ${buildingId} ${tx.statusReceipt}...`);
+    }
   }
 };
 
@@ -159,9 +164,10 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
     wheat_burn_amount: EternumGlobalConfig.exploration.wheatBurn * EternumGlobalConfig.resources.resourcePrecision,
     fish_burn_amount: EternumGlobalConfig.exploration.fishBurn * EternumGlobalConfig.resources.resourcePrecision,
     reward_amount: EternumGlobalConfig.exploration.reward * EternumGlobalConfig.resources.resourcePrecision,
+    shards_mines_fail_probability: EternumGlobalConfig.exploration.shardsMinesFailProbability,
   });
 
-  console.log(`Configuring bank config ${txExplore.statusReceipt}...`);
+  console.log(`Configuring exploration config ${txExplore.statusReceipt}...`);
 };
 
 export const setCapacityConfig = async (account: Account, provider: EternumProvider) => {
@@ -215,4 +221,12 @@ export const setQuestConfig = async (account: Account, provider: EternumProvider
 
     console.log(`Configuring quest config ${type} ${tx.statusReceipt}...`);
   }
+};
+
+export const setHyperstructureConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_hyperstructure_config({
+    signer: account,
+    resources_for_completion: HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  });
+  console.log(`Configuring hyperstructure ${tx.statusReceipt}...`);
 };

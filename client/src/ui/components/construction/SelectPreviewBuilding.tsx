@@ -35,8 +35,11 @@ import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 export const BUILDING_IMAGES_PATH = {
-  [BuildingType.None]: "",
   [BuildingType.Castle]: "",
+  [BuildingType.Bank]: "",
+  [BuildingType.ShardsMine]: "",
+  [BuildingType.Settlement]: "",
+  [BuildingType.Hyperstructure]: "",
   [BuildingType.Resource]: BUILD_IMAGES_PREFIX + "mine.png",
   [BuildingType.Farm]: BUILD_IMAGES_PREFIX + "farm.png",
   [BuildingType.FishingVillage]: BUILD_IMAGES_PREFIX + "fishing_village.png",
@@ -72,11 +75,15 @@ export const SelectPreviewBuildingMenu = () => {
       isNaN(Number(key)) &&
       key !== "Resource" &&
       key !== "Castle" &&
+      key !== "Bank" &&
+      key !== "ShardsMine" &&
       key !== "None" &&
       key !== "DonkeyFarm" &&
       key !== "TradingPost" &&
       key !== "WatchTower" &&
-      key !== "Walls",
+      key !== "Walls" &&
+      key !== "Settlement" &&
+      key !== "Hyperstructure",
   );
 
   const realmResourceIds = useMemo(() => {
@@ -115,7 +122,7 @@ export const SelectPreviewBuildingMenu = () => {
               const hasEnoughPopulation =
                 (realm?.population || 0) + BUILDING_POPULATION[BuildingType.Resource] <= BASE_POPULATION_CAPACITY;
 
-              const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
+              const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
               return (
                 <BuildingCard
@@ -165,7 +172,7 @@ export const SelectPreviewBuildingMenu = () => {
                 const canBuild =
                   BuildingType.WorkersHut == building
                     ? hasBalance
-                    : hasBalance && realm.hasCapacity && hasEnoughPopulation;
+                    : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
                 return (
                   <BuildingCard

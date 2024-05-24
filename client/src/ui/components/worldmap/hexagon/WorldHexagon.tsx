@@ -4,11 +4,10 @@ import { Flags } from "@/ui/components/worldmap/Flags.jsx";
 import useUIStore from "../../../../hooks/store/useUIStore.js";
 import { useDojo } from "../../../../hooks/context/DojoContext.js";
 import { Subscription } from "rxjs";
-import { MyCastles, OtherCastles } from "../../models/buildings/worldmap/Castles.js";
 import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
-import { Banks } from "../../models/buildings/worldmap/Banks.js";
 import { Armies } from "../armies/Armies.js";
 import { create } from "zustand";
+import { Structures } from "../../models/buildings/worldmap/Structures.js";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -90,10 +89,8 @@ export const WorldMap = () => {
   const models = useMemo(() => {
     return (
       <>
-        {hexData && <MyCastles hexData={hexData} />}
-        {hexData && <OtherCastles hexData={hexData} />}
-        {/* <Banks /> */}
         <Armies />
+        <Structures />
       </>
     );
   }, [hexData]);

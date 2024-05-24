@@ -44,6 +44,7 @@ const MAP_EXPLORE_FISH_BURN_AMOUNT: u128 = 500;
 
 const MAP_EXPLORE_RANDOM_MINT_AMOUNT: u128 = 3;
 const MAP_EXPLORE_PRECOMPUTED_RANDOM_MINT_RESOURCE: u8 = 6; // silver
+const SHARDS_MINE_FAIL_PROBABILITY_WEIGHT: u128 = 1000;
 
 const TIMESTAMP: u64 = 10000;
 
@@ -76,7 +77,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
         .set_exploration_config(
             MAP_EXPLORE_WHEAT_BURN_AMOUNT,
             MAP_EXPLORE_FISH_BURN_AMOUNT,
-            MAP_EXPLORE_RANDOM_MINT_AMOUNT
+            MAP_EXPLORE_RANDOM_MINT_AMOUNT,
+            SHARDS_MINE_FAIL_PROBABILITY_WEIGHT
         );
 
     // set tick config

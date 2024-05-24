@@ -144,12 +144,16 @@ export const MarketResourceSidebar = ({
 };
 
 export const TransferView = () => {
-  const { playerRealms, playerAccounts, otherRealms } = useEntities();
+  const { playerRealms, playerAccounts, playerStructures, otherRealms } = useEntities();
   return (
     <TransferBetweenEntities
       entitiesList={[
         { entities: playerRealms(), name: "Player Realms" },
         { entities: playerAccounts(), name: "Player Bank Accounts" },
+        {
+          entities: playerStructures().filter((structure) => structure.category === "ShardsMine"),
+          name: "Player Shards Mines",
+        },
         { entities: otherRealms(), name: "Other Realms" },
       ]}
     />
