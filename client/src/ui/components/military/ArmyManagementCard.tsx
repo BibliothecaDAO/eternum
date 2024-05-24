@@ -18,10 +18,11 @@ import { ArmyAndName } from "@/hooks/helpers/useArmies";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { resources } from "@bibliothecadao/eternum";
 import { LucideArrowRight } from "lucide-react";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 export const nameMapping: { [key: number]: string } = {
   [ResourcesIds.Knight]: "Knight",
-  [ResourcesIds.Crossbowmen]: "Crossbowman",
+  [ResourcesIds.Crossbowmen]: "Crossbowmen",
   [ResourcesIds.Paladin]: "Paladin",
 };
 
@@ -44,7 +45,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
   const { getBalance } = useResourceBalance();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const currentTick = useBlockchainStore((state) => state.currentTick);
-
+  const [travelWindow, setSetTravelWindow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
 
@@ -84,12 +85,13 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
   const [naming, setNaming] = useState("");
 
   const [troopCounts, setTroopCounts] = useState<{ [key: number]: number }>({
-    [ResourcesIds.Knight]: 0,
-    [ResourcesIds.Crossbowmen]: 0,
-    [ResourcesIds.Paladin]: 0,
+    [ResourcesIds.Knight]: 1000,
+    [ResourcesIds.Crossbowmen]: 1000,
+    [ResourcesIds.Paladin]: 1000,
   });
 
   const handleTroopCountChange = (troopName: number, count: number) => {
+    console.log(troopName, count);
     setTroopCounts((prev) => ({ ...prev, [troopName]: count }));
   };
 
@@ -105,6 +107,12 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
         crossbowman_count: troopCounts[ResourcesIds.Crossbowmen] * 1000 || 0,
       },
     }).finally(() => setIsLoading(false));
+
+    setTroopCounts({
+      [ResourcesIds.Knight]: 0,
+      [ResourcesIds.Crossbowmen]: 0,
+      [ResourcesIds.Paladin]: 0,
+    });
   };
 
   useEffect(() => {
@@ -156,13 +164,11 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
       cost: 10,
       attack: 10,
       defense: 10,
-      strong: "Crossbowmen",
+      strong: "Crossbowman",
       weak: "Knight",
       current: currencyFormat(entity.troops.paladin_count, 0),
     },
   ];
-
-  const [travelWindow, setSetTravelWindow] = useState(false);
 
   return (
     <div className="flex flex-col relative">
@@ -232,48 +238,51 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
         <ViewOnMapButton position={position} />
       </div>
 
-      <div className="grid grid-cols-3 gap-2 my-1">
-        {troops.map((troop) => (
-          <div className="p-2 border  border-gold/20 flex flex-col" key={troop.name}>
-            {/* <img src={`/images/units/${nameMapping[troop.name]}.png`} alt={nameMapping[troop.name]} /> */}
-            <div className="font-bold">
-              <div className="text-md">{nameMapping[troop.name]}</div>
-              <div className="text-green">x {troop.current}</div>
-            </div>
+      <div className="grid grid-cols-3 gap-6 my-4">
+        {troops.map((troop) => {
+          const balance = getBalance(owner_entity, troop.name).balance;
 
-            <div className="my-3">
-              <div>Str vs {troop.strong}</div>
-              <div>Wk vs {troop.weak}</div>
-            </div>
+          // floor of balance
 
-            <div className="flex items-center mt-auto flex-col">
-              <div className="px-2 text-xs text-center text-green font-black">
-                [
-                {currencyFormat(
-                  getBalance(owner_entity, troop.name).balance
-                    ? Number(getBalance(owner_entity, troop.name).balance)
-                    : 0,
-                  0,
-                )}
-                ]
+          console.log(EternumGlobalConfig);
+
+          const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
+
+          console.log(balance, balanceFloor);
+          return (
+            <div className="p-2 bg-gold/20 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
+              {/* <img src={`/images/units/${nameMapping[troop.name]}.png`} alt={nameMapping[troop.name]} /> */}
+
+              <div className="font-bold mb-4">
+                <div className="flex justify-between">
+                  <div className="text-md">{nameMapping[troop.name]}</div>
+                </div>
+                <div className="px-2 py-1 bg-white/10 clip-angled-sm flex justify-between">
+                  <ResourceIcon withTooltip={false} resource={nameMapping[troop.name]} size="lg" />
+                  <div className="text-green self-center">x {troop.current}</div>
+                </div>
               </div>
-              <NumberInput
-                className=""
-                max={Number(
-                  currencyFormat(
-                    getBalance(owner_entity, troop.name).balance
-                      ? Number(getBalance(owner_entity, troop.name).balance)
-                      : 0,
-                    2,
-                  ),
-                )}
-                min={0}
-                value={troopCounts[troop.name]}
-                onChange={(amount) => handleTroopCountChange(troop.name, amount)}
-              />
+
+              {/* <div className="my-3">
+            <div>Str vs {troop.strong}</div>
+            <div>Wk vs {troop.weak}</div>
+          </div> */}
+
+              <div className="flex items-center mt-auto flex-col">
+                <div className="px-2 text-xs  font-bold mb-3">
+                  Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
+                </div>
+                <NumberInput
+                  max={balance ? balanceFloor : 0}
+                  min={0}
+                  step={100}
+                  value={troopCounts[troop.name]}
+                  onChange={(amount) => handleTroopCountChange(troop.name, amount)}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <Button className="w-full " disabled={!canCreate} variant="primary" isLoading={isLoading} onClick={handleBuyArmy}>

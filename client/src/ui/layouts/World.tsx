@@ -65,21 +65,20 @@ export const World = () => {
       </BlankOverlayContainer>
       <HooksComponent />
 
-      <BackgroundContainer className=" rounded-xl relative">
-        <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-12 bg-gradient-to-b from-black/20 to-transparent opacity-90" />
+      <BackgroundContainer className="rounded-xl relative">
         <div className="h-full w-full main-scene">
           <MainScene />
         </div>
-        <div className="absolute bottom-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-t from-black/20 to-transparent opacity-90" />
-        <div
-          className={clsx(
-            "absolute bottom-0 left-0 z-20 w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-black duration-300 transition-opacity",
-            isLoadingScreenEnabled ? "opacity-100" : "opacity-0",
-          )}
-        >
-          <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
-        </div>
       </BackgroundContainer>
+
+      <div
+        className={clsx(
+          "absolute bottom-0 left-0 z-[49] w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-map duration-300 transition-opacity bg-brown",
+          isLoadingScreenEnabled ? "opacity-100" : "opacity-0",
+        )}
+      >
+        <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
+      </div>
 
       {/* TOP */}
       <TopMiddleContainer>
