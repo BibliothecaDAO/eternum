@@ -12,7 +12,7 @@ import { ResourceIcon } from "../../../elements/ResourceIcon";
 export const PlayersLeaderboard = () => {
   const [loading, _] = useState(false);
 
-  const playerResourceLeaderboard = useLeaderBoardStore((state) => state.playerResourceLeaderboard);
+  const playerPointsLeaderboard = useLeaderBoardStore((state) => state.playerPointsLeaderboard);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -72,9 +72,9 @@ export const PlayersLeaderboard = () => {
       </SortPanel>
       {!loading && (
         <div className="flex flex-col p-2 space-y-2 overflow-y-auto">
-          {playerResourceLeaderboard
-            .filter((row) => row.totalResources !== 0)
-            .map(({ order, addressName, address, totalResources, isYours }, i) => {
+          {playerPointsLeaderboard
+            // .filter((row) => row.totalResources !== 0)
+            .map(({ order, addressName, address, isYours }, i) => {
               return (
                 <div
                   key={i}
@@ -90,7 +90,7 @@ export const PlayersLeaderboard = () => {
                     <div className="flex-none text-left w-20">{displayAddress(address)}</div>
 
                     <div className="flex-none w-16 text-left mr-2 flex flex-cols">
-                      <div> {currencyFormat(totalResources, 0)}</div>
+                      {/* <div> {currencyFormat(totalResources, 0)}</div> */}
                       <ResourceIcon resource="Resource" size="xs"></ResourceIcon>
                     </div>
                   </div>
