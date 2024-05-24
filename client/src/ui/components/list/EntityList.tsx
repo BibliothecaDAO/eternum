@@ -9,9 +9,10 @@ interface EntityListProps {
   list: any[];
   previous?: any[];
   current?: bigint;
+  entityContent?: (props: { id: any }) => React.ReactElement | null;
 }
 
-export const EntityList = ({ title, panel, list, headerPanel, current }: EntityListProps) => {
+export const EntityList = ({ title, panel, list, headerPanel, current, entityContent }: EntityListProps) => {
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
 
   useEffect(() => {
@@ -39,7 +40,9 @@ export const EntityList = ({ title, panel, list, headerPanel, current }: EntityL
                 key={index}
                 onClick={() => setSelectedEntity(entity)}
               >
-                {entity.name} <ArrowRight className="w-2 fill-current" />
+                {entity.name}
+                {entityContent && entityContent(entity.id)} {/* Dynamic entity icon */}
+                <ArrowRight className="w-2 fill-current" />
               </li>
             ))}
           </ul>

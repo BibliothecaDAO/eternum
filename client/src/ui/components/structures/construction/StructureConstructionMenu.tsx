@@ -184,15 +184,7 @@ export const StructureInfo = ({
       {perTick !== "" && (
         <div className=" flex flex-wrap">
           <div className="font-bold uppercase w-full text-xs">Produces </div>
-          <div className="flex justify-between">
-            {perTick}
-            <ResourceIcon
-              className="self-center mx-1"
-              resource={findResourceById(ResourcesIds.Dragonhide)?.trait || ""}
-              size="md"
-            />
-            {findResourceById(ResourcesIds.Dragonhide)?.trait || ""}
-          </div>
+          <div className="flex justify-between">{perTick}/per tick</div>
         </div>
       )}
 
