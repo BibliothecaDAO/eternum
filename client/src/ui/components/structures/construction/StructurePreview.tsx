@@ -6,12 +6,14 @@ import { getUIPositionFromColRow, ResourceIdToMiningType, ResourceMiningTypes } 
 import { FELT_CENTER, useExploredHexesStore } from "../../worldmap/hexagon/WorldHexagon";
 import { useStructures } from "@/hooks/helpers/useStructures";
 import useRealmStore from "@/hooks/store/useRealmStore";
+import { Hexagon } from "@/types";
 
 export interface OriginalModels {
   [key: number | string]: THREE.Group;
 }
 
 export const StructurePreview = () => {
+  const hexData = useUIStore((state) => state.hexData);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
@@ -43,8 +45,10 @@ export const StructurePreview = () => {
   let structureType = previewBuilding ? previewBuilding.type : 1;
 
   useEffect(() => {
-    if (!hoveredBuildHex) return;
-    setCanPlace(canPlaceStructure(hoveredBuildHex.col, hoveredBuildHex.row, existingStructures, exploredHexes));
+    if (!hoveredBuildHex || !hexData) return;
+    setCanPlace(
+      canPlaceStructure(hoveredBuildHex.col, hoveredBuildHex.row, existingStructures, exploredHexes, hexData),
+    );
   }, [hoveredBuildHex, existingStructures, exploredHexes, previewBuilding]);
 
   useEffect(() => {
@@ -64,11 +68,7 @@ export const StructurePreview = () => {
   }, [structureType, models, previewBuilding]);
 
   const onClick = useCallback(async () => {
-    if (
-      !isLoading &&
-      hoveredBuildHex &&
-      canPlaceStructure(hoveredBuildHex.col, hoveredBuildHex.row, existingStructures, exploredHexes)
-    ) {
+    if (!isLoading && hoveredBuildHex && canPlace) {
       setIsLoading(true);
       setPreviewBuilding(null);
       setHoveredBuildHex(null);
@@ -85,8 +85,16 @@ export const StructurePreview = () => {
   ) : null;
 };
 
-export const canPlaceStructure = (col: number, row: number, structures: any[], explored: Map<number, Set<number>>) => {
+export const canPlaceStructure = (
+  col: number,
+  row: number,
+  structures: any[],
+  explored: Map<number, Set<number>>,
+  hexData: Hexagon[],
+) => {
+  const hex = hexData?.find((hex) => hex.col === col && hex.row === row);
+  const noWater = hex?.biome !== "ocean";
   const noCollision = structures.every((building) => building.col !== col || building.row !== row);
   const isExplored = explored.get(col - FELT_CENTER)?.has(row - FELT_CENTER);
-  return noCollision === true && isExplored === true;
+  return noWater === true && noCollision === true && isExplored === true;
 };
