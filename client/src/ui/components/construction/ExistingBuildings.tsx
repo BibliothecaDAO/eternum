@@ -74,6 +74,7 @@ export const ExistingBuildings = () => {
       [ModelsIndexes.Storehouse]: useGLTF("/models/buildings/storehouse.glb"),
       [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb"),
       [ModelsIndexes.ShardsMine]: useGLTF("/models/buildings/mine.glb"),
+      [ModelsIndexes.Hyperstructure]: useGLTF("/models/buildings/hyperstructure.glb"),
       [ResourceMiningTypes.Forge]: useGLTF("/models/buildings/forge.glb"),
       [ResourceMiningTypes.Mine]: useGLTF("/models/buildings/mine.glb"),
       [ResourceMiningTypes.LumberMill]: useGLTF("/models/buildings/lumber_mill.glb"),
@@ -119,6 +120,8 @@ export const ExistingBuildings = () => {
       ? ModelsIndexes.Bank
       : hexType === HexType.SHARDSMINE
       ? ModelsIndexes.ShardsMine
+      : hexType === HexType.HYPERSTRUCTURE
+      ? ModelsIndexes.Hyperstructure
       : BuildingType.Castle;
 
   return (

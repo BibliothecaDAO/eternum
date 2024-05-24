@@ -7,6 +7,7 @@ import { FELT_CENTER, useExploredHexesStore } from "../../worldmap/hexagon/World
 import { useStructures } from "@/hooks/helpers/useStructures";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { Hexagon } from "@/types";
+import { StructureType } from "@bibliothecadao/eternum";
 
 export interface OriginalModels {
   [key: number | string]: THREE.Group;
@@ -34,7 +35,7 @@ export const StructurePreview = () => {
     () => [
       useGLTF("/models/buildings/castle.glb").scene.clone(),
       useGLTF("/models/buildings/castle.glb").scene.clone(),
-      useGLTF("/models/buildings/bank.glb").scene.clone(),
+      useGLTF("/models/buildings/hyperstructure.glb").scene.clone(),
       useGLTF("/models/buildings/bank.glb").scene.clone(),
       useGLTF("/models/buildings/mine.glb").scene.clone(),
       useGLTF("/models/buildings/castle.glb").scene.clone(),
@@ -76,10 +77,12 @@ export const StructurePreview = () => {
     }
   }, [hoveredBuildHex, existingStructures, exploredHexes, createHyperstructure, previewBuilding]);
 
+  const scale = previewBuilding?.type === StructureType.Hyperstructure ? 1.5 : 3;
+
   return !isLoading && previewModel && previewCoords ? (
     <>
       <group position={[previewCoords.x, 0.32, -previewCoords.y]} onClick={onClick}>
-        <primitive position={[0, 0, 0]} scale={3} object={previewModel} />
+        <primitive position={[0, 0, 0]} scale={scale} object={previewModel} />
       </group>
     </>
   ) : null;
