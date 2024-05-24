@@ -92,9 +92,6 @@ export const WorldMap = () => {
   const models = useMemo(() => {
     return (
       <>
-        {/* {hexData && <MyCastles hexData={hexData} />}
-        {hexData && <OtherCastles hexData={hexData} />}
-        {/* <Banks /> */}
         <Armies />
         <Structures />
       </>
