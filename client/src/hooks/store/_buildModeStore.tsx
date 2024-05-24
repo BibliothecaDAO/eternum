@@ -17,7 +17,7 @@ export const createBuildModeStoreSlice = (set: any) => ({
   isDestroyMode: false,
   setIsDestroyMode: (isDestroyMode: boolean) => set({ isDestroyMode }),
   previewBuilding: null,
-  setPreviewBuilding: (previewBuilding: { type: BuildingType; resource?: ResourcesIds } | null) => {
+  setPreviewBuilding: (previewBuilding: { type: BuildingType | StructureType; resource?: ResourcesIds } | null) => {
     set({ previewBuilding });
   },
   hoveredBuildHex: null,

@@ -39,6 +39,8 @@ export const BUILDING_IMAGES_PATH = {
   [BuildingType.Castle]: "",
   [BuildingType.Bank]: "",
   [BuildingType.ShardsMine]: "",
+  [BuildingType.Settlement]: "",
+  [BuildingType.Hyperstructure]: "",
   [BuildingType.Resource]: BUILD_IMAGES_PREFIX + "mine.png",
   [BuildingType.Farm]: BUILD_IMAGES_PREFIX + "farm.png",
   [BuildingType.FishingVillage]: BUILD_IMAGES_PREFIX + "fishing_village.png",
@@ -80,7 +82,9 @@ export const SelectPreviewBuildingMenu = () => {
       key !== "DonkeyFarm" &&
       key !== "TradingPost" &&
       key !== "WatchTower" &&
-      key !== "Walls",
+      key !== "Walls" &&
+      key !== "Settlement" &&
+      key !== "Hyperstructure",
   );
 
   const realmResourceIds = useMemo(() => {

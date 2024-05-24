@@ -1,31 +1,22 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-// import { ModelsIndexes } from "@/ui/components/construction/ExistingBuildings";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { useGLTF } from "@react-three/drei";
 import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { StructureStringToEnum, StructureType } from "@bibliothecadao/eternum";
+import { StructureType } from "@bibliothecadao/eternum";
 import useUIStore from "@/hooks/store/useUIStore";
 
 export const Structures = () => {
-  //   const models = useMemo(
-  //     () => ({
-  //       [ModelsIndexes.Castle]: useGLTF("/models/buildings/castle.glb"),
-  //       [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb"),
-  //       [ModelsIndexes.Hyperstructure]: useGLTF("/models/buildings/bank.glb"),
-  //       [ModelsIndexes.Settlement]: useGLTF("/models/buildings/barracks.glb"),
-  //     }),
-  //     [],
-  //   );
-
   const models = useMemo(
     () => [
       useGLTF("/models/buildings/castle.glb"),
+      useGLTF("/models/buildings/castle.glb"),
       useGLTF("/models/buildings/bank.glb"),
       useGLTF("/models/buildings/bank.glb"),
-      useGLTF("/models/buildings/barracks.glb"),
+      useGLTF("/models/buildings/mine.glb"),
+      useGLTF("/models/buildings/castle.glb"),
     ],
     [],
   );
@@ -35,12 +26,13 @@ export const Structures = () => {
   const existingStructures = useUIStore((state) => state.existingStructures);
   const setExistingStructures = useUIStore((state) => state.setExistingStructures);
 
-  const builtStructures = useEntityQuery([Has(setup.components.Realm)]);
+  const builtStructures = useEntityQuery([Has(setup.components.Structure)]);
 
-  useEffect(() => {
-    let _tmp = builtStructures.map((entity) => {
+  const _tmp = useMemo(() => {
+    return builtStructures.map((entity) => {
       const position = getComponentValue(setup.components.Position, entity);
-      const type = StructureStringToEnum["Realm"];
+      const structure = getComponentValue(setup.components.Structure, entity);
+      const type = StructureType[structure!.category as keyof typeof StructureType];
       return {
         col: position!.x,
         row: position!.y,
@@ -48,9 +40,11 @@ export const Structures = () => {
         entity: entity,
       };
     });
+  }, [builtStructures.length]);
+
+  useEffect(() => {
     setExistingStructures(_tmp);
-  }, [builtStructures]);
-  console.log({ existingStructures });
+  }, [_tmp]);
 
   return existingStructures.map((structure, index) => {
     return <BuiltStructure key={index} position={structure} models={models} structureCategory={structure.type} />;
@@ -83,8 +77,6 @@ const BuiltStructure = ({
     });
     return model.scene.clone();
   }, [models]);
-
-  console.log({ model });
 
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>

@@ -33,7 +33,7 @@ export const useStructures = () => {
     return Array.from(bankEntities).length > 0 || Array.from(realmEntities).length > 0;
   };
 
-  const createHyperstructure = async (creator_entity_id: number, col: number, row: number) => {
+  const createHyperstructure = async (creator_entity_id: bigint, col: number, row: number) => {
     await create_hyperstructure({ signer: account, coords: { x: col, y: row }, creator_entity_id });
   };
 

@@ -1,66 +1,100 @@
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { useEffect, useMemo } from "react";
-import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
-import { BuildingEnumToString, BuildingType, StructureType } from "@bibliothecadao/eternum";
+import { useEffect, useMemo, useCallback, useState } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getUIPositionFromColRow, ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
-import { ModelsIndexes, structureTypeToModelsIndex } from "../../construction/ExistingBuildings";
-import { isHexOccupied } from "../../construction/GroundGrid";
-import { preview } from "vite";
+import { FELT_CENTER, useExploredHexesStore } from "../../worldmap/hexagon/WorldHexagon";
+import { useStructures } from "@/hooks/helpers/useStructures";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import { Hexagon } from "@/types";
 
 export interface OriginalModels {
   [key: number | string]: THREE.Group;
 }
 
 export const StructurePreview = () => {
+  const hexData = useUIStore((state) => state.hexData);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+  const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
   const hoveredBuildHex = useUIStore((state) => state.hoveredBuildHex);
   const existingStructures = useUIStore((state) => state.existingStructures);
+  const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
+  const { createHyperstructure } = useStructures();
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const [isLoading, setIsLoading] = useState(false);
+  const [canPlace, setCanPlace] = useState(false);
 
   const previewCoords = useMemo(() => {
     if (!hoveredBuildHex) return null;
-    console.log(hoveredBuildHex);
-    return getUIPositionFromColRow(hoveredBuildHex.col, hoveredBuildHex.row, true);
+    return getUIPositionFromColRow(hoveredBuildHex.col, hoveredBuildHex.row, false);
   }, [hoveredBuildHex]);
 
-  const originalModels: OriginalModels = useMemo(
-    () => ({
-      [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb").scene.clone(),
-      [ModelsIndexes.Settlement]: useGLTF("/models/buildings/castle.glb").scene.clone(),
-      [ModelsIndexes.Hyperstructure]: useGLTF("/models/buildings/bank.glb").scene.clone(),
-    }),
+  const models = useMemo(
+    () => [
+      useGLTF("/models/buildings/castle.glb").scene.clone(),
+      useGLTF("/models/buildings/castle.glb").scene.clone(),
+      useGLTF("/models/buildings/bank.glb").scene.clone(),
+      useGLTF("/models/buildings/bank.glb").scene.clone(),
+      useGLTF("/models/buildings/mine.glb").scene.clone(),
+      useGLTF("/models/buildings/castle.glb").scene.clone(),
+    ],
     [],
   );
 
-  const modelIndex = useMemo(() => {
-    let structureType = previewBuilding ? previewBuilding.type : 1;
-    return structureTypeToModelsIndex(structureType);
-  }, [previewBuilding]);
+  let structureType = previewBuilding ? previewBuilding.type : 1;
 
   useEffect(() => {
-    if (!hoveredBuildHex) return;
-    const newColor = isHexOccupied(hoveredBuildHex.col, hoveredBuildHex.row, existingStructures) ? "red" : "green";
-    originalModels[modelIndex].traverse((node) => {
+    if (!hoveredBuildHex || !hexData) return;
+    setCanPlace(
+      canPlaceStructure(hoveredBuildHex.col, hoveredBuildHex.row, existingStructures, exploredHexes, hexData),
+    );
+  }, [hoveredBuildHex, existingStructures, exploredHexes, previewBuilding]);
+
+  useEffect(() => {
+    models[structureType].traverse((node) => {
       if (node instanceof THREE.Mesh) {
         node.material = node.material.clone();
-        node.material.color.set(newColor);
+        node.material.color.set(canPlace ? "green" : "red");
         node.material.transparent = true;
         node.material.opacity = 0.8;
       }
     });
-  }, [modelIndex, hoveredBuildHex, existingStructures, originalModels]);
+  }, [models, structureType, canPlace]);
 
   const previewModel = useMemo(() => {
     if (!previewBuilding) return null;
-    return originalModels[modelIndex];
-  }, [modelIndex, originalModels, previewBuilding]);
+    return models[structureType];
+  }, [structureType, models, previewBuilding]);
 
-  return previewModel && previewCoords ? (
+  const onClick = useCallback(async () => {
+    if (!isLoading && hoveredBuildHex && canPlace) {
+      setIsLoading(true);
+      setPreviewBuilding(null);
+      setHoveredBuildHex(null);
+      createHyperstructure(realmEntityId, hoveredBuildHex.col, hoveredBuildHex.row).finally(() => setIsLoading(false));
+    }
+  }, [hoveredBuildHex, existingStructures, exploredHexes, createHyperstructure, previewBuilding]);
+
+  return !isLoading && previewModel && previewCoords ? (
     <>
-      <group position={[previewCoords.x, 0.32, -previewCoords.y]}>
+      <group position={[previewCoords.x, 0.32, -previewCoords.y]} onClick={onClick}>
         <primitive position={[0, 0, 0]} scale={3} object={previewModel} />
       </group>
     </>
   ) : null;
+};
+
+export const canPlaceStructure = (
+  col: number,
+  row: number,
+  structures: any[],
+  explored: Map<number, Set<number>>,
+  hexData: Hexagon[],
+) => {
+  const hex = hexData?.find((hex) => hex.col === col && hex.row === row);
+  const noWater = hex?.biome !== "ocean";
+  const noCollision = structures.every((building) => building.col !== col || building.row !== row);
+  const isExplored = explored.get(col - FELT_CENTER)?.has(row - FELT_CENTER);
+  return noWater === true && noCollision === true && isExplored === true;
 };
