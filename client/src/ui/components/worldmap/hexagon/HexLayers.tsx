@@ -270,8 +270,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const { travelToHex } = useTravel();
   const { play: playExplore } = useUiSounds(soundSelector.explore);
   const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
-  const { createHyperstructure } = useStructures();
-  const { realmEntityId } = useRealmStore();
 
   const {
     hexData,
@@ -346,7 +344,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       const pos = getPositionsAtIndex(mesh, instanceId);
       if (!pos || !hexDataRef.current || !exploredHexesRef.current) return;
 
-      const coord = getColRowFromUIPosition(pos.x, pos.y, true);
+      const coord = getColRowFromUIPosition(pos.x, pos.y, false);
       setHoveredBuildHex({
         col: coord.col,
         row: coord.row,
@@ -355,7 +353,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       if (!selectedEntityRef.current) {
         const positions = [{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }];
         if (clickedHexRef.current) {
-          console.log(clickedHexRef.current);
           positions.push({ pos: clickedHexRef.current.uiPos, color: CLICKED_HEX_COLOR });
         }
         return setHighlightPositions(positions as HighlightPosition[]);
@@ -435,10 +432,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         const pos = getPositionsAtIndex(mesh, instanceId);
         if (pos && !selectedEntityRef.current) {
           const clickedColRow = getColRowFromUIPosition(pos.x, pos.y);
-          console.log(realmEntityId);
-          if (previewBuilding) {
-            createHyperstructure(Number(realmEntityId), clickedColRow.col, clickedColRow.row);
-          }
           setClickedHex({
             contractPos: { col: clickedColRow.col, row: clickedColRow.row },
             uiPos: [pos.x, -pos.y, pos.z],
