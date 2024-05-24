@@ -7,16 +7,17 @@ import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { ViewOnMapButton } from "@/ui/components/military/ArmyManagementCard";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import useRealmStore from "@/hooks/store/useRealmStore";
 
 export const HyperStructures = ({}: any) => {
   const { hyperstructures } = useHyperstructures();
 
-  const viewOnMapButton = (entityId: any) => {
+  const extraContent = (entityId: any) => {
     // const position = getComponentValue(useDojo().setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
     const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === BigInt(entityId));
     if (!hyperstructure) return null;
     return (
-      <ViewHyperstructureOnMapButton
+      <HyperStructureExtraContent
         hyperstructureEntityId={hyperstructure.entity_id!}
         x={hyperstructure.x!}
         y={hyperstructure.y!}
@@ -28,7 +29,7 @@ export const HyperStructures = ({}: any) => {
       <EntityList
         title="Hyperstructures"
         panel={({ entity }) => <HyperstructurePanel entity={entity} />}
-        entityContent={viewOnMapButton}
+        entityContent={extraContent}
         list={hyperstructures.map((hyperstructure) => ({
           id: hyperstructure.entity_id,
           name: `Hyperstructure ${hyperstructure.entity_id}`,
@@ -39,7 +40,7 @@ export const HyperStructures = ({}: any) => {
   );
 };
 
-const ViewHyperstructureOnMapButton = ({
+const HyperStructureExtraContent = ({
   hyperstructureEntityId,
   x,
   y,
@@ -51,7 +52,7 @@ const ViewHyperstructureOnMapButton = ({
   const { useProgress } = useHyperstructures();
   const progress = useProgress(hyperstructureEntityId);
   return (
-    <div className="flex space-x-2 items-center">
+    <div className="flex space-x-10 items-center">
       <span className="text-lg font-semibold"></span>
       <ViewOnMapButton
         position={{
@@ -59,6 +60,7 @@ const ViewHyperstructureOnMapButton = ({
           y: y,
         }}
       />
+      <div>Progress: {`${progress.pourcentage}%`}</div>
     </div>
   );
 };

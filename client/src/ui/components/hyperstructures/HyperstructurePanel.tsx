@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { RESOURCE_TIERS } from "@bibliothecadao/eternum";
+import { HYPERSTRUCTURE_TOTAL_COSTS_SCALED } from "@bibliothecadao/eternum";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
 import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
@@ -15,9 +15,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
-
   const { useProgress } = useHyperstructures();
-  const progresses = useProgress(realmEntityId);
+  const progresses = useProgress(entity.entity_id);
 
   const [contributions, setContributions] = useState<Record<number, number>>({});
 
@@ -36,34 +35,28 @@ export const HyperstructurePanel = ({ entity }: any) => {
   };
 
   const resourceElements = useMemo(() => {
-    return Object.entries(RESOURCE_TIERS).map(([tier, resourceIds]) => {
-      const resources = resourceIds.map((resourceId: any) => {
-        const progress = progresses.find((progress: ProgressWithPourcentage) => progress.resource_type === resourceId);
-        return (
-          <HyperstructureResourceChip
-            setContributions={setContributions}
-            contributions={contributions}
-            progress={progress!}
-            key={resourceId}
-            resourceId={resourceId}
-          />
-        );
-      });
-
+    return HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource }) => {
+      const progress = progresses.progresses.find(
+        (progress: ProgressWithPourcentage) => progress.resource_type === resource,
+      );
       return (
-        <div className="my-4 px-3" key={tier}>
-          <div className="grid grid-cols-1 flex-wrap">{resources}</div>
-        </div>
+        <HyperstructureResourceChip
+          setContributions={setContributions}
+          contributions={contributions}
+          progress={progress!}
+          key={resource}
+          resourceId={resource}
+        />
       );
     });
-  }, [entity]);
+  }, [progresses]);
 
   return (
     <div className="flex flex-col h-[50vh] justify-between">
-      <div className="flex justify-between">
+      <div className="flex justify-between items-baseline">
         <h3>{`Hyperstructure ${entity.entity_id}`}</h3>
 
-        <div>Creator: {`${entity.owner.slice(0, 4)}...${entity.owner.slice(-4)}`}</div>
+        <div className=" align-text-bottom">Creator: {`${entity.owner.slice(0, 4)}...${entity.owner.slice(-4)}`}</div>
       </div>
       <div className="overflow-y-scroll h-[40vh] border p-2">
         <div className="">{resourceElements}</div>

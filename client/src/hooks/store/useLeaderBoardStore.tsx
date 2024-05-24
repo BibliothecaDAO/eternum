@@ -1,4 +1,4 @@
-import { getOrderName, orders } from "@bibliothecadao/eternum";
+import { getOrderName, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, orders } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { getComponentValue, HasValue } from "@dojoengine/recs";
@@ -47,6 +47,10 @@ const ResourceMultipliers: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Earthenshard]: 20.98,
 };
 
+export let TOTAL_CONTRIBUTABLE_AMOUNT: number;
+HYPERSTRUCTURE_TOTAL_COSTS_SCALED.forEach(({ resource, amount }) => {
+  TOTAL_CONTRIBUTABLE_AMOUNT += ResourceMultipliers[resource as keyof typeof ResourceMultipliers]! * amount;
+});
 
 function getResourceMultiplier(resourceType: BigInt): number {
   const resourceTypeNumber: ResourcesIds = Number(resourceType);

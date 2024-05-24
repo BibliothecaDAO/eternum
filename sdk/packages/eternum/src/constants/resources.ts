@@ -876,13 +876,6 @@ const HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: number }[] 
   { resource: ResourcesIds.Adamantine, amount: 10 },
   { resource: ResourcesIds.Mithral, amount: 10 },
   { resource: ResourcesIds.Dragonhide, amount: 10 },
-  { resource: ResourcesIds.Donkey, amount: 10 },
-  { resource: ResourcesIds.Knight, amount: 10 },
-  { resource: ResourcesIds.Crossbowmen, amount: 10 },
-  { resource: ResourcesIds.Paladin, amount: 10 },
-  { resource: ResourcesIds.Lords, amount: 10 },
-  { resource: ResourcesIds.Wheat, amount: 10 },
-  { resource: ResourcesIds.Fish, amount: 10 },
 ];
 
 const HYPERSTRUCTURE_TOTAL_COSTS: { resource: number; amount: number }[] = [

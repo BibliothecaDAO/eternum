@@ -3,7 +3,8 @@ import { useDojo } from "../context/DojoContext";
 import { Component, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { HYPERSTRUCTURE_TOTAL_COSTS_SCALED, Resource, ResourcesIds } from "@bibliothecadao/eternum";
-import { isInteger } from "lodash";
+import { toInteger } from "lodash";
+import { ResourceMultipliers, TOTAL_CONTRIBUTABLE_AMOUNT } from "../store/useLeaderBoardStore";
 
 export type Hyperstructure = ClientComponents["Structure"]["schema"] &
   ClientComponents["Progress"]["schema"][] &
@@ -17,6 +18,11 @@ export type ProgressWithPourcentage = {
   hyperstructure_entity_id: bigint;
   resource_type: number;
   amount: number;
+};
+
+export type Progress = {
+  pourcentage: number;
+  progresses: ProgressWithPourcentage[];
 };
 
 export const useHyperstructures = () => {
@@ -47,7 +53,8 @@ export const useHyperstructures = () => {
     },
   );
 
-  const useProgress = (hyperstructureEntityId: bigint): ProgressWithPourcentage[] => {
+  const useProgress = (hyperstructureEntityId: bigint): Progress => {
+    let pourcentage = 0;
     let progressQueryResult = useEntityQuery([
       Has(Progress),
       HasValue(Progress, { hyperstructure_entity_id: hyperstructureEntityId }),
@@ -55,30 +62,24 @@ export const useHyperstructures = () => {
     let progresses = progressQueryResult.map((progressEntityId) => {
       return getComponentValue(Progress, progressEntityId);
     });
-    let allProgresses = Object.keys(ResourcesIds)
-      .filter((key) => isInteger(Number(key)))
-      .map((resourceId) => {
-        let id = Number(resourceId);
-        const foundProgress = progresses.find((progress) => progress!.resource_type === id);
-        if (!foundProgress) {
-          return {
-            hyperstructure_entity_id: hyperstructureEntityId,
-            resource_type: id,
-            amount: 0,
-            pourcentage: 0,
-            costNeeded: 0,
-          };
-        }
-        const resourceCost = Object.values(HYPERSTRUCTURE_TOTAL_COSTS_SCALED).find(
-          ({ resource }) => resource === id,
-        )!.amount;
-        return {
-          pourcentage: Math.floor((foundProgress.amount / resourceCost!) * 100),
-          costNeeded: resourceCost,
-          ...foundProgress,
-        };
-      });
-    return allProgresses;
+    let allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource }) => {
+      let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
+      const resourceCost = Object.values(HYPERSTRUCTURE_TOTAL_COSTS_SCALED).find(
+        ({ resource }) => resource === resource,
+      )!.amount;
+      let progress = {
+        hyperstructure_entity_id: hyperstructureEntityId,
+        resource_type: resource,
+        amount: !foundProgress ? 0 : foundProgress.amount,
+        pourcentage: !foundProgress ? 0 : Math.floor((foundProgress.amount / resourceCost!) * 100),
+        costNeeded: resourceCost,
+      };
+      pourcentage +=
+        (progress.amount * ResourceMultipliers[progress.resource_type as keyof typeof ResourceMultipliers]!) /
+        TOTAL_CONTRIBUTABLE_AMOUNT;
+      return progress;
+    });
+    return { pourcentage: toInteger(pourcentage * 100), progresses: allProgresses };
   };
 
   return { hyperstructures, useProgress };

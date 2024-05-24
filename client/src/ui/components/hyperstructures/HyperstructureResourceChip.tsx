@@ -1,15 +1,12 @@
 import { findResourceById, getIconResourceId, HYPERSTRUCTURE_TOTAL_COSTS_SCALED } from "@bibliothecadao/eternum";
 
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat, formatTime } from "../../utils/utils";
-import { useProductionManager, useResourceBalance } from "@/hooks/helpers/useResources";
-import { useEffect, useMemo, useState } from "react";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { useEffect, useState } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
-import { isInteger } from "lodash";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { ProgressWithPourcentage, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
+import { ProgressWithPourcentage } from "@/hooks/helpers/useHyperstructures";
 
 type HyperstructureResourceChipProps = {
   resourceId: number;
