@@ -33,8 +33,6 @@ import { useNotificationsStore } from "../../../../hooks/store/useNotificationsS
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useLocation } from "wouter";
 import { HexGrid } from "../../models/biomes/HexGrid";
-import { useStructures } from "@/hooks/helpers/useStructures";
-import useRealmStore from "@/hooks/store/useRealmStore";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 

@@ -1,5 +1,4 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-// import { ModelsIndexes } from "@/ui/components/construction/ExistingBuildings";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { useGLTF } from "@react-three/drei";
