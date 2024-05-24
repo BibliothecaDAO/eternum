@@ -13,7 +13,7 @@ export const Structures = () => {
     () => [
       useGLTF("/models/buildings/castle.glb"),
       useGLTF("/models/buildings/castle.glb"),
-      useGLTF("/models/buildings/bank.glb"),
+      useGLTF("/models/buildings/hyperstructure.glb"),
       useGLTF("/models/buildings/bank.glb"),
       useGLTF("/models/buildings/mine.glb"),
       useGLTF("/models/buildings/castle.glb"),
@@ -78,9 +78,11 @@ const BuiltStructure = ({
     return model.scene.clone();
   }, [models]);
 
+  const scale = structureCategory === StructureType.Hyperstructure ? 1.5 : 3;
+
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>
-      <primitive dropShadow scale={3} object={model} />
+      <primitive dropShadow scale={scale} object={model} />
     </group>
   );
 };

@@ -11,6 +11,7 @@ export enum HexType {
   BANK = "bank",
   REALM = "realm",
   SHARDSMINE = "shardsmine",
+  HYPERSTRUCTURE = "Hyperstructure",
   EMPTY = "empty",
 }
 

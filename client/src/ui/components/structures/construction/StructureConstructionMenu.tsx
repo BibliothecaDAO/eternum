@@ -37,11 +37,11 @@ import { StructureCard } from "./StructureCard";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
-const STRUCTURE_IMAGE_PREFIX = "/images/structures/construction/";
+const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {
   [StructureType.Bank]: STRUCTURE_IMAGE_PREFIX + "mine.png",
   [StructureType.Settlement]: STRUCTURE_IMAGE_PREFIX + "mine.png",
-  [StructureType.Hyperstructure]: STRUCTURE_IMAGE_PREFIX + "mine.png",
+  [StructureType.Hyperstructure]: STRUCTURE_IMAGE_PREFIX + "hyperstructure.png",
   [StructureType.Realm]: STRUCTURE_IMAGE_PREFIX + "mine.png",
   [StructureType.ShardsMine]: STRUCTURE_IMAGE_PREFIX + "mine.png",
 };
@@ -184,15 +184,7 @@ export const StructureInfo = ({
       {perTick !== "" && (
         <div className=" flex flex-wrap">
           <div className="font-bold uppercase w-full text-xs">Produces </div>
-          <div className="flex justify-between">
-            {perTick}
-            <ResourceIcon
-              className="self-center mx-1"
-              resource={findResourceById(ResourcesIds.Dragonhide)?.trait || ""}
-              size="md"
-            />
-            {findResourceById(ResourcesIds.Dragonhide)?.trait || ""}
-          </div>
+          <div className="flex justify-between">{perTick}/per tick</div>
         </div>
       )}
 
