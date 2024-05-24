@@ -52,11 +52,13 @@ export const StructureConstructionMenu = () => {
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { realm } = useGetRealm(realmEntityId);
-
   const { getBalance } = useResourceBalance();
 
-  const buildingTypes = Object.keys(StructureType).filter((key) => isNaN(Number(key)));
+  const buildingTypes = Object.keys(StructureType)
+    .filter((key) => isNaN(Number(key)))
+    .filter(
+      (key) => key !== "None" && key !== "Realm" && key !== "ShardsMine" && key !== "Bank" && key !== "Settlement",
+    ) as string[];
 
   const checkBalance = (cost: any) =>
     Object.keys(cost).every((resourceId) => {
@@ -145,7 +147,6 @@ export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; ent
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
-          console.log(resourceId);
           const balance = getBalance(entityId || 0n, buildingCost[Number(resourceId)].resource);
           return (
             <ResourceCost

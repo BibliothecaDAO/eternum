@@ -20,28 +20,27 @@ export const StructurePreview = () => {
 
   const previewCoords = useMemo(() => {
     if (!hoveredBuildHex) return null;
-    console.log(hoveredBuildHex);
     return getUIPositionFromColRow(hoveredBuildHex.col, hoveredBuildHex.row, true);
   }, [hoveredBuildHex]);
 
-  const originalModels: OriginalModels = useMemo(
-    () => ({
-      [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb").scene.clone(),
-      [ModelsIndexes.Settlement]: useGLTF("/models/buildings/castle.glb").scene.clone(),
-      [ModelsIndexes.Hyperstructure]: useGLTF("/models/buildings/bank.glb").scene.clone(),
-    }),
+  const models = useMemo(
+    () => [
+      useGLTF("/models/buildings/castle.glb").scene.clone(),
+      useGLTF("/models/buildings/castle.glb").scene.clone(),
+      useGLTF("/models/buildings/bank.glb").scene.clone(),
+      useGLTF("/models/buildings/bank.glb").scene.clone(),
+      useGLTF("/models/buildings/mine.glb").scene.clone(),
+      useGLTF("/models/buildings/castle.glb").scene.clone(),
+    ],
     [],
   );
 
-  const modelIndex = useMemo(() => {
-    let structureType = previewBuilding ? previewBuilding.type : 1;
-    return structureTypeToModelsIndex(structureType);
-  }, [previewBuilding]);
+  let structureType = previewBuilding ? previewBuilding.type : 1;
 
   useEffect(() => {
     if (!hoveredBuildHex) return;
     const newColor = isHexOccupied(hoveredBuildHex.col, hoveredBuildHex.row, existingStructures) ? "red" : "green";
-    originalModels[modelIndex].traverse((node) => {
+    models[structureType].traverse((node) => {
       if (node instanceof THREE.Mesh) {
         node.material = node.material.clone();
         node.material.color.set(newColor);
@@ -49,12 +48,12 @@ export const StructurePreview = () => {
         node.material.opacity = 0.8;
       }
     });
-  }, [modelIndex, hoveredBuildHex, existingStructures, originalModels]);
+  }, [hoveredBuildHex, existingStructures, models]);
 
   const previewModel = useMemo(() => {
     if (!previewBuilding) return null;
-    return originalModels[modelIndex];
-  }, [modelIndex, originalModels, previewBuilding]);
+    return models[structureType];
+  }, [structureType, models, previewBuilding]);
 
   return previewModel && previewCoords ? (
     <>
@@ -63,4 +62,11 @@ export const StructurePreview = () => {
       </group>
     </>
   ) : null;
+};
+
+export const canPlaceStructure = (col: number, row: number, structures: any[], explored: any[]) => {
+  return (
+    !structures.some((building) => building.col === col && building.row === row) &&
+    explored.some((hex) => hex.col === col && hex.row === row)
+  );
 };
