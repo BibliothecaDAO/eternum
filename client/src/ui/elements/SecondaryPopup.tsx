@@ -112,6 +112,12 @@ SecondaryPopup.Head = ({
       " items-center relative cursor-move z-30 p-2 rounded-t  w-full whitespace-nowrap handle flex justify-between bg-brown  hover:bg-brown backdrop-blur-lg border-gradient border-y-2",
       className,
     )}
+    onKeyDown={(e) => {
+      if (e.key === "Escape") {
+        onClose?.();
+      }
+    }}
+    tabIndex={0}
   >
     <h5>{children}</h5>
 
