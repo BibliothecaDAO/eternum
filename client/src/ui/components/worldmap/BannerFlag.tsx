@@ -32,8 +32,6 @@ export function BannerFlag(props: any) {
 
   const positionAttribute = useMemo(() => {
     if (nodes.Plane008 && nodes.Plane008.geometry) {
-      console.log(materials);
-
       return nodes.Plane008.geometry.getAttribute("position");
     }
     return null;
