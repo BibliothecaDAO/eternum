@@ -11,8 +11,13 @@ import { placeholderMaterial } from "@/shaders/placeholderMaterial";
 import { Text, useGLTF } from "@react-three/drei";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
 
+const HEXCEPTION_CENTER = { col: 10, row: 10 };
+
 export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
-  return buildings.some((building) => building.col === col && building.row === row) || (col === 4 && row === 4);
+  return (
+    buildings.some((building) => building.col === col && building.row === row) ||
+    (col === HEXCEPTION_CENTER.col && row === HEXCEPTION_CENTER.row)
+  );
 };
 
 const GroundGrid = () => {
@@ -153,7 +158,7 @@ const EmptyCell = ({ position }: { position: any }) => {
 
 export const generateHexPositions = () => {
   const color = new THREE.Color("gray");
-  const center = { col: 10, row: 10 };
+  const center = HEXCEPTION_CENTER;
   const RADIUS = 4;
   const positions: any[] = [];
   const positionSet = new Set(); // To track existing positions

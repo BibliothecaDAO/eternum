@@ -26,7 +26,7 @@ interface Props {
 }
 
 const maxMapDistance = 1000;
-const maxHexceptionDistance = 150;
+const maxHexceptionDistance = 110;
 const minDistance = 50;
 const maxPolarAngle = Math.PI / 3;
 const minPolarAngle = 0;
