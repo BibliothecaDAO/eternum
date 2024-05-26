@@ -80,17 +80,20 @@ export const useSetExistingStructures = () => {
   const builtStructures = useEntityQuery([Has(setup.components.Structure)]);
 
   useMemo(() => {
-    const _tmp = builtStructures.map((entity) => {
-      const position = getComponentValue(setup.components.Position, entity);
-      const structure = getComponentValue(setup.components.Structure, entity);
-      const type = StructureType[structure!.category as keyof typeof StructureType];
-      return {
-        col: position!.x,
-        row: position!.y,
-        type: type as StructureType,
-        entity: entity,
-      };
-    });
+    const _tmp = builtStructures
+      .map((entity) => {
+        const position = getComponentValue(setup.components.Position, entity);
+        const structure = getComponentValue(setup.components.Structure, entity);
+        const type = StructureType[structure!.category as keyof typeof StructureType];
+        if (!position || !structure) return null;
+        return {
+          col: position.x,
+          row: position.y,
+          type: type as StructureType,
+          entity: entity,
+        };
+      })
+      .filter(Boolean) as { col: number; row: number; type: StructureType }[];
 
     setExistingStructures(_tmp);
   }, [builtStructures.length]);
