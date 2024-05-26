@@ -280,13 +280,6 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
                   onChange={(amount) => handleTroopCountChange(troop.name, amount)}
                 />
               </div>
-              <NumberInput
-                className=""
-                max={divideByPrecision(getBalance(owner_entity, troop.name).balance)}
-                min={0}
-                value={troopCounts[troop.name]}
-                onChange={(amount) => handleTroopCountChange(troop.name, amount)}
-              />
             </div>
           );
         })}

@@ -30,8 +30,7 @@ export const NumberInput = ({ value, onChange, className, step = 1, max = 0, min
       <input
         type="number"
         min={min}
-        max={max}
-        className=" w-16  appearance-none !outline-none h-full text-center bg-transparent text-gold"
+        className=" w-16  appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
         value={value}
         onChange={(e) => {
           if (parseInt(e.target.value) <= max && parseInt(e.target.value) >= min) {
