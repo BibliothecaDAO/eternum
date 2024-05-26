@@ -1,5 +1,10 @@
 import { HyperStructureInterface, Position, StructureType } from "@bibliothecadao/eternum";
 import { ClickedHex, Hexagon, HighlightPosition } from "../../types";
+import { Has, getComponentValue } from "@dojoengine/recs";
+import { useDojo } from "../context/DojoContext";
+import { useMemo } from "react";
+import { useEntityQuery } from "@dojoengine/react";
+import useUIStore from "./useUIStore";
 
 export interface MapStore {
   worldMapBuilding: StructureType | null;
@@ -67,3 +72,26 @@ export const createMapStoreSlice = (set: any) => ({
   setExistingStructures: (existingStructures: { col: number; row: number; type: StructureType }[]) =>
     set({ existingStructures }),
 });
+
+export const useSetExistingStructures = () => {
+  const { setup } = useDojo();
+
+  const setExistingStructures = useUIStore((state) => state.setExistingStructures);
+  const builtStructures = useEntityQuery([Has(setup.components.Structure)]);
+
+  useMemo(() => {
+    const _tmp = builtStructures.map((entity) => {
+      const position = getComponentValue(setup.components.Position, entity);
+      const structure = getComponentValue(setup.components.Structure, entity);
+      const type = StructureType[structure!.category as keyof typeof StructureType];
+      return {
+        col: position!.x,
+        row: position!.y,
+        type: type as StructureType,
+        entity: entity,
+      };
+    });
+
+    setExistingStructures(_tmp);
+  }, [builtStructures.length]);
+};
