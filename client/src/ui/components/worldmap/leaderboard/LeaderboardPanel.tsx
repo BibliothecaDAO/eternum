@@ -1,17 +1,9 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
-import { useComputePointsLeaderboards } from "../../../../hooks/store/useLeaderBoardStore";
-import { OrdersLeaderboard } from "./OrdersLeaderboard";
-import { ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { PlayersLeaderboard } from "./PlayersLeaderboard";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-
-// const LEADERBOARD_RESOURCE_TYPE = ResourcesIds.Earthenshard;
 
 export const LeaderboardPanel = () => {
   const [selectedTab, setSelectedTab] = useState(0);
-
-  useComputePointsLeaderboards();
 
   const tabs = useMemo(
     () => [

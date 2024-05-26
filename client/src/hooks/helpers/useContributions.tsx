@@ -1,6 +1,5 @@
-import { useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../context/DojoContext";
-import { Component, Entity, HasValue, getComponentValue } from "@dojoengine/recs";
+import { Component, Entity, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { ClientComponents } from "@/dojo/createClientComponents";
 
 export type Contribution = ClientComponents["Contribution"]["schema"];
@@ -15,23 +14,23 @@ const formatContributions = (contributions: Entity[], Contribution: Component): 
   });
 };
 
-export const useContributions = (hyperstructureEntityId: bigint) => {
+export const useContributions = () => {
   const {
     setup: {
-      components: {
-        Contribution,
-      },
+      components: { Contribution },
     },
   } = useDojo();
 
-  const contributionsToHyperstructure = useEntityQuery([HasValue(Contribution, { hyperstructure_entity_id: hyperstructureEntityId })]);
+  const getContributions = (hyperstructureEntityId: bigint) => {
+    const contributionsToHyperstructure = Array.from(
+      runQuery([HasValue(Contribution, { hyperstructure_entity_id: hyperstructureEntityId })]),
+    );
+
+    return formatContributions(contributionsToHyperstructure, Contribution);
+  };
 
   return {
-    contributionsToHyperstructure: () =>
-        formatContributions(
-            contributionsToHyperstructure,
-            Contribution,
-      ),
+    getContributions,
   };
 };
 

@@ -4,11 +4,13 @@ import { useComputeMarket } from "../../hooks/store/useMarketStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Hexagon } from "@/types";
 import { useSetExistingStructures } from "@/hooks/store/_mapStore";
+import { useComputePointsLeaderboards } from "@/hooks/store/useLeaderBoardStore";
 
 export const HooksComponent = () => {
   useFetchBlockchainData();
   useComputeMarket();
   useSetExistingStructures();
+  useComputePointsLeaderboards();
 
   const setHexData = useUIStore((state) => state.setHexData);
 

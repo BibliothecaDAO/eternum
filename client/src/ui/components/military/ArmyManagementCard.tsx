@@ -1,4 +1,4 @@
-import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
@@ -259,14 +259,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
               </div>
               <NumberInput
                 className=""
-                max={Number(
-                  currencyFormat(
-                    getBalance(owner_entity, troop.name).balance
-                      ? Number(getBalance(owner_entity, troop.name).balance)
-                      : 0,
-                    2,
-                  ),
-                )}
+                max={divideByPrecision(getBalance(owner_entity, troop.name).balance)}
                 min={0}
                 value={troopCounts[troop.name]}
                 onChange={(amount) => handleTroopCountChange(troop.name, amount)}
