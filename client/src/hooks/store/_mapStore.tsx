@@ -69,7 +69,7 @@ export const createMapStoreSlice = (set: any) => ({
     });
   },
   existingStructures: [],
-  setExistingStructures: (existingStructures: { col: number; row: number; type: StructureType }[]) =>
+  setExistingStructures: (existingStructures: { col: number; row: number; type: StructureType; entityId: number }[]) =>
     set({ existingStructures }),
 });
 
@@ -91,9 +91,10 @@ export const useSetExistingStructures = () => {
           row: position.y,
           type: type as StructureType,
           entity: entity,
+          entityId: Number(structure.entity_id),
         };
       })
-      .filter(Boolean) as { col: number; row: number; type: StructureType }[];
+      .filter(Boolean) as { col: number; row: number; type: StructureType; entityId: number }[];
 
     setExistingStructures(_tmp);
   }, [builtStructures.length]);

@@ -1,19 +1,12 @@
-import { useDojo } from "@/hooks/context/DojoContext";
-import { hyperstructures } from "../../components/navigation/Config";
 import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
 import { EntityList } from "@/ui/components/list/EntityList";
-import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has, HasValue } from "@dojoengine/recs";
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { ViewOnMapButton } from "@/ui/components/military/ArmyManagementCard";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import useRealmStore from "@/hooks/store/useRealmStore";
 
 export const HyperStructures = ({}: any) => {
   const { hyperstructures } = useHyperstructures();
 
   const extraContent = (entityId: any) => {
-    // const position = getComponentValue(useDojo().setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
     const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === BigInt(entityId));
     if (!hyperstructure) return null;
     return (

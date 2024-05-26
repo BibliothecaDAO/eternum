@@ -87,7 +87,6 @@ export function useRealm() {
 
   const getAddressOrder = (address: string) => {
     const ownedRealms = runQuery([Has(Realm), HasValue(Owner, { address: BigInt(address) })]);
-    console.log({ ownedRealms });
     if (ownedRealms.size > 0) {
       const realm = getComponentValue(Realm, ownedRealms.values().next().value);
       return realm?.order;

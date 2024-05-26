@@ -8,9 +8,9 @@ export interface HyperstructureEventInterface {
   timestamp: number;
 }
 
-export async function getHyperstructureEvents() {
+export async function getHyperstructureEvents(): Promise<HyperstructureEventInterface[]> {
   const query = `
-    query GetBankEvents {
+    query getHyperstructureEvents {
       events(keys: ["${HYPERSTRUCTURE_FINISHED_EVENT}"], last: ${MAX_EVENTS}) {
         edges {
           node {
@@ -32,7 +32,7 @@ export async function getHyperstructureEvents() {
   });
 }
 
-function parseHyperstructureFinishedEventData(eventData: Event) {
+export function parseHyperstructureFinishedEventData(eventData: Event): HyperstructureEventInterface {
   const [hyperstructureEntityId, timestamp] = eventData.data;
 
   return {

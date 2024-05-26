@@ -1,4 +1,4 @@
-import { findResourceById, getIconResourceId, HYPERSTRUCTURE_TOTAL_COSTS_SCALED } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
 
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
@@ -7,6 +7,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { ProgressWithPourcentage } from "@/hooks/helpers/useHyperstructures";
+import { currencyIntlFormat } from "@/ui/utils/utils";
 
 type HyperstructureResourceChipProps = {
   resourceId: number;
@@ -27,6 +28,10 @@ export const HyperstructureResourceChip = ({
 
   const { getBalance } = useResourceBalance();
 
+  const maxContributableAmount = Math.min(
+    progress.costNeeded! - progress.amount,
+    getBalance(realmEntityId, resourceId).balance,
+  );
   useEffect(() => {
     let contributionsCopy = Object.assign({}, contributions);
     if (inputValue === 0 || isNaN(inputValue)) {
@@ -38,7 +43,7 @@ export const HyperstructureResourceChip = ({
   }, [inputValue]);
 
   return (
-    <div className="flex mt-1 ">
+    <div className="flex mt-1">
       <div
         className={`flex relative group items-center text-xs px-2 p-1 border rounded-xl w-3/4`}
         style={{
@@ -73,17 +78,21 @@ export const HyperstructureResourceChip = ({
         />
 
         <div className="flex justify-between w-full">
-          <div className=" self-center text-sm font-bold">{`${progress.pourcentage}% (${progress.amount} / ${progress.costNeeded})`}</div>
+          <div className=" self-center text-sm font-bold">{`${progress.pourcentage}% (${currencyIntlFormat(
+            progress.amount,
+          )} / ${currencyIntlFormat(progress.costNeeded)})`}</div>
         </div>
       </div>
-      {progress.pourcentage != 100 && (
-        <NumberInput
-          value={inputValue}
-          className="rounded-xl ml-3"
-          onChange={setInputValue}
-          max={Math.min(progress.costNeeded! - progress.amount, getBalance(realmEntityId, resourceId).balance)}
-        />
-      )}
+
+      <NumberInput
+        value={inputValue}
+        className="rounded-xl ml-3"
+        onChange={setInputValue}
+        max={maxContributableAmount}
+      />
+      <div className="ml-2 pt-2" onClick={() => setInputValue(maxContributableAmount)}>
+        MAX
+      </div>
     </div>
   );
 };

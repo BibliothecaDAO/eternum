@@ -1,22 +1,20 @@
-import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED, getOrderName } from "@bibliothecadao/eternum";
+import {
+  EternumGlobalConfig,
+  HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  getOrderName,
+} from "@bibliothecadao/eternum";
 import { create } from "zustand";
-
+import { HyperstructureEventInterface } from "@/dojo/events/hyperstructureEventQueries";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { useContributions } from "../helpers/useContributions";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { getHyperstructureEvents } from "@/dojo/events/hyperstructureEventQueries";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useRealm } from "../helpers/useRealm";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 
-// Define elsewhere
-const PTS_PER_CYCLE = 100;
-
-// Computed based on qty of 10 of each resource for hyperstructure building
-const TOTAL_EFFECTIVE_CONTRIBUTION = 8209.1;
-
-// fix ?
 export const ResourceMultipliers: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Wood]: 1.0,
   [ResourcesIds.Stone]: 1.27,
@@ -43,7 +41,7 @@ export const ResourceMultipliers: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Earthenshard]: 20.98,
 };
 
-export let TOTAL_CONTRIBUTABLE_AMOUNT: number;
+export let TOTAL_CONTRIBUTABLE_AMOUNT: number = 0;
 HYPERSTRUCTURE_TOTAL_COSTS_SCALED.forEach(({ resource, amount }) => {
   TOTAL_CONTRIBUTABLE_AMOUNT += ResourceMultipliers[resource as keyof typeof ResourceMultipliers]! * amount;
 });
@@ -53,9 +51,9 @@ function getResourceMultiplier(resourceType: BigInt): number {
   return ResourceMultipliers[resourceTypeNumber] ?? 0;
 }
 
-function computeContributionPoints(totalPoints: number, qty: number, type: BigInt) {
-  const effectiveContribution = qty * getResourceMultiplier(type);
-  const points = (effectiveContribution / TOTAL_EFFECTIVE_CONTRIBUTION) * totalPoints;
+export function computeContributionPoints(totalPoints: number, qty: number, resourceType: BigInt): number {
+  const effectiveContribution = qty * getResourceMultiplier(resourceType);
+  const points = (effectiveContribution / TOTAL_CONTRIBUTABLE_AMOUNT) * totalPoints;
   return points;
 }
 
@@ -72,6 +70,8 @@ interface LeaderboardStore {
   setLoading: (loading: boolean) => void;
   playerPointsLeaderboard: PlayerPointsLeaderboardInterface[];
   setPointsLeaderboards: (playerPointsLeaderboard: PlayerPointsLeaderboardInterface[]) => void;
+  finishedHyperstructures: HyperstructureEventInterface[];
+  setFinishedHyperstructures: (val: HyperstructureEventInterface[]) => void;
 }
 
 const useLeaderBoardStore = create<LeaderboardStore>((set) => {
@@ -81,15 +81,20 @@ const useLeaderBoardStore = create<LeaderboardStore>((set) => {
     setPointsLeaderboards: (playerPointsLeaderboard: PlayerPointsLeaderboardInterface[]) =>
       set({ playerPointsLeaderboard: playerPointsLeaderboard }),
     setLoading: (loading) => set({ loading }),
+    finishedHyperstructures: [],
+    setFinishedHyperstructures: (val: HyperstructureEventInterface[]) => set({ finishedHyperstructures: val }),
   };
 });
 
 export const useComputePointsLeaderboards = () => {
   const setPointsLeaderboards = useLeaderBoardStore((state) => state.setPointsLeaderboards);
-  const [computed, setComputed] = useState(false);
+  const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
+  const setFinishedHyperstructures = useLeaderBoardStore((state) => state.setFinishedHyperstructures);
   const { getContributions } = useContributions();
   const { getAddressName, getAddressOrder } = useRealm();
-  const account = useDojo().account.account;
+  const {
+    account: { account },
+  } = useDojo();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
@@ -104,19 +109,18 @@ export const useComputePointsLeaderboards = () => {
       const nbOfCycles = Math.floor(
         (currentTimestamp - finishedTimestamp) / EternumGlobalConfig.tick.tickIntervalInSeconds,
       );
-      let totalHyperstructurePoints = PTS_PER_CYCLE * nbOfCycles;
+      let totalHyperstructurePoints = HYPERSTRUCTURE_POINTS_PER_CYCLE * nbOfCycles;
 
       let tempPlayerPointsLeaderboard: PlayerPointsLeaderboardInterface[] = [];
 
       contributions.forEach((contribution) => {
-        const playerAddress: string = "0x" + contribution.player_address.toString(16);
+        const playerAddress: string = "0x" + contribution!.player_address.toString(16);
         const index = tempPlayerPointsLeaderboard.findIndex((player) => player.address === playerAddress);
-
         if (index >= 0) {
           tempPlayerPointsLeaderboard[index].totalPoints += computeContributionPoints(
             totalHyperstructurePoints,
-            Number(contribution.amount),
-            BigInt(contribution.resource_type),
+            Number(contribution!.amount),
+            BigInt(contribution!.resource_type),
           );
         } else {
           tempPlayerPointsLeaderboard.push({
@@ -125,8 +129,8 @@ export const useComputePointsLeaderboards = () => {
             order: getOrderName(getAddressOrder(playerAddress) || 1),
             totalPoints: computeContributionPoints(
               totalHyperstructurePoints,
-              Number(contribution.amount),
-              BigInt(contribution.resource_type),
+              Number(contribution!.amount),
+              BigInt(contribution!.resource_type),
             ),
             isYours: playerAddress === account.address,
           });
@@ -138,7 +142,7 @@ export const useComputePointsLeaderboards = () => {
   );
 
   useEffect(() => {
-    if (!nextBlockTimestamp || computed) return;
+    if (!nextBlockTimestamp) return;
 
     getHyperstructureEvents().then((events) => {
       let _tmpPlayerPointsLeaderboard;
@@ -147,9 +151,9 @@ export const useComputePointsLeaderboards = () => {
         _tmpPlayerPointsLeaderboard = updatePointsLeaderboard(hyperstructureEntityId, timestamp, nextBlockTimestamp);
       });
       _tmpPlayerPointsLeaderboard && setPointsLeaderboards(_tmpPlayerPointsLeaderboard);
-      setComputed(true);
+      setFinishedHyperstructures(events);
     });
-  }, [nextBlockTimestamp]);
+  }, [finishedHyperstructures.length]);
 };
 
 export default useLeaderBoardStore;
