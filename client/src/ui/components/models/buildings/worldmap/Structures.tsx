@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { StructureType } from "@bibliothecadao/eternum";
 import useUIStore from "@/hooks/store/useUIStore";
-import { getHyperstructureEvents, HyperstructureEventInterface } from "@/dojo/events/hyperstructureEventQueries";
+import { HyperstructureEventInterface } from "@/dojo/events/hyperstructureEventQueries";
 import useLeaderBoardStore from "@/hooks/store/useLeaderBoardStore";
 
 export const Structures = () => {
@@ -37,20 +37,13 @@ const BuiltStructure = ({
   structureCategory: number;
   rotation?: THREE.Euler;
 }) => {
+  const [model, setModel] = useState(models[0].scene.clone());
   const { x, y } = getUIPositionFromColRow(structure.col, structure.row, false);
   const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
 
-  const model = useMemo(() => {
+  useEffect(() => {
     let category = structureCategory;
-    if (structureCategory === StructureType.Hyperstructure) {
-      category = finishedHyperstructures.some((evt: HyperstructureEventInterface) => {
-        return evt.hyperstructureEntityId == structure.entityId;
-      })
-        ? structureCategory
-        : 0;
-    }
     let model = models[category];
-    if (!model) return new THREE.Mesh();
     model.scene.traverse((child: any) => {
       if (child.isMesh) {
         child.castShadow = true;
@@ -59,14 +52,33 @@ const BuiltStructure = ({
         child.material.opacity = 1; // Adjust opacity level as needed
       }
     });
-    return model.scene.clone();
-  }, [models]);
+
+    setModel(model.scene.clone());
+
+    if (structureCategory === StructureType.Hyperstructure) {
+      category = finishedHyperstructures.some((evt: HyperstructureEventInterface) => {
+        return evt.hyperstructureEntityId == structure.entityId;
+      })
+        ? structureCategory
+        : 0;
+      let model = models[category];
+      model.scene.traverse((child: any) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.material = child.material.clone();
+          child.material.transparent = false;
+          child.material.opacity = 1; // Adjust opacity level as needed
+        }
+      });
+      setModel(model.scene.clone());
+    }
+  }, [models, finishedHyperstructures]);
 
   const scale = structureCategory === StructureType.Hyperstructure ? 1.5 : 3;
 
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>
-      <primitive dropShadow scale={scale} object={model} />
+      <primitive dropShadow scale={scale} object={model!} />
     </group>
   );
 };

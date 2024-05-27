@@ -57,6 +57,14 @@ export function computeContributionPoints(totalPoints: number, qty: number, reso
   return points;
 }
 
+export const calculateShares = (contributions: any[]) => {
+  let points = 0;
+  contributions.forEach((contribution) => {
+    points += computeContributionPoints(1, Number(contribution.amount), BigInt(contribution.resource_type));
+  });
+  return points;
+};
+
 export interface PlayerPointsLeaderboardInterface {
   address: string;
   addressName: string;
@@ -88,10 +96,9 @@ const useLeaderBoardStore = create<LeaderboardStore>((set) => {
 
 export const useComputePointsLeaderboards = () => {
   const setPointsLeaderboards = useLeaderBoardStore((state) => state.setPointsLeaderboards);
-  const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
-  const setFinishedHyperstructures = useLeaderBoardStore((state) => state.setFinishedHyperstructures);
   const { getContributions } = useContributions();
   const { getAddressName, getAddressOrder } = useRealm();
+
   const {
     account: { account },
   } = useDojo();
@@ -111,32 +118,13 @@ export const useComputePointsLeaderboards = () => {
       );
       let totalHyperstructurePoints = HYPERSTRUCTURE_POINTS_PER_CYCLE * nbOfCycles;
 
-      let tempPlayerPointsLeaderboard: PlayerPointsLeaderboardInterface[] = [];
-
-      contributions.forEach((contribution) => {
-        const playerAddress: string = "0x" + contribution!.player_address.toString(16);
-        const index = tempPlayerPointsLeaderboard.findIndex((player) => player.address === playerAddress);
-        if (index >= 0) {
-          tempPlayerPointsLeaderboard[index].totalPoints += computeContributionPoints(
-            totalHyperstructurePoints,
-            Number(contribution!.amount),
-            BigInt(contribution!.resource_type),
-          );
-        } else {
-          tempPlayerPointsLeaderboard.push({
-            address: playerAddress,
-            addressName: getAddressName(playerAddress) || displayAddress(playerAddress),
-            order: getOrderName(getAddressOrder(playerAddress) || 1),
-            totalPoints: computeContributionPoints(
-              totalHyperstructurePoints,
-              Number(contribution!.amount),
-              BigInt(contribution!.resource_type),
-            ),
-            isYours: playerAddress === account.address,
-          });
-        }
-      });
-      return tempPlayerPointsLeaderboard;
+      return computeHyperstructureLeaderboard(
+        contributions,
+        totalHyperstructurePoints,
+        account,
+        getAddressName,
+        getAddressOrder,
+      );
     },
     [getContributions],
   );
@@ -151,9 +139,42 @@ export const useComputePointsLeaderboards = () => {
         _tmpPlayerPointsLeaderboard = updatePointsLeaderboard(hyperstructureEntityId, timestamp, nextBlockTimestamp);
       });
       _tmpPlayerPointsLeaderboard && setPointsLeaderboards(_tmpPlayerPointsLeaderboard);
-      setFinishedHyperstructures(events);
     });
-  }, [finishedHyperstructures.length]);
+  }, [nextBlockTimestamp]);
 };
 
 export default useLeaderBoardStore;
+
+export const computeHyperstructureLeaderboard = (
+  contributions: any[],
+  totalHyperstructurePoints: number,
+  account: any,
+  getAddressName: any,
+  getAddressOrder: any,
+): PlayerPointsLeaderboardInterface[] => {
+  let tempPlayerPointsLeaderboard: PlayerPointsLeaderboardInterface[] = [];
+  contributions.forEach((contribution) => {
+    const playerAddress: string = "0x" + contribution!.player_address.toString(16);
+    const index = tempPlayerPointsLeaderboard.findIndex((player) => player.address === playerAddress);
+    if (index >= 0) {
+      tempPlayerPointsLeaderboard[index].totalPoints += computeContributionPoints(
+        totalHyperstructurePoints,
+        Number(contribution!.amount),
+        BigInt(contribution!.resource_type),
+      );
+    } else {
+      tempPlayerPointsLeaderboard.push({
+        address: playerAddress,
+        addressName: getAddressName(playerAddress) || displayAddress(playerAddress),
+        order: getOrderName(getAddressOrder(playerAddress) || 1),
+        totalPoints: computeContributionPoints(
+          totalHyperstructurePoints,
+          Number(contribution!.amount),
+          BigInt(contribution!.resource_type),
+        ),
+        isYours: playerAddress === account.address,
+      });
+    }
+  });
+  return tempPlayerPointsLeaderboard;
+};
