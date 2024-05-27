@@ -38,7 +38,9 @@ export const HexceptionViewScene = () => {
           <BuildArea />
         </group>
         <ExistingBuildings />
-        <group visible={!canConstruct}>{mainHex && <BigHexBiome biome={mainHex.biome as any} />}</group>
+        <group visible={!canConstruct}>
+          {mainHex && <BigHexBiome biome={mainHex.biome as any} flat={hexType !== HexType.EMPTY} />}
+        </group>
       </group>
       {neighborHexesInsideView && (
         <group>
@@ -49,7 +51,7 @@ export const HexceptionViewScene = () => {
               return (
                 hex?.biome && (
                   <group key={index} position={[position.x, 0, -position.y]} rotation={[0, 0, 0]}>
-                    <BigHexBiome biome={hex.biome as any} />
+                    <BigHexBiome biome={hex.biome as any} flat={false} />
                   </group>
                 )
               );
