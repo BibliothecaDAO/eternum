@@ -20,6 +20,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { BASE_POPULATION_CAPACITY, BuildingType, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
+import { debounce } from "lodash";
 
 enum View {
   ResourceTable,
@@ -61,12 +62,21 @@ export const RightNavigationModule = () => {
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
   }, []);
 
+  const debouncedSetIsOffscreen = debounce(() => {
+    setIsOffscreen(true);
+  }, 1500);
+
   return (
     <>
       <div
         className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] text-gold right-4 self-center pointer-events-auto ${
           isOffscreen ? "translate-x-[83%]" : ""
         }`}
+        onPointerEnter={() => {
+          debouncedSetIsOffscreen.cancel();
+          setIsOffscreen(false);
+        }}
+        onPointerLeave={debouncedSetIsOffscreen}
       >
         <div className="gap-2 flex flex-col justify-center self-center">
           <div>
