@@ -5,8 +5,7 @@ import * as THREE from "three";
 import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow } from "../../utils/utils";
 import { useEffect, useMemo } from "react";
 import { ExistingBuildings, ModelsIndexes } from "./ExistingBuildings";
-import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
-import { BuildingEnumToString, BuildingType } from "@bibliothecadao/eternum";
+import { BuildingType } from "@bibliothecadao/eternum";
 
 export interface OriginalModels {
   [key: number | string]: THREE.Group;
@@ -17,6 +16,7 @@ const BuildArea = () => {
     <group>
       <BuildingPreview />
       <GroundGrid />
+      <ExistingBuildings />
     </group>
   );
 };

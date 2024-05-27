@@ -4,7 +4,6 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow } from "@/ui/utils/utils";
 import {
-  BuildingEnumToString,
   BuildingStringToEnum,
   BuildingType,
   MAX_BUILDING_TYPE,
@@ -63,7 +62,6 @@ export const ExistingBuildings = () => {
 
   const models = useMemo(
     () => ({
-      [ModelsIndexes.Castle]: useGLTF("/models/buildings/castle.glb"),
       [ModelsIndexes.Farm]: useGLTF("/models/buildings/farm.glb"),
       [ModelsIndexes.Fishery]: useGLTF("/models/buildings/fishery.glb"),
       [ModelsIndexes.Barracks]: useGLTF("/models/buildings/barracks.glb"),
@@ -72,9 +70,6 @@ export const ExistingBuildings = () => {
       [ModelsIndexes.Stable]: useGLTF("/models/buildings/stable.glb"),
       [ModelsIndexes.WorkersHut]: useGLTF("/models/buildings/workers_hut.glb"),
       [ModelsIndexes.Storehouse]: useGLTF("/models/buildings/storehouse.glb"),
-      [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb"),
-      [ModelsIndexes.ShardsMine]: useGLTF("/models/buildings/mine.glb"),
-      [ModelsIndexes.Hyperstructure]: useGLTF("/models/buildings/hyperstructure.glb"),
       [ResourceMiningTypes.Forge]: useGLTF("/models/buildings/forge.glb"),
       [ResourceMiningTypes.Mine]: useGLTF("/models/buildings/mine.glb"),
       [ResourceMiningTypes.LumberMill]: useGLTF("/models/buildings/lumber_mill.glb"),
@@ -86,7 +81,6 @@ export const ExistingBuildings = () => {
     Has(Building),
     HasValue(Building, { outer_col: BigInt(globalHex.col), outer_row: BigInt(globalHex.row) }),
     NotValue(Building, { entity_id: 0n }),
-    NotValue(Building, { produced_resource_type: ResourcesIds.Earthenshard }),
   ]);
 
   useEffect(() => {
@@ -107,23 +101,6 @@ export const ExistingBuildings = () => {
     setExistingBuildings(_tmp);
   }, [builtBuildings]);
 
-  const { x, y } = getUIPositionFromColRow(10, 10, true);
-
-  const { sLightPosition, sLightIntensity, power } = useControls("Spot Light", {
-    sLightPosition: { value: { x, y: 12, z: -y }, label: "Position" },
-    sLightIntensity: { value: 75, min: 0, max: 100, step: 0.01 },
-    power: { value: 2000, min: 0, max: 10000, step: 1 },
-  });
-
-  const middleBuidingCategory =
-    hexType === HexType.BANK
-      ? ModelsIndexes.Bank
-      : hexType === HexType.SHARDSMINE
-      ? ModelsIndexes.ShardsMine
-      : hexType === HexType.HYPERSTRUCTURE
-      ? ModelsIndexes.Hyperstructure
-      : BuildingType.Castle;
-
   return (
     <>
       {existingBuildings.map((building, index) => (
@@ -135,30 +112,73 @@ export const ExistingBuildings = () => {
           resource={building.resource}
         />
       ))}
-      {hexType !== HexType.EMPTY && (
-        <group>
-          <BuiltBuilding
-            models={models}
-            buildingCategory={middleBuidingCategory}
-            position={{ col: 10, row: 10 }}
-            rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
-          />
-          <pointLight
-            ref={sLightRef}
-            position={[sLightPosition.x, sLightPosition.y, sLightPosition.z]}
-            color="#fff"
-            intensity={sLightIntensity}
-            power={power}
-          />
-        </group>
-      )}
       {hexType === HexType.REALM && (
-        <group position={[x - 1.65, 3.5, -y]}>
+        <group
+          position={[getUIPositionFromColRow(10, 10, true).x - 1.65, 3.5, -getUIPositionFromColRow(10, 10, true).y]}
+        >
           <BannerFlag />
         </group>
       )}
     </>
   );
+};
+
+export const MiddleBuilding = ({ hexType }: { hexType: HexType }) => {
+  const models = useMemo(
+    () => ({
+      [ModelsIndexes.Castle]: useGLTF("/models/buildings/castle.glb"),
+      [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb"),
+      [ModelsIndexes.ShardsMine]: useGLTF("/models/buildings/mine.glb"),
+      [ModelsIndexes.Hyperstructure]: useGLTF("/models/buildings/hyperstructure.glb"),
+    }),
+    [],
+  );
+
+  const { x, y } = getUIPositionFromColRow(10, 10, true);
+  const sLightRef = useRef<any>();
+  const { sLightPosition, sLightIntensity, power } = useControls("Spot Light", {
+    sLightPosition: { value: { x, y: 12, z: -y }, label: "Position" },
+    sLightIntensity: { value: 75, min: 0, max: 100, step: 0.01 },
+    power: { value: 2000, min: 0, max: 10000, step: 1 },
+  });
+
+  const modelIndex =
+    hexType === HexType.BANK
+      ? ModelsIndexes.Bank
+      : hexType === HexType.SHARDSMINE
+      ? ModelsIndexes.ShardsMine
+      : hexType === HexType.HYPERSTRUCTURE
+      ? ModelsIndexes.Hyperstructure
+      : ModelsIndexes.Castle;
+
+  const modelZOffsets = {
+    [HexType.BANK]: 0.2,
+    [HexType.SHARDSMINE]: 0.2,
+    [HexType.HYPERSTRUCTURE]: 0.4,
+    [HexType.REALM]: 0,
+  };
+
+  if (hexType !== HexType.EMPTY) {
+    return (
+      <group position={[0, modelZOffsets[hexType], 0]}>
+        <BuiltBuilding
+          models={models}
+          buildingCategory={modelIndex}
+          position={{ col: 10, row: 10 }}
+          rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
+        />
+        <pointLight
+          ref={sLightRef}
+          position={[sLightPosition.x, sLightPosition.y, sLightPosition.z]}
+          color="#fff"
+          intensity={sLightIntensity}
+          power={power}
+        />
+      </group>
+    );
+  }
+
+  return null;
 };
 
 export const BuiltBuilding = ({
