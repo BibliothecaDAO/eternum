@@ -142,7 +142,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
-  const { hoverHandler, clickHandler } = useEventHandlers(explored);
+  const { hoverHandler, clickHandler, mouseOutHandler } = useEventHandlers(explored);
 
   const { group } = useMemo(() => {
     if (!hexData) return { group: [], colors: [] };
@@ -255,7 +255,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   return (
     <Bvh firstHitOnly>
-      <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
+      <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler} onPointerOut={mouseOutHandler}>
         <primitive object={mesh} onDoubleClick={goToHex} />
       </group>
     </Bvh>
@@ -373,6 +373,14 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     [setHighlightPositions],
   );
 
+  const mouseOutHandler = useCallback((e: any) => {
+    if (clickedHexRef.current) {
+      setHighlightPositions([{ pos: clickedHexRef.current.uiPos, color: CLICKED_HEX_COLOR }]);
+    } else {
+      setHighlightPositions([]);
+    }
+  }, []);
+
   function handleTravelMode({ pos }: any) {
     if (!selectedPathRef.current) {
       const colRow = getColRowFromUIPosition(pos.x, pos.y);
@@ -423,12 +431,20 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         const pos = getPositionsAtIndex(mesh, instanceId);
         if (pos && !selectedEntityRef.current) {
           const clickedColRow = getColRowFromUIPosition(pos.x, pos.y);
-          setClickedHex({
-            contractPos: { col: clickedColRow.col, row: clickedColRow.row },
-            uiPos: [pos.x, -pos.y, pos.z],
-            hexIndex: instanceId,
-          });
-          setHighlightPositions([{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }]);
+          if (
+            clickedHexRef.current?.contractPos.col === clickedColRow.col &&
+            clickedHexRef.current?.contractPos.row === clickedColRow.row
+          ) {
+            setClickedHex(undefined);
+            setHighlightPositions([]);
+          } else {
+            setClickedHex({
+              contractPos: { col: clickedColRow.col, row: clickedColRow.row },
+              uiPos: [pos.x, -pos.y, pos.z],
+              hexIndex: instanceId,
+            });
+            setHighlightPositions([{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }]);
+          }
         }
         if (pos && selectedEntityRef.current) {
           if (isTravelModeRef.current || isExploreModeRef.current) {
@@ -499,5 +515,5 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     clearSelection();
   }
 
-  return { hoverHandler, clickHandler };
+  return { hoverHandler, clickHandler, mouseOutHandler };
 };
