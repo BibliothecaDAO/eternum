@@ -22,7 +22,7 @@ export interface DetachSoldiersProps extends SystemSigner {
 }
 
 export interface SetAddressNameProps extends SystemSigner {
-  name: string;
+  name: num.BigNumberish;
 }
 
 export interface SetEntityNameProps extends SystemSigner {

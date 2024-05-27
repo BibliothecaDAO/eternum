@@ -50,6 +50,22 @@ export const numberToHex = (num: number) => {
   return "0x" + num.toString(16);
 };
 
+export const bigintToString = (bigintValue: bigint) => {
+  // Convert the bigint to a hexadecimal string
+  let hexString = bigintValue.toString(16);
+
+  // Ensure the hex string has an even length
+  if (hexString.length % 2 !== 0) {
+    hexString = "0" + hexString;
+  }
+
+  // Convert the hex string to a buffer
+  const buffer = Buffer.from(hexString, "hex");
+
+  // Convert the buffer to a UTF-8 string
+  return buffer.toString("utf-8");
+};
+
 export const hexToAscii = (str1: string) => {
   var hex = str1.toString();
   var str = "";

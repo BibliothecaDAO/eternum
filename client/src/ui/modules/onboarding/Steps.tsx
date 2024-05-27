@@ -87,7 +87,9 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   const onSetName = async () => {
     setLoading(true);
     if (inputName && !addressIsMaster) {
-      await set_address_name({ name: inputName, signer: account as any });
+      // convert string to bigint
+      const inputNameBigInt = BigInt("0x" + Buffer.from(inputName, "utf-8").toString("hex"));
+      await set_address_name({ name: inputNameBigInt, signer: account as any });
       setAddressName(inputName);
       setLoading(false);
     }
@@ -174,8 +176,8 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
               ) : (
                 <div className="flex w-full h-full">
                   <TextInput
-                    placeholder="Your Name... (Max X characters)"
-                    maxLength={12}
+                    placeholder="Your Name... (Max 31 characters)"
+                    maxLength={31}
                     value={inputName}
                     onChange={setInputName}
                   />
