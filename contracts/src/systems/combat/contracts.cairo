@@ -38,7 +38,7 @@ mod combat_systems {
     };
     use eternum::models::config::{WeightConfig, WeightConfigImpl};
     use eternum::models::loyalty::{Loyalty, LoyaltyTrait};
-
+    use eternum::models::metadata::{EntityMetadata};
     use eternum::models::movable::{Movable, MovableTrait};
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use eternum::models::position::CoordTrait;
@@ -91,7 +91,7 @@ mod combat_systems {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
-            // make army 
+            // make army
             let mut army_id: u128 = world.uuid().into();
             set!(
                 world,
@@ -138,6 +138,7 @@ mod combat_systems {
                 // set movable model
                 let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
                     .sec_per_km;
+
                 set!(
                     world,
                     Movable {
@@ -153,13 +154,12 @@ mod combat_systems {
                 );
 
                 // set army carry capacity
-                let army_carry_capacity: CapacityConfig = CapacityConfigImpl::get(
-                    world, ARMY_ENTITY_TYPE
+                let entity_metadata: EntityMetadata = get!(world, entity_id, EntityMetadata);
+                let capacity: CapacityConfig = CapacityConfigImpl::get(
+                    world, entity_metadata.entity_type
                 );
-                set!(
-                    world,
-                    (Capacity { entity_id: army_id, weight_gram: army_carry_capacity.weight_gram },)
-                );
+
+                set!(world, capacity);
             }
         }
 
@@ -309,7 +309,7 @@ mod combat_systems {
             defending_army_protectee_resource_lock.release_at = BoundedInt::max();
             set!(world, (defending_army_protectee_resource_lock));
 
-            // create battle 
+            // create battle
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
 
@@ -322,7 +322,7 @@ mod combat_systems {
             battle.defence_army_health = defending_army_health.into();
             battle.tick_last_updated = tick.current();
 
-            // set battle position 
+            // set battle position
             let mut battle_position: Position = Default::default();
             battle_position.y = attacking_army_position.x;
             battle_position.y = attacking_army_position.y;
@@ -390,7 +390,7 @@ mod combat_systems {
             }
             battle_army.troops.add(caller_army.troops);
 
-            // add caller army heath to battle army health 
+            // add caller army heath to battle army health
             let mut caller_army_health: Health = get!(world, army_id, Health);
             battle_army_health.increase_by(caller_army_health.current);
 
@@ -450,7 +450,7 @@ mod combat_systems {
                 }
             }
 
-            // remove caller army from army troops 
+            // remove caller army from army troops
             let mut battle_army = battle.attack_army;
             let mut battle_army_health = battle.attack_army_health;
             if caller_army.battle_side == BattleSide::Defence {
@@ -511,7 +511,7 @@ mod combat_systems {
             let structure_position: Position = get!(world, structure_id, Position);
             claimer_army_position.assert_same_location(structure_position.into());
 
-            // ensure structure has no army protecting it 
+            // ensure structure has no army protecting it
             // or it has lost the battle it is currently in
             let tick = TickImpl::get(world);
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
@@ -592,7 +592,7 @@ mod combat_systems {
                 * attacking_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
 
-            // prevent `weights sum is zero` error 
+            // prevent `weights sum is zero` error
             if attacking_army_strength == 0 {
                 panic!("attacking army strength too low");
             }
@@ -681,7 +681,7 @@ mod combat_systems {
 
             if structure.category == StructureCategory::Realm {
                 // all buildings are at most 4 directions from the center
-                // so first we pick a random between within 1 and 4 
+                // so first we pick a random between within 1 and 4
                 // with higher probability of high numbers
 
                 let mut chosen_direction_count: u8 = *random::choices(
@@ -799,7 +799,7 @@ mod combat_systems {
                 set!(world, (structure_army_health));
             }
 
-            // army goes home 
+            // army goes home
 
             let army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
             let army_owner_position: Position = get!(world, army_owner_entity_id, Position);
