@@ -19,11 +19,10 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 interface ArmyInfoLabelProps {
-  position: UIPosition;
   armyId: bigint;
 }
 
-export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
+export const ArmyInfoLabel = ({ armyId }: ArmyInfoLabelProps) => {
   const { getEntitiesCombatInfo } = useCombat();
 
   const {
@@ -57,7 +56,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   );
 
   return (
-    <BaseThreeTooltip position={Position.TOP_CENTER} distanceFactor={undefined}>
+    <BaseThreeTooltip position={"-left-1/2 -mt-[175px]"} distanceFactor={50} className={`bg-transparent`}>
       <RaiderInfo
         key={raider.entityId}
         raider={raider}
@@ -94,11 +93,22 @@ const RaiderInfo = ({
   const isTraveling = isPassiveTravel || isActiveTravel;
 
   const bgColor = BigInt(account.account.address) === owner ? "bg-dark-green-accent" : "bg-red";
-  const pulseColor = !isTraveling ? "animate-slowPulse" : "";
+  const pulseColor = !isTraveling ? "" : "";
+
+  // const [hovered, setHovered] = useState(false);
 
   return (
-    <div className={clsx("w-[200px] flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold", bgColor, pulseColor)}>
-      <div className="flex items-center w-full justify-between text-xs">
+    <div
+      // onPointerEnter={() => setHovered(true)}
+      // onPointerLeave={() => setHovered(false)}
+      className={clsx(
+        "w-[200px] flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold",
+        bgColor,
+        pulseColor,
+        // hovered ? "opacity-100" : "opacity-25",
+      )}
+    >
+      <div className="flex items-center w-full mt-1 justify-between text-xs">
         <div className="flex items-center ml-1 -mt-2">
           <div className="flex items-center ml-1 mr-1 text-gold">
             <OrderIcon order={getRealmOrderNameById(originRealmId || 0n)} className="mr-1" size="xxs" />

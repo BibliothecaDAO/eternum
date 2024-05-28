@@ -67,6 +67,9 @@ export const BottomNavigation = () => {
   const [location, setLocation] = useLocation();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
+  const toggleShowAllArmies = useUIStore((state) => state.toggleShowAllArmies);
+  const showAllArmies = useUIStore((state) => state.showAllArmies);
+
   const navigation = useMemo(() => {
     const navigation = [
       {
@@ -205,6 +208,18 @@ export const BottomNavigation = () => {
           active={isPopupOpen(leaderboard)}
           size="lg"
           onClick={() => togglePopup(leaderboard)}
+        />
+      ),
+    },
+    {
+      button: (
+        <CircleButton
+          tooltipLocation="top"
+          image={BuildingThumbs.military}
+          label={""}
+          active={showAllArmies}
+          size="lg"
+          onClick={toggleShowAllArmies}
         />
       ),
     },

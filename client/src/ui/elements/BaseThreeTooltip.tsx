@@ -1,10 +1,12 @@
 import React from "react";
 import { DojoHtml } from "./DojoHtml";
+import clsx from "clsx";
 
 type BaseThreeTooltipProps = {
   children?: React.ReactNode;
   position?: Position | string;
   distanceFactor?: number;
+  className?: string;
 };
 
 export enum Position {
@@ -20,10 +22,11 @@ export const BaseThreeTooltip = ({
   children,
   distanceFactor = 50,
   position = Position.CENTER,
+  className,
 }: BaseThreeTooltipProps) => {
   return (
     <DojoHtml distanceFactor={distanceFactor}>
-      <div className={` min-w-[215px] clip-angled relative  p-2 bg-brown/90 text-gold ${position}`}>
+      <div className={clsx("min-w-[215px] clip-angled relative  p-2 bg-brown/90 text-gold", position, className)}>
         {children}
         <svg
           className="absolute bottom-[1px] translate-y-full left-1/2 -translate-x-1/2"

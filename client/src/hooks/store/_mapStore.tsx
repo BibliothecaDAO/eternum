@@ -25,6 +25,8 @@ export interface MapStore {
   highlightPositions: HighlightPosition[];
   setHighlightPositions: (positions: HighlightPosition[]) => void;
   clearSelection: () => void;
+  showAllArmies: boolean;
+  toggleShowAllArmies: () => void;
 }
 
 export const createMapStoreSlice = (set: any) => ({
@@ -55,6 +57,12 @@ export const createMapStoreSlice = (set: any) => ({
       selectedEntity: undefined,
       selectedPath: undefined,
       armyMode: null,
+    });
+  },
+  showAllArmies: false,
+  toggleShowAllArmies: () => {
+    set((state: MapStore) => {
+      return { showAllArmies: !state.showAllArmies };
     });
   },
 });

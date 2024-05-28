@@ -21,6 +21,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
   const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const showAllArmies = useUIStore((state) => state.showAllArmies);
 
   const animationPath = animationPaths.find((path) => path.id === info.id);
 
@@ -104,10 +105,14 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     return selectedEntity && selectedEntity.id == info.id;
   }, [selectedEntity, info.id]);
 
+  const showArmyInfo = useMemo(() => {
+    return showAllArmies || (selectedEntity && selectedEntity.id == info.id);
+  }, [showAllArmies, selectedEntity, info.id]);
+
   return (
     <>
       <group position={position}>
-        {selectedEntity && selectedEntity.id == info.id && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />}
+        {showArmyInfo && <ArmyInfoLabel armyId={info.id} />}
         {info.isMine && <ArmyFlag rotationY={rotationY} position={position} order={info.order} />}
         {/* {selectedEntity && showArmyMenu && <ArmyMenu selectedEntityId={selectedEntity.id} />} */}
         <WarriorModel
