@@ -2,7 +2,7 @@ import { HyperStructureInterface, Position, StructureType } from "@bibliothecada
 import { ClickedHex, Hexagon, HighlightPosition } from "../../types";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useEntityQuery } from "@dojoengine/react";
 import useUIStore from "./useUIStore";
 import {
@@ -81,7 +81,7 @@ export const createMapStoreSlice = (set: any) => ({
 export const useSetExistingStructures = () => {
   const [newFinishedHs, setNewFinishedHs] = useState<HyperstructureEventInterface | null>(null);
   const { setup } = useDojo();
-  const [subCreated, setSubCreated] = useState<boolean>(false);
+  const subCreated = useRef<boolean>(false);
 
   const setExistingStructures = useUIStore((state) => state.setExistingStructures);
   const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
@@ -99,7 +99,7 @@ export const useSetExistingStructures = () => {
       const observable = await setup.updates.eventUpdates.hyperstructureFinishedEvents();
       let events: HyperstructureEventInterface[] = [];
 
-      const subscription = observable.subscribe((event) => {
+      const sub = observable.subscribe((event) => {
         if (event) {
           const parsedEvent: HyperstructureEventInterface = parseHyperstructureFinishedEventData(event);
           events.push(parsedEvent);
@@ -107,10 +107,15 @@ export const useSetExistingStructures = () => {
         }
       });
       setFinishedHyperstructures(events);
+
+      // Cleanup function to unsubscribe on unmount
+      return () => {
+        sub.unsubscribe();
+      };
     };
-    if (subCreated) return;
+    if (subCreated.current) return;
     subscription();
-    setSubCreated(true);
+    subCreated.current = true;
   }, []);
 
   useMemo(() => {
