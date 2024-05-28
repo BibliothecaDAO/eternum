@@ -56,6 +56,7 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
 
 export const Naming = ({ onNext }: { onNext: () => void }) => {
   const {
+    masterAccount,
     account: { create, isDeploying, list, account, select, clear },
     setup: {
       systemCalls: { set_address_name },
@@ -77,18 +78,22 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   // @dev: refactor this
   useEffect(() => {
+    if (addressIsMaster) return;
     setAddressName(name);
   }, [name]);
 
+  const addressIsMaster = account.address === masterAccount.address;
+
   const onSetName = async () => {
     setLoading(true);
-    if (inputName) {
-      await set_address_name({ name: inputName, signer: account as any });
+    if (inputName && !addressIsMaster) {
+      // convert string to bigint
+      const inputNameBigInt = BigInt("0x" + Buffer.from(inputName, "utf-8").toString("hex"));
+      await set_address_name({ name: inputNameBigInt, signer: account as any });
       setAddressName(inputName);
       setLoading(false);
     }
   };
-
   const onCopy = () => {
     const burners = localStorage.getItem("burners");
     if (burners) {
@@ -170,7 +175,12 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                 <div className="p-2">{addressName}</div>
               ) : (
                 <div className="flex w-full h-full">
-                  <TextInput placeholder="Your Name..." maxLength={12} value={inputName} onChange={setInputName} />
+                  <TextInput
+                    placeholder="Your Name... (Max 31 characters)"
+                    maxLength={31}
+                    value={inputName}
+                    onChange={setInputName}
+                  />
                   <Button
                     isLoading={loading || !account}
                     onClick={onSetName}
@@ -254,7 +264,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
         {playerRealms().length > 0 ? (
           <NavigateToRealm text={"begin"} />
         ) : (
-          <Button disabled={!name} size="md" className="mx-auto" variant="primary" onClick={onNext}>
+          <Button disabled={!name || addressIsMaster} size="md" className="mx-auto" variant="primary" onClick={onNext}>
             Continue <ArrowRight className="w-2 fill-current ml-3" />
           </Button>
         )}
