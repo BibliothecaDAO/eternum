@@ -65,22 +65,6 @@ export const BUILDING_POPULATION: { [key: number]: number } = {
   [BuildingType.Storehouse]: 2,
 };
 
-export const BUILDING_PRODUCTION_PER_TICK: { [key: number]: number } = {
-  [BuildingType.Resource]: 10,
-  [BuildingType.Farm]: 30,
-  [BuildingType.FishingVillage]: 30,
-  [BuildingType.Barracks]: 2,
-  [BuildingType.Market]: 3,
-  [BuildingType.ArcheryRange]: 2,
-  [BuildingType.Stable]: 2,
-  [BuildingType.DonkeyFarm]: 0,
-  [BuildingType.TradingPost]: 0,
-  [BuildingType.WorkersHut]: 0,
-  [BuildingType.WatchTower]: 0,
-  [BuildingType.Walls]: 0,
-  [BuildingType.Storehouse]: 0,
-};
-
 export const BUILDING_RESOURCE_PRODUCED: { [key: number]: number } = {
   [BuildingType.Castle]: 0,
   [BuildingType.Bank]: 0,

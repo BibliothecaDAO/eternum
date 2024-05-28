@@ -45,7 +45,7 @@ export const HyperstructureResourceChip = ({
   return (
     <div className="flex mt-1">
       <div
-        className={`flex relative group items-center text-xs px-2 p-1 border rounded-xl w-3/4`}
+        className={`flex relative items-center text-xs px-2 p-1 border rounded-xl w-[80%]`}
         style={{
           backgroundImage:
             progress.pourcentage > 0
@@ -77,7 +77,7 @@ export const HyperstructureResourceChip = ({
           className="mr-3 self-center"
         />
 
-        <div className="flex justify-between w-full">
+        <div className="flex justify-between">
           <div className=" self-center text-sm font-bold">{`${progress.pourcentage}% (${currencyIntlFormat(
             progress.amount,
           )} / ${currencyIntlFormat(progress.costNeeded)})`}</div>
@@ -86,7 +86,7 @@ export const HyperstructureResourceChip = ({
 
       <NumberInput
         value={inputValue}
-        className="rounded-xl ml-3"
+        className="rounded-xl ml-3 w-[20%]"
         onChange={setInputValue}
         max={maxContributableAmount}
       />

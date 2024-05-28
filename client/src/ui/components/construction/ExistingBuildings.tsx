@@ -37,15 +37,10 @@ export enum ModelsIndexes {
   Storehouse = BuildingType.Storehouse,
   Bank = BuildingType.Bank,
   ShardsMine = BuildingType.ShardsMine,
-  Settlement = BuildingType.Settlement,
-  Hyperstructure = BuildingType.Hyperstructure,
+  Settlement = 20,
+  Hyperstructure = 21,
+  UnfinishedHyperstructure = 22,
 }
-
-export const structureTypeToModelsIndex = (structureType: StructureType): ModelsIndexes => {
-  return structureType + MAX_BUILDING_TYPE;
-};
-
-const redColor = new THREE.Color("red");
 
 export const ExistingBuildings = () => {
   const { hexPosition: globalHex } = useQuery();
@@ -86,9 +81,7 @@ export const ExistingBuildings = () => {
   useEffect(() => {
     let _tmp = builtBuildings.map((entity) => {
       const productionModelValue = getComponentValue(Building, entity);
-      const type = productionModelValue?.category
-        ? BuildingStringToEnum[productionModelValue.category as keyof typeof BuildingStringToEnum]
-        : BuildingType.None;
+      const type = BuildingStringToEnum[productionModelValue!.category as keyof typeof BuildingStringToEnum];
 
       return {
         col: Number(productionModelValue?.inner_col),
@@ -110,6 +103,7 @@ export const ExistingBuildings = () => {
           buildingCategory={building.type}
           position={{ col: building.col, row: building.row }}
           resource={building.resource}
+          canBeDestroyed={true}
         />
       ))}
       {hexType === HexType.REALM && (
@@ -130,6 +124,7 @@ export const MiddleBuilding = ({ hexType }: { hexType: HexType }) => {
       [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb"),
       [ModelsIndexes.ShardsMine]: useGLTF("/models/buildings/mine.glb"),
       [ModelsIndexes.Hyperstructure]: useGLTF("/models/buildings/hyperstructure.glb"),
+      [ModelsIndexes.UnfinishedHyperstructure]: useGLTF("/models/buildings/hyperstructure-half-transformed.glb"),
     }),
     [],
   );
@@ -149,12 +144,15 @@ export const MiddleBuilding = ({ hexType }: { hexType: HexType }) => {
       ? ModelsIndexes.ShardsMine
       : hexType === HexType.HYPERSTRUCTURE
       ? ModelsIndexes.Hyperstructure
+      : hexType === HexType.UNFINISHEDHYPERSTRUCTURE
+      ? ModelsIndexes.UnfinishedHyperstructure
       : ModelsIndexes.Castle;
 
   const modelZOffsets = {
     [HexType.BANK]: 0.2,
     [HexType.SHARDSMINE]: 0.2,
     [HexType.HYPERSTRUCTURE]: 0.4,
+    [HexType.UNFINISHEDHYPERSTRUCTURE]: 0.4,
     [HexType.REALM]: 0,
   };
 
@@ -166,6 +164,12 @@ export const MiddleBuilding = ({ hexType }: { hexType: HexType }) => {
           buildingCategory={modelIndex}
           position={{ col: 10, row: 10 }}
           rotation={new THREE.Euler(0, Math.PI * 1.5, 0)}
+          canBeDestroyed={false}
+          name={
+            hexType === HexType.HYPERSTRUCTURE || hexType === HexType.UNFINISHEDHYPERSTRUCTURE
+              ? "Hyperstructure"
+              : undefined
+          }
         />
         <pointLight
           ref={sLightRef}
@@ -187,12 +191,16 @@ export const BuiltBuilding = ({
   buildingCategory,
   rotation,
   resource,
+  canBeDestroyed = true,
+  name,
 }: {
   position: any;
   models: any;
   buildingCategory: number;
   rotation?: THREE.Euler;
   resource?: ResourcesIds;
+  canBeDestroyed: boolean;
+  name?: string;
 }) => {
   const lightRef = useRef<any>();
   const isDestroyMode = useUIStore((state) => state.isDestroyMode);
@@ -247,11 +255,6 @@ export const BuiltBuilding = ({
     }, Math.random() * 1000);
   }, [actions]);
 
-  const canBeDestroyed =
-    buildingCategory !== BuildingType.Castle &&
-    buildingCategory !== BuildingType.Bank &&
-    buildingCategory! !== BuildingType.ShardsMine;
-
   const destroyButton = canBeDestroyed && (
     <Button
       onClick={() => {
@@ -285,7 +288,7 @@ export const BuiltBuilding = ({
     >
       <primitive dropShadow scale={3} object={model} />
       {!isDestroyMode && popupOpened && (
-        <HoverBuilding destroyButton={destroyButton} building={buildingCategory} entityId={realmEntityId} />
+        <HoverBuilding name={name} destroyButton={destroyButton} building={buildingCategory} entityId={realmEntityId} />
       )}
     </group>
   );
@@ -295,18 +298,17 @@ const HoverBuilding = ({
   building,
   entityId,
   destroyButton,
+  name,
 }: {
   destroyButton: React.ReactNode;
   building: BuildingType;
   entityId: bigint;
+  name?: string;
 }) => {
   return (
     <BaseThreeTooltip distanceFactor={30} position={Position.BOTTOM_RIGHT}>
       <div className="flex flex-col p-1 space-y-1 text-sm">
-        {/* <div className="font-bold text-center">
-          {BuildingEnumToString[building as keyof typeof BuildingEnumToString]}
-        </div> */}
-        <BuildingInfo buildingId={building} entityId={entityId} extraButtons={[destroyButton]} />
+        <BuildingInfo name={name} buildingId={building} entityId={entityId} extraButtons={[destroyButton]} />
       </div>
     </BaseThreeTooltip>
   );
