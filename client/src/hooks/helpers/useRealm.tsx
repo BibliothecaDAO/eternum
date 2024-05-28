@@ -8,6 +8,7 @@ import { unpackResources } from "../../ui/utils/packedData";
 import { useEntityQuery } from "@dojoengine/react";
 import { RealmInterface } from "@bibliothecadao/eternum";
 import { getRealm, getRealmNameById } from "../../ui/utils/realms";
+import { shortString } from "starknet";
 
 export type RealmExtended = RealmInterface & {
   entity_id: bigint;
@@ -82,7 +83,7 @@ export function useRealm() {
 
   const getAddressName = (address: string) => {
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
-    return addressName ? bigintToString(addressName.name) : undefined;
+    return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
   };
 
   const getRealmAddressName = (realmEntityId: bigint) => {
