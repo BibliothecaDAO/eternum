@@ -330,7 +330,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       if (!selectedEntityRef.current) {
         const positions = [{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }];
         if (clickedHexRef.current) {
-          console.log(clickedHexRef.current);
           positions.push({ pos: clickedHexRef.current.uiPos, color: CLICKED_HEX_COLOR });
         }
         return setHighlightPositions(positions as HighlightPosition[]);
@@ -365,7 +364,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       let end = { x: colRow.col, y: colRow.row };
       let path = findShortestPathBFS(start, end, hexDataRef.current || [], exploredHexesRef.current, 3);
       if (path.length > 1) {
-        console.log("set mode");
         setArmyMode(ArmyMode.Travel);
         const uiPath = path.map(({ x, y }) => {
           const pos = getUIPositionFromColRow(x, y);
@@ -374,7 +372,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         }) as HighlightPosition[];
         setHighlightPositions(uiPath);
       } else {
-        console.log("set mode to null");
         setArmyMode(null);
       }
     }
@@ -410,7 +407,10 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     (e: any) => {
       // Logic for click event
       const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
-      if (!intersect) return;
+      if (!intersect) {
+        clearSelection();
+        return;
+      }
 
       const instanceId = intersect.instanceId;
       const mesh = intersect.object;
@@ -459,13 +459,14 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
               default:
                 clearSelection();
             }
-            if (!armyModeRef.current) {
-              clearSelection();
-            }
           } else {
-            setSelectedEntity(undefined);
+            clearSelection();
           }
+        } else {
+          clearSelection();
         }
+      } else {
+        clearSelection();
       }
     },
     [setHighlightPositions, hexData],

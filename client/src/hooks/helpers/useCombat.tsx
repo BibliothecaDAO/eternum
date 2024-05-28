@@ -70,7 +70,7 @@ export function useCombat() {
       const arrivalTime = getComponentValue(ArrivalTime, entityIndex);
       const position = getComponentValue(Position, entityIndex);
       const entityOwner = getComponentValue(EntityOwner, entityIndex);
-      const owner = getComponentValue(Owner, entityIndex);
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
       const army = getComponentValue(Army, entityIndex);
       const name = getComponentValue(EntityName, entityIndex);
 

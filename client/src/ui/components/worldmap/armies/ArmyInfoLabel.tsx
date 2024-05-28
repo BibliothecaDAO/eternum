@@ -12,11 +12,11 @@ import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
 import clsx from "clsx";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
-import ProgressBar from "../../../elements/ProgressBar";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { useResources } from "../../../../hooks/helpers/useResources";
 import { InventoryResources } from "../../resources/InventoryResources";
-import { DojoHtml } from "@/ui/elements/DojoHtml";
+import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 interface ArmyInfoLabelProps {
   position: UIPosition;
@@ -57,7 +57,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   );
 
   return (
-    <DojoHtml position={[position.x, position.z, -position.y]}>
+    <BaseThreeTooltip position={Position.TOP_CENTER} distanceFactor={undefined}>
       <RaiderInfo
         key={raider.entityId}
         raider={raider}
@@ -66,7 +66,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
         isPassiveTravel={isPassiveTravel}
         isActiveTravel={isActiveTravel}
       />
-    </DojoHtml>
+    </BaseThreeTooltip>
   );
 };
 
@@ -83,7 +83,8 @@ const RaiderInfo = ({
   isPassiveTravel: boolean;
   isActiveTravel: boolean;
 }) => {
-  const { entityOwnerId, entityId, health, quantity, attack, defence, originRealmId } = raider;
+  const { entityOwnerId, owner, originRealmId } = raider;
+  const { account } = useDojo();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const attackerAddressName = entityOwnerId ? getRealmAddressName(entityOwnerId) : "";
@@ -92,117 +93,64 @@ const RaiderInfo = ({
 
   const isTraveling = isPassiveTravel || isActiveTravel;
 
+  const bgColor = BigInt(account.account.address) === owner ? "bg-dark-green-accent" : "bg-red";
+  const pulseColor = !isTraveling ? "animate-slowPulse" : "";
+
   return (
-    <div className={clsx("w-[300px] flex flex-col p-2 mb-1 bg-brow clip-angled-sm bg-brown text-xs text-gold")}>
-      <div className="flex items-center text-xs">
-        {entityId.toString() && (
-          <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-            #{entityId.toString()}
-          </div>
-        )}
+    <div className={clsx("w-[200px] flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold", bgColor, pulseColor)}>
+      <div className="flex items-center w-full justify-between text-xs">
         <div className="flex items-center ml-1 -mt-2">
-          {isTraveling && originRealmId?.toString() && (
-            <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">From</span>
-              <div className="flex items-center ml-1 mr-1 text-gold">
-                <OrderIcon order={getRealmOrderNameById(originRealmId)} className="mr-1" size="xxs" />
-                {originRealmName}
-              </div>
+          <div className="flex items-center ml-1 mr-1 text-gold">
+            <OrderIcon order={getRealmOrderNameById(originRealmId || 0n)} className="mr-1" size="xxs" />
+            {originRealmName}
+          </div>
+        </div>
+        <div className="-mt-2">{attackerAddressName}</div>
+        <div>
+          {!isTraveling && (
+            <div className="flex ml-auto -mt-2 italic text-gold">
+              Idle
+              <Pen className="ml-1 fill-gold" />
             </div>
           )}
-          {!isTraveling && originRealmId?.toString() && (
-            <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">Owned by</span>
-              <div className="flex items-center ml-1 mr-1 text-gold">
-                <span className={"mr-1"}>{attackerAddressName.slice(0, 10)}</span>
-                <OrderIcon order={getRealmOrderNameById(originRealmId)} className="mr-1" size="xxs" />
-                {originRealmName}
-              </div>
+          {raider.arrivalTime && isTraveling && nextBlockTimestamp && (
+            <div className="flex ml-auto -mt-2 italic text-light-pink">
+              {isPassiveTravel
+                ? formatSecondsLeftInDaysHours(raider.arrivalTime - nextBlockTimestamp)
+                : "Arrives Next Tick"}
             </div>
           )}
         </div>
-        {!isTraveling && (
-          <div className="flex ml-auto -mt-2 italic text-gold">
-            Idle
-            <Pen className="ml-1 fill-gold" />
-          </div>
-        )}
-        {raider.arrivalTime && isTraveling && nextBlockTimestamp && (
-          <div className="flex ml-auto -mt-2 italic text-light-pink">
-            {isPassiveTravel
-              ? formatSecondsLeftInDaysHours(raider.arrivalTime - nextBlockTimestamp)
-              : "Arrives Next Tick"}
-          </div>
-        )}
       </div>
-      <div className="flex flex-col mt-2 space-y-2">
-        <div className="flex relative justify-between  w-full text-gold">
-          <div className="flex items-center">
-            <div className="flex items-center  mr-2">
-              {/* <img src="/images/units/troop-icon.png" className="h-[28px]" /> */}
-              <div className="flex flex-col ml-1">
-                <div className="bold mr-1">Knight x{currencyFormat(raider.troops.knightCount, 0)}</div>
-                <div className="bold mr-1">Crossbowmen x{currencyFormat(raider.troops.crossbowmanCount, 0)}</div>
-                <div className="bold mr-1">Paladin x{currencyFormat(raider.troops.paladinCount, 0)}</div>
-              </div>
-            </div>
+      <div className="w-full flex flex-col mt-2 space-y-2">
+        <div className="flex relative justify-between w-full text-gold">
+          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
+            <ResourceIcon withTooltip={false} resource={"Crossbowmen"} size="lg" />
+            <div className="text-green text-xxs self-center">{currencyFormat(raider.troops.crossbowmanCount, 0)}</div>
           </div>
-          {/* <div className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
-            <div
-              className="flex items-center h-6 mr-2"
-              onMouseEnter={() => {
-                setTooltip({
-                  position: "top",
-                  content: (
-                    <>
-                      <p className="whitespace-nowrap">Attack power</p>
-                    </>
-                  ),
-                });
-              }}
-              onMouseLeave={() => {
-                setTooltip(null);
-              }}
-            >
-              <img src="/images/icons/attack.png" className="h-full" />
-              <div className="flex flex-col ml-1 text-center">
-                <div className="bold ">{attack}</div>
-              </div>
-            </div>
-            <div
-              className="flex items-center h-6 mr-2"
-              onMouseEnter={() => {
-                setTooltip({
-                  position: "top",
-                  content: (
-                    <>
-                      <p className="whitespace-nowrap">Defence power</p>
-                    </>
-                  ),
-                });
-              }}
-              onMouseLeave={() => {
-                setTooltip(null);
-              }}
-            >
-              <img src="/images/icons/defence.png" className="h-full" />
-              <div className="flex flex-col ml-1 text-center">
-                <div className="bold ">{defence}</div>
-              </div>
-            </div>
-          </div> */}
-          <div className="flex items-center">
-            <div className="text-order-brilliance">{health && currencyFormat(health, 0)}HP</div>
+          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
+            <ResourceIcon withTooltip={false} resource={"Knight"} size="lg" />
+            <div className="text-green text-xxs self-center">{currencyFormat(raider.troops.knightCount, 0)}</div>
+          </div>
+          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
+            <ResourceIcon withTooltip={false} resource={"Paladin"} size="lg" />
+            <div className="text-green text-xxs self-center">{currencyFormat(raider.troops.paladinCount, 0)}</div>
           </div>
         </div>
-        <div className="grid grid-cols-12 gap-0.5">
+        {/* <div className="grid grid-cols-12 gap-0.5">
           <ProgressBar
             containerClassName="col-span-12 !bg-order-giants"
             rounded
             progress={(health / (10 * quantity)) * 100}
           />
+        </div> */}
+        <div className="flex">
+          <InventoryResources max={2} entityId={raider.entityId} title="Balance" />
+          <div>
+            <div className="uppercase font-bold mb-2">Stamina</div>
+            <div className=""> 200 </div>
+          </div>
         </div>
-        <InventoryResources entityId={raider.entityId} title="Balance" />
       </div>
     </div>
   );

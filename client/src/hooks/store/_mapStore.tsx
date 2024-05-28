@@ -1,4 +1,4 @@
-import { HyperStructureInterface, Position, StructureType } from "@bibliothecadao/eternum";
+import { Position, StructureType } from "@bibliothecadao/eternum";
 import { ClickedHex, Hexagon, HighlightPosition } from "../../types";
 
 export enum ArmyMode {
@@ -54,9 +54,7 @@ export const createMapStoreSlice = (set: any) => ({
     set({
       selectedEntity: undefined,
       selectedPath: undefined,
-      isTravelMode: false,
-      isExploreMode: false,
-      isAttackMode: false,
+      armyMode: null,
     });
   },
 });
