@@ -38,6 +38,7 @@ import { BaseContainer } from "@/ui/containers/BaseContainer";
 import Button from "@/ui/elements/Button";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
+import _, { debounce } from "lodash";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -132,6 +133,11 @@ export const LeftNavigationModule = () => {
     return null;
   }
 
+  // Making UX smoother by not closing the menu immediatly. The cursor often moves a little further than the menu edge
+  const debouncedSetIsOffscreen = debounce(() => {
+    setIsOffscreen(true);
+  }, 1500);
+
   return (
     <>
       <div className="pointer-events-auto">
@@ -146,6 +152,11 @@ export const LeftNavigationModule = () => {
         className={`max-h-full transition-all duration-200 space-x-1 gap-1  flex z-0 w-[600px] text-gold left-4 self-center pointer-events-auto ${
           isOffscreen ? "-translate-x-[88%] " : ""
         }`}
+        onPointerEnter={() => {
+          debouncedSetIsOffscreen.cancel();
+          setIsOffscreen(false);
+        }}
+        onPointerLeave={debouncedSetIsOffscreen}
       >
         <BaseContainer className="w-full h-[60vh] overflow-y-scroll">
           {view === View.EntityView && <EntityDetails />}
