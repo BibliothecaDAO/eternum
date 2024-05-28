@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
-import { getEntityIdFromKeys, hexToAscii, numberToHex } from "../../ui/utils/utils";
+import { bigintToString, getEntityIdFromKeys, hexToAscii, numberToHex } from "../../ui/utils/utils";
 import { BASE_POPULATION_CAPACITY, getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import { unpackResources } from "../../ui/utils/packedData";
@@ -82,7 +82,7 @@ export function useRealm() {
 
   const getAddressName = (address: string) => {
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
-    return addressName ? hexToAscii(numberToHex(Number(addressName.name))) : undefined;
+    return addressName ? bigintToString(addressName.name) : undefined;
   };
 
   const getAddressOrder = (address: string) => {
