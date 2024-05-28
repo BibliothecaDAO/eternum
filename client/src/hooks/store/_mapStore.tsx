@@ -1,6 +1,12 @@
 import { HyperStructureInterface, Position, StructureType } from "@bibliothecadao/eternum";
 import { ClickedHex, Hexagon, HighlightPosition } from "../../types";
 
+export enum ArmyMode {
+  Travel,
+  Explore,
+  Attack,
+}
+
 export interface MapStore {
   worldMapBuilding: StructureType | null;
   setWorldMapBuilding: (building: StructureType | null) => void;
@@ -14,12 +20,8 @@ export interface MapStore {
   setAnimationPaths: (path: { id: bigint; path: Position[]; enemy: boolean }[]) => void;
   selectedPath: { id: bigint; path: Position[] } | undefined;
   setSelectedPath: (path: { id: bigint; path: Position[] } | undefined) => void;
-  isTravelMode: boolean;
-  setIsTravelMode: (isTravelMode: boolean) => void;
-  isExploreMode: boolean;
-  setIsExploreMode: (isExploreMode: boolean) => void;
-  isAttackMode: boolean;
-  setIsAttackMode: (isAttackMode: boolean) => void;
+  armyMode: ArmyMode | null;
+  setArmyMode: (mode: ArmyMode | null) => void;
   highlightPositions: HighlightPosition[];
   setHighlightPositions: (positions: HighlightPosition[]) => void;
   clearSelection: () => void;
@@ -44,12 +46,8 @@ export const createMapStoreSlice = (set: any) => ({
   setAnimationPaths: (animationPaths: { id: bigint; path: Position[]; enemy: boolean }[]) => set({ animationPaths }),
   selectedPath: undefined,
   setSelectedPath: (selectedPath: { id: bigint; path: Position[] } | undefined) => set({ selectedPath }),
-  isTravelMode: false,
-  setIsTravelMode: (isTravelMode: boolean) => set({ isTravelMode }),
-  isExploreMode: false,
-  setIsExploreMode: (isExploreMode: boolean) => set({ isExploreMode }),
-  isAttackMode: false,
-  setIsAttackMode: (isAttackMode: boolean) => set({ isAttackMode }),
+  armyMode: null,
+  setArmyMode: (armyMode: ArmyMode | null) => set({ armyMode }),
   highlightPositions: [],
   setHighlightPositions: (positions: HighlightPosition[]) => set({ highlightPositions: positions }),
   clearSelection: () => {
