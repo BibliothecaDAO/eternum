@@ -8,6 +8,9 @@ import { LoadingScreen } from "./ui/modules/LoadingScreen";
 import { dojoConfig } from "../dojoConfig";
 import { inject } from "@vercel/analytics";
 import { TourProvider, StepType } from "@reactour/tour";
+import { Buffer } from "buffer";
+
+window.Buffer = Buffer;
 
 async function init() {
   const rootElement = document.getElementById("root");
