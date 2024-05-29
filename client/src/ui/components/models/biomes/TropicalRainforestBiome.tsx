@@ -60,7 +60,7 @@ export function TropicalRainforestBiome({ hexes, zOffsets }: { hexes: any[]; zOf
       // rotate hex randomly on 60 * n degrees
       const seededRandom = pseudoRandom(hex.x, hex.y);
       matrix.makeRotationZ((Math.PI / 3) * Math.floor(seededRandom * 6));
-      matrix.setPosition(x, y, zOffsets ? 0.32 + z : 0.32);
+      matrix.setPosition(x, y, zOffsets ? z : 0.32);
       instancedMeshes.forEach((mesh) => {
         mesh.setMatrixAt(idx, matrix);
       });
