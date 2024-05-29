@@ -405,7 +405,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
 
   const clickHandler = useCallback(
     (e: any) => {
-      // Logic for click event
       const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
       if (!intersect) {
         clearSelection();
@@ -415,7 +414,8 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       const instanceId = intersect.instanceId;
       const mesh = intersect.object;
       const pos = getPositionsAtIndex(mesh, instanceId);
-      if (pos && !selectedEntityRef.current) {
+
+      const handleHexClick = (pos: any, instanceId: any) => {
         const clickedColRow = getColRowFromUIPosition(pos.x, pos.y);
         if (
           clickedHexRef.current?.contractPos.col === clickedColRow.col &&
@@ -431,39 +431,42 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
           });
           setHighlightPositions([{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }]);
         }
-      }
-      if (pos && selectedEntityRef.current) {
-        if (armyModeRef.current === ArmyMode.Travel || armyModeRef.current === ArmyMode.Explore) {
-          const path = highlightPositionsRef.current.map((p) => {
-            const colRow = getColRowFromUIPosition(p.pos[0], -p.pos[1]);
-            return { x: colRow.col, y: colRow.row };
+      };
+
+      const handleArmyModeClick = (id: bigint) => {
+        const path = highlightPositionsRef.current.map((p) => {
+          const colRow = getColRowFromUIPosition(p.pos[0], -p.pos[1]);
+          return { x: colRow.col, y: colRow.row };
+        });
+        if (path.length > 1) {
+          setSelectedPath({
+            id,
+            path,
           });
-          if (path.length > 1) {
-            setSelectedPath({
-              id: selectedEntityRef.current.id,
-              path,
-            });
-            switch (armyModeRef.current) {
-              case ArmyMode.Explore:
-                handleExploreModeClick({
-                  id: selectedEntityRef.current.id,
-                  path,
-                });
-                break;
-              case ArmyMode.Travel:
-                handleTravelModeClick({
-                  travelingEntityId: selectedEntityRef.current.id,
-                  path,
-                });
-                break;
-              default:
-                clearSelection();
-            }
-          } else {
-            clearSelection();
+          switch (armyModeRef.current) {
+            case ArmyMode.Explore:
+              handleExploreModeClick({ id, path });
+              break;
+            case ArmyMode.Travel:
+              handleTravelModeClick({ travelingEntityId: id, path });
+              break;
+            default:
+              clearSelection();
           }
         } else {
           clearSelection();
+        }
+      };
+
+      if (pos) {
+        if (!selectedEntityRef.current) {
+          handleHexClick(pos, instanceId);
+        } else {
+          if (armyModeRef.current !== undefined && [ArmyMode.Travel, ArmyMode.Explore].includes(armyModeRef.current)) {
+            handleArmyModeClick(selectedEntityRef.current.id);
+          } else {
+            clearSelection();
+          }
         }
       } else {
         clearSelection();
