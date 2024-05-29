@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useRoute } from "wouter";
 import * as THREE from "three";
+import { useThree } from "@react-three/fiber";
 
 import useUIStore from "../../../hooks/store/useUIStore.js";
 
@@ -36,7 +37,9 @@ const scale = 20;
 export const WorldMapScene = () => {
   const [isMapView] = useRoute("/map");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const clearSelection = useUIStore((state) => state.clearSelection);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const { gl } = useThree();
 
   const texture = useTexture({
     map: "/textures/paper/worldmap-bg.png",
@@ -59,6 +62,17 @@ export const WorldMapScene = () => {
     setTimeout(() => {
       setIsLoadingScreenEnabled(false);
     }, 300);
+
+    const handleRightClick = (e: any) => {
+      e.preventDefault();
+      clearSelection();
+    };
+
+    gl.domElement.addEventListener("contextmenu", handleRightClick);
+
+    return () => {
+      gl.domElement.removeEventListener("contextmenu", handleRightClick);
+    };
   }, []);
 
   return (

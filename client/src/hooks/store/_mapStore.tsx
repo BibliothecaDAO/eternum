@@ -57,6 +57,7 @@ export const createMapStoreSlice = (set: any) => ({
       selectedEntity: undefined,
       selectedPath: undefined,
       armyMode: null,
+      highlightPositions: [],
     });
   },
   showAllArmies: false,
