@@ -7,9 +7,10 @@ import useUIStore from "../../../hooks/store/useUIStore.js";
 
 import HighlightedHexes from "../../components/worldmap/hexagon/HighlightedHexes.js";
 import { WorldMap } from "../../components/worldmap/hexagon/WorldHexagon.js";
-import { useHelper, useTexture } from "@react-three/drei";
+import { useTexture } from "@react-three/drei";
 import { useControls } from "leva";
 import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
+import { ActionInfo } from "@/ui/components/worldmap/hexagon/ActionInfo.js";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();
@@ -79,6 +80,7 @@ export const WorldMapScene = () => {
     <>
       {!showBlankOverlay && isMapView && <WorldMap />}
       <HighlightedHexes />
+      <ActionInfo />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]}>
         <planeGeometry args={[2668, 1390.35]} />
         <meshPhongMaterial {...texture} />

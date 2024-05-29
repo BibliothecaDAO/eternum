@@ -391,7 +391,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
           const hex = hexDataRef?.current?.find((h) => h.col === x && h.row === y);
           return { pos: [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0], color: TRAVEL_COLOUR };
         }) as HighlightPosition[];
-        console.log("handle travel", uiPath);
         setHighlightPositions(uiPath);
       } else {
         setArmyMode(null);
@@ -423,7 +422,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
           { pos: [uiPos.x, -uiPos.y, BIOMES[selectedEntityHex!.biome].depth * 10], color: EXPLORE_COLOUR },
         ] as HighlightPosition[];
         setHighlightPositions(uiPath);
-        console.log("handle explore", uiPath);
       }
     }
   }
