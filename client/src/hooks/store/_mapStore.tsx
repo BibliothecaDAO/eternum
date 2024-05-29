@@ -1,5 +1,5 @@
 import { Position, StructureType } from "@bibliothecadao/eternum";
-import { ClickedHex, Hexagon, HighlightPosition } from "../../types";
+import { ClickedHex, Hexagon, HighlightPosition, Position3D } from "../../types";
 
 export enum ArmyMode {
   Travel,
@@ -24,6 +24,8 @@ export interface MapStore {
   setArmyMode: (mode: ArmyMode | null) => void;
   highlightPositions: HighlightPosition[];
   setHighlightPositions: (positions: HighlightPosition[]) => void;
+  accessiblePositions: Position3D[];
+  setAccessiblePositions: (positions: Position3D[]) => void;
   clearSelection: () => void;
   showAllArmies: boolean;
   toggleShowAllArmies: () => void;
@@ -52,6 +54,10 @@ export const createMapStoreSlice = (set: any) => ({
   setArmyMode: (armyMode: ArmyMode | null) => set({ armyMode }),
   highlightPositions: [],
   setHighlightPositions: (positions: HighlightPosition[]) => set({ highlightPositions: positions }),
+  accessiblePositions: [],
+  setAccessiblePositions: (positions: Position3D[]) => {
+    set({ accessiblePositions: positions });
+  },
   clearSelection: () => {
     set({
       selectedEntity: undefined,

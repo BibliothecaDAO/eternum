@@ -23,7 +23,7 @@ import { TropicalRainforestBiome } from "../../models/biomes/TropicalRainforestB
 import { TropicalSeasonalForestBiome } from "../../models/biomes/TropicalSeasonalForestBiome";
 import { TundraBiome } from "../../models/biomes/TundraBiome.js";
 import { TemperateRainforestBiome } from "../../models/biomes/TemperateRainforestBiome";
-import { Hexagon, HighlightPosition } from "../../../../types/index";
+import { Hexagon, HighlightPosition, Position3D } from "../../../../types/index";
 
 import { findAccessiblePositions, findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
 import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
@@ -256,11 +256,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   return (
     <Bvh firstHitOnly>
-      <group
-        // onPointerEnter={(e) => throttledHoverHandler(e)}
-        onClick={clickHandler}
-        // onPointerOut={mouseOutHandler}
-      >
+      <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler} onPointerOut={mouseOutHandler}>
         <primitive object={mesh} onDoubleClick={goToHex} />
       </group>
     </Bvh>
@@ -269,19 +265,19 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
 export const useSetPossibleActions = (explored: Map<number, Set<number>>) => {
   const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
+  const setAccessiblePositions = useUIStore((state) => state.setAccessiblePositions);
   const hexData = useUIStore((state) => state.hexData);
 
   useMemo(() => {
     if (selectedEntity && hexData) {
-      const path = findAccessiblePositions(selectedEntity.position, hexData, explored, 5);
+      const path = findAccessiblePositions(selectedEntity.position, hexData, explored, 3);
       if (path.length > 1) {
         const uiPath = path.map(({ x, y }) => {
           const pos = getUIPositionFromColRow(x, y);
           const hex = hexData.find((h) => h.col === x && h.row === y);
-          return { pos: [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0], color: TRAVEL_COLOUR };
-        }) as HighlightPosition[];
-        setHighlightPositions(uiPath);
+          return [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0];
+        }) as Position3D[];
+        setAccessiblePositions(uiPath);
       }
     }
   }, [selectedEntity?.id, hexData]);
@@ -356,7 +352,8 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         if (clickedHexRef.current) {
           positions.push({ pos: clickedHexRef.current.uiPos, color: CLICKED_HEX_COLOR });
         }
-        return setHighlightPositions(positions as HighlightPosition[]);
+        // return setHighlightPositions(positions as HighlightPosition[]);
+        return;
       }
 
       const selectedEntityPosition = getUIPositionFromColRow(
@@ -394,6 +391,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
           const hex = hexDataRef?.current?.find((h) => h.col === x && h.row === y);
           return { pos: [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0], color: TRAVEL_COLOUR };
         }) as HighlightPosition[];
+        console.log("handle travel", uiPath);
         setHighlightPositions(uiPath);
       } else {
         setArmyMode(null);
@@ -416,13 +414,16 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         !exploredHexesRef.current.get(colRow.col - 2147483647)?.has(colRow.row - 2147483647)
       ) {
         setArmyMode(ArmyMode.Explore);
-        setHighlightPositions([
+        const uiPos = getUIPositionFromColRow(colRow.col, colRow.row);
+        const uiPath = [
           {
-            pos: [selectedEntityPosition.x, -selectedEntityPosition.y, BIOMES[selectedEntityHex!.biome].depth * 10],
+            pos: [selectedEntityPosition.x, -selectedEntityPosition.y, selectedEntityHex!.depth * 10],
             color: EXPLORE_COLOUR,
           },
-          { pos: [pos.x, -pos.y, pos.z], color: EXPLORE_COLOUR },
-        ]);
+          { pos: [uiPos.x, -uiPos.y, BIOMES[selectedEntityHex!.biome].depth * 10], color: EXPLORE_COLOUR },
+        ] as HighlightPosition[];
+        setHighlightPositions(uiPath);
+        console.log("handle explore", uiPath);
       }
     }
   }
@@ -486,7 +487,10 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         if (!selectedEntityRef.current) {
           handleHexClick(pos, instanceId);
         } else {
-          if (armyModeRef.current !== undefined && [ArmyMode.Travel, ArmyMode.Explore].includes(armyModeRef.current)) {
+          if (
+            armyModeRef?.current !== undefined &&
+            [ArmyMode.Travel, ArmyMode.Explore].includes(armyModeRef!.current!)
+          ) {
             handleArmyModeClick(selectedEntityRef.current.id);
           } else {
             clearSelection();
