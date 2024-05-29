@@ -318,7 +318,7 @@ export interface SetWeightConfigProps extends SystemSigner {
 }
 
 export interface SetTickConfigProps extends SystemSigner {
-  max_moves_per_tick: num.BigNumberish;
+  tick_id: num.BigNumberish;
   tick_interval_in_seconds: num.BigNumberish;
 }
 
@@ -384,4 +384,9 @@ export interface ContributeToConstructionProps extends SystemSigner {
   hyperstructure_entity_id: num.BigNumberish;
   contributor_entity_id: num.BigNumberish;
   contributions: { resource: number; amount: number }[];
+}
+
+export interface SetStaminaConfigProps extends SystemSigner {
+  unit_type: num.BigNumberish;
+  max_stamina: num.BigNumberish;
 }

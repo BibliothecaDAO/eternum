@@ -56,7 +56,7 @@
     "QuantityTracker",
     "Road"
   ],
-  "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
+  "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "Stamina"],
   "NAME_SYSTEMS": ["AddressName", "EntityName"],
   "BANK_SYSTEMS": [
     "Bank",
@@ -125,7 +125,6 @@
     "Movable",
     "Position",
     "ArrivalTime",
-    "TickMove",
     "Resource",
     "Quantity",
     "Production",
@@ -141,7 +140,8 @@
     "Building",
     "Production",
     "BuildingQuantityv2",
-    "Population"
+    "Population",
+    "Stamina"
   ],
   "COMBAT_SYSTEMS": [
     "Health",
@@ -165,6 +165,7 @@
     "Weight",
     "Building",
     "Population",
-    "BuildingQuantityv2"
+    "BuildingQuantityv2",
+    "Stamina"
   ]
 }

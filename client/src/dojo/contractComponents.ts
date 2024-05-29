@@ -919,18 +919,52 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    TickMove: (() => {
+    TickConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.BigInt,
+          tick_id: RecsType.Number,
+          tick_interval_in_seconds: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "TickConfig",
+            types: ["u128", "u8", "u64"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    StaminaConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.BigInt,
+          unit_type: RecsType.Number,
+          max_stamina: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "StaminaConfig",
+            types: ["u128", "u8", "u16"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Stamina: (() => {
       return defineComponent(
         world,
         {
           entity_id: RecsType.BigInt,
-          tick: RecsType.Number,
-          count: RecsType.Number,
+          amount: RecsType.Number,
+          last_refill_tick: RecsType.Number,
         },
         {
           metadata: {
-            name: "TickMove",
-            types: ["u128", "u64", "u8"],
+            name: "Stamina",
+            types: ["u128", "u16", "u64"],
             customTypes: [],
           },
         },

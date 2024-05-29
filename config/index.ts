@@ -15,6 +15,7 @@ import {
   setPopulationConfig,
   setHyperstructureConfig,
   setBuildingConfig,
+  setStaminaConfig,
 } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
@@ -48,3 +49,4 @@ await setSpeedConfig(account, provider);
 await setQuestConfig(account, provider);
 await setupGlobals(account, provider);
 await setHyperstructureConfig(account, provider);
+await setStaminaConfig(account, provider);

@@ -4,11 +4,11 @@ use core::traits::Into;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::LevelIndex;
-
-use eternum::constants::ResourceTypes;
 use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
-use eternum::models::config::LevelingConfig;
-use eternum::models::config::{RoadConfig, TickConfig};
+
+use eternum::constants::{ResourceTypes, TickIds};
+use eternum::models::combat::{Army, BattleSide, Troops};
+use eternum::models::config::{RoadConfig, TickConfig, StaminaConfig, LevelingConfig, TickImpl};
 use eternum::models::level::Level;
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -429,48 +429,77 @@ fn test_in_transit() {
 ///////////////////////////////////////////////
 
 const TICK_INTERVAL_IN_SECONDS: u64 = 200;
-const MAX_MOVES_PER_TICK: u8 = 3;
+const MAX_STAMINA: u16 = 30;
 
-fn ts() -> u64 {
-    let tick = 3;
-    tick * TICK_INTERVAL_IN_SECONDS
-}
-
-
-fn setup_hex_travel() -> (IWorldDispatcher, u64, Position, ITravelSystemsDispatcher) {
+fn setup_hex_travel() -> (IWorldDispatcher, u128, Position, ITravelSystemsDispatcher) {
     let world = spawn_eternum();
-
-    // set as executor
 
     // set tick config
     let tick_config = TickConfig {
         config_id: WORLD_CONFIG_ID,
-        max_moves_per_tick: MAX_MOVES_PER_TICK,
+        tick_id: TickIds::ARMIES,
         tick_interval_in_seconds: TICK_INTERVAL_IN_SECONDS
     };
     set!(world, (tick_config));
 
-    // change time such that we will be in the third tick
-    starknet::testing::set_block_timestamp(ts());
-
-    let travelling_entity_id = 11_u64;
-    let travelling_entity_position = Position {
-        x: 100_000, y: 200_000, entity_id: travelling_entity_id.into()
-    };
-
-    set!(world, (travelling_entity_position));
     set!(
         world,
-        (Owner {
-            address: contract_address_const::<'travelling_entity'>(),
-            entity_id: travelling_entity_id.into()
+        (StaminaConfig {
+            config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::KNIGHT, max_stamina: MAX_STAMINA,
         })
     );
 
     set!(
         world,
+        (StaminaConfig {
+            config_id: WORLD_CONFIG_ID,
+            unit_type: ResourceTypes::CROSSBOWMAN,
+            max_stamina: MAX_STAMINA,
+        })
+    );
+
+    set!(
+        world,
+        (StaminaConfig {
+            config_id: WORLD_CONFIG_ID, unit_type: ResourceTypes::PALADIN, max_stamina: MAX_STAMINA,
+        })
+    );
+
+    // change time such that we will be in the third tick
+    starknet::testing::set_block_timestamp(tick_config.next_tick_timestamp());
+
+    let travelling_entity_id = 11_u128;
+    let owner_entity_id = 12_u128;
+    let travelling_entity_position = Position {
+        x: 100_000, y: 200_000, entity_id: travelling_entity_id
+    };
+
+    set!(world, (travelling_entity_position));
+    set!(
+        world,
+        (Army {
+            entity_id: travelling_entity_id,
+            troops: Troops { knight_count: 1, paladin_count: 0, crossbowman_count: 0, },
+            battle_id: 0,
+            battle_side: BattleSide::None
+        })
+    );
+
+    set!(
+        world,
+        (
+            Owner {
+                address: contract_address_const::<'travelling_entity'>(),
+                entity_id: owner_entity_id.into()
+            },
+            EntityOwner { entity_id: travelling_entity_id, entity_owner_id: owner_entity_id }
+        )
+    );
+
+    set!(
+        world,
         (Movable {
-            entity_id: travelling_entity_id.into(),
+            entity_id: travelling_entity_id,
             sec_per_km: 10,
             blocked: false,
             round_trip: false,
@@ -527,15 +556,11 @@ fn test_travel_hex() {
 
     // travelling entity travels
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
-    travel_systems_dispatcher.travel_hex(travelling_entity_id.into(), travel_directions);
+    travel_systems_dispatcher.travel_hex(travelling_entity_id, travel_directions);
 
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
     assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
     assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
-
-    // arrival time should not change because arrival is immediate
-    let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
-    assert(travelling_entity_arrival_time.arrives_at == ts(), 'arrival time not correct');
 }
 
 
@@ -546,13 +571,13 @@ fn test_travel_hex__destination_tile_not_explored() {
 
     let travel_directions = array![Direction::East].span();
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
-    travel_systems_dispatcher.travel_hex(travelling_entity_id.into(), travel_directions);
+    travel_systems_dispatcher.travel_hex(travelling_entity_id, travel_directions);
 }
 
 
 #[test]
-#[should_panic(expected: ("max moves per tick exceeded", 'ENTRYPOINT_FAILED'))]
-fn test_travel_hex__exceed_max_tick_moves() {
+#[should_panic(expected: ('not enough stamina', 'ENTRYPOINT_FAILED'))]
+fn test_travel_hex__exceed_max_stamina() {
     let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) =
         setup_hex_travel();
 
@@ -567,5 +592,5 @@ fn test_travel_hex__exceed_max_tick_moves() {
 
     // travelling entity travels
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
-    travel_systems_dispatcher.travel_hex(travelling_entity_id.into(), travel_directions);
+    travel_systems_dispatcher.travel_hex(travelling_entity_id, travel_directions);
 }

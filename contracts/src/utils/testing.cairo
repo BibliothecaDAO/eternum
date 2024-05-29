@@ -7,7 +7,7 @@ use eternum::models::capacity::{capacity, Capacity};
 use eternum::models::config::{
     world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,
     weight_config, WeightConfig, road_config, RoadConfig, hyperstructure_resource_config,
-    HyperstructureResourceConfig,
+    HyperstructureResourceConfig, stamina_config, StaminaConfig, tick_config, TickConfig
 };
 use eternum::models::hyperstructure::{Progress, progress, Contribution, contribution};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
@@ -52,6 +52,8 @@ fn spawn_eternum() -> IWorldDispatcher {
         progress::TEST_CLASS_HASH,
         contribution::TEST_CLASS_HASH,
         hyperstructure_resource_config::TEST_CLASS_HASH,
+        stamina_config::TEST_CLASS_HASH,
+        tick_config::TEST_CLASS_HASH,
     ];
 
     spawn_test_world(models)

@@ -8,8 +8,9 @@ mod map_systems {
     use core::option::OptionTrait;
     use core::traits::Into;
     use eternum::alias::ID;
-    use eternum::constants::ResourceTypes;
-    use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
+    use eternum::constants::{
+        WORLD_CONFIG_ID, split_resources_and_probs, TravelTypes, ResourceTypes
+    };
     use eternum::models::buildings::{BuildingCategory, Building, BuildingImpl};
     use eternum::models::combat::{Health, HealthTrait};
     use eternum::models::config::{MapExploreConfig, LevelingConfig};
@@ -21,10 +22,10 @@ mod map_systems {
     use eternum::models::quantity::Quantity;
     use eternum::models::realm::{Realm};
     use eternum::models::resources::{Resource, ResourceCost, ResourceTrait, ResourceFoodImpl};
+    use eternum::models::stamina::StaminaImpl;
     use eternum::models::structure::{
         Structure, StructureCategory, StructureCount, StructureCountTrait
     };
-    use eternum::models::tick::{TickMove, TickMoveTrait};
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl
@@ -77,6 +78,8 @@ mod map_systems {
             // ensure unit is not in transit
             get!(world, unit_id, ArrivalTime).assert_not_travelling();
 
+            StaminaImpl::handle_stamina_costs(unit_id, TravelTypes::Explore, world);
+
             // explore coordinate, pay food and mint reward
             let exploration_reward = InternalMapSystemsImpl::pay_food_and_get_explore_reward(
                 world, unit_entity_owner.entity_owner_id
@@ -95,11 +98,6 @@ mod map_systems {
             InternalTravelSystemsImpl::travel_hex(
                 world, unit_id, current_coord, array![direction].span()
             );
-
-            // max out the army's movement for that tick so 
-            // they can no longer travel during tick
-            let mut tick_move: TickMove = get!(world, unit_id, TickMove);
-            tick_move.max_out(world);
         }
     }
 

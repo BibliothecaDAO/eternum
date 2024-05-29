@@ -566,12 +566,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_tick_config(props: SystemProps.SetTickConfigProps) {
-    const { max_moves_per_tick, tick_interval_in_seconds, signer } = props;
+    const { tick_id, tick_interval_in_seconds, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "config_systems"),
       entrypoint: "set_tick_config",
-      calldata: [max_moves_per_tick, tick_interval_in_seconds],
+      calldata: [tick_id, tick_interval_in_seconds],
     });
   }
 
@@ -685,6 +685,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
       entrypoint: "contribute_to_construction",
       calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
+    });
+  }
+
+  public async set_stamina_config(props: SystemProps.SetStaminaConfigProps) {
+    const { unit_type, max_stamina, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_stamina_config",
+      calldata: [unit_type, max_stamina],
     });
   }
 }

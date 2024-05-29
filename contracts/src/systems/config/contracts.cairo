@@ -30,7 +30,12 @@ trait ICapacityConfig {
 
 #[dojo::interface]
 trait ITickConfig {
-    fn set_tick_config(max_moves_per_tick: u8, tick_interval_in_seconds: u64);
+    fn set_tick_config(tick_id: u8, tick_interval_in_seconds: u64);
+}
+
+#[dojo::interface]
+trait IStaminaConfig {
+    fn set_stamina_config(unit_type: u8, max_stamina: u16);
 }
 
 #[dojo::interface]
@@ -126,7 +131,7 @@ mod config_systems {
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig,
         RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
         TroopConfig, BuildingConfig, BuildingCategoryPopConfig, PopulationConfig,
-        HyperstructureResourceConfig
+        HyperstructureResourceConfig, StaminaConfig
     };
 
     use eternum::models::position::{Position, PositionTrait, Coord};
@@ -270,20 +275,24 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl TickConfigImpl of super::ITickConfig<ContractState> {
-        fn set_tick_config(
-            world: IWorldDispatcher, max_moves_per_tick: u8, tick_interval_in_seconds: u64
-        ) {
+        fn set_tick_config(world: IWorldDispatcher, tick_id: u8, tick_interval_in_seconds: u64) {
             assert_caller_is_admin(world);
 
             set!(
                 world,
-                (TickConfig {
-                    config_id: WORLD_CONFIG_ID, max_moves_per_tick, tick_interval_in_seconds
-                })
+                (TickConfig { config_id: WORLD_CONFIG_ID, tick_id, tick_interval_in_seconds })
             );
         }
     }
 
+    #[abi(embed_v0)]
+    impl StaminaConfigImpl of super::IStaminaConfig<ContractState> {
+        fn set_stamina_config(world: IWorldDispatcher, unit_type: u8, max_stamina: u16) {
+            assert_caller_is_admin(world);
+
+            set!(world, (StaminaConfig { config_id: WORLD_CONFIG_ID, unit_type, max_stamina }));
+        }
+    }
 
     #[abi(embed_v0)]
     impl LevelingConfigImpl of super::ILevelingConfig<ContractState> {

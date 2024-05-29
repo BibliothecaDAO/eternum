@@ -15,7 +15,6 @@ mod donkey_systems {
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceImpl};
     use eternum::models::road::RoadImpl;
-    use eternum::models::tick::{TickMove, TickMoveTrait};
     use eternum::models::weight::Weight;
 
     use eternum::systems::resources::contracts::resource_systems::{

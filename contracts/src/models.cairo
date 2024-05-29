@@ -19,8 +19,8 @@ mod realm;
 mod resources;
 mod road;
 mod settlement;
+mod stamina;
 mod structure;
-mod tick;
 mod trade;
 mod weight;
 mod bank {

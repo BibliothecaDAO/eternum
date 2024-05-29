@@ -41,6 +41,23 @@ const LOYALTY_MAX_VALUE: u64 = 100;
 // TODO: Move to Onchain config
 const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;
 
+// stamina config
+#[derive(Drop)]
+enum TravelTypes {
+    Explore,
+    Travel: u8,
+}
+
+#[generate_trait]
+impl TravelTypesImpl of TravelTypesTrait {
+    fn get_stamina_costs(self: TravelTypes) -> u16 {
+        match self {
+            TravelTypes::Travel(moves) => moves.into() * 10,
+            TravelTypes::Explore => 15,
+        }
+    }
+}
+
 mod ResourceTypes {
     const WOOD: u8 = 1;
     const STONE: u8 = 2;
@@ -276,8 +293,10 @@ mod LevelIndex {
 }
 
 mod ErrorMessages {
-    // we can't use this because values are not "strings" but 'felts'
-    // and we can only use string literals in assert! macro
-    // 
     const NOT_OWNER: felt252 = 'Not Owner';
+}
+
+mod TickIds {
+    const DEFAULT: u8 = 0;
+    const ARMIES: u8 = 1;
 }

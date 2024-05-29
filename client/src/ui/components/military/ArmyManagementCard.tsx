@@ -1,4 +1,4 @@
-import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
@@ -9,7 +9,6 @@ import { useComponentValue } from "@dojoengine/react";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import useUIStore from "@/hooks/store/useUIStore";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import { getComponentValue } from "@dojoengine/recs";
 import { formatSecondsInHoursMinutes } from "../cityview/realm/labor/laborUtils";
 import { useLocation } from "wouter";
 
@@ -38,13 +37,12 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
     network: { provider },
     setup: {
       systemCalls: { army_buy_troops },
-      components: { Position, TickMove },
+      components: { Position },
     },
   } = useDojo();
 
   const { getBalance } = useResourceBalance();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const currentTick = useBlockchainStore((state) => state.currentTick);
   const [travelWindow, setSetTravelWindow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
@@ -52,25 +50,10 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
   // TODO: Clean this up
   const position = { x: entity.x, y: entity.y };
 
-  const tickMove = useMemo(
-    () =>
-      entity.entity_id ? getComponentValue(TickMove, getEntityIdFromKeys([BigInt(entity.entity_id || 0n)])) : undefined,
-    [entity.entity_id],
-  );
-
   const isPassiveTravel = useMemo(
     () => (entity.arrives_at && nextBlockTimestamp ? entity.arrives_at > nextBlockTimestamp : false),
     [nextBlockTimestamp],
   );
-
-  const isActiveTravel = useMemo(
-    () => (tickMove !== undefined ? tickMove.tick >= currentTick : false),
-    [tickMove, currentTick],
-  );
-
-  const isTraveling = useMemo(() => {
-    return isPassiveTravel || isActiveTravel;
-  }, [nextBlockTimestamp]);
 
   const entityOwnerPosition = useComponentValue(
     Position,
@@ -175,7 +158,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
       {travelWindow && (
         <>
           <TravelToLocation
-            isTraveling={isTraveling}
+            isTraveling={isPassiveTravel}
             checkSamePosition={checkSamePosition}
             entityOwnerPosition={entityOwnerPosition}
             entity={entity}
@@ -224,7 +207,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
           {checkSamePosition ? "At Base " : position ? `On Map` : "Unknown"}
         </div>
         <div className="flex ml-auto italic self-center  px-3">
-          {isTraveling && nextBlockTimestamp ? (
+          {isPassiveTravel && nextBlockTimestamp ? (
             <>
               Traveling for{" "}
               {isPassiveTravel

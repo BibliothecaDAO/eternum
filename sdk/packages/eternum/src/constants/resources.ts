@@ -1,58 +1,6 @@
 import { Resource, Resources } from "../types";
 import { BuildingType, StructureType } from "../utils";
-
-export const EternumGlobalConfig = {
-  resources: {
-    resourcePrecision: 1000,
-    resourceMultiplier: 1000,
-    resourceAmountPerTick: 10,
-    foodPerTick: 30,
-    donkeysPerTick: 3,
-    knightsPerTick: 2,
-    crossbowmenPerTick: 2,
-    paladinPerTick: 2,
-  },
-  banks: {
-    lordsCost: 1000,
-    lpFees: 922337203685477580,
-  },
-  weights: {
-    resource: 1000,
-    currency: 1,
-    food: 100,
-  },
-  populationCapacity: {
-    workerHuts: 5,
-  },
-  exploration: {
-    wheatBurn: 50,
-    fishBurn: 50,
-    reward: 20,
-    shardsMinesFailProbability: 10000,
-  },
-  tick: {
-    movesPerTick: 3,
-    tickIntervalInSeconds: 1,
-  },
-  carryCapacity: {
-    donkey: 100,
-    army: 100,
-  },
-  speed: {
-    donkey: 1,
-    army: 1,
-  },
-  troop: {
-    knightHealth: 10,
-    paladinHealth: 10,
-    crossbowmanHealth: 10,
-    knightStrength: 7,
-    paladinStrength: 7,
-    crossbowmanStrength: 7,
-    advantagePercent: 1000,
-    disadvantagePercent: 1000,
-  },
-};
+import { EternumGlobalConfig } from "./global";
 
 // Resources
 
