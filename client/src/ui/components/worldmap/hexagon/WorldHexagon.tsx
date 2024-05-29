@@ -10,6 +10,7 @@ import { Banks } from "../../models/buildings/worldmap/Banks.js";
 import { Armies } from "../armies/Armies.js";
 import { create } from "zustand";
 import { ShardsMines } from "../../models/buildings/worldmap/ShardsMines.js";
+import { BakeShadows } from "@react-three/drei";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -96,6 +97,7 @@ export const WorldMap = () => {
         {/* <Banks /> */}
         <Armies />
         <ShardsMines />
+        <BakeShadows />
       </>
     );
   }, [hexData]);
