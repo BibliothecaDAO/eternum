@@ -105,7 +105,11 @@ export const World = () => {
         <RightNavigationModule />
       </RightMiddleContainer>
 
-      <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} />
+      <Leva
+        hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU}
+        collapsed
+        titleBar={{ position: { x: 0, y: 50 } }}
+      />
       <Tooltip />
       <div className="absolute bottom-4 right-6 text-white text-xs text-white/60 hover:text-white">
         <a target="_blank" href="https://github.com/BibliothecaDAO/eternum">
