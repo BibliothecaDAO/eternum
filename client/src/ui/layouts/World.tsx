@@ -52,10 +52,12 @@ export const World = () => {
   useEffect(() => {
     if (progress === 100) {
       setIsLoadingScreenEnabled(false);
-    } else {
-      setIsLoadingScreenEnabled(true);
     }
   }, [progress]);
+
+  useEffect(() => {
+    setIsLoadingScreenEnabled(true);
+  }, []);
 
   return (
     <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden">
