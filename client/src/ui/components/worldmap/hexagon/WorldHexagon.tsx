@@ -5,7 +5,7 @@ import useUIStore from "../../../../hooks/store/useUIStore.js";
 import { useDojo } from "../../../../hooks/context/DojoContext.js";
 import { Subscription } from "rxjs";
 import { MyCastles, OtherCastles } from "../../models/buildings/worldmap/Castles.js";
-import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
+import { BiomesGrid, HexagonGrid, useSetPossibleActions } from "./HexLayers.js";
 import { Banks } from "../../models/buildings/worldmap/Banks.js";
 import { Armies } from "../armies/Armies.js";
 import { create } from "zustand";
@@ -99,6 +99,8 @@ export const WorldMap = () => {
       </>
     );
   }, [hexData]);
+
+  useSetPossibleActions(exploredHexes);
 
   return (
     <>

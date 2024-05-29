@@ -25,7 +25,7 @@ import { TundraBiome } from "../../models/biomes/TundraBiome.js";
 import { TemperateRainforestBiome } from "../../models/biomes/TemperateRainforestBiome";
 import { Hexagon, HighlightPosition } from "../../../../types/index";
 
-import { findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
+import { findAccessiblePositions, findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
 import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
 import { useExplore } from "../../../../hooks/helpers/useExplore";
 import { useTravel } from "../../../../hooks/helpers/useTravel";
@@ -256,11 +256,35 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   return (
     <Bvh firstHitOnly>
-      <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler} onPointerOut={mouseOutHandler}>
+      <group
+        // onPointerEnter={(e) => throttledHoverHandler(e)}
+        onClick={clickHandler}
+        // onPointerOut={mouseOutHandler}
+      >
         <primitive object={mesh} onDoubleClick={goToHex} />
       </group>
     </Bvh>
   );
+};
+
+export const useSetPossibleActions = (explored: Map<number, Set<number>>) => {
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
+  const hexData = useUIStore((state) => state.hexData);
+
+  useMemo(() => {
+    if (selectedEntity && hexData) {
+      const path = findAccessiblePositions(selectedEntity.position, hexData, explored, 5);
+      if (path.length > 1) {
+        const uiPath = path.map(({ x, y }) => {
+          const pos = getUIPositionFromColRow(x, y);
+          const hex = hexData.find((h) => h.col === x && h.row === y);
+          return { pos: [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0], color: TRAVEL_COLOUR };
+        }) as HighlightPosition[];
+        setHighlightPositions(uiPath);
+      }
+    }
+  }, [selectedEntity?.id, hexData]);
 };
 
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {
