@@ -13,7 +13,6 @@ import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
 import { useEffect } from "react";
 import clsx from "clsx";
 import { Redirect } from "wouter";
-import { useProgress } from "@react-three/drei";
 import { NotificationsComponent } from "../components/notifications/NotificationsComponent";
 import { Tooltip } from "../elements/Tooltip";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
@@ -29,9 +28,6 @@ import { RightNavigationModule } from "../modules/navigation/RightNavigationModu
 
 export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-
-  const progress = useProgress((state) => state.progress);
 
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
@@ -48,14 +44,6 @@ export const World = () => {
       setBlankOverlay(true);
     }
   }, [realmEntityIds]);
-
-  useEffect(() => {
-    if (progress === 100) {
-      setIsLoadingScreenEnabled(false);
-    } else {
-      setIsLoadingScreenEnabled(true);
-    }
-  }, [progress]);
 
   return (
     <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden">

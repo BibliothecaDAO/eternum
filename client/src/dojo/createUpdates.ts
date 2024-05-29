@@ -2,6 +2,7 @@ import { createEventSubscription } from "./events/createEventSubscription";
 import {
   COMBAT_EVENT,
   CREATE_ORDER_EVENT,
+  HYPERSTRUCTURE_FINISHED_EVENT,
   MAP_EXPLORED_EVENT,
   PILLAGE_EVENT,
   TRAVEL_EVENT,
@@ -10,6 +11,7 @@ import { numberToHex } from "../ui/utils/utils";
 
 export const createUpdates = async () => {
   const eventUpdates = {
+    hyperstructureFinishedEvents: async () => createEventSubscription([HYPERSTRUCTURE_FINISHED_EVENT, "*"]),
     createCombatEvents: async (entityId: bigint) =>
       createEventSubscription([COMBAT_EVENT, "*", numberToHex(Number(entityId)), "*"]),
     createTravelEvents: async (x: number, y: number) =>

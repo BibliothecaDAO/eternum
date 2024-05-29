@@ -15,6 +15,7 @@ import {
   RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
   WeightConfig,
+  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
 } from "../constants";
 import { EternumProvider } from "../provider";
 import { BuildingType } from "../utils";
@@ -166,7 +167,7 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
     shards_mines_fail_probability: EternumGlobalConfig.exploration.shardsMinesFailProbability,
   });
 
-  console.log(`Configuring bank config ${txExplore.statusReceipt}...`);
+  console.log(`Configuring exploration config ${txExplore.statusReceipt}...`);
 };
 
 export const setCapacityConfig = async (account: Account, provider: EternumProvider) => {
@@ -220,4 +221,12 @@ export const setQuestConfig = async (account: Account, provider: EternumProvider
 
     console.log(`Configuring quest config ${type} ${tx.statusReceipt}...`);
   }
+};
+
+export const setHyperstructureConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_hyperstructure_config({
+    signer: account,
+    resources_for_completion: HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  });
+  console.log(`Configuring hyperstructure ${tx.statusReceipt}...`);
 };

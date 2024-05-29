@@ -18,6 +18,7 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Subscription } from "rxjs";
 import { BUILDING_IMAGES_PATH } from "../construction/SelectPreviewBuilding";
 import { ArmyChip } from "./ArmyChip";
+import { StructureListItem } from "../worldmap/structures/StructureListItem";
 
 export const ArmiesAtLocation = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
@@ -241,14 +242,17 @@ export const TroopCard = ({ count, id }: { count: number; id: number }) => {
 export const Battle = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
   const { col: x, row: y } = clickedHex!.contractPos;
-  const { formattedRealmAtPosition } = useStructuresPosition({ position: { x, y } });
+  const { formattedRealmAtPosition, formattedStructureAtPosition } = useStructuresPosition({ position: { x, y } });
 
   return (
     <>
       <Headline className="my-3">Structures</Headline>
 
       <div className="grid grid-cols-2">
-        {formattedRealmAtPosition ? <RealmListItem realm={formattedRealmAtPosition} /> : "Nothing is here yet..."}
+        {formattedRealmAtPosition && <RealmListItem realm={formattedRealmAtPosition} />}
+        {!formattedRealmAtPosition && formattedStructureAtPosition && (
+          <StructureListItem structure={formattedStructureAtPosition} />
+        )}
       </div>
     </>
   );

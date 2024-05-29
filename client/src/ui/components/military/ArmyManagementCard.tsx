@@ -1,4 +1,4 @@
-import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";

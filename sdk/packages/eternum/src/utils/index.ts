@@ -2,7 +2,6 @@ import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
 
 export enum StructureType {
-  None = 0,
   Realm = 1,
   Hyperstructure = 2,
   Bank = 3,
@@ -11,7 +10,6 @@ export enum StructureType {
 }
 
 export enum BuildingType {
-  None = 0,
   Castle = 1,
   Resource = 2,
   Farm = 3,
@@ -29,6 +27,7 @@ export enum BuildingType {
   Bank = 15,
   ShardsMine = 16,
 }
+export const MAX_BUILDING_TYPE = 14;
 
 export enum ResourceBuildingType {
   Wood = 1,
@@ -150,8 +149,6 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ Bank: {} });
     case BuildingType.ShardsMine:
       return new CairoCustomEnum({ ShardsMine: {} });
-    case BuildingType.None:
-      return new CairoCustomEnum({ None: {} });
   }
 }
 
@@ -188,8 +185,6 @@ export function getProducedResource(name: BuildingType): number {
     case BuildingType.Bank:
       return 0;
     case BuildingType.ShardsMine:
-      return 0;
-    case BuildingType.None:
       return 0;
   }
 }

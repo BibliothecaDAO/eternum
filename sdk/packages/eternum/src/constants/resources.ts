@@ -1,5 +1,5 @@
 import { Resource, Resources } from "../types";
-import { BuildingType } from "../utils";
+import { BuildingType, StructureType } from "../utils";
 
 export const EternumGlobalConfig = {
   resources: {
@@ -89,6 +89,13 @@ const scaleResourceInputs = (resourceInputs: ResourceInputs) => {
   }
 
   return multipliedCosts;
+};
+
+const scaleResources = (resources: any[]): any[] => {
+  return resources.map((resource) => ({
+    ...resource,
+    amount: resource.amount * EternumGlobalConfig.resources.resourceMultiplier,
+  }));
 };
 
 export const resources: Array<Resources> = [
@@ -839,6 +846,52 @@ const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Earthenshard]: [{ resource: ResourcesIds.Fish, amount: 500 }],
 };
 
+const HYPERSTRUCTURE_CREATION_COSTS: { resource: number; amount: number }[] = [
+  {
+    resource: ResourcesIds.Earthenshard,
+    amount: 10,
+  },
+];
+
+const HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: number }[] = [
+  { resource: ResourcesIds.Wood, amount: 10 },
+  { resource: ResourcesIds.Stone, amount: 10 },
+  { resource: ResourcesIds.Coal, amount: 10 },
+  { resource: ResourcesIds.Copper, amount: 10 },
+  { resource: ResourcesIds.Obsidian, amount: 10 },
+  { resource: ResourcesIds.Silver, amount: 10 },
+  { resource: ResourcesIds.Ironwood, amount: 10 },
+  { resource: ResourcesIds.ColdIron, amount: 10 },
+  { resource: ResourcesIds.Gold, amount: 10 },
+  { resource: ResourcesIds.Hartwood, amount: 10 },
+  { resource: ResourcesIds.Diamonds, amount: 10 },
+  { resource: ResourcesIds.Sapphire, amount: 10 },
+  { resource: ResourcesIds.Ruby, amount: 10 },
+  { resource: ResourcesIds.DeepCrystal, amount: 10 },
+  { resource: ResourcesIds.Ignium, amount: 10 },
+  { resource: ResourcesIds.EtherealSilica, amount: 10 },
+  { resource: ResourcesIds.TrueIce, amount: 10 },
+  { resource: ResourcesIds.TwilightQuartz, amount: 10 },
+  { resource: ResourcesIds.AlchemicalSilver, amount: 10 },
+  { resource: ResourcesIds.Adamantine, amount: 10 },
+  { resource: ResourcesIds.Mithral, amount: 10 },
+  { resource: ResourcesIds.Dragonhide, amount: 10 },
+];
+
+const HYPERSTRUCTURE_TOTAL_COSTS: { resource: number; amount: number }[] = [
+  ...HYPERSTRUCTURE_CONSTRUCTION_COSTS,
+  ...HYPERSTRUCTURE_CREATION_COSTS,
+];
+
+const STRUCTURE_COSTS: ResourceInputs = {
+  [StructureType.Hyperstructure]: HYPERSTRUCTURE_CREATION_COSTS,
+  [StructureType.Bank]: [{ resource: ResourcesIds.Gold, amount: 100_000 }],
+  [StructureType.Settlement]: [
+    { resource: ResourcesIds.Wheat, amount: 100_000 },
+    { resource: ResourcesIds.Fish, amount: 100_000 },
+  ],
+};
+
 export const RESOURCE_INFORMATION: {
   [key: number]: string;
 } = {
@@ -967,7 +1020,12 @@ export const RESOURCE_OUTPUTS_SCALED: ResourceOutputs = scaleResourceOutputs(RES
 export const BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(BUILDING_COSTS);
 export const RESOURCE_INPUTS_SCALED: ResourceInputs = scaleResourceInputs(RESOURCE_INPUTS);
 export const QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(QUEST_RESOURCES);
-export const EXPLORATION_COSTS_SCALED: Resource[] = EXPLORATION_COSTS.map((resource) => ({
-  ...resource,
-  amount: resource.amount * EternumGlobalConfig.resources.resourceMultiplier,
-}));
+export const EXPLORATION_COSTS_SCALED: Resource[] = scaleResources(EXPLORATION_COSTS);
+export const STRUCTURE_COSTS_SCALED: ResourceInputs = scaleResourceInputs(STRUCTURE_COSTS);
+export const HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED: { resource: number; amount: number }[] = scaleResources(
+  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
+);
+export const HYPERSTRUCTURE_CREATION_COSTS_SCALED: { resource: number; amount: number }[] =
+  scaleResources(HYPERSTRUCTURE_CREATION_COSTS);
+export const HYPERSTRUCTURE_TOTAL_COSTS_SCALED: { resource: number; amount: number }[] =
+  scaleResources(HYPERSTRUCTURE_TOTAL_COSTS);
