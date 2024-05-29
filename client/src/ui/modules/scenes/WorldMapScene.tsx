@@ -65,7 +65,7 @@ export const WorldMapScene = () => {
     <>
       {!showBlankOverlay && isMapView && <WorldMap />}
       <HighlightedHexes />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]} receiveShadow>
         <planeGeometry args={[2668, 1390.35]} />
         <meshPhongMaterial {...texture} />
       </mesh>

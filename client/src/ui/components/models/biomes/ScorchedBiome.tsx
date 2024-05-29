@@ -32,6 +32,7 @@ export function ScorchedBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: bo
   const meshes = useMemo(() => {
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["Scorched Rock"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials.Lava, hexes.length);
+    instancedMesh1.receiveShadow = true;
 
     let idx = 0;
     let matrix = new THREE.Matrix4();

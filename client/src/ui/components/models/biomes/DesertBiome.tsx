@@ -16,6 +16,8 @@ export function DesertBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: bool
 
   const mesh = useMemo(() => {
     const instancedMesh = new THREE.InstancedMesh(desertGeometry, materials.Sand, hexes.length);
+    instancedMesh.receiveShadow = true;
+
     let idx = 0;
     let matrix = new THREE.Matrix4();
     hexes.forEach((hex: any) => {

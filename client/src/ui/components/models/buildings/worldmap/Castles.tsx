@@ -7,6 +7,7 @@ import { HexPositions, getRealmUIPosition, pseudoRandom } from "../../../../util
 import { biomes } from "@bibliothecadao/eternum";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { Hexagon } from "../../../../../types";
+import { useControls } from "leva";
 
 type Castle = {
   uiPos: { x: number; y: number };
@@ -50,6 +51,21 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
       .filter(Boolean) as Castle[];
   }, []);
 
+  const { intensity, power, lpos } = useControls("castles", {
+    intensity: { value: 1, min: 0, max: 100, step: 0.1 },
+    power: { value: 275, min: 0, max: 1000, step: 1 },
+    lpos: {
+      value: {
+        x: -2,
+        y: 4,
+        z: 1,
+      },
+      min: -10,
+      max: 10,
+      step: 0.1,
+    },
+  });
+
   return (
     <group>
       {castles.map((castle) => {
@@ -64,6 +80,13 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
               name="castle"
               castShadow
               rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
+            />
+            <pointLight
+              castShadow
+              color="white"
+              intensity={intensity}
+              power={power}
+              position={[lpos.x, lpos.y, lpos.z]}
             />
           </group>
         );

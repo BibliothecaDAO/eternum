@@ -52,6 +52,7 @@ export function TropicalRainforestBiome({ hexes, zOffsets }: { hexes: any[]; zOf
       const instancedMesh = new THREE.InstancedMesh(geometry, materials[idx], hexes.length);
       return instancedMesh;
     });
+    instancedMeshes[0].receiveShadow = true;
 
     let idx = 0;
     let matrix = new THREE.Matrix4();

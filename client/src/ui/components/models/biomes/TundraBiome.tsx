@@ -63,6 +63,10 @@ export function TundraBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: bool
       const instancedMesh = new THREE.InstancedMesh(geometry, materials[idx], hexes.length);
       return instancedMesh;
     });
+    instancedMeshes[0].receiveShadow = true;
+    instancedMeshes[1].receiveShadow = true;
+    instancedMeshes[2].receiveShadow = true;
+    instancedMeshes[3].receiveShadow = true;
 
     let idx = 0;
     let matrix = new THREE.Matrix4();

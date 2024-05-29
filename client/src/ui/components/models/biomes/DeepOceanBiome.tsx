@@ -16,6 +16,8 @@ export function DeepOceanBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: b
 
   const mesh = useMemo(() => {
     const instancedMesh = new THREE.InstancedMesh(geometry, materials["Deep Ocean Water"], hexes.length);
+    instancedMesh.receiveShadow = true;
+
     let idx = 0;
     let matrix = new THREE.Matrix4();
     hexes.forEach((hex: any) => {

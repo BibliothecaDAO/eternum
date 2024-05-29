@@ -38,7 +38,7 @@ export function BeachBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boole
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["White Sand"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials["Palm Trunk"], hexes.length);
     const instancedMesh3 = new THREE.InstancedMesh(geometry3, materials["Palm Leaves"], hexes.length);
-
+    instancedMesh1.receiveShadow = true;
     let idx = 0;
     let matrix = new THREE.Matrix4();
     hexes.forEach((hex: any) => {

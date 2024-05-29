@@ -42,6 +42,8 @@ export function SnowBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boolea
   const meshes = useMemo(() => {
     const instancedMeshRock = new THREE.InstancedMesh(mountains1Geometry, rockMaterial, hexes.length);
     const instancedMeshSnow = new THREE.InstancedMesh(mountains2Geometry, snowMaterial, hexes.length);
+    instancedMeshRock.receiveShadow = true;
+    instancedMeshSnow.receiveShadow = true;
 
     let idx = 0;
     let matrix = new THREE.Matrix4();

@@ -37,6 +37,7 @@ export function ShrublandBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: b
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["Gray Dirt"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials["Yellow Rock"], hexes.length);
     const instancedMesh3 = new THREE.InstancedMesh(geometry3, materials["Cactus.001Shrub"], hexes.length);
+    instancedMesh1.receiveShadow = true;
 
     let idx = 0;
     let matrix = new THREE.Matrix4();

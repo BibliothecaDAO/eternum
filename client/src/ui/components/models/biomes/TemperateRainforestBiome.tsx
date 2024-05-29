@@ -52,6 +52,7 @@ export function TemperateRainforestBiome({ hexes, zOffsets }: { hexes: any[]; zO
       const instancedMesh = new THREE.InstancedMesh(geometry, materials[idx], hexes.length);
       return instancedMesh;
     });
+    instancedMeshes[0].receiveShadow = true;
 
     let idx = 0;
     let matrix = new THREE.Matrix4();

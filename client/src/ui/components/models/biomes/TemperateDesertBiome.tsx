@@ -31,6 +31,7 @@ export function TemperateDesertBiome({ hexes, zOffsets }: { hexes: any[]; zOffse
   const meshes = useMemo(() => {
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["Red Rock"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials["Orange Sand"], hexes.length);
+    instancedMesh1.receiveShadow = true;
 
     let idx = 0;
     let matrix = new THREE.Matrix4();

@@ -38,6 +38,7 @@ export function DeciduousForestBiome({ hexes, zOffsets }: { hexes: any[]; zOffse
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["Lush Grass"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials["Deciduous Leaves"], hexes.length);
     const instancedMesh3 = new THREE.InstancedMesh(geometry3, materials.Wood, hexes.length);
+    instancedMesh1.receiveShadow = true;
 
     let idx = 0;
     let matrix = new THREE.Matrix4();

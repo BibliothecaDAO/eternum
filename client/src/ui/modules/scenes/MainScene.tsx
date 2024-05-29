@@ -156,7 +156,6 @@ export const MainScene = () => {
           <Suspense fallback={null}>
             <Switch location={locationType}>
               <Route path="map">
-                <BakeShadows />
                 <WorldMapScene />
               </Route>
               <Route path="hexception">
