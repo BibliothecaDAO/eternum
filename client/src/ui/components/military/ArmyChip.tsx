@@ -1,21 +1,13 @@
 import { findResourceById } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat, getEntityIdFromKeys } from "../../utils/utils";
+import { currencyFormat } from "../../utils/utils";
 import { useMemo, useState } from "react";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import useUIStore from "@/hooks/store/useUIStore";
 import { ArmyAndName } from "@/hooks/helpers/useArmies";
 import { InventoryResources } from "../resources/InventoryResources";
-import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyManagementCard, ViewOnMapButton } from "./ArmyManagementCard";
 import Button from "@/ui/elements/Button";
 
 export const ArmyChip = ({ army }: { army: ArmyAndName }) => {
-  const { setup, account } = useDojo();
-  const currentTick = useBlockchainStore((state) => state.currentTick);
-  const setTooltip = useUIStore((state) => state.setTooltip);
-
   const troopCounts = useMemo(() => {
     const {
       troops: { crossbowman_count, paladin_count, knight_count },
@@ -39,24 +31,10 @@ export const ArmyChip = ({ army }: { army: ArmyAndName }) => {
     );
   }, [army]);
 
-  const tickMove = getComponentValue(setup.components.TickMove, getEntityIdFromKeys([BigInt(army.entity_id)]));
-  const isActiveTravel = useMemo(() => tickMove && tickMove.tick >= currentTick, [tickMove, currentTick]);
-
   const [editMode, setEditMode] = useState(false);
 
   return (
-    <div
-      className=" items-center text-xs p-2 hover:bg-gold/20 clip-angled-sm bg-gold/20 border-gray-300 rounded-md"
-      // onMouseEnter={() => {
-      //   setTooltip({
-      //     position: "top",
-      //     content: <>{troopCounts}</>,
-      //   });
-      // }}
-      // onMouseLeave={() => {
-      //   setTooltip(null);
-      // }}
-    >
+    <div className=" items-center text-xs p-2 hover:bg-gold/20 clip-angled-sm bg-gold/20 border-gray-300 rounded-md">
       {editMode ? (
         <>
           <Button size="xs" onClick={() => setEditMode(!editMode)}>
@@ -70,7 +48,6 @@ export const ArmyChip = ({ army }: { army: ArmyAndName }) => {
             <div className="font-display">{army.name}</div>
 
             <div className="flex items-center space-x-1 justify-end">
-              <div className="text-xs font-semibold">{isActiveTravel ? "Moving" : "Can Move"}</div>
               <ViewOnMapButton position={{ x: army.x, y: army.y }} className="text-xxs" />
               <Button size="xs" onClick={() => setEditMode(!editMode)}>
                 Buy Troops

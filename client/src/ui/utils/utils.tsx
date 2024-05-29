@@ -1,8 +1,3 @@
-import { forwardRef, useMemo, useLayoutEffect } from "react";
-import { Vector2 } from "three";
-import { useThree } from "@react-three/fiber";
-import { BlendFunction } from "postprocessing";
-import { Entity } from "@dojoengine/recs";
 import { Position, ResourcesIds, UIPosition, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";

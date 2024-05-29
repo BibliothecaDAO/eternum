@@ -17,6 +17,7 @@ import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useResourceBalance } from "../../../../hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import { DojoHtml } from "@/ui/elements/DojoHtml";
+import { useStamina } from "@/hooks/helpers/useStamina";
 
 const EXPLORE_DESCRIPTION = "Explore the area to discover resources. Limit: 1 hex per tick.";
 const TRAVEL_DESCRIPTION = "Move to a new location. Limit: 5 hexes per tick.";
@@ -62,7 +63,7 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
   const {
     account: { account },
     setup: {
-      components: { TickMove, ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Owner, Position, Health, Realm },
+      components: { ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Owner },
     },
   } = useDojo();
 
@@ -75,7 +76,6 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
   const [playerOwnsSelectedEntity, setPlayerOwnsSelectedEntity] = useState(false);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const currentTick = useBlockchainStore((state) => state.currentTick);
 
   useEffect(() => {
     const fetchEntityDetails = () => {
@@ -94,7 +94,6 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
   const quantity = getComponentValue(Quantity, getEntityIdFromKeys([selectedEntityId]));
   const capacity = getComponentValue(Capacity, getEntityIdFromKeys([selectedEntityId]));
   const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntityId]));
-  const tickMove = getComponentValue(TickMove, getEntityIdFromKeys([selectedEntityId]));
 
   const totalCapacityInKg = useMemo(
     () => divideByPrecision(Number(capacity?.weight_gram)) * Number(quantity?.value),
@@ -106,9 +105,7 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
     [arrivalTime, nextBlockTimestamp],
   );
 
-  const isActiveTravel = useMemo(() => tickMove && tickMove.tick >= currentTick, [tickMove, currentTick]);
-
-  const isTraveling = useMemo(() => isPassiveTravel || isActiveTravel, [isPassiveTravel, isActiveTravel]);
+  const isTraveling = useMemo(() => isPassiveTravel, [isPassiveTravel]);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -190,7 +187,7 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
         </Button>
 
         {playerOwnsSelectedEntity && (
-          <Button disabled={isTravelDisabled} onClick={handleTravelClick} variant="primary">
+          <Button onClick={handleTravelClick} variant="primary">
             <div className="flex items-center justify-between w-full">
               <span>{isTravelMode || isTraveling ? "Traveling..." : "Travel"}</span>
               <InfoIcon

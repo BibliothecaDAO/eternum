@@ -114,7 +114,7 @@ export const useComputePointsLeaderboards = () => {
       const contributions = getContributions(hyperstructureEntityId);
 
       const nbOfCycles = Math.floor(
-        (currentTimestamp - finishedTimestamp) / EternumGlobalConfig.tick.tickIntervalInSeconds,
+        (currentTimestamp - finishedTimestamp) / EternumGlobalConfig.tick.defaultTickIntervalInSeconds,
       );
       let totalHyperstructurePoints = HYPERSTRUCTURE_POINTS_PER_CYCLE * nbOfCycles;
 
