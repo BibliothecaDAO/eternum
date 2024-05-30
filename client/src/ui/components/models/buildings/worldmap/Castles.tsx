@@ -1,9 +1,9 @@
-import { useGLTF } from "@react-three/drei";
+import { BakeShadows, Detailed, useGLTF } from "@react-three/drei";
 import realmHexPositions from "../../../../../data/geodata/hex/realmHexPositions.json";
 import { useMemo, useState } from "react";
 import { useGetRealms } from "../../../../../hooks/helpers/useRealm";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { HexPositions, getRealmUIPosition, pseudoRandom } from "../../../../utils/utils";
+import { HexPositions, getRealmUIPosition, getUIPositionFromColRow, pseudoRandom } from "../../../../utils/utils";
 import { biomes } from "@bibliothecadao/eternum";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { Hexagon } from "../../../../../types";
@@ -52,7 +52,7 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
   }, []);
 
   const { intensity, power, lpos } = useControls("castles", {
-    intensity: { value: 1, min: 0, max: 100, step: 0.1 },
+    intensity: { value: 0.1, min: 0, max: 100, step: 0.1 },
     power: { value: 275, min: 0, max: 1000, step: 1 },
     lpos: {
       value: {
@@ -80,13 +80,6 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
               name="castle"
               castShadow
               rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
-            />
-            <pointLight
-              castShadow
-              color="white"
-              intensity={intensity}
-              power={power}
-              position={[lpos.x, lpos.y, lpos.z]}
             />
           </group>
         );
