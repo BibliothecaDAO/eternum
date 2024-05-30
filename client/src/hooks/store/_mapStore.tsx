@@ -54,14 +54,13 @@ export const createMapStoreSlice = (set: any) => ({
   setHighlightPositions: (positions: HighlightPositions) => {
     set({ highlightPositions: positions });
   },
-  clearSelection: () => {
+  clearSelection: () =>
     set({
       selectedEntity: undefined,
       armyMode: null,
       highlightPath: { pos: [], color: 0 },
       highlightPositions: { pos: [], color: 0 },
-    });
-  },
+    }),
   showAllArmies: false,
   toggleShowAllArmies: () => {
     set((state: MapStore) => {

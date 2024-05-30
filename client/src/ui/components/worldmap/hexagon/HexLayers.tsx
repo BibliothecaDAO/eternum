@@ -37,7 +37,7 @@ import { ArmyMode } from "@/hooks/store/_mapStore";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
-const EXPLORE_COLOUR = 0xbc85e1;
+const EXPLORE_COLOUR = 0x2563eb;
 const TRAVEL_COLOUR = 0x3cb93c;
 const CLICKED_HEX_COLOR = 0xff5733;
 const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
@@ -298,7 +298,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     armyMode,
     setArmyMode,
     selectedEntity,
-    setSelectedEntity,
     setClickedHex,
     clickedHex,
     setHighlightPath,
@@ -353,7 +352,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
           positions.push(clickedHexRef.current.uiPos);
         }
         return setHighlightPositions({ pos: positions, color: CLICKED_HEX_COLOR } as HighlightPositions);
-        return;
       }
 
       const selectedEntityPosition = getUIPositionFromColRow(
