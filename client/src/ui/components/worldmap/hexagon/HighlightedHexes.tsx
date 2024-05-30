@@ -4,22 +4,21 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 
 const HighlightedHexes = () => {
-  const highlightPositions = useUIStore((state) => state.highlightPositions);
+  const highlightColors = useUIStore((state) => state.highlightColors);
   const accessiblePositions = useUIStore((state) => state.accessiblePositions);
 
   useEffect(() => {
     meshRefs.current.forEach((mesh, index) => {
       if (mesh) {
         const pos = accessiblePositions[index];
-        const highightedPos = highlightPositions.find(
-          (highlightPos) =>
-            highlightPos.pos[0] === pos[0] && highlightPos.pos[1] === pos[1] && highlightPos.pos[2] === pos[2],
+        const isHighlighted = highlightColors.pos.some(
+          (highlightPos) => highlightPos[0] === pos[0] && highlightPos[1] === pos[1] && highlightPos[2] === pos[2],
         );
-        const color = highightedPos ? highightedPos.color : "white";
+        const color = isHighlighted ? highlightColors.color : "white";
         mesh.material.color.set(color);
       }
     });
-  }, [highlightPositions, accessiblePositions]);
+  }, [highlightColors, accessiblePositions]);
 
   const hexagonGeometry = new THREE.RingGeometry(2, 1.5, 6, 1);
 

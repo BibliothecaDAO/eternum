@@ -3,8 +3,8 @@ import { getColRowFromUIPosition } from "../../../utils/utils";
 
 export const FixedHexagonInformation = () => {
   const hexData = useUIStore((state) => state.hexData);
-  const highlightPositions = useUIStore((state) => state.highlightPositions);
-  const colRow = getColRowFromUIPosition(highlightPositions[0]?.pos[0], -highlightPositions[0]?.pos[1]);
+  const highlightColors = useUIStore((state) => state.highlightColors);
+  const colRow = getColRowFromUIPosition(highlightColors.pos[0][0], -highlightColors.pos[0][1]);
 
   const biome = hexData?.find((hex) => hex.col === colRow.col && hex.row === colRow.row)?.biome;
   return (

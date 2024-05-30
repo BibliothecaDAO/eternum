@@ -16,7 +16,7 @@ export interface ClickedHex {
   hexIndex: number;
 }
 
-export interface HighlightPosition {
-  pos: Position3D;
+export interface HighlightColors {
+  pos: Position3D[];
   color: number;
 }
