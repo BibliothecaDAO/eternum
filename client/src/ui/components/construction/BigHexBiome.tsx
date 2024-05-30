@@ -66,7 +66,7 @@ const BigHexBiome = ({ biome, flat }: { biome: keyof typeof biomes; flat: boolea
 
     return {
       BiomeComponent: biomeComponents[_biome],
-      material: new THREE.MeshBasicMaterial({ color: new THREE.Color(biomes[_biome]!.color) }),
+      material: new THREE.MeshPhongMaterial({ color: new THREE.Color(biomes[_biome]!.color) }),
     };
   }, [biome]);
 

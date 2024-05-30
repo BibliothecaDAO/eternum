@@ -64,16 +64,14 @@ export const WorldMapScene = () => {
 
   return (
     <>
-      <group>
-        {!showBlankOverlay && isMapView && <WorldMap />}
-        <HighlightedHexes />
-        <StructurePreview />
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]}>
-          <planeGeometry args={[2668, 1390.35]} />
-          <meshPhongMaterial {...texture} />
-        </mesh>
-        <WorldMapLight />
-      </group>
+      {!showBlankOverlay && isMapView && <WorldMap />}
+      <HighlightedHexes />
+      <StructurePreview />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]} receiveShadow>
+        <planeGeometry args={[2668, 1390.35]} />
+        <meshPhongMaterial {...texture} />
+      </mesh>
+      <WorldMapLight />
     </>
   );
 };

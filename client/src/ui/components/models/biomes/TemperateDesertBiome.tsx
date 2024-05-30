@@ -31,6 +31,7 @@ export function TemperateDesertBiome({ hexes, zOffsets }: { hexes: any[]; zOffse
   const meshes = useMemo(() => {
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["Red Rock"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials["Orange Sand"], hexes.length);
+    instancedMesh1.receiveShadow = true;
 
     let idx = 0;
     let matrix = new THREE.Matrix4();
@@ -39,7 +40,7 @@ export function TemperateDesertBiome({ hexes, zOffsets }: { hexes: any[]; zOffse
       // rotate hex randomly on 60 * n degrees
       const seededRandom = pseudoRandom(hex.x, hex.y);
       matrix.makeRotationZ((Math.PI / 3) * Math.floor(seededRandom * 6));
-      matrix.setPosition(x, y, zOffsets ? 0.32 + z : 0.32);
+      matrix.setPosition(x, y, zOffsets ? z : 0.32);
       instancedMesh1.setMatrixAt(idx, matrix);
       instancedMesh2.setMatrixAt(idx, matrix);
       idx++;

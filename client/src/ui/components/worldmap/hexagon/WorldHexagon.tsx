@@ -7,6 +7,7 @@ import { Subscription } from "rxjs";
 import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
 import { Armies } from "../armies/Armies.js";
 import { create } from "zustand";
+import { ShardsMines } from "../../models/buildings/worldmap/ShardsMines.js";
 import { Structures } from "../../models/buildings/worldmap/Structures.js";
 
 interface ExploredHexesState {
@@ -90,6 +91,7 @@ export const WorldMap = () => {
     return (
       <>
         <Armies />
+        <ShardsMines />
         <Structures />
       </>
     );
