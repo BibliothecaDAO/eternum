@@ -119,11 +119,6 @@ export function WarriorModel({
   const part2Color = "green";
   const part3Color = "blue";
 
-  // const onPointerEnter = useCallback((e: any) => {
-  //   e.stopPropagation();
-  //   console.log("hello");
-  // }, []);
-
   return (
     <group {...props} ref={groupRef} onClick={onClickAction} onContextMenu={onContextMenu}>
       <mesh position={[0, part1Height / 2, 0]}>
