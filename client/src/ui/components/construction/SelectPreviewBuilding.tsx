@@ -165,7 +165,8 @@ export const SelectPreviewBuildingMenu = () => {
                 const cost = BUILDING_COSTS_SCALED[building];
                 const hasBalance = checkBalance(cost);
                 const hasEnoughPopulation =
-                  (realm?.population || 0) + BUILDING_POPULATION[building] <= BASE_POPULATION_CAPACITY;
+                  (realm?.population || 0) + BUILDING_POPULATION[building] <=
+                  realm?.capacity + BASE_POPULATION_CAPACITY;
 
                 const canBuild =
                   BuildingType.WorkersHut == building
