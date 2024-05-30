@@ -50,7 +50,7 @@ export const World = () => {
   }, [realmEntityIds]);
 
   const isLoading = useMemo(() => {
-    return isLoadingScreenEnabled && progress !== 100;
+    return isLoadingScreenEnabled || progress !== 100;
   }, [isLoadingScreenEnabled, progress]);
 
   return (

@@ -375,6 +375,7 @@ export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => 
 
 export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: string; showWalkthrough?: boolean }) => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const [_location, setLocation] = useLocation();
   const { playerRealms } = useEntities();
   const { setIsOpen } = useTour();
@@ -383,9 +384,12 @@ export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: strin
       size="md"
       variant="primary"
       onClick={() => {
-        showBlankOverlay(false);
-        setLocation(`/hex?col=${playerRealms()[0]?.position.x}&row=${playerRealms()[0]?.position.y}`);
-        setIsOpen(showWalkthrough);
+        setIsLoadingScreenEnabled(true);
+        setTimeout(() => {
+          showBlankOverlay(false);
+          setLocation(`/hex?col=${playerRealms()[0]?.position.x}&row=${playerRealms()[0]?.position.y}`);
+          setIsOpen(showWalkthrough);
+        }, 300);
       }}
     >
       {text}
