@@ -230,7 +230,7 @@ impl ResourceImpl of ResourceTrait {
         let mut production: Production = get!(
             world, (self.entity_id, self.resource_type), Production
         );
-        let tick = TickImpl::get(world);
+        let tick = TickImpl::get_default_tick_config(world);
         if production.last_updated_tick != tick.current() {
             production.harvest(ref self, @tick);
             set!(world, (self));
@@ -307,7 +307,7 @@ mod tests_resource_traits {
     use core::option::OptionTrait;
     use debug::PrintTrait;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+    use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
     use eternum::models::config::{TickConfig, TickImpl, TickTrait};
     use eternum::models::production::ProductionRateTrait;
     use eternum::models::resources::ResourceTrait;
@@ -326,7 +326,7 @@ mod tests_resource_traits {
 
         // set tick config 
         let tick_config = TickConfig {
-            config_id: WORLD_CONFIG_ID, max_moves_per_tick: 5, tick_interval_in_seconds: 5
+            config_id: WORLD_CONFIG_ID, tick_id: TickIds::DEFAULT, tick_interval_in_seconds: 5
         };
         set!(world, (tick_config));
 
@@ -383,7 +383,7 @@ mod tests_resource_traits {
         //
         let (world, entity_id, _, _) = setup();
 
-        let tick_config = TickImpl::get(world);
+        let tick_config = TickImpl::get_default_tick_config(world);
 
         // advance time by 3 ticks
         starknet::testing::set_block_timestamp(3 * tick_config.tick_interval_in_seconds);
@@ -407,7 +407,7 @@ mod tests_resource_traits {
         //
         let (world, entity_id, _, _) = setup();
 
-        let tick_config = TickImpl::get(world);
+        let tick_config = TickImpl::get_default_tick_config(world);
 
         // advance time by 900 ticks (way after 33 ticks when gold finishes)
         starknet::testing::set_block_timestamp(900 * tick_config.tick_interval_in_seconds);

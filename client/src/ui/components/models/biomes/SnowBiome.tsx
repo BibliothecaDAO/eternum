@@ -42,6 +42,8 @@ export function SnowBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boolea
   const meshes = useMemo(() => {
     const instancedMeshRock = new THREE.InstancedMesh(mountains1Geometry, rockMaterial, hexes.length);
     const instancedMeshSnow = new THREE.InstancedMesh(mountains2Geometry, snowMaterial, hexes.length);
+    instancedMeshRock.receiveShadow = true;
+    instancedMeshSnow.receiveShadow = true;
 
     let idx = 0;
     let matrix = new THREE.Matrix4();
@@ -50,7 +52,7 @@ export function SnowBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boolea
       // rotate hex randomly on 60 * n degrees
       const seededRandom = pseudoRandom(hex.x, hex.y);
       matrix.makeRotationZ((Math.PI / 3) * Math.floor(seededRandom * 6));
-      matrix.setPosition(x, y, zOffsets ? 0.32 + z : 0.32);
+      matrix.setPosition(x, y, zOffsets ? z : 0.32);
       instancedMeshRock.setMatrixAt(idx, matrix);
       instancedMeshSnow.setMatrixAt(idx, matrix);
       idx++;

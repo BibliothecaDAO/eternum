@@ -33,7 +33,7 @@ export const MarketResource = ({
   askPrice: string;
   bidPrice: string;
 }) => {
-  const currentTick = useBlockchainStore((state) => state.currentTick);
+  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resource.id);
 
   const production = useMemo(() => {
@@ -41,8 +41,8 @@ export const MarketResource = ({
   }, []);
 
   const balance = useMemo(() => {
-    return productionManager.balance(currentTick);
-  }, [productionManager, production, currentTick]);
+    return productionManager.balance(currentDefaultTick);
+  }, [productionManager, production, currentDefaultTick]);
 
   return (
     <div
@@ -297,7 +297,7 @@ export const OrderCreation = ({
     return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacity.donkey);
   }, [orderWeight]);
 
-  const currentTick = useBlockchainStore((state) => state.currentTick);
+  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
   const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
 
   const donkeyProduction = useMemo(() => {
@@ -305,8 +305,8 @@ export const OrderCreation = ({
   }, []);
 
   const donkeyBalance = useMemo(() => {
-    return donkeyProductionManager.balance(currentTick);
-  }, [donkeyProductionManager, donkeyProduction, currentTick]);
+    return donkeyProductionManager.balance(currentDefaultTick);
+  }, [donkeyProductionManager, donkeyProduction, currentDefaultTick]);
 
   const resourceProductionManager = useProductionManager(entityId, resourceId);
 
@@ -315,8 +315,8 @@ export const OrderCreation = ({
   }, [resourceId]);
 
   const resourceBalance = useMemo(() => {
-    return resourceProductionManager.balance(currentTick);
-  }, [resourceProduction, resourceProduction, currentTick, resourceId]);
+    return resourceProductionManager.balance(currentDefaultTick);
+  }, [resourceProduction, resourceProduction, currentDefaultTick, resourceId]);
 
   const lordsProductionManager = useProductionManager(entityId, ResourcesIds.Lords);
 
@@ -325,8 +325,8 @@ export const OrderCreation = ({
   }, []);
 
   const lordsBalance = useMemo(() => {
-    return lordsProductionManager.balance(currentTick);
-  }, [lordsProductionManager, lordsProduction, currentTick]);
+    return lordsProductionManager.balance(currentDefaultTick);
+  }, [lordsProductionManager, lordsProduction, currentDefaultTick]);
 
   const canBuy = useMemo(() => {
     return isBuy ? lordsBalance > lords : resourceBalance > resource;

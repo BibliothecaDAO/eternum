@@ -3,7 +3,7 @@ use core::debug::PrintTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION,
-    HYPERSTRUCTURE_CONFIG_ID
+    HYPERSTRUCTURE_CONFIG_ID, TickIds
 };
 use eternum::models::buildings::BuildingCategory;
 
@@ -97,15 +97,29 @@ struct MapExploreConfig {
 struct TickConfig {
     #[key]
     config_id: u128,
-    max_moves_per_tick: u8,
+    #[key]
+    tick_id: u8,
     tick_interval_in_seconds: u64
 }
 
+#[derive(Model, Copy, Drop, Serde)]
+struct StaminaConfig {
+    #[key]
+    config_id: u128,
+    #[key]
+    unit_type: u8,
+    max_stamina: u16,
+}
 
 #[generate_trait]
 impl TickImpl of TickTrait {
-    fn get(world: IWorldDispatcher) -> TickConfig {
-        let tick_config: TickConfig = get!(world, WORLD_CONFIG_ID, TickConfig);
+    fn get_default_tick_config(world: IWorldDispatcher) -> TickConfig {
+        let tick_config: TickConfig = get!(world, (WORLD_CONFIG_ID, TickIds::DEFAULT), TickConfig);
+        return tick_config;
+    }
+
+    fn get_armies_tick_config(world: IWorldDispatcher) -> TickConfig {
+        let tick_config: TickConfig = get!(world, (WORLD_CONFIG_ID, TickIds::ARMIES), TickConfig);
         return tick_config;
     }
 
@@ -127,6 +141,10 @@ impl TickImpl of TickTrait {
 
     fn after(self: TickConfig, time_spent: u64) -> u64 {
         (starknet::get_block_timestamp() + time_spent) / self.tick_interval_in_seconds
+    }
+
+    fn next_tick_timestamp(self: TickConfig) -> u64 {
+        self.current() + self.interval()
     }
 }
 

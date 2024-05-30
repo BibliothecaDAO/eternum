@@ -4,15 +4,14 @@ import useUIStore from "@/hooks/store/useUIStore";
 import {
   BASE_POPULATION_CAPACITY,
   BUILDING_CAPACITY,
-  BUILDING_INFORMATION,
   BUILDING_POPULATION,
-  BUILDING_PRODUCTION_PER_TICK,
   BUILDING_RESOURCE_PRODUCED,
   BuildingEnumToString,
   BuildingType,
   EternumGlobalConfig,
   RESOURCE_INFORMATION,
   RESOURCE_INPUTS_SCALED,
+  RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
@@ -30,12 +29,12 @@ import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
+import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
 const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 export const BUILDING_IMAGES_PATH = {
-  [BuildingType.None]: "",
   [BuildingType.Castle]: "",
   [BuildingType.Bank]: "",
   [BuildingType.ShardsMine]: "",
@@ -80,7 +79,9 @@ export const SelectPreviewBuildingMenu = () => {
       key !== "DonkeyFarm" &&
       key !== "TradingPost" &&
       key !== "WatchTower" &&
-      key !== "Walls",
+      key !== "Walls" &&
+      key !== "Settlement" &&
+      key !== "Hyperstructure",
   );
 
   const realmResourceIds = useMemo(() => {
@@ -116,9 +117,11 @@ export const SelectPreviewBuildingMenu = () => {
 
               const cost = [...BUILDING_COSTS_SCALED[BuildingType.Resource], ...RESOURCE_INPUTS_SCALED[resourceId]];
               const hasBalance = checkBalance(cost);
-              const hasEnoughPopulation =
-                (realm?.population || 0) + BUILDING_POPULATION[BuildingType.Resource] <=
-                BASE_POPULATION_CAPACITY + realm?.capacity;
+
+              const hasEnoughPopulation = hasEnoughPopulationForBuilding(
+                realm,
+                BUILDING_POPULATION[BuildingType.Resource],
+              );
 
               const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
@@ -161,12 +164,10 @@ export const SelectPreviewBuildingMenu = () => {
               .filter((a) => a !== "Barracks" && a !== "ArcheryRange" && a !== "Stable")
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
-
                 const cost = BUILDING_COSTS_SCALED[building];
                 const hasBalance = checkBalance(cost);
-                const hasEnoughPopulation =
-                  (realm?.population || 0) + BUILDING_POPULATION[building] <= BASE_POPULATION_CAPACITY;
 
+                const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild =
                   BuildingType.WorkersHut == building
                     ? hasBalance
@@ -219,9 +220,8 @@ export const SelectPreviewBuildingMenu = () => {
 
                 const cost = BUILDING_COSTS_SCALED[building];
                 const hasBalance = checkBalance(cost);
-                const hasEnoughPopulation =
-                  realm?.population + BUILDING_POPULATION[building] <= BASE_POPULATION_CAPACITY;
 
+                const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
 
                 return (
@@ -403,25 +403,26 @@ export const BuildingInfo = ({
   buildingId,
   entityId,
   extraButtons = [],
+  name = BuildingEnumToString[buildingId],
 }: {
   buildingId: number;
   entityId: bigint | undefined;
   extraButtons?: React.ReactNode[];
+  name?: string;
 }) => {
-  const cost = BUILDING_COSTS_SCALED[buildingId];
+  const cost = BUILDING_COSTS_SCALED[buildingId] || [];
 
-  const information = BUILDING_INFORMATION[buildingId];
-  const population = BUILDING_POPULATION[buildingId];
-  const capacity = BUILDING_CAPACITY[buildingId];
-  const perTick = BUILDING_PRODUCTION_PER_TICK[buildingId];
+  const population = BUILDING_POPULATION[buildingId] || 0;
+  const capacity = BUILDING_CAPACITY[buildingId] || 0;
+  const perTick = RESOURCE_OUTPUTS_SCALED[buildingId] || 0;
   const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
-  const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced];
+  const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced] || 0;
 
   const { getBalance } = useResourceBalance();
 
   return (
     <div className="p-2 text-sm text-gold">
-      <Headline className="pb-3"> {BuildingEnumToString[buildingId]} </Headline>
+      <Headline className="pb-3"> {name} </Headline>
 
       {resourceProduced !== 0 && (
         <div className=" flex flex-wrap">
@@ -480,21 +481,25 @@ export const BuildingInfo = ({
         ""
       )}
 
-      <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
-      <div className="grid grid-cols-1 gap-2 text-sm">
-        {Object.keys(cost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
-          return (
-            <ResourceCost
-              key={index}
-              type="horizontal"
-              resourceId={cost[Number(resourceId)].resource}
-              amount={cost[Number(resourceId)].amount}
-              balance={balance.balance}
-            />
-          );
-        })}
-      </div>
+      {cost.length != 0 && (
+        <>
+          <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
+          <div className="grid grid-cols-1 gap-2 text-sm">
+            {Object.keys(cost).map((resourceId, index) => {
+              const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
+              return (
+                <ResourceCost
+                  key={index}
+                  type="horizontal"
+                  resourceId={cost[Number(resourceId)].resource}
+                  amount={cost[Number(resourceId)].amount}
+                  balance={balance.balance}
+                />
+              );
+            })}
+          </div>
+        </>
+      )}
       <div className="flex justify-center">{...extraButtons}</div>
     </div>
   );

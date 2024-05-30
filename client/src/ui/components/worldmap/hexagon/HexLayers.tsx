@@ -1,7 +1,7 @@
 import { Bvh } from "@react-three/drei";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Color, InstancedMesh, Matrix4 } from "three";
-import { Resource, biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { createHexagonGeometry } from "./HexagonGeometry";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { findDirection, getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
@@ -120,6 +120,10 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
 
     // Object.keys(biomeComponents).forEach((biome) => {
     //   biomesAccumulator[biome] = group.filter((hex) => hex.biome === biome);
+    //   biomesAccumulator[biome] = biomesAccumulator[biome].map((hex: any) => {
+    //     const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
+    //     return { ...hex, x, y, z };
+    //   });
     // });
 
     return biomesAccumulator;
@@ -141,6 +145,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const previewBuilding = useUIStore((state) => state.previewBuilding);
 
   const { hoverHandler, clickHandler, mouseOutHandler } = useEventHandlers(explored);
 
@@ -266,6 +271,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const { exploreHex } = useExplore();
   const { travelToHex } = useTravel();
   const { play: playExplore } = useUiSounds(soundSelector.explore);
+  const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
 
   const {
     hexData,
@@ -340,10 +346,15 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       const pos = getPositionsAtIndex(mesh, instanceId);
       if (!pos || !hexDataRef.current || !exploredHexesRef.current) return;
 
+      const coord = getColRowFromUIPosition(pos.x, pos.y, false);
+      setHoveredBuildHex({
+        col: coord.col,
+        row: coord.row,
+      });
+
       if (!selectedEntityRef.current) {
         const positions = [{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }];
         if (clickedHexRef.current) {
-          console.log(clickedHexRef.current);
           positions.push({ pos: clickedHexRef.current.uiPos, color: CLICKED_HEX_COLOR });
         }
         return setHighlightPositions(positions as HighlightPosition[]);

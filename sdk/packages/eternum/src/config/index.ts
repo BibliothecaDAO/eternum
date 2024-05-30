@@ -15,6 +15,9 @@ import {
   RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
   WeightConfig,
+  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  TickIds,
+  TROOPS_STAMINAS,
 } from "../constants";
 import { EternumProvider } from "../provider";
 import { BuildingType } from "../utils";
@@ -150,13 +153,20 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
 
   console.log(`Configuring bank config ${txBank.statusReceipt}...`);
 
-  const txTick = await provider.set_tick_config({
+  const txDefaultTick = await provider.set_tick_config({
     signer: account,
-    max_moves_per_tick: EternumGlobalConfig.tick.movesPerTick,
-    tick_interval_in_seconds: EternumGlobalConfig.tick.tickIntervalInSeconds,
+    tick_id: TickIds.Default,
+    tick_interval_in_seconds: EternumGlobalConfig.tick.defaultTickIntervalInSeconds,
+  });
+  console.log(`Configuring tick config ${txDefaultTick.statusReceipt}...`);
+
+  const txArmiesTick = await provider.set_tick_config({
+    signer: account,
+    tick_id: TickIds.Armies,
+    tick_interval_in_seconds: EternumGlobalConfig.tick.armiesTickIntervalInSeconds,
   });
 
-  console.log(`Configuring bank config ${txTick.statusReceipt}...`);
+  console.log(`Configuring tick config ${txArmiesTick.statusReceipt}...`);
 
   const txExplore = await provider.set_explore_config({
     signer: account,
@@ -166,7 +176,7 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
     shards_mines_fail_probability: EternumGlobalConfig.exploration.shardsMinesFailProbability,
   });
 
-  console.log(`Configuring bank config ${txExplore.statusReceipt}...`);
+  console.log(`Configuring exploration config ${txExplore.statusReceipt}...`);
 };
 
 export const setCapacityConfig = async (account: Account, provider: EternumProvider) => {
@@ -219,5 +229,24 @@ export const setQuestConfig = async (account: Account, provider: EternumProvider
     });
 
     console.log(`Configuring quest config ${type} ${tx.statusReceipt}...`);
+  }
+};
+
+export const setHyperstructureConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_hyperstructure_config({
+    signer: account,
+    resources_for_completion: HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  });
+  console.log(`Configuring hyperstructure ${tx.statusReceipt}...`);
+};
+
+export const setStaminaConfig = async (account: Account, provider: EternumProvider) => {
+  for (const [unit_type, stamina] of Object.entries(TROOPS_STAMINAS)) {
+    const tx = await provider.set_stamina_config({
+      signer: account,
+      unit_type: unit_type,
+      max_stamina: stamina,
+    });
+    console.log(`Configuring staminas ${unit_type} ${tx.statusReceipt}...`);
   }
 };

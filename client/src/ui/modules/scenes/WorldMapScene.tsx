@@ -9,6 +9,7 @@ import { WorldMap } from "../../components/worldmap/hexagon/WorldHexagon.js";
 import { useHelper, useTexture } from "@react-three/drei";
 import { useControls } from "leva";
 import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
+import { StructurePreview } from "@/ui/components/structures/construction/StructurePreview.js";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();
@@ -65,7 +66,8 @@ export const WorldMapScene = () => {
     <>
       {!showBlankOverlay && isMapView && <WorldMap />}
       <HighlightedHexes />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]}>
+      <StructurePreview />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]} receiveShadow>
         <planeGeometry args={[2668, 1390.35]} />
         <meshPhongMaterial {...texture} />
       </mesh>

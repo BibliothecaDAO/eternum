@@ -1,5 +1,15 @@
 import { HyperStructureInterface, Position, StructureType } from "@bibliothecadao/eternum";
 import { ClickedHex, Hexagon, HighlightPosition } from "../../types";
+import { Has, getComponentValue } from "@dojoengine/recs";
+import { useDojo } from "../context/DojoContext";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useEntityQuery } from "@dojoengine/react";
+import useUIStore from "./useUIStore";
+import {
+  HyperstructureEventInterface,
+  parseHyperstructureFinishedEventData,
+} from "@/dojo/events/hyperstructureEventQueries";
+import useLeaderBoardStore from "./useLeaderBoardStore";
 
 export interface MapStore {
   worldMapBuilding: StructureType | null;
@@ -23,6 +33,10 @@ export interface MapStore {
   highlightPositions: HighlightPosition[];
   setHighlightPositions: (positions: HighlightPosition[]) => void;
   clearSelection: () => void;
+  existingStructures: { col: number; row: number; type: StructureType; entityId: number }[];
+  setExistingStructures: (
+    existingStructures: { col: number; row: number; type: StructureType; entityId: number }[],
+  ) => void;
 }
 
 export const createMapStoreSlice = (set: any) => ({
@@ -61,4 +75,68 @@ export const createMapStoreSlice = (set: any) => ({
       isAttackMode: false,
     });
   },
+  existingStructures: [],
+  setExistingStructures: (existingStructures: { col: number; row: number; type: StructureType; entityId: number }[]) =>
+    set({ existingStructures }),
 });
+
+export const useSetExistingStructures = () => {
+  const [newFinishedHs, setNewFinishedHs] = useState<HyperstructureEventInterface | null>(null);
+  const { setup } = useDojo();
+  const subCreated = useRef<boolean>(false);
+
+  const setExistingStructures = useUIStore((state) => state.setExistingStructures);
+  const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
+  const setFinishedHyperstructures = useLeaderBoardStore((state) => state.setFinishedHyperstructures);
+
+  const builtStructures = useEntityQuery([Has(setup.components.Structure)]);
+
+  useEffect(() => {
+    if (newFinishedHs === null) return;
+    setFinishedHyperstructures([...finishedHyperstructures, newFinishedHs]);
+  }, [newFinishedHs]);
+
+  useEffect(() => {
+    const subscription = async () => {
+      const observable = await setup.updates.eventUpdates.hyperstructureFinishedEvents();
+      let events: HyperstructureEventInterface[] = [];
+
+      const sub = observable.subscribe((event) => {
+        if (event) {
+          const parsedEvent: HyperstructureEventInterface = parseHyperstructureFinishedEventData(event);
+          events.push(parsedEvent);
+          setNewFinishedHs(parsedEvent);
+        }
+      });
+      setFinishedHyperstructures(events);
+
+      // Cleanup function to unsubscribe on unmount
+      return () => {
+        sub.unsubscribe();
+      };
+    };
+    if (subCreated.current) return;
+    subscription();
+    subCreated.current = true;
+  }, []);
+
+  useMemo(() => {
+    const _tmp = builtStructures
+      .map((entity) => {
+        const position = getComponentValue(setup.components.Position, entity);
+        const structure = getComponentValue(setup.components.Structure, entity);
+        const type = StructureType[structure!.category as keyof typeof StructureType];
+        if (!position || !structure) return null;
+        return {
+          col: position.x,
+          row: position.y,
+          type: type as StructureType,
+          entity: entity,
+          entityId: Number(structure.entity_id),
+        };
+      })
+      .filter(Boolean) as { col: number; row: number; type: StructureType; entityId: number }[];
+
+    setExistingStructures(_tmp);
+  }, [builtStructures]);
+};

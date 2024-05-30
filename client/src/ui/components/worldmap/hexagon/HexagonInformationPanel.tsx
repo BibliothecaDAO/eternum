@@ -3,9 +3,6 @@ import { ArmiesAtLocation, Battle } from "../../military/Battle";
 
 export const HexagonInformationPanel = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
-  // const { col: x, row: y } = clickedHex!.contractPos;
-
-  console.log(clickedHex);
 
   return (
     <>
