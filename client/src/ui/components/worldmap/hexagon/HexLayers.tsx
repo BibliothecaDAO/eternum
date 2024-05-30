@@ -23,9 +23,9 @@ import { TropicalRainforestBiome } from "../../models/biomes/TropicalRainforestB
 import { TropicalSeasonalForestBiome } from "../../models/biomes/TropicalSeasonalForestBiome";
 import { TundraBiome } from "../../models/biomes/TundraBiome.js";
 import { TemperateRainforestBiome } from "../../models/biomes/TemperateRainforestBiome";
-import { Hexagon, HighlightPosition } from "../../../../types/index";
+import { Hexagon, HighlightPositions } from "../../../../types/index";
 
-import { findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
+import { findAccessiblePositions, findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
 import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
 import { useExplore } from "../../../../hooks/helpers/useExplore";
 import { useTravel } from "../../../../hooks/helpers/useTravel";
@@ -33,12 +33,14 @@ import { useNotificationsStore } from "../../../../hooks/store/useNotificationsS
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useLocation } from "wouter";
 import { HexGrid } from "../../models/biomes/HexGrid";
+import { ArmyMode } from "@/hooks/store/_mapStore";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
-const EXPLORE_COLOUR = 0xbc85e1;
+const EXPLORE_COLOUR = 0x2563eb;
 const TRAVEL_COLOUR = 0x3cb93c;
 const CLICKED_HEX_COLOR = 0xff5733;
+const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
 
 type HexagonGridProps = {
   startRow: number;
@@ -267,6 +269,28 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   );
 };
 
+export const useSetPossibleActions = (explored: Map<number, Set<number>>) => {
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
+  const hexData = useUIStore((state) => state.hexData);
+
+  useMemo(() => {
+    if (selectedEntity && hexData) {
+      const path = findAccessiblePositions(selectedEntity.position, hexData, explored, 3);
+      if (path.length > 1) {
+        const uiPath = {
+          pos: path.map(({ x, y }) => {
+            const pos = getUIPositionFromColRow(x, y);
+            return [pos.x, -pos.y];
+          }),
+          color: ACCESSIBLE_POSITIONS_COLOUR,
+        } as HighlightPositions;
+        setHighlightPositions(uiPath);
+      }
+    }
+  }, [selectedEntity?.id, hexData]);
+};
+
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const { exploreHex } = useExplore();
   const { travelToHex } = useTravel();
@@ -275,66 +299,47 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
 
   const {
     hexData,
-    highlightPositions,
-    isTravelMode,
-    isExploreMode,
-    selectedPath,
+    highlightPath,
+    armyMode,
+    setArmyMode,
     selectedEntity,
-    isAttackMode,
-    setSelectedEntity,
     setClickedHex,
     clickedHex,
+    setHighlightPath,
     setHighlightPositions,
-    setSelectedPath,
     clearSelection,
   } = useUIStore((state) => ({
     hexData: state.hexData,
-    highlightPositions: state.highlightPositions,
-    isTravelMode: state.isTravelMode,
-    isExploreMode: state.isExploreMode,
-    selectedPath: state.selectedPath,
+    highlightPath: state.highlightPath,
+    armyMode: state.armyMode,
+    setArmyMode: state.setArmyMode,
     selectedEntity: state.selectedEntity,
-    isAttackMode: state.isAttackMode,
     setSelectedEntity: state.setSelectedEntity,
     setClickedHex: state.setClickedHex,
     clickedHex: state.clickedHex,
+    setHighlightPath: state.setHighlightPath,
     setHighlightPositions: state.setHighlightPositions,
-    setSelectedPath: state.setSelectedPath,
     clearSelection: state.clearSelection,
   }));
 
   const setExploreNotification = useNotificationsStore((state) => state.setExploreNotification);
 
   // refs
-  const isTravelModeRef = useRef(false);
-  const isExploreModeRef = useRef(false);
-  const selectedPathRef = useRef(selectedPath);
+  const armyModeRef = useRef<ArmyMode | null>(null);
   const selectedEntityRef = useRef(selectedEntity);
   const hexDataRef = useRef(hexData);
   const exploredHexesRef = useRef(explored);
-  const highlightPositionsRef = useRef(highlightPositions);
+  const highlightPathRef = useRef(highlightPath);
   const clickedHexRef = useRef(clickedHex);
 
   useEffect(() => {
-    isTravelModeRef.current = isTravelMode;
-    isExploreModeRef.current = isExploreMode;
-    selectedPathRef.current = selectedPath;
+    armyModeRef.current = armyMode;
     selectedEntityRef.current = selectedEntity;
     clickedHexRef.current = clickedHex;
     hexDataRef.current = hexData;
     exploredHexesRef.current = explored;
-    highlightPositionsRef.current = highlightPositions;
-  }, [
-    isTravelMode,
-    isExploreMode,
-    isAttackMode,
-    selectedPath,
-    selectedEntity,
-    hexData,
-    explored,
-    highlightPositions,
-    clickedHex,
-  ]);
+    highlightPathRef.current = highlightPath;
+  }, [selectedEntity, hexData, explored, highlightPath, clickedHex]);
 
   const hoverHandler = useCallback(
     (e: any) => {
@@ -353,142 +358,150 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       });
 
       if (!selectedEntityRef.current) {
-        const positions = [{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }];
+        const positions = [[pos.x, -pos.y]];
         if (clickedHexRef.current) {
-          positions.push({ pos: clickedHexRef.current.uiPos, color: CLICKED_HEX_COLOR });
+          positions.push(clickedHexRef.current.uiPos);
         }
-        return setHighlightPositions(positions as HighlightPosition[]);
+        return setHighlightPositions({ pos: positions, color: CLICKED_HEX_COLOR } as HighlightPositions);
       }
 
       const selectedEntityPosition = getUIPositionFromColRow(
         selectedEntityRef.current.position.x,
         selectedEntityRef.current.position.y,
       );
-      const selectedEntityHex = hexDataRef.current.find(
-        (h) => h.col === selectedEntityRef?.current?.position.x && h.row === selectedEntityRef.current.position.y,
-      );
 
-      if (isTravelModeRef.current) {
-        handleTravelMode({ pos });
-      } else if (isExploreModeRef.current) {
-        handleExploreMode({ pos, selectedEntityPosition, selectedEntityHex });
-      } else {
-        setHighlightPositions([
-          {
-            pos: [selectedEntityPosition.x, -selectedEntityPosition.y, BIOMES[selectedEntityHex!.biome].depth * 10],
-            color: 0xffffff,
-          },
-        ]);
-      }
+      handleTravelMode({ pos });
+      handleExploreMode({ pos, selectedEntityPosition });
     },
-    [setHighlightPositions],
+    [setHighlightPath],
   );
 
   const mouseOutHandler = useCallback((e: any) => {
     if (clickedHexRef.current) {
-      setHighlightPositions([{ pos: clickedHexRef.current.uiPos, color: CLICKED_HEX_COLOR }]);
+      setHighlightPath({
+        pos: [[clickedHexRef.current.uiPos[0], clickedHexRef.current.uiPos[1]]],
+        color: CLICKED_HEX_COLOR,
+      });
     } else {
-      setHighlightPositions([]);
+      setHighlightPath({ pos: [], color: 0 });
     }
   }, []);
 
   function handleTravelMode({ pos }: any) {
-    if (!selectedPathRef.current) {
-      const colRow = getColRowFromUIPosition(pos.x, pos.y);
-      let start = selectedEntityRef!.current!.position;
-      let end = { x: colRow.col, y: colRow.row };
-      let path = findShortestPathBFS(start, end, hexDataRef.current || [], exploredHexesRef.current, 3);
-      const uiPath = path.map(({ x, y }) => {
-        const pos = getUIPositionFromColRow(x, y);
-        const hex = hexDataRef?.current?.find((h) => h.col === x && h.row === y);
-        return { pos: [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0], color: TRAVEL_COLOUR };
-      }) as HighlightPosition[];
-      setHighlightPositions(uiPath);
+    const colRow = getColRowFromUIPosition(pos.x, pos.y);
+    let start = selectedEntityRef!.current!.position;
+    let end = { x: colRow.col, y: colRow.row };
+    let path = findShortestPathBFS(start, end, hexDataRef.current || [], exploredHexesRef.current, 3);
+    if (path.length > 1) {
+      setArmyMode(ArmyMode.Travel);
+      const colors = {
+        pos: path.map(({ x, y }) => {
+          const pos = getUIPositionFromColRow(x, y);
+          return [pos.x, -pos.y];
+        }),
+        color: TRAVEL_COLOUR,
+      } as HighlightPositions;
+      setHighlightPath(colors);
+    } else {
+      setArmyMode(null);
     }
   }
 
-  function handleExploreMode({ pos, selectedEntityPosition, selectedEntityHex }: any) {
-    if (!selectedPathRef.current) {
-      const colRow = getColRowFromUIPosition(pos.x, pos.y);
-      if (
-        selectedEntityRef?.current?.position &&
-        isNeighbor(
-          { x: colRow.col, y: colRow.row },
-          {
-            x: selectedEntityRef.current.position.x,
-            y: selectedEntityRef.current.position.y,
-          },
-        ) &&
-        !exploredHexesRef.current.get(colRow.col - 2147483647)?.has(colRow.row - 2147483647)
-      ) {
-        setHighlightPositions([
-          {
-            pos: [selectedEntityPosition.x, -selectedEntityPosition.y, BIOMES[selectedEntityHex!.biome].depth * 10],
-            color: EXPLORE_COLOUR,
-          },
-          { pos: [pos.x, -pos.y, pos.z], color: EXPLORE_COLOUR },
-        ]);
-      }
+  function handleExploreMode({ pos, selectedEntityPosition }: any) {
+    const colRow = getColRowFromUIPosition(pos.x, pos.y);
+    if (
+      selectedEntityRef?.current?.position &&
+      isNeighbor(
+        { x: colRow.col, y: colRow.row },
+        {
+          x: selectedEntityRef.current.position.x,
+          y: selectedEntityRef.current.position.y,
+        },
+      ) &&
+      !exploredHexesRef.current.get(colRow.col - 2147483647)?.has(colRow.row - 2147483647)
+    ) {
+      setArmyMode(ArmyMode.Explore);
+      const uiPos = getUIPositionFromColRow(colRow.col, colRow.row);
+      const colors = {
+        pos: [
+          [selectedEntityPosition.x, -selectedEntityPosition.y],
+          [uiPos.x, -uiPos.y],
+        ],
+        color: EXPLORE_COLOUR,
+      } as HighlightPositions;
+      setHighlightPath(colors);
     }
   }
 
   const clickHandler = useCallback(
     (e: any) => {
-      // Logic for click event
       const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
-      if (intersect) {
-        const instanceId = intersect.instanceId;
-        const mesh = intersect.object;
-        const pos = getPositionsAtIndex(mesh, instanceId);
-        if (pos && !selectedEntityRef.current) {
-          const clickedColRow = getColRowFromUIPosition(pos.x, pos.y);
-          if (
-            clickedHexRef.current?.contractPos.col === clickedColRow.col &&
-            clickedHexRef.current?.contractPos.row === clickedColRow.row
-          ) {
-            setClickedHex(undefined);
-            setHighlightPositions([]);
-          } else {
-            setClickedHex({
-              contractPos: { col: clickedColRow.col, row: clickedColRow.row },
-              uiPos: [pos.x, -pos.y, pos.z],
-              hexIndex: instanceId,
-            });
-            setHighlightPositions([{ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR }]);
-          }
+      if (!intersect) {
+        clearSelection();
+        return;
+      }
+
+      const instanceId = intersect.instanceId;
+      const mesh = intersect.object;
+      const pos = getPositionsAtIndex(mesh, instanceId);
+
+      const handleHexClick = (pos: any, instanceId: any) => {
+        const clickedColRow = getColRowFromUIPosition(pos.x, pos.y);
+        if (
+          clickedHexRef.current?.contractPos.col === clickedColRow.col &&
+          clickedHexRef.current?.contractPos.row === clickedColRow.row
+        ) {
+          setClickedHex(undefined);
+          setHighlightPath({ pos: [], color: 0 });
+        } else {
+          setClickedHex({
+            contractPos: { col: clickedColRow.col, row: clickedColRow.row },
+            uiPos: [pos.x, -pos.y, pos.z],
+            hexIndex: instanceId,
+          });
+          setHighlightPath({ pos: [pos.x, -pos.y], color: CLICKED_HEX_COLOR });
         }
-        if (pos && selectedEntityRef.current) {
-          if (isTravelModeRef.current || isExploreModeRef.current) {
-            const path = highlightPositionsRef.current.map((p) => {
-              const colRow = getColRowFromUIPosition(p.pos[0], -p.pos[1]);
-              return { x: colRow.col, y: colRow.row };
-            });
-            if (path.length > 1) {
-              setSelectedPath({
-                id: selectedEntityRef.current.id,
-                path,
-              });
-              if (isExploreModeRef.current) {
-                handleExploreModeClick({
-                  id: selectedEntityRef.current.id,
-                  path,
-                });
-              } else {
-                handleTravelModeClick({
-                  travelingEntityId: selectedEntityRef.current.id,
-                  path,
-                });
-              }
-            } else {
+      };
+
+      const handleArmyModeClick = (id: bigint) => {
+        const path = highlightPathRef.current.pos.map((p) => {
+          const colRow = getColRowFromUIPosition(p[0], -p[1]);
+          return { x: colRow.col, y: colRow.row };
+        });
+        if (path.length > 1) {
+          switch (armyModeRef.current) {
+            case ArmyMode.Explore:
+              handleExploreModeClick({ id, path });
+              break;
+            case ArmyMode.Travel:
+              handleTravelModeClick({ travelingEntityId: id, path });
+              break;
+            default:
               clearSelection();
-            }
+          }
+        } else {
+          clearSelection();
+        }
+      };
+
+      if (pos) {
+        if (!selectedEntityRef.current) {
+          handleHexClick(pos, instanceId);
+        } else {
+          if (
+            armyModeRef?.current !== undefined &&
+            [ArmyMode.Travel, ArmyMode.Explore].includes(armyModeRef!.current!)
+          ) {
+            handleArmyModeClick(selectedEntityRef.current.id);
           } else {
-            setSelectedEntity(undefined);
+            clearSelection();
           }
         }
+      } else {
+        clearSelection();
       }
     },
-    [setHighlightPositions, hexData],
+    [setHighlightPath, hexData],
   );
 
   async function handleTravelModeClick({ travelingEntityId, path }: { travelingEntityId: bigint; path: any[] }) {
@@ -500,13 +513,13 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         return findDirection({ col: path[i].x, row: path[i].y }, { col: path[i + 1].x, row: path[i + 1].y });
       })
       .filter((d) => d !== undefined) as number[];
+    clearSelection();
     await travelToHex({ travelingEntityId, directions, path });
     // reset the state
-    clearSelection();
   }
 
   async function handleExploreModeClick({ id, path }: { id: bigint; path: any[] }) {
-    if (!selectedPathRef || !hexData) return;
+    if (!hexData) return;
     const direction =
       path.length === 2
         ? findDirection({ col: path[0].x, row: path[0].y }, { col: path[1].x, row: path[1].y })
@@ -518,12 +531,12 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       biome,
     });
     playExplore();
+    clearSelection();
     await exploreHex({
       explorerId: id,
       direction,
       path,
     });
-    clearSelection();
   }
 
   return { hoverHandler, clickHandler, mouseOutHandler };

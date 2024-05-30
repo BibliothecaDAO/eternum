@@ -136,3 +136,47 @@ export const findShortestPathBFS = (
 
   return []; // Return empty array if no path is found within maxHex distance
 };
+
+export const findAccessiblePositions = (
+  startPos: Position,
+  hexData: Hexagon[],
+  exploredHexes: Map<number, Set<number>>,
+  maxHex: number,
+) => {
+  const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
+  const visited = new Set<string>();
+  const posKey = (pos: Position) => `${pos.x},${pos.y}`;
+  const highlightPositions = new Set<string>();
+
+  while (queue.length > 0) {
+    const { position: current, distance } = queue.shift()!;
+
+    if (distance > maxHex) {
+      break; // Stop processing if the current distance exceeds maxHex
+    }
+
+    const currentKey = posKey(current);
+    if (!visited.has(currentKey)) {
+      visited.add(currentKey);
+      const neighbors = getNeighbors(current, hexData); // Assuming getNeighbors is defined elsewhere
+      for (const neighbor of neighbors) {
+        const neighborKey = posKey(neighbor);
+        const isExplored = exploredHexes.get(neighbor.x - 2147483647)?.has(neighbor.y - 2147483647);
+
+        if (!visited.has(neighborKey)) {
+          if (isExplored && distance + 1 <= maxHex) {
+            queue.push({ position: neighbor, distance: distance + 1 });
+            highlightPositions.add(neighborKey);
+          } else if (!isExplored && distance + 1 === 1) {
+            highlightPositions.add(neighborKey);
+          }
+        }
+      }
+    }
+  }
+
+  return Array.from(highlightPositions).map((key) => {
+    const [x, y] = key.split(",").map(Number);
+    return { x, y };
+  });
+};

@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useRoute } from "wouter";
 import * as THREE from "three";
+import { useThree } from "@react-three/fiber";
 
 import useUIStore from "../../../hooks/store/useUIStore.js";
 
 import HighlightedHexes from "../../components/worldmap/hexagon/HighlightedHexes.js";
 import { WorldMap } from "../../components/worldmap/hexagon/WorldHexagon.js";
-import { useHelper, useTexture } from "@react-three/drei";
+import { useTexture } from "@react-three/drei";
 import { useControls } from "leva";
 import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
+import { ActionInfo } from "@/ui/components/worldmap/hexagon/ActionInfo.js";
 import { StructurePreview } from "@/ui/components/structures/construction/StructurePreview.js";
 
 const StarsSky = () => {
@@ -37,7 +39,9 @@ const scale = 20;
 export const WorldMapScene = () => {
   const [isMapView] = useRoute("/map");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const clearSelection = useUIStore((state) => state.clearSelection);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const { gl } = useThree();
 
   const texture = useTexture({
     map: "/textures/paper/worldmap-bg.png",
@@ -60,12 +64,24 @@ export const WorldMapScene = () => {
     setTimeout(() => {
       setIsLoadingScreenEnabled(false);
     }, 300);
+
+    const handleRightClick = (e: any) => {
+      e.preventDefault();
+      clearSelection();
+    };
+
+    gl.domElement.addEventListener("contextmenu", handleRightClick);
+
+    return () => {
+      gl.domElement.removeEventListener("contextmenu", handleRightClick);
+    };
   }, []);
 
   return (
     <>
       {!showBlankOverlay && isMapView && <WorldMap />}
       <HighlightedHexes />
+      <ActionInfo />
       <StructurePreview />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]} receiveShadow>
         <planeGeometry args={[2668, 1390.35]} />

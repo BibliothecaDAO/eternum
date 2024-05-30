@@ -17,7 +17,7 @@ import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useResourceBalance } from "../../../../hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import { DojoHtml } from "@/ui/elements/DojoHtml";
-import { useStamina } from "@/hooks/helpers/useStamina";
+import { ArmyMode } from "@/hooks/store/_mapStore";
 
 const EXPLORE_DESCRIPTION = "Explore the area to discover resources. Limit: 1 hex per tick.";
 const TRAVEL_DESCRIPTION = "Move to a new location. Limit: 5 hexes per tick.";
@@ -69,10 +69,7 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
 
   const [appeared, setAppeared] = useState(false);
 
-  const setIsTravelMode = useUIStore((state) => state.setIsTravelMode);
-  const isTravelMode = useUIStore((state) => state.isTravelMode);
-  const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
-  const isExploreMode = useUIStore((state) => state.isExploreMode);
+  const armyMode = useUIStore((state) => state.armyMode);
   const [playerOwnsSelectedEntity, setPlayerOwnsSelectedEntity] = useState(false);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -128,33 +125,10 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
 
   const hasEnoughResourcesToExplore = useMemo(() => explorationCosts.every((res) => res.hasEnough), [explorationCosts]);
 
-  const isExploreDisabled = useMemo(
-    () => isTravelMode || isTraveling || !canCarryNewReward || !hasEnoughResourcesToExplore,
-    [isTravelMode, isTraveling, canCarryNewReward, hasEnoughResourcesToExplore],
-  );
-
-  const isTravelDisabled = useMemo(() => isExploreMode || isTraveling, [isExploreMode, isTraveling]);
-
   useEffect(() => {
     const timer = setTimeout(() => setAppeared(true), 150);
     return () => clearTimeout(timer);
   }, []);
-
-  const handleExploreClick = (e: any) => {
-    e.stopPropagation();
-    if (!isExploreDisabled) {
-      setIsTravelMode(false);
-      setIsExploreMode(!isExploreMode);
-    }
-  };
-
-  const handleTravelClick = (e: any) => {
-    e.stopPropagation();
-    if (!isTravelDisabled) {
-      setIsTravelMode(!isTravelMode);
-      setIsExploreMode(false);
-    }
-  };
 
   return (
     <DojoHtml position={[0, 3, -0.5]}>
@@ -164,9 +138,9 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
           appeared ? "opacity-100" : "opacity-0 translate-y-1/2",
         )}
       >
-        <Button disabled={isExploreDisabled} onClick={handleExploreClick} variant="primary">
+        <Button disabled={true} onClick={() => {}} variant="primary">
           <div className="flex items-center justify-between w-full">
-            {isExploreMode ? "Exploring..." : "Explore"}
+            {armyMode === ArmyMode.Explore ? "Exploring..." : "Explore"}
             <InfoIcon
               onMouseEnter={() =>
                 setTooltip({
@@ -187,9 +161,9 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
         </Button>
 
         {playerOwnsSelectedEntity && (
-          <Button onClick={handleTravelClick} variant="primary">
+          <Button disabled={true} onClick={() => {}} variant="primary">
             <div className="flex items-center justify-between w-full">
-              <span>{isTravelMode || isTraveling ? "Traveling..." : "Travel"}</span>
+              <span>{armyMode === ArmyMode.Travel || isTraveling ? "Traveling..." : "Travel"}</span>
               <InfoIcon
                 onMouseEnter={() =>
                   setTooltip({
