@@ -10,7 +10,7 @@ import LeftMiddleContainer from "../containers/LeftMiddleContainer";
 import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
 import { BottomNavigation } from "../modules/navigation/BottomNavigation";
 import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import clsx from "clsx";
 import { Redirect } from "wouter";
 import { useProgress } from "@react-three/drei";
@@ -49,15 +49,9 @@ export const World = () => {
     }
   }, [realmEntityIds]);
 
-  useEffect(() => {
-    if (progress === 100) {
-      setIsLoadingScreenEnabled(false);
-    }
-  }, [progress]);
-
-  useEffect(() => {
-    setIsLoadingScreenEnabled(true);
-  }, []);
+  const isLoading = useMemo(() => {
+    return isLoadingScreenEnabled && progress !== 100;
+  }, [isLoadingScreenEnabled, progress]);
 
   return (
     <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden">
@@ -76,7 +70,7 @@ export const World = () => {
       <div
         className={clsx(
           "absolute bottom-0 left-0 z-[49] w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-map duration-300 transition-opacity bg-brown",
-          isLoadingScreenEnabled ? "opacity-100" : "opacity-0",
+          isLoading ? "opacity-100" : "opacity-0",
         )}
       >
         <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
