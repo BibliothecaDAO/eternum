@@ -297,28 +297,24 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     highlightPath,
     armyMode,
     setArmyMode,
-    selectedPath,
     selectedEntity,
     setSelectedEntity,
     setClickedHex,
     clickedHex,
     setHighlightPath,
     setHighlightPositions,
-    setSelectedPath,
     clearSelection,
   } = useUIStore((state) => ({
     hexData: state.hexData,
     highlightPath: state.highlightPath,
     armyMode: state.armyMode,
     setArmyMode: state.setArmyMode,
-    selectedPath: state.selectedPath,
     selectedEntity: state.selectedEntity,
     setSelectedEntity: state.setSelectedEntity,
     setClickedHex: state.setClickedHex,
     clickedHex: state.clickedHex,
     setHighlightPath: state.setHighlightPath,
     setHighlightPositions: state.setHighlightPositions,
-    setSelectedPath: state.setSelectedPath,
     clearSelection: state.clearSelection,
   }));
 
@@ -326,7 +322,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
 
   // refs
   const armyModeRef = useRef<ArmyMode | null>(null);
-  const selectedPathRef = useRef(selectedPath);
   const selectedEntityRef = useRef(selectedEntity);
   const hexDataRef = useRef(hexData);
   const exploredHexesRef = useRef(explored);
@@ -335,13 +330,12 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
 
   useEffect(() => {
     armyModeRef.current = armyMode;
-    selectedPathRef.current = selectedPath;
     selectedEntityRef.current = selectedEntity;
     clickedHexRef.current = clickedHex;
     hexDataRef.current = hexData;
     exploredHexesRef.current = explored;
     highlightPathRef.current = highlightPath;
-  }, [selectedPath, selectedEntity, hexData, explored, highlightPath, clickedHex]);
+  }, [selectedEntity, hexData, explored, highlightPath, clickedHex]);
 
   const hoverHandler = useCallback(
     (e: any) => {
@@ -385,53 +379,49 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   }, []);
 
   function handleTravelMode({ pos }: any) {
-    if (!selectedPathRef.current) {
-      const colRow = getColRowFromUIPosition(pos.x, pos.y);
-      let start = selectedEntityRef!.current!.position;
-      let end = { x: colRow.col, y: colRow.row };
-      let path = findShortestPathBFS(start, end, hexDataRef.current || [], exploredHexesRef.current, 3);
-      if (path.length > 1) {
-        setArmyMode(ArmyMode.Travel);
-        const colors = {
-          pos: path.map(({ x, y }) => {
-            const pos = getUIPositionFromColRow(x, y);
-            const hex = hexDataRef?.current?.find((h) => h.col === x && h.row === y);
-            return [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0];
-          }),
-          color: TRAVEL_COLOUR,
-        } as HighlightPositions;
-        setHighlightPath(colors);
-      } else {
-        setArmyMode(null);
-      }
+    const colRow = getColRowFromUIPosition(pos.x, pos.y);
+    let start = selectedEntityRef!.current!.position;
+    let end = { x: colRow.col, y: colRow.row };
+    let path = findShortestPathBFS(start, end, hexDataRef.current || [], exploredHexesRef.current, 3);
+    if (path.length > 1) {
+      setArmyMode(ArmyMode.Travel);
+      const colors = {
+        pos: path.map(({ x, y }) => {
+          const pos = getUIPositionFromColRow(x, y);
+          const hex = hexDataRef?.current?.find((h) => h.col === x && h.row === y);
+          return [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0];
+        }),
+        color: TRAVEL_COLOUR,
+      } as HighlightPositions;
+      setHighlightPath(colors);
+    } else {
+      setArmyMode(null);
     }
   }
 
   function handleExploreMode({ pos, selectedEntityPosition, selectedEntityHex }: any) {
-    if (!selectedPathRef.current) {
-      const colRow = getColRowFromUIPosition(pos.x, pos.y);
-      if (
-        selectedEntityRef?.current?.position &&
-        isNeighbor(
-          { x: colRow.col, y: colRow.row },
-          {
-            x: selectedEntityRef.current.position.x,
-            y: selectedEntityRef.current.position.y,
-          },
-        ) &&
-        !exploredHexesRef.current.get(colRow.col - 2147483647)?.has(colRow.row - 2147483647)
-      ) {
-        setArmyMode(ArmyMode.Explore);
-        const uiPos = getUIPositionFromColRow(colRow.col, colRow.row);
-        const colors = {
-          pos: [
-            [selectedEntityPosition.x, -selectedEntityPosition.y, selectedEntityHex!.depth * 10],
-            [uiPos.x, -uiPos.y, BIOMES[selectedEntityHex!.biome].depth * 10],
-          ],
-          color: EXPLORE_COLOUR,
-        } as HighlightPositions;
-        setHighlightPath(colors);
-      }
+    const colRow = getColRowFromUIPosition(pos.x, pos.y);
+    if (
+      selectedEntityRef?.current?.position &&
+      isNeighbor(
+        { x: colRow.col, y: colRow.row },
+        {
+          x: selectedEntityRef.current.position.x,
+          y: selectedEntityRef.current.position.y,
+        },
+      ) &&
+      !exploredHexesRef.current.get(colRow.col - 2147483647)?.has(colRow.row - 2147483647)
+    ) {
+      setArmyMode(ArmyMode.Explore);
+      const uiPos = getUIPositionFromColRow(colRow.col, colRow.row);
+      const colors = {
+        pos: [
+          [selectedEntityPosition.x, -selectedEntityPosition.y, selectedEntityHex!.depth * 10],
+          [uiPos.x, -uiPos.y, BIOMES[selectedEntityHex!.biome].depth * 10],
+        ],
+        color: EXPLORE_COLOUR,
+      } as HighlightPositions;
+      setHighlightPath(colors);
     }
   }
 
@@ -471,10 +461,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
           return { x: colRow.col, y: colRow.row };
         });
         if (path.length > 1) {
-          setSelectedPath({
-            id,
-            path,
-          });
           switch (armyModeRef.current) {
             case ArmyMode.Explore:
               handleExploreModeClick({ id, path });
@@ -525,7 +511,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   }
 
   async function handleExploreModeClick({ id, path }: { id: bigint; path: any[] }) {
-    if (!selectedPathRef || !hexData) return;
+    if (!hexData) return;
     const direction =
       path.length === 2
         ? findDirection({ col: path[0].x, row: path[0].y }, { col: path[1].x, row: path[1].y })

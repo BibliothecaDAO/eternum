@@ -18,8 +18,6 @@ export interface MapStore {
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => void;
   animationPaths: { id: bigint; path: Position[]; enemy: boolean }[];
   setAnimationPaths: (path: { id: bigint; path: Position[]; enemy: boolean }[]) => void;
-  selectedPath: { id: bigint; path: Position[] } | undefined;
-  setSelectedPath: (path: { id: bigint; path: Position[] } | undefined) => void;
   armyMode: ArmyMode | null;
   setArmyMode: (mode: ArmyMode | null) => void;
   highlightPath: HighlightPositions;
@@ -48,8 +46,6 @@ export const createMapStoreSlice = (set: any) => ({
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => set({ selectedEntity: entity }),
   animationPaths: [],
   setAnimationPaths: (animationPaths: { id: bigint; path: Position[]; enemy: boolean }[]) => set({ animationPaths }),
-  selectedPath: undefined,
-  setSelectedPath: (selectedPath: { id: bigint; path: Position[] } | undefined) => set({ selectedPath }),
   armyMode: null,
   setArmyMode: (armyMode: ArmyMode | null) => set({ armyMode }),
   highlightPath: { pos: [], color: 0 },
@@ -61,7 +57,6 @@ export const createMapStoreSlice = (set: any) => ({
   clearSelection: () => {
     set({
       selectedEntity: undefined,
-      selectedPath: undefined,
       armyMode: null,
       highlightPath: { pos: [], color: 0 },
       highlightPositions: { pos: [], color: 0 },
