@@ -26,8 +26,6 @@ export const Camera = () => {
 
 export const MainScene = () => {
   const [location] = useLocation();
-  const isDestroyMode = useUIStore((state) => state.isDestroyMode);
-
   // location type
   const locationType = useMemo(() => {
     if (location === "/map" || location === "/") {
@@ -111,7 +109,7 @@ export const MainScene = () => {
   return (
     <Canvas
       frameloop={import.meta.env.VITE_PUBLIC_GRAPHICS_DEV === "true" ? "always" : "demand"} // FPS limiter is enabled in production
-      className={clsx("rounded-xl", isDestroyMode && "!cursor-crosshair")}
+      className={clsx("rounded-xl")}
       raycaster={{
         params: {
           Points: { threshold: 0.2 },

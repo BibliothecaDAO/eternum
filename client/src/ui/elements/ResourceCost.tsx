@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { findResourceById } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "./ResourceIcon";
 import clsx from "clsx";
-import { currencyFormat, divideByPrecision } from "../utils/utils";
+import { divideByPrecision, formatNumber } from "../utils/utils";
 
 type ResourceCostProps = {
   isLabor?: boolean;
@@ -28,9 +28,9 @@ export const ResourceCost = ({
   textSize = "xs", // Added text size option
   ...props
 }: ResourceCostProps) => {
+  const balance = divideByPrecision(props.balance!);
   const trait = useMemo(() => findResourceById(props.resourceId)?.trait, [props.resourceId]);
-  const balanceColor =
-    props.balance !== undefined && divideByPrecision(props.balance) < props.amount ? "text-red/90" : "text-green/90";
+  const balanceColor = balance !== undefined && balance < props.amount ? "text-red/90" : "text-green/90";
 
   return (
     <div
@@ -60,7 +60,7 @@ export const ResourceCost = ({
             maximumFractionDigits: 1,
           }).format(props.amount || 0)}{" "}
           <span className={clsx(balanceColor, "font-normal")}>
-            {props.balance !== undefined && `(${currencyFormat(props.balance, 0)})`}{" "}
+            {balance !== undefined && `(${formatNumber(balance, 0)})`}{" "}
           </span>
         </div>
         {type === "horizontal" && (

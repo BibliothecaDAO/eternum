@@ -3,14 +3,7 @@ import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow } from "@/ui/utils/utils";
-import {
-  BuildingStringToEnum,
-  BuildingType,
-  MAX_BUILDING_TYPE,
-  ResourcesIds,
-  StructureType,
-  biomes,
-} from "@bibliothecadao/eternum";
+import { BuildingStringToEnum, BuildingType, ResourcesIds, biomes } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useAnimations, useGLTF, useHelper } from "@react-three/drei";
@@ -203,7 +196,6 @@ export const BuiltBuilding = ({
   name?: string;
 }) => {
   const lightRef = useRef<any>();
-  const isDestroyMode = useUIStore((state) => state.isDestroyMode);
   const { destroyBuilding } = useBuildings();
   const { realmEntityId } = useRealmStore();
   const [popupOpened, setPopupOpened] = useState(false);
@@ -287,7 +279,7 @@ export const BuiltBuilding = ({
       }}
     >
       <primitive dropShadow scale={3} object={model} />
-      {!isDestroyMode && popupOpened && (
+      {popupOpened && (
         <HoverBuilding name={name} destroyButton={destroyButton} building={buildingCategory} entityId={realmEntityId} />
       )}
     </group>

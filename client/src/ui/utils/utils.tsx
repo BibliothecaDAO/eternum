@@ -10,10 +10,12 @@ export const getForeignKeyEntityId = (entityId: bigint, key: bigint, index: bigi
   return getEntityIdFromKeys([BigInt(keyHash)]);
 };
 
+export const formatNumber = (num: any, decimals: number) => {
+  return num.toFixed(decimals).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+};
+
 export const currencyFormat = (num: any, decimals: number) => {
-  return divideByPrecision(num)
-    .toFixed(decimals)
-    .replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+  return formatNumber(divideByPrecision(num), decimals);
 };
 
 export function currencyIntlFormat(num: any, decimals: number = 2) {
