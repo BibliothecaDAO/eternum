@@ -83,31 +83,26 @@ const RaiderInfo = ({
   isActiveTravel: boolean;
 }) => {
   const { entityOwnerId, owner, originRealmId } = raider;
-  const { account } = useDojo();
+  const { account, masterAccount } = useDojo();
 
-  const setTooltip = useUIStore((state) => state.setTooltip);
   const attackerAddressName = entityOwnerId ? getRealmAddressName(entityOwnerId) : "";
 
   const originRealmName = originRealmId ? getRealmNameById(originRealmId) : "";
 
   const isTraveling = isPassiveTravel || isActiveTravel;
 
-  const bgColor = BigInt(account.account.address) === owner ? "bg-dark-green-accent" : "bg-red";
+  const bgColor = account.account.address
+    ? BigInt(account.account.address) === owner
+      ? "bg-dark-green-accent"
+      : "bg-red"
+    : undefined;
+
+  if (!bgColor || account.account.address === masterAccount.address) return;
+
   const pulseColor = !isTraveling ? "" : "";
 
-  // const [hovered, setHovered] = useState(false);
-
   return (
-    <div
-      // onPointerEnter={() => setHovered(true)}
-      // onPointerLeave={() => setHovered(false)}
-      className={clsx(
-        "w-[200px] flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold",
-        bgColor,
-        pulseColor,
-        // hovered ? "opacity-100" : "opacity-25",
-      )}
-    >
+    <div className={clsx("w-[200px] flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold", bgColor, pulseColor)}>
       <div className="flex items-center w-full mt-1 justify-between text-xs">
         <div className="flex items-center ml-1 -mt-2">
           <div className="flex items-center ml-1 mr-1 text-gold">
@@ -147,13 +142,6 @@ const RaiderInfo = ({
             <div className="text-green text-xxs self-center">{currencyFormat(raider.troops.paladinCount, 0)}</div>
           </div>
         </div>
-        {/* <div className="grid grid-cols-12 gap-0.5">
-          <ProgressBar
-            containerClassName="col-span-12 !bg-order-giants"
-            rounded
-            progress={(health / (10 * quantity)) * 100}
-          />
-        </div> */}
         <div className="flex">
           <InventoryResources max={2} entityId={raider.entityId} title="Balance" />
           <div>
