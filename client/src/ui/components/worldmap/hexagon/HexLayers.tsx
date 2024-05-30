@@ -276,8 +276,7 @@ export const useSetPossibleActions = (explored: Map<number, Set<number>>) => {
         const uiPath = {
           pos: path.map(({ x, y }) => {
             const pos = getUIPositionFromColRow(x, y);
-            const hex = hexData.find((h) => h.col === x && h.row === y);
-            return [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0];
+            return [pos.x, -pos.y];
           }),
           color: ACCESSIBLE_POSITIONS_COLOUR,
         } as HighlightPositions;
@@ -347,7 +346,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       if (!pos || !hexDataRef.current || !exploredHexesRef.current) return;
 
       if (!selectedEntityRef.current) {
-        const positions = [[pos.x, -pos.y, pos.z]];
+        const positions = [[pos.x, -pos.y]];
         if (clickedHexRef.current) {
           positions.push(clickedHexRef.current.uiPos);
         }
@@ -358,19 +357,19 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         selectedEntityRef.current.position.x,
         selectedEntityRef.current.position.y,
       );
-      const selectedEntityHex = hexDataRef.current.find(
-        (h) => h.col === selectedEntityRef?.current?.position.x && h.row === selectedEntityRef.current.position.y,
-      );
 
       handleTravelMode({ pos });
-      handleExploreMode({ pos, selectedEntityPosition, selectedEntityHex });
+      handleExploreMode({ pos, selectedEntityPosition });
     },
     [setHighlightPath],
   );
 
   const mouseOutHandler = useCallback((e: any) => {
     if (clickedHexRef.current) {
-      setHighlightPath({ pos: [clickedHexRef.current.uiPos], color: CLICKED_HEX_COLOR });
+      setHighlightPath({
+        pos: [[clickedHexRef.current.uiPos[0], clickedHexRef.current.uiPos[1]]],
+        color: CLICKED_HEX_COLOR,
+      });
     } else {
       setHighlightPath({ pos: [], color: 0 });
     }
@@ -386,8 +385,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       const colors = {
         pos: path.map(({ x, y }) => {
           const pos = getUIPositionFromColRow(x, y);
-          const hex = hexDataRef?.current?.find((h) => h.col === x && h.row === y);
-          return [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0];
+          return [pos.x, -pos.y];
         }),
         color: TRAVEL_COLOUR,
       } as HighlightPositions;
@@ -397,7 +395,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     }
   }
 
-  function handleExploreMode({ pos, selectedEntityPosition, selectedEntityHex }: any) {
+  function handleExploreMode({ pos, selectedEntityPosition }: any) {
     const colRow = getColRowFromUIPosition(pos.x, pos.y);
     if (
       selectedEntityRef?.current?.position &&
@@ -414,8 +412,8 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       const uiPos = getUIPositionFromColRow(colRow.col, colRow.row);
       const colors = {
         pos: [
-          [selectedEntityPosition.x, -selectedEntityPosition.y, selectedEntityHex!.depth * 10],
-          [uiPos.x, -uiPos.y, BIOMES[selectedEntityHex!.biome].depth * 10],
+          [selectedEntityPosition.x, -selectedEntityPosition.y],
+          [uiPos.x, -uiPos.y],
         ],
         color: EXPLORE_COLOUR,
       } as HighlightPositions;
@@ -449,7 +447,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
             uiPos: [pos.x, -pos.y, pos.z],
             hexIndex: instanceId,
           });
-          setHighlightPath({ pos: [pos.x, -pos.y, pos.z], color: CLICKED_HEX_COLOR });
+          setHighlightPath({ pos: [pos.x, -pos.y], color: CLICKED_HEX_COLOR });
         }
       };
 

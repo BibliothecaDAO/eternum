@@ -12,7 +12,7 @@ const HighlightedHexes = () => {
       if (mesh) {
         const pos = highlightPositions.pos[index];
         const isHighlighted = highlightPath.pos.some(
-          (highlightPos) => highlightPos[0] === pos[0] && highlightPos[1] === pos[1] && highlightPos[2] === pos[2],
+          (highlightPos) => highlightPos[0] === pos[0] && highlightPos[1] === pos[1],
         );
         const color = isHighlighted ? highlightPath.color : highlightPositions.color;
         mesh.material.color.set(color);

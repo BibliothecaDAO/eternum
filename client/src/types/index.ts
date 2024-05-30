@@ -9,6 +9,7 @@ export interface Hexagon {
 }
 
 export type Position3D = [number, number, number];
+export type Position2D = [number, number];
 
 export interface ClickedHex {
   contractPos: { col: number; row: number };
@@ -17,6 +18,6 @@ export interface ClickedHex {
 }
 
 export interface HighlightPositions {
-  pos: Position3D[];
+  pos: Position2D[];
   color: number;
 }
