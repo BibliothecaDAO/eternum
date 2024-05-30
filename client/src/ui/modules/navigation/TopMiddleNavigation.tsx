@@ -56,13 +56,9 @@ export const TopMiddleNavigation = () => {
 
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
-      if (location.includes(`/hex`)) {
-        setIsLoadingScreenEnabled(false);
-      }
       setLocation(`/hex?col=${structure!.position.x}&row=${structure!.position.y}`);
+      setRealmEntityId(BigInt(entityId));
     }, 300);
-
-    setRealmEntityId(BigInt(entityId));
   };
 
   const goToMapView = (entityId: any) => {
@@ -120,11 +116,9 @@ export const TopMiddleNavigation = () => {
                     moveCameraToColRow(hexPosition.col, hexPosition.row, 1.5);
                   }, 10);
                 }
-              }, 100);
+              }, 300);
             } else {
-              setTimeout(() => {
-                goToHexView(realmEntityId.toString());
-              }, 50);
+              goToHexView(realmEntityId.toString());
             }
           }}
         >

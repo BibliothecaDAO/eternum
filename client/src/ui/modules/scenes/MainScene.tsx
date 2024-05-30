@@ -108,7 +108,7 @@ export const MainScene = () => {
 
   return (
     <Canvas
-      frameloop="demand" // for fps limiter
+      frameloop={import.meta.env.VITE_PUBLIC_GRAPHICS_DEV === "true" ? "always" : "demand"} // FPS limiter is enabled in production
       className={clsx("rounded-xl")}
       raycaster={{
         params: {
@@ -154,7 +154,6 @@ export const MainScene = () => {
           <Suspense fallback={null}>
             <Switch location={locationType}>
               <Route path="map">
-                <BakeShadows />
                 <WorldMapScene />
               </Route>
               <Route path="hexception">

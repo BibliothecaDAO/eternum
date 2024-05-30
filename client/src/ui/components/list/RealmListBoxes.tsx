@@ -20,11 +20,11 @@ export const RealmListBoxes = ({ className }: RealmSwitchProps) => {
 
   const gotToRealmView = (realm: any) => {
     setIsLoadingScreenEnabled(true);
+    setLocation(`/hex?col=${realm?.position.x}&row=${realm?.position.y}`);
     setTimeout(() => {
       if (location.includes(`/hex`)) {
         setIsLoadingScreenEnabled(false);
       }
-      setLocation(`/hex?col=${realm?.position.x}&row=${realm?.position.y}`);
     }, 300);
   };
 

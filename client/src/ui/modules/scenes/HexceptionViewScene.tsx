@@ -6,7 +6,9 @@ import BigHexBiome from "../../components/construction/BigHexBiome";
 import { useControls } from "leva";
 import * as THREE from "three";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
+import useUIStore from "@/hooks/store/useUIStore";
 import { MiddleBuilding } from "@/ui/components/construction/ExistingBuildings";
+import { useQuery } from "@/hooks/helpers/useQuery";
 
 const positions = {
   main: getUIPositionFromColRow(0, 0, true),
@@ -20,6 +22,10 @@ const positions = {
 
 export const HexceptionViewScene = () => {
   const { mainHex, neighborHexesInsideView, hexType } = useHexPosition();
+  const { hexPosition } = useQuery();
+
+  const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const texture = useTexture({
     map: "/textures/paper/paper-color.jpg",
@@ -31,6 +37,13 @@ export const HexceptionViewScene = () => {
   // only realm can build
   const canConstruct = hexType === HexType.REALM;
   const hasStructure = hexType !== HexType.EMPTY;
+
+  useEffect(() => {
+    moveCameraToRealmView();
+    setTimeout(() => {
+      setIsLoadingScreenEnabled(false);
+    }, 300);
+  }, [hexPosition]);
 
   return (
     <>

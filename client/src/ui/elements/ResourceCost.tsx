@@ -55,7 +55,6 @@ export const ResourceCost = ({
       >
         <div onClick={onClick} className={clsx(`relative text-${textSize} font-bold`, props.color)}>
           {" "}
-          {props.color && props.amount > 0 ? "+" : ""}
           {Intl.NumberFormat("en-US", {
             notation: "compact",
             maximumFractionDigits: 1,

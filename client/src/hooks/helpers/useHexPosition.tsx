@@ -18,9 +18,7 @@ export enum HexType {
 }
 
 export const useHexPosition = () => {
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const hexData = useUIStore((state) => state.hexData);
-  const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
   const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
 
   const {
@@ -85,11 +83,6 @@ export const useHexPosition = () => {
       return hexData?.find((hex) => hex.col === neighborHex.col && hex.row === neighborHex.row);
     });
   }, [hexData, neighborHexes]);
-
-  useEffect(() => {
-    moveCameraToRealmView();
-    setIsLoadingScreenEnabled(false);
-  }, []);
 
   return {
     mainHex,
