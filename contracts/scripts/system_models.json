@@ -56,7 +56,7 @@
     "QuantityTracker",
     "Road"
   ],
-  "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
+  "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "Stamina"],
   "NAME_SYSTEMS": ["AddressName", "EntityName"],
   "BANK_SYSTEMS": [
     "Bank",
@@ -72,7 +72,31 @@
   ],
   "SWAP_SYSTEMS": ["Market", "OwnedResourcesTracker", "Resource", "Production"],
   "LIQUIDITY_SYSTEMS": ["Market", "OwnedResourcesTracker", "Production", "Resource", "Liquidity"],
-  "HYPERSTRUCTURE_SYSTEMS": ["Structure", "StructureCount", "Position", "Owner", "Progress", "Contribution"],
+  "HYPERSTRUCTURE_SYSTEMS": [
+    "Structure",
+    "StructureCount",
+    "Position",
+    "Owner",
+    "Progress",
+    "Contribution",
+    "Resource",
+    "OwnedResourcesTracker",
+    "ResourceAllowance",
+    "Owner",
+    "Weight",
+    "DetachedResource",
+    "ForeignKey",
+    "Production",
+    "Movable",
+    "Capacity",
+    "Position",
+    "EntityOwner",
+    "EntityMetadata",
+    "Quantity",
+    "ArrivalTime",
+    "QuantityTracker",
+    "Road"
+  ],
   "BUILDINGS_SYSTEMS": [
     "Resource",
     "OwnedResourcesTracker",
@@ -101,7 +125,6 @@
     "Movable",
     "Position",
     "ArrivalTime",
-    "TickMove",
     "Resource",
     "Quantity",
     "Production",
@@ -117,7 +140,8 @@
     "Building",
     "Production",
     "BuildingQuantityv2",
-    "Population"
+    "Population",
+    "Stamina"
   ],
   "COMBAT_SYSTEMS": [
     "Health",
@@ -141,6 +165,7 @@
     "Weight",
     "Building",
     "Population",
-    "BuildingQuantityv2"
+    "BuildingQuantityv2",
+    "Stamina"
   ]
 }

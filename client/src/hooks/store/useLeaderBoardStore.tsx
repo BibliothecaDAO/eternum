@@ -1,123 +1,180 @@
-import { getOrderName, orders } from "@bibliothecadao/eternum";
+import {
+  EternumGlobalConfig,
+  HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  getOrderName,
+} from "@bibliothecadao/eternum";
 import { create } from "zustand";
-import { getEntityIdFromKeys } from "../../ui/utils/utils";
-import { getComponentValue } from "@dojoengine/recs";
+import { HyperstructureEventInterface } from "@/dojo/events/hyperstructureEventQueries";
+import useBlockchainStore from "../store/useBlockchainStore";
+import { useContributions } from "../helpers/useContributions";
+import { ResourcesIds } from "@bibliothecadao/eternum";
+import { getHyperstructureEvents } from "@/dojo/events/hyperstructureEventQueries";
+import { useCallback, useEffect } from "react";
+import { useRealm } from "../helpers/useRealm";
+import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
-import { useGetRealms, useRealm } from "../helpers/useRealm";
-import { useEffect } from "react";
-import { useEntities } from "../helpers/useEntities";
 
-export interface PlayerResourceLeaderboardInterface {
+export const ResourceMultipliers: { [key in ResourcesIds]?: number } = {
+  [ResourcesIds.Wood]: 1.0,
+  [ResourcesIds.Stone]: 1.27,
+  [ResourcesIds.Coal]: 1.31,
+  [ResourcesIds.Copper]: 1.9,
+  [ResourcesIds.Obsidian]: 2.26,
+  [ResourcesIds.Silver]: 2.88,
+  [ResourcesIds.Ironwood]: 4.25,
+  [ResourcesIds.ColdIron]: 5.24,
+  [ResourcesIds.Gold]: 5.49,
+  [ResourcesIds.Hartwood]: 8.44,
+  [ResourcesIds.Diamonds]: 16.72,
+  [ResourcesIds.Sapphire]: 20.3,
+  [ResourcesIds.Ruby]: 20.98,
+  [ResourcesIds.DeepCrystal]: 20.98,
+  [ResourcesIds.Ignium]: 29.15,
+  [ResourcesIds.EtherealSilica]: 30.95,
+  [ResourcesIds.TrueIce]: 36.06,
+  [ResourcesIds.TwilightQuartz]: 45.18,
+  [ResourcesIds.AlchemicalSilver]: 53.92,
+  [ResourcesIds.Adamantine]: 91.2,
+  [ResourcesIds.Mithral]: 135.53,
+  [ResourcesIds.Dragonhide]: 217.92,
+  [ResourcesIds.Earthenshard]: 20.98,
+};
+
+export let TOTAL_CONTRIBUTABLE_AMOUNT: number = 0;
+HYPERSTRUCTURE_TOTAL_COSTS_SCALED.forEach(({ resource, amount }) => {
+  TOTAL_CONTRIBUTABLE_AMOUNT += ResourceMultipliers[resource as keyof typeof ResourceMultipliers]! * amount;
+});
+
+function getResourceMultiplier(resourceType: BigInt): number {
+  const resourceTypeNumber: ResourcesIds = Number(resourceType);
+  return ResourceMultipliers[resourceTypeNumber] ?? 0;
+}
+
+export function computeContributionPoints(totalPoints: number, qty: number, resourceType: BigInt): number {
+  const effectiveContribution = qty * getResourceMultiplier(resourceType);
+  const points = (effectiveContribution / TOTAL_CONTRIBUTABLE_AMOUNT) * totalPoints;
+  return points;
+}
+
+export const calculateShares = (contributions: any[]) => {
+  let points = 0;
+  contributions.forEach((contribution) => {
+    points += computeContributionPoints(1, Number(contribution.amount), BigInt(contribution.resource_type));
+  });
+  return points;
+};
+
+export interface PlayerPointsLeaderboardInterface {
   address: string;
   addressName: string;
   order: string;
-  totalResources: number;
-  isYours: boolean;
-}
-
-export interface OrderResourceLeaderboardInterface {
-  order: string;
-  realmCount: number;
-  totalResources: number;
+  totalPoints: number;
   isYours: boolean;
 }
 
 interface LeaderboardStore {
   loading: boolean;
   setLoading: (loading: boolean) => void;
-  playerResourceLeaderboard: PlayerResourceLeaderboardInterface[];
-  orderResourceLeaderboard: OrderResourceLeaderboardInterface[];
-  setResourceLeaderboards: (
-    playerResourceLeaderboard: PlayerResourceLeaderboardInterface[],
-    orderResourceLeaderboard: OrderResourceLeaderboardInterface[],
-  ) => void;
+  playerPointsLeaderboard: PlayerPointsLeaderboardInterface[];
+  setPointsLeaderboards: (playerPointsLeaderboard: PlayerPointsLeaderboardInterface[]) => void;
+  finishedHyperstructures: HyperstructureEventInterface[];
+  setFinishedHyperstructures: (val: HyperstructureEventInterface[]) => void;
 }
 
 const useLeaderBoardStore = create<LeaderboardStore>((set) => {
   return {
     loading: false,
-    playerResourceLeaderboard: [],
-    orderResourceLeaderboard: [],
-    setResourceLeaderboards: (
-      playermResourceLeaderboard: PlayerResourceLeaderboardInterface[],
-      orderResourceLeaderboard: OrderResourceLeaderboardInterface[],
-    ) => set({ playerResourceLeaderboard: playermResourceLeaderboard, orderResourceLeaderboard }),
+    playerPointsLeaderboard: [],
+    setPointsLeaderboards: (playerPointsLeaderboard: PlayerPointsLeaderboardInterface[]) =>
+      set({ playerPointsLeaderboard: playerPointsLeaderboard }),
     setLoading: (loading) => set({ loading }),
+    finishedHyperstructures: [],
+    setFinishedHyperstructures: (val: HyperstructureEventInterface[]) => set({ finishedHyperstructures: val }),
   };
 });
 
-export const useComputeResourceLeaderboards = (resourceId: bigint) => {
+export const useComputePointsLeaderboards = () => {
+  const setPointsLeaderboards = useLeaderBoardStore((state) => state.setPointsLeaderboards);
+  const { getContributions } = useContributions();
+  const { getAddressName, getAddressOrder } = useRealm();
+
   const {
     account: { account },
-    setup: {
-      components: { Resource, Realm },
-    },
   } = useDojo();
 
-  const { setResourceLeaderboards } = useLeaderBoardStore();
-  const { playerRealms } = useEntities();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { getAddressName } = useRealm();
+  const updatePointsLeaderboard = useCallback(
+    (
+      hyperstructureEntityId: bigint,
+      finishedTimestamp: number,
+      currentTimestamp: number,
+    ): PlayerPointsLeaderboardInterface[] => {
+      const contributions = getContributions(hyperstructureEntityId);
 
-  // todo: do entities like bank accounts as well
-  const realms = useGetRealms();
+      const nbOfCycles = Math.floor(
+        (currentTimestamp - finishedTimestamp) / EternumGlobalConfig.tick.defaultTickIntervalInSeconds,
+      );
+      let totalHyperstructurePoints = HYPERSTRUCTURE_POINTS_PER_CYCLE * nbOfCycles;
+
+      return computeHyperstructureLeaderboard(
+        contributions,
+        totalHyperstructurePoints,
+        account,
+        getAddressName,
+        getAddressOrder,
+      );
+    },
+    [getContributions],
+  );
 
   useEffect(() => {
-    const playerOrder = getOrderName(
-      getComponentValue(Realm, getEntityIdFromKeys([playerRealms()[0]?.entity_id || 0n]))?.order || 0,
-    );
+    if (!nextBlockTimestamp) return;
 
-    const playerResourceLeaderboard: PlayerResourceLeaderboardInterface[] = [];
-    const orderResourceLeaderboard: Record<string, OrderResourceLeaderboardInterface> = {};
-    orders
-      .filter((order) => order.orderId !== 17)
-      .forEach((order) => {
-        const isYours = order.orderName.toLowerCase() === playerOrder;
-        orderResourceLeaderboard[order.orderName] = {
-          order: order.orderName,
-          realmCount: 0,
-          totalResources: 0,
-          isYours,
-        };
+    getHyperstructureEvents().then((events) => {
+      let _tmpPlayerPointsLeaderboard;
+      events.forEach((event) => {
+        const { hyperstructureEntityId, timestamp } = event;
+        _tmpPlayerPointsLeaderboard = updatePointsLeaderboard(hyperstructureEntityId, timestamp, nextBlockTimestamp);
       });
-
-    for (const realm of realms) {
-      const owner = "0x" + realm.owner?.toString(16) || "0x0";
-      const resourceAmounts = getComponentValue(Resource, getEntityIdFromKeys([realm.entity_id, resourceId]));
-      if (resourceAmounts && resourceAmounts?.balance > 100000000) continue;
-      let order = getOrderName(realm.order);
-      const isYours = account.address === owner;
-      const existingEntryIndex = playerResourceLeaderboard.findIndex((entry) => entry.address === owner);
-      if (existingEntryIndex !== -1) {
-        playerResourceLeaderboard[existingEntryIndex].totalResources += Number(resourceAmounts?.balance) || 0;
-      } else {
-        playerResourceLeaderboard.push({
-          address: owner,
-          addressName: getAddressName(owner) || "",
-          order,
-          totalResources: Number(resourceAmounts?.balance) || 0,
-          isYours,
-        });
-      }
-
-      if (!orderResourceLeaderboard[order]) {
-        orderResourceLeaderboard[order] = {
-          order,
-          realmCount: 1,
-          totalResources: Number(resourceAmounts?.balance) || 0,
-          isYours: order === playerOrder,
-        };
-      } else {
-        orderResourceLeaderboard[order].realmCount++;
-        orderResourceLeaderboard[order].totalResources += Number(resourceAmounts?.balance) || 0;
-      }
-    }
-
-    setResourceLeaderboards(
-      playerResourceLeaderboard.sort((a, b) => b.totalResources - a.totalResources),
-      Object.values(orderResourceLeaderboard).sort((a, b) => b.totalResources - a.totalResources),
-    );
-  }, [resourceId]);
+      _tmpPlayerPointsLeaderboard && setPointsLeaderboards(_tmpPlayerPointsLeaderboard);
+    });
+  }, [nextBlockTimestamp]);
 };
 
 export default useLeaderBoardStore;
+
+export const computeHyperstructureLeaderboard = (
+  contributions: any[],
+  totalHyperstructurePoints: number,
+  account: any,
+  getAddressName: any,
+  getAddressOrder: any,
+): PlayerPointsLeaderboardInterface[] => {
+  let tempPlayerPointsLeaderboard: PlayerPointsLeaderboardInterface[] = [];
+  contributions.forEach((contribution) => {
+    const playerAddress: string = "0x" + contribution!.player_address.toString(16);
+    const index = tempPlayerPointsLeaderboard.findIndex((player) => player.address === playerAddress);
+    if (index >= 0) {
+      tempPlayerPointsLeaderboard[index].totalPoints += computeContributionPoints(
+        totalHyperstructurePoints,
+        Number(contribution!.amount),
+        BigInt(contribution!.resource_type),
+      );
+    } else {
+      tempPlayerPointsLeaderboard.push({
+        address: playerAddress,
+        addressName: getAddressName(playerAddress) || displayAddress(playerAddress),
+        order: getOrderName(getAddressOrder(playerAddress) || 1),
+        totalPoints: computeContributionPoints(
+          totalHyperstructurePoints,
+          Number(contribution!.amount),
+          BigInt(contribution!.resource_type),
+        ),
+        isYours: playerAddress === account.address,
+      });
+    }
+  });
+  return tempPlayerPointsLeaderboard;
+};

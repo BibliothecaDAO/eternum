@@ -1,15 +1,15 @@
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { useMemo } from "react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm, getRealmNameById } from "@/ui/utils/realms";
-import { useCaravan } from "./useCaravans";
 import { calculateDistance } from "@/ui/utils/utils";
 import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { useEntities } from "./useEntities";
 
 export type Structure = ClientComponents["Realm"]["schema"] &
   ClientComponents["Loyalty"]["schema"] & { resources: number[] } & { self: boolean } & { name: string };
@@ -18,6 +18,8 @@ export const useStructures = () => {
   const {
     setup: {
       components: { Position, Bank, Realm },
+      account: { account },
+      systemCalls: { create_hyperstructure },
     },
   } = useDojo();
 
@@ -31,21 +33,29 @@ export const useStructures = () => {
     return Array.from(bankEntities).length > 0 || Array.from(realmEntities).length > 0;
   };
 
+  const createHyperstructure = async (creator_entity_id: bigint, col: number, row: number) => {
+    await create_hyperstructure({ signer: account, coords: { x: col, y: row }, creator_entity_id });
+  };
+
   return {
     hasStructures,
+    createHyperstructure,
   };
 };
 
 export const useStructuresPosition = ({ position }: { position: Position }) => {
   const {
     setup: {
-      components: { Position, Bank, Realm, EntityOwner, Owner, Loyalty },
+      components: { Position, Realm, EntityOwner, Owner, Loyalty, Structure },
     },
     account: { account },
   } = useDojo();
 
-  const realmsAtPosition = useEntityQuery([HasValue(Position, position), Has(Realm)]);
-  const banksAtPosition = useEntityQuery([HasValue(Position, position), Has(Bank)]);
+  const { getEntityName } = useEntities();
+
+  // structures at position
+  const realmsAtPosition = useEntityQuery([HasValue(Position, position), HasValue(Structure, { category: "Realm" })]);
+  const structuresAtPosition = useEntityQuery([HasValue(Position, position), Has(Structure)]);
 
   const formattedRealmAtPosition: Structure = useMemo(() => {
     return realmsAtPosition.map((realm_entity_id: any) => {
@@ -66,21 +76,27 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
     });
   }, [realmsAtPosition])[0];
 
-  const formattedBanksAtPosition = useMemo(() => {
-    return banksAtPosition.map((bank_entity_id: any) => {
-      const bank = getComponentValue(Bank, bank_entity_id);
-      return { ...bank };
-    });
-  }, [banksAtPosition])[0];
+  const formattedStructureAtPosition = useMemo(() => {
+    return structuresAtPosition.map((hyperstructure_entity_id: any) => {
+      const structure = getComponentValue(Structure, hyperstructure_entity_id);
+      const name = structure ? getEntityName(structure?.entity_id) : "";
 
-  const structuresAtPosition = useMemo(() => {
-    return formattedRealmAtPosition?.entity_id != null || formattedBanksAtPosition != null;
-  }, [formattedRealmAtPosition, formattedBanksAtPosition]);
+      return {
+        entity_id: structure!.entity_id,
+        category: StructureType[structure!.category as keyof typeof StructureType],
+        name,
+      };
+    });
+  }, [structuresAtPosition])[0];
+
+  const structureAtPosition = useMemo(() => {
+    return formattedStructureAtPosition?.entity_id != null;
+  }, [formattedStructureAtPosition]);
 
   return {
     formattedRealmAtPosition,
-    formattedBanksAtPosition,
-    structuresAtPosition,
+    formattedStructureAtPosition,
+    structuresAtPosition: structureAtPosition,
   };
 };
 

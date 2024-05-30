@@ -2,9 +2,10 @@ use core::traits::TryInto;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
+use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 use eternum::models::capacity::Capacity;
 use eternum::models::combat::{Health};
+use eternum::models::config::TickConfig;
 
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable};
@@ -14,7 +15,6 @@ use eternum::models::position::{Position, Coord, CoordTrait, Direction};
 use eternum::models::quantity::Quantity;
 use eternum::models::realm::Realm;
 use eternum::models::resources::{Resource, ResourceFoodImpl};
-use eternum::models::tick::TickConfig;
 use eternum::models::weight::Weight;
 
 use eternum::systems::config::contracts::{
@@ -48,7 +48,6 @@ const SHARDS_MINE_FAIL_PROBABILITY_WEIGHT: u128 = 1000;
 
 const TIMESTAMP: u64 = 10000;
 
-const MAX_MOVES_PER_TICK: u8 = 12;
 const TICK_INTERVAL_IN_SECONDS: u64 = 3;
 
 fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
@@ -84,7 +83,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     // set tick config
     let tick_config = TickConfig {
         config_id: WORLD_CONFIG_ID,
-        max_moves_per_tick: MAX_MOVES_PER_TICK,
+        tick_id: TickIds::DEFAULT,
         tick_interval_in_seconds: TICK_INTERVAL_IN_SECONDS
     };
     set!(world, (tick_config));

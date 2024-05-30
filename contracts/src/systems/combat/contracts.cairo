@@ -47,6 +47,7 @@ mod combat_systems {
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockTrait};
+    use eternum::models::stamina::Stamina;
     use eternum::models::structure::{Structure, StructureTrait, StructureCategory};
     use eternum::models::weight::Weight;
     use eternum::models::{
@@ -160,6 +161,16 @@ mod combat_systems {
                     world,
                     (Capacity { entity_id: army_id, weight_gram: army_carry_capacity.weight_gram },)
                 );
+
+                let armies_tick_config = TickImpl::get_armies_tick_config(world);
+                set!(
+                    world,
+                    (Stamina {
+                        entity_id: army_id,
+                        amount: 0,
+                        last_refill_tick: armies_tick_config.current()
+                    })
+                )
             }
         }
 
@@ -313,7 +324,7 @@ mod combat_systems {
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
 
-            let tick = TickImpl::get(world);
+            let tick = TickImpl::get_default_tick_config(world);
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;
             battle.attack_army = attacking_army.into();
@@ -345,7 +356,7 @@ mod combat_systems {
 
             // update battle state before any other actions
             let mut battle: Battle = get!(world, battle_id, Battle);
-            let tick = TickImpl::get(world);
+            let tick = TickImpl::get_default_tick_config(world);
             battle.update_state(tick);
 
             // ensure battle is still ongoing
@@ -414,7 +425,7 @@ mod combat_systems {
 
             // update battle state before any other actions
             let mut battle: Battle = get!(world, battle_id, Battle);
-            let tick = TickImpl::get(world);
+            let tick = TickImpl::get_default_tick_config(world);
             battle.update_state(tick);
 
             // ensure battle id is correct
@@ -513,7 +524,7 @@ mod combat_systems {
 
             // ensure structure has no army protecting it 
             // or it has lost the battle it is currently in
-            let tick = TickImpl::get(world);
+            let tick = TickImpl::get_default_tick_config(world);
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
                 // ensure structure army is in battle
@@ -559,7 +570,7 @@ mod combat_systems {
             let structure_position: Position = get!(world, structure_id, Position);
             army_position.assert_same_location(structure_position.into());
 
-            let tick = TickImpl::get(world);
+            let tick = TickImpl::get_default_tick_config(world);
             let troop_config = TroopConfigImpl::get(world);
 
             // get structure army and health

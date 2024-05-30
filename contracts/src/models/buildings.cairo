@@ -168,7 +168,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
     fn start_production(ref self: Building, world: IWorldDispatcher) {
         if self.is_resource_producer() {
-            let tick = TickImpl::get(world);
+            let tick = TickImpl::get_default_tick_config(world);
             let produced_resource_type = self.produced_resource();
             let mut produced_resource: Resource = ResourceImpl::get(
                 world, (self.outer_entity_id, produced_resource_type)
@@ -247,7 +247,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 
     fn stop_production(ref self: Building, world: IWorldDispatcher) {
         if self.is_resource_producer() {
-            let tick = TickImpl::get(world);
+            let tick = TickImpl::get_default_tick_config(world);
             let produced_resource_type = self.produced_resource();
             let mut produced_resource: Resource = ResourceImpl::get(
                 world, (self.outer_entity_id, produced_resource_type)
@@ -355,7 +355,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         let mut resource_production: Production = get!(
             world, (self.outer_entity_id, produced_resource_type), Production
         );
-        let tick_config: TickConfig = TickImpl::get(world);
+        let tick_config: TickConfig = TickImpl::get_default_tick_config(world);
 
         if delete {
             // remove this building's contribution from global resource production
@@ -437,7 +437,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             let mut bonus_receiver_resource_production: Production = get!(
                 world, (self.outer_entity_id, bonus_receiver_produced_resource_type), Production
             );
-            let tick_config: TickConfig = TickImpl::get(world);
+            let tick_config: TickConfig = TickImpl::get_default_tick_config(world);
 
             // remove old building's contribution to global resource production
             let bonus_receiver_old_production_amount: u128 = bonus_receiver_building

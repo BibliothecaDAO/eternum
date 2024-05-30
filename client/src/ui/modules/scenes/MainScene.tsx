@@ -26,8 +26,6 @@ export const Camera = () => {
 
 export const MainScene = () => {
   const [location] = useLocation();
-  const isDestroyMode = useUIStore((state) => state.isDestroyMode);
-
   // location type
   const locationType = useMemo(() => {
     if (location === "/map" || location === "/") {
@@ -49,13 +47,13 @@ export const MainScene = () => {
     () =>
       locationType === "map"
         ? {
-          near: mapFogNear,
-          far: mapFogFar,
-        }
+            near: mapFogNear,
+            far: mapFogFar,
+          }
         : {
-          near: realmFogNear,
-          far: realmFogFar,
-        },
+            near: realmFogNear,
+            far: realmFogFar,
+          },
     [locationType, mapFogFar, mapFogNear, realmFogFar, realmFogNear],
   );
 
@@ -110,8 +108,8 @@ export const MainScene = () => {
 
   return (
     <Canvas
-      frameloop="demand" // for fps limiter
-      className={clsx("rounded-xl", isDestroyMode && "!cursor-crosshair")}
+      frameloop={import.meta.env.VITE_PUBLIC_GRAPHICS_DEV === "true" ? "always" : "demand"} // FPS limiter is enabled in production
+      className={clsx("rounded-xl")}
       raycaster={{
         params: {
           Points: { threshold: 0.2 },
@@ -156,7 +154,6 @@ export const MainScene = () => {
           <Suspense fallback={null}>
             <Switch location={locationType}>
               <Route path="map">
-                <BakeShadows />
                 <WorldMapScene />
               </Route>
               <Route path="hexception">

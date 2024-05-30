@@ -9,7 +9,7 @@ import { useMemo } from "react";
 
 const hexagonGeometry = new THREE.ExtrudeGeometry(createHexagonShape(HEX_RADIUS), { depth: 2, bevelEnabled: false });
 
-const generateHexPositions = (biome: keyof typeof biomes) => {
+const generateHexPositions = (biome: keyof typeof biomes, flat: boolean) => {
   const _color = new THREE.Color("gray");
   const center = { col: 10, row: 10 };
   const RADIUS = 4;
@@ -31,15 +31,17 @@ const generateHexPositions = (biome: keyof typeof biomes) => {
     }
   };
 
+  const isFlat = flat || ["ocean", "deep_ocean"].includes(biome);
+
   for (let i = 0; i < RADIUS; i++) {
     if (i === 0) {
       const { x, y, z } = getUIPositionFromColRow(center.col, center.row, true);
-      const adjustedZ = !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32;
+      const adjustedZ = !isFlat ? 0.32 + z : 0.32;
       addPosition(center.col, center.row, x, y, adjustedZ, false);
 
       getNeighborHexes(center.col, center.row).forEach((neighbor) => {
         const { x, y, z } = getUIPositionFromColRow(neighbor.col, neighbor.row, true);
-        const adjustedZ = !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32;
+        const adjustedZ = !isFlat ? 0.32 + z : 0.32;
         addPosition(neighbor.col, neighbor.row, x, y, adjustedZ, false);
       });
     } else {
@@ -47,7 +49,7 @@ const generateHexPositions = (biome: keyof typeof biomes) => {
         getNeighborHexes(position.col, position.row).forEach((neighbor) => {
           const { x, y, z } = getUIPositionFromColRow(neighbor.col, neighbor.row, true);
           const isBorderHex = i === RADIUS - 1;
-          const adjustedZ = !isBorderHex && !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32;
+          const adjustedZ = !isBorderHex && !isFlat ? 0.32 + z : 0.32;
           addPosition(neighbor.col, neighbor.row, x, y, adjustedZ, isBorderHex);
         });
       });
@@ -58,17 +60,23 @@ const generateHexPositions = (biome: keyof typeof biomes) => {
 };
 
 const defaultBiome = "snow";
-const BigHexBiome = ({ biome }: { biome: keyof typeof biomes }) => {
+const BigHexBiome = ({ biome, flat }: { biome: keyof typeof biomes; flat: boolean }) => {
   const { BiomeComponent, material } = useMemo(() => {
     const _biome = biome && biomes[biome] ? biome : defaultBiome;
 
     return {
       BiomeComponent: biomeComponents[_biome],
-      material: new THREE.MeshBasicMaterial({ color: new THREE.Color(biomes[_biome]!.color) }),
+      material: new THREE.MeshPhongMaterial({ color: new THREE.Color(biomes[_biome]!.color) }),
     };
   }, [biome]);
 
-  const { positions: hexPositions, hexColRows, borderHexes } = useMemo(() => generateHexPositions(biome), [biome]);
+  const {
+    positions: hexPositions,
+    hexColRows,
+    borderHexes,
+  } = useMemo(() => generateHexPositions(biome, flat), [biome]);
+
+  const isFlat = flat || ["ocean", "deep_ocean"].includes(biome);
 
   const hexesInstancedMesh = useMemo(() => {
     const _tmp = new THREE.InstancedMesh(hexagonGeometry, material, hexPositions.length);
@@ -84,7 +92,7 @@ const BigHexBiome = ({ biome }: { biome: keyof typeof biomes }) => {
     <group rotation={[Math.PI / -2, 0, 0]} position={[0, 0, 0]}>
       <primitive object={hexesInstancedMesh} />
       <group position={[0, 0, 2.01]}>
-        <BiomeComponent hexes={hexColRows} zOffsets={!["ocean", "deep_ocean"].includes(biome)} />
+        <BiomeComponent hexes={hexColRows} zOffsets={!isFlat} />
         <BiomeComponent hexes={borderHexes} zOffsets={false} />
       </group>
     </group>

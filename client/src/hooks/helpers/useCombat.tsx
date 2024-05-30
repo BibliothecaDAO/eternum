@@ -17,7 +17,6 @@ export function useCombat() {
       components: {
         Position,
         EntityOwner,
-        HyperStructure,
         Owner,
         Health,
         Quantity,
@@ -77,29 +76,6 @@ export function useCombat() {
       /// @note: determine the type of position the raider is on (home, other realm, hyperstructure, bank)
       let locationEntityId: bigint | undefined;
       let locationType: DESTINATION_TYPE | undefined;
-
-      if (position) {
-        const realmQueryResult = runQuery([Has(Realm), HasValue(Position, { x: position.x, y: position.y })]);
-        const hyperStructureQueryResult = runQuery([
-          Has(HyperStructure),
-          HasValue(Position, { x: position.x, y: position.y }),
-        ]);
-
-        if (realmQueryResult.size === 1) {
-          locationEntityId = getComponentValue(Realm, realmQueryResult.values().next().value)?.entity_id;
-          locationType = DESTINATION_TYPE.REALM;
-        } else if (hyperStructureQueryResult.size === 1) {
-          locationEntityId = getComponentValue(
-            HyperStructure,
-            hyperStructureQueryResult.values().next().value,
-          )?.entity_id;
-          locationType = DESTINATION_TYPE.HYPERSTRUCTURE;
-        }
-
-        if (locationEntityId === realmEntityId) {
-          locationType = DESTINATION_TYPE.HOME;
-        }
-      }
 
       const originRealm = entityOwner
         ? getComponentValue(Realm, getEntityIdFromKeys([entityOwner.entity_owner_id]))

@@ -14,6 +14,7 @@ import {
   trade,
   construction,
   assistant,
+  structures,
 } from "../../components/navigation/Config";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useMemo, useState } from "react";
@@ -37,7 +38,7 @@ import { useLocation } from "wouter";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import Button from "@/ui/elements/Button";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
-import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
+import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
 import _, { debounce } from "lodash";
 
 export const BuildingThumbs = {
@@ -47,7 +48,7 @@ export const BuildingThumbs = {
   trade: "/images/buildings/thumb/trade.png",
   resources: "/images/buildings/thumb/resources.png",
   banks: "/images/buildings/thumb/banks.png",
-  hyperstructures: "/images/buildings/thumb/hyperstructure.png",
+  hyperstructures: "/images/buildings/thumb/world-map.png",
   leaderboard: "/images/buildings/thumb/leaderboard.png",
   worldMap: "/images/buildings/thumb/world-map.png",
   squire: "/images/buildings/thumb/squire.png",
@@ -60,6 +61,8 @@ enum View {
   MilitaryView,
   EntityView,
   ConstructionView,
+  StructureView,
+  HyperstructuresView,
 }
 
 export const LeftNavigationModule = () => {
@@ -69,6 +72,9 @@ export const LeftNavigationModule = () => {
   const { realmEntityId } = useRealmStore();
   const { setIsOpen } = useTour();
   const [location, setLocation] = useLocation();
+
+  const isWorldView = useMemo(() => location === "/map", [location]);
+
   const navigation = useMemo(() => {
     const navigation = [
       {
@@ -122,11 +128,40 @@ export const LeftNavigationModule = () => {
           />
         ),
       },
+      {
+        name: "hyperstructures",
+        button: (
+          <CircleButton
+            className="hyperstructures-selector"
+            image={BuildingThumbs.hyperstructures}
+            tooltipLocation="top"
+            label={hyperstructures}
+            active={view === View.HyperstructuresView}
+            size="xl"
+            onClick={() => {
+              setIsOffscreen(false);
+              setView(View.HyperstructuresView);
+            }}
+          />
+        ),
+      },
     ];
 
-    return location === "/map"
-      ? navigation.filter((item) => item.name === MenuEnum.military || item.name === MenuEnum.entityDetails)
-      : navigation.filter((item) => item.name === MenuEnum.military || item.name === MenuEnum.construction);
+    return isWorldView
+      ? navigation.filter(
+          (item) =>
+            item.name === MenuEnum.entityDetails ||
+            item.name === MenuEnum.military ||
+            item.name === MenuEnum.construction ||
+            item.name === MenuEnum.hyperstructures,
+        )
+      : navigation.filter(
+          (item) =>
+            item.name === MenuEnum.entityDetails ||
+            item.name === MenuEnum.military ||
+            item.name === MenuEnum.construction ||
+            item.name === MenuEnum.hyperstructures,
+        );
   }, [location, view]);
 
   if (realmEntityId === undefined) {
@@ -161,7 +196,9 @@ export const LeftNavigationModule = () => {
         <BaseContainer className="w-full h-[60vh] overflow-y-scroll">
           {view === View.EntityView && <EntityDetails />}
           {view === View.MilitaryView && <Military entityId={realmEntityId} />}
-          {view === View.ConstructionView && <SelectPreviewBuildingMenu />}
+          {!isWorldView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
+          {isWorldView && view === View.ConstructionView && <StructureConstructionMenu />}
+          {view === View.HyperstructuresView && <HyperStructures />}
         </BaseContainer>
         <div className="gap-2 flex flex-col justify-center self-center">
           <div>

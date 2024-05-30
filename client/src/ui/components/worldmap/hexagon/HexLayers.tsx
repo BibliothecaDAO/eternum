@@ -122,6 +122,10 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
 
     // Object.keys(biomeComponents).forEach((biome) => {
     //   biomesAccumulator[biome] = group.filter((hex) => hex.biome === biome);
+    //   biomesAccumulator[biome] = biomesAccumulator[biome].map((hex: any) => {
+    //     const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
+    //     return { ...hex, x, y, z };
+    //   });
     // });
 
     return biomesAccumulator;
@@ -143,6 +147,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const previewBuilding = useUIStore((state) => state.previewBuilding);
 
   const { hoverHandler, clickHandler, mouseOutHandler } = useEventHandlers(explored);
 
@@ -290,6 +295,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const { exploreHex } = useExplore();
   const { travelToHex } = useTravel();
   const { play: playExplore } = useUiSounds(soundSelector.explore);
+  const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
 
   const {
     hexData,
@@ -344,6 +350,12 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       const mesh = intersect.object;
       const pos = getPositionsAtIndex(mesh, instanceId);
       if (!pos || !hexDataRef.current || !exploredHexesRef.current) return;
+
+      const coord = getColRowFromUIPosition(pos.x, pos.y, false);
+      setHoveredBuildHex({
+        col: coord.col,
+        row: coord.row,
+      });
 
       if (!selectedEntityRef.current) {
         const positions = [[pos.x, -pos.y]];

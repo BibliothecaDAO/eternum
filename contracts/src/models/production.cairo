@@ -172,7 +172,7 @@ impl ProductionInputImpl of ProductionInputTrait {
     /// returns the tick it runs out 
     fn first_input_finish_tick(production: @Production, world: IWorldDispatcher) -> u64 {
         let production_config = get!(world, *production.resource_type, ProductionConfig);
-        let tick_config = TickImpl::get(world);
+        let tick_config = TickImpl::get_default_tick_config(world);
 
         let mut least_tick: u64 = BoundedInt::max();
         let mut count = 0;
@@ -227,7 +227,7 @@ impl ProductionOutputImpl of ProductionOutputTrait {
         );
 
         // Get the current tick from the world
-        let tick = TickImpl::get(world);
+        let tick = TickImpl::get_default_tick_config(world);
 
         // Iterate through each dependent output resource
         let mut count = 0;

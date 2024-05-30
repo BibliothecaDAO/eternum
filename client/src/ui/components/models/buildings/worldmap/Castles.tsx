@@ -1,12 +1,13 @@
-import { useGLTF } from "@react-three/drei";
+import { BakeShadows, Detailed, useGLTF } from "@react-three/drei";
 import realmHexPositions from "../../../../../data/geodata/hex/realmHexPositions.json";
 import { useMemo, useState } from "react";
 import { useGetRealms } from "../../../../../hooks/helpers/useRealm";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { HexPositions, getRealmUIPosition, pseudoRandom } from "../../../../utils/utils";
+import { HexPositions, getRealmUIPosition, getUIPositionFromColRow, pseudoRandom } from "../../../../utils/utils";
 import { biomes } from "@bibliothecadao/eternum";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { Hexagon } from "../../../../../types";
+import { useControls } from "leva";
 
 type Castle = {
   uiPos: { x: number; y: number };
@@ -49,6 +50,21 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
       })
       .filter(Boolean) as Castle[];
   }, []);
+
+  const { intensity, power, lpos } = useControls("castles", {
+    intensity: { value: 0.1, min: 0, max: 100, step: 0.1 },
+    power: { value: 275, min: 0, max: 1000, step: 1 },
+    lpos: {
+      value: {
+        x: -2,
+        y: 4,
+        z: 1,
+      },
+      min: -10,
+      max: 10,
+      step: 0.1,
+    },
+  });
 
   return (
     <group>

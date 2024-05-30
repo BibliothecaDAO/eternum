@@ -56,13 +56,9 @@ export const TopMiddleNavigation = () => {
 
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
-      if (location.includes(`/hex`)) {
-        setIsLoadingScreenEnabled(false);
-      }
       setLocation(`/hex?col=${structure!.position.x}&row=${structure!.position.y}`);
+      setRealmEntityId(BigInt(entityId));
     }, 300);
-
-    setRealmEntityId(BigInt(entityId));
   };
 
   const goToMapView = (entityId: any) => {
@@ -120,11 +116,9 @@ export const TopMiddleNavigation = () => {
                     moveCameraToColRow(hexPosition.col, hexPosition.row, 1.5);
                   }, 10);
                 }
-              }, 100);
+              }, 300);
             } else {
-              setTimeout(() => {
-                goToHexView(realmEntityId.toString());
-              }, 50);
+              goToHexView(realmEntityId.toString());
             }
           }}
         >
@@ -151,8 +145,8 @@ const TickProgress = () => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.tickIntervalInSeconds;
-    const progressValue = (timeLeft / EternumGlobalConfig.tick.tickIntervalInSeconds) * 100;
+    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.defaultTickIntervalInSeconds;
+    const progressValue = (timeLeft / EternumGlobalConfig.tick.defaultTickIntervalInSeconds) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
@@ -163,7 +157,7 @@ const TickProgress = () => {
           position: "bottom",
           content: (
             <span className="whitespace-nowrap pointer-events-none">
-              <span>A day in Eternum is {EternumGlobalConfig.tick.tickIntervalInSeconds / 60}m</span>
+              <span>A day in Eternum is {EternumGlobalConfig.tick.defaultTickIntervalInSeconds / 60}m</span>
             </span>
           ),
         });

@@ -81,7 +81,9 @@ export function useBuildings() {
           ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
           : new CairoOption<Number>(CairoOptionVariant.None, 0),
     }).finally(() => {
-      Building.removeOverride(overrideId);
+      setTimeout(() => {
+        Building.removeOverride(overrideId);
+      }, 2000);
     });
   };
 
@@ -97,7 +99,9 @@ export function useBuildings() {
         y: row.toString(),
       },
     }).finally(() => {
-      Building.removeOverride(overrideId);
+      setTimeout(() => {
+        Building.removeOverride(overrideId);
+      }, 2000);
     });
   };
 

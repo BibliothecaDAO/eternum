@@ -115,11 +115,11 @@ export function useResources() {
 export function useResourceBalance() {
   const {
     setup: {
-      components: { Resource, Production, QuantityTracker, BuildingQuantityv2 },
+      components: { Resource, Production, BuildingQuantityv2 },
     },
   } = useDojo();
 
-  const currentTick = useBlockchainStore((state) => state.currentTick);
+  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
 
   const getFoodResources = (entityId: bigint): Resource[] => {
     const wheatBalance = new ProductionManager(
@@ -128,14 +128,14 @@ export function useResourceBalance() {
       BuildingQuantityv2,
       entityId,
       BigInt(ResourcesIds.Wheat),
-    ).balance(currentTick);
+    ).balance(currentDefaultTick);
     const fishBalance = new ProductionManager(
       Production,
       Resource,
       BuildingQuantityv2,
       entityId,
       BigInt(ResourcesIds.Fish),
-    ).balance(currentTick);
+    ).balance(currentDefaultTick);
 
     return [
       { resourceId: ResourcesIds.Wheat, amount: wheatBalance },
@@ -151,7 +151,7 @@ export function useResourceBalance() {
       entityId,
       BigInt(resourceId),
     );
-    return { balance: productionManager.balance(currentTick), resourceId };
+    return { balance: productionManager.balance(currentDefaultTick), resourceId };
   };
 
   // We should deprecate this hook and use getBalance instead - too many useEffects
@@ -169,7 +169,7 @@ export function useResourceBalance() {
         entityId,
         BigInt(resourceId),
       );
-      setResourceBalance({ amount: productionManager.balance(currentTick), resourceId });
+      setResourceBalance({ amount: productionManager.balance(currentDefaultTick), resourceId });
     }, []);
 
     return resourceBalance;
