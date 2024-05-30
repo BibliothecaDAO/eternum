@@ -10,7 +10,7 @@ type DojoHtmlProps = {
 export const DojoHtml = ({ children, ...rest }: DojoHtmlProps) => {
   const { setup } = useDojo();
   return (
-    <Html {...rest}>
+    <Html {...rest} style={{ pointerEvents: "none" }}>
       <DojoProvider value={setup}>{children}</DojoProvider>
     </Html>
   );

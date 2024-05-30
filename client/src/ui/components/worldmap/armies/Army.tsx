@@ -7,8 +7,8 @@ import { WarriorModel } from "../../models/armies/WarriorModel";
 import { Vector3 } from "three";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import { ArmyInfoLabel } from "./ArmyInfoLabel";
-import { ArmyMenu } from "./ArmyMenu";
 import { BannerFlag } from "../BannerFlag";
+import { Box } from "@react-three/drei";
 
 type ArmyProps = {
   info: { contractPos: Position; uiPos: UIPosition; id: bigint; order: string; isMine: boolean };
@@ -92,7 +92,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     setSelectedEntity({ id: info.id, position: info.contractPos });
   }, [info.id, info.contractPos, playBuildMilitary, setSelectedEntity]);
 
-  const onPointerIn = useCallback((e: any) => {
+  const onPointerEnter = useCallback((e: any) => {
     e.stopPropagation();
     setHovered(true);
   }, []);
@@ -101,31 +101,29 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     setHovered(false);
   }, []);
 
-  const showArmyMenu = useMemo(() => {
-    return selectedEntity && selectedEntity.id == info.id;
-  }, [selectedEntity, info.id]);
-
   const showArmyInfo = useMemo(() => {
-    return showAllArmies || (selectedEntity && selectedEntity.id == info.id);
-  }, [showAllArmies, selectedEntity, info.id]);
+    return showAllArmies || hovered;
+  }, [showAllArmies, hovered]);
 
   return (
     <>
       <group position={position}>
         {showArmyInfo && <ArmyInfoLabel armyId={info.id} />}
         {info.isMine && <ArmyFlag rotationY={rotationY} position={position} order={info.order} />}
-        {/* {selectedEntity && showArmyMenu && <ArmyMenu selectedEntityId={selectedEntity.id} />} */}
         <WarriorModel
           {...props}
           id={Number(info.id)}
           rotationY={rotationY}
           onContextMenu={onClick}
-          onPointerEnter={onPointerIn}
-          onPointerOut={onPointerOut}
           isRunning={isRunning}
-          hovered={hovered}
           isFriendly={info.isMine}
         />
+        <mesh position={[0, 1.6, 0]} onPointerEnter={onPointerEnter} onPointerOut={onPointerOut} visible={false}>
+          <Box
+            // material-color="hotpink"
+            args={[1, 3, 1]} // Args for the buffer geometry
+          />
+        </mesh>
       </group>
     </>
   );
