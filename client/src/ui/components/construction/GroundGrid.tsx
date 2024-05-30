@@ -90,7 +90,11 @@ const GroundGrid = () => {
                   !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) &&
                   !isLoading
                 ) {
-                  handlePlacement(hexPosition.col, hexPosition.row, previewBuilding);
+                  handlePlacement(
+                    hexPosition.col,
+                    hexPosition.row,
+                    previewBuilding as { type: BuildingType; resource?: ResourcesIds },
+                  );
                 }
               }}
             />

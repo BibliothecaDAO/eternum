@@ -26,34 +26,16 @@ interface ArmyInfoLabelProps {
 export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   const { getEntitiesCombatInfo } = useCombat();
 
-  const {
-    setup: {
-      components: { TickMove },
-    },
-  } = useDojo();
-
-  const { getResourcesFromBalance } = useResources();
   const { getRealmAddressName } = useRealm();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const currentTick = useBlockchainStore((state) => state.currentTick);
 
   const raider = useMemo(() => {
     return getEntitiesCombatInfo([armyId])[0];
   }, [armyId]);
 
-  const tickMove = useMemo(
-    () => (raider.entityId ? getComponentValue(TickMove, getEntityIdFromKeys([raider.entityId])) : undefined),
-    [raider.entityId, TickMove],
-  );
-
   const isPassiveTravel = useMemo(
     () => (raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false),
     [raider.arrivalTime, nextBlockTimestamp],
-  );
-
-  const isActiveTravel = useMemo(
-    () => (tickMove !== undefined ? tickMove.tick >= currentTick : false),
-    [tickMove, currentTick],
   );
 
   return (
@@ -64,7 +46,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
         getRealmAddressName={getRealmAddressName}
         nextBlockTimestamp={nextBlockTimestamp}
         isPassiveTravel={isPassiveTravel}
-        isActiveTravel={isActiveTravel}
+        isActiveTravel={false}
       />
     </DojoHtml>
   );
@@ -83,9 +65,8 @@ const RaiderInfo = ({
   isPassiveTravel: boolean;
   isActiveTravel: boolean;
 }) => {
-  const { entityOwnerId, entityId, health, quantity, attack, defence, originRealmId } = raider;
+  const { entityOwnerId, entityId, health, quantity, originRealmId } = raider;
 
-  const setTooltip = useUIStore((state) => state.setTooltip);
   const attackerAddressName = entityOwnerId ? getRealmAddressName(entityOwnerId) : "";
 
   const originRealmName = originRealmId ? getRealmNameById(originRealmId) : "";
@@ -139,7 +120,6 @@ const RaiderInfo = ({
         <div className="flex relative justify-between  w-full text-gold">
           <div className="flex items-center">
             <div className="flex items-center  mr-2">
-              {/* <img src="/images/units/troop-icon.png" className="h-[28px]" /> */}
               <div className="flex flex-col ml-1">
                 <div className="bold mr-1">Knight x{currencyFormat(raider.troops.knightCount, 0)}</div>
                 <div className="bold mr-1">Crossbowmen x{currencyFormat(raider.troops.crossbowmanCount, 0)}</div>
@@ -147,50 +127,6 @@ const RaiderInfo = ({
               </div>
             </div>
           </div>
-          {/* <div className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
-            <div
-              className="flex items-center h-6 mr-2"
-              onMouseEnter={() => {
-                setTooltip({
-                  position: "top",
-                  content: (
-                    <>
-                      <p className="whitespace-nowrap">Attack power</p>
-                    </>
-                  ),
-                });
-              }}
-              onMouseLeave={() => {
-                setTooltip(null);
-              }}
-            >
-              <img src="/images/icons/attack.png" className="h-full" />
-              <div className="flex flex-col ml-1 text-center">
-                <div className="bold ">{attack}</div>
-              </div>
-            </div>
-            <div
-              className="flex items-center h-6 mr-2"
-              onMouseEnter={() => {
-                setTooltip({
-                  position: "top",
-                  content: (
-                    <>
-                      <p className="whitespace-nowrap">Defence power</p>
-                    </>
-                  ),
-                });
-              }}
-              onMouseLeave={() => {
-                setTooltip(null);
-              }}
-            >
-              <img src="/images/icons/defence.png" className="h-full" />
-              <div className="flex flex-col ml-1 text-center">
-                <div className="bold ">{defence}</div>
-              </div>
-            </div>
-          </div> */}
           <div className="flex items-center">
             <div className="text-order-brilliance">{health && currencyFormat(health, 0)}HP</div>
           </div>

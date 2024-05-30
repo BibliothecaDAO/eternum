@@ -6,16 +6,20 @@ import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import useRealmStore, { STARTING_ENTITY_ID } from "../store/useRealmStore";
+import useLeaderBoardStore from "../store/useLeaderBoardStore";
 
 export enum HexType {
   BANK = "bank",
   REALM = "realm",
   SHARDSMINE = "shardsmine",
+  HYPERSTRUCTURE = "Hyperstructure",
+  UNFINISHEDHYPERSTRUCTURE = "UnfinishedHyperstructure",
   EMPTY = "empty",
 }
 
 export const useHexPosition = () => {
   const hexData = useUIStore((state) => state.hexData);
+  const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
 
   const {
     account,
@@ -44,7 +48,15 @@ export const useHexPosition = () => {
 
   const hexType: HexType = useMemo(() => {
     if (!structure) return HexType.EMPTY;
-    const category = structure.category.toUpperCase();
+    let category = structure.category.toUpperCase();
+    if (structure.category === HexType.HYPERSTRUCTURE) {
+      category = finishedHyperstructures.some((evt) => {
+        return evt.hyperstructureEntityId == structure.entity_id;
+      })
+        ? category
+        : HexType.UNFINISHEDHYPERSTRUCTURE.toUpperCase();
+      finishedHyperstructures;
+    }
     return HexType[category as keyof typeof HexType];
   }, [structure]);
 

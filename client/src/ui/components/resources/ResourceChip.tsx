@@ -16,7 +16,7 @@ export const ResourceChip = ({
   resourceId: number;
   entityId: bigint;
 }) => {
-  const currentTick = useBlockchainStore((state) => state.currentTick);
+  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resourceId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -25,18 +25,18 @@ export const ResourceChip = ({
   }, []);
 
   const balance = useMemo(() => {
-    return productionManager.balance(currentTick);
-  }, [productionManager, production, currentTick]);
+    return productionManager.balance(currentDefaultTick);
+  }, [productionManager, production, currentDefaultTick]);
 
   const timeUntilValueReached = useMemo(() => {
-    return productionManager.timeUntilValueReached(currentTick, 0);
-  }, [productionManager, production, currentTick]);
+    return productionManager.timeUntilValueReached(currentDefaultTick, 0);
+  }, [productionManager, production, currentDefaultTick]);
 
   const netRate = useMemo(() => {
-    let netRate = productionManager.netRate(currentTick);
+    let netRate = productionManager.netRate(currentDefaultTick);
     if (netRate[1] < 0) {
       // net rate is negative
-      if (Math.abs(netRate[1]) > productionManager.balance(currentTick)) {
+      if (Math.abs(netRate[1]) > productionManager.balance(currentDefaultTick)) {
         return 0;
       }
     }
@@ -45,8 +45,8 @@ export const ResourceChip = ({
 
   const isConsumingInputsWithoutOutput = useMemo(() => {
     if (!production?.production_rate) return false;
-    return productionManager.isConsumingInputsWithoutOutput(currentTick);
-  }, [productionManager, production, currentTick]);
+    return productionManager.isConsumingInputsWithoutOutput(currentDefaultTick);
+  }, [productionManager, production, currentDefaultTick]);
 
   const [displayBalance, setDisplayBalance] = useState(balance);
 

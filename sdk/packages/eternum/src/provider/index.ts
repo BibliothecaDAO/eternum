@@ -566,12 +566,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_tick_config(props: SystemProps.SetTickConfigProps) {
-    const { max_moves_per_tick, tick_interval_in_seconds, signer } = props;
+    const { tick_id, tick_interval_in_seconds, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "config_systems"),
       entrypoint: "set_tick_config",
-      calldata: [max_moves_per_tick, tick_interval_in_seconds],
+      calldata: [tick_id, tick_interval_in_seconds],
     });
   }
 
@@ -658,6 +658,42 @@ export class EternumProvider extends EnhancedDojoProvider {
         cost_of_building.length,
         ...cost_of_building.flatMap(({ resource, amount }) => [resource, amount]),
       ],
+    });
+  }
+
+  public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
+    const { resources_for_completion, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_hyperstructure_config",
+      calldata: [resources_for_completion],
+    });
+  }
+
+  public async create_hyperstructure(props: SystemProps.CreateHyperstructureProps) {
+    const { creator_entity_id, coords, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
+      entrypoint: "create",
+      calldata: [creator_entity_id, coords],
+    });
+  }
+
+  public async contribute_to_construction(props: SystemProps.ContributeToConstructionProps) {
+    const { hyperstructure_entity_id, contributor_entity_id, contributions, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
+      entrypoint: "contribute_to_construction",
+      calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
+    });
+  }
+
+  public async set_stamina_config(props: SystemProps.SetStaminaConfigProps) {
+    const { unit_type, max_stamina, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_stamina_config",
+      calldata: [unit_type, max_stamina],
     });
   }
 }

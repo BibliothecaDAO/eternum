@@ -6,8 +6,8 @@ import BigHexBiome from "../../components/construction/BigHexBiome";
 import { useControls } from "leva";
 import * as THREE from "three";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
-import { ExistingBuildings } from "@/ui/components/construction/ExistingBuildings";
 import useUIStore from "@/hooks/store/useUIStore";
+import { MiddleBuilding } from "@/ui/components/construction/ExistingBuildings";
 
 const positions = {
   main: getUIPositionFromColRow(0, 0, true),
@@ -34,6 +34,7 @@ export const HexceptionViewScene = () => {
 
   // only realm can build
   const canConstruct = hexType === HexType.REALM;
+  const hasStructure = hexType !== HexType.EMPTY;
 
   useEffect(() => {
     moveCameraToRealmView();
@@ -45,11 +46,9 @@ export const HexceptionViewScene = () => {
   return (
     <>
       <group position={[positions.main.x, 0, -positions.main.y]} rotation={[0, 0, 0]}>
-        <group visible={canConstruct}>
-          <BuildArea />
-        </group>
-        <ExistingBuildings />
-        <group visible={!canConstruct}>{mainHex && <BigHexBiome biome={mainHex.biome as any} />}</group>
+        {canConstruct && <BuildArea />}
+        {hasStructure && <MiddleBuilding hexType={hexType} />}
+        {!canConstruct && mainHex && <BigHexBiome biome={mainHex.biome as any} flat={hexType !== HexType.EMPTY} />}
       </group>
       {neighborHexesInsideView && (
         <group>
@@ -60,7 +59,7 @@ export const HexceptionViewScene = () => {
               return (
                 hex?.biome && (
                   <group key={index} position={[position.x, 0, -position.y]} rotation={[0, 0, 0]}>
-                    <BigHexBiome biome={hex.biome as any} />
+                    <BigHexBiome biome={hex.biome as any} flat={false} />
                   </group>
                 )
               );

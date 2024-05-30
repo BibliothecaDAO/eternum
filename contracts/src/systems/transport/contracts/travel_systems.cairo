@@ -14,7 +14,7 @@ trait ITravelSystems {
 mod travel_systems {
     use eternum::alias::ID;
 
-    use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex};
+    use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex, TravelTypes};
     use eternum::models::capacity::{Capacity, CapacityTrait};
     use eternum::models::config::{RoadConfig, LevelingConfig};
     use eternum::models::level::{Level, LevelTrait};
@@ -26,7 +26,7 @@ mod travel_systems {
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::realm::Realm;
     use eternum::models::road::RoadImpl;
-    use eternum::models::tick::{TickMove, TickMoveTrait};
+    use eternum::models::stamina::StaminaImpl;
     use eternum::models::weight::Weight;
 
     use eternum::systems::leveling::contracts::leveling_systems::{
@@ -109,6 +109,11 @@ mod travel_systems {
             let travelling_entity_position = get!(world, travelling_entity_id, Position);
             let travelling_entity_coord: Coord = travelling_entity_position.into();
 
+            let num_moves = directions.len().try_into().unwrap();
+            StaminaImpl::handle_stamina_costs(
+                travelling_entity_id, TravelTypes::Travel(num_moves), world
+            );
+
             InternalTravelSystemsImpl::travel_hex(
                 world, travelling_entity_id, travelling_entity_coord, directions
             );
@@ -153,10 +158,6 @@ mod travel_systems {
             from_coord: Coord,
             mut directions: Span<Direction>
         ) {
-            // check and update tick move steps
-            let mut tick_move: TickMove = get!(world, transport_id, TickMove);
-            tick_move.add(world, directions.len().try_into().unwrap());
-
             // get destination coordinate
             let mut travel_path = array![from_coord];
             let mut to_coord = from_coord;

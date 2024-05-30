@@ -1,25 +1,48 @@
 import { create } from "zustand";
 import { useEffect } from "react";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, TickIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { useDojo } from "../context/DojoContext";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 interface BlockchainState {
   nextBlockTimestamp: number | undefined;
   setNextBlockTimestamp: (nextBlockTimestamp: number) => void;
-  currentTick: number;
-  setCurrentTick: (currentTick: number) => void;
+  currentArmiesTick: number;
+  setCurrentArmiesTick: (currentDefaultTick: number) => void;
+  currentDefaultTick: number;
+  setCurrentDefaultTick: (currentDefaultTick: number) => void;
 }
 
 const useBlockchainStore = create<BlockchainState>((set) => ({
   nextBlockTimestamp: undefined,
   setNextBlockTimestamp: (nextBlockTimestamp: number) => set({ nextBlockTimestamp }),
-  currentTick: 0,
-  setCurrentTick: (currentTick: number) => set({ currentTick }),
+  currentDefaultTick: 0,
+  setCurrentDefaultTick: (currentDefaultTick: number) => set({ currentDefaultTick }),
+  currentArmiesTick: 0,
+  setCurrentArmiesTick: (currentArmiesTick: number) => set({ currentArmiesTick }),
 }));
 
 export const useFetchBlockchainData = () => {
+  const {
+    setup: {
+      components: { TickConfig },
+    },
+  } = useDojo();
+
   const setNextBlockTimestamp = useBlockchainStore((state) => state.setNextBlockTimestamp);
-  const setCurrentTick = useBlockchainStore((state) => state.setCurrentTick);
+  const setCurrentDefaultTick = useBlockchainStore((state) => state.setCurrentDefaultTick);
+  const setCurrentArmiesTick = useBlockchainStore((state) => state.setCurrentArmiesTick);
   const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp); // Get the current nextBlockTimestamp from the store
+
+  const tickConfigArmies = getComponentValue(
+    TickConfig,
+    getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TickIds.Armies)]),
+  );
+  const tickConfigDefault = getComponentValue(
+    TickConfig,
+    getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(TickIds.Default)]),
+  );
 
   useEffect(() => {
     const fetchBlockchainTimestamp = async () => {
@@ -30,7 +53,8 @@ export const useFetchBlockchainData = () => {
       if (timestamp && timestamp !== currentTimestamp) {
         // Check if fetched timestamp is different from current state
         setNextBlockTimestamp(timestamp);
-        setCurrentTick(Math.floor(timestamp / EternumGlobalConfig.tick.tickIntervalInSeconds));
+        setCurrentDefaultTick(Math.floor(timestamp / tickConfigDefault!.tick_interval_in_seconds));
+        setCurrentArmiesTick(Math.floor(timestamp / tickConfigArmies!.tick_interval_in_seconds));
       }
     };
 

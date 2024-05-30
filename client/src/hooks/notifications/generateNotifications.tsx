@@ -308,9 +308,6 @@ export const generateYourRaidersHaveArrivedNotifications = (
     );
 
     for (const id of entityIds) {
-      const tickMove = getComponentValue(components.TickMove, id) as
-        | { entity_id: bigint; tick: number; count: number }
-        | undefined;
       const arrivalTime = getComponentValue(components.ArrivalTime, id) as
         | { entity_id: bigint; arrives_at: number }
         | undefined;
@@ -321,13 +318,7 @@ export const generateYourRaidersHaveArrivedNotifications = (
       // and also that notfication close is smaller than arrival (not seen yet by user)
       const timestamps = getLastLoginTimestamp();
 
-      const currentTick = nextBlockTimestamp
-        ? Math.floor(nextBlockTimestamp / EternumGlobalConfig.tick.tickIntervalInSeconds)
-        : 0;
-      const isActiveTravel = tickMove !== undefined ? tickMove.tick >= currentTick : false;
-
       const hasArrivedAndNotSeen =
-        !isActiveTravel &&
         raiders?.arrivalTime &&
         raiders.arrivalTime > timestamps.lastLoginBlockTimestamp &&
         raiders.arrivalTime < nextBlockTimestamp;

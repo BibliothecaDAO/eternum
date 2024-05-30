@@ -29,10 +29,8 @@ import { RightNavigationModule } from "../modules/navigation/RightNavigationModu
 
 export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-
   const progress = useProgress((state) => state.progress);
-
+  
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
@@ -52,7 +50,7 @@ export const World = () => {
   const isLoading = useMemo(() => {
     return isLoadingScreenEnabled || progress !== 100;
   }, [isLoadingScreenEnabled, progress]);
-
+  
   return (
     <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden">
       <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>

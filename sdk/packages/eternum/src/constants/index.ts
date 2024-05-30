@@ -6,3 +6,5 @@ export * from "./travel";
 export * from "./trade";
 export * from "./hex";
 export * from "./buildings";
+export * from "./structures";
+export * from "./global";
