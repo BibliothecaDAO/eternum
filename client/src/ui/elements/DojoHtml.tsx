@@ -5,12 +5,13 @@ import React from "react";
 type DojoHtmlProps = {
   children: React.ReactNode;
   [propName: string]: any; // Allow any other props
+  pointerEvents?: "auto" | "none";
 };
 
 export const DojoHtml = ({ children, ...rest }: DojoHtmlProps) => {
   const { setup } = useDojo();
   return (
-    <Html {...rest} style={{ pointerEvents: "none" }}>
+    <Html {...rest}>
       <DojoProvider value={setup}>{children}</DojoProvider>
     </Html>
   );

@@ -36,7 +36,11 @@ export const ArmyInfoLabel = ({ armyId }: ArmyInfoLabelProps) => {
   );
 
   return (
-    <BaseThreeTooltip position={"-left-1/2 -mt-[200px]"} distanceFactor={30} className={`bg-transparent`}>
+    <BaseThreeTooltip
+      position={"-left-1/2 -mt-[200px]"}
+      distanceFactor={30}
+      className={`bg-transparent pointer-events-none`}
+    >
       <RaiderInfo
         key={raider.entityId}
         raider={raider}
