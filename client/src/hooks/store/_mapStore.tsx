@@ -1,5 +1,5 @@
 import { Position, StructureType } from "@bibliothecadao/eternum";
-import { ClickedHex, Hexagon, HighlightColors, Position3D } from "../../types";
+import { ClickedHex, Hexagon, HighlightPositions, Position3D } from "../../types";
 
 export enum ArmyMode {
   Travel,
@@ -22,10 +22,10 @@ export interface MapStore {
   setSelectedPath: (path: { id: bigint; path: Position[] } | undefined) => void;
   armyMode: ArmyMode | null;
   setArmyMode: (mode: ArmyMode | null) => void;
-  highlightColors: HighlightColors;
-  setHighlightColors: (colors: HighlightColors) => void;
-  accessiblePositions: Position3D[];
-  setAccessiblePositions: (positions: Position3D[]) => void;
+  highlightPath: HighlightPositions;
+  setHighlightPath: (positions: HighlightPositions) => void;
+  highlightPositions: HighlightPositions;
+  setHighlightPositions: (positions: HighlightPositions) => void;
   clearSelection: () => void;
   showAllArmies: boolean;
   toggleShowAllArmies: () => void;
@@ -52,18 +52,19 @@ export const createMapStoreSlice = (set: any) => ({
   setSelectedPath: (selectedPath: { id: bigint; path: Position[] } | undefined) => set({ selectedPath }),
   armyMode: null,
   setArmyMode: (armyMode: ArmyMode | null) => set({ armyMode }),
-  highlightColors: { pos: [], color: 0 },
-  setHighlightColors: (colors: HighlightColors) => set({ highlightColors: colors }),
-  accessiblePositions: [],
-  setAccessiblePositions: (positions: Position3D[]) => {
-    set({ accessiblePositions: positions });
+  highlightPath: { pos: [], color: 0 },
+  setHighlightPath: (positions: HighlightPositions) => set({ highlightPath: positions }),
+  highlightPositions: { pos: [], color: 0 },
+  setHighlightPositions: (positions: HighlightPositions) => {
+    set({ highlightPositions: positions });
   },
   clearSelection: () => {
     set({
       selectedEntity: undefined,
       selectedPath: undefined,
       armyMode: null,
-      highlightColors: { pos: [], color: 0 },
+      highlightPath: { pos: [], color: 0 },
+      highlightPositions: { pos: [], color: 0 },
     });
   },
   showAllArmies: false,

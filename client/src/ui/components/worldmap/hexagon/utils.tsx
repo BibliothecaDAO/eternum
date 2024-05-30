@@ -146,7 +146,7 @@ export const findAccessiblePositions = (
   const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
   const visited = new Set<string>();
   const posKey = (pos: Position) => `${pos.x},${pos.y}`;
-  const accessiblePositions = new Set<string>();
+  const highlightPositions = new Set<string>();
 
   while (queue.length > 0) {
     const { position: current, distance } = queue.shift()!;
@@ -166,16 +166,16 @@ export const findAccessiblePositions = (
         if (!visited.has(neighborKey)) {
           if (isExplored && distance + 1 <= maxHex) {
             queue.push({ position: neighbor, distance: distance + 1 });
-            accessiblePositions.add(neighborKey);
+            highlightPositions.add(neighborKey);
           } else if (!isExplored && distance + 1 === 1) {
-            accessiblePositions.add(neighborKey);
+            highlightPositions.add(neighborKey);
           }
         }
       }
     }
   }
 
-  return Array.from(accessiblePositions).map((key) => {
+  return Array.from(highlightPositions).map((key) => {
     const [x, y] = key.split(",").map(Number);
     return { x, y };
   });

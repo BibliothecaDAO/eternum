@@ -2,11 +2,11 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
 
 export const ActionInfo = () => {
-  const highlightColors = useUIStore((state) => state.highlightColors);
+  const highlightPath = useUIStore((state) => state.highlightPath);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const armyMode = useUIStore((state) => state.armyMode);
 
-  const lastHighlightedHex = highlightColors.pos[highlightColors.pos.length - 1];
+  const lastHighlightedHex = highlightPath.pos.length > 1 ? highlightPath.pos[highlightPath.pos.length - 1] : undefined;
 
   return (
     <>
