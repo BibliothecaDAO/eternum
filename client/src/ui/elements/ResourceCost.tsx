@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { findResourceById } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "./ResourceIcon";
 import clsx from "clsx";
-import { currencyFormat } from "../utils/utils";
+import { currencyFormat, divideByPrecision } from "../utils/utils";
 
 type ResourceCostProps = {
   isLabor?: boolean;
@@ -29,7 +29,8 @@ export const ResourceCost = ({
   ...props
 }: ResourceCostProps) => {
   const trait = useMemo(() => findResourceById(props.resourceId)?.trait, [props.resourceId]);
-  const balanceColor = props.balance !== undefined && props.balance < props.amount ? "text-red/90" : "text-green/90";
+  const balanceColor =
+    props.balance !== undefined && divideByPrecision(props.balance) < props.amount ? "text-red/90" : "text-green/90";
 
   return (
     <div
@@ -54,7 +55,6 @@ export const ResourceCost = ({
       >
         <div onClick={onClick} className={clsx(`relative text-${textSize} font-bold`, props.color)}>
           {" "}
-          {props.color && props.amount > 0 ? "+" : ""}
           {Intl.NumberFormat("en-US", {
             notation: "compact",
             maximumFractionDigits: 1,
