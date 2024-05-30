@@ -29,6 +29,7 @@ import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
+import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -116,9 +117,11 @@ export const SelectPreviewBuildingMenu = () => {
 
               const cost = [...BUILDING_COSTS_SCALED[BuildingType.Resource], ...RESOURCE_INPUTS_SCALED[resourceId]];
               const hasBalance = checkBalance(cost);
-              const hasEnoughPopulation =
-                (realm?.population || 0) + BUILDING_POPULATION[BuildingType.Resource] <=
-                BASE_POPULATION_CAPACITY + realm?.capacity;
+
+              const hasEnoughPopulation = hasEnoughPopulationForBuilding(
+                realm,
+                BUILDING_POPULATION[BuildingType.Resource],
+              );
 
               const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
@@ -161,12 +164,10 @@ export const SelectPreviewBuildingMenu = () => {
               .filter((a) => a !== "Barracks" && a !== "ArcheryRange" && a !== "Stable")
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
-
                 const cost = BUILDING_COSTS_SCALED[building];
                 const hasBalance = checkBalance(cost);
-                const hasEnoughPopulation =
-                  (realm?.population || 0) + BUILDING_POPULATION[building] <= BASE_POPULATION_CAPACITY;
 
+                const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild =
                   BuildingType.WorkersHut == building
                     ? hasBalance
@@ -219,9 +220,8 @@ export const SelectPreviewBuildingMenu = () => {
 
                 const cost = BUILDING_COSTS_SCALED[building];
                 const hasBalance = checkBalance(cost);
-                const hasEnoughPopulation =
-                  realm?.population + BUILDING_POPULATION[building] <= BASE_POPULATION_CAPACITY;
 
+                const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
 
                 return (
