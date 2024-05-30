@@ -71,8 +71,8 @@ export const OrdersLeaderboard = () => {
       {!loading && (
         <div className="flex flex-col p-2 space-y-2  overflow-y-auto">
           {orderResourceLeaderboard
-            .filter((row) => row.totalResources !== 0)
-            .map(({ order, realmCount, totalResources, isYours }, i) => {
+            .filter((row: any) => row.totalResources !== 0)
+            .map(({ order, realmCount, totalResources, isYours }: any, i: any) => {
               return (
                 <div
                   key={i}
