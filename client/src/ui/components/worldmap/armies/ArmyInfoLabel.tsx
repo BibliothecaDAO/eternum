@@ -37,7 +37,7 @@ export const ArmyInfoLabel = ({ armyId }: ArmyInfoLabelProps) => {
 
   return (
     <BaseThreeTooltip
-      position={"-left-1/2 -mt-[200px]"}
+      position={Position.TOP_CENTER}
       distanceFactor={30}
       className={`bg-transparent pointer-events-none`}
     >

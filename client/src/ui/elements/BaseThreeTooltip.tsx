@@ -4,7 +4,7 @@ import clsx from "clsx";
 
 type BaseThreeTooltipProps = {
   children?: React.ReactNode;
-  position?: Position | string;
+  position?: Position;
   distanceFactor?: number;
   className?: string;
 };

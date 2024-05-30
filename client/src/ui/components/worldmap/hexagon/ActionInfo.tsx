@@ -1,5 +1,5 @@
 import useUIStore from "@/hooks/store/useUIStore";
-import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
+import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 
 export const ActionInfo = () => {
   const highlightPath = useUIStore((state) => state.highlightPath);
@@ -12,7 +12,7 @@ export const ActionInfo = () => {
     <>
       {lastHighlightedHex && (
         <group position={[lastHighlightedHex[0], 0.32, lastHighlightedHex[1]]}>
-          <BaseThreeTooltip position={"-left-1/2 -mt-[150px]"} distanceFactor={30} className="animate-bounce">
+          <BaseThreeTooltip position={Position.CENTER} distanceFactor={30} className="animate-bounce">
             <div className="">info</div>
           </BaseThreeTooltip>
         </group>
