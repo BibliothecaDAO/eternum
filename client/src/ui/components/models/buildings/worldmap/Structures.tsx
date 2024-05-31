@@ -1,11 +1,13 @@
-import { useGLTF } from "@react-three/drei";
-import { useEffect, useMemo, useState } from "react";
+import { Detailed, useGLTF } from "@react-three/drei";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { StructureType } from "@bibliothecadao/eternum";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HyperstructureEventInterface } from "@/dojo/events/hyperstructureEventQueries";
 import useLeaderBoardStore from "@/hooks/store/useLeaderBoardStore";
+import { useControls } from "leva";
+import { useFrame, useThree } from "@react-three/fiber";
 
 export const Structures = () => {
   const models = useMemo(
@@ -41,6 +43,8 @@ const BuiltStructure = ({
   const { x, y } = getUIPositionFromColRow(structure.col, structure.row, false);
   const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
 
+  const { camera } = useThree();
+
   useEffect(() => {
     let category = structureCategory;
     let model = models[category];
@@ -75,10 +79,36 @@ const BuiltStructure = ({
   }, [models, finishedHyperstructures]);
 
   const scale = structureCategory === StructureType.Hyperstructure ? 1.5 : 3;
+  const { power, lpos, color } = useControls("Structures Light", {
+    power: { value: 530, min: 0, max: 1000, step: 1 },
+    lpos: {
+      value: {
+        x: 0,
+        y: 7,
+        z: 0,
+      },
+      min: -10,
+      max: 10,
+      step: 0.1,
+    },
+    color: { value: "#fcffbc", label: "Color" },
+  });
+
+  const pLight = useRef<THREE.PointLight>(null);
+
+  useFrame(({ camera }) => {
+    if (!pLight.current) return;
+    const distance = camera.position.distanceTo(new THREE.Vector3(x, 0, -y));
+    //pLight.current.power = Math.max(0, power * (1 - (distance - 130) / 250));
+  });
 
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>
       <primitive dropShadow scale={scale} object={model!} />
+      <pointLight ref={pLight} distance={24} position={[lpos.x, lpos.y, lpos.z]} color={color} power={power} />
+      {/* <Detailed distances={[0, 350]}>
+        <group></group>
+      </Detailed> */}
     </group>
   );
 };
