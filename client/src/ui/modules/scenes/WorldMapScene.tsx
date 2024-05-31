@@ -164,10 +164,10 @@ const WorldMapLight = () => {
     dLightRef.current.position.z = target.z - offsetY;
     dLightRef.current.target.position.x = target.x + 30 - offsetX;
     dLightRef.current.target.position.z = target.z - 50 - offsetY;
-    dLightRef.current.shadow.camera.left = -55 - 300 * distanceMultiplier;
-    dLightRef.current.shadow.camera.right = 55 + 300 * distanceMultiplier;
-    dLightRef.current.shadow.camera.top = 55 + 300 * distanceMultiplier;
-    dLightRef.current.shadow.camera.far = 55 + 450 * distanceMultiplier;
+    dLightRef.current.shadow.camera.left = -75 - 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.right = 75 + 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.top = 75 + 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.far = 150 + 300 * distanceMultiplier;
     dLightRef.current.shadow.camera.updateProjectionMatrix();
     gl.shadowMap.needsUpdate = true;
   });
