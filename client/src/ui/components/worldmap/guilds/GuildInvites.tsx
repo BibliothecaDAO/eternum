@@ -109,16 +109,10 @@ export function sortInvites(
 ): GuildInviteAndName[] | undefined {
   const sortedInvites = [...invites];
 
-  if (activeSort.sort !== "none") {
-    if (activeSort.sortKey === "name") {
-      return sortedInvites.sort((a, b) => {
-        if (activeSort.sort === "asc") {
-          return a.name.localeCompare(b.name);
-        } else {
-          return b.name.localeCompare(a.name);
-        }
-      });
-    }
+  if (activeSort.sort === "none") return sortedInvites;
+  if (activeSort.sortKey === "name") {
+    return sortedInvites.sort((a, b) => {
+      return activeSort.sort === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    });
   }
-  return sortedInvites;
 }

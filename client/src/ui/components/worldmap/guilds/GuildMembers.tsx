@@ -66,16 +66,10 @@ export function sortGuildMembers(
 ): GuildMemberAndName[] | undefined {
   const sortedGuildMembers = [...guildMembers];
 
-  if (activeSort.sort !== "none") {
-    if (activeSort.sortKey === "name") {
-      return sortedGuildMembers.sort((a, b) => {
-        if (activeSort.sort === "asc") {
-          return a.name.localeCompare(b.name);
-        } else {
-          return b.name.localeCompare(a.name);
-        }
-      });
-    }
+  if (activeSort.sort === "none") return sortedGuildMembers;
+  if (activeSort.sortKey === "name") {
+    return sortedGuildMembers.sort((a, b) => {
+      return activeSort.sort === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    });
   }
-  return sortedGuildMembers;
 }

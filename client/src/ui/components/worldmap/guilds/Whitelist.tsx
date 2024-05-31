@@ -102,16 +102,10 @@ export const Whitelist = ({ guildEntityId, isOwner }: WhitelistProps) => {
 export function sortWhitelist(whitelist: WhitelistElem[], activeSort: SortInterface): WhitelistElem[] | undefined {
   const sortedWhitelist = [...whitelist];
 
-  if (activeSort.sort !== "none") {
-    if (activeSort.sortKey === "name") {
-      return sortedWhitelist.sort((a, b) => {
-        if (activeSort.sort === "asc") {
-          return a.name.localeCompare(b.name);
-        } else {
-          return b.name.localeCompare(a.name);
-        }
-      });
-    }
+  if (activeSort.sort === "none") return sortedWhitelist;
+  if (activeSort.sortKey === "name") {
+    return sortedWhitelist.sort((a, b) => {
+      return activeSort.sort === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    });
   }
-  return sortedWhitelist;
 }

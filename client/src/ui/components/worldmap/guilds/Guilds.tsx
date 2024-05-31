@@ -104,24 +104,16 @@ export const Guilds = () => {
 export function sortGuilds(guilds: GuildAndName[], activeSort: SortInterface): GuildAndName[] | undefined {
   const sortedGuilds = [...guilds];
 
-  if (activeSort.sort !== "none") {
-    if (activeSort.sortKey === "name") {
-      return sortedGuilds.sort((a, b) => {
-        if (activeSort.sort === "asc") {
-          return a.name.localeCompare(b.name);
-        } else {
-          return b.name.localeCompare(a.name);
-        }
-      });
-    } else if (activeSort.sortKey === "isPublic") {
-      return sortedGuilds.sort((a, b) => {
-        if (activeSort.sort === "asc") {
-          return Number(a.is_public) - Number(b.is_public);
-        } else {
-          return Number(b.is_public) - Number(a.is_public);
-        }
-      });
-    }
+  if (activeSort.sort === "none") return sortedGuilds;
+  if (activeSort.sortKey === "name") {
+    return sortedGuilds.sort((a, b) => {
+      return activeSort.sort === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    });
+  } else if (activeSort.sortKey === "isPublic") {
+    return sortedGuilds.sort((a, b) => {
+      return activeSort.sort === "asc"
+        ? Number(a.is_public) - Number(b.is_public)
+        : Number(b.is_public) - Number(a.is_public);
+    });
   }
-  return sortedGuilds;
 }
