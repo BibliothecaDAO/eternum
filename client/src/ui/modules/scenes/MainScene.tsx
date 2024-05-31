@@ -78,7 +78,7 @@ export const MainScene = () => {
   });
 
   const { ambientColor, ambientIntensityHexception, ambientIntensityMap } = useControls("Ambient Light", {
-    ambientColor: { value: "#fff", label: "Color" },
+    ambientColor: { value: "#7b7c59", label: "Color" },
     ambientIntensityHexception: { value: 0.5, min: 0, max: 1, step: 0.01 },
     ambientIntensityMap: { value: 0.75, min: 0, max: 1, step: 0.01 },
   });

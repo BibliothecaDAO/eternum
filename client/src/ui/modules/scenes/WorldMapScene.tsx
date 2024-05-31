@@ -117,7 +117,7 @@ const WorldMapLight = () => {
     lightPosition: {
       value: {
         x: 1227.7357824149108,
-        y: 18.87194105743851,
+        y: 22.87194105743851,
         z: -670.8113762465337,
       },
       step: 0.01,
@@ -129,7 +129,7 @@ const WorldMapLight = () => {
       step: 0.01,
     },
     bias: {
-      value: 0.04,
+      value: 0.0,
       min: 0,
       max: 1,
       step: 0.01,
@@ -164,10 +164,10 @@ const WorldMapLight = () => {
     dLightRef.current.position.z = target.z - offsetY;
     dLightRef.current.target.position.x = target.x + 30 - offsetX;
     dLightRef.current.target.position.z = target.z - 50 - offsetY;
-    dLightRef.current.shadow.camera.left = -75 - 300 * distanceMultiplier;
-    dLightRef.current.shadow.camera.right = 75 + 300 * distanceMultiplier;
-    dLightRef.current.shadow.camera.top = 75 + 300 * distanceMultiplier;
-    dLightRef.current.shadow.camera.far = 150 + 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.left = -55 - 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.right = 55 + 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.top = 55 + 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.far = 55 + 450 * distanceMultiplier;
     dLightRef.current.shadow.camera.updateProjectionMatrix();
     gl.shadowMap.needsUpdate = true;
   });
