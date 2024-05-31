@@ -140,7 +140,7 @@ export const useUserGuild = () => {
     useEntityQuery([HasValue(GuildMember, { address: BigInt(account.address) })])[0],
   )?.guild_entity_id;
 
-  const guildName = getEntityName(BigInt(userGuildEntityId!));
+  const guildName = userGuildEntityId ? getEntityName(BigInt(userGuildEntityId!)) : undefined;
 
   const owner = getComponentValue(
     Owner,
