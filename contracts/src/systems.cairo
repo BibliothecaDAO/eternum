@@ -62,3 +62,8 @@ mod bank {
     mod tests;
 }
 
+mod guild {
+    mod contracts;
+    #[cfg(test)]
+    mod tests;
+}

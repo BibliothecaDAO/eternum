@@ -33,6 +33,7 @@ import { Construction } from "../construction/Construction";
 import { Assistant } from "../assistant/Assistant";
 import { useTour } from "@reactour/tour";
 import { Questing } from "../questing/Questing";
+import { Guilds } from "../guilds/Guilds";
 import { MenuEnum } from "./BottomNavigation";
 import { useLocation } from "wouter";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
@@ -181,6 +182,7 @@ export const LeftNavigationModule = () => {
         <Assistant />
         <Leaderboard />
         <Banks />
+        <Guilds />
       </div>
 
       <div

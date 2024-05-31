@@ -515,6 +515,46 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async create_guild(props: SystemProps.CreateGuildProps) {
+    const { is_public, guild_name, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      entrypoint: "create_guild",
+      calldata: [is_public, guild_name]
+    });
+  }
+
+  public async join_guild(props: SystemProps.JoinGuildProps) {
+    const { guild_entity_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      entrypoint: "join_guild",
+      calldata: [guild_entity_id]
+    });
+  }
+
+  public async whitelist_player(props: SystemProps.WhitelistPlayerProps) {
+    const { player_address, guild_entity_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      entrypoint: "whitelist_player",
+      calldata: [player_address, guild_entity_id]
+    });
+  }
+
+  public async leave_guild(props: SystemProps.LeaveGuild) {
+    const { signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      entrypoint: "leave_guild",
+      calldata: []
+    });
+  }
+
   public async set_mint_config(props: SystemProps.SetMintConfigProps) {
     const { config_id, resources, signer } = props;
 

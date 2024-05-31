@@ -46,6 +46,8 @@ export MAP_SYSTEMS=$(get_contract_address "eternum::systems::map::contracts::map
 
 export DEV_BANK_SYSTEMS=$(get_contract_address "eternum::systems::dev::contracts::bank::dev_bank_systems")
 
+export GUILD_SYSTEMS=$(get_contract_address "eternum::systems::guild::contracts::guild_systems")
+
 # Display the addresses
 echo "-------------------------ADDRESS----------------------------------------"
 echo world : $SOZO_WORLD
@@ -67,3 +69,4 @@ echo hyperstructure : $HYPERSTRUCTURE_SYSTEMS
 echo buildings : $BUILDINGS_SYSTEMS
 echo maps : $MAP_SYSTEMS
 echo test_bank : $DEV_BANK_SYSTEMS
+echo guild : $GUILD_SYSTEMS

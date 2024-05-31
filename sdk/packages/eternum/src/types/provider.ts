@@ -285,6 +285,20 @@ export interface BattleClaimProps extends SystemSigner {
   structure_id: num.BigNumberish;
 }
 
+export interface CreateGuildProps extends SystemSigner {
+  is_public: boolean;
+  guild_name: string;
+}
+export interface JoinGuildProps extends SystemSigner {
+  guild_entity_id: num.BigNumberish;
+}
+export interface WhitelistPlayerProps extends SystemSigner {
+  player_address: num.BigNumberish; 
+  guild_entity_id: num.BigNumberish;
+}
+
+export interface LeaveGuild extends SystemSigner {}
+
 export interface CreateStartingResources extends SystemSigner {
   config_id: num.BigNumberish;
   realm_entity_id: num.BigNumberish;
