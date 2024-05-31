@@ -6,6 +6,7 @@ import { ArmyAndName } from "@/hooks/helpers/useArmies";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard, ViewOnMapButton } from "./ArmyManagementCard";
 import Button from "@/ui/elements/Button";
+import { StaminaResource } from "@/ui/elements/StaminaResource";
 
 export const ArmyChip = ({ army }: { army: ArmyAndName }) => {
   const troopCounts = useMemo(() => {
@@ -54,13 +55,14 @@ export const ArmyChip = ({ army }: { army: ArmyAndName }) => {
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-3 mt-2">
+          <div className="flex flex-row mt-2 items-center justify-between">
             <div className="flex items-center flex-wrap">
               <span className="">HP:</span>
               <span>{Number((army.current || 0).toString()) / 1000}</span>
             </div>
             <div>{troopCounts}</div>
-            <InventoryResources entityId={BigInt(army.entity_id)} max={3} className="flex h-6 text-xs" />
+            <InventoryResources entityId={BigInt(army.entity_id)} max={3} className="flex text-xs" />
+            <StaminaResource entityId={BigInt(army.entity_id)} />
           </div>
         </>
       )}

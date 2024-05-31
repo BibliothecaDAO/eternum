@@ -1,4 +1,3 @@
-import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { useCombat } from "../../../../hooks/helpers/useCombat";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
@@ -16,6 +15,7 @@ import { InventoryResources } from "../../resources/InventoryResources";
 import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { useStamina } from "@/hooks/helpers/useStamina";
+import { StaminaResource } from "@/ui/elements/StaminaResource";
 
 interface ArmyInfoLabelProps {
   armyId: bigint;
@@ -72,10 +72,6 @@ const RaiderInfo = ({
 
   const isTraveling = isPassiveTravel || isActiveTravel;
 
-  const { useStaminaByEntityId } = useStamina();
-
-  const stamina = useStaminaByEntityId({ travelingEntityId: entityId });
-
   const bgColor = account.account.address
     ? BigInt(account.account.address) === owner
       ? "bg-dark-green-accent"
@@ -127,15 +123,10 @@ const RaiderInfo = ({
             <div className="text-green text-xxs self-center">{currencyFormat(raider.troops.paladinCount, 0)}</div>
           </div>
         </div>
-        <div className="flex">
-          <InventoryResources max={2} entityId={raider.entityId} title="Balance" />
-          <div className="flex flex-row p-1 text-xs">
-            <div className="text-lg p-1 pr-3">⚡️</div>
-            <div className="flex flex-col">
-              <div>{stamina.amount}</div>
-              <div>Stamina</div>
-            </div>
-          </div>
+        <div>Balance</div>
+        <div className="flex flex-row justify-between">
+          <InventoryResources max={2} entityId={raider.entityId} />
+          <StaminaResource entityId={raider.entityId} />
         </div>
       </div>
     </div>

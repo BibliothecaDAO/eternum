@@ -26,7 +26,7 @@ export const useStamina = () => {
       staminaEntity = {
         ...staminaEntity,
         last_refill_tick: currentArmiesTick,
-        amount: getRefilledStamina(armyEntity.troops, StaminaConfig),
+        amount: getMaxStamina(armyEntity.troops, StaminaConfig),
       };
     }
     return staminaEntity as unknown as ClientComponents["Stamina"]["schema"];
@@ -49,19 +49,28 @@ export const useStamina = () => {
       staminaEntity = {
         ...staminaEntity!,
         last_refill_tick: armiesTick,
-        amount: getRefilledStamina(armyEntity!.troops, StaminaConfig),
+        amount: getMaxStamina(armyEntity!.troops, StaminaConfig),
       };
     }
     return staminaEntity as unknown as ClientComponents["Stamina"]["schema"];
   };
 
+  const getMaxStaminaByEntityId = (travelingEntityId: bigint): number => {
+    const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: travelingEntityId })]);
+    const armyEntity = getComponentValue(Army, armiesEntityIds.values().next().value);
+    if (!armyEntity) return 0;
+    const maxStamina = getMaxStamina(armyEntity.troops, StaminaConfig);
+    return maxStamina;
+  };
+
   return {
     useStaminaByEntityId,
     getStamina,
+    getMaxStaminaByEntityId,
   };
 };
 
-const getRefilledStamina = (troops: any, StaminaConfig: Component): number => {
+const getMaxStamina = (troops: any, StaminaConfig: Component): number => {
   let maxStaminas: number[] = [];
   if (troops.knight_count > 0) {
     const knightConfig = getComponentValue(

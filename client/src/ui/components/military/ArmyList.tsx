@@ -8,6 +8,7 @@ import React, { useMemo, useState } from "react";
 import Button from "@/ui/elements/Button";
 import { ArmyViewCard } from "./ArmyViewCard";
 import { DepositResources } from "../resources/DepositResources";
+import { StaminaResource } from "@/ui/elements/StaminaResource";
 
 export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
@@ -69,6 +70,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
             <ArmyManagementCard owner_entity={entity_id?.entity_id} entity={entity} />
             <InventoryResources entityId={entity.entity_id} title="Balance" />
             <DepositResources entityId={entity.entity_id} />
+            <StaminaResource entityId={entity.entity_id} className="mt-3" />
           </React.Fragment>
         )}
       />
