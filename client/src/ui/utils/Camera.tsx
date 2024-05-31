@@ -27,7 +27,8 @@ interface Props {
 
 const maxMapDistance = 1000;
 const maxHexceptionDistance = 110;
-const minDistance = 50;
+const minHexceptionDistance = 50;
+const minWorldMapDistance = 150;
 const maxPolarAngle = Math.PI / 3;
 const minPolarAngle = 0;
 const upVector = new Vector3(0, 1, 0);
@@ -130,12 +131,12 @@ const CameraControls = ({ position, target }: Props) => {
       ref={ref}
       args={[camera, domElement]}
       panSpeed={1}
-      enableRotate={true}
+      enableRotate={!isMapView}
       enablePan={isMapView}
       maxDistance={isMapView ? maxMapDistance : maxHexceptionDistance}
-      minDistance={minDistance}
-      maxPolarAngle={maxPolarAngle}
-      minPolarAngle={minPolarAngle}
+      minDistance={isMapView ? minWorldMapDistance : minHexceptionDistance}
+      maxPolarAngle={isMapView ? Math.PI / 3 : maxPolarAngle}
+      minPolarAngle={isMapView ? Math.PI / 3 : minPolarAngle}
       minAzimuthAngle={isMapView ? Math.PI * 2 : undefined}
       maxAzimuthAngle={isMapView ? Math.PI * 2 : undefined}
       zoomToCursor={isMapView}

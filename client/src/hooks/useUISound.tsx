@@ -59,6 +59,8 @@ export const soundSelector = {
   addLords: "resources/lords.mp3",
   unitRunning: "units/running.mp3",
   unitRunningAlternative: "units/running_2.mp3",
+  battleDefeat: "events/battle_defeat.mp3",
+  battleVictory: "events/battle_victory.mp3",
 };
 
 export const useUiSounds = (selector: string) => {

@@ -93,8 +93,10 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     if (!isRunning && info.isMine) {
       playBuildMilitary();
     }
-    setSelectedEntity({ id: info.id, position: info.contractPos });
-  }, [info.id, info.contractPos, playBuildMilitary, setSelectedEntity]);
+    if (selectedEntity?.id !== info.id) {
+      setSelectedEntity({ id: info.id, position: info.contractPos });
+    }
+  }, [info.id, info.contractPos, selectedEntity, playBuildMilitary, setSelectedEntity]);
 
   const onPointerEnter = useCallback((e: any) => {
     e.stopPropagation();
@@ -118,11 +120,16 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
           {...props}
           id={Number(info.id)}
           rotationY={rotationY}
-          onContextMenu={onClick}
           isRunning={isRunning}
           isFriendly={info.isMine}
         />
-        <mesh position={[0, 1.6, 0]} onPointerEnter={onPointerEnter} onPointerOut={onPointerOut} visible={false}>
+        <mesh
+          position={[0, 1.6, 0]}
+          onContextMenu={onClick}
+          onPointerEnter={onPointerEnter}
+          onPointerOut={onPointerOut}
+          visible={false}
+        >
           <Box
             // material-color="hotpink"
             args={[1, 3, 1]} // Args for the buffer geometry

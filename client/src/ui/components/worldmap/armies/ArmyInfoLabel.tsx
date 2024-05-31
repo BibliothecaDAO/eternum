@@ -20,11 +20,7 @@ interface ArmyInfoLabelProps {
 
 export const ArmyInfoLabel = ({ info, accountAddress }: ArmyInfoLabelProps) => {
   return (
-    <BaseThreeTooltip
-      position={Position.TOP_CENTER}
-      distanceFactor={30}
-      className={`bg-transparent pointer-events-none`}
-    >
+    <BaseThreeTooltip position={Position.TOP_CENTER} className={`bg-transparent pointer-events-none -mt-[220px]`}>
       <RaiderInfo key={info.entity_id} info={info} accountAddress={accountAddress} />
     </BaseThreeTooltip>
   );
