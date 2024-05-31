@@ -129,8 +129,6 @@ const WorldMapLight = () => {
 
   useEffect(() => {
     dLightRef.current.target.position.set(target.x, 0, -target.y);
-    console.log("x delta", dLightRef.current.position.x - dLightRef.current.target.position.x);
-    console.log("y delta", dLightRef.current.position.z - dLightRef.current.target.position.z);
   }, [target]);
 
   useControls({
