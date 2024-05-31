@@ -6,10 +6,11 @@ import useUIStore from "../../../hooks/store/useUIStore.js";
 
 import HighlightedHexes from "../../components/worldmap/hexagon/HighlightedHexes.js";
 import { WorldMap } from "../../components/worldmap/hexagon/WorldHexagon.js";
-import { useHelper, useTexture } from "@react-three/drei";
-import { useControls } from "leva";
+import { BakeShadows, useHelper, useTexture } from "@react-three/drei";
+import { button, useControls } from "leva";
 import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
 import { StructurePreview } from "@/ui/components/structures/construction/StructurePreview.js";
+import { useFrame, useThree } from "@react-three/fiber";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();
@@ -42,8 +43,6 @@ export const WorldMapScene = () => {
   const texture = useTexture({
     map: "/textures/paper/worldmap-bg.png",
     displacementMap: "/textures/paper/paper-height.jpg",
-    roughnessMap: "/textures/paper/paper-roughness.jpg",
-    normalMap: "/textures/paper/paper-normal.jpg",
   });
 
   useMemo(() => {
@@ -62,6 +61,23 @@ export const WorldMapScene = () => {
     }, 300);
   }, []);
 
+  const { metalness, roughness } = useControls("map material", {
+    metalness: {
+      value: 0.5,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      label: "Metalness",
+    },
+    roughness: {
+      value: 0.7,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      label: "Roughness",
+    },
+  });
+
   return (
     <>
       {!showBlankOverlay && isMapView && <WorldMap />}
@@ -69,7 +85,7 @@ export const WorldMapScene = () => {
       <StructurePreview />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]} receiveShadow>
         <planeGeometry args={[2668, 1390.35]} />
-        <meshPhongMaterial {...texture} />
+        <meshStandardMaterial {...texture} metalness={metalness} roughness={roughness} />
       </mesh>
       <WorldMapLight />
     </>
@@ -78,41 +94,72 @@ export const WorldMapScene = () => {
 
 const WorldMapLight = () => {
   const dLightRef = useRef<any>();
+  if (import.meta.env.DEV) {
+    useHelper(dLightRef, THREE.DirectionalLightHelper, 10, "hotpink");
+  }
+  const { camera } = useThree(); // Import useThree to access the camera
 
   const { lightPosition, intensity } = useControls("Worldmap Light", {
     lightPosition: {
       value: {
-        x: 1383.6945872489268,
-        y: 404.2563729638701,
-        z: -1329.476006704701,
+        x: 1227.7357824149108,
+        y: 18.87194105743851,
+        z: -670.8113762465337,
       },
       step: 0.01,
     },
     intensity: {
       value: 1.65,
       min: 0,
-      max: 10,
+      max: 2,
       step: 0.01,
     },
   });
 
   const target = useMemo(() => {
-    const pos = getUIPositionFromColRow(2147483908, 2147483772);
+    const pos = getUIPositionFromColRow(2147483889, 2147483807);
     return new THREE.Vector3(pos.x, pos.y, pos.z);
   }, []);
 
   useEffect(() => {
     dLightRef.current.target.position.set(target.x, 0, -target.y);
+    console.log("x delta", dLightRef.current.position.x - dLightRef.current.target.position.x);
+    console.log("y delta", dLightRef.current.position.z - dLightRef.current.target.position.z);
   }, [target]);
+
+  useControls({
+    moveLight: button(() => {
+      dLightRef.current.position.x = camera.position.x;
+      dLightRef.current.position.z = camera.position.z;
+      dLightRef.current.target.position.x = camera.position.x + 30;
+      dLightRef.current.target.position.z = camera.position.z - 50;
+    }),
+  });
+
+  useFrame(({ camera, gl }) => {
+    dLightRef.current.position.x = camera.position.x - 100;
+    dLightRef.current.position.z = camera.position.z - 150;
+    dLightRef.current.target.position.x = camera.position.x - 70;
+    dLightRef.current.target.position.z = camera.position.z - 200;
+    gl.shadowMap.needsUpdate = true;
+  });
 
   return (
     <group>
       <directionalLight
         ref={dLightRef}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-far={500}
+        shadow-camera-left={-250}
+        shadow-camera-right={250}
+        shadow-camera-top={250}
+        shadow-camera-bottom={-250}
         position={[lightPosition.x, lightPosition.y, lightPosition.z]}
         color={"#fff"}
         intensity={intensity}
       />
+      <BakeShadows />
     </group>
   );
 };
