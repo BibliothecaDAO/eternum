@@ -1,6 +1,10 @@
 import { ResourcesIds } from "./resources";
 
 export const EternumGlobalConfig = {
+  stamina: {
+    travelCost: 10,
+    exploreCost: 15,
+  },
   resources: {
     resourcePrecision: 1000,
     resourceMultiplier: 1000,

@@ -142,6 +142,7 @@ export const findAccessiblePositions = (
   hexData: Hexagon[],
   exploredHexes: Map<number, Set<number>>,
   maxHex: number,
+  canExplore: boolean,
 ) => {
   const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
   const visited = new Set<string>();
@@ -167,7 +168,7 @@ export const findAccessiblePositions = (
           if (isExplored && distance + 1 <= maxHex) {
             queue.push({ position: neighbor, distance: distance + 1 });
             highlightPositions.add(neighborKey);
-          } else if (!isExplored && distance + 1 === 1) {
+          } else if (!isExplored && canExplore && distance + 1 === 1) {
             highlightPositions.add(neighborKey);
           }
         }

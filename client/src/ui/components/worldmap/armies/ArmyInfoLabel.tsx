@@ -13,8 +13,9 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { InventoryResources } from "../../resources/InventoryResources";
-import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
+import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { useStamina } from "@/hooks/helpers/useStamina";
 
 interface ArmyInfoLabelProps {
   armyId: bigint;
@@ -63,13 +64,17 @@ const RaiderInfo = ({
   isActiveTravel: boolean;
 }) => {
   const { account, masterAccount } = useDojo();
-  const { entityOwnerId, health, owner, originRealmId } = raider;
+  const { entityOwnerId, owner, originRealmId, entityId } = raider;
 
   const attackerAddressName = entityOwnerId ? getRealmAddressName(entityOwnerId) : "";
 
   const originRealmName = originRealmId ? getRealmNameById(originRealmId) : "";
 
   const isTraveling = isPassiveTravel || isActiveTravel;
+
+  const { useStaminaByEntityId } = useStamina();
+
+  const stamina = useStaminaByEntityId({ travelingEntityId: entityId });
 
   const bgColor = account.account.address
     ? BigInt(account.account.address) === owner
@@ -124,9 +129,12 @@ const RaiderInfo = ({
         </div>
         <div className="flex">
           <InventoryResources max={2} entityId={raider.entityId} title="Balance" />
-          <div>
-            <div className="uppercase font-bold mb-2">Stamina</div>
-            <div className=""> 200 </div>
+          <div className="flex flex-row p-1 text-xs">
+            <div className="text-lg p-1 pr-3">⚡️</div>
+            <div className="flex flex-col">
+              <div>{stamina.amount}</div>
+              <div>Stamina</div>
+            </div>
           </div>
         </div>
       </div>

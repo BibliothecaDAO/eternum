@@ -1,7 +1,7 @@
 import { Bvh } from "@react-three/drei";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Color, InstancedMesh, Matrix4 } from "three";
-import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { createHexagonGeometry } from "./HexagonGeometry";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { findDirection, getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
@@ -34,9 +34,11 @@ import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useLocation } from "wouter";
 import { HexGrid } from "../../models/biomes/HexGrid";
 import { ArmyMode } from "@/hooks/store/_mapStore";
+import { useStamina } from "@/hooks/helpers/useStamina";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 
-const EXPLORE_COLOUR = 0x2563eb;
-const TRAVEL_COLOUR = 0x3cb93c;
+export const EXPLORE_COLOUR = 0x2563eb;
+export const TRAVEL_COLOUR = 0x3cb93c;
 const CLICKED_HEX_COLOR = 0xff5733;
 const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
 
@@ -271,10 +273,15 @@ export const useSetPossibleActions = (explored: Map<number, Set<number>>) => {
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
   const hexData = useUIStore((state) => state.hexData);
+  const { useStaminaByEntityId } = useStamina();
+
+  const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
 
   useMemo(() => {
-    if (selectedEntity && hexData) {
-      const path = findAccessiblePositions(selectedEntity.position, hexData, explored, 3);
+    if (selectedEntity && hexData && stamina) {
+      const maxTravelPossible = Math.floor((stamina?.amount || 0) / EternumGlobalConfig.stamina.travelCost);
+      const canExplore = (stamina?.amount || 0) >= EternumGlobalConfig.stamina.exploreCost;
+      const path = findAccessiblePositions(selectedEntity.position, hexData, explored, maxTravelPossible, canExplore);
       if (path.length > 1) {
         const uiPath = {
           pos: path.map(({ x, y }) => {
@@ -286,7 +293,7 @@ export const useSetPossibleActions = (explored: Map<number, Set<number>>) => {
         setHighlightPositions(uiPath);
       }
     }
-  }, [selectedEntity?.id, hexData]);
+  }, [selectedEntity?.id, hexData, stamina]);
 };
 
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {
@@ -294,6 +301,10 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const { travelToHex } = useTravel();
   const { play: playExplore } = useUiSounds(soundSelector.explore);
   const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
+
+  const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
+
+  const { getStamina } = useStamina();
 
   const {
     hexData,
@@ -329,6 +340,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const exploredHexesRef = useRef(explored);
   const highlightPathRef = useRef(highlightPath);
   const clickedHexRef = useRef(clickedHex);
+  const currentArmiesTickRef = useRef(currentArmiesTick);
 
   useEffect(() => {
     armyModeRef.current = armyMode;
@@ -337,7 +349,8 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     hexDataRef.current = hexData;
     exploredHexesRef.current = explored;
     highlightPathRef.current = highlightPath;
-  }, [selectedEntity, hexData, explored, highlightPath, clickedHex]);
+    currentArmiesTickRef.current = currentArmiesTick;
+  }, [selectedEntity, hexData, explored, highlightPath, clickedHex, currentArmiesTickRef]);
 
   const hoverHandler = useCallback(
     (e: any) => {
@@ -386,10 +399,17 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   }, []);
 
   function handleTravelMode({ pos }: any) {
+    const stamina = getStamina({
+      travelingEntityId: selectedEntityRef!.current!.id || 0n,
+      armiesTick: currentArmiesTickRef!.current,
+    });
+    if (!stamina) return;
     const colRow = getColRowFromUIPosition(pos.x, pos.y);
+
     let start = selectedEntityRef!.current!.position;
+    const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
     let end = { x: colRow.col, y: colRow.row };
-    let path = findShortestPathBFS(start, end, hexDataRef.current || [], exploredHexesRef.current, 3);
+    let path = findShortestPathBFS(start, end, hexDataRef.current || [], exploredHexesRef.current, maxTravelPossible);
     if (path.length > 1) {
       setArmyMode(ArmyMode.Travel);
       const colors = {
@@ -406,8 +426,15 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   }
 
   function handleExploreMode({ pos, selectedEntityPosition }: any) {
+    const stamina = getStamina({
+      travelingEntityId: selectedEntityRef!.current!.id || 0n,
+      armiesTick: currentArmiesTickRef!.current,
+    });
+    if (!stamina) return;
+    const canExplore = (stamina.amount || 0) >= EternumGlobalConfig.stamina.exploreCost;
     const colRow = getColRowFromUIPosition(pos.x, pos.y);
     if (
+      canExplore &&
       selectedEntityRef?.current?.position &&
       isNeighbor(
         { x: colRow.col, y: colRow.row },
@@ -416,7 +443,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
           y: selectedEntityRef.current.position.y,
         },
       ) &&
-      !exploredHexesRef.current.get(colRow.col - 2147483647)?.has(colRow.row - 2147483647)
+      !exploredHexesRef.current.get(colRow.col - FELT_CENTER)?.has(colRow.row - FELT_CENTER)
     ) {
       setArmyMode(ArmyMode.Explore);
       const uiPos = getUIPositionFromColRow(colRow.col, colRow.row);
