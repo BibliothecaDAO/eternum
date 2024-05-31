@@ -1,5 +1,5 @@
-import { HyperStructureInterface, Position, StructureType } from "@bibliothecadao/eternum";
-import { ClickedHex, Hexagon, HighlightPosition } from "../../types";
+import { ClickedHex, Hexagon, HighlightPositions } from "../../types";
+import { Position, StructureType } from "@bibliothecadao/eternum";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -10,6 +10,12 @@ import {
   parseHyperstructureFinishedEventData,
 } from "@/dojo/events/hyperstructureEventQueries";
 import useLeaderBoardStore from "./useLeaderBoardStore";
+
+export enum ArmyMode {
+  Travel,
+  Explore,
+  Attack,
+}
 
 export interface MapStore {
   worldMapBuilding: StructureType | null;
@@ -22,17 +28,15 @@ export interface MapStore {
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => void;
   animationPaths: { id: bigint; path: Position[]; enemy: boolean }[];
   setAnimationPaths: (path: { id: bigint; path: Position[]; enemy: boolean }[]) => void;
-  selectedPath: { id: bigint; path: Position[] } | undefined;
-  setSelectedPath: (path: { id: bigint; path: Position[] } | undefined) => void;
-  isTravelMode: boolean;
-  setIsTravelMode: (isTravelMode: boolean) => void;
-  isExploreMode: boolean;
-  setIsExploreMode: (isExploreMode: boolean) => void;
-  isAttackMode: boolean;
-  setIsAttackMode: (isAttackMode: boolean) => void;
-  highlightPositions: HighlightPosition[];
-  setHighlightPositions: (positions: HighlightPosition[]) => void;
+  armyMode: ArmyMode | null;
+  setArmyMode: (mode: ArmyMode | null) => void;
+  highlightPath: HighlightPositions;
+  setHighlightPath: (positions: HighlightPositions) => void;
+  highlightPositions: HighlightPositions;
+  setHighlightPositions: (positions: HighlightPositions) => void;
   clearSelection: () => void;
+  showAllArmies: boolean;
+  toggleShowAllArmies: () => void;
   existingStructures: { col: number; row: number; type: StructureType; entityId: number }[];
   setExistingStructures: (
     existingStructures: { col: number; row: number; type: StructureType; entityId: number }[],
@@ -56,23 +60,25 @@ export const createMapStoreSlice = (set: any) => ({
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => set({ selectedEntity: entity }),
   animationPaths: [],
   setAnimationPaths: (animationPaths: { id: bigint; path: Position[]; enemy: boolean }[]) => set({ animationPaths }),
-  selectedPath: undefined,
-  setSelectedPath: (selectedPath: { id: bigint; path: Position[] } | undefined) => set({ selectedPath }),
-  isTravelMode: false,
-  setIsTravelMode: (isTravelMode: boolean) => set({ isTravelMode }),
-  isExploreMode: false,
-  setIsExploreMode: (isExploreMode: boolean) => set({ isExploreMode }),
-  isAttackMode: false,
-  setIsAttackMode: (isAttackMode: boolean) => set({ isAttackMode }),
-  highlightPositions: [],
-  setHighlightPositions: (positions: HighlightPosition[]) => set({ highlightPositions: positions }),
-  clearSelection: () => {
+  armyMode: null,
+  setArmyMode: (armyMode: ArmyMode | null) => set({ armyMode }),
+  highlightPath: { pos: [], color: 0 },
+  setHighlightPath: (positions: HighlightPositions) => set({ highlightPath: positions }),
+  highlightPositions: { pos: [], color: 0 },
+  setHighlightPositions: (positions: HighlightPositions) => {
+    set({ highlightPositions: positions });
+  },
+  clearSelection: () =>
     set({
       selectedEntity: undefined,
-      selectedPath: undefined,
-      isTravelMode: false,
-      isExploreMode: false,
-      isAttackMode: false,
+      armyMode: null,
+      highlightPath: { pos: [], color: 0 },
+      highlightPositions: { pos: [], color: 0 },
+    }),
+  showAllArmies: false,
+  toggleShowAllArmies: () => {
+    set((state: MapStore) => {
+      return { showAllArmies: !state.showAllArmies };
     });
   },
   existingStructures: [],

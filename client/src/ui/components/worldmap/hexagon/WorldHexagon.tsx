@@ -4,7 +4,7 @@ import { Flags } from "@/ui/components/worldmap/Flags.jsx";
 import useUIStore from "../../../../hooks/store/useUIStore.js";
 import { useDojo } from "../../../../hooks/context/DojoContext.js";
 import { Subscription } from "rxjs";
-import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
+import { BiomesGrid, HexagonGrid, useSetPossibleActions } from "./HexLayers.js";
 import { Armies } from "../armies/Armies.js";
 import { create } from "zustand";
 import { ShardsMines } from "../../models/buildings/worldmap/ShardsMines.js";
@@ -96,6 +96,8 @@ export const WorldMap = () => {
       </>
     );
   }, [hexData]);
+
+  useSetPossibleActions(exploredHexes);
 
   return (
     <>

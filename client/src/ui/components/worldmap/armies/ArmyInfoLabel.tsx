@@ -2,28 +2,25 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { useCombat } from "../../../../hooks/helpers/useCombat";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import useUIStore from "../../../../hooks/store/useUIStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { currencyFormat, getEntityIdFromKeys } from "../../../utils/utils";
-import { type CombatInfo, type Resource, type UIPosition } from "@bibliothecadao/eternum";
+import { currencyFormat } from "../../../utils/utils";
+import { type CombatInfo } from "@bibliothecadao/eternum";
 
 import { useMemo } from "react";
 import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
 import clsx from "clsx";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
-import ProgressBar from "../../../elements/ProgressBar";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
-import { useResources } from "../../../../hooks/helpers/useResources";
 import { InventoryResources } from "../../resources/InventoryResources";
-import { DojoHtml } from "@/ui/elements/DojoHtml";
+import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 interface ArmyInfoLabelProps {
-  position: UIPosition;
   armyId: bigint;
 }
 
-export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
+export const ArmyInfoLabel = ({ armyId }: ArmyInfoLabelProps) => {
   const { getEntitiesCombatInfo } = useCombat();
 
   const { getRealmAddressName } = useRealm();
@@ -39,7 +36,11 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   );
 
   return (
-    <DojoHtml position={[position.x, position.z, -position.y]}>
+    <BaseThreeTooltip
+      position={Position.TOP_CENTER}
+      distanceFactor={30}
+      className={`bg-transparent pointer-events-none`}
+    >
       <RaiderInfo
         key={raider.entityId}
         raider={raider}
@@ -48,7 +49,7 @@ export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
         isPassiveTravel={isPassiveTravel}
         isActiveTravel={false}
       />
-    </DojoHtml>
+    </BaseThreeTooltip>
   );
 };
 
@@ -65,7 +66,8 @@ const RaiderInfo = ({
   isPassiveTravel: boolean;
   isActiveTravel: boolean;
 }) => {
-  const { entityOwnerId, entityId, health, quantity, originRealmId } = raider;
+  const { account, masterAccount } = useDojo();
+  const { entityOwnerId, health, owner, originRealmId } = raider;
 
   const attackerAddressName = entityOwnerId ? getRealmAddressName(entityOwnerId) : "";
 
@@ -73,72 +75,64 @@ const RaiderInfo = ({
 
   const isTraveling = isPassiveTravel || isActiveTravel;
 
+  const bgColor = account.account.address
+    ? BigInt(account.account.address) === owner
+      ? "bg-dark-green-accent"
+      : "bg-red"
+    : undefined;
+
+  if (!bgColor || account.account.address === masterAccount.address) return;
+
+  const pulseColor = !isTraveling ? "" : "";
+
   return (
-    <div className={clsx("w-[300px] flex flex-col p-2 mb-1 bg-brow clip-angled-sm bg-brown text-xs text-gold")}>
-      <div className="flex items-center text-xs">
-        {entityId.toString() && (
-          <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-            #{entityId.toString()}
-          </div>
-        )}
+    <div className={clsx("w-[200px] flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold", bgColor, pulseColor)}>
+      <div className="flex items-center w-full mt-1 justify-between text-xs">
         <div className="flex items-center ml-1 -mt-2">
-          {isTraveling && originRealmId?.toString() && (
-            <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">From</span>
-              <div className="flex items-center ml-1 mr-1 text-gold">
-                <OrderIcon order={getRealmOrderNameById(originRealmId)} className="mr-1" size="xxs" />
-                {originRealmName}
-              </div>
+          <div className="flex items-center ml-1 mr-1 text-gold">
+            <OrderIcon order={getRealmOrderNameById(originRealmId || 0n)} className="mr-1" size="xxs" />
+            {originRealmName}
+          </div>
+        </div>
+        <div className="-mt-2">{attackerAddressName}</div>
+        <div>
+          {!isTraveling && (
+            <div className="flex ml-auto -mt-2 italic text-gold">
+              Idle
+              <Pen className="ml-1 fill-gold" />
             </div>
           )}
-          {!isTraveling && originRealmId?.toString() && (
-            <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">Owned by</span>
-              <div className="flex items-center ml-1 mr-1 text-gold">
-                <span className={"mr-1"}>{attackerAddressName.slice(0, 10)}</span>
-                <OrderIcon order={getRealmOrderNameById(originRealmId)} className="mr-1" size="xxs" />
-                {originRealmName}
-              </div>
+          {raider.arrivalTime && isTraveling && nextBlockTimestamp && (
+            <div className="flex ml-auto -mt-2 italic text-light-pink">
+              {isPassiveTravel
+                ? formatSecondsLeftInDaysHours(raider.arrivalTime - nextBlockTimestamp)
+                : "Arrives Next Tick"}
             </div>
           )}
         </div>
-        {!isTraveling && (
-          <div className="flex ml-auto -mt-2 italic text-gold">
-            Idle
-            <Pen className="ml-1 fill-gold" />
-          </div>
-        )}
-        {raider.arrivalTime && isTraveling && nextBlockTimestamp && (
-          <div className="flex ml-auto -mt-2 italic text-light-pink">
-            {isPassiveTravel
-              ? formatSecondsLeftInDaysHours(raider.arrivalTime - nextBlockTimestamp)
-              : "Arrives Next Tick"}
-          </div>
-        )}
       </div>
-      <div className="flex flex-col mt-2 space-y-2">
-        <div className="flex relative justify-between  w-full text-gold">
-          <div className="flex items-center">
-            <div className="flex items-center  mr-2">
-              <div className="flex flex-col ml-1">
-                <div className="bold mr-1">Knight x{currencyFormat(raider.troops.knightCount, 0)}</div>
-                <div className="bold mr-1">Crossbowmen x{currencyFormat(raider.troops.crossbowmanCount, 0)}</div>
-                <div className="bold mr-1">Paladin x{currencyFormat(raider.troops.paladinCount, 0)}</div>
-              </div>
-            </div>
+      <div className="w-full flex flex-col mt-2 space-y-2">
+        <div className="flex relative justify-between w-full text-gold">
+          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
+            <ResourceIcon withTooltip={false} resource={"Crossbowmen"} size="lg" />
+            <div className="text-green text-xxs self-center">{currencyFormat(raider.troops.crossbowmanCount, 0)}</div>
           </div>
-          <div className="flex items-center">
-            <div className="text-order-brilliance">{health && currencyFormat(health, 0)}HP</div>
+          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
+            <ResourceIcon withTooltip={false} resource={"Knight"} size="lg" />
+            <div className="text-green text-xxs self-center">{currencyFormat(raider.troops.knightCount, 0)}</div>
+          </div>
+          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
+            <ResourceIcon withTooltip={false} resource={"Paladin"} size="lg" />
+            <div className="text-green text-xxs self-center">{currencyFormat(raider.troops.paladinCount, 0)}</div>
           </div>
         </div>
-        <div className="grid grid-cols-12 gap-0.5">
-          <ProgressBar
-            containerClassName="col-span-12 !bg-order-giants"
-            rounded
-            progress={(health / (10 * quantity)) * 100}
-          />
+        <div className="flex">
+          <InventoryResources max={2} entityId={raider.entityId} title="Balance" />
+          <div>
+            <div className="uppercase font-bold mb-2">Stamina</div>
+            <div className=""> 200 </div>
+          </div>
         </div>
-        <InventoryResources entityId={raider.entityId} title="Balance" />
       </div>
     </div>
   );

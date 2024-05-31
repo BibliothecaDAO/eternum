@@ -11,9 +11,6 @@ import { GLTF, SkeletonUtils } from "three-stdlib";
 import { Vector3, useGraph } from "@react-three/fiber";
 import { useRunningSound } from "../../../../hooks/useUISound";
 
-const FRIENDLY_ARMY_MODEL_HOVER_COLOR: string = "yellow";
-const ENEMY_ARMY_MODEL_HOVER_COLOR: string = "orange";
-
 type GLTFResult = GLTF & {
   nodes: {
     Face: THREE.Mesh;
@@ -58,10 +55,7 @@ type WarriorModelProps = {
   id: number;
   position?: Vector3;
   rotationY: number;
-  onPointerEnter: (e: any) => void;
-  onPointerOut: (e: any) => void;
   onContextMenu: (e: any) => void;
-  hovered: boolean;
   isRunning: boolean;
   isFriendly: boolean;
 };
@@ -70,10 +64,7 @@ export function WarriorModel({
   id,
   position,
   rotationY,
-  onPointerEnter,
-  onPointerOut,
   onContextMenu,
-  hovered,
   isRunning,
   isFriendly,
   ...props
@@ -113,21 +104,6 @@ export function WarriorModel({
     }
   }, [isRunning, actions]);
 
-  const hoverMaterial = useMemo(() => {
-    const material = new THREE.MeshStandardMaterial();
-    material.color.set(isFriendly ? FRIENDLY_ARMY_MODEL_HOVER_COLOR : ENEMY_ARMY_MODEL_HOVER_COLOR);
-    return material;
-  }, []);
-
-  useEffect(() => {
-    const targetMaterial = hovered ? hoverMaterial : materials.Warrior_Texture;
-    Object.values(nodes).forEach((node) => {
-      if (node instanceof THREE.Mesh || node instanceof THREE.SkinnedMesh) {
-        node.material = targetMaterial;
-      }
-    });
-  }, [hovered, hoverMaterial, nodes, materials.Warrior_Texture]);
-
   const part1Height = 0.4; // 1/3 of the total height
   const part2Height = 0.33; // 1/3 of the total height
   const part3Height = 0.34; // 1/3 of the total height
@@ -144,25 +120,8 @@ export function WarriorModel({
   const part3Color = "blue";
 
   return (
-    <group
-      {...props}
-      ref={groupRef}
-      onClick={onClickAction}
-      onPointerEnter={onPointerEnter}
-      onPointerOut={onPointerOut}
-      onContextMenu={onContextMenu}
-    >
-      <mesh
-        position={[0, part1Height / 2, 0]}
-        onPointerEnter={(e) => {
-          e.stopPropagation();
-          (e.object as THREE.Mesh).material = hoverMaterial;
-        }}
-        onPointerOut={(e) => {
-          e.stopPropagation();
-          (e.object as THREE.Mesh).material = new THREE.MeshStandardMaterial({ color: "#582C4D" });
-        }}
-      >
+    <group {...props} ref={groupRef} onClick={onClickAction} onContextMenu={onContextMenu}>
+      <mesh position={[0, part1Height / 2, 0]}>
         <cylinderGeometry args={[part1TopRadius, part1BottomRadius, part1Height, 10]} />
         <meshStandardMaterial color={"#582C4D"} />
       </mesh>
@@ -174,19 +133,6 @@ export function WarriorModel({
         <cylinderGeometry args={[part3TopRadius, part3BottomRadius, part3Height, 10]} />
         <meshStandardMaterial color={"#F24236"} />
       </mesh>
-      {/* <group name="Scene" rotation={[0, rotationY, 0]}>
-        <group name="CharacterArmature">
-          <primitive object={nodes.Root} />
-        </group>
-        <skinnedMesh
-          name="Warrior_Body"
-          // @ts-ignore
-          geometry={nodes.Warrior_Body.geometry}
-          material={hovered ? hoverMaterial : materials.Warrior_Texture}
-          // @ts-ignore
-          skeleton={nodes.Warrior_Body.skeleton}
-        />
-      </group> */}
     </group>
   );
 }

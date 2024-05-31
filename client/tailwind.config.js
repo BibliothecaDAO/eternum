@@ -81,6 +81,15 @@ export default {
           tropical_rain_forest: "#4f6123",
         },
       },
+      animation: {
+        slowPulse: "slowPulse 2s ease-in-out infinite",
+      },
+      keyframes: {
+        slowPulse: {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.8" },
+        },
+      },
     },
   },
   safelist: [

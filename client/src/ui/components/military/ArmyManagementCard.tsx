@@ -225,13 +225,8 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
         {troops.map((troop) => {
           const balance = getBalance(owner_entity, troop.name).balance;
 
-          // floor of balance
-
-          console.log(EternumGlobalConfig);
-
           const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
 
-          console.log(balance, balanceFloor);
           return (
             <div className="p-2 bg-gold/20 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
               {/* <img src={`/images/units/${nameMapping[troop.name]}.png`} alt={nameMapping[troop.name]} /> */}
@@ -245,11 +240,6 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
                   <div className="text-green self-center">x {troop.current}</div>
                 </div>
               </div>
-
-              {/* <div className="my-3">
-            <div>Str vs {troop.strong}</div>
-            <div>Wk vs {troop.weak}</div>
-          </div> */}
 
               <div className="flex items-center mt-auto flex-col">
                 <div className="px-2 text-xs  font-bold mb-3">
