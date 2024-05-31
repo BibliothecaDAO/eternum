@@ -5,6 +5,7 @@ import React from "react";
 type DojoHtmlProps = {
   children: React.ReactNode;
   [propName: string]: any; // Allow any other props
+  pointerEvents?: "auto" | "none";
 };
 
 export const DojoHtml = ({ children, ...rest }: DojoHtmlProps) => {
