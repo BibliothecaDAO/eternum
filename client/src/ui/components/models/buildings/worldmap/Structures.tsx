@@ -96,11 +96,11 @@ const BuiltStructure = ({
 
   const pLight = useRef<THREE.PointLight>(null);
 
-  useFrame(({ camera }) => {
-    if (!pLight.current) return;
-    const distance = camera.position.distanceTo(new THREE.Vector3(x, 0, -y));
-    //pLight.current.power = Math.max(0, power * (1 - (distance - 130) / 250));
-  });
+  // useFrame(({ camera }) => {
+  //   if (!pLight.current) return;
+  //   const distance = camera.position.distanceTo(new THREE.Vector3(x, 0, -y));
+  //   //pLight.current.power = Math.max(0, power * (1 - (distance - 130) / 250));
+  // });
 
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>
