@@ -43,7 +43,7 @@ const BuiltStructure = ({
   const { x, y } = getUIPositionFromColRow(structure.col, structure.row, false);
   const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
 
-  const { camera } = useThree();
+  // const { camera } = useThree();
 
   useEffect(() => {
     let category = structureCategory;
@@ -79,54 +79,54 @@ const BuiltStructure = ({
   }, [models, finishedHyperstructures]);
 
   const scale = structureCategory === StructureType.Hyperstructure ? 1.5 : 3;
-  const { power, lpos, color } = useControls("Structures Light", {
-    power: { value: 300, min: 0, max: 1000, step: 1 },
-    lpos: {
-      value: {
-        x: 0,
-        y: 7,
-        z: 0,
-      },
-      min: -10,
-      max: 10,
-      step: 0.1,
-    },
-    color: { value: "#fcffbc", label: "Color" },
-  });
+  // const { power, lpos, color } = useControls("Structures Light", {
+  //   power: { value: 300, min: 0, max: 1000, step: 1 },
+  //   lpos: {
+  //     value: {
+  //       x: 0,
+  //       y: 7,
+  //       z: 0,
+  //     },
+  //     min: -10,
+  //     max: 10,
+  //     step: 0.1,
+  //   },
+  //   color: { value: "#fcffbc", label: "Color" },
+  // });
 
-  const pLight = useRef<any>(null);
+  // const pLight = useRef<any>(null);
 
-  if (import.meta.env.DEV) {
-    useHelper(pLight, THREE.SpotLightHelper, "hotpink");
-  }
+  // if (import.meta.env.DEV) {
+  //   useHelper(pLight, THREE.SpotLightHelper, "hotpink");
+  // }
 
-  useEffect(() => {
-    if (!pLight.current) return;
-    pLight.current.target.position.x = x;
-    pLight.current.target.position.z = -y;
-  }, [x, y]);
+  // useEffect(() => {
+  //   if (!pLight.current) return;
+  //   pLight.current.target.position.x = x;
+  //   pLight.current.target.position.z = -y;
+  // }, [x, y, pLight]);
 
-  useFrame(({ camera }) => {
-    if (!pLight.current) return;
-    const distance = camera.position.distanceTo(new THREE.Vector3(x, 0, -y));
-    pLight.current.power = Math.max(0, power * (1 - (distance - 130) / 250));
-  });
+  // useFrame(({ camera }) => {
+  //   if (!pLight.current) return;
+  //   const distance = camera.position.distanceTo(new THREE.Vector3(x, 0, -y));
+  //   pLight.current.power = Math.max(0, power * (1 - (distance - 130) / 250));
+  // });
 
   // const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>
       <primitive dropShadow scale={scale} object={model!} />
-      <Detailed distances={[0, 350]}>
-        <spotLight
+      {/* <Detailed distances={[0, 350]}>
+        <pointLight
           ref={pLight}
           distance={12}
-          penumbra={0}
+          //penumbra={0}
           position={[lpos.x, lpos.y, lpos.z]}
           color={color}
           power={power}
         />
         <mesh />
-      </Detailed>
+      </Detailed> */}
     </group>
   );
 };
