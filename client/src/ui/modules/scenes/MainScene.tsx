@@ -36,8 +36,8 @@ export const MainScene = () => {
   }, [location]);
 
   const { mapFogNear, mapFogFar, realmFogNear, realmFogFar, fogColor } = useControls("Fog", {
-    mapFogNear: { value: 1195, min: 0, max: 3000, step: 1 },
-    mapFogFar: { value: 1426, min: 0, max: 3000, step: 1 },
+    mapFogNear: { value: 1010, min: 0, max: 3000, step: 1 },
+    mapFogFar: { value: 2271, min: 0, max: 3000, step: 1 },
     realmFogNear: { value: 1885, min: 0, max: 1000, step: 1 },
     realmFogFar: { value: 2300, min: 0, max: 1000, step: 1 },
     fogColor: { value: "#fff", label: "Color" },
@@ -78,7 +78,7 @@ export const MainScene = () => {
   });
 
   const { ambientColor, ambientIntensityHexception, ambientIntensityMap } = useControls("Ambient Light", {
-    ambientColor: { value: "#fff", label: "Color" },
+    ambientColor: { value: "#7b7c59", label: "Color" },
     ambientIntensityHexception: { value: 0.5, min: 0, max: 1, step: 0.01 },
     ambientIntensityMap: { value: 0.75, min: 0, max: 1, step: 0.01 },
   });
@@ -190,7 +190,7 @@ export const MainScene = () => {
         <EffectComposer multisampling={0}>
           <Vignette
             offset={0.5} // vignette offset
-            darkness={0.2} // vignette darkness
+            darkness={0.6} // vignette darkness
             eskil={false} // Eskil's vignette technique
             blendFunction={BlendFunction.NORMAL} // blend mode
           />

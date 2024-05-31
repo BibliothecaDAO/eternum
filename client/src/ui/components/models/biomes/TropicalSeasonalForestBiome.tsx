@@ -57,7 +57,9 @@ export function TropicalSeasonalForestBiome({ hexes, zOffsets }: { hexes: any[];
       return instancedMesh;
     });
     instancedMeshes[0].receiveShadow = true;
-
+    instancedMeshes[1].castShadow = true;
+    instancedMeshes[2].castShadow = true;
+    instancedMeshes[3].castShadow = true;
     let idx = 0;
     let matrix = new THREE.Matrix4();
     hexes.forEach((hex: any) => {
