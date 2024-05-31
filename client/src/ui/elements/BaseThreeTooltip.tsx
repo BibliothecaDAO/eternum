@@ -20,7 +20,7 @@ export enum Position {
 
 export const BaseThreeTooltip = ({
   children,
-  distanceFactor = 50,
+  distanceFactor,
   position = Position.CENTER,
   className,
 }: BaseThreeTooltipProps) => {
