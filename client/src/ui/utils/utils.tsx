@@ -63,8 +63,7 @@ export const bigintToString = (bigintValue: bigint) => {
   return buffer.toString("utf-8");
 };
 
-export const hexToAscii = (str1: string) => {
-  var hex = str1.toString();
+export const hexToAscii = (hex: string) => {
   var str = "";
   for (var n = 0; n < hex.length; n += 2) {
     var asciiCode = parseInt(hex.substr(n, 2), 16);
