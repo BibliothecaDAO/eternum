@@ -89,8 +89,10 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     if (!isRunning && info.isMine) {
       playBuildMilitary();
     }
-    setSelectedEntity({ id: info.id, position: info.contractPos });
-  }, [info.id, info.contractPos, playBuildMilitary, setSelectedEntity]);
+    if (selectedEntity?.id !== info.id) {
+      setSelectedEntity({ id: info.id, position: info.contractPos });
+    }
+  }, [info.id, info.contractPos, selectedEntity, playBuildMilitary, setSelectedEntity]);
 
   const onPointerEnter = useCallback((e: any) => {
     e.stopPropagation();

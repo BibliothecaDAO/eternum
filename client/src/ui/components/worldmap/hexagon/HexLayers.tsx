@@ -35,8 +35,6 @@ import { useLocation } from "wouter";
 import { HexGrid } from "../../models/biomes/HexGrid";
 import { ArmyMode } from "@/hooks/store/_mapStore";
 
-const BIOMES = biomes as Record<string, { color: string; depth: number }>;
-
 const EXPLORE_COLOUR = 0x2563eb;
 const TRAVEL_COLOUR = 0x3cb93c;
 const CLICKED_HEX_COLOR = 0xff5733;
