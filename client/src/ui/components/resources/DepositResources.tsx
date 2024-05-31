@@ -32,7 +32,6 @@ export const DepositResources = ({ entityId }: DepositResourcesProps) => {
     arrivalTime?.arrives_at,
     inventoryResources.length > 0,
   );
-  console.log(inventoryResources.length);
 
   const onOffload = async (receiverEntityId: bigint) => {
     setIsLoading(true);

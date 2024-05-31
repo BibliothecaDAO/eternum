@@ -60,6 +60,7 @@ export const useStamina = () => {
     const armyEntity = getComponentValue(Army, armiesEntityIds.values().next().value);
     if (!armyEntity) return 0;
     const maxStamina = getMaxStamina(armyEntity.troops, StaminaConfig);
+
     return maxStamina;
   };
 
@@ -93,6 +94,8 @@ const getMaxStamina = (troops: any, StaminaConfig: Component): number => {
     );
     maxStaminas.push(paladinConfig!.max_stamina);
   }
+
+  if (maxStaminas.length === 0) return 0;
 
   const maxArmyStamina = Math.min(...maxStaminas);
 
