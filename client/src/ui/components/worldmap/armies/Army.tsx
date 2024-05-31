@@ -9,14 +9,18 @@ import { getUIPositionFromColRow } from "../../../utils/utils";
 import { ArmyInfoLabel } from "./ArmyInfoLabel";
 import { BannerFlag } from "../BannerFlag";
 import { Box } from "@react-three/drei";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { ArmyAndName } from "@/hooks/helpers/useArmies";
 
 type ArmyProps = {
-  info: { contractPos: Position; uiPos: UIPosition; id: bigint; order: string; isMine: boolean };
+  info: ArmyAndName & { order: string; id: bigint; isMine: boolean; contractPos: Position; uiPos: UIPosition };
   offset: { x: number; y: number };
 };
 
 export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElements["group"]) {
   const { play: playBuildMilitary } = useUiSounds(soundSelector.buildMilitary);
+  const { account } = useDojo();
+
   const animationPaths = useUIStore((state) => state.animationPaths);
   const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
@@ -110,7 +114,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
   return (
     <>
       <group position={position}>
-        {showArmyInfo && <ArmyInfoLabel armyId={info.id} />}
+        {showArmyInfo && <ArmyInfoLabel info={info} accountAddress={account.account.address} />}
         {info.isMine && <ArmyFlag rotationY={rotationY} position={position} order={info.order} />}
         <WarriorModel
           {...props}
