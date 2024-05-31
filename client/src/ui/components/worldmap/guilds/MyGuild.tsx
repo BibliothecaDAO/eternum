@@ -113,7 +113,7 @@ export const MyGuild = () => {
                 value={newGuildName}
                 onChange={(newGuildName) => setNewGuildName(newGuildName)}
               />
-              <Button onClick={createGuild} disabled={guildName == ""}>
+              <Button onClick={createGuild} disabled={newGuildName == ""}>
                 Confirm
               </Button>
             </div>
