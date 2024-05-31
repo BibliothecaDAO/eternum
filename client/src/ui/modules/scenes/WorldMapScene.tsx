@@ -99,7 +99,7 @@ const WorldMapLight = () => {
   }
   const { camera } = useThree(); // Import useThree to access the camera
 
-  const { lightPosition, intensity } = useControls("Worldmap Light", {
+  const { lightPosition, intensity, bias } = useControls("Worldmap Light", {
     lightPosition: {
       value: {
         x: 1227.7357824149108,
@@ -112,6 +112,12 @@ const WorldMapLight = () => {
       value: 1.65,
       min: 0,
       max: 2,
+      step: 0.01,
+    },
+    bias: {
+      value: 0.04,
+      min: 0,
+      max: 1,
       step: 0.01,
     },
   });
@@ -136,11 +142,21 @@ const WorldMapLight = () => {
     }),
   });
 
-  useFrame(({ camera, gl }) => {
-    dLightRef.current.position.x = camera.position.x - 100;
-    dLightRef.current.position.z = camera.position.z - 150;
-    dLightRef.current.target.position.x = camera.position.x - 70;
-    dLightRef.current.target.position.z = camera.position.z - 200;
+  useFrame(({ camera, gl, get }) => {
+    // @ts-ignore
+    const target = get()?.controls?.target;
+    const distanceMultiplier = camera.position.y / 500;
+    const offsetX = 30 + 170 * distanceMultiplier;
+    const offsetY = -50 - 180 * distanceMultiplier;
+    dLightRef.current.position.x = target.x - offsetX;
+    dLightRef.current.position.z = target.z - offsetY;
+    dLightRef.current.target.position.x = target.x + 30 - offsetX;
+    dLightRef.current.target.position.z = target.z - 50 - offsetY;
+    dLightRef.current.shadow.camera.left = -75 - 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.right = 75 + 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.top = 75 + 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.far = 150 + 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.updateProjectionMatrix();
     gl.shadowMap.needsUpdate = true;
   });
 
@@ -150,16 +166,16 @@ const WorldMapLight = () => {
         ref={dLightRef}
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={500}
-        shadow-camera-left={-250}
-        shadow-camera-right={250}
-        shadow-camera-top={250}
-        shadow-camera-bottom={-250}
+        shadow-camera-far={150}
+        shadow-camera-left={-75}
+        shadow-camera-right={75}
+        shadow-camera-top={75}
+        shadow-camera-bottom={-75}
+        shadow-bias={bias}
         position={[lightPosition.x, lightPosition.y, lightPosition.z]}
         color={"#fff"}
         intensity={intensity}
       />
-      <BakeShadows />
     </group>
   );
 };
