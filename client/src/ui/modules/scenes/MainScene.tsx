@@ -67,10 +67,10 @@ export const MainScene = () => {
     hexceptionCloudsBounds,
     hexceptionCloudsVolume,
   } = useControls("Clouds", {
-    mapCloudsPosition: { value: [1250, 400, -650], label: "Map Clouds Position" },
-    mapCloudsOpacity: { value: 0.05, min: 0, max: 1, step: 0.01, label: "Map Clouds Opacity" },
-    mapCloudsBounds: { value: [1500, 1, 700], label: "Map Clouds Bounds" },
-    mapCloudsVolume: { value: 700, min: 0, max: 1000, step: 1, label: "Map Clouds Volume" },
+    mapCloudsPosition: { value: [1250, 135, -650], label: "Map Clouds Position" },
+    mapCloudsOpacity: { value: 0.02, min: 0, max: 1, step: 0.01, label: "Map Clouds Opacity" },
+    mapCloudsBounds: { value: [1500, 50, 700], label: "Map Clouds Bounds" },
+    mapCloudsVolume: { value: 325, min: 0, max: 1000, step: 1, label: "Map Clouds Volume" },
     hexceptionCloudsPosition: { value: [45, 32, -39], label: "Hexception Clouds Position" },
     hexceptionCloudsOpacity: { value: 0.05, min: 0, max: 1, step: 0.01, label: "Hexception Clouds Opacity" },
     hexceptionCloudsBounds: { value: [30, 6, 45], label: "Hexception Clouds Bounds" },
@@ -155,6 +155,30 @@ export const MainScene = () => {
             <Switch location={locationType}>
               <Route path="map">
                 <WorldMapScene />
+                <Clouds position={mapCloudsPosition as any} material={THREE.MeshBasicMaterial}>
+                  <Cloud
+                    concentrate="random"
+                    seed={7331}
+                    speed={0.06}
+                    segments={100}
+                    castShadow={true}
+                    opacity={mapCloudsOpacity}
+                    bounds={mapCloudsBounds}
+                    volume={mapCloudsVolume}
+                    color="white"
+                  />
+                  <Cloud
+                    concentrate="random"
+                    seed={1337}
+                    castShadow={true}
+                    speed={0.03}
+                    segments={100}
+                    opacity={mapCloudsOpacity}
+                    bounds={mapCloudsBounds}
+                    volume={mapCloudsVolume}
+                    color="white"
+                  />
+                </Clouds>
               </Route>
               <Route path="hexception">
                 <CameraShake {...shakeConfig} />
