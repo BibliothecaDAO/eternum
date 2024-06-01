@@ -108,9 +108,12 @@ export const WorldMapScene = () => {
 
 const WorldMapLight = () => {
   const dLightRef = useRef<any>();
+  const targetRef = useRef<any>();
+
   if (import.meta.env.DEV) {
     useHelper(dLightRef, THREE.DirectionalLightHelper, 10, "hotpink");
   }
+
   const { camera } = useThree(); // Import useThree to access the camera
 
   const { lightPosition, intensity, bias } = useControls("Worldmap Light", {
@@ -154,6 +157,10 @@ const WorldMapLight = () => {
     }),
   });
 
+  const targetObject = useMemo(() => {
+    return new THREE.Object3D();
+  }, []);
+
   useFrame(({ camera, gl, get }) => {
     // @ts-ignore
     const target = get()?.controls?.target;
@@ -162,18 +169,23 @@ const WorldMapLight = () => {
     const offsetY = -50 - 180 * distanceMultiplier;
     dLightRef.current.position.x = target.x - offsetX;
     dLightRef.current.position.z = target.z - offsetY;
-    dLightRef.current.target.position.x = target.x + 30 - offsetX;
-    dLightRef.current.target.position.z = target.z - 50 - offsetY;
+    targetRef.current.position.x = target.x + 30 - offsetX;
+    targetRef.current.position.z = target.z - 50 - offsetY;
+    dLightRef.current.target = targetRef.current;
     dLightRef.current.shadow.camera.left = -75 - 300 * distanceMultiplier;
-    dLightRef.current.shadow.camera.right = 75 + 300 * distanceMultiplier;
+    dLightRef.current.shadow.camera.right = 75 + 30 * distanceMultiplier;
     dLightRef.current.shadow.camera.top = 75 + 300 * distanceMultiplier;
     dLightRef.current.shadow.camera.far = 150 + 300 * distanceMultiplier;
     dLightRef.current.shadow.camera.updateProjectionMatrix();
+    //update matrixworld
+    // dLightRef.current.updateMatrixWorld();
+    // dLightRef.current.updateMatrix();
     gl.shadowMap.needsUpdate = true;
   });
 
   return (
     <group>
+      <primitive ref={targetRef} object={targetObject} position={[target.x, 0, -target.y]} />
       <directionalLight
         ref={dLightRef}
         castShadow
