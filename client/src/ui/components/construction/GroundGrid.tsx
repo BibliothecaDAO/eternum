@@ -67,7 +67,7 @@ const GroundGrid = () => {
               <mesh
                 name="free-cell-placeholder"
                 position={[hexPosition.x, hexPosition.y, hexPosition.z + 0.1]}
-                geometry={hexagonGeometry}
+                geometry={invisibleHexagonGeometry}
                 material={placeholderMaterial}
               />
             )}

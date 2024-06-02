@@ -1,9 +1,6 @@
-import { useDojo } from "../../../../hooks/context/DojoContext";
-import { useCombat } from "../../../../hooks/helpers/useCombat";
 import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { currencyFormat } from "../../../utils/utils";
-import { type CombatInfo } from "@bibliothecadao/eternum";
 
 import { useMemo } from "react";
 import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
@@ -12,73 +9,55 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { InventoryResources } from "../../resources/InventoryResources";
-import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
+import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { useStamina } from "@/hooks/helpers/useStamina";
+import { ArmyAndName } from "@/hooks/helpers/useArmies";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
 
 interface ArmyInfoLabelProps {
-  armyId: bigint;
+  accountAddress: string;
+  info: ArmyAndName;
 }
 
-export const ArmyInfoLabel = ({ armyId }: ArmyInfoLabelProps) => {
-  const { getEntitiesCombatInfo } = useCombat();
-
-  const { getRealmAddressName } = useRealm();
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-
-  const raider = useMemo(() => {
-    return getEntitiesCombatInfo([armyId])[0];
-  }, [armyId]);
-
-  const isPassiveTravel = useMemo(
-    () => (raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false),
-    [raider.arrivalTime, nextBlockTimestamp],
-  );
-
+export const ArmyInfoLabel = ({ info, accountAddress }: ArmyInfoLabelProps) => {
   return (
-    <BaseThreeTooltip className={`bg-transparent pointer-events-none -left-1/2 -mt-[220px]`}>
-      <RaiderInfo
-        key={raider.entityId}
-        raider={raider}
-        getRealmAddressName={getRealmAddressName}
-        nextBlockTimestamp={nextBlockTimestamp}
-        isPassiveTravel={isPassiveTravel}
-        isActiveTravel={false}
-      />
+    <BaseThreeTooltip position={Position.TOP_CENTER} className={`bg-transparent pointer-events-none -mt-[220px]`}>
+      <RaiderInfo key={info.entity_id} info={info} accountAddress={accountAddress} />
     </BaseThreeTooltip>
   );
 };
 
-const RaiderInfo = ({
-  raider,
-  getRealmAddressName,
-  nextBlockTimestamp,
-  isPassiveTravel,
-  isActiveTravel,
-}: {
-  raider: CombatInfo;
-  getRealmAddressName: (name: bigint) => string;
-  nextBlockTimestamp: number | undefined;
-  isPassiveTravel: boolean;
-  isActiveTravel: boolean;
-}) => {
-  const { account, masterAccount } = useDojo();
-  const { entityOwnerId, owner, originRealmId, entityId } = raider;
+interface ArmyInfoLabelProps {
+  info: ArmyAndName;
+  accountAddress: string;
+}
 
-  const attackerAddressName = entityOwnerId ? getRealmAddressName(entityOwnerId) : "";
+const RaiderInfo = ({ info, accountAddress }: ArmyInfoLabelProps) => {
+  const { getRealmAddressName } = useRealm();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const originRealmName = originRealmId ? getRealmNameById(originRealmId) : "";
+  const isPassiveTravel = useMemo(
+    () => (info.arrives_at && nextBlockTimestamp ? info.arrives_at > nextBlockTimestamp : false),
+    [info.arrives_at, nextBlockTimestamp],
+  );
+
+  const isActiveTravel = false;
+
+  const { entity_id, entity_owner_id, address, arrives_at, realm, troops } = info;
+
+  const realmId = BigInt(realm?.realm_id) || 0n;
+
+  const attackerAddressName = entity_owner_id ? getRealmAddressName(BigInt(entity_owner_id)) : "";
+
+  const originRealmName = getRealmNameById(BigInt(realmId));
 
   const isTraveling = isPassiveTravel || isActiveTravel;
 
-  const bgColor = account.account.address
-    ? BigInt(account.account.address) === owner
+  const bgColor = accountAddress
+    ? BigInt(accountAddress) === BigInt(address)
       ? "bg-dark-green-accent"
       : "bg-red"
     : undefined;
-
-  if (!bgColor || account.account.address === masterAccount.address) return;
 
   const pulseColor = !isTraveling ? "" : "";
 
@@ -87,7 +66,7 @@ const RaiderInfo = ({
       <div className="flex items-center w-full mt-1 justify-between text-xs">
         <div className="flex items-center ml-1 -mt-2">
           <div className="flex items-center ml-1 mr-1 text-gold">
-            <OrderIcon order={getRealmOrderNameById(originRealmId || 0n)} className="mr-1" size="xxs" />
+            <OrderIcon order={getRealmOrderNameById(realmId)} className="mr-1" size="xxs" />
             {originRealmName}
           </div>
         </div>
@@ -99,11 +78,9 @@ const RaiderInfo = ({
               <Pen className="ml-1 fill-gold" />
             </div>
           )}
-          {raider.arrivalTime && isTraveling && nextBlockTimestamp && (
+          {info.arrives_at && isTraveling && nextBlockTimestamp && (
             <div className="flex ml-auto -mt-2 italic text-light-pink">
-              {isPassiveTravel
-                ? formatSecondsLeftInDaysHours(raider.arrivalTime - nextBlockTimestamp)
-                : "Arrives Next Tick"}
+              {isPassiveTravel ? formatSecondsLeftInDaysHours(arrives_at - nextBlockTimestamp) : "Arrives Next Tick"}
             </div>
           )}
         </div>
@@ -112,21 +89,21 @@ const RaiderInfo = ({
         <div className="flex relative justify-between w-full text-gold">
           <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
             <ResourceIcon withTooltip={false} resource={"Crossbowmen"} size="lg" />
-            <div className="text-green text-xxs self-center">{currencyFormat(raider.troops.crossbowmanCount, 0)}</div>
+            <div className="text-green text-xxs self-center">{currencyFormat(troops.crossbowman_count, 0)}</div>
           </div>
           <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
             <ResourceIcon withTooltip={false} resource={"Knight"} size="lg" />
-            <div className="text-green text-xxs self-center">{currencyFormat(raider.troops.knightCount, 0)}</div>
+            <div className="text-green text-xxs self-center">{currencyFormat(troops.knight_count, 0)}</div>
           </div>
           <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
             <ResourceIcon withTooltip={false} resource={"Paladin"} size="lg" />
-            <div className="text-green text-xxs self-center">{currencyFormat(raider.troops.paladinCount, 0)}</div>
+            <div className="text-green text-xxs self-center">{currencyFormat(troops.paladin_count, 0)}</div>
           </div>
         </div>
         <div>Balance</div>
         <div className="flex flex-row justify-between">
-          <InventoryResources max={2} entityId={raider.entityId} />
-          <StaminaResource entityId={raider.entityId} />
+          <InventoryResources max={2} entityId={BigInt(entity_id)} />
+          <StaminaResource entityId={BigInt(entity_id)} />
         </div>
       </div>
     </div>

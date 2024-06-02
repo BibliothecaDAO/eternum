@@ -44,6 +44,7 @@ export const Armies = ({}: ArmiesProps) => {
             uiPos: { ...getUIPositionFromColRow(army.x, army.y), z: 0.32 },
             id: BigInt(army.entity_id),
             isMine,
+            ...army,
           };
         })
     );
