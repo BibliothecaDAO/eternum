@@ -3,7 +3,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
-import { Position, ResourcesIds } from "@bibliothecadao/eternum";
+import { Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { useComponentValue } from "@dojoengine/react";
 import { NumberInput } from "@/ui/elements/NumberInput";
@@ -74,7 +74,6 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
   });
 
   const handleTroopCountChange = (troopName: number, count: number) => {
-    console.log(troopName, count);
     setTroopCounts((prev) => ({ ...prev, [troopName]: count }));
   };
 
@@ -85,9 +84,9 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
       army_id: entity.entity_id,
       payer_id: owner_entity,
       troops: {
-        knight_count: troopCounts[ResourcesIds.Knight] * 1000 || 0,
-        paladin_count: troopCounts[ResourcesIds.Paladin] * 1000 || 0,
-        crossbowman_count: troopCounts[ResourcesIds.Crossbowmen] * 1000 || 0,
+        knight_count: troopCounts[ResourcesIds.Knight] * EternumGlobalConfig.resources.resourcePrecision || 0,
+        paladin_count: troopCounts[ResourcesIds.Paladin] * EternumGlobalConfig.resources.resourcePrecision || 0,
+        crossbowman_count: troopCounts[ResourcesIds.Crossbowmen] * EternumGlobalConfig.resources.resourcePrecision || 0,
       },
     }).finally(() => setIsLoading(false));
 
@@ -246,7 +245,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
                   Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
                 </div>
                 <NumberInput
-                  max={balance ? balanceFloor : 0}
+                  max={balance ? Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision) : 0}
                   min={0}
                   step={100}
                   value={troopCounts[troop.name]}

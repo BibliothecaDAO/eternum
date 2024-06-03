@@ -70,8 +70,8 @@ name = "eternum::systems::buildings::contracts::building_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x490d8572029a070064c52d09d2fdb4d5a538bd26f723abfcdeeaff38e47dfeb"
-class_hash = "0x40d06b3fe7b80a242913d29b331b567d6407e4be86d1b4ac1950b51bae8b15c"
-original_class_hash = "0x40d06b3fe7b80a242913d29b331b567d6407e4be86d1b4ac1950b51bae8b15c"
+class_hash = "0x4c47f877921dcc1eeb579ef69c2095aabb7a609e4163672619d89b308071cf7"
+original_class_hash = "0x4c47f877921dcc1eeb579ef69c2095aabb7a609e4163672619d89b308071cf7"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_combat_contracts_combat_systems.json"
 reads = []
@@ -82,8 +82,8 @@ name = "eternum::systems::combat::contracts::combat_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x6e5d27950b7aa8eece851aecb7864b8efb9c1c90e7548b8fdd949b9963c6123"
-class_hash = "0x3cd521e68bebdd8a46ac207e2bc786c6d08d566692970ad15352fc77fcac018"
-original_class_hash = "0x3cd521e68bebdd8a46ac207e2bc786c6d08d566692970ad15352fc77fcac018"
+class_hash = "0x6f116ec9034d74e2ce2164a1624830efa0ea5f1de4081ffaccdcd2d2612779"
+original_class_hash = "0x6f116ec9034d74e2ce2164a1624830efa0ea5f1de4081ffaccdcd2d2612779"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_config_contracts_config_systems.json"
 reads = []
@@ -1020,8 +1020,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x54a90b66611b699ab042b78295eee917ceca7a41833caccc10060d1a7e11eaf"
-original_class_hash = "0x54a90b66611b699ab042b78295eee917ceca7a41833caccc10060d1a7e11eaf"
+class_hash = "0x472dca664def31070a4737a7953d27991b6019ffe19504c630f9683a108687c"
+original_class_hash = "0x472dca664def31070a4737a7953d27991b6019ffe19504c630f9683a108687c"
 abi = "abis/deployments/models/eternum_models_config_troop_config.json"
 name = "eternum::models::config::troop_config"
 
@@ -1032,42 +1032,42 @@ key = true
 
 [[models.members]]
 name = "knight_health"
-type = "u32"
+type = "u8"
 key = false
 
 [[models.members]]
 name = "paladin_health"
-type = "u32"
+type = "u8"
 key = false
 
 [[models.members]]
 name = "crossbowman_health"
-type = "u32"
+type = "u8"
 key = false
 
 [[models.members]]
 name = "knight_strength"
-type = "u32"
+type = "u8"
 key = false
 
 [[models.members]]
 name = "paladin_strength"
-type = "u32"
+type = "u8"
 key = false
 
 [[models.members]]
 name = "crossbowman_strength"
-type = "u32"
+type = "u16"
 key = false
 
 [[models.members]]
 name = "advantage_percent"
-type = "u32"
+type = "u16"
 key = false
 
 [[models.members]]
 name = "disadvantage_percent"
-type = "u32"
+type = "u16"
 key = false
 
 [[models]]
@@ -1933,28 +1933,6 @@ name = "eternum::models::structure::structure_count"
 name = "coord"
 type = "Coord"
 key = true
-
-[[models.members]]
-name = "count"
-type = "u8"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x70b0d7a75f4f826e2d8556abe0c1c0891539611d98658421f9eb2754f263be8"
-original_class_hash = "0x70b0d7a75f4f826e2d8556abe0c1c0891539611d98658421f9eb2754f263be8"
-abi = "abis/deployments/models/eternum_models_tick_tick_move.json"
-name = "eternum::models::tick::tick_move"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "tick"
-type = "u64"
-key = false
 
 [[models.members]]
 name = "count"

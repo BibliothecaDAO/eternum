@@ -6,7 +6,8 @@ export const StaminaResource = ({ entityId, className }: { entityId: bigint | un
   const { useStaminaByEntityId, getMaxStaminaByEntityId } = useStamina();
   const stamina = useStaminaByEntityId({ travelingEntityId: entityId || 0n });
 
-  const staminaColor = stamina?.amount || 0n < EternumGlobalConfig.stamina.travelCost ? "text-red/90" : "text-green/90";
+  const staminaColor =
+    (stamina?.amount || 0n) < EternumGlobalConfig.stamina.travelCost ? "text-red/90" : "text-green/90";
 
   return (
     <div className={`flex flex-row p-1 text-xs ${className}`}>

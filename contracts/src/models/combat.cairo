@@ -85,22 +85,28 @@ impl TroopsImpl of TroopsTrait {
 
 
     fn full_health(self: Troops, troop_config: TroopConfig) -> u128 {
-        let total_knight_health = troop_config.knight_health * self.knight_count;
-        let total_paladin_health = troop_config.paladin_health * self.paladin_count;
-        let total_crossbowman_health = troop_config.crossbowman_health * self.crossbowman_count;
+        let knight_count: u128 = self.knight_count.into();
+        let paladin_count: u128 = self.paladin_count.into();
+        let crossbowman_count: u128 = self.crossbowman_count.into();
+        let total_knight_health: u128 = troop_config.knight_health.into() * knight_count;
+        let total_paladin_health: u128 = troop_config.paladin_health.into() * paladin_count;
+        let total_crossbowman_health: u128 = troop_config.crossbowman_health.into()
+            * crossbowman_count;
 
-        total_knight_health.into() + total_paladin_health.into() + total_crossbowman_health.into()
+        total_knight_health + total_paladin_health + total_crossbowman_health
     }
 
 
     fn full_strength(self: Troops, troop_config: TroopConfig) -> u128 {
-        let total_knight_strength = troop_config.knight_strength * self.knight_count;
-        let total_paladin_strength = troop_config.paladin_strength * self.paladin_count;
-        let total_crossbowman_strength = troop_config.crossbowman_strength * self.crossbowman_count;
+        let knight_count: u128 = self.knight_count.into();
+        let paladin_count: u128 = self.paladin_count.into();
+        let crossbowman_count: u128 = self.crossbowman_count.into();
+        let total_knight_strength: u128 = troop_config.knight_strength.into() * knight_count;
+        let total_paladin_strength: u128 = troop_config.paladin_strength.into() * paladin_count;
+        let total_crossbowman_strength: u128 = troop_config.crossbowman_strength.into()
+            * crossbowman_count;
 
-        total_knight_strength.into()
-            + total_paladin_strength.into()
-            + total_crossbowman_strength.into()
+        total_knight_strength + total_paladin_strength + total_crossbowman_strength
     }
 
 
@@ -109,7 +115,6 @@ impl TroopsImpl of TroopsTrait {
     ) -> (Resource, Resource, Resource) {
         let (mut knight_resource, mut paladin_resoure, mut crossbowman_resoure) = troops_resources;
 
-        // pay for knights using KNIGHT resource
         knight_resource.burn(self.knight_count.into());
         paladin_resoure.burn(self.paladin_count.into());
         crossbowman_resoure.burn(self.crossbowman_count.into());
@@ -118,13 +123,13 @@ impl TroopsImpl of TroopsTrait {
     }
 
     fn delta(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> (u32, u32) {
-        let self_strength: i64 = self.strength_against(enemy_troops, troop_config);
-        let enemy_strength: i64 = enemy_troops.strength_against(self, troop_config);
-        let mut strength_difference: i64 = self_strength - enemy_strength;
+        let self_strength: i128 = self.strength_against(enemy_troops, troop_config);
+        let enemy_strength: i128 = enemy_troops.strength_against(self, troop_config);
+        let mut strength_difference: i128 = self_strength - enemy_strength;
         if strength_difference < 0 {
             strength_difference *= -1;
         }
-        let strength_difference: u32 = Into::<i64, felt252>::into(strength_difference)
+        let strength_difference: u32 = Into::<i128, felt252>::into(strength_difference)
             .try_into()
             .unwrap();
         (strength_difference, strength_difference)
@@ -135,24 +140,26 @@ impl TroopsImpl of TroopsTrait {
     /// @param enemy_troops Reference to the instance of the Troops struct representing the defending troops.
     /// @param troop_config Configuration object containing strength and advantage/disadvantage percentages for each troop type.
     /// @return The net combat strength as an integer, where a positive number indicates a strength advantage for the attacking troops.
-    fn strength_against(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> i64 {
+    fn strength_against(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> i128 {
         let self = *self;
         let enemy_troops = *enemy_troops;
 
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        let mut self_knight_strength: u32 = troop_config.knight_strength * self.knight_count;
+        let mut self_knight_strength: u64 = troop_config.knight_strength.into();
+        self_knight_strength *= self.knight_count.into();
         self_knight_strength =
             PercentageImpl::get(self_knight_strength.into(), troop_config.advantage_percent.into());
 
-        let mut self_paladin_strength: u32 = troop_config.paladin_strength * self.paladin_count;
+        let mut self_paladin_strength: u64 = troop_config.paladin_strength.into();
+        self_paladin_strength *= self.paladin_count.into();
         self_paladin_strength =
             PercentageImpl::get(
                 self_paladin_strength.into(), troop_config.advantage_percent.into()
             );
 
-        let mut self_crossbowman_strength: u32 = troop_config.crossbowman_strength
-            * self.crossbowman_count;
+        let mut self_crossbowman_strength: u64 = troop_config.crossbowman_strength.into();
+        self_crossbowman_strength *= self.crossbowman_count.into();
         self_crossbowman_strength =
             PercentageImpl::get(
                 self_crossbowman_strength.into(), troop_config.advantage_percent.into()
@@ -160,18 +167,18 @@ impl TroopsImpl of TroopsTrait {
 
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        let mut enemy_knight_strength: u32 = troop_config.knight_strength
-            * enemy_troops.knight_count;
+        let mut enemy_knight_strength: u64 = troop_config.knight_strength.into();
+        enemy_knight_strength *= enemy_troops.knight_count.into();
         enemy_knight_strength =
             PercentageImpl::get(enemy_knight_strength, troop_config.disadvantage_percent.into());
 
-        let mut enemy_paladin_strength: u32 = troop_config.paladin_strength
-            * enemy_troops.paladin_count;
+        let mut enemy_paladin_strength: u64 = troop_config.paladin_strength.into();
+        enemy_paladin_strength *= enemy_troops.paladin_count.into();
         enemy_paladin_strength =
             PercentageImpl::get(enemy_paladin_strength, troop_config.disadvantage_percent.into());
 
-        let mut enemy_crossbowman_strength: u32 = troop_config.crossbowman_strength
-            * enemy_troops.crossbowman_count;
+        let mut enemy_crossbowman_strength: u64 = troop_config.crossbowman_strength.into();
+        enemy_crossbowman_strength *= enemy_troops.crossbowman_count.into();
         enemy_crossbowman_strength =
             PercentageImpl::get(
                 enemy_crossbowman_strength, troop_config.disadvantage_percent.into()
@@ -179,10 +186,12 @@ impl TroopsImpl of TroopsTrait {
 
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        let self_knight_strength: i64 = self_knight_strength.into() - enemy_paladin_strength.into();
-        let self_paladin_strength: i64 = self_paladin_strength.into()
+        let self_knight_strength: i128 = self_knight_strength.into() - enemy_paladin_strength.into();
+        let self_knight_strength: i128 = self_knight_strength.into()
+            - enemy_paladin_strength.into();
+        let self_paladin_strength: i128 = self_paladin_strength.into()
             - enemy_crossbowman_strength.into();
-        let self_crossbowman_strength: i64 = self_crossbowman_strength.into()
+        let self_crossbowman_strength: i128 = self_crossbowman_strength.into()
             - enemy_knight_strength.into();
 
         self_knight_strength + self_paladin_strength + self_crossbowman_strength
