@@ -60,7 +60,7 @@ export const ResourceCost = ({
             maximumFractionDigits: 1,
           }).format(props.amount || 0)}{" "}
           <span className={clsx(balanceColor, "font-normal")}>
-            {balance !== undefined && `(${formatNumber(balance, 0)})`}{" "}
+            {!isNaN(balance) && `(${formatNumber(balance, 0)})`}{" "}
           </span>
         </div>
         {type === "horizontal" && (

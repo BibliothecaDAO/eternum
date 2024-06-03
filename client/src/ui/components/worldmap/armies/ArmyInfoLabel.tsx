@@ -12,6 +12,7 @@ import { InventoryResources } from "../../resources/InventoryResources";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ArmyAndName } from "@/hooks/helpers/useArmies";
+import { StaminaResource } from "@/ui/elements/StaminaResource";
 
 interface ArmyInfoLabelProps {
   accountAddress: string;
@@ -99,12 +100,10 @@ const RaiderInfo = ({ info, accountAddress }: ArmyInfoLabelProps) => {
             <div className="text-green text-xxs self-center">{currencyFormat(troops.paladin_count, 0)}</div>
           </div>
         </div>
-        <div className="flex">
-          <InventoryResources max={2} entityId={BigInt(entity_id)} title="Balance" />
-          <div>
-            <div className="uppercase font-bold mb-2">Stamina</div>
-            <div className=""> 200 </div>
-          </div>
+        <div>Balance</div>
+        <div className="flex flex-row justify-between">
+          <InventoryResources max={2} entityId={BigInt(entity_id)} />
+          <StaminaResource entityId={BigInt(entity_id)} />
         </div>
       </div>
     </div>

@@ -30,8 +30,6 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const { getEntityInfo } = useEntities();
   const { getResourcesFromBalance } = useResources();
 
-  console.log(getEntityInfo(entityId));
-
   const { arrivalTime, blocked, resources, entityType, isMine } = getEntityInfo(entityId);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
