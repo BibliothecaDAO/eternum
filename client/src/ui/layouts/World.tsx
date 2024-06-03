@@ -26,11 +26,11 @@ import { QuestList } from "../components/hints/HintBox";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import { SideBar } from "../components/navigation/SideBar";
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
+import { BattleContainer } from "../containers/BattleContainer";
+import { BattleView } from "../modules/military/BattleView";
+import { LoadingContainer } from "../containers/LoadingContainer";
 
 export const World = () => {
-  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-  const progress = useProgress((state) => state.progress);
-  
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
@@ -47,10 +47,6 @@ export const World = () => {
     }
   }, [realmEntityIds]);
 
-  const isLoading = useMemo(() => {
-    return isLoadingScreenEnabled || progress !== 100;
-  }, [isLoadingScreenEnabled, progress]);
-  
   return (
     <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden">
       <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
@@ -65,14 +61,12 @@ export const World = () => {
         </div>
       </BackgroundContainer>
 
-      <div
-        className={clsx(
-          "absolute bottom-0 left-0 z-[49] w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-map duration-300 transition-opacity bg-brown",
-          isLoading ? "opacity-100" : "opacity-0",
-        )}
-      >
-        <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
-      </div>
+      <BattleContainer>
+        <BattleView />
+      </BattleContainer>
+
+      {/* LOADING */}
+      <LoadingContainer />
 
       {/* TOP */}
       <TopMiddleContainer>
