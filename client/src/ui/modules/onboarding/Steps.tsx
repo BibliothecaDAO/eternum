@@ -18,6 +18,8 @@ import { useEntities } from "@/hooks/helpers/useEntities";
 import { useTour } from "@reactour/tour";
 import { LucideArrowRight } from "lucide-react";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { useQuests } from "@/hooks/helpers/useQuests";
+import { QuestType } from "@bibliothecadao/eternum";
 
 export const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -347,7 +349,8 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
       <ContainerWithSquire>
         <h2 className="mb-4">Days are 8hrs long</h2>
         <p className="mb-4 text-xl">
-          Each 8hr period your Realms and Troops will regain energy and be able to travel again.
+          Each 8hr period your Realms and Troops will regain energy and be able to travel again. Don't get caught out in
+          the open.
         </p>
         <div className="mt-auto">
           <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
@@ -374,16 +377,32 @@ export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => 
 };
 
 export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: string; showWalkthrough?: boolean }) => {
+  const {
+    setup: {
+      systemCalls: { mint_starting_resources },
+    },
+    account: { account },
+  } = useDojo();
+
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const [_location, setLocation] = useLocation();
   const { playerRealms } = useEntities();
   const { setIsOpen } = useTour();
+
+  const { quests } = useQuests({ entityId: playerRealms()[0].entity_id || BigInt("0") });
+
   return (
     <Button
       size="md"
       variant="primary"
-      onClick={() => {
+      onClick={async () => {
+        await mint_starting_resources({
+          signer: account,
+          config_id: QuestType.Food,
+          realm_entity_id: playerRealms()[0].entity_id || "0",
+        });
+
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);

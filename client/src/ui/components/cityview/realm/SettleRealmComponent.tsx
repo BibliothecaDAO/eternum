@@ -12,7 +12,7 @@ import clsx from "clsx";
 import { order_statments } from "../../../../data/orders";
 import realmsHexPositions from "../../../../data/geodata/hex/realmHexPositions.json";
 
-export const MAX_REALMS = 3;
+export const MAX_REALMS = 1;
 
 export const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -76,14 +76,14 @@ export const SettleRealmComponent = () => {
       signer: account,
       realms: [calldata[0]],
     });
-    await create_multiple_realms({
-      signer: account,
-      realms: [calldata[1]],
-    });
-    await create_multiple_realms({
-      signer: account,
-      realms: [calldata[2]],
-    });
+    // await create_multiple_realms({
+    //   signer: account,
+    //   realms: [calldata[1]],
+    // });
+    // await create_multiple_realms({
+    //   signer: account,
+    //   realms: [calldata[2]],
+    // });
     setIsLoading(false);
     playSign();
   };
