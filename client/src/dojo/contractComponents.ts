@@ -970,5 +970,54 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Guild: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.BigInt,
+          is_public: RecsType.Boolean
+        },
+        {
+          metadata: {
+            name: "Guild",
+            types: ["u128", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    GuildMember: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          guild_entity_id: RecsType.BigInt
+        },
+        {
+          metadata: {
+            name: "GuildMember",
+            types: ["contractaddress", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    GuildWhitelist: (() => {
+      return defineComponent(
+        world,
+        {
+          address: RecsType.BigInt,
+          guild_entity_id: RecsType.BigInt,
+          is_whitelisted: RecsType.BigInt
+        },
+        {
+          metadata: {
+            name: "GuildWhitelist",
+            types: ["contractaddress", "u128", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
   };
 }

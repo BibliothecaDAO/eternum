@@ -18,6 +18,7 @@ import {
   construction,
   settings,
   quests,
+  guilds
 } from "../../components/navigation/Config";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 import { useTour } from "@reactour/tour";
@@ -224,6 +225,18 @@ export const BottomNavigation = () => {
         />
       ),
     },
+    {
+      button: (
+        <CircleButton
+          tooltipLocation="top"
+          // image={BuildingThumbs.leaderboard}
+          label={guilds}
+          active={isPopupOpen(guilds)}
+          size="lg"
+          onClick={() => togglePopup(guilds)}
+        />
+      ),
+    }
   ];
 
   useMemo(() => {

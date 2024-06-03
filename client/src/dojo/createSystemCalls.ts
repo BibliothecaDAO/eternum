@@ -141,6 +141,22 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.contribute_to_construction(props);
   };
 
+  const create_guild = async (props: SystemProps.CreateGuildProps) => {
+    await provider.create_guild(props);
+  }
+  
+  const join_guild = async (props: SystemProps.JoinGuildProps) => {
+    await provider.join_guild(props);
+  }
+
+  const whitelist_player = async (props: SystemProps.WhitelistPlayerProps) => {
+    await provider.whitelist_player(props);
+  }
+
+  const leave_guild = async (props: SystemProps.LeaveGuild) => {
+    await provider.leave_guild(props);
+  }
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -184,6 +200,11 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
     army_buy_troops,
     army_merge_troops,
+
+    create_guild,
+    join_guild, 
+    whitelist_player, 
+    leave_guild
   };
 
   // TODO: Fix Type

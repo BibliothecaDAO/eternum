@@ -13,7 +13,8 @@ export type OSWindows =
   | "Assistant"
   | "Create Offer"
   | "Accept Offer"
-  | "Quests";
+  | "Quests"
+  | "Guilds";
 
 export interface OSInterface {
   onClick: () => void;
@@ -38,3 +39,4 @@ export const assistant: OSWindows = "Assistant";
 export const createOffer: OSWindows = "Create Offer";
 export const acceptOfferTitle: OSWindows = "Accept Offer";
 export const quests: OSWindows = "Quests";
+export const guilds: OSWindows = "Guilds";
