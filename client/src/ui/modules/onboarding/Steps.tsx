@@ -397,12 +397,13 @@ export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: strin
       size="md"
       variant="primary"
       onClick={async () => {
-        await mint_starting_resources({
-          signer: account,
-          config_id: QuestType.Food,
-          realm_entity_id: playerRealms()[0].entity_id || "0",
-        });
-
+        if (!quests.some((quest: any) => quest.name === "Claim Food" && quest.completed === true)) {
+          await mint_starting_resources({
+            signer: account,
+            config_id: QuestType.Food,
+            realm_entity_id: playerRealms()[0].entity_id || "0",
+          });
+        }
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);
