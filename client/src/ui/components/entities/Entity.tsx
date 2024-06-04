@@ -18,6 +18,12 @@ const entityIcon: Record<ENTITY_TYPE, string> = {
   [ENTITY_TYPE.UNKNOWN]: "❓", // Add a default or placeholder icon for UNKNOWN
 };
 
+const entityName: Record<ENTITY_TYPE, string> = {
+  [ENTITY_TYPE.DONKEY]: "Trade Caravan",
+  [ENTITY_TYPE.TROOP]: "Army",
+  [ENTITY_TYPE.UNKNOWN]: "❓", // Add a default or placeholder icon for UNKNOWN
+};
+
 type EntityProps = {
   entityId: bigint;
   idleOnly?: boolean;
@@ -30,7 +36,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const { getEntityInfo } = useEntities();
   const { getResourcesFromBalance } = useResources();
 
-  const { arrivalTime, blocked, resources, entityType, isMine } = getEntityInfo(entityId);
+  const entity = getEntityInfo(entityId);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
@@ -38,7 +44,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
 
   const hasResources = entityResources.length > 0;
 
-  const entityState = determineEntityState(nextBlockTimestamp, blocked, arrivalTime, hasResources);
+  const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
   if (entityState === EntityState.NotApplicable) {
     return null;
   }
@@ -46,6 +52,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const onCloseTravel = () => {
     setShowTravel(false);
   };
+  console.log(entity);
 
   return (
     <div
@@ -53,13 +60,16 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
       onClick={props.onClick}
     >
       {showTravel && <TravelEntityPopup entityId={entityId} onClose={onCloseTravel} />}
-      <div className="text-xs">{isMine ? "Incoming" : "Outgoing"}</div>
+      {/* <div className="text-xs">{entity.isMine ? "Incoming" : "Outgoing"}</div> */}
 
-      <div className="flex items-center text-xs">
-        <div className="text-2xl">{entityIcon[entityType]}</div>
+      <div className="flex items-center text-xs flex-wrap">
+        <div className="text-xl w-full flex justify-between">
+          {entityName[entity.entityType]}
+          <span>{entityIcon[entity.entityType]}</span>
+        </div>
 
-        <div className="flex items-center ml-1">
-          <span className="italic ">{entityState === EntityState.Traveling ? "Traveling" : "Waiting"}</span>
+        <div className="flex items-center">
+          <span>{entityState === EntityState.Traveling ? "Traveling" : "Resting"}</span>
         </div>
 
         {entityState === EntityState.WaitingForDeparture && (
@@ -76,17 +86,17 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
           </div>
         )}
 
-        {arrivalTime && entityState === EntityState.Traveling && nextBlockTimestamp && (
+        {entity.arrivalTime && entityState === EntityState.Traveling && nextBlockTimestamp && (
           <div className="flex ml-auto -mt-2 italic ">
-            {formatSecondsLeftInDaysHours(arrivalTime - nextBlockTimestamp)}
+            {formatSecondsLeftInDaysHours(entity.arrivalTime - nextBlockTimestamp)}
           </div>
         )}
       </div>
       <div className="flex  items-center space-x-2 flex-wrap mt-2">
         {entityState !== EntityState.Idle &&
           entityState !== EntityState.WaitingForDeparture &&
-          resources &&
-          resources.map(
+          entity.resources &&
+          entity.resources.map(
             (resource: any) =>
               resource && (
                 <ResourceCost

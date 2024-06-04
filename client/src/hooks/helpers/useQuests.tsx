@@ -2,6 +2,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntityArmies } from "@/hooks/helpers/useArmies";
 import { useGetMyOffers } from "@/hooks/helpers/useTrade";
 import { BuildingType, QuestType } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
@@ -13,23 +14,13 @@ export const useQuests = ({ entityId }: { entityId: bigint | undefined }) => {
     },
   } = useDojo();
 
-  const farms = useMemo(() => {
-    const quantity =
-      getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(BuildingType.Farm)]))
-        ?.value || 0;
+  const farms =
+    useComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(BuildingType.Farm)]))
+      ?.value || 0;
 
-    return quantity;
-  }, [entityId]);
-
-  const resource = useMemo(() => {
-    const quantity =
-      getComponentValue(
-        BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(BuildingType.Resource)]),
-      )?.value || 0;
-
-    return quantity;
-  }, [entityId]);
+  const resource =
+    useComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(BuildingType.Resource)]))
+      ?.value || 0;
 
   const orders = useGetMyOffers();
 

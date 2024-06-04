@@ -38,11 +38,13 @@ export const HexceptionViewScene = () => {
   const canConstruct = hexType === HexType.REALM;
   const hasStructure = hexType !== HexType.EMPTY;
 
+  // BUG HERE
   useEffect(() => {
     moveCameraToRealmView();
-    setTimeout(() => {
-      setIsLoadingScreenEnabled(false);
-    }, 300);
+    setIsLoadingScreenEnabled(false);
+    // setTimeout(() => {
+    //   setIsLoadingScreenEnabled(false);
+    // }, 300);
   }, [hexPosition]);
 
   return (

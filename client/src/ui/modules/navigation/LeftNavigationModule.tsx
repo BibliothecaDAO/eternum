@@ -57,6 +57,7 @@ export const BuildingThumbs = {
   question: "/images/buildings/thumb/question-wood.png",
   scale: "/images/buildings/thumb/scale.png",
   settings: "/images/buildings/thumb/settings.png",
+  guild: "/images/buildings/thumb/guilds.png",
 };
 
 enum View {

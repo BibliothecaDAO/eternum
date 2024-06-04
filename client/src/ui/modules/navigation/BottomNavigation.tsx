@@ -129,7 +129,7 @@ export const BottomNavigation = () => {
         button: (
           <CircleButton
             tooltipLocation="top"
-            // image={BuildingThumbs.leaderboard}
+            image={BuildingThumbs.guild}
             label={guilds}
             active={isPopupOpen(guilds)}
             size="lg"
@@ -138,7 +138,7 @@ export const BottomNavigation = () => {
         ),
       },
     ];
-  }, []);
+  }, [claimableQuests]);
 
   const slideUp = {
     hidden: { y: "100%" },
