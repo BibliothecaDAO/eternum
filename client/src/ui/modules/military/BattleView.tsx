@@ -23,7 +23,8 @@ const slideDown = {
 
 export const BattleView = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
-  const { col: x, row: y } = clickedHex!.contractPos;
+  const { col: x, row: y } = useMemo(() => (clickedHex ? clickedHex?.contractPos : { col: 0, row: 0 }), [clickedHex]);
+
   const { formattedRealmAtPosition, formattedStructureAtPosition } = useStructuresPosition({ position: { x, y } });
   const { enemyArmies, userArmies, allArmies } = usePositionArmies({ position: { x, y } });
 
@@ -55,15 +56,21 @@ export const BattleView = () => {
 
   // get entity id
   const enemyEntityId = useMemo(() => {
-    return Object.keys(getProtector).length !== 0 ? formattedRealmAtPosition?.entity_id : enemyArmies[0].entity_id;
+    return Object.keys(getProtector).length !== 0 ? formattedRealmAtPosition?.entity_id : enemyArmies[0]?.entity_id;
   }, [getEnemy]);
 
   return (
     <div>
-      <motion.div className="absolute top-0 flex w-full" variants={slideDown} initial="hidden" animate="visible">
+      <motion.div
+        className="absolute top-0 flex w-full"
+        variants={slideDown}
+        initial="hidden"
+        animate="visible"
+        exit="hidden"
+      >
         <div className="mx-auto bg-brown text-gold text-4xl p-4">Battle</div>
       </motion.div>
-      <motion.div className="absolute bottom-0" variants={slideUp} initial="hidden" animate="visible">
+      <motion.div className="absolute bottom-0" variants={slideUp} initial="hidden" animate="visible" exit="hidden">
         <BattleProgressBar
           attackingHealth={Number(userArmies[0]?.current || 0)}
           attacker="You"
@@ -73,7 +80,7 @@ export const BattleView = () => {
         <div className="w-screen bg-brown h-64 grid grid-cols-12 py-8">
           <EntityAvatar />
           <TroopRow army={userArmies[0]} />
-          <Actions attacker={BigInt(userArmies[0]?.entity_id)} defender={BigInt(enemyEntityId)} />
+          <Actions attacker={BigInt(userArmies[0]?.entity_id || "0")} defender={BigInt(enemyEntityId || "0")} />
           <TroopRow army={getEnemy as ArmyAndName} defending />
           <EntityAvatar />
         </div>

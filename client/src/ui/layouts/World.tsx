@@ -69,9 +69,7 @@ export const World = () => {
           <TopMiddleContainer>
             <TopMiddleNavigation />
           </TopMiddleContainer>
-          {/* <TopLeftContainer>
-        <QuestList />
-      </TopLeftContainer> */}
+
           {/* LEFT */}
           <LeftMiddleContainer>
             <LeftNavigationModule />
