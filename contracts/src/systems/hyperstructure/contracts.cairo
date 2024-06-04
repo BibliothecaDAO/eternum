@@ -74,7 +74,7 @@ mod hyperstructure_systems {
                     StructureCount { coord, count: 1 },
                     Position { entity_id: new_uuid, x: coord.x, y: coord.y },
                     Owner { entity_id: new_uuid, address: starknet::get_caller_address() },
-                    EntityOwner {entity_id: new_uuid, entity_owner_id: new_uuid},
+                    EntityOwner { entity_id: new_uuid, entity_owner_id: new_uuid },
                     Progress {
                         hyperstructure_entity_id: new_uuid,
                         resource_type: ResourceTypes::EARTHEN_SHARD,
