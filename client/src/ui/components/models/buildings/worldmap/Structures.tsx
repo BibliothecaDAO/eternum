@@ -1,13 +1,12 @@
-import { Detailed, useGLTF, useHelper } from "@react-three/drei";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useGLTF } from "@react-three/drei";
+import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { StructureType } from "@bibliothecadao/eternum";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HyperstructureEventInterface } from "@/dojo/events/hyperstructureEventQueries";
 import useLeaderBoardStore from "@/hooks/store/useLeaderBoardStore";
-import { useControls } from "leva";
-import { useFrame, useThree } from "@react-three/fiber";
+import { AttackOrPillageLabel } from "@/ui/components/worldmap/armies/AttackOrPillageLabel";
 
 export const Structures = () => {
   const models = useMemo(
@@ -42,8 +41,20 @@ const BuiltStructure = ({
   const [model, setModel] = useState(models[0].scene.clone());
   const { x, y } = getUIPositionFromColRow(structure.col, structure.row, false);
   const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
 
   // const { camera } = useThree();
+
+  const isAttackable = useMemo(() => {
+    if (
+      selectedEntity &&
+      selectedEntity!.position.x === structure.col &&
+      selectedEntity!.position.y === structure.row
+    ) {
+      return true;
+    }
+    return false;
+  }, [selectedEntity]);
 
   useEffect(() => {
     let category = structureCategory;
@@ -115,6 +126,9 @@ const BuiltStructure = ({
   // const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>
+      {isAttackable && (
+        <AttackOrPillageLabel structureEntityId={structure.entityId} attackerEntityId={selectedEntity!.id} />
+      )}
       <primitive dropShadow scale={scale} object={model!} />
       {/* <Detailed distances={[0, 350]}>
         <pointLight

@@ -1,6 +1,6 @@
 import { useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../context/DojoContext";
-import { Component, Entity, Has, HasValue, Not, NotValue, getComponentValue } from "@dojoengine/recs";
+import { Component, Entity, Has, HasValue, Not, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { Position } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import { useMemo } from "react";
@@ -237,4 +237,43 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
       userArmies,
     };
   }
+};
+
+export const getArmyByEntityId = ({ entity_id }: { entity_id: bigint }) => {
+  const {
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+      },
+    },
+  } = useDojo();
+
+  const armies = runQuery([Has(Army), HasValue(Army, { entity_id })]);
+
+  return formatArmies(
+    Array.from(armies),
+    Army,
+    Protectee,
+    EntityName,
+    Health,
+    Quantity,
+    Movable,
+    Capacity,
+    ArrivalTime,
+    Position,
+    EntityOwner,
+    Owner,
+    Realm,
+  )[0];
 };

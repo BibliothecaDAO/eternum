@@ -12,9 +12,6 @@ export const EntityDetails = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
   const isOpen = clickedHex !== undefined;
 
-  const battleView = useUIStore((state) => state.battleView);
-  const setBattleView = useUIStore((state) => state.setBattleView);
-
   const onClose = () => {
     togglePopup(entityDetails);
     setClickedHex(undefined);
@@ -23,8 +20,6 @@ export const EntityDetails = () => {
   return (
     <>
       <HexagonInformationPanel />
-
-      <Button onClick={() => setBattleView(true)}>battle</Button>
     </>
   );
 };

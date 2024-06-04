@@ -130,7 +130,10 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
         {showArmyInfo && <ArmyInfoLabel info={info} accountAddress={account.account.address} />}
         {info.isMine && <ArmyFlag rotationY={rotationY} position={position} order={info.order} />}
         {isAttackable && (
-          <AttackOrPillageLabel attackerEntityId={selectedEntity!.id} attackedInfo={info}></AttackOrPillageLabel>
+          <AttackOrPillageLabel
+            attackerEntityId={selectedEntity!.id}
+            defenderEntityId={BigInt(info.entity_id)}
+          ></AttackOrPillageLabel>
         )}
         <WarriorModel
           {...props}

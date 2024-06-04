@@ -1,27 +1,41 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyAndName } from "@/hooks/helpers/useArmies";
+import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { DojoHtml } from "@/ui/elements/DojoHtml";
+import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useMemo } from "react";
 
 interface ArmyInfoLabelProps {
-  attackedInfo: ArmyAndName;
+  defenderEntityId?: bigint;
+  structureEntityId?: bigint;
   attackerEntityId: bigint;
 }
 
-export const AttackOrPillageLabel = ({ attackedInfo, attackerEntityId }: ArmyInfoLabelProps) => {
+export const AttackOrPillageLabel = ({ defenderEntityId, attackerEntityId, structureEntityId }: ArmyInfoLabelProps) => {
   const {
-    account: { account },
     setup: {
-      systemCalls: { battle_start },
+      components: { Protector },
     },
   } = useDojo();
-  console.log(attackerEntityId);
+  const setBattleView = useUIStore((state) => state.setBattleView);
+
+  const attackedArmyId = useMemo(() => {
+    if (defenderEntityId) return defenderEntityId;
+    if (structureEntityId) {
+      const attackedArmy = getComponentValue(Protector, getEntityIdFromKeys([BigInt(structureEntityId)]));
+      return attackedArmy?.army_id;
+    }
+  }, [structureEntityId, defenderEntityId, attackerEntityId]);
+  if (attackedArmyId) {
+    console.log(attackedArmyId);
+  }
   const attack = async () => {
-    await battle_start({
-      signer: account,
-      attacking_army_id: attackerEntityId,
-      defending_army_id: attackedInfo.entity_id,
-    });
+    if (!attackedArmyId) {
+      return;
+    }
+
+    setBattleView({ attackerId: attackerEntityId, defenderId: BigInt(attackedArmyId || 0n) });
   };
 
   return (
