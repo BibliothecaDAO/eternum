@@ -53,6 +53,8 @@ interface UIStore {
   modalContent: React.ReactNode;
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
+  battleView: boolean;
+  setBattleView: (battleView: boolean) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((set, get) => ({
@@ -178,6 +180,8 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   modalContent: null,
   toggleModal: (content) => set({ modalContent: content, showModal: !get().showModal }),
   showModal: false,
+  battleView: false,
+  setBattleView: (battleView) => set({ battleView }),
   ...createPopupsSlice(set, get),
   ...createMapStoreSlice(set),
   ...createBuildModeStoreSlice(set),

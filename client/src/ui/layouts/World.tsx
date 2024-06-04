@@ -4,27 +4,20 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { Leva } from "leva";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
-import TopContainer from "../containers/TopContainer";
 import TopMiddleContainer from "../containers/TopMiddleContainer";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
 import { LeftNavigationModule } from "../modules/navigation/LeftNavigationModule";
 import { BottomNavigation } from "../modules/navigation/BottomNavigation";
 import { TopMiddleNavigation } from "../modules/navigation/TopMiddleNavigation";
-import { useEffect, useMemo } from "react";
-import clsx from "clsx";
-import { Redirect } from "wouter";
-import { useProgress } from "@react-three/drei";
-import { NotificationsComponent } from "../components/notifications/NotificationsComponent";
+import { useEffect } from "react";
+
 import { Tooltip } from "../elements/Tooltip";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "./Onboarding";
 import { HooksComponent } from "../components/HooksComponent";
 import { Transactions } from "../modules/transactions/Transactions";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import TopLeftContainer from "../containers/TopLeftContainer";
-import { QuestList } from "../components/hints/HintBox";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
-import { SideBar } from "../components/navigation/SideBar";
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
 import { BattleContainer } from "../containers/BattleContainer";
 import { BattleView } from "../modules/military/BattleView";
@@ -39,8 +32,10 @@ export const World = () => {
   const modalContent = useUIStore((state) => state.modalContent);
   const toggleModal = useUIStore((state) => state.toggleModal);
 
+  const battleView = useUIStore((state) => state.battleView);
+
   useEffect(() => {
-    if (realmEntityIds.length > 4) {
+    if (realmEntityIds.length >= 1) {
       setBlankOverlay(false);
     } else {
       setBlankOverlay(true);
@@ -60,38 +55,42 @@ export const World = () => {
           <MainScene />
         </div>
       </BackgroundContainer>
-
-      <BattleContainer>
-        <BattleView />
-      </BattleContainer>
-
+      {/* TODO: Fix something is up here with the loading */}
       {/* LOADING */}
       <LoadingContainer />
 
-      {/* TOP */}
-      <TopMiddleContainer>
-        <TopMiddleNavigation />
-      </TopMiddleContainer>
-      {/* <TopLeftContainer>
+      {battleView ? (
+        <BattleContainer>
+          <BattleView />
+        </BattleContainer>
+      ) : (
+        <>
+          {/* TOP */}
+          <TopMiddleContainer>
+            <TopMiddleNavigation />
+          </TopMiddleContainer>
+          {/* <TopLeftContainer>
         <QuestList />
       </TopLeftContainer> */}
-      {/* LEFT */}
-      <LeftMiddleContainer>
-        <LeftNavigationModule />
-      </LeftMiddleContainer>
+          {/* LEFT */}
+          <LeftMiddleContainer>
+            <LeftNavigationModule />
+          </LeftMiddleContainer>
 
-      {/* BOTTOM */}
-      <BottomMiddleContainer>
-        <BottomNavigation />
-      </BottomMiddleContainer>
-      <BottomRightContainer>
-        <Transactions />
-      </BottomRightContainer>
+          {/* BOTTOM */}
+          <BottomMiddleContainer>
+            <BottomNavigation />
+          </BottomMiddleContainer>
+          <BottomRightContainer>
+            <Transactions />
+          </BottomRightContainer>
 
-      {/* RIGHT */}
-      <RightMiddleContainer>
-        <RightNavigationModule />
-      </RightMiddleContainer>
+          {/* RIGHT */}
+          <RightMiddleContainer>
+            <RightNavigationModule />
+          </RightMiddleContainer>
+        </>
+      )}
 
       <Leva
         hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU}
