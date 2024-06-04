@@ -421,6 +421,7 @@ impl BattleImpl of BattleTrait {
             let duration = self.tick_duration_left;
             self.tick_duration_left = 0;
             self.tick_last_updated = current_tick;
+
             duration
         }
     }

@@ -1,15 +1,13 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyAndName, usePositionArmies } from "@/hooks/helpers/useArmies";
-import { useStructuresPosition } from "@/hooks/helpers/useStructures";
+import { ArmyAndName } from "@/hooks/helpers/useArmies";
+import { useBattles } from "@/hooks/helpers/useBattles";
 import useUIStore from "@/hooks/store/useUIStore";
 import { nameMapping } from "@/ui/components/military/ArmyManagementCard";
 import Button from "@/ui/elements/Button";
 import { currencyFormat } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 const slideUp = {
   hidden: { y: "100%" },
@@ -22,43 +20,14 @@ const slideDown = {
 };
 
 export const BattleView = () => {
-  const clickedHex = useUIStore((state) => state.clickedHex);
-  const { col: x, row: y } = useMemo(() => (clickedHex ? clickedHex?.contractPos : { col: 0, row: 0 }), [clickedHex]);
+  const battleView = useUIStore((state) => state.battleView);
 
-  const { formattedRealmAtPosition, formattedStructureAtPosition } = useStructuresPosition({ position: { x, y } });
-  const { enemyArmies, userArmies, allArmies } = usePositionArmies({ position: { x, y } });
-
-  const {
-    account: { account },
-    network: { provider },
-    setup: {
-      systemCalls: { create_army, army_buy_troops },
-      components: { Protector, Army, Health },
-    },
-  } = useDojo();
-
-  // get protector army if any
-  const getProtector = useMemo(() => {
-    const protector = getComponentValue(
-      Protector,
-      getEntityIdFromKeys([BigInt(formattedRealmAtPosition?.entity_id || 0n)]),
-    );
-    const protectorArmy = getComponentValue(Army, getEntityIdFromKeys([BigInt(protector?.army_id || 0n)]));
-    const health = getComponentValue(Health, getEntityIdFromKeys([BigInt(protectorArmy?.entity_id || 0n)]));
-
-    return { ...protectorArmy, ...health };
-  }, [allArmies]);
-
-  // if structure, use protector, else use first other army
-  const getEnemy = useMemo(() => {
-    return Object.keys(getProtector).length === 0 ? enemyArmies[0] : getProtector;
-  }, [getProtector]);
-
-  // get entity id
-  const enemyEntityId = useMemo(() => {
-    return Object.keys(getProtector).length !== 0 ? formattedRealmAtPosition?.entity_id : enemyArmies[0]?.entity_id;
-  }, [getEnemy]);
-
+  const { useBattleByEntityId } = useBattles();
+  const { battle, attackerArmy, defenderArmy } = useBattleByEntityId(
+    battleView?.attackerId || 0n,
+    battleView?.defenderId || 0n,
+  )!;
+  console.log(defenderArmy);
   return (
     <div>
       <motion.div
@@ -68,20 +37,31 @@ export const BattleView = () => {
         animate="visible"
         exit="hidden"
       >
-        <div className="mx-auto bg-brown text-gold text-4xl p-4">Battle</div>
+        <div className="mx-auto bg-brown text-gold text-4xl p-4">{battle ? "Battle" : "Attack"}</div>
       </motion.div>
       <motion.div className="absolute bottom-0" variants={slideUp} initial="hidden" animate="visible" exit="hidden">
         <BattleProgressBar
-          attackingHealth={Number(userArmies[0]?.current || 0)}
-          attacker="You"
-          defendingHealth={Number(getEnemy?.current || 0)}
-          defender={"defender"}
+          attackingHealth={Number(
+            battle?.attack_army_health.current !== undefined
+              ? battle?.attack_army_health.current
+              : attackerArmy.current || attackerArmy.current,
+          )}
+          attacker={attackerArmy.name}
+          defendingHealth={Number(
+            battle?.defence_army_health.current !== undefined
+              ? battle?.defence_army_health.current
+              : defenderArmy.current || defenderArmy.current,
+          )}
+          defender={defenderArmy.name}
         />
         <div className="w-screen bg-brown h-64 grid grid-cols-12 py-8">
           <EntityAvatar />
-          <TroopRow army={userArmies[0]} />
-          <Actions attacker={BigInt(userArmies[0]?.entity_id || "0")} defender={BigInt(enemyEntityId || "0")} />
-          <TroopRow army={getEnemy as ArmyAndName} defending />
+          <TroopRow army={attackerArmy} />
+          <Actions
+            attacker={BigInt(attackerArmy?.entity_id || "0")}
+            defender={BigInt(defenderArmy?.entity_id || "0")}
+          />
+          <TroopRow army={defenderArmy as ArmyAndName} defending />
           <EntityAvatar />
         </div>
       </motion.div>
@@ -101,12 +81,18 @@ export const BattleProgressBar = ({
   defender: string;
 }) => {
   const totalHealth = attackingHealth + defendingHealth;
-  const attackingHealthPercentage = (attackingHealth / totalHealth) * 100;
-  const defendingHealthPercentage = (defendingHealth / totalHealth) * 100;
+  const attackingHealthPercentage = ((attackingHealth / totalHealth) * 100).toFixed(2);
+  const defendingHealthPercentage = ((defendingHealth / totalHealth) * 100).toFixed(2);
+
+  const gradient =
+    attackingHealthPercentage > defendingHealthPercentage
+      ? `linear-gradient(to right, #582C4D ${attackingHealthPercentage}%, rgba(0,0,0,0) ${defendingHealthPercentage}%)`
+      : `linear-gradient(to left, #582C4D ${defendingHealthPercentage}%, rgba(0,0,0,0) ${attackingHealthPercentage}%)`;
   const slideUp = {
     hidden: { y: "100%" },
     visible: { y: "0%", transition: { duration: 0.5 } },
   };
+
   return (
     <motion.div initial="hidden" animate="visible" variants={slideUp}>
       <div className="mx-auto w-2/3 flex justify-between text-2xl">
@@ -116,7 +102,8 @@ export const BattleProgressBar = ({
       <div
         className="h-8 mb-2 mx-auto w-2/3 clip-angled-sm "
         style={{
-          background: `linear-gradient(to right, #582C4D ${attackingHealthPercentage}%, #6B7FD7 ${defendingHealthPercentage}%)`,
+          background: gradient,
+          backgroundColor: "#6B7FD7",
         }}
       ></div>
     </motion.div>
@@ -150,13 +137,11 @@ export const Actions = ({ attacker, defender }: { attacker: bigint; defender: bi
   const [loading, setLoading] = useState(false);
   const setBattleView = useUIStore((state) => state.setBattleView);
 
-  console.log(attacker, defender);
-
   const {
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { create_army, army_buy_troops },
+      systemCalls: { create_army, army_buy_troops, battle_start },
       components: { Protector, Army, Health },
     },
   } = useDojo();
@@ -176,7 +161,7 @@ export const Actions = ({ attacker, defender }: { attacker: bigint; defender: bi
   const handleBattleStart = async () => {
     setLoading(true);
 
-    await provider.battle_start({
+    await battle_start({
       signer: account,
       attacking_army_id: attacker,
       defending_army_id: defender,
@@ -190,7 +175,7 @@ export const Actions = ({ attacker, defender }: { attacker: bigint; defender: bi
       <div className="flex flex-col">
         <Button onClick={handleRaid}>Raid</Button>
         <Button onClick={handleBattleStart}>Battle</Button>
-        <Button onClick={() => setBattleView(false)}>exit view</Button>
+        <Button onClick={() => setBattleView(null)}>exit view</Button>
       </div>
     </div>
   );
