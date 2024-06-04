@@ -110,8 +110,12 @@ export const BattleProgressBar = ({
   return (
     <motion.div initial="hidden" animate="visible" variants={slideUp}>
       <div className="mx-auto w-2/3 flex justify-between text-2xl">
-        <div>{attacker}</div>
-        <div>{defender}</div>
+        <div>
+          {attacker} {Math.round(attackingHealthPercentage)}% {attackingHealth}
+        </div>
+        <div>
+          {defender} {Math.round(defendingHealthPercentage)}% {defendingHealth}
+        </div>
       </div>
       <div
         className="h-8 mb-2 mx-auto w-2/3 clip-angled-sm "
