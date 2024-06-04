@@ -2,7 +2,10 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyAndName, usePositionArmies } from "@/hooks/helpers/useArmies";
 import { useStructuresPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import { nameMapping } from "@/ui/components/military/ArmyManagementCard";
 import Button from "@/ui/elements/Button";
+import { currencyFormat } from "@/ui/utils/utils";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
@@ -10,12 +13,12 @@ import { useMemo, useState } from "react";
 
 const slideUp = {
   hidden: { y: "100%" },
-  visible: { y: "0%", transition: { duration: 0.3 } },
+  visible: { y: "0%", opacity: 1, transition: { duration: 0.5 } },
 };
 
 const slideDown = {
-  hidden: { y: "-100%" },
-  visible: { y: "0%", transition: { duration: 0.3 } },
+  hidden: { y: "-100%", opacity: 0 },
+  visible: { y: "0%", opacity: 1, transition: { duration: 0.3 } },
 };
 
 export const BattleView = () => {
@@ -71,7 +74,7 @@ export const BattleView = () => {
           <EntityAvatar />
           <TroopRow army={userArmies[0]} />
           <Actions attacker={BigInt(userArmies[0]?.entity_id)} defender={BigInt(enemyEntityId)} />
-          <TroopRow army={getEnemy as ArmyAndName} />
+          <TroopRow army={getEnemy as ArmyAndName} defending />
           <EntityAvatar />
         </div>
       </motion.div>
@@ -104,9 +107,9 @@ export const BattleProgressBar = ({
         <div>{defender}</div>
       </div>
       <div
-        className="h-8 mb-2 mx-auto w-2/3 "
+        className="h-8 mb-2 mx-auto w-2/3 clip-angled-sm "
         style={{
-          background: `linear-gradient(to right, red ${attackingHealthPercentage}%, blue ${defendingHealthPercentage}%)`,
+          background: `linear-gradient(to right, #582C4D ${attackingHealthPercentage}%, #6B7FD7 ${defendingHealthPercentage}%)`,
         }}
       ></div>
     </motion.div>
@@ -186,22 +189,53 @@ export const Actions = ({ attacker, defender }: { attacker: bigint; defender: bi
   );
 };
 
-export const TroopRow = ({ army }: { army: ArmyAndName }) => {
+export const TroopRow = ({ army, defending = false }: { army: ArmyAndName; defending?: boolean }) => {
   return (
-    <div className="grid grid-cols-3 col-span-3 gap-2">
-      <TroopCard count={army?.troops?.knight_count || 0} />
-      <TroopCard count={army?.troops?.knight_count || 0} />
-      <TroopCard count={army?.troops?.knight_count || 0} />
+    <div className=" grid-cols-3 col-span-3 gap-2 flex">
+      <TroopCard
+        defending={defending}
+        className={`${defending ? "order-last" : ""} w-1/3`}
+        id={ResourcesIds.Crossbowmen}
+        count={army?.troops?.crossbowman_count || 0}
+      />
+
+      <TroopCard
+        defending={defending}
+        className={`w-1/3`}
+        id={ResourcesIds.Paladin}
+        count={army?.troops?.paladin_count || 0}
+      />
+      <TroopCard
+        defending={defending}
+        className={`${defending ? "order-first" : ""} w-1/3`}
+        id={ResourcesIds.Knight}
+        count={army?.troops?.knight_count || 0}
+      />
     </div>
   );
 };
 
-export const TroopCard = ({ count }: { count: number }) => {
+export const TroopCard = ({
+  count,
+  id,
+  className,
+  defending = false,
+}: {
+  count: number;
+  id: ResourcesIds;
+  className?: string;
+  defending?: boolean;
+}) => {
   return (
-    <div className="border border-gold p-2">
-      <img className="h-24 object-cover" src="./images/icons/archer.png" alt="" />
-
-      <div className="text-gold text-xl">{count}</div>
+    <div className={` bg-gold/20 p-2 clip-angled-sm ${className}`}>
+      <img
+        style={defending ? { transform: "scaleX(-1)" } : {}}
+        className="h-28 object-cover mx-auto p-2"
+        src={`/images/icons/${id}.png`}
+        alt={nameMapping[id]}
+      />
+      <div className="text-gold text"> {nameMapping[id]}</div>
+      <div className="text-gold text-xl">x {currencyFormat(count, 0)}</div>
     </div>
   );
 };
