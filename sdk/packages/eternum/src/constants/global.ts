@@ -69,3 +69,5 @@ export const TROOPS_STAMINAS = {
 };
 
 export const WORLD_CONFIG_ID = 999999999999999999n;
+
+export const MAX_NAME_LENGTH = 31;

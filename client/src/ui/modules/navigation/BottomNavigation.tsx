@@ -37,7 +37,7 @@ export enum MenuEnum {
   trade = "trade",
   resources = "resources",
   bank = "bank",
-  hyperstructures = "hyperstructures",
+  worldStructures = "worldStructures",
   structures = "structures",
   leaderboard = "leaderboard",
   entityDetails = "entityDetails",

@@ -4,7 +4,7 @@ import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
 import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { ProgressWithPourcentage, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
+import { ProgressWithPercentage, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { useContributions } from "@/hooks/helpers/useContributions";
 import {
   calculateShares,
@@ -16,14 +16,21 @@ import { useRealm } from "@/hooks/helpers/useRealm";
 import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
+import TextInput from "@/ui/elements/TextInput";
+import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 
 export const HyperstructurePanel = ({ entity }: any) => {
   const {
     account: { account },
+    network: { provider },
     setup: {
       systemCalls: { contribute_to_construction },
     },
   } = useDojo();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [editName, setEditName] = useState(false);
+  const [naming, setNaming] = useState("");
 
   const { realmEntityId } = useRealmStore();
   const { useProgress } = useHyperstructures();
@@ -49,10 +56,10 @@ export const HyperstructurePanel = ({ entity }: any) => {
   };
 
   const resourceElements = useMemo(() => {
-    if (progresses.pourcentage === 100) return;
+    if (progresses.percentage === 100) return;
     return HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED.map(({ resource }) => {
       const progress = progresses.progresses.find(
-        (progress: ProgressWithPourcentage) => progress.resource_type === resource,
+        (progress: ProgressWithPercentage) => progress.resource_type === resource,
       );
       return (
         <HyperstructureResourceChip
@@ -72,15 +79,56 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   return (
     <div className="flex flex-col h-[50vh] justify-between">
-      <div className="flex justify-between items-baseline mb-2">
-        <h3>{`Hyperstructure ${entity.entity_id}`}</h3>
+      <div className="flex flex-col mb-2">
+        <div className="flex flex-row justify-between items-baseline">
+          {editName ? (
+            <div className="flex space-x-2">
+              <TextInput
+                placeholder="Type Name"
+                className="h-full"
+                value={naming}
+                onChange={(name) => setNaming(name)}
+                maxLength={MAX_NAME_LENGTH}
+              />
+              <Button
+                variant="default"
+                isLoading={isLoading}
+                onClick={async () => {
+                  setIsLoading(true);
+
+                  try {
+                    await provider.set_entity_name({ signer: account, entity_id: entity.entity_id, name: naming });
+                  } catch (e) {
+                    console.error(e);
+                  }
+
+                  setIsLoading(false);
+                  setEditName(false);
+                }}
+              >
+                Change Name
+              </Button>
+            </div>
+          ) : (
+            <h3 className="truncate pr-5">{entity.name}</h3>
+          )}
+
+          {account.address === entity.owner && (
+            <>
+              <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
+                edit name
+              </Button>
+            </>
+          )}
+        </div>
 
         <div className=" align-text-bottom">Creator: {`${displayAddress(entity.owner)}`}</div>
       </div>
+
       <div className="w-[100%] flex flex-row justify-between border m-auto p-2">
         <div className="flex flex-col text-center p-4">
           <div className="text-xl">Progress</div>
-          <div className="font-bold text-base">{currencyIntlFormat(progresses.pourcentage)}%</div>
+          <div className="font-bold text-base">{currencyIntlFormat(progresses.percentage)}%</div>
         </div>
         <div className="flex flex-col text-center p-4">
           <div className="text-xl">Your shares</div>
@@ -94,7 +142,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
         </div>
       </div>
       <div className="overflow-y-scroll h-[40vh] border p-2">
-        {progresses.pourcentage === 100 ? (
+        {progresses.percentage === 100 ? (
           <HyperstructureLeaderboard contributions={contributions} />
         ) : (
           <div className="">{resourceElements}</div>
