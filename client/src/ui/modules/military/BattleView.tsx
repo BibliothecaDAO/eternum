@@ -45,13 +45,12 @@ export const BattleView = () => {
     return { ...protectorArmy, ...health };
   }, [allArmies]);
 
-  console.log(getProtector, enemyArmies[0]);
-
   // if structure, use protector, else use first other army
   const getEnemy = useMemo(() => {
     return Object.keys(getProtector).length === 0 ? enemyArmies[0] : getProtector;
   }, [getProtector]);
 
+  // get entity id
   const enemyEntityId = useMemo(() => {
     return Object.keys(getProtector).length !== 0 ? formattedRealmAtPosition?.entity_id : enemyArmies[0].entity_id;
   }, [getEnemy]);
@@ -71,8 +70,8 @@ export const BattleView = () => {
         <div className="w-screen bg-brown h-64 grid grid-cols-12 py-8">
           <EntityAvatar />
           <TroopRow army={userArmies[0]} />
-          <Actions attacker={userArmies[0]?.entity_id} defender={enemyEntityId} />
-          <TroopRow army={getEnemy} />
+          <Actions attacker={BigInt(userArmies[0]?.entity_id)} defender={BigInt(enemyEntityId)} />
+          <TroopRow army={getEnemy as ArmyAndName} />
           <EntityAvatar />
         </div>
       </motion.div>

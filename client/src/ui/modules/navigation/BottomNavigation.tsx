@@ -18,7 +18,7 @@ import {
   construction,
   settings,
   quests,
-  guilds
+  guilds,
 } from "../../components/navigation/Config";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 import { useTour } from "@reactour/tour";
@@ -28,6 +28,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { ArrowDown } from "lucide-react";
 import { useQuests } from "@/hooks/helpers/useQuests";
+import { motion } from "framer-motion";
 
 export enum MenuEnum {
   realm = "realm",
@@ -50,210 +51,116 @@ export const BottomNavigation = () => {
     },
   } = useDojo();
 
-  const [activeBar, setActiveBar] = useState<MenuEnum | null>(MenuEnum.bank);
-
-  const { realmEntityId } = useRealmStore();
-
-  const toggleBar = (barName: MenuEnum) => {
-    setActiveBar((currentBar) => (currentBar === barName ? null : barName));
-  };
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const closeAllPopups = useUIStore((state) => state.closeAllPopups);
-  const openAllPopups = useUIStore((state) => state.openAllPopups);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const { hexPosition } = useQuery();
-  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const { setIsOpen } = useTour();
-
   const [location, setLocation] = useLocation();
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const { realmEntityId } = useRealmStore();
+  const togglePopup = useUIStore((state) => state.togglePopup);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const toggleShowAllArmies = useUIStore((state) => state.toggleShowAllArmies);
   const showAllArmies = useUIStore((state) => state.showAllArmies);
-
-  const navigation = useMemo(() => {
-    const navigation = [
-      {
-        name: "military",
-        button: (
-          <CircleButton
-            className="military-selector"
-            image={BuildingThumbs.military}
-            tooltipLocation="top"
-            label={military}
-            active={isPopupOpen(military)}
-            size="xl"
-            onClick={() => togglePopup(military)}
-          ></CircleButton>
-        ),
-      },
-      {
-        name: "construction",
-        button: (
-          <CircleButton
-            className="construction-selector"
-            image={BuildingThumbs.construction}
-            tooltipLocation="top"
-            label={construction}
-            // active={isPopupOpen(construction)}
-
-            active={activeBar === MenuEnum.construction}
-            size="xl"
-            onClick={() => toggleBar(MenuEnum.construction)}
-            // onClick={() => togglePopup(construction)}
-          ></CircleButton>
-        ),
-      },
-    ];
-
-    return location === "/map"
-      ? navigation.filter(
-          (item) =>
-            item.name !== MenuEnum.construction &&
-            item.name !== MenuEnum.resources &&
-            item.name !== MenuEnum.worldMap &&
-            item.name !== MenuEnum.trade,
-        )
-      : navigation;
-  }, [location]);
 
   const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
 
   const { claimableQuests } = useQuests({ entityId: realmEntityId || BigInt("0") });
 
-  const secondaryNavigation = [
-    // {
-    //   button: (
-    //     <CircleButton
-    //       label={"expand all popups"}
-    //       size="sm"
-    //       tooltipLocation="right"
-    //       onClick={() =>
-    //         openAllPopups([
-    //           entityDetails,
-    //           leaderboard,
-    //           settings,
-    //           hyperstructures,
-    //           banks,
-    //           resources,
-    //           eventLog,
-    //           military,
-    //           construction,
-    //         ])
-    //       }
-    //     >
-    //       <Expand className="w-4" />
-    //     </CircleButton>
-    //   ),
-    // },
-    // {
-    //   button: (
-    //     <CircleButton tooltipLocation="right" label={"close all popups"} size="sm" onClick={() => closeAllPopups()}>
-    //       <Close className="w-4" />
-    //     </CircleButton>
-    //   ),
-    // },
-    {
-      button: (
-        <CircleButton
-          tooltipLocation="top"
-          active={isPopupOpen(settings)}
-          image={BuildingThumbs.settings}
-          label={"Settings"}
-          size="lg"
-          onClick={() => togglePopup(settings)}
-        />
-      ),
-    },
-    // {
-    //   button: (
-    //     <CircleButton
-    //       tooltipLocation="top"
-    //       image={BuildingThumbs.settings}
-    //       active={isPopupOpen(settings)}
-    //       label={"walkthrough"}
-    //       size="lg"
-    //       onClick={() => setIsOpen(true)}
-    //     />
-    //   ),
-    // },
-    {
-      button: (
-        <div className="relative">
+  const secondaryNavigation = useMemo(() => {
+    return [
+      {
+        button: (
           <CircleButton
             tooltipLocation="top"
-            image={BuildingThumbs.squire}
-            label={quests}
-            active={isPopupOpen(quests)}
+            active={isPopupOpen(settings)}
+            image={BuildingThumbs.settings}
+            label={"Settings"}
             size="lg"
-            onClick={() => togglePopup(quests)}
-            className="forth-step"
-            notification={claimableQuests.length}
+            onClick={() => togglePopup(settings)}
           />
+        ),
+      },
+      {
+        button: (
+          <div className="relative">
+            <CircleButton
+              tooltipLocation="top"
+              image={BuildingThumbs.squire}
+              label={quests}
+              active={isPopupOpen(quests)}
+              size="lg"
+              onClick={() => togglePopup(quests)}
+              className="forth-step"
+              notification={claimableQuests.length}
+            />
 
-          {population?.population == null && location !== "/map" && (
-            <div className="absolute bg-brown text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
-              <ArrowDown className="text-gold w-4 mr-3" />
-              <div>Start here</div>
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      button: (
-        <CircleButton
-          tooltipLocation="top"
-          image={BuildingThumbs.leaderboard}
-          label={leaderboard}
-          active={isPopupOpen(leaderboard)}
-          size="lg"
-          onClick={() => togglePopup(leaderboard)}
-        />
-      ),
-    },
-    {
-      button: (
-        <CircleButton
-          tooltipLocation="top"
-          image={BuildingThumbs.military}
-          label={""}
-          active={showAllArmies}
-          size="lg"
-          onClick={toggleShowAllArmies}
-        />
-      ),
-    },
-    {
-      button: (
-        <CircleButton
-          tooltipLocation="top"
-          // image={BuildingThumbs.leaderboard}
-          label={guilds}
-          active={isPopupOpen(guilds)}
-          size="lg"
-          onClick={() => togglePopup(guilds)}
-        />
-      ),
-    }
-  ];
+            {population?.population == null && location !== "/map" && (
+              <div className="absolute bg-brown text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
+                <ArrowDown className="text-gold w-4 mr-3" />
+                <div>Start here</div>
+              </div>
+            )}
+          </div>
+        ),
+      },
+      {
+        button: (
+          <CircleButton
+            tooltipLocation="top"
+            image={BuildingThumbs.leaderboard}
+            label={leaderboard}
+            active={isPopupOpen(leaderboard)}
+            size="lg"
+            onClick={() => togglePopup(leaderboard)}
+          />
+        ),
+      },
+      {
+        button: (
+          <CircleButton
+            tooltipLocation="top"
+            image={BuildingThumbs.military}
+            label={""}
+            active={showAllArmies}
+            size="lg"
+            onClick={toggleShowAllArmies}
+          />
+        ),
+      },
+      {
+        button: (
+          <CircleButton
+            tooltipLocation="top"
+            // image={BuildingThumbs.leaderboard}
+            label={guilds}
+            active={isPopupOpen(guilds)}
+            size="lg"
+            onClick={() => togglePopup(guilds)}
+          />
+        ),
+      },
+    ];
+  }, []);
 
-  useMemo(() => {
-    setActiveBar(null);
-  }, [location]);
+  const slideUp = {
+    hidden: { y: "100%" },
+    visible: { y: "0%", transition: { duration: 0.3 } },
+  };
 
   if (!nextBlockTimestamp) {
     return null;
   }
 
   return (
-    <div className="flex justify-center flex-wrap first-step relative w-full duration-300 transition-all">
+    <motion.div
+      variants={slideUp}
+      initial="hidden"
+      animate="visible"
+      className="flex justify-center flex-wrap first-step relative w-full duration-300 transition-all"
+    >
       <div className="flex py-2 sixth-step">
         {secondaryNavigation.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 };

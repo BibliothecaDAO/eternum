@@ -19,6 +19,13 @@ import Button from "@/ui/elements/Button";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
+import { motion } from "framer-motion";
+
+const slideDown = {
+  hidden: { y: "-100%" },
+  visible: { y: "0%", transition: { duration: 0.3 } },
+};
+
 // use a different icon for each structure depending on their category
 const structureIcons: Record<string, JSX.Element> = {
   None: <div />,
@@ -72,7 +79,7 @@ export const TopMiddleNavigation = () => {
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
 
   return (
-    <div className="flex">
+    <motion.div className="flex" variants={slideDown} initial="hidden" animate="visible">
       <div className="self-center px-3 flex space-x-2">
         <TickProgress />
       </div>
@@ -135,7 +142,7 @@ export const TopMiddleNavigation = () => {
           onClick={() => toggleModal(<HintModal />)}
         />
       </div>
-    </div>
+    </motion.div>
   );
 };
 

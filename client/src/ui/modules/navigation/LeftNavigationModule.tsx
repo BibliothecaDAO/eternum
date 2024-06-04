@@ -41,6 +41,7 @@ import Button from "@/ui/elements/Button";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
 import _, { debounce } from "lodash";
+import { motion } from "framer-motion";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -67,7 +68,7 @@ enum View {
 }
 
 export const LeftNavigationModule = () => {
-  const [isOffscreen, setIsOffscreen] = useState(false);
+  const [isOffscreen, setIsOffscreen] = useState(true);
   const [view, setView] = useState<View>(View.ConstructionView);
 
   const { realmEntityId } = useRealmStore();
@@ -174,6 +175,11 @@ export const LeftNavigationModule = () => {
     setIsOffscreen(true);
   }, 1500);
 
+  const slideLeft = {
+    hidden: { x: "-100%" },
+    visible: { x: "0%", transition: { duration: 0.5 } },
+  };
+
   return (
     <>
       <div className="pointer-events-auto">
@@ -195,14 +201,19 @@ export const LeftNavigationModule = () => {
         }}
         onPointerLeave={debouncedSetIsOffscreen}
       >
-        <BaseContainer className="w-full h-[60vh] overflow-y-scroll">
+        <BaseContainer className={`w-full overflow-y-scroll ${isOffscreen ? "h-[20vh]" : "h-[60vh]"}`}>
           {view === View.EntityView && <EntityDetails />}
           {view === View.MilitaryView && <Military entityId={realmEntityId} />}
           {!isWorldView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
           {isWorldView && view === View.ConstructionView && <StructureConstructionMenu />}
           {view === View.HyperstructuresView && <HyperStructures />}
         </BaseContainer>
-        <div className="gap-2 flex flex-col justify-center self-center">
+        <motion.div
+          variants={slideLeft}
+          initial="hidden"
+          animate="visible"
+          className="gap-2 flex flex-col justify-center self-center"
+        >
           <div>
             <Button onClick={() => setIsOffscreen(!isOffscreen)} variant="primary">
               <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen ? "" : "rotate-180"}`} />
@@ -215,7 +226,7 @@ export const LeftNavigationModule = () => {
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </>
   );

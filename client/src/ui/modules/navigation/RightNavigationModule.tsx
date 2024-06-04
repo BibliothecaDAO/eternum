@@ -21,6 +21,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { BASE_POPULATION_CAPACITY, BuildingType, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
 import { debounce } from "lodash";
+import { motion } from "framer-motion";
 
 enum View {
   ResourceTable,
@@ -28,7 +29,7 @@ enum View {
 }
 
 export const RightNavigationModule = () => {
-  const [isOffscreen, setIsOffscreen] = useState(false);
+  const [isOffscreen, setIsOffscreen] = useState(true);
 
   const [currentView, setCurrentView] = useState(View.ResourceTable);
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -65,6 +66,10 @@ export const RightNavigationModule = () => {
   const debouncedSetIsOffscreen = debounce(() => {
     setIsOffscreen(true);
   }, 1500);
+  const slideRight = {
+    hidden: { x: "100%" },
+    visible: { x: "0%", transition: { duration: 0.5 } },
+  };
 
   return (
     <>
@@ -78,7 +83,12 @@ export const RightNavigationModule = () => {
         }}
         onPointerLeave={debouncedSetIsOffscreen}
       >
-        <div className="gap-2 flex flex-col justify-center self-center">
+        <motion.div
+          variants={slideRight}
+          initial="hidden"
+          animate="visible"
+          className="gap-2 flex flex-col justify-center self-center"
+        >
           <div>
             <Button onClick={() => setIsOffscreen(!isOffscreen)} variant="primary">
               <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen ? "rotate-180" : ""}`} />
@@ -135,9 +145,9 @@ export const RightNavigationModule = () => {
               }}
             ></CircleButton>
           </div>
-        </div>
+        </motion.div>
 
-        <BaseContainer className="w-full h-[80vh] overflow-y-scroll py-4">
+        <BaseContainer className={`w-full  overflow-y-scroll py-4 ${isOffscreen ? "h-[20vh]" : "h-[80vh]"}`}>
           {currentView === View.ResourceTable ? (
             <>
               <div className="flex justify-between">
