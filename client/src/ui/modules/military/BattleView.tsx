@@ -1,6 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyAndName } from "@/hooks/helpers/useArmies";
-import { useBattles } from "@/hooks/helpers/useBattles";
+import { useBattleManager, useBattles } from "@/hooks/helpers/useBattles";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { nameMapping } from "@/ui/components/military/ArmyManagementCard";
 import Button from "@/ui/elements/Button";
@@ -22,18 +23,26 @@ const slideDown = {
 export const BattleView = () => {
   const battleView = useUIStore((state) => state.battleView);
 
+  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+
   const { battleByEntityId } = useBattles();
   const { battle, attackerArmy, defenderArmy } = battleByEntityId(
     battleView?.attackerId || 0n,
     battleView?.defenderId || 0n,
   )!;
 
+  const { updatedBattle } = useBattleManager(BigInt(defenderArmy?.battle_id || 0n));
+
+  console.log(updatedBattle.getElapsedTime(currentDefaultTick));
+
   // if structure is not 0, then the defender is a structure
   const defenderEntityId = useMemo(() => {
     return defenderArmy?.entity_id;
   }, [battleView?.attackerId, battleView?.defenderId, defenderArmy]);
 
-  console.log(battle);
+  const battleAdjusted = useMemo(() => {
+    return updatedBattle.getUpdatedBattle(currentDefaultTick);
+  }, [currentDefaultTick]);
 
   return (
     <div>
@@ -48,17 +57,9 @@ export const BattleView = () => {
       </motion.div>
       <motion.div className="absolute bottom-0" variants={slideUp} initial="hidden" animate="visible" exit="hidden">
         <BattleProgressBar
-          attackingHealth={Number(
-            battle?.attack_army_health.current !== undefined
-              ? battle?.attack_army_health.current
-              : attackerArmy?.current || attackerArmy?.current,
-          )}
+          attackingHealth={Number(battleAdjusted?.attack_army_health.current)}
           attacker={attackerArmy.name}
-          defendingHealth={Number(
-            battle?.defence_army_health?.current !== undefined
-              ? battle?.defence_army_health?.current
-              : defenderArmy?.current || defenderArmy?.current,
-          )}
+          defendingHealth={Number(battleAdjusted?.defence_army_health.current)}
           defender={defenderArmy?.name}
         />
         <div className="w-screen bg-brown h-64 grid grid-cols-12 py-8">

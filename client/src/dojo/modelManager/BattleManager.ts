@@ -2,7 +2,7 @@ import { Component, OverridableComponent, getComponentValue } from "@dojoengine/
 import { BattleType } from "./types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
-export class ProductionManager {
+export class BattleManager {
   battleModel: Component<BattleType> | OverridableComponent<BattleType>;
   battleId: bigint;
 

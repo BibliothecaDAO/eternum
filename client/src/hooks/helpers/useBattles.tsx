@@ -5,6 +5,27 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { getArmyByEntityId } from "./useArmies";
 import { ClientComponents } from "@/dojo/createClientComponents";
+import { useMemo } from "react";
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
+
+export const useBattleManager = (battleId: bigint) => {
+  const {
+    setup: {
+      components: { Battle },
+    },
+  } = useDojo();
+
+  const battle = useComponentValue(
+    Battle,
+    getEntityIdFromKeys([BigInt(battleId)]),
+  ) as unknown as ClientComponents["Battle"]["schema"];
+
+  const updatedBattle = useMemo(() => {
+    return new BattleManager(Battle, battleId);
+  }, [battleId, battle]);
+
+  return { updatedBattle };
+};
 
 export const useBattles = () => {
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
