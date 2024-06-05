@@ -33,7 +33,7 @@ export const BattleView = () => {
     return defenderArmy?.entity_id;
   }, [battleView?.attackerId, battleView?.defenderId, defenderArmy]);
 
-  console.log(battleView);
+  console.log(battle);
 
   return (
     <div>
