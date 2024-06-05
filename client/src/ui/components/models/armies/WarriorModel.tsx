@@ -1,6 +1,7 @@
 import * as THREE from "three";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { Vector3 } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 
 type WarriorModelProps = {
   id: number;
@@ -24,9 +25,14 @@ export function WarriorModel({ id, position, rotationY, isRunning, isFriendly, .
   const part3TopRadius = 0.4;
   const part3BottomRadius = part2TopRadius;
 
+  const model = useMemo(() => {
+    return useGLTF("/models/chess_piece_king.glb").scene.clone();
+  }, []);
+
   return (
-    <group {...props} ref={groupRef} scale={1.5}>
-      <mesh position={[0, part1Height / 2 + 0.3, 0]} castShadow>
+    <group {...props} ref={groupRef} scale={12} rotation={[0, rotationY, 0]}>
+      <primitive castShadow receiveShadow object={model} />
+      {/* <mesh position={[0, part1Height / 2 + 0.3, 0]} castShadow>
         <cylinderGeometry args={[part1TopRadius, part1BottomRadius, part1Height, 10]} />
         <meshStandardMaterial color={"#582C4D"} />
       </mesh>
@@ -37,7 +43,7 @@ export function WarriorModel({ id, position, rotationY, isRunning, isFriendly, .
       <mesh position={[0, part1Height + part2Height + part3Height / 2 + 0.3, 0]} castShadow>
         <cylinderGeometry args={[part3TopRadius, part3BottomRadius, part3Height, 10]} />
         <meshStandardMaterial color={"#582C4D"} />
-      </mesh>
+      </mesh> */}
     </group>
   );
 }
