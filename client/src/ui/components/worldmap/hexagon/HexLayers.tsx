@@ -38,7 +38,7 @@ import { useStamina } from "@/hooks/helpers/useStamina";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 
 export const EXPLORE_COLOUR = 0x2563eb;
-export const TRAVEL_COLOUR = 0x3cb93c;
+export const TRAVEL_COLOUR = 0xffce31;
 const CLICKED_HEX_COLOR = 0xff5733;
 const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
 
