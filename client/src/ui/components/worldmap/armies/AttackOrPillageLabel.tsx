@@ -27,20 +27,26 @@ export const AttackOrPillageLabel = ({ defenderEntityId, attackerEntityId, struc
       return attackedArmy?.army_id;
     }
   }, [structureEntityId, defenderEntityId, attackerEntityId]);
-  if (attackedArmyId) {
-    console.log(attackedArmyId);
-  }
-  const attack = async () => {
-    if (!attackedArmyId) {
-      return;
-    }
 
-    setBattleView({ attackerId: attackerEntityId, defenderId: BigInt(attackedArmyId || 0n) });
+  console.log(attackedArmyId);
+
+  const attack = async () => {
+    // if (!attackedArmyId) {
+    //   return;
+    // }
+
+    setBattleView({
+      attackerId: attackerEntityId,
+      defenderId: BigInt(attackedArmyId || 0n),
+      structure: BigInt(structureEntityId || 0n),
+    });
   };
 
   return (
     <DojoHtml className="relative -left-[15px] -top-[70px]">
-      <Button onClick={attack}>Attack</Button>
+      <Button variant="primary" onClick={attack}>
+        Attack
+      </Button>
     </DojoHtml>
   );
 };

@@ -7,7 +7,7 @@ import Button from "@/ui/elements/Button";
 import { currencyFormat } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const slideUp = {
   hidden: { y: "100%" },
@@ -22,12 +22,17 @@ const slideDown = {
 export const BattleView = () => {
   const battleView = useUIStore((state) => state.battleView);
 
-  const { useBattleByEntityId } = useBattles();
-  const { battle, attackerArmy, defenderArmy } = useBattleByEntityId(
+  const { battleByEntityId } = useBattles();
+  const { battle, attackerArmy, defenderArmy } = battleByEntityId(
     battleView?.attackerId || 0n,
     battleView?.defenderId || 0n,
   )!;
-  console.log(defenderArmy);
+
+  // if structure is not 0, then the defender is a structure
+  const defenderEntityId = useMemo(() => {
+    return battleView?.structure !== 0n ? battleView?.structure : defenderArmy?.entity_id;
+  }, [battleView?.attackerId, battleView?.defenderId]);
+
   return (
     <div>
       <motion.div
@@ -44,23 +49,20 @@ export const BattleView = () => {
           attackingHealth={Number(
             battle?.attack_army_health.current !== undefined
               ? battle?.attack_army_health.current
-              : attackerArmy.current || attackerArmy.current,
+              : attackerArmy?.current || attackerArmy?.current,
           )}
           attacker={attackerArmy.name}
           defendingHealth={Number(
-            battle?.defence_army_health.current !== undefined
-              ? battle?.defence_army_health.current
-              : defenderArmy.current || defenderArmy.current,
+            battle?.defence_army_health?.current !== undefined
+              ? battle?.defence_army_health?.current
+              : defenderArmy?.current || defenderArmy?.current,
           )}
-          defender={defenderArmy.name}
+          defender={defenderArmy?.name}
         />
         <div className="w-screen bg-brown h-64 grid grid-cols-12 py-8">
           <EntityAvatar />
           <TroopRow army={attackerArmy} />
-          <Actions
-            attacker={BigInt(attackerArmy?.entity_id || "0")}
-            defender={BigInt(defenderArmy?.entity_id || "0")}
-          />
+          <Actions attacker={BigInt(attackerArmy?.entity_id || "0")} defender={BigInt(defenderEntityId || "0")} />
           <TroopRow army={defenderArmy as ArmyAndName} defending />
           <EntityAvatar />
         </div>
@@ -97,10 +99,10 @@ export const BattleProgressBar = ({
     <motion.div initial="hidden" animate="visible" variants={slideUp}>
       <div className="mx-auto w-2/3 flex justify-between text-2xl">
         <div>
-          {attacker} {Math.round(attackingHealthPercentage)}% {attackingHealth}
+          {attacker} {Math.round(Number(attackingHealthPercentage))}% {attackingHealth}
         </div>
         <div>
-          {defender} {Math.round(defendingHealthPercentage)}% {defendingHealth}
+          {defender} {Math.round(Number(defendingHealthPercentage))}% {defendingHealth}
         </div>
       </div>
       <div
@@ -152,6 +154,11 @@ export const Actions = ({ attacker, defender }: { attacker: bigint; defender: bi
 
   const handleRaid = async () => {
     setLoading(true);
+
+    console.log({
+      army_id: attacker,
+      structure_id: defender,
+    });
 
     await provider.battle_pillage({
       signer: account,

@@ -15,7 +15,7 @@ export const useBattles = () => {
     },
   } = useDojo();
 
-  const useBattles = () => {
+  const allBattles = () => {
     const entityIds = useEntityQuery([Has(Battle)]);
     return Array.from(entityIds).map((entityId) => {
       const army = getComponentValue(Battle, entityId);
@@ -24,11 +24,11 @@ export const useBattles = () => {
     });
   };
 
-  const useBattleByEntityId = (attackerEntityId: bigint, defenderEntityId: bigint) => {
+  const battleByEntityId = (attackerEntityId: bigint, defenderEntityId: bigint) => {
     const attackerArmy = getArmyByEntityId({ entity_id: attackerEntityId });
     const defenderArmy = getArmyByEntityId({ entity_id: defenderEntityId });
 
-	if (
+    if (
       !attackerArmy ||
       !defenderArmy ||
       BigInt(defenderArmy.battle_id) === 0n ||
@@ -50,7 +50,7 @@ export const useBattles = () => {
     return { battle, attackerArmy, defenderArmy };
   };
 
-  return { useBattles, useBattleByEntityId };
+  return { allBattles, battleByEntityId };
 };
 
 const updateBattle = (battle: any, currentDefaultTick: bigint) => {

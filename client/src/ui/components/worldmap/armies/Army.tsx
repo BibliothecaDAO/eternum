@@ -124,6 +124,8 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     return showAllArmies || hovered;
   }, [showAllArmies, hovered]);
 
+  console.log("selectedEntity", selectedEntity, info.entity_id);
+
   return (
     <>
       <group position={position}>
@@ -133,7 +135,8 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
           <AttackOrPillageLabel
             attackerEntityId={selectedEntity!.id}
             defenderEntityId={BigInt(info.entity_id)}
-          ></AttackOrPillageLabel>
+            structureEntityId={BigInt(info.entity_owner_id)}
+          />
         )}
         <WarriorModel
           {...props}

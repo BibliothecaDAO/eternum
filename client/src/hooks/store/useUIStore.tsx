@@ -53,8 +53,8 @@ interface UIStore {
   modalContent: React.ReactNode;
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
-  battleView: { attackerId: bigint; defenderId: bigint } | null;
-  setBattleView: (armies: { attackerId: bigint; defenderId: bigint } | null) => void;
+  battleView: { attackerId: bigint; defenderId: bigint; structure: bigint } | null;
+  setBattleView: (armies: { attackerId: bigint; defenderId: bigint; structure: bigint } | null) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((set, get) => ({
@@ -181,7 +181,8 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   toggleModal: (content) => set({ modalContent: content, showModal: !get().showModal }),
   showModal: false,
   battleView: null,
-  setBattleView: (armies: { attackerId: bigint; defenderId: bigint } | null) => set({ battleView: armies }),
+  setBattleView: (armies: { attackerId: bigint; defenderId: bigint; structure: bigint } | null) =>
+    set({ battleView: armies }),
   ...createPopupsSlice(set, get),
   ...createMapStoreSlice(set),
   ...createBuildModeStoreSlice(set),
