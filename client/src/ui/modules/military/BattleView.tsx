@@ -105,12 +105,12 @@ export const BattleProgressBar = ({
 
   return (
     <motion.div initial="hidden" animate="visible" variants={slideUp}>
-      <div className="mx-auto w-2/3 flex justify-between text-2xl">
+      <div className="mx-auto w-2/3 flex justify-between text-2xl text-white">
         <div>
-          {attacker} {Math.round(Number(attackingHealthPercentage))}% {attackingHealth}
+          {attacker} {Math.round(Number(attackingHealthPercentage))}% {currencyFormat(attackingHealth, 0)}
         </div>
         <div>
-          {defender} {Math.round(Number(defendingHealthPercentage))}% {defendingHealth}
+          {defender} {Math.round(Number(defendingHealthPercentage))}% {currencyFormat(defendingHealth, 0)}
         </div>
       </div>
       <div
