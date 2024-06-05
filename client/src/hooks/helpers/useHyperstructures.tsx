@@ -5,15 +5,17 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { HYPERSTRUCTURE_TOTAL_COSTS_SCALED, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { toInteger } from "lodash";
 import { ResourceMultipliers, TOTAL_CONTRIBUTABLE_AMOUNT } from "../store/useLeaderBoardStore";
+import { shortString } from "starknet";
 
 export type Hyperstructure = ClientComponents["Structure"]["schema"] &
   ClientComponents["Progress"]["schema"][] &
   ClientComponents["Contribution"]["schema"][] &
   ClientComponents["Position"]["schema"] & {
     entityIdPoseidon: Entity;
-  };
-export type ProgressWithPourcentage = {
-  pourcentage: number;
+  } & { name: string };
+
+export type ProgressWithPercentage = {
+  percentage: number;
   costNeeded: number;
   hyperstructure_entity_id: bigint;
   resource_type: number;
@@ -21,14 +23,14 @@ export type ProgressWithPourcentage = {
 };
 
 export type Progress = {
-  pourcentage: number;
-  progresses: ProgressWithPourcentage[];
+  percentage: number;
+  progresses: ProgressWithPercentage[];
 };
 
 export const useHyperstructures = () => {
   const {
     setup: {
-      components: { Structure, Contribution, Progress, Position, Owner },
+      components: { Structure, Contribution, Progress, Position, Owner, EntityName },
     },
   } = useDojo();
 
@@ -43,18 +45,22 @@ export const useHyperstructures = () => {
           .values()
           .next().value,
       )?.address.toString(16)}`;
+      const entityName = getComponentValue(EntityName, hyperstructureEntityId);
       return {
         ...hyperstructure,
         ...position,
         ...contributions,
         owner,
         entityIdPoseidon: hyperstructureEntityId,
+        name: entityName
+          ? shortString.decodeShortString(entityName.name.toString())
+          : `Hyperstructure ${hyperstructure?.entity_id}`,
       };
     },
   );
 
   const useProgress = (hyperstructureEntityId: bigint): Progress => {
-    let pourcentage = 0;
+    let percentage = 0;
     let progressQueryResult = useEntityQuery([
       Has(Progress),
       HasValue(Progress, { hyperstructure_entity_id: hyperstructureEntityId }),
@@ -71,15 +77,15 @@ export const useHyperstructures = () => {
         hyperstructure_entity_id: hyperstructureEntityId,
         resource_type: resource,
         amount: !foundProgress ? 0 : foundProgress.amount,
-        pourcentage: !foundProgress ? 0 : Math.floor((foundProgress.amount / resourceCost!) * 100),
+        percentage: !foundProgress ? 0 : Math.floor((foundProgress.amount / resourceCost!) * 100),
         costNeeded: resourceCost,
       };
-      pourcentage +=
+      percentage +=
         (progress.amount * ResourceMultipliers[progress.resource_type as keyof typeof ResourceMultipliers]!) /
         TOTAL_CONTRIBUTABLE_AMOUNT;
       return progress;
     });
-    return { pourcentage: toInteger(pourcentage * 100), progresses: allProgresses };
+    return { percentage: toInteger(percentage * 100), progresses: allProgresses };
   };
 
   return { hyperstructures, useProgress };

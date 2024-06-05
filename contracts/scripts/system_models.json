@@ -1,5 +1,8 @@
 {
-  "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
+  "DEV_RESOURCE_SYSTEMS": [
+    "Resource",
+    "OwnedResourcesTracker"
+  ],
   "REALM_SYSTEMS": [
     "Owner",
     "Realm",
@@ -56,8 +59,17 @@
     "QuantityTracker",
     "Road"
   ],
-  "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "Stamina"],
-  "NAME_SYSTEMS": ["AddressName", "EntityName"],
+  "TRAVEL_SYSTEMS": [
+    "ArrivalTime",
+    "Position",
+    "Road",
+    "Movable",
+    "Stamina"
+  ],
+  "NAME_SYSTEMS": [
+    "AddressName",
+    "EntityName"
+  ],
   "BANK_SYSTEMS": [
     "Bank",
     "Position",
@@ -70,8 +82,19 @@
     "Structure",
     "StructureCount"
   ],
-  "SWAP_SYSTEMS": ["Market", "OwnedResourcesTracker", "Resource", "Production"],
-  "LIQUIDITY_SYSTEMS": ["Market", "OwnedResourcesTracker", "Production", "Resource", "Liquidity"],
+  "SWAP_SYSTEMS": [
+    "Market",
+    "OwnedResourcesTracker",
+    "Resource",
+    "Production"
+  ],
+  "LIQUIDITY_SYSTEMS": [
+    "Market",
+    "OwnedResourcesTracker",
+    "Production",
+    "Resource",
+    "Liquidity"
+  ],
   "HYPERSTRUCTURE_SYSTEMS": [
     "Structure",
     "StructureCount",
@@ -168,5 +191,12 @@
     "BuildingQuantityv2",
     "Stamina"
   ],
-  "GUILD_SYSTEMS": ["Guild", "GuildMember", "GuildWhitelist", "EntityName", "Owner"]
+  "GUILD_SYSTEMS": [
+    "Guild",
+    "GuildMember",
+    "GuildWhitelist",
+    "EntityName",
+    "Owner",
+    "EntityOwner"
+  ]
 }

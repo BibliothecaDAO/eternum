@@ -6,12 +6,12 @@ import { useEffect, useState } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { ProgressWithPourcentage } from "@/hooks/helpers/useHyperstructures";
+import { ProgressWithPercentage } from "@/hooks/helpers/useHyperstructures";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 
 type HyperstructureResourceChipProps = {
   resourceId: number;
-  progress: ProgressWithPourcentage;
+  progress: ProgressWithPercentage;
   contributions: Record<number, number>;
   setContributions: (val: Record<number, number>) => void;
 };
@@ -48,9 +48,9 @@ export const HyperstructureResourceChip = ({
         className={`flex relative items-center text-xs px-2 p-1 border rounded-xl w-[80%]`}
         style={{
           backgroundImage:
-            progress.pourcentage > 0
-              ? `linear-gradient(to right, #06D6A03c ${String(progress.pourcentage)}%, rgba(0,0,0,0) ${String(
-                  progress.pourcentage,
+            progress.percentage > 0
+              ? `linear-gradient(to right, #06D6A03c ${String(progress.percentage)}%, rgba(0,0,0,0) ${String(
+                  progress.percentage,
                 )}%)`
               : "",
         }}
@@ -78,7 +78,7 @@ export const HyperstructureResourceChip = ({
         />
 
         <div className="flex justify-between">
-          <div className=" self-center text-sm font-bold">{`${progress.pourcentage}% (${currencyIntlFormat(
+          <div className=" self-center text-sm font-bold">{`${progress.percentage}% (${currencyIntlFormat(
             progress.amount,
           )} / ${currencyIntlFormat(progress.costNeeded)})`}</div>
         </div>
