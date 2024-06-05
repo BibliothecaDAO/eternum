@@ -16,6 +16,7 @@ const PARTICLES_COUNT = 15;
 const PARTICLE_SPEED = 0.01;
 const PARTICLE_RESET_Y = 5;
 const PARTICLE_START_Y = -5;
+const PARICLE_COLOR = 0xf9e076;
 
 export const SelectedUnit = ({ position }: SelectedUnitProps) => {
   const imageRef = useRef<any>();
@@ -61,10 +62,10 @@ export const SelectedUnit = ({ position }: SelectedUnitProps) => {
         url="/textures/aura.png"
         rotation={[-Math.PI / 2, 0, 0]}
         renderOrder={1}
-        color={"yellow"}
+        color={PARICLE_COLOR}
       />
       <Points limit={PARTICLES_COUNT} range={PARTICLES_COUNT} positions={pointsPositions}>
-        <pointsMaterial color={"yellow"} size={1} />
+        <pointsMaterial color={PARICLE_COLOR} size={1} />
       </Points>
       <pointLight position={[0, 1.5, 0]} power={25} />
     </group>
