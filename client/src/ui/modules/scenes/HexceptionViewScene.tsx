@@ -39,10 +39,12 @@ export const HexceptionViewScene = () => {
   const hasStructure = hexType !== HexType.EMPTY;
 
   useEffect(() => {
-    moveCameraToRealmView();
-    setTimeout(() => {
-      setIsLoadingScreenEnabled(false);
-    }, 300);
+    if (hexPosition.col && hexPosition.row) {
+      moveCameraToRealmView();
+      setTimeout(() => {
+        setIsLoadingScreenEnabled(false);
+      }, 300);
+    }
   }, [hexPosition]);
 
   return (

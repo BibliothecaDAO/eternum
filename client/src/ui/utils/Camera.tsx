@@ -39,7 +39,6 @@ const maxPan = new THREE.Vector3(2700, Infinity, 0);
 const CameraControls = ({ position, target }: Props) => {
   const direction = useUIStore((state) => state.compassDirection);
   const setCompassDirection = useUIStore((state) => state.setCompassDirection);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const {
     camera,
@@ -96,13 +95,15 @@ const CameraControls = ({ position, target }: Props) => {
           "<",
         )
         .then(() => {
-          setIsTransitioning(false);
+          if (duration > 0.1 && ref.current.minDistance === 5) {
+            ref.current.minDistance = isMapView ? minWorldMapDistance : minHexceptionDistance;
+          }
         });
     }
   }
 
   useEffect(() => {
-    setIsTransitioning(true);
+    ref.current.minDistance = 5;
     setTimeout(() => {
       cameraAnimate();
       // dont play if transition is instant
@@ -142,7 +143,7 @@ const CameraControls = ({ position, target }: Props) => {
       enableRotate={!isMapView}
       enablePan={isMapView}
       maxDistance={isMapView ? maxMapDistance : maxHexceptionDistance}
-      minDistance={isTransitioning ? 5 : isMapView ? minWorldMapDistance : minHexceptionDistance}
+      minDistance={isMapView ? minWorldMapDistance : minHexceptionDistance}
       maxPolarAngle={isMapView ? Math.PI / 3.65 : maxPolarAngle}
       minPolarAngle={isMapView ? Math.PI / 3.65 : minPolarAngle}
       minAzimuthAngle={isMapView ? Math.PI * 2 : undefined}
