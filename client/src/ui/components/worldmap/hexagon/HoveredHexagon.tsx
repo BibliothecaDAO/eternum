@@ -16,7 +16,6 @@ export const HoveredHexagon = () => {
 
   const hoveredHexPosition = useMemo(() => {
     if (!hoveredHex) return { x: 0, y: 0 };
-    console.log(getUIPositionFromColRow(hoveredHex.col, hoveredHex.row));
     return getUIPositionFromColRow(hoveredHex.col, hoveredHex.row);
   }, [hoveredHex]);
 

@@ -25,16 +25,16 @@ export function WarriorModel({ id, position, rotationY, isRunning, isFriendly, .
   const part3BottomRadius = part2TopRadius;
 
   return (
-    <group {...props} ref={groupRef}>
-      <mesh position={[0, part1Height / 2, 0]} castShadow>
+    <group {...props} ref={groupRef} scale={1.5}>
+      <mesh position={[0, part1Height / 2 + 0.3, 0]} castShadow>
         <cylinderGeometry args={[part1TopRadius, part1BottomRadius, part1Height, 10]} />
         <meshStandardMaterial color={"#582C4D"} />
       </mesh>
-      <mesh position={[0, part1Height + part2Height / 2, 0]} castShadow>
+      <mesh position={[0, part1Height + part2Height / 2 + 0.3, 0]} castShadow>
         <cylinderGeometry args={[part2TopRadius, part2BottomRadius, part2Height, 10]} />
         <meshStandardMaterial color={"#6B7FD7"} />
       </mesh>
-      <mesh position={[0, part1Height + part2Height + part3Height / 2, 0]} castShadow>
+      <mesh position={[0, part1Height + part2Height + part3Height / 2 + 0.3, 0]} castShadow>
         <cylinderGeometry args={[part3TopRadius, part3BottomRadius, part3Height, 10]} />
         <meshStandardMaterial color={"#F24236"} />
       </mesh>
