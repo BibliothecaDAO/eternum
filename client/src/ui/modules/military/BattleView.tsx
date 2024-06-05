@@ -169,11 +169,6 @@ export const Actions = ({
   const handleRaid = async () => {
     setLoading(true);
 
-    console.log({
-      army_id: attacker,
-      structure_id: structure,
-    });
-
     await provider.battle_pillage({
       signer: account,
       army_id: attacker,
@@ -195,11 +190,24 @@ export const Actions = ({
     setLoading(false);
   };
 
+  const handleBattleClaim = async () => {
+    setLoading(true);
+
+    await provider.battle_claim({
+      signer: account,
+      army_id: attacker,
+      structure_id: structure,
+    });
+
+    setLoading(false);
+  };
+
   return (
     <div className=" col-span-2 flex justify-center">
       <div className="flex flex-col">
         <Button onClick={handleRaid}>Raid</Button>
         <Button onClick={handleBattleStart}>Battle</Button>
+        <Button onClick={handleBattleClaim}>Claim Structure</Button>
         <Button onClick={() => setBattleView(null)}>exit view</Button>
       </div>
     </div>
