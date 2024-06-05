@@ -11,8 +11,8 @@ import { BannerFlag } from "../BannerFlag";
 import { Box } from "@react-three/drei";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyAndName } from "@/hooks/helpers/useArmies";
-import { AttackOrPillageLabel } from "./AttackOrPillageLabel";
 import { SelectedUnit } from "../hexagon/SelectedUnit";
+import { CombatLabel } from "./CombatLabel";
 
 type ArmyProps = {
   info: ArmyAndName & { order: string; id: bigint; isMine: boolean; contractPos: Position; uiPos: UIPosition };
@@ -135,10 +135,11 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
         {showArmyInfo && <ArmyInfoLabel info={info} accountAddress={account.account.address} />}
         {info.isMine && <ArmyFlag rotationY={rotationY} position={position} order={info.order} />}
         {isAttackable && (
-          <AttackOrPillageLabel
+          <CombatLabel
             attackerEntityId={selectedEntity!.id}
             defenderEntityId={BigInt(info.entity_id)}
             structureEntityId={BigInt(info.entity_owner_id)}
+            isTargetMine={info.isMine}
           />
         )}
         <WarriorModel

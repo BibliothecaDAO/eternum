@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyAndName } from "@/hooks/helpers/useArmies";
+import { ArmyAndName, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useBattleManager, useBattles } from "@/hooks/helpers/useBattles";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -21,19 +21,19 @@ const slideDown = {
 };
 
 export const BattleView = () => {
+  const {
+    setup: {
+      components: { Battle },
+    },
+  } = useDojo();
   const battleView = useUIStore((state) => state.battleView);
 
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
 
-  const { battleByEntityId } = useBattles();
-  const { battle, attackerArmy, defenderArmy } = battleByEntityId(
-    battleView?.attackerId || 0n,
-    battleView?.defenderId || 0n,
-  )!;
+  const attackerArmy = getArmyByEntityId({ entity_id: battleView?.attackerId || 0n });
+  const defenderArmy = getArmyByEntityId({ entity_id: battleView?.defenderId || 0n });
 
   const { updatedBattle } = useBattleManager(BigInt(defenderArmy?.battle_id || 0n));
-
-  console.log(updatedBattle.getElapsedTime(currentDefaultTick));
 
   // if structure is not 0, then the defender is a structure
   const defenderEntityId = useMemo(() => {
@@ -53,13 +53,23 @@ export const BattleView = () => {
         animate="visible"
         exit="hidden"
       >
-        <div className="mx-auto bg-brown text-gold text-4xl p-4">{battle ? "Battle" : "Attack"}</div>
+        <div className="mx-auto bg-brown text-gold text-4xl p-4">Battle</div>
       </motion.div>
       <motion.div className="absolute bottom-0" variants={slideUp} initial="hidden" animate="visible" exit="hidden">
         <BattleProgressBar
-          attackingHealth={Number(battleAdjusted?.attack_army_health.current)}
+          attackingHealth={
+            !isNaN(Number(battleAdjusted?.attack_army_health.current))
+              ? Number(battleAdjusted?.attack_army_health.current)
+              : Number(attackerArmy.current)
+          }
+          lifetimeAttackingHealth={Number(attackerArmy.lifetime)}
           attacker={attackerArmy.name}
-          defendingHealth={Number(battleAdjusted?.defence_army_health.current)}
+          defendingHealth={
+            !isNaN(Number(battleAdjusted?.defence_army_health.current))
+              ? Number(battleAdjusted?.defence_army_health.current)
+              : Number(defenderArmy.current)
+          }
+          lifetimeDefendingHealth={Number(defenderArmy.lifetime)}
           defender={defenderArmy?.name}
         />
         <div className="w-screen bg-brown h-64 grid grid-cols-12 py-8">
@@ -81,13 +91,17 @@ export const BattleView = () => {
 
 export const BattleProgressBar = ({
   attackingHealth,
+  lifetimeAttackingHealth,
   attacker,
   defendingHealth,
+  lifetimeDefendingHealth,
   defender,
 }: {
   attackingHealth: number;
+  lifetimeAttackingHealth: number;
   attacker: string;
   defendingHealth: number;
+  lifetimeDefendingHealth: number;
   defender: string;
 }) => {
   const totalHealth = attackingHealth + defendingHealth;
@@ -107,17 +121,22 @@ export const BattleProgressBar = ({
     <motion.div initial="hidden" animate="visible" variants={slideUp}>
       <div className="mx-auto w-2/3 flex justify-between text-2xl text-white">
         <div>
-          {attacker} {Math.round(Number(attackingHealthPercentage))}% {currencyFormat(attackingHealth, 0)}
+          <p>Your army</p>
+          <p>
+            Health ❤️: {currencyFormat(attackingHealth, 0)}/{currencyFormat(lifetimeAttackingHealth, 0)}
+          </p>
         </div>
         <div>
-          {defender} {Math.round(Number(defendingHealthPercentage))}% {currencyFormat(defendingHealth, 0)}
+          <p>{defender}</p>
+          <p>
+            Health ❤️: {currencyFormat(defendingHealth, 0)}/{currencyFormat(lifetimeDefendingHealth, 0)}
+          </p>
         </div>
       </div>
       <div
         className="h-8 mb-2 mx-auto w-2/3 clip-angled-sm "
         style={{
           background: gradient,
-          backgroundColor: "#6B7FD7",
         }}
       ></div>
     </motion.div>

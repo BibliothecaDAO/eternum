@@ -92,7 +92,11 @@ export const createMapStoreSlice = (set: any) => ({
 
 export const useSetExistingStructures = () => {
   const [newFinishedHs, setNewFinishedHs] = useState<HyperstructureEventInterface | null>(null);
-  const { setup } = useDojo();
+  const {
+    setup,
+    account: { account },
+    masterAccount,
+  } = useDojo();
   const subCreated = useRef<boolean>(false);
 
   const setExistingStructures = useUIStore((state) => state.setExistingStructures);
@@ -135,18 +139,22 @@ export const useSetExistingStructures = () => {
       .map((entity) => {
         const position = getComponentValue(setup.components.Position, entity);
         const structure = getComponentValue(setup.components.Structure, entity);
+        const owner = getComponentValue(setup.components.Owner, entity);
         const type = StructureType[structure!.category as keyof typeof StructureType];
-        if (!position || !structure) return null;
+        if (account.address === masterAccount.address) return null;
+        if (!position || !structure || !owner) return null;
+        const isMine = owner?.address === BigInt(account.address);
         return {
           col: position.x,
           row: position.y,
           type: type as StructureType,
           entity: entity,
           entityId: Number(structure.entity_id),
+          isMine,
         };
       })
       .filter(Boolean) as { col: number; row: number; type: StructureType; entityId: number }[];
 
     setExistingStructures(_tmp);
-  }, [builtStructures]);
+  }, [builtStructures, account.address]);
 };

@@ -25,24 +25,37 @@ export class BattleManager {
     return battle ? battle.defence_delta : 0;
   }
 
-  public getElapsedTime(currentTick: number) {
+  public getElapsedTime(currentTick: number): number {
     const battle = this.getBattle();
     if (!battle) return 0;
-    return currentTick - Number(battle.tick_last_updated);
+    const duractionSinceLastUpdate = currentTick - Number(battle.tick_last_updated);
+    console.log(battle.tick_duration_left);
+    if (Number(battle.tick_duration_left) >= duractionSinceLastUpdate) {
+      return duractionSinceLastUpdate;
+    } else {
+      return Number(battle.tick_duration_left);
+    }
   }
 
   public getUpdatedBattle(currentTick: number) {
     const battle = this.getBattle();
     if (!battle) return;
-
-    const durationPassed = this.getElapsedTime(currentTick);
+    console.log(battle);
+    const durationPassed: number = this.getElapsedTime(currentTick);
     const attackDelta = this.attackingDelta();
     const defenceDelta = this.defendingDelta();
 
-    console.log("attackDelta", attackDelta, defenceDelta);
+    if (BigInt(attackDelta) * BigInt(durationPassed) > battle.attack_army_health.current) {
+      battle.attack_army_health.current = 0n;
+    } else {
+      battle.attack_army_health.current -= BigInt(attackDelta) * BigInt(durationPassed);
+    }
 
-    battle.attack_army_health.current -= BigInt(attackDelta) * BigInt(durationPassed);
-    battle.defence_army_health.current -= BigInt(defenceDelta) * BigInt(durationPassed);
+    if (BigInt(defenceDelta) * BigInt(durationPassed) > battle.defence_army_health.current) {
+      battle.defence_army_health.current = 0n;
+    } else {
+      battle.defence_army_health.current -= BigInt(defenceDelta) * BigInt(durationPassed);
+    }
 
     return battle;
   }

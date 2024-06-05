@@ -22,9 +22,9 @@ export const EntityArmyTable = ({ entityId }: EntityArmyTableProps) => {
 };
 
 export const EntitiesArmyTable = () => {
-  const { playerRealms } = useEntities();
+  const { playerStructures } = useEntities();
 
-  return playerRealms().map((entity: any) => {
+  return playerStructures().map((entity: any) => {
     return (
       <div className="p-2">
         <Headline className="my-3">{entity.name}</Headline>

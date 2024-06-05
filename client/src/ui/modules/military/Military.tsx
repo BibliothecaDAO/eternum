@@ -12,7 +12,7 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(military));
 
-  const { playerRealms } = useEntities();
+  const { playerStructures } = useEntities();
 
   const [location, _] = useLocation();
 
@@ -28,7 +28,7 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
       ) : (
         <EntityList
           current={entityId}
-          list={playerRealms()}
+          list={playerStructures()}
           title="armies"
           panel={({ entity }) => <ArmyPanel entity={entity} />}
         />

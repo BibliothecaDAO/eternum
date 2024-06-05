@@ -293,7 +293,7 @@ export interface JoinGuildProps extends SystemSigner {
   guild_entity_id: num.BigNumberish;
 }
 export interface WhitelistPlayerProps extends SystemSigner {
-  player_address: num.BigNumberish; 
+  player_address: num.BigNumberish;
   guild_entity_id: num.BigNumberish;
 }
 
@@ -404,3 +404,6 @@ export interface SetStaminaConfigProps extends SystemSigner {
   unit_type: num.BigNumberish;
   max_stamina: num.BigNumberish;
 }
+
+export type ProtectStructureProps = Omit<ArmyCreateProps, "army_is_protector">;
+//  & ArmyMergeTroopsProps;
