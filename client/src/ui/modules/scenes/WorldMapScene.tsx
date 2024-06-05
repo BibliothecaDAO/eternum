@@ -11,6 +11,7 @@ import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
 import { ActionInfo } from "@/ui/components/worldmap/hexagon/ActionInfo.js";
 import { StructurePreview } from "@/ui/components/structures/construction/StructurePreview.js";
 import { useFrame, useThree } from "@react-three/fiber";
+import { HoveredHexagon } from "@/ui/components/worldmap/hexagon/HoveredHexagon.js";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();
@@ -95,6 +96,7 @@ export const WorldMapScene = () => {
     <>
       {!showBlankOverlay && isMapView && <WorldMap />}
       <HighlightedHexes />
+      <HoveredHexagon />
       <ActionInfo />
       <StructurePreview />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]} receiveShadow>

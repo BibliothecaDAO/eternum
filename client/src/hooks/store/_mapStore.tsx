@@ -1,4 +1,4 @@
-import { ClickedHex, Hexagon, HighlightPositions } from "../../types";
+import { ClickedHex, HexPosition, Hexagon, HighlightPositions, Position2D } from "../../types";
 import { Position, StructureType } from "@bibliothecadao/eternum";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
@@ -34,6 +34,8 @@ export interface MapStore {
   setHighlightPath: (positions: HighlightPositions) => void;
   highlightPositions: HighlightPositions;
   setHighlightPositions: (positions: HighlightPositions) => void;
+  hoveredHex: HexPosition | undefined;
+  setHoveredHex: (position: HexPosition | undefined) => void;
   clearSelection: () => void;
   showAllArmies: boolean;
   toggleShowAllArmies: () => void;
@@ -68,6 +70,8 @@ export const createMapStoreSlice = (set: any) => ({
   setHighlightPositions: (positions: HighlightPositions) => {
     set({ highlightPositions: positions });
   },
+  hoveredHex: undefined,
+  setHoveredHex: (position: HexPosition | undefined) => set({ hoveredHex: position }),
   clearSelection: () =>
     set({
       selectedEntity: undefined,
