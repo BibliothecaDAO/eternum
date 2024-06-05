@@ -53,11 +53,7 @@ const RaiderInfo = ({ info, accountAddress }: ArmyInfoLabelProps) => {
 
   const isTraveling = isPassiveTravel || isActiveTravel;
 
-  const bgColor = accountAddress
-    ? BigInt(accountAddress) === BigInt(address)
-      ? "bg-dark-green-accent"
-      : "bg-red"
-    : undefined;
+  const bgColor = accountAddress ? (BigInt(accountAddress) === BigInt(address) ? "bg-crimson" : "bg-brown") : undefined;
 
   const pulseColor = !isTraveling ? "" : "";
 

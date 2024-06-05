@@ -60,16 +60,16 @@ export const BattleView = () => {
           attackingHealth={
             !isNaN(Number(battleAdjusted?.attack_army_health.current))
               ? Number(battleAdjusted?.attack_army_health.current)
-              : Number(attackerArmy.current)
+              : Number(attackerArmy?.current)
           }
-          lifetimeAttackingHealth={Number(attackerArmy.lifetime)}
+          lifetimeAttackingHealth={Number(attackerArmy?.lifetime)}
           attacker={attackerArmy.name}
           defendingHealth={
             !isNaN(Number(battleAdjusted?.defence_army_health.current))
               ? Number(battleAdjusted?.defence_army_health.current)
-              : Number(defenderArmy.current)
+              : Number(defenderArmy?.current)
           }
-          lifetimeDefendingHealth={Number(defenderArmy.lifetime)}
+          lifetimeDefendingHealth={Number(defenderArmy?.lifetime)}
           defender={defenderArmy?.name}
         />
         <div className="w-screen bg-brown h-64 grid grid-cols-12 py-8">
