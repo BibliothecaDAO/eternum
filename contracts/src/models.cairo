@@ -5,7 +5,6 @@ mod config;
 mod guild;
 mod hyperstructure;
 mod level;
-mod loyalty;
 mod map;
 mod metadata;
 mod movable;

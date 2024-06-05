@@ -12,7 +12,7 @@ import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { useEntities } from "./useEntities";
 
 export type Structure = ClientComponents["Realm"]["schema"] &
-  ClientComponents["Loyalty"]["schema"] & { resources: number[] } & { self: boolean } & { name: string };
+   { resources: number[] } & { self: boolean } & { name: string };
 
 export const useStructures = () => {
   const {
@@ -46,7 +46,7 @@ export const useStructures = () => {
 export const useStructuresPosition = ({ position }: { position: Position }) => {
   const {
     setup: {
-      components: { Position, Realm, EntityOwner, Owner, Loyalty, Structure },
+      components: { Position, Realm, EntityOwner, Owner, Structure },
     },
     account: { account },
   } = useDojo();
@@ -64,11 +64,9 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
       const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
       const resources = unpackResources(BigInt(realm?.resource_types_packed || 0n), realm?.resource_types_count || 0);
       const name = getRealmNameById(BigInt(realm?.realm_id) || 0n);
-      const loyalty = getComponentValue(Loyalty as Component, realm_entity_id) as ClientComponents["Loyalty"]["schema"];
 
       return {
         ...realm,
-        ...loyalty,
         resources,
         self: owner?.address === BigInt(account.address),
         name,
