@@ -135,8 +135,8 @@ const CameraControls = ({ position, target }: Props) => {
       enablePan={isMapView}
       maxDistance={isMapView ? maxMapDistance : maxHexceptionDistance}
       minDistance={isMapView ? minWorldMapDistance : minHexceptionDistance}
-      maxPolarAngle={isMapView ? Math.PI / 3.75 : maxPolarAngle}
-      minPolarAngle={isMapView ? Math.PI / 3.75 : minPolarAngle}
+      maxPolarAngle={isMapView ? Math.PI / 3.65 : maxPolarAngle}
+      minPolarAngle={isMapView ? Math.PI / 3.65 : minPolarAngle}
       minAzimuthAngle={isMapView ? Math.PI * 2 : undefined}
       maxAzimuthAngle={isMapView ? Math.PI * 2 : undefined}
       zoomToCursor={isMapView}
