@@ -8,26 +8,30 @@ import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
 
 export const ActionInfo = () => {
   const highlightPath = useUIStore((state) => state.highlightPath);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
-
+  const hoveredHex = useUIStore((state) => state.hoveredHex);
   const { getBalance } = useResourceBalance();
   const { realmEntityId } = useRealmStore();
 
-  const lastHighlightedHex = highlightPath.pos.length > 1 ? highlightPath.pos[highlightPath.pos.length - 1] : undefined;
+  const hoveredHexPosition = useMemo(() => {
+    if (!hoveredHex) return undefined;
+    return getUIPositionFromColRow(hoveredHex.col, hoveredHex.row);
+  }, [hoveredHex]);
 
   const isExplored = useMemo(() => {
     const isExplored = highlightPath.color === TRAVEL_COLOUR;
     return isExplored;
-  }, [lastHighlightedHex]);
+  }, [hoveredHexPosition]);
 
   return (
     <>
-      {lastHighlightedHex && selectedEntity && (
-        <group position={[lastHighlightedHex[0], 0.32, lastHighlightedHex[1]]}>
-          <BaseThreeTooltip position={Position.TOP_CENTER} distanceFactor={30} className="animate-bounce">
+      {hoveredHexPosition && selectedEntity && (
+        <group position={[hoveredHexPosition.x, 0.32, -hoveredHexPosition.y]}>
+          <BaseThreeTooltip position={Position.CENTER} className="-mt-[230px]" distanceFactor={44}>
             <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
             <div>Costs</div>
             {!isExplored && (
