@@ -373,7 +373,7 @@ impl BattleImpl of BattleTrait {
         let battle_duration_passed = self.duration_passed(tick);
         self
             .attack_army_health
-            .decrease_by((self.attack_delta.into() * battle_duration_passed.into()));
+            .decrease_by((self.defence_delta.into() * battle_duration_passed.into()));
         self
             .defence_army_health
             .decrease_by((self.attack_delta.into() * battle_duration_passed.into()));
