@@ -6,7 +6,7 @@ import { StructureType } from "@bibliothecadao/eternum";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HyperstructureEventInterface } from "@/dojo/events/hyperstructureEventQueries";
 import useLeaderBoardStore from "@/hooks/store/useLeaderBoardStore";
-import { AttackOrPillageLabel } from "@/ui/components/worldmap/armies/AttackOrPillageLabel";
+import { CombatLabel } from "@/ui/components/worldmap/armies/CombatLabel";
 
 export const Structures = () => {
   const models = useMemo(
@@ -127,7 +127,11 @@ const BuiltStructure = ({
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>
       {isAttackable && (
-        <AttackOrPillageLabel structureEntityId={structure.entityId} attackerEntityId={selectedEntity!.id} />
+        <CombatLabel
+          structureEntityId={structure.entityId}
+          attackerEntityId={selectedEntity!.id}
+          isTargetMine={structure.isMine}
+        />
       )}
       <primitive dropShadow scale={scale} object={model!} />
       {/* <Detailed distances={[0, 350]}>

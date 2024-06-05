@@ -45,6 +45,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   private async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
     const tx = await this.executeMulti(signer, transactionDetails);
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
+    // const transactionResultCpy = { ...transactionResult };
     this.emit("transactionComplete", transactionResult);
     return transactionResult;
   }
@@ -521,7 +522,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "guild_systems"),
       entrypoint: "create_guild",
-      calldata: [is_public, guild_name]
+      calldata: [is_public, guild_name],
     });
   }
 
@@ -531,7 +532,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "guild_systems"),
       entrypoint: "join_guild",
-      calldata: [guild_entity_id]
+      calldata: [guild_entity_id],
     });
   }
 
@@ -541,7 +542,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "guild_systems"),
       entrypoint: "whitelist_player",
-      calldata: [player_address, guild_entity_id]
+      calldata: [player_address, guild_entity_id],
     });
   }
 
@@ -551,7 +552,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "guild_systems"),
       entrypoint: "leave_guild",
-      calldata: []
+      calldata: [],
     });
   }
 

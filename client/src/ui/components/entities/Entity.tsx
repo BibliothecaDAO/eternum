@@ -52,7 +52,6 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const onCloseTravel = () => {
     setShowTravel(false);
   };
-  console.log(entity);
 
   return (
     <div
