@@ -118,10 +118,14 @@ export const useEntities = () => {
           const structure = getComponentValue(Structure, id);
           const realm = getComponentValue(Realm, id);
           const position = getComponentValue(Position, id);
-          // console.log({posiiont})
+
+          const structureName = getEntityName(structure!.entity_id);
+
           const name = realm
             ? getRealmNameById(realm.realm_id)
-            : structure?.category + " " + getEntityName(structure!.entity_id);
+            : structureName
+            ? getEntityName(structure!.entity_id)
+            : structure?.category;
           return { ...structure, position: position!, name };
         })
         .sort((a, b) => (a.category || "").localeCompare(b.category || ""));
