@@ -2,7 +2,7 @@ export type OSWindows =
   | "Event Log"
   | "Banks"
   | "Leaderboard"
-  | "Hyperstructures"
+  | "World Structures"
   | "Structures"
   | "Settings"
   | "Resources"
@@ -27,7 +27,7 @@ export interface OSInterface {
 export const eventLog: OSWindows = "Event Log";
 export const banks: OSWindows = "Banks";
 export const leaderboard: OSWindows = "Leaderboard";
-export const hyperstructures: OSWindows = "Hyperstructures";
+export const worldStructures: OSWindows = "World Structures";
 export const structures: OSWindows = "Structures";
 export const settings: OSWindows = "Settings";
 export const resources: OSWindows = "Resources";

@@ -38,7 +38,7 @@ import { useStamina } from "@/hooks/helpers/useStamina";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 
 export const EXPLORE_COLOUR = 0x2563eb;
-export const TRAVEL_COLOUR = 0x3cb93c;
+export const TRAVEL_COLOUR = 0xffce31;
 const CLICKED_HEX_COLOR = 0xff5733;
 const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
 
@@ -301,7 +301,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const { travelToHex } = useTravel();
   const { play: playExplore } = useUiSounds(soundSelector.explore);
   const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
-
+  const setHoveredHex = useUIStore((state) => state.setHoveredHex);
   const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
 
   const { getStamina } = useStamina();
@@ -363,6 +363,10 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       if (!pos || !hexDataRef.current || !exploredHexesRef.current) return;
 
       const coord = getColRowFromUIPosition(pos.x, pos.y, false);
+      setHoveredHex({
+        col: coord.col,
+        row: coord.row,
+      });
       setHoveredBuildHex({
         col: coord.col,
         row: coord.row,
@@ -373,7 +377,8 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         if (clickedHexRef.current) {
           positions.push(clickedHexRef.current.uiPos);
         }
-        return setHighlightPositions({ pos: positions, color: CLICKED_HEX_COLOR } as HighlightPositions);
+        // setHighlightPositions({ pos: positions, color: CLICKED_HEX_COLOR } as HighlightPositions);
+        return;
       }
 
       const selectedEntityPosition = getUIPositionFromColRow(
@@ -388,14 +393,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   );
 
   const mouseOutHandler = useCallback((e: any) => {
-    if (clickedHexRef.current) {
-      setHighlightPath({
-        pos: [[clickedHexRef.current.uiPos[0], clickedHexRef.current.uiPos[1]]],
-        color: CLICKED_HEX_COLOR,
-      });
-    } else {
-      setHighlightPath({ pos: [], color: 0 });
-    }
+    setHoveredHex(undefined);
   }, []);
 
   function handleTravelMode({ pos }: any) {

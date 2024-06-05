@@ -15,7 +15,7 @@ mod guild_systems {
     };
     use eternum::models::name::AddressName;
     use eternum::models::name::EntityName;
-    use eternum::models::owner::{Owner, OwnerTrait};
+    use eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
     use starknet::ContractAddress;
 
     #[abi(embed_v0)]
@@ -35,6 +35,7 @@ mod guild_systems {
                 (
                     Guild { entity_id: guild_uuid, is_public: is_public },
                     Owner { entity_id: guild_uuid, address: player_address },
+                    EntityOwner { entity_id: guild_uuid, entity_owner_id: guild_uuid },
                     EntityName { entity_id: guild_uuid, name: guild_name },
                     GuildMember { address: player_address, guild_entity_id: guild_uuid }
                 )

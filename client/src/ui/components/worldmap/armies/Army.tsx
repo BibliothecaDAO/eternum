@@ -11,7 +11,11 @@ import { BannerFlag } from "../BannerFlag";
 import { Box } from "@react-three/drei";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyAndName } from "@/hooks/helpers/useArmies";
+<<<<<<< HEAD
 import { AttackOrPillageLabel } from "./AttackOrPillageLabel";
+=======
+import { SelectedUnit } from "../hexagon/SelectedUnit";
+>>>>>>> main
 
 type ArmyProps = {
   info: ArmyAndName & { order: string; id: bigint; isMine: boolean; contractPos: Position; uiPos: UIPosition };
@@ -124,7 +128,9 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     return showAllArmies || hovered;
   }, [showAllArmies, hovered]);
 
-  console.log(selectedEntity);
+  const isSelected = useMemo(() => {
+    return selectedEntity?.id === info.id;
+  }, [selectedEntity, info.id]);
 
   return (
     <>
@@ -158,13 +164,14 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
           />
         </mesh>
       </group>
+      {isSelected && <SelectedUnit position={info.contractPos} />}
     </>
   );
 }
 
 export const ArmyFlag = ({ position, order, rotationY }: { position: Vector3; order: string; rotationY: number }) => {
   return (
-    <group position={[0, 3, 0]} rotation={[0, rotationY - Math.PI / 2, 0]} scale={1}>
+    <group position={[0, 2.25, 0]} rotation={[0, rotationY - Math.PI / 2, 0]} scale={0.7}>
       <BannerFlag angle={rotationY} order={order} position={[position.x, position.y, position.z + 10]}></BannerFlag>
     </group>
   );

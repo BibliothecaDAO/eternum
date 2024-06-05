@@ -1,7 +1,7 @@
 import { MapControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import gsap from "gsap";
-import { useEffect, useRef, useMemo, useCallback } from "react";
+import { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { Vector3 } from "three";
 import { useControls, button } from "leva";
 import { useRoute } from "wouter";
@@ -80,28 +80,37 @@ const CameraControls = ({ position, target }: Props) => {
         ease: "power3.inOut",
       });
 
-      gsap.timeline().to(
-        ref.current.target,
-        {
-          duration,
-          repeat: 0,
-          x: target.x,
-          y: target.y,
-          z: target.z,
-          ease: "power3.inOut",
-        },
-        "<",
-      );
+      gsap
+        .timeline()
+        .to(
+          ref.current.target,
+          {
+            duration,
+            repeat: 0,
+            x: target.x,
+            y: target.y,
+            z: target.z,
+            ease: "power3.inOut",
+          },
+          "<",
+        )
+        .then(() => {
+          if (duration > 0.1 && ref.current.minDistance === 5) {
+            ref.current.minDistance = isMapView ? minWorldMapDistance : minHexceptionDistance;
+          }
+        });
     }
   }
 
   useEffect(() => {
-    cameraAnimate();
-
-    // dont play if transition is instant
-    if (!position.transitionDuration || position.transitionDuration > 0.1) {
-      playFly();
-    }
+    ref.current.minDistance = 5;
+    setTimeout(() => {
+      cameraAnimate();
+      // dont play if transition is instant
+      if (!position.transitionDuration || position.transitionDuration > 0.1) {
+        playFly();
+      }
+    }, 10);
   }, [target, position]);
 
   // move compass direction
@@ -135,8 +144,8 @@ const CameraControls = ({ position, target }: Props) => {
       enablePan={isMapView}
       maxDistance={isMapView ? maxMapDistance : maxHexceptionDistance}
       minDistance={isMapView ? minWorldMapDistance : minHexceptionDistance}
-      maxPolarAngle={isMapView ? Math.PI / 3 : maxPolarAngle}
-      minPolarAngle={isMapView ? Math.PI / 3 : minPolarAngle}
+      maxPolarAngle={isMapView ? Math.PI / 3.65 : maxPolarAngle}
+      minPolarAngle={isMapView ? Math.PI / 3.65 : minPolarAngle}
       minAzimuthAngle={isMapView ? Math.PI * 2 : undefined}
       maxAzimuthAngle={isMapView ? Math.PI * 2 : undefined}
       zoomToCursor={isMapView}

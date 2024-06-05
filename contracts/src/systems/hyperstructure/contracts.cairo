@@ -19,7 +19,7 @@ mod hyperstructure_systems {
     use eternum::models::config::HyperstructureConfigTrait;
     use eternum::models::hyperstructure::{Progress, Contribution};
     use eternum::models::order::{Orders};
-    use eternum::models::owner::{Owner, OwnerTrait};
+    use eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
     use eternum::models::position::{Coord, Position, PositionIntoCoord};
     use eternum::models::realm::{Realm};
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
@@ -74,6 +74,7 @@ mod hyperstructure_systems {
                     StructureCount { coord, count: 1 },
                     Position { entity_id: new_uuid, x: coord.x, y: coord.y },
                     Owner { entity_id: new_uuid, address: starknet::get_caller_address() },
+                    EntityOwner { entity_id: new_uuid, entity_owner_id: new_uuid },
                     Progress {
                         hyperstructure_entity_id: new_uuid,
                         resource_type: ResourceTypes::EARTHEN_SHARD,

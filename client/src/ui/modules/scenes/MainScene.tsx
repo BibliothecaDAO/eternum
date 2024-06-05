@@ -112,13 +112,13 @@ export const MainScene = () => {
       className={clsx("rounded-xl")}
       raycaster={{
         params: {
-          Points: { threshold: 0.2 },
-          Mesh: { threshold: 0.2 },
+          Points: { threshold: 0.1 },
+          Mesh: { threshold: 0.1 },
           Line: {
-            threshold: 0.2,
+            threshold: 0.1,
           },
-          LOD: { threshold: 0.2 },
-          Sprite: { threshold: 0.2 },
+          LOD: { threshold: 0.1 },
+          Sprite: { threshold: 0.1 },
         },
       }}
       camera={{ fov: 15, position: [0, 700, 0], far: 1300, near: 20 }}
@@ -135,8 +135,8 @@ export const MainScene = () => {
         powerPreference: "high-performance",
         antialias: false,
         stencil: false,
-        depth: false,
-        logarithmicDepthBuffer: true,
+        depth: true,
+        logarithmicDepthBuffer: false,
       }}
     >
       {import.meta.env.VITE_PUBLIC_GRAPHICS_DEV === "true" && (

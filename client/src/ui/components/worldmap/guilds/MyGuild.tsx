@@ -4,6 +4,7 @@ import Button from "../../../elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { SelectBox } from "@/ui/elements/SelectBox";
 import { Tabs } from "../../../elements/tab";
+import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 
 import { useUserGuild, useGuildMembers } from "../../../../hooks/helpers/useGuilds";
 import { hasGuild } from "./utils";
@@ -15,6 +16,7 @@ export const MyGuild = () => {
     setup: {
       systemCalls: { create_guild, leave_guild },
     },
+    network: { provider },
     account: { account },
   } = useDojo();
 
@@ -27,6 +29,9 @@ export const MyGuild = () => {
 
   const { userGuildEntityId, isOwner, guildName } = useUserGuild();
   const { guildMembers } = useGuildMembers(userGuildEntityId!);
+
+  const [editName, setEditName] = useState(false);
+  const [naming, setNaming] = useState("");
 
   const tabs = useMemo(
     () => [
@@ -55,7 +60,11 @@ export const MyGuild = () => {
   const createGuild = () => {
     setIsLoading(true);
     setIsCreatingGuild(false);
-    create_guild({ is_public: isPublic, guild_name: newGuildName, signer: account }).finally(() => setIsLoading(false));
+    create_guild({
+      is_public: isPublic,
+      guild_name: newGuildName,
+      signer: account,
+    }).finally(() => setIsLoading(false));
   };
 
   const leaveGuild = () => {
@@ -68,6 +77,43 @@ export const MyGuild = () => {
       {hasGuild(userGuildEntityId) ? (
         <>
           <p className="flex justify-center py-2">{guildName}</p>
+
+          {editName && (
+            <div className="flex space-x-2">
+              <TextInput
+                placeholder="Type Name"
+                className="h-full"
+                value={naming}
+                onChange={(name) => setNaming(name)}
+                maxLength={MAX_NAME_LENGTH}
+              />
+              <Button
+                variant="default"
+                isLoading={isLoading}
+                onClick={async () => {
+                  setIsLoading(true);
+
+                  try {
+                    await provider.set_entity_name({ signer: account, entity_id: userGuildEntityId!, name: naming });
+                  } catch (e) {
+                    console.error(e);
+                  }
+
+                  setIsLoading(false);
+                  setEditName(false);
+                }}
+              >
+                Change Name
+              </Button>
+            </div>
+          )}
+
+          {isOwner && (
+            <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
+              edit name
+            </Button>
+          )}
+
           <Tabs
             selectedIndex={selectedTab}
             onChange={(index: number) => setSelectedTab(index)}
@@ -112,6 +158,7 @@ export const MyGuild = () => {
                 className="border border-gold  !w-1/2 !flex-grow-0 !text-light-pink text-xs"
                 value={newGuildName}
                 onChange={(newGuildName) => setNewGuildName(newGuildName)}
+                maxLength={MAX_NAME_LENGTH}
               />
               <Button onClick={createGuild} disabled={newGuildName == ""}>
                 Confirm
