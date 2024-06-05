@@ -506,19 +506,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Loyalty: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.BigInt, last_updated_tick: RecsType.BigInt },
-        {
-          metadata: {
-            name: "Loyalty",
-            types: ["u128", "u64"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
     WorldConfig: (() => {
       return defineComponent(
         world,

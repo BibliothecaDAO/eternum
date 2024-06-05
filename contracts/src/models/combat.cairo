@@ -189,7 +189,8 @@ impl TroopsImpl of TroopsTrait {
 
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        let self_knight_strength: i128 = self_knight_strength.into() - enemy_paladin_strength.into();
+        let self_knight_strength: i128 = self_knight_strength.into()
+            - enemy_paladin_strength.into();
         let self_knight_strength: i128 = self_knight_strength.into()
             - enemy_paladin_strength.into();
         let self_paladin_strength: i128 = self_paladin_strength.into()

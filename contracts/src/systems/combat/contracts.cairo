@@ -26,9 +26,7 @@ mod combat_systems {
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards,
         get_resources_without_earthenshards_probs
     };
-    use eternum::constants::{
-        WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, LOYALTY_MAX_VALUE, MAX_PILLAGE_TRIAL_COUNT
-    };
+    use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
     use eternum::models::buildings::{Building, BuildingImpl, BuildingCategory};
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{
@@ -37,7 +35,6 @@ mod combat_systems {
         CapacityConfigImpl
     };
     use eternum::models::config::{WeightConfig, WeightConfigImpl};
-    use eternum::models::loyalty::{Loyalty, LoyaltyTrait};
 
     use eternum::models::movable::{Movable, MovableTrait};
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
@@ -547,9 +544,6 @@ mod combat_systems {
                 .entity_owner_id;
             structure_owner_entity.entity_owner_id = claimer_army_owner_entity_id;
             set!(world, (structure_owner_entity));
-
-            // reset structure loyalty
-            set!(world, (Loyalty { entity_id: structure_id, last_updated_tick: tick.current() }));
         }
 
 
@@ -570,7 +564,6 @@ mod combat_systems {
             let structure_position: Position = get!(world, structure_id, Position);
             army_position.assert_same_location(structure_position.into());
 
-            let tick = TickImpl::get_default_tick_config(world);
             let troop_config = TroopConfigImpl::get(world);
 
             // get structure army and health
@@ -590,12 +583,6 @@ mod combat_systems {
             let mut structure_army_strength = structure_army.troops.full_strength(troop_config)
                 * structure_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
-
-            // a percentage of its relative strength depending on loyalty
-            let structure_loyalty: Loyalty = get!(world, structure_id, Loyalty);
-            structure_army_strength += structure_army_strength
-                * structure_loyalty.value(tick).into()
-                / LOYALTY_MAX_VALUE.into();
 
             // a percentage of it's full strength depending on structure army's health
             let mut attacking_army_health: Health = get!(world, army_id, Health);

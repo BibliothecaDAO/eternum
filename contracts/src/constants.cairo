@@ -31,11 +31,6 @@ const RESOURCE_PRECISION: u128 = 1_000;
 // TODO: Move to Onchain config
 const BASE_STOREHOUSE_CAPACITY: u128 = 100_000_000;
 
-// loyalty config
-// TODO: Move to Onchain config
-const LOYALTY_TICK_INTERVAL: u64 = 7; // updates after x ticks
-const LOYALTY_PER_TICK_INTERVAL: u64 = 1; // update by y after x ticks
-const LOYALTY_MAX_VALUE: u64 = 100;
 
 // pillage config
 // TODO: Move to Onchain config
