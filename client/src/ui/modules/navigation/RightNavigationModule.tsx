@@ -65,7 +65,8 @@ export const RightNavigationModule = () => {
 
   const debouncedSetIsOffscreen = debounce(() => {
     setIsOffscreen(true);
-  }, 1500);
+  }, 3000);
+
   const slideRight = {
     hidden: { x: "100%" },
     visible: { x: "0%", transition: { duration: 0.5 } },

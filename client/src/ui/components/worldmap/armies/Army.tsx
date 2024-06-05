@@ -124,7 +124,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     return showAllArmies || hovered;
   }, [showAllArmies, hovered]);
 
-  console.log("selectedEntity", selectedEntity, info.entity_id);
+  console.log(selectedEntity);
 
   return (
     <>
@@ -164,7 +164,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
 
 export const ArmyFlag = ({ position, order, rotationY }: { position: Vector3; order: string; rotationY: number }) => {
   return (
-    <group position={[0, 0, 0]} rotation={[0, rotationY - Math.PI / 2, 0]} scale={0.7}>
+    <group position={[0, 3, 0]} rotation={[0, rotationY - Math.PI / 2, 0]} scale={1}>
       <BannerFlag angle={rotationY} order={order} position={[position.x, position.y, position.z + 10]}></BannerFlag>
     </group>
   );

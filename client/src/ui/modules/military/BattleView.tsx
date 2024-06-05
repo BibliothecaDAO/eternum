@@ -30,8 +30,10 @@ export const BattleView = () => {
 
   // if structure is not 0, then the defender is a structure
   const defenderEntityId = useMemo(() => {
-    return battleView?.structure !== 0n ? battleView?.structure : defenderArmy?.entity_id;
-  }, [battleView?.attackerId, battleView?.defenderId]);
+    return defenderArmy?.entity_id;
+  }, [battleView?.attackerId, battleView?.defenderId, defenderArmy]);
+
+  console.log(battleView);
 
   return (
     <div>
@@ -62,7 +64,11 @@ export const BattleView = () => {
         <div className="w-screen bg-brown h-64 grid grid-cols-12 py-8">
           <EntityAvatar />
           <TroopRow army={attackerArmy} />
-          <Actions attacker={BigInt(attackerArmy?.entity_id || "0")} defender={BigInt(defenderEntityId || "0")} />
+          <Actions
+            attacker={BigInt(attackerArmy?.entity_id || "0")}
+            defender={BigInt(defenderEntityId || "0")}
+            structure={BigInt(battleView?.structure || "0")}
+          />
           <TroopRow army={defenderArmy as ArmyAndName} defending />
           <EntityAvatar />
         </div>
@@ -139,7 +145,15 @@ export const EntityAvatar = () => {
   );
 };
 
-export const Actions = ({ attacker, defender }: { attacker: bigint; defender: bigint }) => {
+export const Actions = ({
+  attacker,
+  defender,
+  structure,
+}: {
+  attacker: bigint;
+  defender: bigint;
+  structure: bigint;
+}) => {
   const [loading, setLoading] = useState(false);
   const setBattleView = useUIStore((state) => state.setBattleView);
 
@@ -157,13 +171,13 @@ export const Actions = ({ attacker, defender }: { attacker: bigint; defender: bi
 
     console.log({
       army_id: attacker,
-      structure_id: defender,
+      structure_id: structure,
     });
 
     await provider.battle_pillage({
       signer: account,
       army_id: attacker,
-      structure_id: defender,
+      structure_id: structure,
     });
 
     setLoading(false);
