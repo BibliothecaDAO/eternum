@@ -393,14 +393,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   );
 
   const mouseOutHandler = useCallback((e: any) => {
-    if (clickedHexRef.current) {
-      setHighlightPath({
-        pos: [[clickedHexRef.current.uiPos[0], clickedHexRef.current.uiPos[1]]],
-        color: CLICKED_HEX_COLOR,
-      });
-    } else {
-      setHighlightPositions({ pos: [], color: 0 });
-    }
     setHoveredHex(undefined);
   }, []);
 
