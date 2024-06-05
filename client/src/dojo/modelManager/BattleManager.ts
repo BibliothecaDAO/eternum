@@ -39,6 +39,8 @@ export class BattleManager {
     const attackDelta = this.attackingDelta();
     const defenceDelta = this.defendingDelta();
 
+    console.log("attackDelta", attackDelta, defenceDelta);
+
     battle.attack_army_health.current -= BigInt(attackDelta) * BigInt(durationPassed);
     battle.defence_army_health.current -= BigInt(defenceDelta) * BigInt(durationPassed);
 
