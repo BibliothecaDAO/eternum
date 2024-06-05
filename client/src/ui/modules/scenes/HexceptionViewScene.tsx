@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useTexture } from "@react-three/drei";
+import { useHelper, useTexture } from "@react-three/drei";
 import BuildArea from "../../components/construction/BuildArea";
 import { getUIPositionFromColRow } from "../../utils/utils";
 import BigHexBiome from "../../components/construction/BigHexBiome";
@@ -39,10 +39,12 @@ export const HexceptionViewScene = () => {
   const hasStructure = hexType !== HexType.EMPTY;
 
   useEffect(() => {
-    moveCameraToRealmView();
-    setTimeout(() => {
-      setIsLoadingScreenEnabled(false);
-    }, 300);
+    if (hexPosition.col && hexPosition.row) {
+      moveCameraToRealmView();
+      setTimeout(() => {
+        setIsLoadingScreenEnabled(false);
+      }, 300);
+    }
   }, [hexPosition]);
 
   return (
@@ -82,14 +84,14 @@ const HexceptionLight = () => {
   const dLightRef = useRef<any>();
   // if (import.meta.env.DEV) {
   //   useHelper(dLightRef, THREE.DirectionalLightHelper, 10, "hotpink");
-  //   useHelper(sLightRef, THREE.PointLightHelper, 10, "green");
+  //   // useHelper(sLightRef, THREE.PointLightHelper, 10, "green");
   // }
-
+  const targetRef = useRef<any>();
   const { lightPosition, bias, intensity } = useControls("Hexception Light", {
     lightPosition: {
       // value: { x: 37, y: 17, z: 2 },
       // value: { x: 22, y: 9, z: -5 },
-      value: { x: 29, y: 20, z: 35 },
+      value: { x: 55, y: 18, z: -18 },
       step: 0.01,
     },
     intensity: {
@@ -107,30 +109,37 @@ const HexceptionLight = () => {
   });
 
   const target = useMemo(() => {
-    const pos = getUIPositionFromColRow(4, 4, true);
+    const pos = getUIPositionFromColRow(10, 10, true);
     return new THREE.Vector3(pos.x, pos.y, pos.z);
   }, []);
 
-  useEffect(() => {
-    dLightRef.current.target.position.set(target.x, 2, -target.y);
-    // sLightRef.current.target.position.set(target.x, 2, -target.y);
-  }, [target]);
+  const targetObject = useMemo(() => {
+    return new THREE.Object3D();
+  }, []);
+
+  // useEffect(() => {
+  //   targetObject.position.set(target.x, 2, -target.y);
+  //   //dLightRef.current.target.position.set(target.x, 2, -target.y);
+  //   // sLightRef.current.target.position.set(target.x, 2, -target.y);
+  // }, [target, targetObject]);
 
   return (
     <group>
+      <primitive ref={targetRef} object={targetObject} position={[target.x, 0, -target.y]} />
       <directionalLight
         ref={dLightRef}
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-far={75}
-        shadow-camera-left={-75}
-        shadow-camera-right={75}
-        shadow-camera-top={75}
-        shadow-camera-bottom={-75}
+        shadow-camera-far={150}
+        shadow-camera-left={-25}
+        shadow-camera-right={25}
+        shadow-camera-top={25}
+        shadow-camera-bottom={-25}
         shadow-bias={bias}
         position={[lightPosition.x, lightPosition.y, lightPosition.z]}
         color={"#fff"}
         intensity={intensity}
+        target={targetObject}
       ></directionalLight>
     </group>
   );

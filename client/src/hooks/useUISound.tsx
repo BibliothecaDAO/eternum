@@ -292,6 +292,7 @@ export const useBuildingSound = () => {
         playLumberMill();
         break;
       default:
+        playBuildMine();
         break;
     }
   };
