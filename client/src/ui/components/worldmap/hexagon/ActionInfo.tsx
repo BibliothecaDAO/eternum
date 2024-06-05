@@ -18,9 +18,16 @@ export const ActionInfo = () => {
   const { realmEntityId } = useRealmStore();
 
   const hoveredHexPosition = useMemo(() => {
-    if (!hoveredHex) return undefined;
+    if (!hoveredHex) return { x: 0, y: 0 };
     return getUIPositionFromColRow(hoveredHex.col, hoveredHex.row);
   }, [hoveredHex]);
+
+  const hoveredHexIsHighlighted = useMemo(() => {
+    if (!hoveredHex) return false;
+    return highlightPath.pos.some(
+      (highlightPos) => highlightPos[0] === hoveredHexPosition.x && highlightPos[1] === -hoveredHexPosition.y,
+    );
+  }, [hoveredHexPosition]);
 
   const isExplored = useMemo(() => {
     const isExplored = highlightPath.color === TRAVEL_COLOUR;
@@ -29,7 +36,7 @@ export const ActionInfo = () => {
 
   return (
     <>
-      {hoveredHexPosition && selectedEntity && (
+      {hoveredHexIsHighlighted && selectedEntity && (
         <group position={[hoveredHexPosition.x, 0.32, -hoveredHexPosition.y]}>
           <BaseThreeTooltip position={Position.CENTER} className="-mt-[230px]" distanceFactor={44}>
             <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
