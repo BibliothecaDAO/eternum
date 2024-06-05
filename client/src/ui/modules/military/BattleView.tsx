@@ -69,6 +69,7 @@ export const BattleView = () => {
             attacker={BigInt(attackerArmy?.entity_id || "0")}
             defender={BigInt(defenderEntityId || "0")}
             structure={BigInt(battleView?.structure || "0")}
+            battleId={BigInt(defenderArmy?.battle_id || "0")}
           />
           <TroopRow army={defenderArmy as ArmyAndName} defending />
           <EntityAvatar />
@@ -150,10 +151,12 @@ export const Actions = ({
   attacker,
   defender,
   structure,
+  battleId,
 }: {
   attacker: bigint;
   defender: bigint;
   structure: bigint;
+  battleId: bigint;
 }) => {
   const [loading, setLoading] = useState(false);
   const setBattleView = useUIStore((state) => state.setBattleView);
@@ -202,6 +205,17 @@ export const Actions = ({
 
     setLoading(false);
   };
+  const handleLeaveBattle = async () => {
+    setLoading(true);
+
+    await provider.battle_leave({
+      signer: account,
+      army_id: attacker,
+      battle_id: battleId,
+    });
+
+    setLoading(false);
+  };
 
   return (
     <div className=" col-span-2 flex justify-center">
@@ -209,6 +223,7 @@ export const Actions = ({
         <Button onClick={handleRaid}>Raid</Button>
         <Button onClick={handleBattleStart}>Battle</Button>
         <Button onClick={handleBattleClaim}>Claim Structure</Button>
+        <Button onClick={handleLeaveBattle}>Leave Battle</Button>
         <Button onClick={() => setBattleView(null)}>exit view</Button>
       </div>
     </div>
