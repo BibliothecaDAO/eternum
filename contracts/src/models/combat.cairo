@@ -38,7 +38,10 @@ impl HealthImpl of HealthTrait {
         assert(self.is_alive(), 'Entity is dead');
     }
 
-    fn steps_to_finish(self: @Health, deduction: u128) -> u128 {
+    fn steps_to_finish(self: @Health, mut deduction: u128) -> u128 {
+        // prevent div by 0 errors
+        deduction += 1;
+
         let mut num_steps = *self.current / deduction;
         if (num_steps % deduction) > 0 {
             num_steps += 1;
