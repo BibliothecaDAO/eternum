@@ -11,11 +11,8 @@ import { BannerFlag } from "../BannerFlag";
 import { Box } from "@react-three/drei";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyAndName } from "@/hooks/helpers/useArmies";
-<<<<<<< HEAD
 import { AttackOrPillageLabel } from "./AttackOrPillageLabel";
-=======
 import { SelectedUnit } from "../hexagon/SelectedUnit";
->>>>>>> main
 
 type ArmyProps = {
   info: ArmyAndName & { order: string; id: bigint; isMine: boolean; contractPos: Position; uiPos: UIPosition };
