@@ -124,7 +124,7 @@ export const useEntities = () => {
           const name = realm
             ? getRealmNameById(realm.realm_id)
             : structureName
-            ? getEntityName(structure!.entity_id)
+            ? `${structure?.category} ${structureName}`
             : structure?.category;
           return { ...structure, position: position!, name };
         })

@@ -161,6 +161,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.battle_start(props);
   };
 
+  const battle_leave = async (props: SystemProps.BattleLeaveProps) => {
+    await provider.battle_leave(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -211,6 +215,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     leave_guild,
 
     battle_start,
+    battle_leave,
   };
 
   // TODO: Fix Type

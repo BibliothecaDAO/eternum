@@ -192,7 +192,7 @@ export function defineContractComponents(world: World) {
           entity_id: RecsType.BigInt,
           troops: { knight_count: RecsType.Number, paladin_count: RecsType.Number, crossbowman_count: RecsType.Number },
           battle_id: RecsType.BigInt,
-          battle_side: RecsType.Number,
+          battle_side: RecsType.String,
         },
         {
           metadata: {
@@ -215,7 +215,7 @@ export function defineContractComponents(world: World) {
               crossbowman_count: RecsType.Number,
             },
             battle_id: RecsType.BigInt,
-            battle_side: RecsType.Number,
+            battle_side: RecsType.String,
           },
           defence_army: {
             troops: {
@@ -224,7 +224,7 @@ export function defineContractComponents(world: World) {
               crossbowman_count: RecsType.Number,
             },
             battle_id: RecsType.BigInt,
-            battle_side: RecsType.Number,
+            battle_side: RecsType.String,
           },
           attack_army_health: { current: RecsType.BigInt, lifetime: RecsType.BigInt },
           defence_army_health: { current: RecsType.BigInt, lifetime: RecsType.BigInt },
@@ -962,7 +962,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           entity_id: RecsType.BigInt,
-          is_public: RecsType.Boolean
+          is_public: RecsType.Boolean,
         },
         {
           metadata: {
@@ -978,7 +978,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           address: RecsType.BigInt,
-          guild_entity_id: RecsType.BigInt
+          guild_entity_id: RecsType.BigInt,
         },
         {
           metadata: {
@@ -995,7 +995,7 @@ export function defineContractComponents(world: World) {
         {
           address: RecsType.BigInt,
           guild_entity_id: RecsType.BigInt,
-          is_whitelisted: RecsType.BigInt
+          is_whitelisted: RecsType.BigInt,
         },
         {
           metadata: {

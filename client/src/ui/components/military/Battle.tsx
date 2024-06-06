@@ -90,7 +90,6 @@ export const ArmyActions = ({ armyId }: { armyId: bigint }) => {
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { create_army, army_buy_troops },
       components: { Protector, Army, Health },
     },
   } = useDojo();
@@ -107,18 +106,6 @@ export const ArmyActions = ({ armyId }: { armyId: bigint }) => {
 
     return { ...protectorArmy, ...health };
   }, [allArmies]);
-
-  const handleBattleStart = async () => {
-    setLoading(true);
-
-    await provider.battle_start({
-      signer: account,
-      attacking_army_id: army.entity_id,
-      defending_army_id: selectedArmyToAttack,
-    });
-
-    setLoading(false);
-  };
 
   const handlePillage = async () => {
     setLoading(true);
@@ -211,21 +198,6 @@ export const ArmyActions = ({ armyId }: { armyId: bigint }) => {
             )}
           </div>
         </div>
-      </div>
-      <div className="w-full my-8 flex justify-center">
-        {selectedArmyToAttack && (
-          <Button
-            onClick={() =>
-              provider.battle_start({
-                signer: account,
-                attacking_army_id: army.entity_id,
-                defending_army_id: selectedArmyToAttack,
-              })
-            }
-          >
-            Start Battle
-          </Button>
-        )}{" "}
       </div>
     </ModalContainer>
   );

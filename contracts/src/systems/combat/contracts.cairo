@@ -103,6 +103,8 @@ mod combat_systems {
 
             // set army owner entity
             set!(world, (EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id }));
+            set!(world, (Owner {entity_id: army_id, address: starknet::get_caller_address()}));
+
 
             // set army position to be owner position
             let owner_position: Position = get!(world, army_owner_id, Position);
@@ -320,6 +322,8 @@ mod combat_systems {
             // create battle 
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
+
+            assert(defending_army_health > 0, 'defender has 0 health');
 
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;

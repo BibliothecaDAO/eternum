@@ -29,7 +29,6 @@ export class BattleManager {
     const battle = this.getBattle();
     if (!battle) return 0;
     const duractionSinceLastUpdate = currentTick - Number(battle.last_updated);
-    console.log(battle.duration_left);
     if (Number(battle.duration_left) >= duractionSinceLastUpdate) {
       return duractionSinceLastUpdate;
     } else {
@@ -45,7 +44,7 @@ export class BattleManager {
   public getUpdatedBattle(currentTick: number) {
     const battle = this.getBattle();
     if (!battle) return;
-    console.log(battle);
+
     const durationPassed: number = this.getElapsedTime(currentTick);
     const attackDelta = this.attackingDelta();
     const defenceDelta = this.defendingDelta();

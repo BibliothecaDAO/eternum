@@ -1,8 +1,7 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { BattleType } from "@/dojo/modelManager/types";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyAndName, getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { useBattleManager, useBattles } from "@/hooks/helpers/useBattles";
+import { useBattleManager } from "@/hooks/helpers/useBattles";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { nameMapping } from "@/ui/components/military/ArmyManagementCard";
@@ -10,16 +9,11 @@ import Button from "@/ui/elements/Button";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { Component, OverridableComponent } from "@dojoengine/recs";
+import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export const BattleView = () => {
-  const {
-    setup: {
-      components: { Battle },
-    },
-  } = useDojo();
   const battleView = useUIStore((state) => state.battleView);
   const setBattleView = useUIStore((state) => state.setBattleView);
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
@@ -29,11 +23,14 @@ export const BattleView = () => {
 
   const { updatedBattle } = useBattleManager(BigInt(defenderArmy?.battle_id || 0n));
 
-  console.log(updatedBattle.getBattle());
-
   const battleAdjusted = useMemo(() => {
     return updatedBattle.getUpdatedBattle(currentDefaultTick);
   }, [currentDefaultTick]);
+
+  const attackingHealth =
+    battleAdjusted === undefined ? Number(attackerArmy?.current) : Number(battleAdjusted?.attack_army_health.current);
+  const defendingHealth =
+    battleAdjusted === undefined ? Number(defenderArmy?.current) : Number(battleAdjusted?.defence_army_health.current);
 
   return (
     <div>
@@ -63,18 +60,10 @@ export const BattleView = () => {
         exit="hidden"
       >
         <BattleProgressBar
-          attackingHealth={
-            !isNaN(Number(battleAdjusted?.attack_army_health.current))
-              ? Number(battleAdjusted?.attack_army_health.current)
-              : Number(attackerArmy?.current)
-          }
+          attackingHealth={attackingHealth}
           lifetimeAttackingHealth={Number(attackerArmy?.lifetime)}
           attacker={attackerArmy.name}
-          defendingHealth={
-            !isNaN(Number(battleAdjusted?.defence_army_health.current))
-              ? Number(battleAdjusted?.defence_army_health.current)
-              : Number(defenderArmy?.current)
-          }
+          defendingHealth={defendingHealth}
           lifetimeDefendingHealth={Number(defenderArmy?.lifetime)}
           defender={defenderArmy?.name}
         />
@@ -133,7 +122,7 @@ export const BattleProgressBar = ({
     >
       <div className="mx-auto w-2/3 flex justify-between text-2xl text-white">
         <div>
-          <p>Your army</p>
+          <p>{attacker}</p>
           <p>
             Health ❤️: {currencyFormat(attackingHealth, 0)}/{currencyFormat(lifetimeAttackingHealth, 0)}
           </p>
@@ -193,24 +182,31 @@ export const Actions = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const setBattleView = useUIStore((state) => state.setBattleView);
+  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
 
   const {
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { create_army, army_buy_troops, battle_start },
-      components: { Protector, Army, Health, Realm },
+      systemCalls: { battle_leave, battle_start },
+      components: { Protector, Realm },
     },
   } = useDojo();
 
   const isActive = useMemo(() => battle.battleActive(), [battle]);
 
-  const hasProtector = useComponentValue(Protector, getEntityIdFromKeys([structure]))?.army_id;
+  const protector = useComponentValue(Protector, getEntityIdFromKeys([structure]))?.army_id;
   const isRealm = useComponentValue(Realm, getEntityIdFromKeys([structure]));
 
   const canClaimBecauseNotRealm = useMemo(() => {
-    return !isRealm && !hasProtector;
-  }, [isRealm, hasProtector]);
+    if (protector) {
+      const updatedBattle = battle.getUpdatedBattle(currentDefaultTick);
+      if (updatedBattle?.defence_army_health.current === 0n) {
+        return !isRealm;
+      }
+    }
+    return !isRealm && !protector;
+  }, [isRealm, protector]);
 
   const handleRaid = async () => {
     setLoading(true);
@@ -251,7 +247,7 @@ export const Actions = ({
   const handleLeaveBattle = async () => {
     setLoading(true);
 
-    await provider.battle_leave({
+    await battle_leave({
       signer: account,
       army_id: attacker,
       battle_id: battleId,
