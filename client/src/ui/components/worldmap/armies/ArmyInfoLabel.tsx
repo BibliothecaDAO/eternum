@@ -21,7 +21,7 @@ interface ArmyInfoLabelProps {
 
 export const ArmyInfoLabel = ({ info, accountAddress }: ArmyInfoLabelProps) => {
   return (
-    <BaseThreeTooltip position={Position.TOP_CENTER} className={`bg-transparent pointer-events-none -mt-[220px]`}>
+    <BaseThreeTooltip position={Position.TOP_CENTER} className={`bg-transparent pointer-events-none -mt-[320px]`}>
       <RaiderInfo key={info.entity_id} info={info} accountAddress={accountAddress} />
     </BaseThreeTooltip>
   );
@@ -58,48 +58,49 @@ const RaiderInfo = ({ info, accountAddress }: ArmyInfoLabelProps) => {
   const pulseColor = !isTraveling ? "" : "";
 
   return (
-    <div className={clsx("w-[200px] flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold", bgColor, pulseColor)}>
+    <div
+      className={clsx(
+        "w-auto flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold shadow-2xl border-2 border-gradient",
+        bgColor,
+        pulseColor,
+      )}
+    >
       <div className="flex items-center w-full mt-1 justify-between text-xs">
-        <div className="flex items-center ml-1 -mt-2">
-          <div className="flex items-center ml-1 mr-1 text-gold">
-            <OrderIcon order={getRealmOrderNameById(realmId)} className="mr-1" size="xxs" />
+        <div className="flex flex-col gap-1 w-full">
+          <div className="flex items-center text-gold text-lg gap-2">
+            <OrderIcon order={getRealmOrderNameById(realmId)} className="mr-1" size="sm" />
             {originRealmName}
           </div>
+          <div className="self-center flex justify-between w-full">
+            {!isTraveling && <div className="flex   italic text-gold self-center">Idle</div>}
+            {info.arrives_at && isTraveling && nextBlockTimestamp && (
+              <div className="flex   italic text-light-pink">
+                {isPassiveTravel ? formatSecondsLeftInDaysHours(arrives_at - nextBlockTimestamp) : "Arrives Next Tick"}
+              </div>
+            )}
+            <StaminaResource entityId={BigInt(entity_id)} />
+          </div>
         </div>
-        <div className="-mt-2">{attackerAddressName}</div>
-        <div>
-          {!isTraveling && (
-            <div className="flex ml-auto -mt-2 italic text-gold">
-              Idle
-              <Pen className="ml-1 fill-gold" />
-            </div>
-          )}
-          {info.arrives_at && isTraveling && nextBlockTimestamp && (
-            <div className="flex ml-auto -mt-2 italic text-light-pink">
-              {isPassiveTravel ? formatSecondsLeftInDaysHours(arrives_at - nextBlockTimestamp) : "Arrives Next Tick"}
-            </div>
-          )}
-        </div>
+        {/* <div className="-mt-2">{attackerAddressName}</div> */}
       </div>
-      <div className="w-full flex flex-col mt-2 space-y-2">
-        <div className="flex relative justify-between w-full text-gold">
-          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
+      <div className="w-full flex flex-col mt-2 space-y-2 font-bold">
+        <div className="grid grid-cols-3 gap-2 relative justify-between w-full text-gold">
+          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between gap-2">
             <ResourceIcon withTooltip={false} resource={"Crossbowmen"} size="lg" />
-            <div className="text-green text-xxs self-center">{currencyFormat(troops.crossbowman_count, 0)}</div>
+            <div className="text-green text-xs self-center">{currencyFormat(troops.crossbowman_count, 0)}</div>
           </div>
-          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
+          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between gap-2">
             <ResourceIcon withTooltip={false} resource={"Knight"} size="lg" />
-            <div className="text-green text-xxs self-center">{currencyFormat(troops.knight_count, 0)}</div>
+            <div className="text-green text-xs self-center">{currencyFormat(troops.knight_count, 0)}</div>
           </div>
-          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between">
+          <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between gap-2">
             <ResourceIcon withTooltip={false} resource={"Paladin"} size="lg" />
-            <div className="text-green text-xxs self-center">{currencyFormat(troops.paladin_count, 0)}</div>
+            <div className="text-green text-xs self-center">{currencyFormat(troops.paladin_count, 0)}</div>
           </div>
         </div>
-        <div>Balance</div>
+
         <div className="flex flex-row justify-between">
           <InventoryResources max={2} entityId={BigInt(entity_id)} />
-          <StaminaResource entityId={BigInt(entity_id)} />
         </div>
       </div>
     </div>
