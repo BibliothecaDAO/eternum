@@ -47,7 +47,7 @@ enum TravelTypes {
 impl TravelTypesImpl of TravelTypesTrait {
     fn get_stamina_costs(self: TravelTypes) -> u16 {
         match self {
-            TravelTypes::Travel(moves) => moves.into() * 10,
+            TravelTypes::Travel(moves) => moves.into() * 5,
             TravelTypes::Explore => 15,
         }
     }

@@ -83,6 +83,6 @@ export type BattleType = {
   defence_army_health: { current: RecsType.BigInt; lifetime: RecsType.BigInt };
   attack_delta: RecsType.Number;
   defence_delta: RecsType.Number;
-  tick_last_updated: RecsType.BigInt;
-  tick_duration_left: RecsType.BigInt;
+  last_updated: RecsType.BigInt;
+  duration_left: RecsType.BigInt;
 };

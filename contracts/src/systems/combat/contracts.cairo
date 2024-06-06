@@ -103,6 +103,8 @@ mod combat_systems {
 
             // set army owner entity
             set!(world, (EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id }));
+            set!(world, (Owner {entity_id: army_id, address: starknet::get_caller_address()}));
+
 
             // set army position to be owner position
             let owner_position: Position = get!(world, army_owner_id, Position);
@@ -321,14 +323,15 @@ mod combat_systems {
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
 
-            let tick = TickImpl::get_default_tick_config(world);
+            assert(defending_army_health > 0, 'defender has 0 health');
+
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;
             battle.attack_army = attacking_army.into();
             battle.defence_army = defending_army.into();
             battle.attack_army_health = attacking_army_health.into();
             battle.defence_army_health = defending_army_health.into();
-            battle.tick_last_updated = tick.current();
+            battle.last_updated = starknet::get_block_timestamp();
 
             // set battle position 
             let mut battle_position: Position = Default::default();
@@ -338,7 +341,7 @@ mod combat_systems {
 
             // start battle
             let troop_config = TroopConfigImpl::get(world);
-            battle.restart(tick, troop_config);
+            battle.restart(troop_config);
             set!(world, (battle));
         }
 
@@ -353,11 +356,10 @@ mod combat_systems {
 
             // update battle state before any other actions
             let mut battle: Battle = get!(world, battle_id, Battle);
-            let tick = TickImpl::get_default_tick_config(world);
-            battle.update_state(tick);
+            battle.update_state();
 
             // ensure battle is still ongoing
-            assert!(battle.tick_duration_left > 0, "Battle has ended");
+            assert!(battle.duration_left > 0, "Battle has ended");
 
             // ensure caller army is not in battle
             let mut caller_army: Army = get!(world, army_id, Army);
@@ -411,7 +413,7 @@ mod combat_systems {
             }
 
             let troop_config = TroopConfigImpl::get(world);
-            battle.restart(tick, troop_config);
+            battle.restart(troop_config);
             set!(world, (battle));
         }
 
@@ -422,8 +424,7 @@ mod combat_systems {
 
             // update battle state before any other actions
             let mut battle: Battle = get!(world, battle_id, Battle);
-            let tick = TickImpl::get_default_tick_config(world);
-            battle.update_state(tick);
+            battle.update_state();
 
             // ensure battle id is correct
             let mut caller_army: Army = get!(world, army_id, Army);
@@ -489,13 +490,12 @@ mod combat_systems {
             }
 
             let troop_config = TroopConfigImpl::get(world);
-            battle.restart(tick, troop_config);
+            battle.restart(troop_config);
             set!(world, (battle));
 
             caller_army.battle_id = 0;
             caller_army.battle_side = BattleSide::None;
             set!(world, (caller_army));
-
         }
 
 
@@ -521,7 +521,6 @@ mod combat_systems {
 
             // ensure structure has no army protecting it 
             // or it has lost the battle it is currently in
-            let tick = TickImpl::get_default_tick_config(world);
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
                 // ensure structure army is in battle
@@ -530,11 +529,10 @@ mod combat_systems {
 
                 // update battle state before checking battle winner
                 let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
-                battle.update_state(tick);
+                battle.update_state();
                 set!(world, (battle));
 
                 // ensure structure lost the battle
-                assert!(battle.winner() != BattleSide::None, "battle has no winner");
                 assert!(structure_army.battle_side != battle.winner(), "structure army won");
             }
 
