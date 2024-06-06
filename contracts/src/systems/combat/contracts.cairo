@@ -533,7 +533,6 @@ mod combat_systems {
                 set!(world, (battle));
 
                 // ensure structure lost the battle
-                assert!(battle.winner() != BattleSide::None, "battle has no winner");
                 assert!(structure_army.battle_side != battle.winner(), "structure army won");
             }
 
