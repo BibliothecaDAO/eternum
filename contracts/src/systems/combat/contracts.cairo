@@ -475,12 +475,7 @@ mod combat_systems {
                 / battle_army_health.lifetime;
 
             caller_army_health.decrease_by(caller_army_health.current - caller_army_health_left);
-
-            caller_army
-                .troops
-                .deduct_percentage(battle_army_health.current, battle_army_health.lifetime);
-
-            set!(world, (caller_army, caller_army_health));
+            set!(world, (caller_army_health));
 
             battle_army.troops.deduct(caller_army_original_troops);
             battle_army_health.decrease_by(caller_army_original_health);
@@ -496,6 +491,11 @@ mod combat_systems {
             let troop_config = TroopConfigImpl::get(world);
             battle.restart(tick, troop_config);
             set!(world, (battle));
+
+            caller_army.battle_id = 0;
+            caller_army.battle_side = BattleSide::None;
+            set!(world, (caller_army));
+
         }
 
 
