@@ -29,8 +29,6 @@ fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
 
     (world, hyperstructure_config_dispatcher)
 }
-
-
 // #[test]
 // #[available_gas(3000000000000)]
 // fn test_create_hyperstructure() {
@@ -45,4 +43,5 @@ fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
 //     // // let world.uuid start from 1
 //     // world.uuid();
 // }
+
 
