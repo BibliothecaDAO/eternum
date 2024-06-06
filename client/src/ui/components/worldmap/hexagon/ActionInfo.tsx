@@ -40,16 +40,16 @@ export const ActionInfo = () => {
         <group position={[hoveredHexPosition.x, 0.32, -hoveredHexPosition.y]}>
           <BaseThreeTooltip position={Position.CENTER} className="-mt-[230px]" distanceFactor={44}>
             <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
-            <div>Costs</div>
+
             {!isExplored && (
               <div>
                 <ResourceCost
-                  amount={EternumGlobalConfig.exploration.wheatBurn}
+                  amount={-EternumGlobalConfig.exploration.wheatBurn}
                   resourceId={ResourcesIds.Wheat}
                   balance={getBalance(realmEntityId, ResourcesIds.Wheat).balance}
                 />
                 <ResourceCost
-                  amount={EternumGlobalConfig.exploration.fishBurn}
+                  amount={-EternumGlobalConfig.exploration.fishBurn}
                   resourceId={ResourcesIds.Fish}
                   balance={getBalance(realmEntityId, ResourcesIds.Fish).balance}
                 />

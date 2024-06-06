@@ -9,11 +9,12 @@ import clsx from "clsx";
 import { Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { useComponentValue } from "@dojoengine/react";
-import { currencyFormat } from "@/ui/utils/utils";
+import { currencyFormat, getColRowFromUIPosition } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ArrowRight } from "lucide-react";
+import { ArmyMode } from "@/hooks/store/_mapStore";
 
 interface ArmyInfoLabelProps {
   structureEntityId?: bigint;
@@ -31,11 +32,12 @@ export const CombatLabel = ({
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
   const {
     setup: {
-      components: { Protector },
+      components: { Protector, Position },
     },
   } = useDojo();
-
   const setBattleView = useUIStore((state) => state.setBattleView);
+  const clearSelection = useUIStore((state) => state.clearSelection);
+  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
 
   const attackedArmyId = useMemo(() => {
     if (defenderEntityId) {
@@ -51,12 +53,16 @@ export const CombatLabel = ({
     setShowMergeTroopsPopup(true);
   };
 
+  const position = useComponentValue(Position, getEntityIdFromKeys([attackerEntityId]))!;
+
   const attack = () => {
+    moveCameraToColRow(position.x, position.y, 3, true);
     setBattleView({
       attackerId: attackerEntityId,
       defenderId: BigInt(attackedArmyId || 0n),
       structure: BigInt(structureEntityId || 0n),
     });
+    clearSelection();
   };
 
   return (

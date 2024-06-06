@@ -1,3 +1,5 @@
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { BattleType } from "@/dojo/modelManager/types";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyAndName, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useBattleManager, useBattles } from "@/hooks/helpers/useBattles";
@@ -5,20 +7,12 @@ import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { nameMapping } from "@/ui/components/military/ArmyManagementCard";
 import Button from "@/ui/elements/Button";
-import { currencyFormat } from "@/ui/utils/utils";
+import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
+import { Component, OverridableComponent } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
-
-const slideUp = {
-  hidden: { y: "100%" },
-  visible: { y: "0%", opacity: 1, transition: { duration: 0.5 } },
-};
-
-const slideDown = {
-  hidden: { y: "-100%", opacity: 0 },
-  visible: { y: "0%", opacity: 1, transition: { duration: 0.3 } },
-};
 
 export const BattleView = () => {
   const {
@@ -27,7 +21,7 @@ export const BattleView = () => {
     },
   } = useDojo();
   const battleView = useUIStore((state) => state.battleView);
-
+  const setBattleView = useUIStore((state) => state.setBattleView);
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
 
   const attackerArmy = getArmyByEntityId({ entity_id: battleView?.attackerId || 0n });
@@ -35,10 +29,7 @@ export const BattleView = () => {
 
   const { updatedBattle } = useBattleManager(BigInt(defenderArmy?.battle_id || 0n));
 
-  // if structure is not 0, then the defender is a structure
-  const defenderEntityId = useMemo(() => {
-    return defenderArmy?.entity_id;
-  }, [battleView?.attackerId, battleView?.defenderId, defenderArmy]);
+  console.log(updatedBattle.getBattle());
 
   const battleAdjusted = useMemo(() => {
     return updatedBattle.getUpdatedBattle(currentDefaultTick);
@@ -48,14 +39,29 @@ export const BattleView = () => {
     <div>
       <motion.div
         className="absolute top-0 flex w-full"
-        variants={slideDown}
+        variants={{
+          hidden: { y: "-100%", opacity: 0 },
+          visible: { y: "0%", opacity: 1, transition: { duration: 0.3 } },
+        }}
         initial="hidden"
         animate="visible"
         exit="hidden"
       >
-        <div className="mx-auto bg-brown text-gold text-4xl p-4">Battle</div>
+        <div className="mx-auto bg-brown text-gold text-2xl  p-4 flex flex-col w-72 text-center">
+          Battle
+          <Button onClick={() => setBattleView(null)}>exit battle view</Button>
+        </div>
       </motion.div>
-      <motion.div className="absolute bottom-0" variants={slideUp} initial="hidden" animate="visible" exit="hidden">
+      <motion.div
+        className="absolute bottom-0"
+        variants={{
+          hidden: { y: "100%" },
+          visible: { y: "0%", opacity: 1, transition: { duration: 0.5 } },
+        }}
+        initial="hidden"
+        animate="visible"
+        exit="hidden"
+      >
         <BattleProgressBar
           attackingHealth={
             !isNaN(Number(battleAdjusted?.attack_army_health.current))
@@ -72,15 +78,18 @@ export const BattleView = () => {
           lifetimeDefendingHealth={Number(defenderArmy?.lifetime)}
           defender={defenderArmy?.name}
         />
-        <div className="w-screen bg-brown h-64 grid grid-cols-12 py-8">
+        <div className="w-screen bg-brown/50 backdrop-blur-lg h-64 grid grid-cols-12 py-8 ">
           <EntityAvatar />
           <TroopRow army={attackerArmy} />
+
           <Actions
+            battle={updatedBattle}
             attacker={BigInt(attackerArmy?.entity_id || "0")}
-            defender={BigInt(defenderEntityId || "0")}
+            defender={BigInt(defenderArmy?.entity_id || "0")}
             structure={BigInt(battleView?.structure || "0")}
             battleId={BigInt(defenderArmy?.battle_id || "0")}
           />
+
           <TroopRow army={defenderArmy as ArmyAndName} defending />
           <EntityAvatar />
         </div>
@@ -112,13 +121,16 @@ export const BattleProgressBar = ({
     attackingHealthPercentage > defendingHealthPercentage
       ? `linear-gradient(to right, #582C4D ${attackingHealthPercentage}%, rgba(0,0,0,0) ${defendingHealthPercentage}%)`
       : `linear-gradient(to left, #582C4D ${defendingHealthPercentage}%, rgba(0,0,0,0) ${attackingHealthPercentage}%)`;
-  const slideUp = {
-    hidden: { y: "100%" },
-    visible: { y: "0%", transition: { duration: 0.5 } },
-  };
 
   return (
-    <motion.div initial="hidden" animate="visible" variants={slideUp}>
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: { y: "100%" },
+        visible: { y: "0%", transition: { duration: 0.5 } },
+      }}
+    >
       <div className="mx-auto w-2/3 flex justify-between text-2xl text-white">
         <div>
           <p>Your army</p>
@@ -156,7 +168,7 @@ export const EntityAvatar = () => {
           initial="hidden"
           animate="visible"
           variants={slideUp}
-          className="w-36 h-36 rounded-full  -mt-28"
+          className="w-36 h-36 clip-angled border-gradient border-4  -mt-28"
           src="./images/avatars/6.png"
           alt=""
         />
@@ -167,11 +179,13 @@ export const EntityAvatar = () => {
 };
 
 export const Actions = ({
+  battle,
   attacker,
   defender,
   structure,
   battleId,
 }: {
+  battle: BattleManager;
   attacker: bigint;
   defender: bigint;
   structure: bigint;
@@ -185,9 +199,18 @@ export const Actions = ({
     network: { provider },
     setup: {
       systemCalls: { create_army, army_buy_troops, battle_start },
-      components: { Protector, Army, Health },
+      components: { Protector, Army, Health, Realm },
     },
   } = useDojo();
+
+  const isActive = useMemo(() => battle.battleActive(), [battle]);
+
+  const hasProtector = useComponentValue(Protector, getEntityIdFromKeys([structure]))?.army_id;
+  const isRealm = useComponentValue(Realm, getEntityIdFromKeys([structure]));
+
+  const canClaimBecauseNotRealm = useMemo(() => {
+    return !isRealm && !hasProtector;
+  }, [isRealm, hasProtector]);
 
   const handleRaid = async () => {
     setLoading(true);
@@ -224,6 +247,7 @@ export const Actions = ({
 
     setLoading(false);
   };
+
   const handleLeaveBattle = async () => {
     setLoading(true);
 
@@ -234,16 +258,33 @@ export const Actions = ({
     });
 
     setLoading(false);
+    setBattleView(null);
   };
 
   return (
     <div className=" col-span-2 flex justify-center">
       <div className="flex flex-col">
-        <Button onClick={handleRaid}>Raid</Button>
-        <Button onClick={handleBattleStart}>Battle</Button>
-        <Button onClick={handleBattleClaim}>Claim Structure</Button>
-        <Button onClick={handleLeaveBattle}>Leave Battle</Button>
-        <Button onClick={() => setBattleView(null)}>exit view</Button>
+        <Button isLoading={loading} onClick={handleRaid}>
+          Raid
+        </Button>
+
+        {/* IF BATTLE HAS BEEN WON or NO ARMY ON STRUCTURE */}
+
+        {canClaimBecauseNotRealm && (
+          <Button isLoading={loading} onClick={handleBattleClaim}>
+            Claim Structure
+          </Button>
+        )}
+
+        {isActive ? (
+          <Button isLoading={loading} onClick={handleLeaveBattle}>
+            Leave Battle
+          </Button>
+        ) : (
+          <Button isLoading={loading} onClick={handleBattleStart}>
+            Battle
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -287,15 +328,17 @@ export const TroopCard = ({
   defending?: boolean;
 }) => {
   return (
-    <div className={` bg-gold/20 p-2 clip-angled-sm ${className}`}>
+    <div
+      className={` bg-gold/30 text-gold font-bold border-2 border-gradient p-2 clip-angled-sm hover:bg-gold/40 duration-300 ${className}`}
+    >
       <img
         style={defending ? { transform: "scaleX(-1)" } : {}}
         className="h-28 object-cover mx-auto p-2"
         src={`/images/icons/${id}.png`}
         alt={nameMapping[id]}
       />
-      <div className="text-gold text"> {nameMapping[id]}</div>
-      <div className="text-gold text-xl">x {currencyFormat(count, 0)}</div>
+      <div> {nameMapping[id]}</div>
+      <div>x {currencyFormat(count, 0)}</div>
     </div>
   );
 };

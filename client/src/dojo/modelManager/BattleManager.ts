@@ -37,6 +37,11 @@ export class BattleManager {
     }
   }
 
+  public battleActive() {
+    const battle = this.getBattle();
+    return battle ? battle.tick_duration_left > 0n : false;
+  }
+
   public getUpdatedBattle(currentTick: number) {
     const battle = this.getBattle();
     if (!battle) return;

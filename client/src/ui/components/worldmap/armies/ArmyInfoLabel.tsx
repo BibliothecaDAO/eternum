@@ -35,15 +35,16 @@ interface ArmyInfoLabelProps {
 const RaiderInfo = ({ info, accountAddress }: ArmyInfoLabelProps) => {
   const { getRealmAddressName } = useRealm();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const { entity_id, entity_owner_id, address, arrives_at, realm, troops, battle_id, battle_side } = info;
 
   const isPassiveTravel = useMemo(
     () => (info.arrives_at && nextBlockTimestamp ? info.arrives_at > nextBlockTimestamp : false),
     [info.arrives_at, nextBlockTimestamp],
   );
 
-  const isActiveTravel = false;
-
-  const { entity_id, entity_owner_id, address, arrives_at, realm, troops } = info;
+  const battle = useMemo(() => {
+    return !Number.isNaN(battle_side);
+  }, [battle_id, battle_side]);
 
   const realmId = BigInt(realm?.realm_id) || 0n;
 
@@ -51,37 +52,40 @@ const RaiderInfo = ({ info, accountAddress }: ArmyInfoLabelProps) => {
 
   const originRealmName = getRealmNameById(BigInt(realmId));
 
-  const isTraveling = isPassiveTravel || isActiveTravel;
+  const isTraveling = isPassiveTravel;
 
-  const bgColor = accountAddress ? (BigInt(accountAddress) === BigInt(address) ? "bg-crimson" : "bg-brown") : undefined;
-
-  const pulseColor = !isTraveling ? "" : "";
+  // TODO: Check if in battle - if so, display in battle
 
   return (
     <div
       className={clsx(
         "w-auto flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold shadow-2xl border-2 border-gradient",
-        bgColor,
-        pulseColor,
+        accountAddress ? (BigInt(accountAddress) === BigInt(address) ? "bg-crimson" : "bg-brown") : undefined,
       )}
     >
       <div className="flex items-center w-full mt-1 justify-between text-xs">
         <div className="flex flex-col gap-1 w-full">
-          <div className="flex items-center text-gold text-lg gap-2">
-            <OrderIcon order={getRealmOrderNameById(realmId)} className="mr-1" size="sm" />
-            {originRealmName}
+          <div className="flex items-center text-gold gap-2">
+            <OrderIcon order={getRealmOrderNameById(realmId)} className="mr-1" size="md" />
+
+            <div>
+              {" "}
+              <div className=" text-lg"> {originRealmName}</div>
+              {attackerAddressName}
+            </div>
           </div>
           <div className="self-center flex justify-between w-full">
             {!isTraveling && <div className="flex   italic text-gold self-center">Idle</div>}
             {info.arrives_at && isTraveling && nextBlockTimestamp && (
               <div className="flex   italic text-light-pink">
                 {isPassiveTravel ? formatSecondsLeftInDaysHours(arrives_at - nextBlockTimestamp) : "Arrives Next Tick"}
+
+                {battle && `In Battle`}
               </div>
             )}
             <StaminaResource entityId={BigInt(entity_id)} />
           </div>
         </div>
-        {/* <div className="-mt-2">{attackerAddressName}</div> */}
       </div>
       <div className="w-full flex flex-col mt-2 space-y-2 font-bold">
         <div className="grid grid-cols-3 gap-2 relative justify-between w-full text-gold">

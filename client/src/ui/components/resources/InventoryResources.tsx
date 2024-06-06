@@ -20,7 +20,7 @@ export const InventoryResources = ({
 
   return (
     <div className={className}>
-      <div className="w-full uppercase font-bold mb-2">{title && title}</div>
+      {/* <div className="w-full uppercase font-bold p-2">{title && title}</div> */}
       {inventoryResources &&
         inventoryResources
           .slice(0, max)
@@ -28,8 +28,8 @@ export const InventoryResources = ({
             (resource) =>
               resource && (
                 <ResourceCost
-                  size="xs"
-                  textSize="xxs"
+                  size="sm"
+                  textSize="xs"
                   key={resource.resourceId}
                   type="vertical"
                   color="text-green"
