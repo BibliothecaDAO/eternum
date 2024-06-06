@@ -228,10 +228,10 @@ export function defineContractComponents(world: World) {
           },
           attack_army_health: { current: RecsType.BigInt, lifetime: RecsType.BigInt },
           defence_army_health: { current: RecsType.BigInt, lifetime: RecsType.BigInt },
-          attack_delta: RecsType.Number,
-          defence_delta: RecsType.Number,
-          tick_last_updated: RecsType.BigInt,
-          tick_duration_left: RecsType.BigInt,
+          attack_delta: RecsType.BigInt,
+          defence_delta: RecsType.BigInt,
+          last_updated: RecsType.BigInt,
+          duration_left: RecsType.BigInt,
         },
         {
           metadata: {

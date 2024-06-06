@@ -65,7 +65,7 @@ export const useBattles = () => {
 
     if (!battle) return;
 
-    if (battle.tick_last_updated !== currentDefaultTick) {
+    if (battle.last_updated !== currentDefaultTick) {
       updateBattle(battle, BigInt(currentDefaultTick));
     }
     return { battle, attackerArmy, defenderArmy };
@@ -89,16 +89,16 @@ const decreaseHealthBy = (health: { current: bigint; lifetime: bigint }, value: 
 };
 
 const getDurationPassed = (battle: any, currentDefaultTick: bigint) => {
-  const duractionSinceLastUpdate = currentDefaultTick - battle.tick_last_updated;
-  if (battle.tick_duration_left >= duractionSinceLastUpdate) {
-    battle.tick_duration_left -= duractionSinceLastUpdate;
-    battle.tick_last_updated = currentDefaultTick;
+  const duractionSinceLastUpdate = currentDefaultTick - battle.last_updated;
+  if (battle.duration_left >= duractionSinceLastUpdate) {
+    battle.duration_left -= duractionSinceLastUpdate;
+    battle.last_updated = currentDefaultTick;
     return duractionSinceLastUpdate;
   } else {
     // battle is over
-    const duration = battle.tick_duration_left;
-    battle.tick_duration_left = 0n;
-    battle.tick_last_updated = currentDefaultTick;
+    const duration = battle.duration_left;
+    battle.duration_left = 0n;
+    battle.last_updated = currentDefaultTick;
 
     return duration;
   }

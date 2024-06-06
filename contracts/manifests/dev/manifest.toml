@@ -70,8 +70,8 @@ name = "eternum::systems::buildings::contracts::building_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x490d8572029a070064c52d09d2fdb4d5a538bd26f723abfcdeeaff38e47dfeb"
-class_hash = "0x2270eaa68630aea63c1d849028985510a8313a2ba901342d125f1e1dc853e7a"
-original_class_hash = "0x2270eaa68630aea63c1d849028985510a8313a2ba901342d125f1e1dc853e7a"
+class_hash = "0x15a7fb33eb6e76eb8dc71db9124c43546557b604fd3a9a002510663d547adbc"
+original_class_hash = "0x15a7fb33eb6e76eb8dc71db9124c43546557b604fd3a9a002510663d547adbc"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_combat_contracts_combat_systems.json"
 reads = []
@@ -470,8 +470,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x1865f3d58fa32f36b9c8e80e11f6fd3eb1598ab1e20de1c963fece5c1947e57"
-original_class_hash = "0x1865f3d58fa32f36b9c8e80e11f6fd3eb1598ab1e20de1c963fece5c1947e57"
+class_hash = "0xb68241de052faae4154b8b8779a16686e2a0c56e16f973359a4ba7cc1fc2aa"
+original_class_hash = "0xb68241de052faae4154b8b8779a16686e2a0c56e16f973359a4ba7cc1fc2aa"
 abi = "abis/deployments/models/eternum_models_combat_battle.json"
 name = "eternum::models::combat::battle"
 
@@ -502,21 +502,21 @@ key = false
 
 [[models.members]]
 name = "attack_delta"
-type = "u32"
-key = false
-
-[[models.members]]
-name = "defence_delta"
-type = "u32"
-key = false
-
-[[models.members]]
-name = "tick_last_updated"
 type = "u64"
 key = false
 
 [[models.members]]
-name = "tick_duration_left"
+name = "defence_delta"
+type = "u64"
+key = false
+
+[[models.members]]
+name = "last_updated"
+type = "u64"
+key = false
+
+[[models.members]]
+name = "duration_left"
 type = "u64"
 key = false
 
@@ -1933,28 +1933,6 @@ name = "eternum::models::structure::structure_count"
 name = "coord"
 type = "Coord"
 key = true
-
-[[models.members]]
-name = "count"
-type = "u8"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x70b0d7a75f4f826e2d8556abe0c1c0891539611d98658421f9eb2754f263be8"
-original_class_hash = "0x70b0d7a75f4f826e2d8556abe0c1c0891539611d98658421f9eb2754f263be8"
-abi = "abis/deployments/models/eternum_models_tick_tick_move.json"
-name = "eternum::models::tick::tick_move"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "tick"
-type = "u64"
-key = false
 
 [[models.members]]
 name = "count"
