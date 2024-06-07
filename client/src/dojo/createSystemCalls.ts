@@ -156,7 +156,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   const leave_guild = async (props: SystemProps.LeaveGuild) => {
     await provider.leave_guild(props);
   };
-  
+
   const transfer_guild_ownership = async (props: SystemProps.TransferGuildOwnership) => {
     await provider.transfer_guild_ownership(props);
   };

@@ -295,10 +295,7 @@ export const formatTime = (seconds: number): string => {
 };
 
 // Add override
-export function sortItems<T>(
-  items: T[],
-  activeSort: SortInterface
-): T[] {
+export function sortItems<T>(items: T[], activeSort: SortInterface): T[] {
   const sortedItems = [...items];
 
   if (activeSort.sort !== "none") {
@@ -308,25 +305,25 @@ export function sortItems<T>(
 
       let comparison = 0;
 
-      if (typeof keyA === 'string' && typeof keyB === 'string') {
+      if (typeof keyA === "string" && typeof keyB === "string") {
         comparison = keyA.localeCompare(keyB);
-      } else if (typeof keyA === 'number' && typeof keyB === 'number') {
+      } else if (typeof keyA === "number" && typeof keyB === "number") {
         comparison = keyA - keyB;
       }
 
-      return activeSort.sort === 'asc' ? comparison : -comparison;
+      return activeSort.sort === "asc" ? comparison : -comparison;
     });
   } else {
     return sortedItems.sort((a, b) => {
-      const keyA = getPropertyByPath(a, 'realmId') as number;
-      const keyB = getPropertyByPath(b, 'realmId') as number;
+      const keyA = getPropertyByPath(a, "realmId") as number;
+      const keyB = getPropertyByPath(b, "realmId") as number;
       return keyB - keyA;
     });
   }
 }
 
 function getPropertyByPath<T>(obj: T, path: string): any {
-  return path.split('.').reduce((o, p) => (o ? (o as any)[p] : 0), obj);
+  return path.split(".").reduce((o, p) => (o ? (o as any)[p] : 0), obj);
 }
 
 export const copyPlayerAddressToClipboard = (address: bigint, name: string) => {
@@ -339,4 +336,3 @@ export const copyPlayerAddressToClipboard = (address: bigint, name: string) => {
       console.error("Failed to copy: ", err);
     });
 };
-

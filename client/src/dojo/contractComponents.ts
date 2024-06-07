@@ -963,7 +963,7 @@ export function defineContractComponents(world: World) {
         {
           entity_id: RecsType.BigInt,
           is_public: RecsType.Boolean,
-          member_count: RecsType.Number
+          member_count: RecsType.Number,
         },
         {
           metadata: {

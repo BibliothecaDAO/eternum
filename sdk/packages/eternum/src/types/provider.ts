@@ -293,7 +293,7 @@ export interface JoinGuildProps extends SystemSigner {
   guild_entity_id: num.BigNumberish;
 }
 export interface WhitelistPlayerProps extends SystemSigner {
-  player_address_to_whitelist: num.BigNumberish; 
+  player_address_to_whitelist: num.BigNumberish;
   guild_entity_id: num.BigNumberish;
 }
 

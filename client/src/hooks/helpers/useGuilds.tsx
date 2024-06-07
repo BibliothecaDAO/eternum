@@ -6,7 +6,7 @@ import { useRealm } from "./useRealm";
 import { useEntities } from "./useEntities";
 import useLeaderBoardStore, { GuildPointsLeaderboardInterface } from "../store/useLeaderBoardStore";
 
-export type GuildAndName = ClientComponents["Guild"]["schema"] & { name: string } & { rank: number | string};
+export type GuildAndName = ClientComponents["Guild"]["schema"] & { name: string } & { rank: number | string };
 export type GuildMemberAndName = ClientComponents["GuildMember"]["schema"] & { name: string } & {
   playerAddress: string;
 };
@@ -87,7 +87,7 @@ const formatGuilds = (
   Guild: Component,
   getEntityName: (entityId: bigint) => string,
   getGuildMembers: (guildEntityId: bigint) => { guildMembers: GuildMemberAndName[] },
-  guildPointsLeaderboard: GuildPointsLeaderboardInterface[]
+  guildPointsLeaderboard: GuildPointsLeaderboardInterface[],
 ): GuildAndName[] => {
   return guilds.map((guild_entity_id) => {
     const guild = getComponentValue(Guild, guild_entity_id) as ClientComponents["Guild"]["schema"];

@@ -190,8 +190,8 @@ export const MyGuild = () => {
                 </div>
               ) : (
                 <Button isLoading={isLoading} onClick={leaveGuild} size="xs">
-                    Leave Guild
-                  </Button>
+                  Leave Guild
+                </Button>
               )}
             </div>
           </div>

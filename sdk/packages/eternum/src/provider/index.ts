@@ -542,7 +542,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "guild_systems"),
       entrypoint: "whitelist_player",
-      calldata: [player_address_to_whitelist, guild_entity_id]
+      calldata: [player_address_to_whitelist, guild_entity_id],
     });
   }
 
@@ -552,7 +552,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "guild_systems"),
       entrypoint: "leave_guild",
-      calldata: []
+      calldata: [],
     });
   }
 
@@ -562,7 +562,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "guild_systems"),
       entrypoint: "transfer_guild_ownership",
-      calldata: [guild_entity_id, to_player_address]
+      calldata: [guild_entity_id, to_player_address],
     });
   }
 
@@ -572,7 +572,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "guild_systems"),
       entrypoint: "remove_guild_member",
-      calldata: [player_address_to_remove]
+      calldata: [player_address_to_remove],
     });
   }
 
@@ -582,7 +582,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "guild_systems"),
       entrypoint: "remove_player_from_whitelist",
-      calldata: [player_address_to_remove, guild_entity_id]
+      calldata: [player_address_to_remove, guild_entity_id],
     });
   }
 
