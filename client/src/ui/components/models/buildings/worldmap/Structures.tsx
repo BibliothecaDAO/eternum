@@ -126,13 +126,13 @@ const BuiltStructure = ({
   // const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>
-      {isAttackable && (
+      {/* {isAttackable && (
         <CombatLabel
-          structureEntityId={structure.entityId}
+          structureAtPosition={structure.entityId}
           attackerEntityId={selectedEntity!.id}
           isTargetMine={structure.isMine}
         />
-      )}
+      )} */}
       <primitive dropShadow scale={scale} object={model!} />
       {/* <Detailed distances={[0, 350]}>
         <pointLight

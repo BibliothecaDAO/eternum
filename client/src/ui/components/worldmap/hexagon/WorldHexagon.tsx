@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 // @ts-ignore
 import { Flags } from "@/ui/components/worldmap/Flags.jsx";
 import useUIStore from "../../../../hooks/store/useUIStore.js";
-import { useDojo } from "../../../../hooks/context/DojoContext.js";
+import { useDojo } from "../../../../hooks/context/DojoContext";
 import { Subscription } from "rxjs";
 import { BiomesGrid, HexagonGrid, useSetPossibleActions } from "./HexLayers.js";
 import { Armies } from "../armies/Armies.js";
@@ -10,29 +10,26 @@ import { create } from "zustand";
 import { ShardsMines } from "../../models/buildings/worldmap/ShardsMines.js";
 import { Structures } from "../../models/buildings/worldmap/Structures.js";
 
+import { COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
+
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
   setExploredHexes: (col: number, row: number) => void;
 }
 
 export const useExploredHexesStore = create<ExploredHexesState>((set) => ({
-  exploredHexes: new Map(),
+  exploredHexes: new Map<number, Set<number>>(),
 
-  setExploredHexes: (col, row) =>
+  setExploredHexes: (col: number, row: number) =>
     set((state) => {
       const newMap = new Map(state.exploredHexes);
-      const rowSet = newMap.get(col) || new Set();
-      rowSet.add(row);
-      newMap.set(col, rowSet);
+      if (!newMap.has(col)) {
+        newMap.set(col, new Set());
+      }
+      newMap.get(col)!.add(row);
       return { exploredHexes: newMap };
     }),
 }));
-
-export const DEPTH = 10;
-export const HEX_RADIUS = 3;
-export const ROWS = 300;
-export const COLS = 500;
-export const FELT_CENTER = 2147483647;
 
 export const WorldMap = () => {
   const {
@@ -87,16 +84,6 @@ export const WorldMap = () => {
     };
   }, [hexData, setExploredHexes]);
 
-  const models = useMemo(() => {
-    return (
-      <>
-        <Armies />
-        <ShardsMines />
-        <Structures />
-      </>
-    );
-  }, [hexData]);
-
   useSetPossibleActions(exploredHexes);
 
   return (
@@ -109,7 +96,9 @@ export const WorldMap = () => {
           return <HexagonGrid key={index} {...grid} explored={exploredHexes} />;
         })}
       </group>
-      {models}
+      <Armies />
+      <ShardsMines />
+      <Structures />
       <Flags />
     </>
   );

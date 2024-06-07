@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
-import { FELT_CENTER, HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
 import { getUIPositionFromColRow } from "../../utils/utils";
 import { biomes, getNeighborHexes } from "@bibliothecadao/eternum";
 import { Hexagon } from "../../../types";
 import { biomeComponents } from "../worldmap/hexagon/HexLayers";
 import { useMemo } from "react";
+import { HEX_RADIUS } from "@/ui/config";
 
 const hexagonGeometry = new THREE.ExtrudeGeometry(createHexagonShape(HEX_RADIUS), { depth: 2, bevelEnabled: false });
 
