@@ -10,7 +10,6 @@ export const Leaderboard = () => {
 
   return (
     <OSWindow onClick={() => togglePopup(leaderboard)} show={isOpen} title={leaderboard}>
-      {/* COMPONENTS GO HERE */}
       <LeaderboardPanel />
     </OSWindow>
   );

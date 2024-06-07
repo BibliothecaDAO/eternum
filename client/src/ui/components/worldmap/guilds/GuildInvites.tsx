@@ -4,32 +4,37 @@ import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import Button from "../../../elements/Button";
 
-import {
-  useGuildInvites,
-  GuildInviteAndName,
-  useUserGuild,
-  useGuildMembers,
-} from "../../../../hooks/helpers/useGuilds";
+import { useGuilds, AddressWhitelistAndName, GuildWhitelistAndName } from "../../../../hooks/helpers/useGuilds";
 import { hasGuild } from "./utils";
 import { GuildMembers } from "./GuildMembers";
+import { sortItems } from "@/ui/utils/utils";
+
+type GuildWhitelistAndNameKeys = keyof GuildWhitelistAndName;
+interface SortingParamGuildWhitelistAndName {
+  label: string;
+  sortKey: GuildWhitelistAndNameKeys;
+  className?: string;
+}
 
 export const GuildInvites = () => {
   const {
     setup: {
-      systemCalls: { join_guild },
+      systemCalls: { join_guild, remove_player_from_whitelist },
     },
     account: { account },
   } = useDojo();
 
-  const [_, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedGuild, setSelectedGuild] = useState({ id: 0n, name: "" });
 
-  const { invites } = useGuildInvites(BigInt(account.address));
-  const { userGuildEntityId } = useUserGuild();
-  const { guildMembers } = useGuildMembers(selectedGuild.id);
+  const { getAddressWhitelist, getAddressGuild, getGuildMembers } = useGuilds();
 
-  const sortingParams = useMemo(() => {
-    return [{ label: "Guild Name", sortKey: "name", className: "w-1/6" }];
+  const { addressWhitelist } = getAddressWhitelist(BigInt(account.address));
+  const { userGuildEntityId, isOwner } = getAddressGuild(account.address);
+  const { guildMembers } = getGuildMembers(selectedGuild.id);
+
+  const sortingParams: SortingParamGuildWhitelistAndName[] = useMemo(() => {
+    return [{ label: "Guild Name", sortKey: "name", className: "col-span-1" }];
   }, []);
 
   const [activeSort, setActiveSort] = useState<SortInterface>({
@@ -42,6 +47,15 @@ export const GuildInvites = () => {
     join_guild({ guild_entity_id: guildEntityId, signer: account }).finally(() => setIsLoading(false));
   };
 
+  const removePlayerFromWhitelist = (guildEntityId: bigint) => {
+    setIsLoading(true);
+    remove_player_from_whitelist({
+      player_address_to_remove: account.address,
+      guild_entity_id: guildEntityId,
+      signer: account,
+    }).finally(() => setIsLoading(false));
+  };
+
   return (
     <div className="flex flex-col">
       {selectedGuild.id ? (
@@ -50,7 +64,9 @@ export const GuildInvites = () => {
           <div className="flex flex-col">
             <div className="flex flex-row justify-between">
               <div className="px-4">
-                <Button onClick={() => setSelectedGuild({ id: 0n, name: "" })}>Back</Button>
+                <Button size="xs" onClick={() => setSelectedGuild({ id: 0n, name: "" })}>
+                  Back
+                </Button>
               </div>
 
               {!hasGuild(userGuildEntityId) && (
@@ -59,13 +75,13 @@ export const GuildInvites = () => {
                 </div>
               )}
             </div>
-            <GuildMembers guildMembers={guildMembers} />
+            <GuildMembers guildMembers={guildMembers} isOwner={isOwner} />
           </div>
         </>
       ) : (
         <>
           <div className="flex flex-col">
-            <SortPanel className="px-3 py-2">
+            <SortPanel className="px-3 py-2 grid grid-cols-3 gap-4">
               {sortingParams.map(({ label, sortKey, className }) => (
                 <SortButton
                   className={className}
@@ -82,16 +98,27 @@ export const GuildInvites = () => {
                 />
               ))}
             </SortPanel>
-            <div className="py-2">
-              {sortInvites(invites, activeSort)?.map((invite: GuildInviteAndName, index) => {
+            <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
+              {sortItems(addressWhitelist, activeSort)?.map((addressWhitelist: AddressWhitelistAndName, index) => {
                 return (
-                  <div key={index} className="flex px-3 text-xs">
+                  <div key={addressWhitelist.guild_entity_id} className="grid grid-cols-3 gap-4 text-xs">
                     <p
-                      className="w-1/6  hover:text-white  truncate"
-                      onClick={() => setSelectedGuild({ id: BigInt(invite.guild_entity_id), name: invite.name })}
+                      className="col-span-1  hover:text-white  truncate"
+                      onClick={() =>
+                        setSelectedGuild({ id: BigInt(addressWhitelist.guild_entity_id), name: addressWhitelist.name })
+                      }
                     >
-                      {invite.name}
+                      {addressWhitelist.name}
                     </p>
+                    <div className="col-span-1">
+                      <Button
+                        size="xs"
+                        isLoading={isLoading}
+                        onClick={() => removePlayerFromWhitelist(BigInt(addressWhitelist.guild_entity_id))}
+                      >
+                        Refuse
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
@@ -102,17 +129,3 @@ export const GuildInvites = () => {
     </div>
   );
 };
-
-export function sortInvites(
-  invites: GuildInviteAndName[],
-  activeSort: SortInterface,
-): GuildInviteAndName[] | undefined {
-  const sortedInvites = [...invites];
-
-  if (activeSort.sort === "none") return sortedInvites;
-  if (activeSort.sortKey === "name") {
-    return sortedInvites.sort((a, b) => {
-      return activeSort.sort === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-    });
-  }
-}

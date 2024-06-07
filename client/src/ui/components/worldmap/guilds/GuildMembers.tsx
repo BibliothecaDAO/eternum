@@ -2,14 +2,37 @@ import { useMemo, useState } from "react";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import { GuildMemberAndName } from "../../../../hooks/helpers/useGuilds";
+import { displayAddress, sortItems, copyPlayerAddressToClipboard } from "@/ui/utils/utils";
+import Button from "../../../elements/Button";
+import { useDojo } from "../../../../hooks/context/DojoContext";
 
 interface GuildMembersProps {
   guildMembers: GuildMemberAndName[];
+  isOwner: boolean;
 }
 
-export const GuildMembers = ({ guildMembers }: GuildMembersProps) => {
-  const sortingParams = useMemo(() => {
-    return [{ label: "Player", sortKey: "name", className: "w-1/6" }];
+type GuildMemberAndNameKeys = keyof GuildMemberAndName;
+interface SortingParamGuildMemberAndName {
+  label: string;
+  sortKey: GuildMemberAndNameKeys;
+  className?: string;
+}
+
+export const GuildMembers = ({ guildMembers, isOwner }: GuildMembersProps) => {
+  const {
+    setup: {
+      systemCalls: { remove_guild_member },
+    },
+    account: { account },
+  } = useDojo();
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const sortingParams: SortingParamGuildMemberAndName[] = useMemo(() => {
+    return [
+      { label: "Player", sortKey: "name", className: "col-span-1" },
+      { label: "Address", sortKey: "playerAddress", className: "col-span-1" },
+    ];
   }, []);
 
   const [activeSort, setActiveSort] = useState<SortInterface>({
@@ -17,20 +40,17 @@ export const GuildMembers = ({ guildMembers }: GuildMembersProps) => {
     sort: "none",
   });
 
-  const copyPlayerAddressToClipboard = (member: GuildMemberAndName) => {
-    navigator.clipboard
-      .writeText(member.address.toString())
-      .then(() => {
-        alert(`Address of ${member.name} copied to clipboard`);
-      })
-      .catch((err) => {
-        console.error("Failed to copy: ", err);
-      });
+  const removeGuildMember = (address: bigint) => {
+    setIsLoading(true);
+    remove_guild_member({
+      player_address_to_remove: address,
+      signer: account,
+    }).finally(() => setIsLoading(false));
   };
 
   return (
     <>
-      <SortPanel className="px-3 py-2">
+      <SortPanel className="px-3 py-2 grid grid-cols-3 gap-4">
         {sortingParams.map(({ label, sortKey, className }) => (
           <SortButton
             className={className}
@@ -47,11 +67,29 @@ export const GuildMembers = ({ guildMembers }: GuildMembersProps) => {
           />
         ))}
       </SortPanel>
-      <div className="py-2">
-        {sortGuildMembers(guildMembers, activeSort)?.map((member: GuildMemberAndName) => {
+      <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
+        {sortItems(guildMembers, activeSort)?.map((member: GuildMemberAndName) => {
           return (
-            <div key={member.address} className="flex px-3 text-xs hover:text-white">
-              <p onClick={() => copyPlayerAddressToClipboard(member)}>{member.name}</p>
+            <div
+              key={member.address}
+              className={`grid grid-cols-3 gap-4 text-xxs clip-angled-sm p-1 ${
+                member.playerAddress == account.address ? "bg-green/20" : ""
+              } `}
+            >
+              <p className="col-span-1">{member.name}</p>
+              <p
+                className="col-span-1 hover:text-white"
+                onClick={() => copyPlayerAddressToClipboard(BigInt(member.address), member.name)}
+              >
+                {displayAddress(member.playerAddress)}
+              </p>
+              {isOwner && member.playerAddress != account.address && (
+                <div className="col-span-1">
+                  <Button size="xs" isLoading={isLoading} onClick={() => removeGuildMember(BigInt(member.address))}>
+                    Kick out
+                  </Button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -59,17 +97,3 @@ export const GuildMembers = ({ guildMembers }: GuildMembersProps) => {
     </>
   );
 };
-
-export function sortGuildMembers(
-  guildMembers: GuildMemberAndName[],
-  activeSort: SortInterface,
-): GuildMemberAndName[] | undefined {
-  const sortedGuildMembers = [...guildMembers];
-
-  if (activeSort.sort === "none") return sortedGuildMembers;
-  if (activeSort.sortKey === "name") {
-    return sortedGuildMembers.sort((a, b) => {
-      return activeSort.sort === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-    });
-  }
-}

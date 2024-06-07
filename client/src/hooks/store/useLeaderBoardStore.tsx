@@ -8,11 +8,12 @@ import { create } from "zustand";
 import { HyperstructureEventInterface } from "@/dojo/events/hyperstructureEventQueries";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { useContributions } from "../helpers/useContributions";
+import { useGuilds } from "../helpers/useGuilds";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { getHyperstructureEvents } from "@/dojo/events/hyperstructureEventQueries";
 import { useCallback, useEffect } from "react";
 import { useRealm } from "../helpers/useRealm";
-import { displayAddress } from "@/ui/utils/utils";
+import { displayAddress, sortItems } from "@/ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 
 export const ResourceMultipliers: { [key in ResourcesIds]?: number } = {
@@ -65,20 +66,35 @@ export const calculateShares = (contributions: any[]) => {
   return points;
 };
 
+interface Rankable {
+  totalPoints: number;
+  rank: number;
+}
 export interface PlayerPointsLeaderboardInterface {
   address: string;
   addressName: string;
   order: string;
   totalPoints: number;
   isYours: boolean;
+  rank: number;
+}
+
+export interface GuildPointsLeaderboardInterface {
+  guildEntityId: bigint;
+  name: string;
+  totalPoints: number;
+  isYours: boolean;
+  rank: number;
 }
 
 interface LeaderboardStore {
   loading: boolean;
-  setLoading: (loading: boolean) => void;
   playerPointsLeaderboard: PlayerPointsLeaderboardInterface[];
-  setPointsLeaderboards: (playerPointsLeaderboard: PlayerPointsLeaderboardInterface[]) => void;
+  guildPointsLeaderboard: GuildPointsLeaderboardInterface[];
   finishedHyperstructures: HyperstructureEventInterface[];
+  setLoading: (loading: boolean) => void;
+  setPlayerPointsLeaderboards: (playerPointsLeaderboard: PlayerPointsLeaderboardInterface[]) => void;
+  setGuildPointsLeaderboards: (guildPointsLeaderboard: GuildPointsLeaderboardInterface[]) => void;
   setFinishedHyperstructures: (val: HyperstructureEventInterface[]) => void;
 }
 
@@ -86,17 +102,24 @@ const useLeaderBoardStore = create<LeaderboardStore>((set) => {
   return {
     loading: false,
     playerPointsLeaderboard: [],
-    setPointsLeaderboards: (playerPointsLeaderboard: PlayerPointsLeaderboardInterface[]) =>
-      set({ playerPointsLeaderboard: playerPointsLeaderboard }),
-    setLoading: (loading) => set({ loading }),
+    guildPointsLeaderboard: [],
     finishedHyperstructures: [],
+    setLoading: (loading) => set({ loading }),
+    setPlayerPointsLeaderboards: (playerPointsLeaderboard: PlayerPointsLeaderboardInterface[]) =>
+      set({ playerPointsLeaderboard: playerPointsLeaderboard }),
+    setGuildPointsLeaderboards: (guildPointsLeaderboard: GuildPointsLeaderboardInterface[]) =>
+      set({ guildPointsLeaderboard: guildPointsLeaderboard }),
     setFinishedHyperstructures: (val: HyperstructureEventInterface[]) => set({ finishedHyperstructures: val }),
   };
 });
 
 export const useComputePointsLeaderboards = () => {
-  const setPointsLeaderboards = useLeaderBoardStore((state) => state.setPointsLeaderboards);
+  const playerPointsLeaderboards = useLeaderBoardStore((state) => state.playerPointsLeaderboard);
+  const setPlayerPointsLeaderboards = useLeaderBoardStore((state) => state.setPlayerPointsLeaderboards);
+  const setGuildPointsLeaderboards = useLeaderBoardStore((state) => state.setGuildPointsLeaderboards);
+
   const { getContributions } = useContributions();
+  const { getAddressGuild } = useGuilds();
   const { getAddressName, getAddressOrder } = useRealm();
 
   const {
@@ -105,8 +128,9 @@ export const useComputePointsLeaderboards = () => {
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const updatePointsLeaderboard = useCallback(
+  const updatePlayerPointsLeaderboard = useCallback(
     (
+      playerPointsLeaderboards: PlayerPointsLeaderboardInterface[],
       hyperstructureEntityId: bigint,
       finishedTimestamp: number,
       currentTimestamp: number,
@@ -119,6 +143,7 @@ export const useComputePointsLeaderboards = () => {
       let totalHyperstructurePoints = HYPERSTRUCTURE_POINTS_PER_CYCLE * nbOfCycles;
 
       return computeHyperstructureLeaderboard(
+        playerPointsLeaderboards,
         contributions,
         totalHyperstructurePoints,
         account,
@@ -129,16 +154,51 @@ export const useComputePointsLeaderboards = () => {
     [getContributions],
   );
 
+  const updateGuildPointsLeaderboard = useCallback(
+    (playerPointsLeaderboard: PlayerPointsLeaderboardInterface[]): GuildPointsLeaderboardInterface[] => {
+      let tempGuildPointsLeaderboard: GuildPointsLeaderboardInterface[] = [];
+      playerPointsLeaderboard.forEach((player) => {
+        const { guildName, userGuildEntityId } = getAddressGuild(player.address);
+
+        if (userGuildEntityId) {
+          const index = tempGuildPointsLeaderboard.findIndex((guild) => guild.guildEntityId === userGuildEntityId);
+          if (index >= 0) {
+            tempGuildPointsLeaderboard[index].totalPoints += player.totalPoints;
+          } else {
+            tempGuildPointsLeaderboard.push({
+              guildEntityId: userGuildEntityId!,
+              name: guildName!,
+              totalPoints: player.totalPoints,
+              isYours: player.address === account.address,
+              rank: 0,
+            });
+          }
+        }
+      });
+
+      return setRanks(tempGuildPointsLeaderboard);
+    },
+    [getContributions],
+  );
+
   useEffect(() => {
     if (!nextBlockTimestamp) return;
 
     getHyperstructureEvents().then((events) => {
       let _tmpPlayerPointsLeaderboard;
+      let _tmpGuildPointsLeaderboard;
       events.forEach((event) => {
         const { hyperstructureEntityId, timestamp } = event;
-        _tmpPlayerPointsLeaderboard = updatePointsLeaderboard(hyperstructureEntityId, timestamp, nextBlockTimestamp);
+        _tmpPlayerPointsLeaderboard = updatePlayerPointsLeaderboard(
+          playerPointsLeaderboards,
+          hyperstructureEntityId,
+          timestamp,
+          nextBlockTimestamp,
+        );
+        _tmpGuildPointsLeaderboard = updateGuildPointsLeaderboard(_tmpPlayerPointsLeaderboard);
       });
-      _tmpPlayerPointsLeaderboard && setPointsLeaderboards(_tmpPlayerPointsLeaderboard);
+      _tmpPlayerPointsLeaderboard && setPlayerPointsLeaderboards(_tmpPlayerPointsLeaderboard);
+      _tmpGuildPointsLeaderboard && setGuildPointsLeaderboards(_tmpGuildPointsLeaderboard);
     });
   }, [nextBlockTimestamp]);
 };
@@ -146,13 +206,20 @@ export const useComputePointsLeaderboards = () => {
 export default useLeaderBoardStore;
 
 export const computeHyperstructureLeaderboard = (
+  playerPointsLeaderboards: PlayerPointsLeaderboardInterface[],
   contributions: any[],
   totalHyperstructurePoints: number,
   account: any,
   getAddressName: any,
   getAddressOrder: any,
 ): PlayerPointsLeaderboardInterface[] => {
-  let tempPlayerPointsLeaderboard: PlayerPointsLeaderboardInterface[] = [];
+  let tempPlayerPointsLeaderboard: PlayerPointsLeaderboardInterface[] = playerPointsLeaderboards;
+
+  if (!Array.isArray(contributions)) {
+    console.error("Contributions is not an array:", contributions);
+    return tempPlayerPointsLeaderboard;
+  }
+
   contributions.forEach((contribution) => {
     const playerAddress: string = "0x" + contribution!.player_address.toString(16);
     const index = tempPlayerPointsLeaderboard.findIndex((player) => player.address === playerAddress);
@@ -173,8 +240,17 @@ export const computeHyperstructureLeaderboard = (
           BigInt(contribution!.resource_type),
         ),
         isYours: playerAddress === account.address,
+        rank: 0,
       });
     }
   });
+
+  setRanks(tempPlayerPointsLeaderboard);
   return tempPlayerPointsLeaderboard;
 };
+
+function setRanks<T extends Rankable>(leaderboard: T[]): T[] {
+  const leaderboardSortedByRank = sortItems(leaderboard, { sortKey: "totalPoints", sort: "desc" });
+  leaderboardSortedByRank.forEach((item, index) => (item.rank = index + 1));
+  return leaderboardSortedByRank;
+}
