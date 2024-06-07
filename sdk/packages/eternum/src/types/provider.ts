@@ -293,11 +293,25 @@ export interface JoinGuildProps extends SystemSigner {
   guild_entity_id: num.BigNumberish;
 }
 export interface WhitelistPlayerProps extends SystemSigner {
-  player_address: num.BigNumberish;
+  player_address_to_whitelist: num.BigNumberish; 
   guild_entity_id: num.BigNumberish;
 }
 
 export interface LeaveGuild extends SystemSigner {}
+
+export interface TransferGuildOwnership extends SystemSigner {
+  guild_entity_id: num.BigNumberish;
+  to_player_address: num.BigNumberish;
+}
+
+export interface RemoveGuildMember extends SystemSigner {
+  player_address_to_remove: num.BigNumberish;
+}
+
+export interface RemovePlayerFromWhitelist extends SystemSigner {
+  player_address_to_remove: num.BigNumberish;
+  guild_entity_id: num.BigNumberish;
+}
 
 export interface CreateStartingResources extends SystemSigner {
   config_id: num.BigNumberish;

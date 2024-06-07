@@ -156,6 +156,18 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   const leave_guild = async (props: SystemProps.LeaveGuild) => {
     await provider.leave_guild(props);
   };
+  
+  const transfer_guild_ownership = async (props: SystemProps.TransferGuildOwnership) => {
+    await provider.transfer_guild_ownership(props);
+  };
+
+  const remove_guild_member = async (props: SystemProps.RemoveGuildMember) => {
+    await provider.remove_guild_member(props);
+  };
+
+  const remove_player_from_whitelist = async (props: SystemProps.RemovePlayerFromWhitelist) => {
+    await provider.remove_player_from_whitelist(props);
+  };
 
   const battle_start = async (props: SystemProps.BattleStartProps) => {
     await provider.battle_start(props);
@@ -213,6 +225,9 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     join_guild,
     whitelist_player,
     leave_guild,
+    transfer_guild_ownership,
+    remove_guild_member,
+    remove_player_from_whitelist,
 
     battle_start,
     battle_leave,

@@ -4,7 +4,8 @@ use starknet::ContractAddress;
 struct Guild {
     #[key]
     entity_id: u128,
-    is_public: bool
+    is_public: bool,
+    member_count: u16
 }
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -36,7 +37,7 @@ impl GuildMemberImpl of GuildMemberTrait {
 
 #[generate_trait]
 impl GuildWhitelistImpl of GuildWhitelistTrait {
-    fn assert_is_whitelisted(self: GuildWhitelist, guild_entity_id: u128) {
+    fn assert_is_whitelisted(self: GuildWhitelist) {
         assert(self.is_whitelisted == true, 'Player is not whitelisted');
     }
 }

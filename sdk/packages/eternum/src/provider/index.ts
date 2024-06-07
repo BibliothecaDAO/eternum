@@ -537,12 +537,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async whitelist_player(props: SystemProps.WhitelistPlayerProps) {
-    const { player_address, guild_entity_id, signer } = props;
+    const { player_address_to_whitelist, guild_entity_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "guild_systems"),
       entrypoint: "whitelist_player",
-      calldata: [player_address, guild_entity_id],
+      calldata: [player_address_to_whitelist, guild_entity_id]
     });
   }
 
@@ -552,7 +552,37 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "guild_systems"),
       entrypoint: "leave_guild",
-      calldata: [],
+      calldata: []
+    });
+  }
+
+  public async transfer_guild_ownership(props: SystemProps.TransferGuildOwnership) {
+    const { guild_entity_id, to_player_address, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      entrypoint: "transfer_guild_ownership",
+      calldata: [guild_entity_id, to_player_address]
+    });
+  }
+
+  public async remove_guild_member(props: SystemProps.RemoveGuildMember) {
+    const { player_address_to_remove, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      entrypoint: "remove_guild_member",
+      calldata: [player_address_to_remove]
+    });
+  }
+
+  public async remove_player_from_whitelist(props: SystemProps.RemovePlayerFromWhitelist) {
+    const { player_address_to_remove, guild_entity_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      entrypoint: "remove_player_from_whitelist",
+      calldata: [player_address_to_remove, guild_entity_id]
     });
   }
 
