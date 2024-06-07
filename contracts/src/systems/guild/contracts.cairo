@@ -8,7 +8,9 @@ trait IGuildSystems {
     fn leave_guild();
     fn transfer_guild_ownership(guild_entity_id: u128, to_player_address: ContractAddress);
     fn remove_guild_member(player_address_to_remove: ContractAddress);
-    fn remove_player_from_whitelist(player_address_to_remove: ContractAddress, guild_entity_id: u128);
+    fn remove_player_from_whitelist(
+        player_address_to_remove: ContractAddress, guild_entity_id: u128
+    );
 }
 
 #[dojo::contract]
@@ -97,7 +99,7 @@ mod guild_systems {
             guild_member.assert_has_guild();
 
             let mut guild_owner = get!(world, guild_member.guild_entity_id, Owner);
-            
+
             let mut guild = get!(world, guild_member.guild_entity_id, Guild);
 
             if (guild_member.address == guild_owner.address) {
@@ -111,8 +113,7 @@ mod guild_systems {
                 guild_owner.address = contract_address_const::<'0x0'>();
 
                 set!(world, (guild, guild_member, guild_owner));
-            }
-            else {
+            } else {
                 guild.member_count -= 1;
 
                 set!(world, (GuildMember { address: caller_address, guild_entity_id: 0 }, guild));
@@ -127,7 +128,10 @@ mod guild_systems {
             let to_player_guild_member_info = get!(world, to_player_address, GuildMember);
             to_player_guild_member_info.assert_has_guild();
 
-            assert(to_player_guild_member_info.guild_entity_id == guild_entity_id, 'Must transfer to guildmember');
+            assert(
+                to_player_guild_member_info.guild_entity_id == guild_entity_id,
+                'Must transfer to guildmember'
+            );
 
             let mut guild_owner = get!(world, guild_entity_id, Owner);
             guild_owner.address = to_player_address;
@@ -140,28 +144,42 @@ mod guild_systems {
             get!(world, guild_entity_id, Owner).assert_caller_owner();
 
             let mut guild_member_to_remove = get!(world, player_address_to_remove, GuildMember);
-            assert(guild_member_to_remove.guild_entity_id == guild_entity_id, 'Player not guildmember');
+            assert(
+                guild_member_to_remove.guild_entity_id == guild_entity_id, 'Player not guildmember'
+            );
 
             guild_member_to_remove.guild_entity_id = 0;
 
             let mut guild = get!(world, guild_entity_id, Guild);
             guild.member_count -= 1;
-            
+
             set!(world, (guild_member_to_remove, guild));
         }
 
-        fn remove_player_from_whitelist(world: IWorldDispatcher, player_address_to_remove: ContractAddress, guild_entity_id: u128) {
+        fn remove_player_from_whitelist(
+            world: IWorldDispatcher,
+            player_address_to_remove: ContractAddress,
+            guild_entity_id: u128
+        ) {
             get!(world, (player_address_to_remove, guild_entity_id), GuildWhitelist)
-                    .assert_is_whitelisted();
+                .assert_is_whitelisted();
 
             let caller_address = starknet::get_caller_address();
             let guild_owner = get!(world, guild_entity_id, Owner);
 
-            assert( (guild_owner.address == caller_address) || (player_address_to_remove == caller_address), 'Cannot remove from whitelist');
+            assert(
+                (guild_owner.address == caller_address)
+                    || (player_address_to_remove == caller_address),
+                'Cannot remove from whitelist'
+            );
 
             set!(
                 world,
-                (GuildWhitelist { address: player_address_to_remove, guild_entity_id: guild_entity_id, is_whitelisted: false })
+                (GuildWhitelist {
+                    address: player_address_to_remove,
+                    guild_entity_id: guild_entity_id,
+                    is_whitelisted: false
+                })
             );
         }
     }
