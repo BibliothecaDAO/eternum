@@ -47,8 +47,9 @@ export const BattleView = () => {
         animate="visible"
         exit="hidden"
       >
-        <div className="mx-auto bg-brown text-gold text-2xl  p-4 flex flex-col w-72 text-center">
-          Battle
+        <div className="mx-auto bg-brown text-gold text-2xl  p-4 flex flex-col w-72 text-center clip-angled">
+          <div className="mb-4">Battle!</div>
+
           <Button onClick={() => setBattleView(null)}>exit battle view</Button>
         </div>
       </motion.div>
@@ -70,7 +71,7 @@ export const BattleView = () => {
           lifetimeDefendingHealth={Number(defenderArmy?.lifetime)}
           defender={defenderArmy?.name}
         />
-        <div className="w-screen bg-brown/50 backdrop-blur-lg h-64 grid grid-cols-12 py-8 ">
+        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 grid grid-cols-12 p-6 mb-4">
           <EntityAvatar />
           <TroopRow army={attackerArmy} />
 
@@ -156,13 +157,13 @@ export const EntityAvatar = () => {
   return (
     <div className="col-span-2 flex">
       {" "}
-      <div className="mx-auto flex flex-col gap-4">
+      <div className="mx-auto flex flex-col gap-4  p-3">
         <motion.img
           initial="hidden"
           animate="visible"
           variants={slideUp}
-          className="w-36 h-36 clip-angled border-gradient border-4  -mt-28"
-          src="./images/avatars/6.png"
+          className="w-42 h-42 clip-angled  -mt-24"
+          src="./images/avatars/2.png"
           alt=""
         />
         <Button className="w-full">Reinforce Army</Button>
@@ -273,8 +274,7 @@ export const Actions = ({
 
   return (
     <div className=" col-span-2 flex justify-center flex-wrap">
-      <div className="w-full text-center text-gold uppercase">Actions</div>
-      <div className="grid grid-cols-2 gap-4 p-4 row-span-2">
+      <div className="grid grid-cols-2 gap-1  row-span-2">
         <Button variant="primary" className="flex flex-col gap-2" isLoading={loading} onClick={handleRaid}>
           <img className="w-10" src="/images/icons/raid.png" alt="coin" />
           Raid!
@@ -310,9 +310,9 @@ export const Actions = ({
 export const TroopRow = ({ army, defending = false }: { army: ArmyAndName; defending?: boolean }) => {
   const noArmy = useMemo(() => !army, [army]);
   return (
-    <div className=" grid-cols-3 col-span-3 gap-2 flex">
+    <div className=" grid-cols-3 col-span-3 gap-2 flex ">
       {noArmy ? (
-        <div className="text-2xl text-gold">
+        <div className="text-2xl text-gold  bg-white/10 p-5 border-4 border-gradient">
           Nothing Defending this poor structure. The residents are shaking in terror.
         </div>
       ) : (
