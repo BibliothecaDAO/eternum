@@ -200,8 +200,9 @@ const SelectEntityFromList = ({
 }) => {
   return (
     <div>
-      {entities.map((entity) => (
+      {entities.map((entity, index) => (
         <div
+          key={index}
           className={clsx(
             "flex w-full justify-between hover:bg-white/10 items-center  p-1  text-xs my-3 pl-2",
             selectedEntityId === entity.entity_id && "border-order-brilliance/40 border",
