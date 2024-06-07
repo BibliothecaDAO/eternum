@@ -1,7 +1,9 @@
 import { Position, ResourcesIds, UIPosition, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import realmHexPositions from "../../data/geodata/hex/realmHexPositions.json";
+import {
+  default as realmHexPositions,
+  default as realmsHexPositions,
+} from "../../data/geodata/hex/realmHexPositions.json";
 
 export { getEntityIdFromKeys };
 

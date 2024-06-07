@@ -1,15 +1,15 @@
-import { ClickedHex, HexPosition, Hexagon, HighlightPositions, Position2D } from "../../types";
-import { Position, StructureType } from "@bibliothecadao/eternum";
-import { Has, getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../context/DojoContext";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useEntityQuery } from "@dojoengine/react";
-import useUIStore from "./useUIStore";
 import {
   HyperstructureEventInterface,
   parseHyperstructureFinishedEventData,
 } from "@/dojo/events/hyperstructureEventQueries";
+import { Position, StructureType } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { Has, getComponentValue } from "@dojoengine/recs";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ClickedHex, HexPosition, Hexagon, HighlightPositions } from "../../types";
+import { useDojo } from "../context/DojoContext";
 import useLeaderBoardStore from "./useLeaderBoardStore";
+import useUIStore from "./useUIStore";
 
 export enum ArmyMode {
   Travel,
@@ -26,6 +26,8 @@ export interface MapStore {
   setHexData: (hexData: Hexagon[]) => void;
   selectedEntity: { id: bigint; position: Position } | undefined;
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => void;
+  targetEntity: bigint;
+  setTargetEntity: (entityId: bigint) => void;
   animationPaths: { id: bigint; path: Position[]; enemy: boolean }[];
   setAnimationPaths: (path: { id: bigint; path: Position[]; enemy: boolean }[]) => void;
   armyMode: ArmyMode | null;
@@ -39,9 +41,9 @@ export interface MapStore {
   clearSelection: () => void;
   showAllArmies: boolean;
   toggleShowAllArmies: () => void;
-  existingStructures: { col: number; row: number; type: StructureType; entityId: number }[];
+  existingStructures: { col: number; row: number; type: StructureType; entityId: bigint }[];
   setExistingStructures: (
-    existingStructures: { col: number; row: number; type: StructureType; entityId: number }[],
+    existingStructures: { col: number; row: number; type: StructureType; entityId: bigint }[],
   ) => void;
 }
 
@@ -60,6 +62,8 @@ export const createMapStoreSlice = (set: any) => ({
   },
   selectedEntity: undefined,
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => set({ selectedEntity: entity }),
+  targetEntity: 0n,
+  setTargetEntity: (entityId: bigint | undefined) => set({ targetEntity: entityId }),
   animationPaths: [],
   setAnimationPaths: (animationPaths: { id: bigint; path: Position[]; enemy: boolean }[]) => set({ animationPaths }),
   armyMode: null,
@@ -86,7 +90,7 @@ export const createMapStoreSlice = (set: any) => ({
     });
   },
   existingStructures: [],
-  setExistingStructures: (existingStructures: { col: number; row: number; type: StructureType; entityId: number }[]) =>
+  setExistingStructures: (existingStructures: { col: number; row: number; type: StructureType; entityId: bigint }[]) =>
     set({ existingStructures }),
 });
 
@@ -149,11 +153,11 @@ export const useSetExistingStructures = () => {
           row: position.y,
           type: type as StructureType,
           entity: entity,
-          entityId: Number(structure.entity_id),
+          entityId: structure.entity_id,
           isMine,
         };
       })
-      .filter(Boolean) as { col: number; row: number; type: StructureType; entityId: number }[];
+      .filter(Boolean) as { col: number; row: number; type: StructureType; entityId: bigint }[];
 
     setExistingStructures(_tmp);
   }, [builtStructures, account.address]);

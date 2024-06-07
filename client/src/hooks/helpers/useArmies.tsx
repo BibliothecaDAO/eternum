@@ -1,12 +1,11 @@
-import { useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../context/DojoContext";
-import { Component, Entity, Has, HasValue, Not, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { Position } from "@bibliothecadao/eternum";
-import { shortString } from "starknet";
-import { useMemo } from "react";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { getForeignKeyEntityId } from "@/ui/utils/utils";
+import { Position } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useMemo } from "react";
+import { shortString } from "starknet";
+import { useDojo } from "../context/DojoContext";
 
 export type ArmyAndName = ClientComponents["Army"]["schema"] & { name: string } & ClientComponents["Health"]["schema"] &
   ClientComponents["Protectee"]["schema"] &
@@ -82,8 +81,6 @@ const formatArmies = (
       name: name
         ? shortString.decodeShortString(name.name.toString())
         : `${protectee ? "🛡️" : "🗡️"}` + `Army ${army?.entity_id}`,
-      // note: have to explicitly specify entity id as the army entity id or else it's realm entity id
-      entity_id: army.entity_id,
     };
   });
 };
@@ -108,10 +105,15 @@ export const useArmies = () => {
     },
   } = useDojo();
 
-  const armies = useEntityQuery([Has(Army), Has(Health), NotValue(Health, { lifetime: 0n })]);
+  const armies = useEntityQuery([
+    Has(Army),
+    Has(Health),
+    NotValue(Movable, { sec_per_km: 0 }),
+    NotValue(Health, { current: 0n }),
+  ]);
 
   return {
-    armies: () =>
+    getArmies: () =>
       formatArmies(
         armies,
         Army,
@@ -239,7 +241,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
   }
 };
 
-export const getArmyByEntityId = ({ entity_id }: { entity_id: bigint }) => {
+export const getArmyByEntityId = (entity_id: bigint) => {
   const {
     setup: {
       components: {
@@ -259,7 +261,7 @@ export const getArmyByEntityId = ({ entity_id }: { entity_id: bigint }) => {
     },
   } = useDojo();
 
-  const armies = runQuery([Has(Army), HasValue(Army, { entity_id })]);
+  const armies = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
 
   return formatArmies(
     Array.from(armies),

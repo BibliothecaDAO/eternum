@@ -1,14 +1,13 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../context/DojoContext";
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useMemo } from "react";
+import { shortString } from "starknet";
+import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { getArmyByEntityId } from "./useArmies";
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { useMemo } from "react";
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { useEntities } from "./useEntities";
-import { shortString } from "starknet";
 
 export type FullArmyType = ClientComponents["Army"]["schema"] & ClientComponents["Health"]["schema"];
 
@@ -102,8 +101,8 @@ export const useBattles = () => {
   };
 
   const battleByEntityId = (attackerEntityId: bigint, defenderEntityId: bigint) => {
-    const attackerArmy = getArmyByEntityId({ entity_id: attackerEntityId });
-    const defenderArmy = getArmyByEntityId({ entity_id: defenderEntityId });
+    const attackerArmy = getArmyByEntityId(attackerEntityId);
+    const defenderArmy = getArmyByEntityId(defenderEntityId);
 
     if (
       !attackerArmy ||

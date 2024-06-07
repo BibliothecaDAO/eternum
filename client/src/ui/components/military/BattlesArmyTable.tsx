@@ -1,15 +1,13 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ExtraBattleInfo, useBattleManager, useBattles } from "@/hooks/helpers/useBattles";
-import { Headline } from "@/ui/elements/Headline";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { findResourceById } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
-import { ViewOnMapButton } from "./ArmyManagementCard";
-import useUIStore from "@/hooks/store/useUIStore";
 import { InventoryResources } from "../resources/InventoryResources";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 
 export const BattlesArmyTable = () => {
   const {
@@ -61,7 +59,7 @@ const BattleChip = ({ battleEntityId, ownArmy }: BattleChipProps) => {
     extendedBattle && (
       <div className=" items-center text-xs p-2 hover:bg-gold/20 clip-angled-sm bg-gold/20 border-gray-300 rounded-md">
         <div className=" text-xl w-full flex justify-between">
-          <div
+          {/* <div
             onClick={() =>
               setBattleView({
                 attackerId: BigInt(extendedBattle.ownArmy.entity_id),
@@ -72,7 +70,7 @@ const BattleChip = ({ battleEntityId, ownArmy }: BattleChipProps) => {
             className="flex items-center space-x-1 justify-end"
           >
             <ViewOnMapButton position={{ x: extendedBattle.x, y: extendedBattle.y }} className="text-xxs" />
-          </div>
+          </div> */}
         </div>
         <div className="flex flex-row justify-between items-center">
           <ArmyCard armyName={extendedBattle.ownArmyEntityName} army={extendedBattle.ownArmy} position={"start"} />

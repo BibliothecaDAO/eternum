@@ -62,7 +62,7 @@ export const SelectPreviewBuildingMenu = () => {
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  console.log(realmEntityId);
+
   const { realm } = useGetRealm(realmEntityId);
 
   const { getBalance } = useResourceBalance();

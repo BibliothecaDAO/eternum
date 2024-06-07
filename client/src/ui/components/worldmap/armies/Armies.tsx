@@ -1,79 +1,102 @@
 import { useDojo } from "../../../../hooks/context/DojoContext";
-import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 // @ts-ignore
-import { useEffect, useMemo, useRef } from "react";
+import { ReactElement, useEffect, useMemo, useRef } from "react";
 import { Subscription } from "rxjs";
-import { Army } from "./Army";
-import { getRealmOrderNameById } from "../../../utils/realms";
-import { useArmies } from "@/hooks/helpers/useArmies";
+import { Army, FullArmyInfo } from "./Army";
+import { ArmyAndName, useArmies } from "@/hooks/helpers/useArmies";
+import { Event } from "@/dojo/events/graphqlClient";
 
-type ArmiesProps = {
-  props?: any;
-};
-
-export const Armies = ({}: ArmiesProps) => {
+export const Armies = () => {
   const {
     account: { account },
   } = useDojo();
 
-  const realms = useRealmStore((state) => state.realmEntityIds);
+  const { getArmies } = useArmies();
+  const armiesList = getArmies();
 
-  // set animation path for enemies
-  useUpdateAnimationPaths();
+  useUpdateAnimationPathsForEnnemies();
 
-  const { armies } = useArmies();
-  const armiesList = armies();
+  const armies = useMemo(() => {
+    return armiesList.map((army) => getArmyReactElement(army, account.address, armiesList.length));
+  }, [armiesList]);
 
-  const realmOrder = useMemo(() => {
-    const realmId = realms[0]?.realmId || BigInt(0);
-    const orderName = getRealmOrderNameById(realmId);
-    return orderName.charAt(0).toUpperCase() + orderName.slice(1);
+  return <group>{armies}</group>;
+};
+
+const useUpdateAnimationPathsForEnnemies = () => {
+  const {
+    account: { account },
+    setup: {
+      updates: {
+        eventUpdates: { createTravelHexEvents },
+      },
+    },
+  } = useDojo();
+
+  const { animationPaths, setAnimationPaths } = useUIStore(({ animationPaths, setAnimationPaths }) => ({
+    animationPaths,
+    setAnimationPaths,
+  }));
+
+  const subscriptionRef = useRef<Subscription | undefined>();
+  const isComponentMounted = useRef(true);
+
+  useEffect(() => {
+    let subscription: Subscription | undefined;
+
+    const subscribeToTravelEvents = async () => {
+      const observable = await createTravelHexEvents();
+      const subscription = observable.subscribe((event) => {
+        if (!isComponentMounted.current) return;
+        if (event) {
+          const eventData = exractUsefulTravelEventData(event, account.address);
+          if (!eventData) return;
+          setAnimationPaths([...animationPaths, eventData]);
+        }
+      });
+      subscriptionRef.current = subscription;
+    };
+    subscribeToTravelEvents();
+
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
+};
 
-  // move into hook idk....
-  const armyInfo = useMemo(() => {
-    return (
-      [...armiesList]
-        // only show movable armies
-        .filter((army) => army.sec_per_km > 0)
-        .filter((army) => army.current > 0)
-        .map((army) => {
-          const isMine = BigInt(army.address) === BigInt(account.address);
-          return {
-            contractPos: { x: army.x, y: army.y },
-            uiPos: { ...getUIPositionFromColRow(army.x, army.y), z: 0.32 },
-            id: BigInt(army.entity_id),
-            isMine,
-            ...army,
-          };
-        })
-    );
-  }, [armiesList]); // Fixed missing dependency array
+const getArmyReactElement = (army: ArmyAndName, accountAddress: string, groupLength: number): ReactElement => {
+  const isMine = BigInt(army.address) === BigInt(accountAddress);
+  
+  const ownGroupIndex = Number(army.entity_id) % groupLength;
+  const offset = calculateOffset(ownGroupIndex, groupLength);
 
-  return (
-    <group>
-      {armyInfo.map((info) => {
-        // Find the index of this army within its own group
-        const index = Number(info.id) % 12;
-        const offset = calculateOffset(index, 12);
-        // add random offset to avoid overlapping
-        offset.y += Math.random() * 1 - 0.5;
+  const offsetToAvoidOverlapping = Math.random() * 1 - 0.5;
+  offset.y += offsetToAvoidOverlapping;
 
-        return (
-          <Army
-            key={info.id}
-            info={{
-              ...info,
-              order: realmOrder,
-            }}
-            offset={offset}
-          />
-        );
-      })}
-    </group>
-  );
+  const fullArmyData: FullArmyInfo = {
+    uiPos: { ...getUIPositionFromColRow(army.x, army.y), z: 0.32 },
+    isMine,
+    ...army,
+  };
+
+  return <Army key={army.entity_id} army={fullArmyData} offset={offset} />;
+};
+
+const exractUsefulTravelEventData = (event: Event, userAccountAddress: string) => {
+  const path = [];
+  const owner = BigInt(event.keys[3]);
+  const enemy = owner !== BigInt(userAccountAddress);
+  // if my army, then set animation directly when firing tx
+  if (!enemy) return;
+  const id = BigInt(event.data[0]);
+  const len = Number(event.data[2]);
+  for (let i = 3; i < 3 + len * 2; i += 2) {
+    const pos = { x: Number(event.data[i]), y: Number(event.data[i + 1]) };
+    path.push(pos);
+  }
+  return { id, path, enemy };
 };
 
 const calculateOffset = (index: number, total: number) => {
@@ -94,52 +117,4 @@ const calculateOffset = (index: number, total: number) => {
     x: offsetRadius * Math.cos(angle),
     y: offsetRadius * Math.sin(angle),
   };
-};
-
-const useUpdateAnimationPaths = () => {
-  const {
-    account: { account },
-    setup: {
-      updates: {
-        eventUpdates: { createTravelHexEvents },
-      },
-    },
-  } = useDojo();
-
-  const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
-  const animationPaths = useUIStore((state) => state.animationPaths);
-
-  const subscriptionRef = useRef<Subscription | undefined>();
-  const isComponentMounted = useRef(true);
-
-  useEffect(() => {
-    let subscription: Subscription | undefined;
-
-    const subscribeToTravelEvents = async () => {
-      const observable = await createTravelHexEvents();
-      const subscription = observable.subscribe((event) => {
-        if (!isComponentMounted.current) return;
-        if (event) {
-          const path = [];
-          const owner = BigInt(event.keys[3]);
-          const enemy = owner !== BigInt(account.address);
-          // if my army, then set animation directly when firing tx
-          if (!enemy) return;
-          const id = BigInt(event.data[0]);
-          const len = Number(event.data[2]);
-          for (let i = 3; i < 3 + len * 2; i += 2) {
-            const pos = { x: Number(event.data[i]), y: Number(event.data[i + 1]) };
-            path.push(pos);
-          }
-          setAnimationPaths([...animationPaths, { id, path, enemy }]);
-        }
-      });
-      subscriptionRef.current = subscription;
-    };
-    subscribeToTravelEvents();
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, []);
 };

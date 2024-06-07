@@ -12,17 +12,16 @@ import Button from "@/ui/elements/Button";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
-import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 export const BattleView = () => {
   const battleView = useUIStore((state) => state.battleView);
   const setBattleView = useUIStore((state) => state.setBattleView);
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
 
-  const attackerArmy = getArmyByEntityId({ entity_id: battleView?.attackerId || 0n });
-  const defenderArmy = getArmyByEntityId({ entity_id: battleView?.defenderId || 0n });
+  const attackerArmy = getArmyByEntityId(battleView?.attackerId || 0n);
+  const defenderArmy = getArmyByEntityId(battleView?.defenderId || 0n);
 
   const { updatedBattle } = useBattleManager(BigInt(defenderArmy?.battle_id || 0n));
 

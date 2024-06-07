@@ -1,10 +1,14 @@
-import { create } from "zustand";
-import { createPopupsSlice, PopupsStore } from "./_popups";
-import { Vector3 } from "three";
-import { createMapStoreSlice, MapStore } from "./_mapStore";
+import { FullArmyInfo } from "@/ui/components/worldmap/armies/Army";
+import { TargetType } from "@/ui/components/worldmap/armies/CombatLabel";
 import React from "react";
+import { Vector3 } from "three";
+import { create } from "zustand";
 import { getRealmUIPosition, getUIPositionFromColRow } from "../../ui/utils/utils";
+import { ArmyAndName } from "../helpers/useArmies";
+import { FullStructure } from "../helpers/useStructures";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
+import { createMapStoreSlice, MapStore } from "./_mapStore";
+import { createPopupsSlice, PopupsStore } from "./_popups";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -53,8 +57,16 @@ interface UIStore {
   modalContent: React.ReactNode;
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
-  battleView: { attackerId: bigint; defenderId: bigint; structure: bigint } | null;
-  setBattleView: (armies: { attackerId: bigint; defenderId: bigint; structure: bigint } | null) => void;
+  battleView: {
+    attacker: ArmyAndName;
+    target: { type: TargetType; entity: FullArmyInfo | FullStructure };
+  } | null;
+  setBattleView: (
+    participants: {
+      attacker: ArmyAndName;
+      target: { type: TargetType; entity: FullArmyInfo | FullStructure };
+    } | null,
+  ) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((set, get) => ({
@@ -181,8 +193,12 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   toggleModal: (content) => set({ modalContent: content, showModal: !get().showModal }),
   showModal: false,
   battleView: null,
-  setBattleView: (armies: { attackerId: bigint; defenderId: bigint; structure: bigint } | null) =>
-    set({ battleView: armies }),
+  setBattleView: (
+    participants: {
+      attacker: ArmyAndName;
+      target: { type: TargetType; entity: FullArmyInfo | FullStructure };
+    } | null,
+  ) => set({ battleView: participants }),
   ...createPopupsSlice(set, get),
   ...createMapStoreSlice(set),
   ...createBuildModeStoreSlice(set),

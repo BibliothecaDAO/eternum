@@ -1,120 +1,102 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { ArmyAndName, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { FullStructure, useStructures } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import { Position } from "@/ui/elements/BaseThreeTooltip";
 import Button from "@/ui/elements/Button";
 import { DojoHtml } from "@/ui/elements/DojoHtml";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useEffect, useMemo, useState } from "react";
-import clsx from "clsx";
-import { Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
-import { useComponentValue } from "@dojoengine/react";
-import { currencyFormat, getColRowFromUIPosition } from "@/ui/utils/utils";
-import { EternumGlobalConfig, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { NumberInput } from "@/ui/elements/NumberInput";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { currencyFormat } from "@/ui/utils/utils";
+import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import clsx from "clsx";
 import { ArrowRight } from "lucide-react";
-import { ArmyMode } from "@/hooks/store/_mapStore";
+import { useEffect, useMemo, useState } from "react";
+import { FullArmyInfo } from "./Army";
 
-interface ArmyInfoLabelProps {
-  defenderEntityId?: bigint;
-  attackerEntityId: bigint;
-  structureAtPosition: bigint;
-  isTargetMine: boolean;
-  visible?: boolean;
+export enum TargetType {
+  Structure,
+  Army,
 }
 
-export const CombatLabel = ({
-  defenderEntityId,
-  attackerEntityId,
-  isTargetMine,
-  structureAtPosition,
-  visible = true,
-}: ArmyInfoLabelProps) => {
+interface ArmyInfoLabelProps {
+  targetStructureEntityId?: bigint;
+  visible?: boolean;
+  targetArmy?: FullArmyInfo;
+}
+
+export const CombatLabel = ({ targetStructureEntityId, targetArmy, visible = true }: ArmyInfoLabelProps) => {
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
-  const {
-    setup: {
-      components: { Protector, Position, EntityOwner },
-    },
-  } = useDojo();
 
-  const setBattleView = useUIStore((state) => state.setBattleView);
-  const clearSelection = useUIStore((state) => state.clearSelection);
-  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
+  const { getStructure } = useStructures();
+  const structure = getStructure(targetStructureEntityId!);
 
-  const attackedArmyId = useMemo(() => {
-    if (defenderEntityId) {
-      return defenderEntityId;
+  const { selectedEntity, setBattleView, clearSelection } = useUIStore(
+    ({ selectedEntity, setBattleView, clearSelection }) => ({
+      selectedEntity,
+      setBattleView,
+      clearSelection,
+    }),
+  );
+
+  const ownArmy = useMemo(() => {
+    if (!selectedEntity) {
+      return;
     }
-    // if (structureEntityId) {
-    //   const attackedArmy = getComponentValue(Protector, getEntityIdFromKeys([BigInt(structureEntityId)]));
-    //   return attackedArmy?.army_id;
-    // }
-  }, [isTargetMine, defenderEntityId, attackerEntityId]);
+    return getArmyByEntityId(selectedEntity.id);
+  }, [selectedEntity]);
 
-  const position = useComponentValue(Position, getEntityIdFromKeys([attackerEntityId]))!;
-
-  // get owner of entity
-  const entityOwner = useComponentValue(EntityOwner, getEntityIdFromKeys([attackerEntityId]))!;
+  const target = useMemo(() => {
+    const targetIsStructure = targetStructureEntityId !== 0n;
+    const targetIsArmy = Boolean(targetArmy);
+    if (!targetIsStructure && !targetIsArmy) {
+      setShowMergeTroopsPopup(false);
+      return;
+    }
+    if (targetIsStructure) {
+      return { type: TargetType.Structure, entity: structure };
+    } else if (targetIsArmy) {
+      return { type: TargetType.Army, entity: targetArmy };
+    } else {
+      // should never happen
+      return undefined;
+    }
+  }, [targetArmy, targetStructureEntityId]);
 
   const attack = () => {
-    // moveCameraToColRow(position.x, position.y, 3, true);
-
     setBattleView({
-      attackerId: attackerEntityId,
-      defenderId: BigInt(attackedArmyId || 0n),
-      structure: BigInt(structureAtPosition || 0n),
+      attacker: ownArmy!,
+      target: { type: target!.type, entity: target!.entity! },
     });
-    clearSelection();
+    // clearSelection();
   };
-
-  console.log(structureAtPosition);
 
   return (
     <DojoHtml visible={visible} className="relative -left-[15px] -top-[70px]">
-      {structureAtPosition?.toString() && isTargetMine && (
+      {target?.type === TargetType.Structure && target.entity?.isMine && !showMergeTroopsPopup && (
         <Button variant="primary" onClick={() => setShowMergeTroopsPopup(true)}>
           Protect
         </Button>
       )}
-
-      {!structureAtPosition?.toString() && !isTargetMine && (
+      {target?.type === TargetType.Army && !target.entity?.isMine && (
         <Button variant="primary" onClick={attack}>
           Attack Army
         </Button>
       )}
-
-      {/* <Button variant="primary" onClick={() => setShowMergeTroopsPopup(true)}>
-        Protect
-      </Button>
-      <Button variant="primary" onClick={() => setShowMergeTroopsPopup(true)}>
-        Protect
-      </Button> */}
-
-      {/* 
-      {!showMergeTroopsPopup &&
-        (structureAtPosition && isTargetMine ? (
-          <Button variant="primary" onClick={protect}>
-            Protect
-          </Button>
-        ) : (
-          <Button variant="primary" onClick={attack}>
-            Attack
-          </Button>
-        ))} */}
-      {showMergeTroopsPopup && (
-        <MergeTroopsPanel giverArmyEntityId={attackerEntityId} structureEntityId={structureAtPosition!} />
-      )}
+      {showMergeTroopsPopup && <MergeTroopsPanel giverArmy={ownArmy!} structure={target!.entity as FullStructure} />}
     </DojoHtml>
   );
 };
 
 type MergeTroopsPanelProps = {
-  giverArmyEntityId: bigint;
-  structureEntityId: bigint;
+  giverArmy: ArmyAndName;
+  structure: FullStructure;
 };
 
-const MergeTroopsPanel = ({ giverArmyEntityId, structureEntityId }: MergeTroopsPanelProps) => {
+const MergeTroopsPanel = ({ giverArmy, structure }: MergeTroopsPanelProps) => {
   const {
     setup: {
       account: { account },
@@ -123,14 +105,15 @@ const MergeTroopsPanel = ({ giverArmyEntityId, structureEntityId }: MergeTroopsP
     },
   } = useDojo();
 
-  const protector = useComponentValue(Protector, getEntityIdFromKeys([BigInt(structureEntityId!)]));
+  const protector =
+    structure.protector || useComponentValue(Protector, getEntityIdFromKeys([BigInt(structure.entity_id!)]));
 
   useEffect(() => {
     const createProtector = async () => {
       await create_army({
         signer: account,
         army_is_protector: true,
-        army_owner_id: structureEntityId!,
+        army_owner_id: structure.entity_id!,
       });
     };
 
@@ -142,11 +125,15 @@ const MergeTroopsPanel = ({ giverArmyEntityId, structureEntityId }: MergeTroopsP
     protector && (
       <ToolTip>
         <Headline>Reinforce troops</Headline>
-        <TroopExchange giverArmyEntityId={giverArmyEntityId} takerArmyEntityId={protector.army_id}></TroopExchange>
+        <TroopExchange
+          giverArmyEntityId={BigInt(giverArmy.entity_id)}
+          takerArmyEntityId={BigInt(protector.army_id)}
+        ></TroopExchange>
       </ToolTip>
     )
   );
 };
+
 const ToolTip = ({ children, distanceFactor, position = Position.CENTER, className }: TooltipProps) => {
   return (
     <div className={clsx("min-w-[600px] clip-angled relative p-2 bg-brown/90 text-gold", Position.BOTTOM_RIGHT)}>
@@ -229,7 +216,6 @@ const TroopExchange = ({ giverArmyEntityId, takerArmyEntityId }: TroopsProps) =>
 
   // const giverArmyTroops = troopsToFormat(getComponentValue(Army, getEntityIdFromKeys([giverArmyEntityId]))!.troops);
   // const receiverArmyTroops = troopsToFormat(getComponentValue(Army, getEntityIdFromKeys([takerArmyEntityId]))!.troops);
-
   const giverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([giverArmyEntityId]))!.troops;
   const receiverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([takerArmyEntityId]))!.troops;
 
