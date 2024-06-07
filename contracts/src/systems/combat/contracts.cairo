@@ -322,8 +322,7 @@ mod combat_systems {
             // create battle 
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
-
-            assert(defending_army_health > 0, 'defender has 0 health');
+            defending_army_health.assert_alive();
 
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;
