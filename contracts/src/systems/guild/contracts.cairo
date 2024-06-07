@@ -105,8 +105,6 @@ mod guild_systems {
             if (guild_member.address == guild_owner.address) {
                 assert(guild.member_count == 1, 'Guild not empty');
 
-                guild.entity_id = 0;
-
                 guild.member_count = 0;
                 guild_member.guild_entity_id = 0;
 

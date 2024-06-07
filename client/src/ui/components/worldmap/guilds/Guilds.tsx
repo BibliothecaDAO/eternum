@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import Button from "../../../elements/Button";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
@@ -16,6 +16,11 @@ interface SortingParamGuildAndName {
   className?: string;
 }
 
+export interface SelectedGuildInterface {
+  guildEntityId: bigint;
+  name: string;
+}
+
 export const Guilds = () => {
   const {
     setup: {
@@ -25,12 +30,11 @@ export const Guilds = () => {
   } = useDojo();
 
   const [_, setIsLoading] = useState(false);
-  const [selectedGuild, setSelectedGuild] = useState({ id: 0n, name: "" });
+  const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0n, name: "" });
 
-  const { getGuilds, getGuildMembers, getAddressGuild } = useGuilds();
+  const { getGuilds, getAddressGuild } = useGuilds();
 
   const { guilds } = getGuilds();
-  const { guildMembers } = getGuildMembers(selectedGuild.id);
   const { userGuildEntityId, isOwner } = getAddressGuild(account.address);
 
   const sortingParams: SortingParamGuildAndName[] = useMemo(() => {
@@ -47,18 +51,18 @@ export const Guilds = () => {
     sort: "none",
   });
 
-  const joinGuild = (guildEntityId: bigint) => {
+  const joinGuild = useCallback((guildEntityId: bigint) => {
     setIsLoading(true);
     join_guild({ guild_entity_id: guildEntityId, signer: account }).finally(() => setIsLoading(false));
-  };
+  }, []);
 
   return (
     <div className="flex flex-col">
-      {selectedGuild.id ? (
+      {selectedGuild.guildEntityId ? (
         <>
           <div className="relative flex my-1 justify-center">
             <div className="absolute left-0 px-2 flex h-full items-center">
-              <Button className="" size="xs" onClick={() => setSelectedGuild({ id: 0n, name: "" })}>
+              <Button className="" size="xs" onClick={() => setSelectedGuild({ guildEntityId: 0n, name: "" })}>
                 Back
               </Button>
             </div>
@@ -69,14 +73,14 @@ export const Guilds = () => {
             <div className="flex flex-row justify-between">
               {!hasGuild(userGuildEntityId) && (
                 <div className="px-4 ml-auto">
-                  <Button size="xs" onClick={() => joinGuild(selectedGuild.id)}>
+                  <Button size="xs" onClick={() => joinGuild(selectedGuild.guildEntityId)}>
                     Join Guild
                   </Button>
                 </div>
               )}
             </div>
 
-            <GuildMembers guildMembers={guildMembers} isOwner={isOwner} />
+            <GuildMembers selectedGuild={selectedGuild} isOwner={isOwner} />
           </div>
         </>
       ) : (
@@ -110,7 +114,7 @@ export const Guilds = () => {
                   <p className="col-span-1">{`#${guild.rank}`} </p>
                   <p
                     className="col-span-1 hover:text-white truncate"
-                    onClick={() => setSelectedGuild({ id: BigInt(guild.entity_id), name: guild.name })}
+                    onClick={() => setSelectedGuild({ guildEntityId: BigInt(guild.entity_id), name: guild.name })}
                   >
                     {guild.name}
                   </p>

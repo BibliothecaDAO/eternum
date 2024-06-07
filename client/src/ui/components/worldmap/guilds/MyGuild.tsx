@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import Button from "../../../elements/Button";
 import TextInput from "@/ui/elements/TextInput";
@@ -29,10 +29,9 @@ export const MyGuild = () => {
   const [isPublic, setIsPublic] = useState(true);
   const [newGuildName, setNewGuildName] = useState("");
 
-  const { getAddressGuild, getGuildMembers } = useGuilds();
+  const { getAddressGuild } = useGuilds();
 
-  const { userGuildEntityId, isOwner, guildName } = getAddressGuild(account.address);
-  const { guildMembers } = getGuildMembers(userGuildEntityId!);
+  const { userGuildEntityId, isOwner, guildName, memberCount } = getAddressGuild(account.address);
 
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
@@ -46,7 +45,9 @@ export const MyGuild = () => {
             <div>Guild Members</div>
           </div>
         ),
-        component: <GuildMembers guildMembers={guildMembers} isOwner={isOwner} />,
+        component: (
+          <GuildMembers selectedGuild={{ guildEntityId: userGuildEntityId!, name: guildName! }} isOwner={isOwner} />
+        ),
       },
       {
         key: "Whitelist",
@@ -71,19 +72,19 @@ export const MyGuild = () => {
     }).finally(() => setIsLoading(false));
   };
 
-  const leaveGuild = () => {
+  const leaveGuild = useCallback(() => {
     setIsLoading(true);
     leave_guild({ signer: account }).finally(() => setIsLoading(false));
-  };
+  }, []);
 
-  const transferGuildOwnership = () => {
+  const transferGuildOwnership = useCallback(() => {
     setIsLoading(true);
     transfer_guild_ownership({
       guild_entity_id: userGuildEntityId!,
       to_player_address: playerAddress,
       signer: account,
     }).finally(() => setIsLoading(false));
-  };
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -173,7 +174,7 @@ export const MyGuild = () => {
                     </>
                   )}
 
-                  {guildMembers.length > 1 ? (
+                  {memberCount && memberCount > 1 ? (
                     <Button
                       className="ml-5"
                       isLoading={isLoading}

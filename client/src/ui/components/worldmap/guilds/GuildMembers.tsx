@@ -1,13 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import { GuildMemberAndName } from "../../../../hooks/helpers/useGuilds";
 import { displayAddress, sortItems, copyPlayerAddressToClipboard } from "@/ui/utils/utils";
 import Button from "../../../elements/Button";
 import { useDojo } from "../../../../hooks/context/DojoContext";
+import { useGuilds } from "../../../../hooks/helpers/useGuilds";
+import { SelectedGuildInterface } from "./Guilds";
 
 interface GuildMembersProps {
-  guildMembers: GuildMemberAndName[];
+  selectedGuild: SelectedGuildInterface;
   isOwner: boolean;
 }
 
@@ -18,7 +20,7 @@ interface SortingParamGuildMemberAndName {
   className?: string;
 }
 
-export const GuildMembers = ({ guildMembers, isOwner }: GuildMembersProps) => {
+export const GuildMembers = ({ selectedGuild, isOwner }: GuildMembersProps) => {
   const {
     setup: {
       systemCalls: { remove_guild_member },
@@ -27,6 +29,9 @@ export const GuildMembers = ({ guildMembers, isOwner }: GuildMembersProps) => {
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const { getGuildMembers } = useGuilds();
+  const { guildMembers } = getGuildMembers(selectedGuild.guildEntityId);
 
   const sortingParams: SortingParamGuildMemberAndName[] = useMemo(() => {
     return [
@@ -40,13 +45,15 @@ export const GuildMembers = ({ guildMembers, isOwner }: GuildMembersProps) => {
     sort: "none",
   });
 
-  const removeGuildMember = (address: bigint) => {
+  const removeGuildMember = useCallback((address: bigint) => {
     setIsLoading(true);
     remove_guild_member({
       player_address_to_remove: address,
       signer: account,
-    }).finally(() => setIsLoading(false));
-  };
+    }).finally(() => {
+      setIsLoading(false);
+    });
+  }, []);
 
   return (
     <>

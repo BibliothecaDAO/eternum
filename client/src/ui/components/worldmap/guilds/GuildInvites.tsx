@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
@@ -8,6 +8,7 @@ import { useGuilds, AddressWhitelistAndName, GuildWhitelistAndName } from "../..
 import { hasGuild } from "./utils";
 import { GuildMembers } from "./GuildMembers";
 import { sortItems } from "@/ui/utils/utils";
+import { SelectedGuildInterface } from "./Guilds";
 
 type GuildWhitelistAndNameKeys = keyof GuildWhitelistAndName;
 interface SortingParamGuildWhitelistAndName {
@@ -25,13 +26,12 @@ export const GuildInvites = () => {
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedGuild, setSelectedGuild] = useState({ id: 0n, name: "" });
+  const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0n, name: "" });
 
-  const { getAddressWhitelist, getAddressGuild, getGuildMembers } = useGuilds();
+  const { getAddressWhitelist, getAddressGuild } = useGuilds();
 
   const { addressWhitelist } = getAddressWhitelist(BigInt(account.address));
-  const { userGuildEntityId, isOwner } = getAddressGuild(account.address);
-  const { guildMembers } = getGuildMembers(selectedGuild.id);
+  const { userGuildEntityId } = getAddressGuild(account.address);
 
   const sortingParams: SortingParamGuildWhitelistAndName[] = useMemo(() => {
     return [{ label: "Guild Name", sortKey: "name", className: "col-span-1" }];
@@ -42,40 +42,40 @@ export const GuildInvites = () => {
     sort: "none",
   });
 
-  const joinGuild = (guildEntityId: bigint) => {
+  const joinGuild = useCallback((guildEntityId: bigint) => {
     setIsLoading(true);
     join_guild({ guild_entity_id: guildEntityId, signer: account }).finally(() => setIsLoading(false));
-  };
+  }, []);
 
-  const removePlayerFromWhitelist = (guildEntityId: bigint) => {
+  const removePlayerFromWhitelist = useCallback((guildEntityId: bigint) => {
     setIsLoading(true);
     remove_player_from_whitelist({
       player_address_to_remove: account.address,
       guild_entity_id: guildEntityId,
       signer: account,
     }).finally(() => setIsLoading(false));
-  };
+  }, []);
 
   return (
     <div className="flex flex-col">
-      {selectedGuild.id ? (
+      {selectedGuild.guildEntityId ? (
         <>
           <p className="flex justify-center py-2">{selectedGuild.name}</p>
           <div className="flex flex-col">
             <div className="flex flex-row justify-between">
               <div className="px-4">
-                <Button size="xs" onClick={() => setSelectedGuild({ id: 0n, name: "" })}>
+                <Button size="xs" onClick={() => setSelectedGuild({ guildEntityId: 0n, name: "" })}>
                   Back
                 </Button>
               </div>
 
               {!hasGuild(userGuildEntityId) && (
                 <div className="px-4">
-                  <Button onClick={() => joinGuild(selectedGuild.id)}>Join Guild</Button>
+                  <Button onClick={() => joinGuild(selectedGuild.guildEntityId)}>Join Guild</Button>
                 </div>
               )}
             </div>
-            <GuildMembers guildMembers={guildMembers} isOwner={isOwner} />
+            <GuildMembers selectedGuild={selectedGuild} isOwner={false} />
           </div>
         </>
       ) : (
@@ -105,7 +105,10 @@ export const GuildInvites = () => {
                     <p
                       className="col-span-1  hover:text-white  truncate"
                       onClick={() =>
-                        setSelectedGuild({ id: BigInt(addressWhitelist.guild_entity_id), name: addressWhitelist.name })
+                        setSelectedGuild({
+                          guildEntityId: BigInt(addressWhitelist.guild_entity_id),
+                          name: addressWhitelist.name,
+                        })
                       }
                     >
                       {addressWhitelist.name}

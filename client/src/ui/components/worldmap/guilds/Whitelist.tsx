@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import Button from "../../../elements/Button";
 import TextInput from "@/ui/elements/TextInput";
@@ -56,14 +56,14 @@ export const Whitelist = ({ guildEntityId, isOwner }: WhitelistProps) => {
     }).finally(() => setIsLoading(false));
   };
 
-  const removePlayerFromWhitelist = (address: string) => {
+  const removePlayerFromWhitelist = useCallback((address: string) => {
     setIsLoading(true);
     remove_player_from_whitelist({
       player_address_to_remove: address,
       guild_entity_id: guildEntityId!,
       signer: account,
     }).finally(() => setIsLoading(false));
-  };
+  }, []);
 
   return (
     <div className="flex flex-col">
