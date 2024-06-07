@@ -6,12 +6,13 @@ type DojoHtmlProps = {
   children: React.ReactNode;
   [propName: string]: any; // Allow any other props
   pointerEvents?: "auto" | "none";
+  visible?: boolean;
 };
 
-export const DojoHtml = ({ children, ...rest }: DojoHtmlProps) => {
+export const DojoHtml = ({ children, visible = true, ...rest }: DojoHtmlProps) => {
   const { setup } = useDojo();
   return (
-    <Html {...rest}>
+    <Html visible={visible} {...rest}>
       <DojoProvider value={setup}>{children}</DojoProvider>
     </Html>
   );

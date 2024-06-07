@@ -17,24 +17,27 @@ import { ArrowRight } from "lucide-react";
 import { ArmyMode } from "@/hooks/store/_mapStore";
 
 interface ArmyInfoLabelProps {
-  structureEntityId?: bigint;
   defenderEntityId?: bigint;
   attackerEntityId: bigint;
+  structureAtPosition: bigint;
   isTargetMine: boolean;
+  visible?: boolean;
 }
 
 export const CombatLabel = ({
   defenderEntityId,
   attackerEntityId,
-  structureEntityId,
   isTargetMine,
+  structureAtPosition,
+  visible = true,
 }: ArmyInfoLabelProps) => {
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
   const {
     setup: {
-      components: { Protector, Position },
+      components: { Protector, Position, EntityOwner },
     },
   } = useDojo();
+
   const setBattleView = useUIStore((state) => state.setBattleView);
   const clearSelection = useUIStore((state) => state.clearSelection);
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
@@ -43,32 +46,54 @@ export const CombatLabel = ({
     if (defenderEntityId) {
       return defenderEntityId;
     }
-    if (structureEntityId) {
-      const attackedArmy = getComponentValue(Protector, getEntityIdFromKeys([BigInt(structureEntityId)]));
-      return attackedArmy?.army_id;
-    }
-  }, [isTargetMine, structureEntityId, defenderEntityId, attackerEntityId]);
-
-  const protect = async () => {
-    setShowMergeTroopsPopup(true);
-  };
+    // if (structureEntityId) {
+    //   const attackedArmy = getComponentValue(Protector, getEntityIdFromKeys([BigInt(structureEntityId)]));
+    //   return attackedArmy?.army_id;
+    // }
+  }, [isTargetMine, defenderEntityId, attackerEntityId]);
 
   const position = useComponentValue(Position, getEntityIdFromKeys([attackerEntityId]))!;
 
+  // get owner of entity
+  const entityOwner = useComponentValue(EntityOwner, getEntityIdFromKeys([attackerEntityId]))!;
+
   const attack = () => {
-    moveCameraToColRow(position.x, position.y, 3, true);
+    // moveCameraToColRow(position.x, position.y, 3, true);
+
     setBattleView({
       attackerId: attackerEntityId,
       defenderId: BigInt(attackedArmyId || 0n),
-      structure: BigInt(structureEntityId || 0n),
+      structure: BigInt(structureAtPosition || 0n),
     });
     clearSelection();
   };
 
+  console.log(structureAtPosition);
+
   return (
-    <DojoHtml className="relative -left-[15px] -top-[70px]">
+    <DojoHtml visible={visible} className="relative -left-[15px] -top-[70px]">
+      {structureAtPosition?.toString() && isTargetMine && (
+        <Button variant="primary" onClick={() => setShowMergeTroopsPopup(true)}>
+          Protect
+        </Button>
+      )}
+
+      {!structureAtPosition?.toString() && !isTargetMine && (
+        <Button variant="primary" onClick={attack}>
+          Attack Army
+        </Button>
+      )}
+
+      {/* <Button variant="primary" onClick={() => setShowMergeTroopsPopup(true)}>
+        Protect
+      </Button>
+      <Button variant="primary" onClick={() => setShowMergeTroopsPopup(true)}>
+        Protect
+      </Button> */}
+
+      {/* 
       {!showMergeTroopsPopup &&
-        (structureEntityId && isTargetMine ? (
+        (structureAtPosition && isTargetMine ? (
           <Button variant="primary" onClick={protect}>
             Protect
           </Button>
@@ -76,9 +101,9 @@ export const CombatLabel = ({
           <Button variant="primary" onClick={attack}>
             Attack
           </Button>
-        ))}
+        ))} */}
       {showMergeTroopsPopup && (
-        <MergeTroopsPanel giverArmyEntityId={attackerEntityId} structureEntityId={structureEntityId!} />
+        <MergeTroopsPanel giverArmyEntityId={attackerEntityId} structureEntityId={structureAtPosition!} />
       )}
     </DojoHtml>
   );

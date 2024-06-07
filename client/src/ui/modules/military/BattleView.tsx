@@ -3,8 +3,11 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyAndName, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useBattleManager } from "@/hooks/helpers/useBattles";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { useModal } from "@/hooks/store/useModal";
 import useUIStore from "@/hooks/store/useUIStore";
+import { ModalContainer } from "@/ui/components/ModalContainer";
 import { nameMapping } from "@/ui/components/military/ArmyManagementCard";
+import { PillageHistory } from "@/ui/components/military/Battle";
 import Button from "@/ui/elements/Button";
 import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
@@ -74,6 +77,7 @@ export const BattleView = () => {
           <Actions
             battle={updatedBattle}
             attacker={BigInt(attackerArmy?.entity_id || "0")}
+            attackerOwner={BigInt(attackerArmy?.entity_owner_id || "0")}
             defender={BigInt(defenderArmy?.entity_id || "0")}
             structure={BigInt(battleView?.structure || "0")}
             battleId={BigInt(defenderArmy?.battle_id || "0")}
@@ -170,12 +174,14 @@ export const EntityAvatar = () => {
 export const Actions = ({
   battle,
   attacker,
+  attackerOwner,
   defender,
   structure,
   battleId,
 }: {
   battle: BattleManager;
   attacker: bigint;
+  attackerOwner: bigint;
   defender: bigint;
   structure: bigint;
   battleId: bigint;
@@ -183,6 +189,8 @@ export const Actions = ({
   const [loading, setLoading] = useState(false);
   const setBattleView = useUIStore((state) => state.setBattleView);
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+
+  const { toggleModal } = useModal();
 
   const {
     account: { account },
@@ -218,6 +226,12 @@ export const Actions = ({
     });
 
     setLoading(false);
+    setBattleView(null);
+    toggleModal(
+      <ModalContainer size="half">
+        <PillageHistory structureId={structure} attackerRealmEntityId={attackerOwner} />
+      </ModalContainer>,
+    );
   };
 
   const handleBattleStart = async () => {
@@ -258,26 +272,33 @@ export const Actions = ({
   };
 
   return (
-    <div className=" col-span-2 flex justify-center">
-      <div className="flex flex-col">
-        <Button isLoading={loading} onClick={handleRaid}>
-          Raid
+    <div className=" col-span-2 flex justify-center flex-wrap">
+      <div className="w-full text-center text-gold uppercase">Actions</div>
+      <div className="grid grid-cols-2 gap-4 p-4 row-span-2">
+        <Button variant="primary" className="flex flex-col gap-2" isLoading={loading} onClick={handleRaid}>
+          <img className="w-10" src="/images/icons/raid.png" alt="coin" />
+          Raid!
         </Button>
 
         {/* IF BATTLE HAS BEEN WON or NO ARMY ON STRUCTURE */}
 
         {canClaimBecauseNotRealm && (
-          <Button isLoading={loading} onClick={handleBattleClaim}>
-            Claim Structure
+          <Button variant="primary" className="flex flex-col gap-2" isLoading={loading} onClick={handleBattleClaim}>
+            <img className="w-10" src="/images/icons/claim.png" alt="coin" />
+            Claim
           </Button>
         )}
 
-        {isActive ? (
-          <Button isLoading={loading} onClick={handleLeaveBattle}>
+        {isActive && (
+          <Button variant="primary" className="flex flex-col gap-2" isLoading={loading} onClick={handleLeaveBattle}>
+            <img className="w-10" src="/images/icons/leave-battle.png" alt="coin" />
             Leave Battle
           </Button>
-        ) : (
-          <Button isLoading={loading} onClick={handleBattleStart}>
+        )}
+
+        {!isRealm && (
+          <Button variant="primary" className="flex flex-col gap-2" isLoading={loading} onClick={handleBattleStart}>
+            <img className="w-10" src="/images/icons/attack.png" alt="coin" />
             Battle
           </Button>
         )}
@@ -287,27 +308,36 @@ export const Actions = ({
 };
 
 export const TroopRow = ({ army, defending = false }: { army: ArmyAndName; defending?: boolean }) => {
+  const noArmy = useMemo(() => !army, [army]);
   return (
     <div className=" grid-cols-3 col-span-3 gap-2 flex">
-      <TroopCard
-        defending={defending}
-        className={`${defending ? "order-last" : ""} w-1/3`}
-        id={ResourcesIds.Crossbowmen}
-        count={army?.troops?.crossbowman_count || 0}
-      />
-
-      <TroopCard
-        defending={defending}
-        className={`w-1/3`}
-        id={ResourcesIds.Paladin}
-        count={army?.troops?.paladin_count || 0}
-      />
-      <TroopCard
-        defending={defending}
-        className={`${defending ? "order-first" : ""} w-1/3`}
-        id={ResourcesIds.Knight}
-        count={army?.troops?.knight_count || 0}
-      />
+      {noArmy ? (
+        <div className="text-2xl text-gold">
+          Nothing Defending this poor structure. The residents are shaking in terror.
+        </div>
+      ) : (
+        <>
+          {" "}
+          <TroopCard
+            defending={defending}
+            className={`${defending ? "order-last" : ""} w-1/3`}
+            id={ResourcesIds.Crossbowmen}
+            count={army?.troops?.crossbowman_count || 0}
+          />
+          <TroopCard
+            defending={defending}
+            className={`w-1/3`}
+            id={ResourcesIds.Paladin}
+            count={army?.troops?.paladin_count || 0}
+          />
+          <TroopCard
+            defending={defending}
+            className={`${defending ? "order-first" : ""} w-1/3`}
+            id={ResourcesIds.Knight}
+            count={army?.troops?.knight_count || 0}
+          />
+        </>
+      )}
     </div>
   );
 };

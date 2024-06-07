@@ -32,6 +32,7 @@ export const Armies = ({}: ArmiesProps) => {
     return orderName.charAt(0).toUpperCase() + orderName.slice(1);
   }, []);
 
+  // move into hook idk....
   const armyInfo = useMemo(() => {
     return (
       [...armiesList]
