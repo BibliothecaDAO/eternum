@@ -118,8 +118,8 @@ name = "eternum::systems::dev::contracts::resource::dev_resource_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x2d4304c3ac359b8852a70c4f029f94cd145da88ed2e4fcfb769708a1dd80ef"
-class_hash = "0x193fbc87eba977e6e799dede12f85ee37c30e2e33977e07725af5da12f36bcb"
-original_class_hash = "0x193fbc87eba977e6e799dede12f85ee37c30e2e33977e07725af5da12f36bcb"
+class_hash = "0x4f74ff8347e88ee67e98be7a93112aad1c94980afbd8aaccd259c925f5076ff"
+original_class_hash = "0x4f74ff8347e88ee67e98be7a93112aad1c94980afbd8aaccd259c925f5076ff"
 base_class_hash = "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76"
 abi = "abis/deployments/contracts/eternum_systems_guild_contracts_guild_systems.json"
 reads = []
@@ -1121,8 +1121,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x7d68656c40b761e1de534f29a47ed1a6a503214952543e75dcef094c324308a"
-original_class_hash = "0x7d68656c40b761e1de534f29a47ed1a6a503214952543e75dcef094c324308a"
+class_hash = "0x23c1242abea31ad62d1bc86e252c6a3bdbb01cac41603f67bd2f97856440a43"
+original_class_hash = "0x23c1242abea31ad62d1bc86e252c6a3bdbb01cac41603f67bd2f97856440a43"
 abi = "abis/deployments/models/eternum_models_guild_guild.json"
 name = "eternum::models::guild::guild"
 
@@ -1134,6 +1134,11 @@ key = true
 [[models.members]]
 name = "is_public"
 type = "bool"
+key = false
+
+[[models.members]]
+name = "member_count"
+type = "u16"
 key = false
 
 [[models]]
