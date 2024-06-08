@@ -52,13 +52,13 @@ export class BattleManager {
     if (BigInt(attackDelta) * BigInt(durationPassed) > battle.attack_army_health.current) {
       battle.attack_army_health.current = 0n;
     } else {
-      battle.attack_army_health.current -= BigInt(attackDelta) * BigInt(durationPassed);
+      battle.attack_army_health.current -= BigInt(defenceDelta) * BigInt(durationPassed);
     }
 
     if (BigInt(defenceDelta) * BigInt(durationPassed) > battle.defence_army_health.current) {
       battle.defence_army_health.current = 0n;
     } else {
-      battle.defence_army_health.current -= BigInt(defenceDelta) * BigInt(durationPassed);
+      battle.defence_army_health.current -= BigInt(attackDelta) * BigInt(durationPassed);
     }
 
     return battle;
