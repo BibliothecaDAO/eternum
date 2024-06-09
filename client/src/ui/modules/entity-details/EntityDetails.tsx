@@ -2,6 +2,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { OSWindow } from "../../components/navigation/OSWindow";
 import { entityDetails } from "../../components/navigation/Config";
 import HexagonInformationPanel from "@/ui/components/worldmap/hexagon/HexagonInformationPanel";
+import Button from "@/ui/elements/Button";
 
 export const EntityDetails = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -17,8 +18,8 @@ export const EntityDetails = () => {
   };
 
   return (
-    // <OSWindow width="600px" onClick={onClose} show={isOpen} title={"Location Details"}>
-    <HexagonInformationPanel />
-    // </OSWindow>
+    <>
+      <HexagonInformationPanel />
+    </>
   );
 };

@@ -38,6 +38,7 @@ export const HexceptionViewScene = () => {
   const canConstruct = hexType === HexType.REALM;
   const hasStructure = hexType !== HexType.EMPTY;
 
+  // BUG HERE
   useEffect(() => {
     if (hexPosition.col && hexPosition.row) {
       moveCameraToRealmView();

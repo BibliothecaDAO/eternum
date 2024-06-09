@@ -90,7 +90,6 @@ export const ArmyActions = ({ armyId }: { armyId: bigint }) => {
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { create_army, army_buy_troops },
       components: { Protector, Army, Health },
     },
   } = useDojo();
@@ -107,18 +106,6 @@ export const ArmyActions = ({ armyId }: { armyId: bigint }) => {
 
     return { ...protectorArmy, ...health };
   }, [allArmies]);
-
-  const handleBattleStart = async () => {
-    setLoading(true);
-
-    await provider.battle_start({
-      signer: account,
-      attacking_army_id: army.entity_id,
-      defending_army_id: selectedArmyToAttack,
-    });
-
-    setLoading(false);
-  };
 
   const handlePillage = async () => {
     setLoading(true);
@@ -211,21 +198,6 @@ export const ArmyActions = ({ armyId }: { armyId: bigint }) => {
             )}
           </div>
         </div>
-      </div>
-      <div className="w-full my-8 flex justify-center">
-        {selectedArmyToAttack && (
-          <Button
-            onClick={() =>
-              provider.battle_start({
-                signer: account,
-                attacking_army_id: army.entity_id,
-                defending_army_id: selectedArmyToAttack,
-              })
-            }
-          >
-            Start Battle
-          </Button>
-        )}{" "}
       </div>
     </ModalContainer>
   );
@@ -352,31 +324,35 @@ export const PillageHistory = ({
     return history.pillagedResources.length > 0 || history.destroyedBuildingType !== "None";
   };
 
+  console.log(pillageHistory);
+
   return (
-    <div className="border p-2">
+    <div className=" p-6 overflow-auto h-full ">
       <div className="m-3 text-center">
         <Headline>Pillage History</Headline>
       </div>
-      <div className="overflow-auto max-h-[300px]">
-        {pillageHistory.map((history, index) => (
-          <div key={index} className="group hover:bg-gold/10 border relative bg-gold/5 text-gold my-3">
-            <div className="absolute top-0 left-0 p-2 text-sm">Army ID: {history.armyId.toString()}</div>
+      <div className="overflow-scroll-y max-h-[300px] grid grid-cols-1 gap-4">
+        {pillageHistory.reverse().map((history, index) => (
+          <div key={index} className="group hover:bg-gold/10  relative bg-gold/20 text-gold  p-4 clip-angled ">
+            {/* <div className="absolute top-0 left-0 p-2 text-sm">Army ID: {history.armyId.toString()}</div> */}
             <div className="flex justify-center items-center p-3">
               <div className="text-center">
-                <Headline>Outcome</Headline>
+                {/* <Headline>Outcome</Headline> */}
                 <div className={`text-xl font-bold ${history.winner === 0 ? "text-blue-500" : "text-red-500"}`}>
-                  {isPillageSucess(history) ? "Pillage Sucessful" : "Pillage Failed"}
+                  {isPillageSucess(history) ? "Pillage Successful!" : "Pillage Failed"}
                 </div>
               </div>
             </div>
             <div className="p-2">
               <div className="flex justify-around items-start my-2">
                 <div className="text-center">
-                  <Headline>Pillaged Resources</Headline>
+                  <div>Resources</div>
                   <div className="flex flex-wrap justify-center gap-4">
                     {history.pillagedResources.length > 0
                       ? history.pillagedResources.map((resource: Resource) => (
                           <ResourceCost
+                            size="lg"
+                            textSize="lg"
                             key={resource.resourceId}
                             resourceId={resource.resourceId}
                             amount={divideByPrecision(resource.amount)}
@@ -385,20 +361,22 @@ export const PillageHistory = ({
                       : "None"}
                   </div>
                 </div>
-                <div className="text-center">
-                  <Headline>Destroyed Building</Headline>
-                  {history.destroyedBuildingType !== "None" && (
-                    <img
-                      src={`${
-                        BUILDING_IMAGES_PATH[BuildingType[history.destroyedBuildingType as keyof typeof BuildingType]]
-                      }`}
-                      alt="Destroyed Building"
-                      className="w-24 h-24 mx-auto"
-                    />
-                  )}
-                  {/* Placeholder for Building Image */}
-                  <div>{history.destroyedBuildingType}</div>
-                </div>
+                {history.destroyedBuildingType !== undefined && (
+                  <div className="text-center">
+                    <Headline>Destroyed Building</Headline>
+                    {history.destroyedBuildingType !== undefined && (
+                      <img
+                        src={`${
+                          BUILDING_IMAGES_PATH[BuildingType[history.destroyedBuildingType as keyof typeof BuildingType]]
+                        }`}
+                        alt="Destroyed Building"
+                        className="w-24 h-24 mx-auto"
+                      />
+                    )}
+                    {/* Placeholder for Building Image */}
+                    <div>{history.destroyedBuildingType}</div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

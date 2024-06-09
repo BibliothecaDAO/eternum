@@ -1,7 +1,6 @@
 import useUIStore from "../../../hooks/store/useUIStore";
 import * as THREE from "three";
 import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
-import { HEX_RADIUS } from "../worldmap/hexagon/WorldHexagon";
 import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow, pseudoRandom } from "../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
 import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
@@ -10,6 +9,7 @@ import { BuildingType, ResourcesIds, getNeighborHexes } from "@bibliothecadao/et
 import { placeholderMaterial } from "@/shaders/placeholderMaterial";
 import { Text, useGLTF } from "@react-three/drei";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
+import { HEX_RADIUS } from "@/ui/config";
 
 const HEXCEPTION_CENTER = { col: 10, row: 10 };
 

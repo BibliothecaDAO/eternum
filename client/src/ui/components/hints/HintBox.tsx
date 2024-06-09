@@ -49,6 +49,27 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
     }
   };
 
+  const handleAllClaims = async () => {
+    setIsLoading(true); // Start loading
+    try {
+      for (const prize of quest.prizes) {
+        try {
+          await mint_starting_resources({
+            signer: account,
+            config_id: prize.id.toString(),
+            realm_entity_id: entityId || "0",
+          });
+        } catch (error) {
+          console.error(`Failed to claim resources for prize ${prize.id}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to claim resources:", error);
+    } finally {
+      setIsLoading(false); // Stop loading regardless of success or failure
+    }
+  };
+
   const hasClaimed = useMemo(() => {
     return quest.prizes.every((prize) => {
       const value = getComponentValue(
@@ -69,24 +90,11 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
       <p className="text-xl mb-4">{quest.description}</p>
 
       <div className="mt-1 grid grid-cols-3 gap-2">
-        {quest.completed &&
-          quest.prizes.map((prize, index) => {
-            const hasClaimed = getComponentValue(
-              HasClaimedStartingResources,
-              getEntityIdFromKeys([BigInt(entityId), BigInt(prize.id)]),
-            );
-            return (
-              <Button
-                key={index}
-                isLoading={isLoading}
-                disabled={hasClaimed?.claimed}
-                variant="primary"
-                onClick={() => handleClaimResources(prize.id.toString())}
-              >
-                {hasClaimed?.claimed ? "Claimed" : prize.title}
-              </Button>
-            );
-          })}
+        {quest.completed && (
+          <Button isLoading={isLoading} variant="primary" onClick={() => handleAllClaims()}>
+            {"Claim All"}
+          </Button>
+        )}
       </div>
     </div>
   ) : (

@@ -83,30 +83,30 @@ fn set_u256_bit(number: u256, position: u8, value: bool) -> u256 {
 }
 
 trait PercentageTrait<T> {
-    fn get(value: T, numerator: u32) -> T;
+    fn get(value: T, numerator: u64) -> T;
 }
 
-impl PercentageImpl<T, +Mul<T>, +Div<T>, +Into<u32, T>, +Copy<T>, +Drop<T>> of PercentageTrait<T> {
-    fn get(value: T, numerator: u32) -> T {
+impl PercentageImpl<T, +Mul<T>, +Div<T>, +Into<u64, T>, +Copy<T>, +Drop<T>> of PercentageTrait<T> {
+    fn get(value: T, numerator: u64) -> T {
         return (value * numerator.into()) / PercentageValueImpl::_100().into();
     }
 }
 
 #[generate_trait]
 impl PercentageValueImpl of PercentageValueTrait {
-    fn _1() -> u32 {
+    fn _1() -> u64 {
         100
     }
 
-    fn _10() -> u32 {
+    fn _10() -> u64 {
         1_000
     }
 
-    fn _50() -> u32 {
+    fn _50() -> u64 {
         5_000
     }
 
-    fn _100() -> u32 {
+    fn _100() -> u64 {
         10_000
     }
 }

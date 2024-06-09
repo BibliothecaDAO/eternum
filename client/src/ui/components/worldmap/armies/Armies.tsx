@@ -32,11 +32,13 @@ export const Armies = ({}: ArmiesProps) => {
     return orderName.charAt(0).toUpperCase() + orderName.slice(1);
   }, []);
 
+  // move into hook idk....
   const armyInfo = useMemo(() => {
     return (
       [...armiesList]
         // only show movable armies
         .filter((army) => army.sec_per_km > 0)
+        .filter((army) => army.current > 0)
         .map((army) => {
           const isMine = BigInt(army.address) === BigInt(account.address);
           return {

@@ -192,7 +192,7 @@ export function defineContractComponents(world: World) {
           entity_id: RecsType.BigInt,
           troops: { knight_count: RecsType.Number, paladin_count: RecsType.Number, crossbowman_count: RecsType.Number },
           battle_id: RecsType.BigInt,
-          battle_side: RecsType.Number,
+          battle_side: RecsType.String,
         },
         {
           metadata: {
@@ -215,7 +215,7 @@ export function defineContractComponents(world: World) {
               crossbowman_count: RecsType.Number,
             },
             battle_id: RecsType.BigInt,
-            battle_side: RecsType.Number,
+            battle_side: RecsType.String,
           },
           defence_army: {
             troops: {
@@ -224,14 +224,14 @@ export function defineContractComponents(world: World) {
               crossbowman_count: RecsType.Number,
             },
             battle_id: RecsType.BigInt,
-            battle_side: RecsType.Number,
+            battle_side: RecsType.String,
           },
           attack_army_health: { current: RecsType.BigInt, lifetime: RecsType.BigInt },
           defence_army_health: { current: RecsType.BigInt, lifetime: RecsType.BigInt },
-          attack_delta: RecsType.Number,
-          defence_delta: RecsType.Number,
-          tick_last_updated: RecsType.BigInt,
-          tick_duration_left: RecsType.BigInt,
+          attack_delta: RecsType.BigInt,
+          defence_delta: RecsType.BigInt,
+          last_updated: RecsType.BigInt,
+          duration_left: RecsType.BigInt,
         },
         {
           metadata: {
@@ -501,19 +501,6 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: "Protector",
             types: ["u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    Loyalty: (() => {
-      return defineComponent(
-        world,
-        { entity_id: RecsType.BigInt, last_updated_tick: RecsType.BigInt },
-        {
-          metadata: {
-            name: "Loyalty",
-            types: ["u128", "u64"],
             customTypes: [],
           },
         },
@@ -975,7 +962,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           entity_id: RecsType.BigInt,
-          is_public: RecsType.Boolean
+          is_public: RecsType.Boolean,
         },
         {
           metadata: {
@@ -991,7 +978,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           address: RecsType.BigInt,
-          guild_entity_id: RecsType.BigInt
+          guild_entity_id: RecsType.BigInt,
         },
         {
           metadata: {
@@ -1008,7 +995,7 @@ export function defineContractComponents(world: World) {
         {
           address: RecsType.BigInt,
           guild_entity_id: RecsType.BigInt,
-          is_whitelisted: RecsType.BigInt
+          is_whitelisted: RecsType.BigInt,
         },
         {
           metadata: {

@@ -26,7 +26,7 @@ export const BaseThreeTooltip = ({
 }: BaseThreeTooltipProps) => {
   return (
     <DojoHtml distanceFactor={distanceFactor}>
-      <div className={clsx("min-w-[215px] clip-angled relative  p-2 bg-brown/90 text-gold", position, className)}>
+      <div className={clsx("min-w-[215px] clip-angled relative p-2 bg-brown/90 text-gold", position, className)}>
         {children}
         <svg
           className="absolute bottom-[1px] translate-y-full left-1/2 -translate-x-1/2"

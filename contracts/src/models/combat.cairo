@@ -1,12 +1,14 @@
 use core::option::OptionTrait;
 use core::traits::Into;
+use core::traits::TryInto;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
-use eternum::models::config::{TickConfig, TickImpl, TickTrait};
 use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 use eternum::utils::math::{PercentageImpl, PercentageValueImpl};
+use eternum::utils::number::NumberTrait;
 
+const STRENGTH_PRECISION: u256 = 10_000;
 
 #[derive(Model, Copy, Drop, Serde, Default)]
 struct Health {
@@ -38,9 +40,15 @@ impl HealthImpl of HealthTrait {
         assert(self.is_alive(), 'Entity is dead');
     }
 
-    fn steps_to_finish(self: @Health, deduction: u128) -> u128 {
+    fn steps_to_finish(self: @Health, mut deduction: u128) -> u128 {
+        assert!(deduction != 0, "deduction value is 0");
+
         let mut num_steps = *self.current / deduction;
         if (num_steps % deduction) > 0 {
+            num_steps += 1;
+        }
+
+        if num_steps == 0 {
             num_steps += 1;
         }
         num_steps
@@ -74,33 +82,29 @@ impl TroopsImpl of TroopsTrait {
         self.crossbowman_count -= other.crossbowman_count;
     }
 
-    fn deduct_percentage(ref self: Troops, num: u128, denom: u128) {
-        self.knight_count -= ((self.knight_count.into() * num) / denom).try_into().unwrap();
-        self.paladin_count -= ((self.paladin_count.into() * num) / denom).try_into().unwrap();
-        self
-            .crossbowman_count -= ((self.crossbowman_count.into() * num) / denom)
-            .try_into()
-            .unwrap();
-    }
-
-
     fn full_health(self: Troops, troop_config: TroopConfig) -> u128 {
-        let total_knight_health = troop_config.knight_health * self.knight_count;
-        let total_paladin_health = troop_config.paladin_health * self.paladin_count;
-        let total_crossbowman_health = troop_config.crossbowman_health * self.crossbowman_count;
+        let knight_count: u128 = self.knight_count.into();
+        let paladin_count: u128 = self.paladin_count.into();
+        let crossbowman_count: u128 = self.crossbowman_count.into();
+        let total_knight_health: u128 = troop_config.knight_health.into() * knight_count;
+        let total_paladin_health: u128 = troop_config.paladin_health.into() * paladin_count;
+        let total_crossbowman_health: u128 = troop_config.crossbowman_health.into()
+            * crossbowman_count;
 
-        total_knight_health.into() + total_paladin_health.into() + total_crossbowman_health.into()
+        total_knight_health + total_paladin_health + total_crossbowman_health
     }
 
 
     fn full_strength(self: Troops, troop_config: TroopConfig) -> u128 {
-        let total_knight_strength = troop_config.knight_strength * self.knight_count;
-        let total_paladin_strength = troop_config.paladin_strength * self.paladin_count;
-        let total_crossbowman_strength = troop_config.crossbowman_strength * self.crossbowman_count;
+        let knight_count: u128 = self.knight_count.into();
+        let paladin_count: u128 = self.paladin_count.into();
+        let crossbowman_count: u128 = self.crossbowman_count.into();
+        let total_knight_strength: u128 = troop_config.knight_strength.into() * knight_count;
+        let total_paladin_strength: u128 = troop_config.paladin_strength.into() * paladin_count;
+        let total_crossbowman_strength: u128 = troop_config.crossbowman_strength.into()
+            * crossbowman_count;
 
-        total_knight_strength.into()
-            + total_paladin_strength.into()
-            + total_crossbowman_strength.into()
+        total_knight_strength + total_paladin_strength + total_crossbowman_strength
     }
 
 
@@ -109,7 +113,6 @@ impl TroopsImpl of TroopsTrait {
     ) -> (Resource, Resource, Resource) {
         let (mut knight_resource, mut paladin_resoure, mut crossbowman_resoure) = troops_resources;
 
-        // pay for knights using KNIGHT resource
         knight_resource.burn(self.knight_count.into());
         paladin_resoure.burn(self.paladin_count.into());
         crossbowman_resoure.burn(self.crossbowman_count.into());
@@ -117,17 +120,25 @@ impl TroopsImpl of TroopsTrait {
         return (knight_resource, paladin_resoure, crossbowman_resoure);
     }
 
-    fn delta(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> (u32, u32) {
-        let self_strength: i64 = self.strength_against(enemy_troops, troop_config);
-        let enemy_strength: i64 = enemy_troops.strength_against(self, troop_config);
-        let mut strength_difference: i64 = self_strength - enemy_strength;
-        if strength_difference < 0 {
-            strength_difference *= -1;
-        }
-        let strength_difference: u32 = Into::<i64, felt252>::into(strength_difference)
+
+    fn delta(
+        self: @Troops,
+        self_health: @Health,
+        enemy_troops: @Troops,
+        enemy_health: @Health,
+        troop_config: TroopConfig
+    ) -> (u64, u64) {
+        let self_delta: i128 = self
+            .strength_against(self_health, enemy_troops, enemy_health, troop_config);
+        let self_delta_abs: u64 = Into::<i128, felt252>::into(self_delta.abs()).try_into().unwrap();
+
+        let enemy_delta: i128 = enemy_troops
+            .strength_against(enemy_health, self, self_health, troop_config);
+        let enemy_delta_abs: u64 = Into::<i128, felt252>::into(enemy_delta.abs())
             .try_into()
             .unwrap();
-        (strength_difference, strength_difference)
+
+        return (enemy_delta_abs + 1, self_delta_abs + 1);
     }
 
     /// @dev Calculates the net combat strength of one troop against another, factoring in troop-specific strengths and advantages/disadvantages.
@@ -135,54 +146,78 @@ impl TroopsImpl of TroopsTrait {
     /// @param enemy_troops Reference to the instance of the Troops struct representing the defending troops.
     /// @param troop_config Configuration object containing strength and advantage/disadvantage percentages for each troop type.
     /// @return The net combat strength as an integer, where a positive number indicates a strength advantage for the attacking troops.
-    fn strength_against(self: @Troops, enemy_troops: @Troops, troop_config: TroopConfig) -> i64 {
+    fn strength_against(
+        self: @Troops,
+        self_health: @Health,
+        enemy_troops: @Troops,
+        enemy_health: @Health,
+        troop_config: TroopConfig
+    ) -> i128 {
         let self = *self;
         let enemy_troops = *enemy_troops;
 
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        let mut self_knight_strength: u32 = troop_config.knight_strength * self.knight_count;
-        self_knight_strength =
+        let mut self_knight_strength: u64 = troop_config.knight_strength.into();
+        self_knight_strength *=
+            (self.knight_count.into() * (*self_health).current.try_into().unwrap())
+            / (*self_health).lifetime.try_into().unwrap();
+        self_knight_strength +=
             PercentageImpl::get(self_knight_strength.into(), troop_config.advantage_percent.into());
 
-        let mut self_paladin_strength: u32 = troop_config.paladin_strength * self.paladin_count;
-        self_paladin_strength =
+        let mut self_paladin_strength: u64 = troop_config.paladin_strength.into();
+        self_paladin_strength *=
+            (self.paladin_count.into() * (*self_health).current.try_into().unwrap())
+            / (*self_health).lifetime.try_into().unwrap();
+        self_paladin_strength +=
             PercentageImpl::get(
                 self_paladin_strength.into(), troop_config.advantage_percent.into()
             );
 
-        let mut self_crossbowman_strength: u32 = troop_config.crossbowman_strength
-            * self.crossbowman_count;
-        self_crossbowman_strength =
+        let mut self_crossbowman_strength: u64 = troop_config.crossbowman_strength.into();
+        self_crossbowman_strength *=
+            (self.crossbowman_count.into() * (*self_health).current.try_into().unwrap())
+            / (*self_health).lifetime.try_into().unwrap();
+
+        self_crossbowman_strength +=
             PercentageImpl::get(
                 self_crossbowman_strength.into(), troop_config.advantage_percent.into()
             );
 
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        let mut enemy_knight_strength: u32 = troop_config.knight_strength
-            * enemy_troops.knight_count;
-        enemy_knight_strength =
+        let mut enemy_knight_strength: u64 = troop_config.knight_strength.into();
+        enemy_knight_strength *=
+            (enemy_troops.knight_count.into() * (*enemy_health).current.try_into().unwrap())
+            / (*enemy_health).lifetime.try_into().unwrap();
+        enemy_knight_strength -=
             PercentageImpl::get(enemy_knight_strength, troop_config.disadvantage_percent.into());
 
-        let mut enemy_paladin_strength: u32 = troop_config.paladin_strength
-            * enemy_troops.paladin_count;
-        enemy_paladin_strength =
+        let mut enemy_paladin_strength: u64 = troop_config.paladin_strength.into();
+        enemy_paladin_strength *=
+            (enemy_troops.paladin_count.into() * (*enemy_health).current.try_into().unwrap())
+            / (*enemy_health).lifetime.try_into().unwrap();
+        enemy_paladin_strength -=
             PercentageImpl::get(enemy_paladin_strength, troop_config.disadvantage_percent.into());
 
-        let mut enemy_crossbowman_strength: u32 = troop_config.crossbowman_strength
-            * enemy_troops.crossbowman_count;
-        enemy_crossbowman_strength =
+        let mut enemy_crossbowman_strength: u64 = troop_config.crossbowman_strength.into();
+        enemy_crossbowman_strength *=
+            (enemy_troops.crossbowman_count.into() * (*enemy_health).current.try_into().unwrap())
+            / (*enemy_health).lifetime.try_into().unwrap();
+        enemy_crossbowman_strength -=
             PercentageImpl::get(
                 enemy_crossbowman_strength, troop_config.disadvantage_percent.into()
             );
 
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        let self_knight_strength: i64 = self_knight_strength.into() - enemy_paladin_strength.into();
-        let self_paladin_strength: i64 = self_paladin_strength.into()
+        let self_knight_strength: i128 = self_knight_strength.into()
+            - enemy_paladin_strength.into();
+        let self_knight_strength: i128 = self_knight_strength.into()
+            - enemy_paladin_strength.into();
+        let self_paladin_strength: i128 = self_paladin_strength.into()
             - enemy_crossbowman_strength.into();
-        let self_crossbowman_strength: i64 = self_crossbowman_strength.into()
+        let self_crossbowman_strength: i128 = self_crossbowman_strength.into()
             - enemy_knight_strength.into();
 
         self_knight_strength + self_paladin_strength + self_crossbowman_strength
@@ -324,10 +359,10 @@ struct Battle {
     defence_army: BattleArmy,
     attack_army_health: BattleHealth,
     defence_army_health: BattleHealth,
-    attack_delta: u32,
-    defence_delta: u32,
-    tick_last_updated: u64,
-    tick_duration_left: u64
+    attack_delta: u64,
+    defence_delta: u64,
+    last_updated: u64,
+    duration_left: u64
 }
 
 #[derive(Copy, Drop, Serde, PartialEq, Introspect)]
@@ -356,68 +391,76 @@ impl BattleSideIntoFelt252 of Into<BattleSide, felt252> {
 
 #[generate_trait]
 impl BattleImpl of BattleTrait {
-    fn update_state(ref self: Battle, tick: TickConfig) {
-        let battle_duration_passed = self.duration_passed(tick);
+    fn update_state(ref self: Battle) {
+        let battle_duration_passed = self.duration_passed();
         self
             .attack_army_health
-            .decrease_by((self.attack_delta.into() * battle_duration_passed.into()));
+            .decrease_by((self.defence_delta.into() * battle_duration_passed.into()));
         self
             .defence_army_health
             .decrease_by((self.attack_delta.into() * battle_duration_passed.into()));
     }
 
-    fn restart(ref self: Battle, tick: TickConfig, troop_config: TroopConfig) {
+    fn restart(ref self: Battle, troop_config: TroopConfig) {
         // ensure state has been updated 
-        assert!(self.tick_last_updated == tick.current(), "state not updated");
+        assert!(self.last_updated == starknet::get_block_timestamp(), "state not updated");
+
+        // fn delta(self: @Troops, self_health: @Health, enemy_troops: @Troops, enemy_health: @Health, troop_config: TroopConfig) -> (u64, u64) {
 
         // reset attack and defence delta 
         let (attack_delta, defence_delta) = self
             .attack_army
             .troops
-            .delta(@self.defence_army.troops, troop_config);
+            .delta(
+                @self.attack_army_health.into(),
+                @self.defence_army.troops,
+                @self.defence_army_health.into(),
+                troop_config
+            );
         self.attack_delta = attack_delta;
         self.defence_delta = defence_delta;
 
         // get duration with latest delta
-        self.tick_duration_left = self.duration();
+        self.duration_left = self.duration();
     }
 
 
     fn duration(self: Battle) -> u64 {
-        let mut attack_num_ticks_to_death = self
+        let mut attack_num_seconds_to_death = self
             .attack_army_health
             .steps_to_finish(self.defence_delta.into());
 
-        let mut defence_num_ticks_to_death = self
+        let mut defence_num_seconds_to_death = self
             .defence_army_health
             .steps_to_finish(self.attack_delta.into());
 
-        if defence_num_ticks_to_death < attack_num_ticks_to_death {
-            defence_num_ticks_to_death.try_into().unwrap()
+        if defence_num_seconds_to_death < attack_num_seconds_to_death {
+            defence_num_seconds_to_death.try_into().unwrap()
         } else {
-            attack_num_ticks_to_death.try_into().unwrap()
+            attack_num_seconds_to_death.try_into().unwrap()
         }
     }
 
 
-    fn duration_passed(ref self: Battle, tick: TickConfig) -> u64 {
-        let current_tick = tick.current();
-        let duration_since_last_update = current_tick - self.tick_last_updated;
-        if self.tick_duration_left >= duration_since_last_update {
-            self.tick_duration_left -= duration_since_last_update;
-            self.tick_last_updated = current_tick;
+    fn duration_passed(ref self: Battle) -> u64 {
+        let now = starknet::get_block_timestamp();
+        let duration_since_last_update = now - self.last_updated;
+        if self.duration_left >= duration_since_last_update {
+            self.duration_left -= duration_since_last_update;
+            self.last_updated = now;
 
             duration_since_last_update
         } else {
-            let duration = self.tick_duration_left;
-            self.tick_duration_left = 0;
-            self.tick_last_updated = current_tick;
+            let duration = self.duration_left;
+            self.duration_left = 0;
+            self.last_updated = now;
+
             duration
         }
     }
 
     fn has_ended(self: Battle) -> bool {
-        self.tick_duration_left == 0
+        self.duration_left == 0
     }
 
     fn winner(self: Battle) -> BattleSide {
@@ -433,3 +476,91 @@ impl BattleImpl of BattleTrait {
         return BattleSide::None;
     }
 }
+
+
+// #[cfg(test)]
+// mod battle_tests {
+//     use eternum::models::combat::BattleTrait;
+//     use eternum::models::combat::TroopsTrait;
+//     use super::{Battle, BattleHealth, BattleArmy, BattleSide, Troops, TroopConfig};
+
+//     #[test]
+//     fn test_battle_helper() {
+//         let troop_config = TroopConfig {
+//             config_id: 0,
+//             knight_health: 7_200,
+//             paladin_health: 7_200,
+//             crossbowman_health: 7_200,
+//             knight_strength: 1,
+//             paladin_strength: 1,
+//             crossbowman_strength: 1,
+//             advantage_percent: 1000,
+//             disadvantage_percent: 1000,
+//         };
+
+//         let attack_troop_each = 10_000;
+//         let defence_troop_each = 10_000;
+
+//         let attack_troops = Troops {
+//             knight_count: attack_troop_each,
+//             paladin_count: attack_troop_each,
+//             crossbowman_count: attack_troop_each,
+//         };
+//         let defence_troops = Troops {
+//             knight_count: defence_troop_each,
+//             paladin_count: defence_troop_each,
+//             crossbowman_count: defence_troop_each,
+//         };
+
+//         let mut battle: Battle = Battle {
+//             entity_id: 45,
+//             attack_army: BattleArmy {
+//                 troops: attack_troops, battle_id: 0, battle_side: BattleSide::Attack
+//             },
+//             defence_army: BattleArmy {
+//                 troops: defence_troops, battle_id: 0, battle_side: BattleSide::Defence
+//             },
+//             attack_army_health: BattleHealth {
+//                 current: attack_troops.full_health(troop_config),
+//                 lifetime: attack_troops.full_health(troop_config)
+//             },
+//             defence_army_health: BattleHealth {
+//                 current: defence_troops.full_health(troop_config),
+//                 lifetime: defence_troops.full_health(troop_config)
+//             },
+//             attack_delta: 0,
+//             defence_delta: 0,
+//             last_updated: 0,
+//             duration_left: 0
+//         };
+
+//         // reset attack and defence delta 
+//         let (attack_delta, defence_delta) = battle
+//             .attack_army
+//             .troops
+//             .delta(
+//                 @battle.attack_army_health.into(),
+//                 @battle.defence_army.troops,
+//                 @battle.defence_army_health.into(),
+//                 troop_config
+//             );
+//         battle.attack_delta = attack_delta;
+//         battle.defence_delta = defence_delta;
+
+//         // get duration with latest delta
+//         battle.duration_left = battle.duration();
+
+//         print!("\n\n Attack Troops each: {} \n\n", attack_troop_each);
+//         print!("\n\n Defence Troops each: {} \n\n", defence_troop_each);
+//         print!("\n\n Attack delta: {} \n\n", attack_delta);
+//         print!("\n\n Defence delta: {} \n\n", defence_delta);
+//         print!("\n\n Attack Army health: {} \n\n", battle.attack_army_health.current);
+//         print!("\n\n Defence Army health: {} \n\n", battle.defence_army_health.current);
+//         print!("\n\n Scale A: {} \n\n", attack_troops.count() / defence_troops.count());
+//         print!("\n\n Scale B: {} \n\n", defence_troops.count() / attack_troops.count());
+//         print!("\n\n Duration in Seconds: {} \n\n", battle.duration_left);
+//         print!("\n\n Duration in Minutes: {} \n\n", battle.duration_left / 60);
+//         print!("\n\n Duration in Hours: {} \n\n", battle.duration_left / (60 * 60));
+//     }
+// }
+

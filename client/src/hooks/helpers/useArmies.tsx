@@ -1,6 +1,6 @@
 import { useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../context/DojoContext";
-import { Component, Entity, Has, HasValue, Not, NotValue, getComponentValue } from "@dojoengine/recs";
+import { Component, Entity, Has, HasValue, Not, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { Position } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import { useMemo } from "react";
@@ -16,6 +16,7 @@ export type ArmyAndName = ClientComponents["Army"]["schema"] & { name: string } 
   ClientComponents["ArrivalTime"]["schema"] &
   ClientComponents["Position"]["schema"] &
   ClientComponents["EntityOwner"]["schema"] &
+  ClientComponents["Stamina"]["schema"] &
   ClientComponents["Owner"]["schema"] & { realm: ClientComponents["Realm"]["schema"] } & {
     homePosition: ClientComponents["Position"]["schema"];
   };
@@ -34,6 +35,7 @@ const formatArmies = (
   EntityOwner: Component,
   Owner: Component,
   Realm: Component,
+  Stamina: Component,
 ): ArmyAndName[] => {
   return armies.map((id) => {
     const army = getComponentValue(Army, id) as ClientComponents["Army"]["schema"];
@@ -45,6 +47,7 @@ const formatArmies = (
     const arrivalTime = getComponentValue(ArrivalTime, id) as ClientComponents["ArrivalTime"]["schema"];
     const position = getComponentValue(Position, id) as ClientComponents["Position"]["schema"];
     const entityOwner = getComponentValue(EntityOwner, id) as ClientComponents["EntityOwner"]["schema"];
+    const stamina = getComponentValue(Stamina, id) as ClientComponents["Stamina"]["schema"];
     let owner = getComponentValue(Owner, id) as ClientComponents["Owner"]["schema"];
     if (!owner && entityOwner?.entity_owner_id) {
       owner = getComponentValue(
@@ -76,12 +79,13 @@ const formatArmies = (
       ...arrivalTime,
       ...position,
       ...entityOwner,
+      ...stamina,
       ...owner,
       realm,
       homePosition,
-      name:
-        (name ? shortString.decodeShortString(name.name.toString()) : `Army ${army?.entity_id}`) +
-        ` - ${protectee ? "🛡️" : "🗡️"}`,
+      name: name
+        ? shortString.decodeShortString(name.name.toString())
+        : `${protectee ? "🛡️" : "🗡️"}` + `Army ${army?.entity_id}`,
       // note: have to explicitly specify entity id as the army entity id or else it's realm entity id
       entity_id: army.entity_id,
     };
@@ -104,6 +108,7 @@ export const useArmies = () => {
         Army,
         Protectee,
         EntityName,
+        Stamina,
       },
     },
   } = useDojo();
@@ -126,6 +131,7 @@ export const useArmies = () => {
         EntityOwner,
         Owner,
         Realm,
+        Stamina,
       ),
   };
 };
@@ -146,29 +152,34 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
         Army,
         Protectee,
         EntityName,
+        Stamina,
       },
     },
   } = useDojo();
 
   const armies = useEntityQuery([Has(Army), HasValue(EntityOwner, { entity_owner_id: entity_id })]);
 
+  const entityArmies = useMemo(() => {
+    return formatArmies(
+      armies,
+      Army,
+      Protectee,
+      EntityName,
+      Health,
+      Quantity,
+      Movable,
+      Capacity,
+      ArrivalTime,
+      Position,
+      EntityOwner,
+      Owner,
+      Realm,
+      Stamina,
+    );
+  }, [armies]);
+
   return {
-    entityArmies: () =>
-      formatArmies(
-        armies,
-        Army,
-        Protectee,
-        EntityName,
-        Health,
-        Quantity,
-        Movable,
-        Capacity,
-        ArrivalTime,
-        Position,
-        EntityOwner,
-        Owner,
-        Realm,
-      ),
+    entityArmies,
   };
 };
 
@@ -189,6 +200,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
           Army,
           Protectee,
           EntityName,
+          Stamina,
         },
       },
       account: { account },
@@ -211,6 +223,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
         EntityOwner,
         Owner,
         Realm,
+        Stamina,
       );
     }, [allArmiesAtPosition]);
 
@@ -237,4 +250,46 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
       userArmies,
     };
   }
+};
+
+export const useArmyByEntityId = ({ entity_id }: { entity_id: bigint }) => {
+  const {
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+        Stamina,
+      },
+    },
+  } = useDojo();
+
+  const armies = runQuery([Has(Army), HasValue(Army, { entity_id })]);
+
+  return formatArmies(
+    Array.from(armies),
+    Army,
+    Protectee,
+    EntityName,
+    Health,
+    Quantity,
+    Movable,
+    Capacity,
+    ArrivalTime,
+    Position,
+    EntityOwner,
+    Owner,
+    Realm,
+
+    Stamina,
+  )[0];
 };

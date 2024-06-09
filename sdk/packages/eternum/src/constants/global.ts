@@ -2,7 +2,7 @@ import { ResourcesIds } from "./resources";
 
 export const EternumGlobalConfig = {
   stamina: {
-    travelCost: 10,
+    travelCost: 5,
     exploreCost: 15,
   },
   resources: {
@@ -46,12 +46,12 @@ export const EternumGlobalConfig = {
     army: 1,
   },
   troop: {
-    knightHealth: 10,
-    paladinHealth: 10,
-    crossbowmanHealth: 10,
-    knightStrength: 7,
-    paladinStrength: 7,
-    crossbowmanStrength: 7,
+    knightHealth: 7_200,
+    paladinHealth: 7_200,
+    crossbowmanHealth: 7_200,
+    knightStrength: 1,
+    paladinStrength: 1,
+    crossbowmanStrength: 1,
     advantagePercent: 1000,
     disadvantagePercent: 1000,
   },
@@ -63,11 +63,12 @@ export enum TickIds {
 }
 
 export const TROOPS_STAMINAS = {
-  [ResourcesIds.Paladin]: 45,
-  [ResourcesIds.Knight]: 30,
-  [ResourcesIds.Crossbowmen]: 30,
+  [ResourcesIds.Paladin]: 100,
+  [ResourcesIds.Knight]: 80,
+  [ResourcesIds.Crossbowmen]: 80,
 };
 
 export const WORLD_CONFIG_ID = 999999999999999999n;
 
+export const U32_MAX = 4294967295;
 export const MAX_NAME_LENGTH = 31;

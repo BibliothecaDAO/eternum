@@ -397,7 +397,7 @@ export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: strin
       size="md"
       variant="primary"
       onClick={async () => {
-        if (!quests.some((quest: any) => quest.name === "Claim Food" && quest.completed === true)) {
+        if (showWalkthrough) {
           await mint_starting_resources({
             signer: account,
             config_id: QuestType.Food,

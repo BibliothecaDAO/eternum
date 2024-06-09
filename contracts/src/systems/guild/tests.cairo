@@ -39,7 +39,7 @@ fn setup() -> (IWorldDispatcher, IGuildSystemsDispatcher, INameSystemsDispatcher
 #[test]
 #[available_gas(3000000000000)]
 fn test_create_guild() {
-    let (world, guild_systems_dispatcher, name_systems_dispatcher) = setup();
+    let (world, guild_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 
@@ -66,7 +66,7 @@ fn test_create_guild() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Already member of a guild', 'ENTRYPOINT_FAILED'))]
 fn test_create_multiple_guilds() {
-    let (_, guild_systems_dispatcher, name_systems_dispatcher) = setup();
+    let (_, guild_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 
@@ -78,7 +78,7 @@ fn test_create_multiple_guilds() {
 #[test]
 #[available_gas(3000000000000)]
 fn test_join_guild() {
-    let (world, guild_systems_dispatcher, name_systems_dispatcher) = setup();
+    let (world, guild_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 
@@ -96,7 +96,7 @@ fn test_join_guild() {
 // #[available_gas(3000000000000)]
 // #[should_panic(expected: ('Already member of a guild', 'ENTRYPOINT_FAILED'))]
 // fn test_join_guild_when_already_member() {
-//     let (_, guild_systems_dispatcher, name_systems_dispatcher) = setup();
+//     let (_, guild_systems_dispatcher, _) = setup();
 
 //     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 //     guild_systems_dispatcher.create_guild(true, 'GuildName');
@@ -112,7 +112,7 @@ fn test_join_guild() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Player is not whitelisted', 'ENTRYPOINT_FAILED'))]
 fn test_join_private_guild_not_whitelisted() {
-    let (_, guild_systems_dispatcher, name_systems_dispatcher) = setup();
+    let (_, guild_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(false, 'GuildName');
@@ -124,7 +124,7 @@ fn test_join_private_guild_not_whitelisted() {
 #[test]
 #[available_gas(3000000000000)]
 fn test_whitelist_player() {
-    let (_, guild_systems_dispatcher, name_systems_dispatcher) = setup();
+    let (_, guild_systems_dispatcher, _) = setup();
 
     let player2_address = contract_address_const::<'player2'>();
 
@@ -141,7 +141,7 @@ fn test_whitelist_player() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
 fn test_whitelist_player_as_not_owner() {
-    let (_, guild_systems_dispatcher, name_systems_dispatcher) = setup();
+    let (_, guild_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(false, 'GuildName');
@@ -154,7 +154,7 @@ fn test_whitelist_player_as_not_owner() {
 #[test]
 #[available_gas(3000000000000)]
 fn test_leave_guild() {
-    let (_, guild_systems_dispatcher, name_systems_dispatcher) = setup();
+    let (_, guild_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     guild_systems_dispatcher.create_guild(false, 'GuildName');
@@ -166,7 +166,7 @@ fn test_leave_guild() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Not member of a guild', 'ENTRYPOINT_FAILED'))]
 fn test_leave_guild_not_member() {
-    let (_, guild_systems_dispatcher, name_systems_dispatcher) = setup();
+    let (_, guild_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     guild_systems_dispatcher.leave_guild();
@@ -176,7 +176,7 @@ fn test_leave_guild_not_member() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Guild name cannot be empty', 'ENTRYPOINT_FAILED'))]
 fn test_empty_guild_name() {
-    let (_, guild_systems_dispatcher, name_systems_dispatcher) = setup();
+    let (_, guild_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 
@@ -187,7 +187,7 @@ fn test_empty_guild_name() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('Address given is not a player', 'ENTRYPOINT_FAILED'))]
 fn test_whitelist_wrong_address() {
-    let (_, guild_systems_dispatcher, name_systems_dispatcher) = setup();
+    let (_, guild_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     let guild_entity_id = guild_systems_dispatcher.create_guild(true, 'GuildName');

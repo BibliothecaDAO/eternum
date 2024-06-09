@@ -58,3 +58,31 @@ export type QuantityTrackerType = {
   entity_id: RecsType.BigInt;
   count: RecsType.BigInt;
 };
+
+export type BattleType = {
+  entity_id: RecsType.BigInt;
+  attack_army: {
+    troops: {
+      knight_count: RecsType.Number;
+      paladin_count: RecsType.Number;
+      crossbowman_count: RecsType.Number;
+    };
+    battle_id: RecsType.BigInt;
+    battle_side: RecsType.String;
+  };
+  defence_army: {
+    troops: {
+      knight_count: RecsType.Number;
+      paladin_count: RecsType.Number;
+      crossbowman_count: RecsType.Number;
+    };
+    battle_id: RecsType.BigInt;
+    battle_side: RecsType.String;
+  };
+  attack_army_health: { current: RecsType.BigInt; lifetime: RecsType.BigInt };
+  defence_army_health: { current: RecsType.BigInt; lifetime: RecsType.BigInt };
+  attack_delta: RecsType.BigInt;
+  defence_delta: RecsType.BigInt;
+  last_updated: RecsType.BigInt;
+  duration_left: RecsType.BigInt;
+};

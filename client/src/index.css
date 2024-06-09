@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap&family=Sedan:ital@0;1&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap&family=Sedan:ital@0;1&display=swap&Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -163,4 +163,32 @@ h6 {
 @keyframes fadeOut {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+
+@keyframes gradientAnimation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.ornate-borders {
+  border: 15px solid transparent;
+  -moz-border-image: url("/border-2.png") 30 30 round; /* Old firefox */
+  -webkit-border-image: url("/border-2.png") 30 30 round; /* Safari */
+  -o-border-image: url("/border-2.png") 30 30 round; /* Opera */
+  border-image: url("/border-2.png") 30 30 round;
+}
+
+.ornate-borders-sm {
+  border: 5px solid transparent;
+  -moz-border-image: url("/border-2.png") 30 30 round; /* Old firefox */
+  -webkit-border-image: url("/border-2.png") 30 30 round; /* Safari */
+  -o-border-image: url("/border-2.png") 30 30 round; /* Opera */
+  border-image: url("/border-2.png") 30 30 round;
 }

@@ -143,19 +143,27 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
   const create_guild = async (props: SystemProps.CreateGuildProps) => {
     await provider.create_guild(props);
-  }
-  
+  };
+
   const join_guild = async (props: SystemProps.JoinGuildProps) => {
     await provider.join_guild(props);
-  }
+  };
 
   const whitelist_player = async (props: SystemProps.WhitelistPlayerProps) => {
     await provider.whitelist_player(props);
-  }
+  };
 
   const leave_guild = async (props: SystemProps.LeaveGuild) => {
     await provider.leave_guild(props);
-  }
+  };
+
+  const battle_start = async (props: SystemProps.BattleStartProps) => {
+    await provider.battle_start(props);
+  };
+
+  const battle_leave = async (props: SystemProps.BattleLeaveProps) => {
+    await provider.battle_leave(props);
+  };
 
   const isLive = async () => {
     try {
@@ -202,9 +210,12 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     army_merge_troops,
 
     create_guild,
-    join_guild, 
-    whitelist_player, 
-    leave_guild
+    join_guild,
+    whitelist_player,
+    leave_guild,
+
+    battle_start,
+    battle_leave,
   };
 
   // TODO: Fix Type

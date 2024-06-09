@@ -19,6 +19,13 @@ import Button from "@/ui/elements/Button";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 
+import { motion } from "framer-motion";
+
+const slideDown = {
+  hidden: { y: "-100%" },
+  visible: { y: "0%", transition: { duration: 0.3 } },
+};
+
 // use a different icon for each structure depending on their category
 const structureIcons: Record<string, JSX.Element> = {
   None: <div />,
@@ -72,7 +79,7 @@ export const TopMiddleNavigation = () => {
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
 
   return (
-    <div className="flex">
+    <motion.div className="flex" variants={slideDown} initial="hidden" animate="visible">
       <div className="self-center px-3 flex space-x-2">
         <TickProgress />
       </div>
@@ -136,7 +143,7 @@ export const TopMiddleNavigation = () => {
           onClick={() => toggleModal(<HintModal />)}
         />
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -146,8 +153,8 @@ const TickProgress = () => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.defaultTickIntervalInSeconds;
-    const progressValue = (timeLeft / EternumGlobalConfig.tick.defaultTickIntervalInSeconds) * 100;
+    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
+    const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
@@ -158,7 +165,7 @@ const TickProgress = () => {
           position: "bottom",
           content: (
             <span className="whitespace-nowrap pointer-events-none">
-              <span>A day in Eternum is {EternumGlobalConfig.tick.defaultTickIntervalInSeconds / 60}m</span>
+              <span>A day in Eternum is {EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60}m</span>
             </span>
           ),
         });

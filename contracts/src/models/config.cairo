@@ -248,11 +248,11 @@ struct TroopConfig {
     knight_health: u32,
     paladin_health: u32,
     crossbowman_health: u32,
-    knight_strength: u32,
-    paladin_strength: u32,
-    crossbowman_strength: u32,
-    advantage_percent: u32,
-    disadvantage_percent: u32,
+    knight_strength: u8,
+    paladin_strength: u8,
+    crossbowman_strength: u16,
+    advantage_percent: u16,
+    disadvantage_percent: u16,
 }
 
 

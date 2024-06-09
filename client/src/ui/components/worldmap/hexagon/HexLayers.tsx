@@ -26,7 +26,6 @@ import { TemperateRainforestBiome } from "../../models/biomes/TemperateRainfores
 import { Hexagon, HighlightPositions } from "../../../../types/index";
 
 import { findAccessiblePositions, findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
-import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
 import { useExplore } from "../../../../hooks/helpers/useExplore";
 import { useTravel } from "../../../../hooks/helpers/useTravel";
 import { useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
@@ -36,11 +35,15 @@ import { HexGrid } from "../../models/biomes/HexGrid";
 import { ArmyMode } from "@/hooks/store/_mapStore";
 import { useStamina } from "@/hooks/helpers/useStamina";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-
-export const EXPLORE_COLOUR = 0x2563eb;
-export const TRAVEL_COLOUR = 0xffce31;
-const CLICKED_HEX_COLOR = 0xff5733;
-const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
+import {
+  ACCESSIBLE_POSITIONS_COLOUR,
+  CLICKED_HEX_COLOR,
+  DEPTH,
+  EXPLORE_COLOUR,
+  FELT_CENTER,
+  HEX_RADIUS,
+  TRAVEL_COLOUR,
+} from "@/ui/config";
 
 type HexagonGridProps = {
   startRow: number;
@@ -119,14 +122,6 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
         }
       });
     });
-
-    // Object.keys(biomeComponents).forEach((biome) => {
-    //   biomesAccumulator[biome] = group.filter((hex) => hex.biome === biome);
-    //   biomesAccumulator[biome] = biomesAccumulator[biome].map((hex: any) => {
-    //     const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
-    //     return { ...hex, x, y, z };
-    //   });
-    // });
 
     return biomesAccumulator;
   }, [explored]);

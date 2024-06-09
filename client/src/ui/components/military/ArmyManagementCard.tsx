@@ -3,7 +3,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
-import { Position, ResourcesIds } from "@bibliothecadao/eternum";
+import { Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { useComponentValue } from "@dojoengine/react";
 import { NumberInput } from "@/ui/elements/NumberInput";
@@ -74,7 +74,6 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
   });
 
   const handleTroopCountChange = (troopName: number, count: number) => {
-    console.log(troopName, count);
     setTroopCounts((prev) => ({ ...prev, [troopName]: count }));
   };
 
@@ -85,9 +84,9 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
       army_id: entity.entity_id,
       payer_id: owner_entity,
       troops: {
-        knight_count: troopCounts[ResourcesIds.Knight] * 1000 || 0,
-        paladin_count: troopCounts[ResourcesIds.Paladin] * 1000 || 0,
-        crossbowman_count: troopCounts[ResourcesIds.Crossbowmen] * 1000 || 0,
+        knight_count: troopCounts[ResourcesIds.Knight] * EternumGlobalConfig.resources.resourcePrecision || 0,
+        paladin_count: troopCounts[ResourcesIds.Paladin] * EternumGlobalConfig.resources.resourcePrecision || 0,
+        crossbowman_count: troopCounts[ResourcesIds.Crossbowmen] * EternumGlobalConfig.resources.resourcePrecision || 0,
       },
     }).finally(() => setIsLoading(false));
 
@@ -154,55 +153,11 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
   ];
 
   return (
-    <div className="flex flex-col relative">
-      {travelWindow && (
-        <>
-          <TravelToLocation
-            isTraveling={isPassiveTravel}
-            checkSamePosition={checkSamePosition}
-            entityOwnerPosition={entityOwnerPosition}
-            entity={entity}
-            position={position}
-            onClose={() => setSetTravelWindow(false)}
-          />
-        </>
-      )}
-
-      <div className="flex justify-between border-b border-gold/20 py-2">
-        {editName ? (
-          <div className="flex space-x-2">
-            <TextInput placeholder="Type Name" className="h-full" value={naming} onChange={(name) => setNaming(name)} />
-            <Button
-              variant="default"
-              isLoading={isLoading}
-              onClick={async () => {
-                setIsLoading(true);
-
-                try {
-                  await provider.set_entity_name({ signer: account, entity_id: entity.entity_id, name: naming });
-                } catch (e) {
-                  console.error(e);
-                }
-
-                setIsLoading(false);
-                setEditName(false);
-              }}
-            >
-              Change Name
-            </Button>
-          </div>
-        ) : (
-          <h3>{entity.name}</h3>
-        )}
-        <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
-          edit name
-        </Button>
-      </div>
-
-      <div className="flex justify-between my-1">
-        <Button variant="default" onClick={() => setSetTravelWindow(true)}>
+    <>
+      <div className="flex justify-between  bg-gold/5 p-2 text-xs">
+        {/* <Button size="xs" variant="default" onClick={() => setSetTravelWindow(true)}>
           travel
-        </Button>
+        </Button> */}
         <div className="self-center mr-auto px-3">
           {checkSamePosition ? "At Base " : position ? `On Map` : "Unknown"}
         </div>
@@ -220,48 +175,106 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
         </div>
         <ViewOnMapButton position={position} />
       </div>
+      <div className="flex flex-col relative  p-2">
+        {travelWindow && (
+          <>
+            <TravelToLocation
+              isTraveling={isPassiveTravel}
+              checkSamePosition={checkSamePosition}
+              entityOwnerPosition={entityOwnerPosition}
+              entity={entity}
+              position={position}
+              onClose={() => setSetTravelWindow(false)}
+            />
+          </>
+        )}
 
-      <div className="grid grid-cols-3 gap-6 my-4">
-        {troops.map((troop) => {
-          const balance = getBalance(owner_entity, troop.name).balance;
+        <div className="flex justify-between   p-2">
+          {editName ? (
+            <div className="flex space-x-2">
+              <TextInput
+                placeholder="Type Name"
+                className="h-full"
+                value={naming}
+                onChange={(name) => setNaming(name)}
+              />
+              <Button
+                variant="default"
+                isLoading={isLoading}
+                onClick={async () => {
+                  setIsLoading(true);
 
-          const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
+                  try {
+                    await provider.set_entity_name({ signer: account, entity_id: entity.entity_id, name: naming });
+                  } catch (e) {
+                    console.error(e);
+                  }
 
-          return (
-            <div className="p-2 bg-gold/20 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
-              {/* <img src={`/images/units/${nameMapping[troop.name]}.png`} alt={nameMapping[troop.name]} /> */}
-
-              <div className="font-bold mb-4">
-                <div className="flex justify-between">
-                  <div className="text-md">{nameMapping[troop.name]}</div>
-                </div>
-                <div className="px-2 py-1 bg-white/10 clip-angled-sm flex justify-between">
-                  <ResourceIcon withTooltip={false} resource={nameMapping[troop.name]} size="lg" />
-                  <div className="text-green self-center">x {troop.current}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center mt-auto flex-col">
-                <div className="px-2 text-xs  font-bold mb-3">
-                  Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
-                </div>
-                <NumberInput
-                  max={balance ? balanceFloor : 0}
-                  min={0}
-                  step={100}
-                  value={troopCounts[troop.name]}
-                  onChange={(amount) => handleTroopCountChange(troop.name, amount)}
-                />
-              </div>
+                  setIsLoading(false);
+                  setEditName(false);
+                }}
+              >
+                Change Name
+              </Button>
             </div>
-          );
-        })}
-      </div>
+          ) : (
+            <h3>{entity.name}</h3>
+          )}
+          <Button size="xs" variant="default" onClick={() => setEditName(!editName)}>
+            edit
+          </Button>
+        </div>
 
-      <Button className="w-full " disabled={!canCreate} variant="primary" isLoading={isLoading} onClick={handleBuyArmy}>
-        {checkSamePosition ? "Buy Troops" : "Must be at Base to Purchase"}
-      </Button>
-    </div>
+        <div className="grid grid-cols-3 gap-6 my-4">
+          {troops.map((troop) => {
+            const balance = getBalance(owner_entity, troop.name).balance;
+
+            const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
+
+            return (
+              <div className="p-2 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
+                {/* <img src={`/images/units/${nameMapping[troop.name]}.png`} alt={nameMapping[troop.name]} /> */}
+
+                <div className="font-bold mb-4">
+                  <div className="flex justify-between">
+                    <div className="text-md">{nameMapping[troop.name]}</div>
+                  </div>
+                  <div className="px-2 py-1 bg-white/10 clip-angled-sm flex justify-between">
+                    <ResourceIcon withTooltip={false} resource={nameMapping[troop.name]} size="lg" />
+                    <div className="text-green self-center">x {troop.current}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center mt-auto flex-col">
+                  <div className="px-2 text-xs  font-bold mb-3">
+                    Avail. [{currencyFormat(balance ? Number(balance) : 0, 0)}]
+                  </div>
+                  <NumberInput
+                    max={
+                      balance ? Math.min(balanceFloor, U32_MAX / EternumGlobalConfig.resources.resourcePrecision) : 0
+                    }
+                    min={0}
+                    step={100}
+                    value={troopCounts[troop.name]}
+                    onChange={(amount) => handleTroopCountChange(troop.name, amount)}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <Button
+          className="w-full "
+          disabled={!canCreate}
+          variant="primary"
+          isLoading={isLoading}
+          onClick={handleBuyArmy}
+        >
+          {checkSamePosition ? "Buy Troops" : "Must be at Base to Purchase"}
+        </Button>
+      </div>
+    </>
   );
 };
 
