@@ -14,7 +14,6 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { HoveredHexagon } from "@/ui/components/worldmap/hexagon/HoveredHexagon.js";
 
 const scale = 20;
-
 export const WorldMapScene = () => {
   const [isMapView] = useRoute("/map");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);

@@ -44,6 +44,7 @@ import {
   HEX_RADIUS,
   TRAVEL_COLOUR,
 } from "@/ui/config";
+import { useExploredHexesStore } from "./WorldHexagon";
 
 type HexagonGridProps = {
   startRow: number;
@@ -523,6 +524,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     });
     playExplore();
     clearSelection();
+
     await exploreHex({
       explorerId: id,
       direction,

@@ -7,6 +7,8 @@ import useRealmStore from "../store/useRealmStore";
 import { findDirection } from "../../ui/utils/utils";
 import useUIStore from "../store/useUIStore";
 import { Subscription } from "rxjs";
+import { useExploredHexesStore } from "@/ui/components/worldmap/hexagon/WorldHexagon";
+import { FELT_CENTER } from "@/ui/config";
 
 interface ExploreHexProps {
   explorerId: bigint | undefined;
@@ -29,6 +31,9 @@ export function useExplore() {
   const animationPaths = useUIStore((state) => state.animationPaths);
   const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+  const setExploredHexes = useExploredHexesStore((state) => state.setExploredHexes);
+
+  const removeHex = useExploredHexesStore((state) => state.removeHex);
 
   const isExplored = (col: number, row: number) => {
     const exploredMap = getComponentValue(Tile, getEntityIdFromKeys([BigInt(col), BigInt(row)]));
@@ -113,14 +118,18 @@ export function useExplore() {
     const newPath = { id: explorerId, path, enemy: false };
     const prevPaths = animationPaths.filter((p) => p.id !== explorerId);
     setAnimationPaths([...prevPaths, newPath]);
-    await explore({
-      unit_id: explorerId,
-      direction,
-      signer: account,
-    }).catch(() => {
+    setExploredHexes(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
+    try {
+      await explore({
+        unit_id: explorerId,
+        direction,
+        signer: account,
+      });
+    } catch (e) {
       // revert animation so that it goes back to the original position
       setAnimationPaths([...prevPaths, { id: explorerId, path: path.reverse(), enemy: false }]);
-    });
+      // removeHex(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
+    }
   };
   return { isExplored, exploredColsRows, useFoundResources, getExplorationInput, exploreHex };
 }

@@ -22,6 +22,7 @@ import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
   setExploredHexes: (col: number, row: number) => void;
+  removeHex: (col: number, row: number) => void;
 }
 
 export const useExploredHexesStore = create<ExploredHexesState>((set) => ({
@@ -34,6 +35,18 @@ export const useExploredHexesStore = create<ExploredHexesState>((set) => ({
         newMap.set(col, new Set());
       }
       newMap.get(col)!.add(row);
+      return { exploredHexes: newMap };
+    }),
+  removeHex: (col: number, row: number) =>
+    set((state) => {
+      const newMap = new Map(state.exploredHexes);
+      if (newMap.has(col)) {
+        const rowSet = newMap.get(col);
+        rowSet?.delete(row);
+        if (rowSet?.size === 0) {
+          newMap.delete(col);
+        }
+      }
       return { exploredHexes: newMap };
     }),
 }));
@@ -78,6 +91,8 @@ export const WorldMap = () => {
         if (event && hexData) {
           const col = Number(event.keys[2]) - FELT_CENTER;
           const row = Number(event.keys[3]) - FELT_CENTER;
+
+          console.log(col, row);
           setExploredHexes(col, row);
         }
       });
