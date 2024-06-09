@@ -30,7 +30,8 @@ export const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-brown/80 p-8 text-gold sharp-corners min-w-[800px] max-w-[800px] rounded border-2 border-gold backdrop-blur-lg border-gradient overflow-hidden  clip-angled">
+      <div className="self-center bg-brown/80 p-8 text-gold sharp-corners min-w-[800px] max-w-[800px] rounded border-2 border-gold backdrop-blur-lg border-gradient overflow-hidden  clip-angled relative ">
+        <div className="absolute h-full w-full ornate-borders top-0 left-0 z-0" />
         {children}
       </div>
     </motion.div>

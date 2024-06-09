@@ -1,6 +1,3 @@
-import useUIStore from "@/hooks/store/useUIStore";
-import { OSWindow } from "@/ui/components/navigation/OSWindow";
-import { military } from "@/ui/components/navigation/Config";
 import { EntityList } from "@/ui/components/list/EntityList";
 import { useMemo, useState } from "react";
 import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
@@ -11,8 +8,6 @@ import { BattlesArmyTable } from "@/ui/components/military/BattlesArmyTable";
 import { Tabs } from "@/ui/elements/tab";
 
 export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const isOpen = useUIStore((state) => state.isPopupOpen(military));
   const [selectedTab, setSelectedTab] = useState(0);
 
   const { playerStructures } = useEntities();
