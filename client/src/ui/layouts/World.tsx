@@ -50,8 +50,8 @@ export const World = () => {
       </BlankOverlayContainer>
       <HooksComponent />
 
-      <BackgroundContainer className=" clip-angled relative ornate-borders ">
-        <div className="h-full w-full main-scene">
+      <BackgroundContainer className=" clip-angled relative  ornate-borders">
+        <div className="h-full w-full main-scene z-100">
           <MainScene />
         </div>
       </BackgroundContainer>

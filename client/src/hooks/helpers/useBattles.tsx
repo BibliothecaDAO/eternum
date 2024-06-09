@@ -9,6 +9,7 @@ import { useMemo } from "react";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useEntities } from "./useEntities";
 import { shortString } from "starknet";
+import { BattleType } from "@/dojo/modelManager/types";
 
 export type FullArmyType = ClientComponents["Army"]["schema"] & ClientComponents["Health"]["schema"];
 
