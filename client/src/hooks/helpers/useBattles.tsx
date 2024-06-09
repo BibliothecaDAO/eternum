@@ -3,7 +3,7 @@ import { useDojo } from "../context/DojoContext";
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
-import { getArmyByEntityId } from "./useArmies";
+import { useArmyByEntityId } from "./useArmies";
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { useMemo } from "react";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
@@ -102,8 +102,8 @@ export const useBattles = () => {
   };
 
   const battleByEntityId = (attackerEntityId: bigint, defenderEntityId: bigint) => {
-    const attackerArmy = getArmyByEntityId({ entity_id: attackerEntityId });
-    const defenderArmy = getArmyByEntityId({ entity_id: defenderEntityId });
+    const attackerArmy = useArmyByEntityId({ entity_id: attackerEntityId });
+    const defenderArmy = useArmyByEntityId({ entity_id: defenderEntityId });
 
     if (
       !attackerArmy ||

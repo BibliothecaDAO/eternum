@@ -58,7 +58,7 @@ const CircleButton = ({
         }
       }}
       className={clsx(
-        "flex relative transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold  rounded    shadow-2xl   group",
+        "flex relative transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold  rounded    shadow-2xl   group ornate-borders-sm clip-angled-sm",
         className,
         sizes[size],
         { "opacity-50 cursor-not-allowed": disabled },
@@ -83,7 +83,7 @@ const CircleButton = ({
           backgroundPosition: "center", // Center the background image
           padding: image ? "5px" : "0",
         }}
-        className={`absolute w-[calc(100%-3px)] h-[calc(100%-3px)] bg-no-repeat z-10 clip-angled-sm  hover:bg-gold duration-300 ${
+        className={`absolute w-[calc(100%)] h-[calc(100%)] bg-no-repeat z-10   hover:bg-gold duration-300 ${
           active ? "bg-gold/60" : "bg-brown/80"
         }`}
       ></div>

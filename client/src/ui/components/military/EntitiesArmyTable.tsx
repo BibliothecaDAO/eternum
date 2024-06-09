@@ -13,7 +13,7 @@ export const EntityArmyTable = ({ entityId }: EntityArmyTableProps) => {
   }
   const { entityArmies } = useEntityArmies({ entity_id: entityId });
   const armyElements = () => {
-    return entityArmies().map((army: ArmyAndName) => {
+    return entityArmies.map((army: ArmyAndName) => {
       return <ArmyChip key={army.army_id} army={army} />;
     });
   };

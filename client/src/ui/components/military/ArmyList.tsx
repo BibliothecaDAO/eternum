@@ -12,7 +12,7 @@ import { StaminaResource } from "@/ui/elements/StaminaResource";
 
 export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
-  const armyList = entityArmies();
+
   const {
     account: { account },
     setup: {
@@ -22,7 +22,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const canCreateProtector = useMemo(() => !armyList.find((army) => army.protectee_id), [armyList]);
+  const canCreateProtector = useMemo(() => !entityArmies.find((army) => army.protectee_id), [entityArmies]);
 
   const handleCreateArmy = (army_is_protector: boolean) => {
     setIsLoading(true);
@@ -36,7 +36,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
   return (
     <>
       <EntityList
-        list={armyList}
+        list={entityArmies}
         headerPanel={
           <>
             {" "}

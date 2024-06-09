@@ -143,7 +143,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
   return (
     <>
       <group position={position}>
-        {showArmyInfo && <ArmyInfoLabel info={info} accountAddress={account.account.address} />}
+        {/* {showArmyInfo && <ArmyInfoLabel info={info} accountAddress={account.account.address} />} */}
         {info.isMine && <ArmyFlag rotationY={rotationY} position={position} order={info.order} />}
 
         {actionMenu && (

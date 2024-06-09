@@ -86,6 +86,8 @@ export const WorldMap = () => {
 
   useSetPossibleActions(exploredHexes);
 
+  const biomeLayers = useMemo(() => {}, [exploredHexes]);
+
   return (
     <>
       <group rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>

@@ -1,6 +1,6 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyAndName, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { ArmyAndName, useArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useBattleManager } from "@/hooks/helpers/useBattles";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { useModal } from "@/hooks/store/useModal";
@@ -21,8 +21,8 @@ export const BattleView = () => {
   const setBattleView = useUIStore((state) => state.setBattleView);
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
 
-  const attackerArmy = getArmyByEntityId({ entity_id: battleView?.attackerId || 0n });
-  const defenderArmy = getArmyByEntityId({ entity_id: battleView?.defenderId || 0n });
+  const attackerArmy = useArmyByEntityId({ entity_id: battleView?.attackerId || 0n });
+  const defenderArmy = useArmyByEntityId({ entity_id: battleView?.defenderId || 0n });
 
   const { updatedBattle } = useBattleManager(BigInt(defenderArmy?.battle_id || 0n));
 

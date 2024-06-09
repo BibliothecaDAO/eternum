@@ -123,14 +123,6 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
       });
     });
 
-    // Object.keys(biomeComponents).forEach((biome) => {
-    //   biomesAccumulator[biome] = group.filter((hex) => hex.biome === biome);
-    //   biomesAccumulator[biome] = biomesAccumulator[biome].map((hex: any) => {
-    //     const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
-    //     return { ...hex, x, y, z };
-    //   });
-    // });
-
     return biomesAccumulator;
   }, [explored]);
 
