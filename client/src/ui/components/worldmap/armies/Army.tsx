@@ -5,7 +5,7 @@ import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { Position, UIPosition } from "@bibliothecadao/eternum";
 import { WarriorModel } from "../../models/armies/WarriorModel";
 import { Vector3 } from "three";
-import { getUIPositionFromColRow } from "../../../utils/utils";
+import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../../utils/utils";
 import { ArmyInfoLabel } from "./ArmyInfoLabel";
 import { BannerFlag } from "../BannerFlag";
 import { Box } from "@react-three/drei";
@@ -14,6 +14,7 @@ import { ArmyAndName } from "@/hooks/helpers/useArmies";
 import { SelectedUnit } from "../hexagon/SelectedUnit";
 import { CombatLabel } from "./CombatLabel";
 import { useStructuresPosition } from "@/hooks/helpers/useStructures";
+import { useComponentValue } from "@dojoengine/react";
 
 type ArmyProps = {
   info: ArmyAndName & { order: string; id: bigint; isMine: boolean; contractPos: Position; uiPos: UIPosition };
@@ -21,7 +22,7 @@ type ArmyProps = {
 };
 
 export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElements["group"]) {
-  const { account } = useDojo();
+  const { account, setup } = useDojo();
 
   const { play: playBuildMilitary } = useUiSounds(soundSelector.buildMilitary);
 
@@ -97,20 +98,20 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
 
   // Check if the army is attackable by selected entity
   // WHAT DOES THIS DO
-  // const isAttackable = useMemo(() => {
-  //   if (
-  //     selectedEntity &&
-  //     selectedEntity!.position.x === info.contractPos.x &&
-  //     selectedEntity!.position.y === info.contractPos.y &&
-  //     info.id !== selectedEntity.id
-  //   ) {
-  //     return true;
-  //   }
-  //   return false;
-  // }, [selectedEntity, formattedStructureAtPosition?.entity_id]);
+  const isAttackable = useMemo(() => {
+    if (
+      selectedEntity &&
+      selectedEntity!.position.x === info.contractPos.x &&
+      selectedEntity!.position.y === info.contractPos.y &&
+      info.id !== selectedEntity.id
+    ) {
+      return true;
+    }
+    return false;
+  }, [selectedEntity, formattedStructureAtPosition?.entity_id]);
 
   const actionMenu = useMemo(() => {
-    return formattedStructureAtPosition?.entity_id != null && selectedEntity != null;
+    return selectedEntity != null && info.isMine;
   }, [formattedStructureAtPosition, selectedEntity, position]);
 
   const onClick = useCallback(() => {
@@ -140,6 +141,9 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     return selectedEntity?.id === info.id;
   }, [selectedEntity, info.id]);
 
+  // Army can be self owned or enemy
+  // location can have a structure or no strucutre and this strucutre can be owned by self or enemy
+
   return (
     <>
       <group position={position}>
@@ -148,11 +152,11 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
 
         {actionMenu && (
           <CombatLabel
-            visible={actionMenu}
             attackerEntityId={selectedEntity?.id || 0n}
             defenderEntityId={BigInt(info.entity_id)}
             structureAtPosition={formattedStructureAtPosition?.entity_id}
             isTargetMine={info.isMine}
+            isStructureMine={formattedStructureAtPosition?.self}
           />
         )}
 

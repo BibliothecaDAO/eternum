@@ -4,13 +4,20 @@ import { Flags } from "@/ui/components/worldmap/Flags.jsx";
 import useUIStore from "../../../../hooks/store/useUIStore.js";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { Subscription } from "rxjs";
-import { BiomesGrid, HexagonGrid, useSetPossibleActions } from "./HexLayers.js";
+import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
 import { Armies } from "../armies/Armies.js";
 import { create } from "zustand";
 import { ShardsMines } from "../../models/buildings/worldmap/ShardsMines.js";
 import { Structures } from "../../models/buildings/worldmap/Structures.js";
 
-import { COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
+import { ACCESSIBLE_POSITIONS_COLOUR, COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
+import { useStamina } from "@/hooks/helpers/useStamina.js";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { findAccessiblePositions } from "./utils.js";
+import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
+import { HighlightPositions } from "@/types/index.js";
+import { useEntityQuery } from "@dojoengine/react";
+import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -37,6 +44,7 @@ export const WorldMap = () => {
       updates: {
         eventUpdates: { createExploreMapEvents: exploreMapEvents },
       },
+      components: { Tile, Structure, Position },
     },
   } = useDojo();
 
@@ -84,9 +92,38 @@ export const WorldMap = () => {
     };
   }, [hexData, setExploredHexes]);
 
-  useSetPossibleActions(exploredHexes);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
 
-  const biomeLayers = useMemo(() => {}, [exploredHexes]);
+  const { useStaminaByEntityId } = useStamina();
+  const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
+
+  useMemo(() => {
+    if (!selectedEntity || !hexData || !stamina) return;
+
+    const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
+    const canExplore = (stamina.amount || 0) >= EternumGlobalConfig.stamina.exploreCost;
+
+    const path = findAccessiblePositions(
+      selectedEntity.position,
+      hexData,
+      exploredHexes,
+      maxTravelPossible,
+      canExplore,
+    );
+
+    if (path.length <= 1) return;
+
+    const uiPath: HighlightPositions = {
+      pos: path.map(({ x, y }) => {
+        const pos = getUIPositionFromColRow(x, y);
+        return [pos.x, -pos.y];
+      }),
+      color: ACCESSIBLE_POSITIONS_COLOUR,
+    };
+
+    setHighlightPositions(uiPath);
+  }, [selectedEntity, hexData, stamina, exploredHexes, setHighlightPositions]);
 
   return (
     <>

@@ -21,6 +21,7 @@ interface ArmyInfoLabelProps {
   attackerEntityId: bigint;
   structureAtPosition: bigint;
   isTargetMine: boolean;
+  isStructureMine: boolean;
   visible?: boolean;
 }
 
@@ -30,6 +31,7 @@ export const CombatLabel = ({
   isTargetMine,
   structureAtPosition,
   visible = true,
+  isStructureMine,
 }: ArmyInfoLabelProps) => {
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
   const {
@@ -52,11 +54,6 @@ export const CombatLabel = ({
     // }
   }, [isTargetMine, defenderEntityId, attackerEntityId]);
 
-  const position = useComponentValue(Position, getEntityIdFromKeys([attackerEntityId]))!;
-
-  // get owner of entity
-  const entityOwner = useComponentValue(EntityOwner, getEntityIdFromKeys([attackerEntityId]))!;
-
   const attack = () => {
     // moveCameraToColRow(position.x, position.y, 3, true);
 
@@ -71,8 +68,8 @@ export const CombatLabel = ({
   console.log(structureAtPosition);
 
   return (
-    <DojoHtml visible={visible} className="relative -left-[15px] -top-[70px]">
-      {structureAtPosition?.toString() && isTargetMine && (
+    <DojoHtml className="relative -left-[15px] -top-[70px]">
+      {isStructureMine && (
         <Button variant="primary" onClick={() => setShowMergeTroopsPopup(true)}>
           Protect
         </Button>
@@ -84,12 +81,11 @@ export const CombatLabel = ({
         </Button>
       )}
 
-      {/* <Button variant="primary" onClick={() => setShowMergeTroopsPopup(true)}>
-        Protect
-      </Button>
-      <Button variant="primary" onClick={() => setShowMergeTroopsPopup(true)}>
-        Protect
-      </Button> */}
+      {!isStructureMine && (
+        <Button variant="primary" onClick={attack}>
+          Attack
+        </Button>
+      )}
 
       {/* 
       {!showMergeTroopsPopup &&

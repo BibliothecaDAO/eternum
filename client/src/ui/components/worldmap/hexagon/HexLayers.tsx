@@ -264,33 +264,6 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   );
 };
 
-export const useSetPossibleActions = (explored: Map<number, Set<number>>) => {
-  const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
-  const hexData = useUIStore((state) => state.hexData);
-  const { useStaminaByEntityId } = useStamina();
-
-  const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
-
-  useMemo(() => {
-    if (selectedEntity && hexData && stamina) {
-      const maxTravelPossible = Math.floor((stamina?.amount || 0) / EternumGlobalConfig.stamina.travelCost);
-      const canExplore = (stamina?.amount || 0) >= EternumGlobalConfig.stamina.exploreCost;
-      const path = findAccessiblePositions(selectedEntity.position, hexData, explored, maxTravelPossible, canExplore);
-      if (path.length > 1) {
-        const uiPath = {
-          pos: path.map(({ x, y }) => {
-            const pos = getUIPositionFromColRow(x, y);
-            return [pos.x, -pos.y];
-          }),
-          color: ACCESSIBLE_POSITIONS_COLOUR,
-        } as HighlightPositions;
-        setHighlightPositions(uiPath);
-      }
-    }
-  }, [selectedEntity?.id, hexData, stamina]);
-};
-
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const { exploreHex } = useExplore();
   const { travelToHex } = useTravel();

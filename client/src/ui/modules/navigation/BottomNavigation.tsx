@@ -172,7 +172,7 @@ export const BottomNavigation = () => {
             className="bg-brown h-32 flex gap-4 text-gold p-3 ornate-borders-sm w-auto clip-angled-sm"
           >
             <div className="flex">
-              <img src="./public/images/avatars/1.png" className="w-24 h-24" alt="" />
+              <img src="./images/avatars/1.png" className="w-24 h-24" alt="" />
               <ProgressBar
                 fillColor="yellow"
                 // TODO: Make this the lowest stamina of the troop types
