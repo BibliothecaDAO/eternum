@@ -22,9 +22,7 @@ type ArmyProps = {
 };
 
 export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElements["group"]) {
-  const { account, setup } = useDojo();
-
-  const { play: playBuildMilitary } = useUiSounds(soundSelector.buildMilitary);
+  const { play: playBuildMilitary } = useUiSounds(soundSelector.hoverClick);
 
   const { formattedStructureAtPosition } = useStructuresPosition({ position: info.contractPos });
 
@@ -98,17 +96,17 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
 
   // Check if the army is attackable by selected entity
   // WHAT DOES THIS DO
-  const isAttackable = useMemo(() => {
-    if (
-      selectedEntity &&
-      selectedEntity!.position.x === info.contractPos.x &&
-      selectedEntity!.position.y === info.contractPos.y &&
-      info.id !== selectedEntity.id
-    ) {
-      return true;
-    }
-    return false;
-  }, [selectedEntity, formattedStructureAtPosition?.entity_id]);
+  // const isAttackable = useMemo(() => {
+  //   if (
+  //     selectedEntity &&
+  //     selectedEntity!.position.x === info.contractPos.x &&
+  //     selectedEntity!.position.y === info.contractPos.y &&
+  //     info.id !== selectedEntity.id
+  //   ) {
+  //     return true;
+  //   }
+  //   return false;
+  // }, [selectedEntity, formattedStructureAtPosition?.entity_id]);
 
   const actionMenu = useMemo(() => {
     return selectedEntity != null && info.isMine;
