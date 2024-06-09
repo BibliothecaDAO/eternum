@@ -81,7 +81,7 @@ export const CombatLabel = ({
         </Button>
       )}
 
-      {!isStructureMine && (
+      {structureAtPosition?.toString() && isStructureMine && (
         <Button variant="primary" onClick={attack}>
           Attack
         </Button>
