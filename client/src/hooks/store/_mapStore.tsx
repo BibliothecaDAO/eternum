@@ -30,8 +30,10 @@ export interface MapStore {
   setAnimationPaths: (path: { id: bigint; path: Position[]; enemy: boolean }[]) => void;
   armyMode: ArmyMode | null;
   setArmyMode: (mode: ArmyMode | null) => void;
-  highlightPath: HighlightPositions;
-  setHighlightPath: (positions: HighlightPositions) => void;
+  travelPath: Position[];
+  setTravelPath: (paths: Position[]) => void;
+  travelPaths: Map<string, Position[]>;
+  setTravelPaths: (paths: Map<string, Position[]>) => void;
   highlightPositions: HighlightPositions;
   setHighlightPositions: (positions: HighlightPositions) => void;
   hoveredHex: HexPosition | undefined;
@@ -64,19 +66,22 @@ export const createMapStoreSlice = (set: any) => ({
   setAnimationPaths: (animationPaths: { id: bigint; path: Position[]; enemy: boolean }[]) => set({ animationPaths }),
   armyMode: null,
   setArmyMode: (armyMode: ArmyMode | null) => set({ armyMode }),
-  highlightPath: { pos: [], color: 0 },
-  setHighlightPath: (positions: HighlightPositions) => set({ highlightPath: positions }),
+  travelPath: [],
+  setTravelPath: (paths: Position[]) => set({ travelPath: paths }),
+  travelPaths: new Map<string, Position[]>(),
+  setTravelPaths: (paths: Map<string, Position[]>) => set({ travelPaths: paths }),
   highlightPositions: { pos: [], color: 0 },
   setHighlightPositions: (positions: HighlightPositions) => {
     set({ highlightPositions: positions });
   },
   hoveredHex: undefined,
   setHoveredHex: (position: HexPosition | undefined) => set({ hoveredHex: position }),
+  hoveredHexColor: 0,
+  setHoveredHexColor: (color: number) => set({ hoveredHexColor: color }),
   clearSelection: () =>
     set({
       selectedEntity: undefined,
       armyMode: null,
-      highlightPath: { pos: [], color: 0 },
       highlightPositions: { pos: [], color: 0 },
     }),
   showAllArmies: false,

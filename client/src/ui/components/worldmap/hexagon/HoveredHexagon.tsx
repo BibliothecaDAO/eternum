@@ -7,9 +7,9 @@ import * as THREE from "three";
 
 export const HoveredHexagon = () => {
   const imageRef = useRef<any>();
-  const { hoveredHex, highlightPath } = useUIStore((state) => ({
+  const { hoveredHex, highlightPositions } = useUIStore((state) => ({
     hoveredHex: state.hoveredHex,
-    highlightPath: state.highlightPath,
+    highlightPositions: state.highlightPositions,
   }));
 
   useFrame(() => {
@@ -24,16 +24,16 @@ export const HoveredHexagon = () => {
   }, [hoveredHex]);
 
   const isHighlighted = useMemo(() => {
-    return highlightPath.pos.some(
+    return highlightPositions.pos.some(
       (highlightPos) => highlightPos[0] === hoveredHexPosition.x && highlightPos[1] === -hoveredHexPosition.y,
     );
-  }, [highlightPath, hoveredHexPosition]);
+  }, [highlightPositions, hoveredHexPosition]);
 
   useEffect(() => {
     if (imageRef.current) {
-      imageRef.current.material.color.set(isHighlighted ? highlightPath.color : 0xffffff);
+      imageRef.current.material.color.set(isHighlighted ? highlightPositions.color : 0xffffff);
     }
-  }, [isHighlighted, highlightPath.color]);
+  }, [isHighlighted, highlightPositions.color]);
 
   return (
     <Image
