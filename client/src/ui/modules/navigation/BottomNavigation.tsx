@@ -74,11 +74,11 @@ export const BottomNavigation = () => {
   const { claimableQuests } = useQuests({ entityId: realmEntityId || BigInt("0") });
 
   const { playerStructures } = useEntities();
+  const structures = useMemo(() => playerStructures(), [playerStructures]);
 
   const isRealmSelected = () => {
-    const structures = playerStructures();
-    const index = structures?.findIndex((structure) => structure?.entity_id === realmEntityId);
-    return structures[index]?.category === "Realm";
+    const selectedStructure = structures?.find((structure) => structure?.entity_id === realmEntityId);
+    return selectedStructure?.category === "Realm";
   };
 
   const secondaryNavigation = useMemo(() => {
