@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useRoute } from "wouter";
+
 import * as THREE from "three";
 import useUIStore from "../../../hooks/store/useUIStore.js";
 
@@ -15,8 +15,6 @@ import { HoveredHexagon } from "@/ui/components/worldmap/hexagon/HoveredHexagon.
 
 const scale = 20;
 export const WorldMapScene = () => {
-  const [isMapView] = useRoute("/map");
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const clearSelection = useUIStore((state) => state.clearSelection);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const { gl } = useThree();
@@ -72,7 +70,7 @@ export const WorldMapScene = () => {
 
   return (
     <>
-      {!showBlankOverlay && isMapView && <WorldMap />}
+      <WorldMap />
       <HighlightedHexes />
       <HoveredHexagon />
       <ActionInfo />
