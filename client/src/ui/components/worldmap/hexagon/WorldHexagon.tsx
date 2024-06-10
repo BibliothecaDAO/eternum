@@ -121,25 +121,25 @@ export const WorldMap = () => {
 
     // console.log(maxTravelPossible);
 
-    // const path = findAccessiblePositions(
-    //   selectedEntity.position,
-    //   hexData,
-    //   exploredHexes,
-    //   maxTravelPossible,
-    //   canExplore,
-    // );
+    const path = findAccessiblePositions(
+      selectedEntity.position,
+      hexData,
+      exploredHexes,
+      maxTravelPossible,
+      canExplore,
+    );
 
-    // if (path.length <= 1) return;
+    if (path.length <= 1) return;
 
-    // const uiPath: HighlightPositions = {
-    //   pos: path.map(({ x, y }) => {
-    //     const pos = getUIPositionFromColRow(x, y);
-    //     return [pos.x, -pos.y];
-    //   }),
-    //   color: ACCESSIBLE_POSITIONS_COLOUR,
-    // };
+    const uiPath: HighlightPositions = {
+      pos: path.map(({ x, y }) => {
+        const pos = getUIPositionFromColRow(x, y);
+        return [pos.x, -pos.y];
+      }),
+      color: ACCESSIBLE_POSITIONS_COLOUR,
+    };
 
-    // setHighlightPositions(uiPath);
+    setHighlightPositions(uiPath);
   }, [selectedEntity, stamina, exploredHexes]);
 
   return (
