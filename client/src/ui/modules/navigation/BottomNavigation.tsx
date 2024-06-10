@@ -33,6 +33,7 @@ import { useArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { EternumGlobalConfig, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { TroopMenuRow } from "@/ui/components/military/TroopChip";
+import { useEntities } from "@/hooks/helpers/useEntities";
 
 export enum MenuEnum {
   realm = "realm",
@@ -72,6 +73,14 @@ export const BottomNavigation = () => {
 
   const { claimableQuests } = useQuests({ entityId: realmEntityId || BigInt("0") });
 
+  const { playerStructures } = useEntities();
+
+  const isRealmSelected = () => {
+    const structures = playerStructures();
+    const index = structures?.findIndex((structure) => structure?.entity_id === realmEntityId);
+    return structures[index]?.category === "Realm";
+  };
+
   const secondaryNavigation = useMemo(() => {
     return [
       {
@@ -97,7 +106,8 @@ export const BottomNavigation = () => {
               size="lg"
               onClick={() => togglePopup(quests)}
               className="forth-step"
-              notification={claimableQuests.length}
+              notification={isRealmSelected() ? claimableQuests.length : undefined}
+              disabled={!isRealmSelected()}
             />
 
             {population?.population == null && location !== "/map" && (

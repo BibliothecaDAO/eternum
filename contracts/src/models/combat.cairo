@@ -476,8 +476,6 @@ impl BattleImpl of BattleTrait {
         return BattleSide::None;
     }
 }
-
-
 // #[cfg(test)]
 // mod battle_tests {
 //     use eternum::models::combat::BattleTrait;
@@ -563,4 +561,5 @@ impl BattleImpl of BattleTrait {
 //         print!("\n\n Duration in Hours: {} \n\n", battle.duration_left / (60 * 60));
 //     }
 // }
+
 
