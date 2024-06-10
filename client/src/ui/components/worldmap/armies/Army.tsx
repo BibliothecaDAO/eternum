@@ -23,8 +23,8 @@ type ArmyProps = {
   offset: { x: number; y: number };
 };
 
-export function Army({ army, offset }: ArmyProps) {
-  const { play: playBuildMilitary } = useUiSounds(soundSelector.buildMilitary);
+export function Army({ army, offset }: ArmyProps & JSX.IntrinsicElements["group"]) {
+  const { play: playBuildMilitary } = useUiSounds(soundSelector.hoverClick);
 
   const { formattedStructureAtPosition } = useStructuresPosition({ position: { x: army.x, y: army.y } });
 
@@ -166,6 +166,9 @@ export function Army({ army, offset }: ArmyProps) {
       targetEntity === BigInt(army.entity_id)
     );
   }, [selectedEntity, targetEntity]);
+
+  // Army can be self owned or enemy
+  // location can have a structure or no strucutre and this strucutre can be owned by self or enemy
 
   return (
     <>

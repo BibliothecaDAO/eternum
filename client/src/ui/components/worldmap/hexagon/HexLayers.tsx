@@ -35,7 +35,7 @@ import { useNotificationsStore } from "../../../../hooks/store/useNotificationsS
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { HexGrid } from "../../models/biomes/HexGrid";
 import { findAccessiblePositions, findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
-import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
+import { DEPTH, FELT_CENTER, HEX_RADIUS } from "@/ui/config";
 
 export const EXPLORE_COLOUR = 0x2563eb;
 export const TRAVEL_COLOUR = 0xffce31;
@@ -119,14 +119,6 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
         }
       });
     });
-
-    // Object.keys(biomeComponents).forEach((biome) => {
-    //   biomesAccumulator[biome] = group.filter((hex) => hex.biome === biome);
-    //   biomesAccumulator[biome] = biomesAccumulator[biome].map((hex: any) => {
-    //     const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
-    //     return { ...hex, x, y, z };
-    //   });
-    // });
 
     return biomesAccumulator;
   }, [explored]);
@@ -267,33 +259,6 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
       </group>
     </Bvh>
   );
-};
-
-export const useSetPossibleActions = (explored: Map<number, Set<number>>) => {
-  const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
-  const hexData = useUIStore((state) => state.hexData);
-  const { useStaminaByEntityId } = useStamina();
-
-  const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
-
-  useMemo(() => {
-    if (selectedEntity && hexData && stamina) {
-      const maxTravelPossible = Math.floor((stamina?.amount || 0) / EternumGlobalConfig.stamina.travelCost);
-      const canExplore = (stamina?.amount || 0) >= EternumGlobalConfig.stamina.exploreCost;
-      const path = findAccessiblePositions(selectedEntity.position, hexData, explored, maxTravelPossible, canExplore);
-      if (path.length > 1) {
-        const uiPath = {
-          pos: path.map(({ x, y }) => {
-            const pos = getUIPositionFromColRow(x, y);
-            return [pos.x, -pos.y];
-          }),
-          color: ACCESSIBLE_POSITIONS_COLOUR,
-        } as HighlightPositions;
-        setHighlightPositions(uiPath);
-      }
-    }
-  }, [selectedEntity?.id, hexData, stamina]);
 };
 
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {
@@ -567,6 +532,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     });
     playExplore();
     clearSelection();
+
     await exploreHex({
       explorerId: id,
       direction,

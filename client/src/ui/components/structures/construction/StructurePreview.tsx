@@ -3,11 +3,12 @@ import * as THREE from "three";
 import { useEffect, useMemo, useCallback, useState } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getUIPositionFromColRow, ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
-import { FELT_CENTER, useExploredHexesStore } from "../../worldmap/hexagon/WorldHexagon";
+import { useExploredHexesStore } from "../../worldmap/hexagon/WorldHexagon";
 import { useStructures } from "@/hooks/helpers/useStructures";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { Hexagon } from "@/types";
 import { StructureType } from "@bibliothecadao/eternum";
+import { FELT_CENTER } from "@/ui/config";
 
 export interface OriginalModels {
   [key: number | string]: THREE.Group;

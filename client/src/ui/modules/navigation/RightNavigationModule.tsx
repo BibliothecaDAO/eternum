@@ -76,7 +76,7 @@ export const RightNavigationModule = () => {
     <>
       <div
         className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] text-gold right-4 self-center pointer-events-auto ${
-          isOffscreen ? "translate-x-[83%]" : ""
+          isOffscreen ? "translate-x-[79%]" : ""
         }`}
         onPointerEnter={() => {
           debouncedSetIsOffscreen.cancel();

@@ -2,37 +2,54 @@ import { useEffect, useMemo, useRef } from "react";
 // @ts-ignore
 import { Flags } from "@/ui/components/worldmap/Flags.jsx";
 import useUIStore from "../../../../hooks/store/useUIStore.js";
-import { useDojo } from "../../../../hooks/context/DojoContext.js";
+import { useDojo } from "../../../../hooks/context/DojoContext";
 import { Subscription } from "rxjs";
-import { BiomesGrid, HexagonGrid, useSetPossibleActions } from "./HexLayers.js";
+import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
 import { Armies } from "../armies/Armies.js";
 import { create } from "zustand";
 import { ShardsMines } from "../../models/buildings/worldmap/ShardsMines.js";
 import { Structures } from "../../models/buildings/worldmap/Structures.js";
 
+import { ACCESSIBLE_POSITIONS_COLOUR, COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
+import { useStamina } from "@/hooks/helpers/useStamina.js";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { findAccessiblePositions } from "./utils.js";
+import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
+import { HighlightPositions } from "@/types/index.js";
+import { useEntityQuery } from "@dojoengine/react";
+import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
+
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
   setExploredHexes: (col: number, row: number) => void;
+  removeHex: (col: number, row: number) => void;
 }
 
 export const useExploredHexesStore = create<ExploredHexesState>((set) => ({
-  exploredHexes: new Map(),
+  exploredHexes: new Map<number, Set<number>>(),
 
-  setExploredHexes: (col, row) =>
+  setExploredHexes: (col: number, row: number) =>
     set((state) => {
       const newMap = new Map(state.exploredHexes);
-      const rowSet = newMap.get(col) || new Set();
-      rowSet.add(row);
-      newMap.set(col, rowSet);
+      if (!newMap.has(col)) {
+        newMap.set(col, new Set());
+      }
+      newMap.get(col)!.add(row);
+      return { exploredHexes: newMap };
+    }),
+  removeHex: (col: number, row: number) =>
+    set((state) => {
+      const newMap = new Map(state.exploredHexes);
+      if (newMap.has(col)) {
+        const rowSet = newMap.get(col);
+        rowSet?.delete(row);
+        if (rowSet?.size === 0) {
+          newMap.delete(col);
+        }
+      }
       return { exploredHexes: newMap };
     }),
 }));
-
-export const DEPTH = 10;
-export const HEX_RADIUS = 3;
-export const ROWS = 300;
-export const COLS = 500;
-export const FELT_CENTER = 2147483647;
 
 export const WorldMap = () => {
   const {
@@ -40,6 +57,7 @@ export const WorldMap = () => {
       updates: {
         eventUpdates: { createExploreMapEvents: exploreMapEvents },
       },
+      components: { Tile, Structure, Position },
     },
   } = useDojo();
 
@@ -73,6 +91,8 @@ export const WorldMap = () => {
         if (event && hexData) {
           const col = Number(event.keys[2]) - FELT_CENTER;
           const row = Number(event.keys[3]) - FELT_CENTER;
+
+          console.log(col, row);
           setExploredHexes(col, row);
         }
       });
@@ -87,17 +107,40 @@ export const WorldMap = () => {
     };
   }, [hexData, setExploredHexes]);
 
-  const models = useMemo(() => {
-    return (
-      <>
-        <Armies />
-        <ShardsMines />
-        <Structures />
-      </>
-    );
-  }, [hexData]);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
 
-  useSetPossibleActions(exploredHexes);
+  const { useStaminaByEntityId } = useStamina();
+  const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
+
+  useMemo(() => {
+    if (!selectedEntity || !hexData || !stamina) return;
+
+    const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
+    const canExplore = (stamina.amount || 0) >= EternumGlobalConfig.stamina.exploreCost;
+
+    // console.log(maxTravelPossible);
+
+    // const path = findAccessiblePositions(
+    //   selectedEntity.position,
+    //   hexData,
+    //   exploredHexes,
+    //   maxTravelPossible,
+    //   canExplore,
+    // );
+
+    // if (path.length <= 1) return;
+
+    // const uiPath: HighlightPositions = {
+    //   pos: path.map(({ x, y }) => {
+    //     const pos = getUIPositionFromColRow(x, y);
+    //     return [pos.x, -pos.y];
+    //   }),
+    //   color: ACCESSIBLE_POSITIONS_COLOUR,
+    // };
+
+    // setHighlightPositions(uiPath);
+  }, [selectedEntity, stamina, exploredHexes]);
 
   return (
     <>
@@ -109,7 +152,9 @@ export const WorldMap = () => {
           return <HexagonGrid key={index} {...grid} explored={exploredHexes} />;
         })}
       </group>
-      {models}
+      <Armies />
+      <ShardsMines />
+      <Structures />
       <Flags />
     </>
   );

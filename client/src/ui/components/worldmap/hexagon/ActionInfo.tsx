@@ -2,13 +2,13 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { useMemo } from "react";
 import { Headline } from "@/ui/elements/Headline";
-import { TRAVEL_COLOUR } from "./HexLayers";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
+import { TRAVEL_COLOUR } from "@/ui/config";
 
 export const ActionInfo = () => {
   const highlightPath = useUIStore((state) => state.highlightPath);

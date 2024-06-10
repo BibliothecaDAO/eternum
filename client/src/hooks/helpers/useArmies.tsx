@@ -15,6 +15,7 @@ export type ArmyAndName = ClientComponents["Army"]["schema"] & { name: string } 
   ClientComponents["ArrivalTime"]["schema"] &
   ClientComponents["Position"]["schema"] &
   ClientComponents["EntityOwner"]["schema"] &
+  ClientComponents["Stamina"]["schema"] &
   ClientComponents["Owner"]["schema"] & { realm: ClientComponents["Realm"]["schema"] } & {
     homePosition: ClientComponents["Position"]["schema"];
   };
@@ -33,6 +34,7 @@ const formatArmies = (
   EntityOwner: Component,
   Owner: Component,
   Realm: Component,
+  Stamina: Component,
 ): ArmyAndName[] => {
   return armies.map((id) => {
     const army = getComponentValue(Army, id) as ClientComponents["Army"]["schema"];
@@ -44,6 +46,7 @@ const formatArmies = (
     const arrivalTime = getComponentValue(ArrivalTime, id) as ClientComponents["ArrivalTime"]["schema"];
     const position = getComponentValue(Position, id) as ClientComponents["Position"]["schema"];
     const entityOwner = getComponentValue(EntityOwner, id) as ClientComponents["EntityOwner"]["schema"];
+    const stamina = getComponentValue(Stamina, id) as ClientComponents["Stamina"]["schema"];
     let owner = getComponentValue(Owner, id) as ClientComponents["Owner"]["schema"];
     if (!owner && entityOwner?.entity_owner_id) {
       owner = getComponentValue(
@@ -75,6 +78,7 @@ const formatArmies = (
       ...arrivalTime,
       ...position,
       ...entityOwner,
+      ...stamina,
       ...owner,
       realm,
       homePosition,
@@ -101,6 +105,7 @@ export const useArmies = () => {
         Army,
         Protectee,
         EntityName,
+        Stamina,
       },
     },
   } = useDojo();
@@ -128,6 +133,7 @@ export const useArmies = () => {
         EntityOwner,
         Owner,
         Realm,
+        Stamina,
       ),
   };
 };
@@ -148,29 +154,34 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
         Army,
         Protectee,
         EntityName,
+        Stamina,
       },
     },
   } = useDojo();
 
   const armies = useEntityQuery([Has(Army), HasValue(EntityOwner, { entity_owner_id: entity_id })]);
 
+  const entityArmies = useMemo(() => {
+    return formatArmies(
+      armies,
+      Army,
+      Protectee,
+      EntityName,
+      Health,
+      Quantity,
+      Movable,
+      Capacity,
+      ArrivalTime,
+      Position,
+      EntityOwner,
+      Owner,
+      Realm,
+      Stamina,
+    );
+  }, [armies]);
+
   return {
-    entityArmies: () =>
-      formatArmies(
-        armies,
-        Army,
-        Protectee,
-        EntityName,
-        Health,
-        Quantity,
-        Movable,
-        Capacity,
-        ArrivalTime,
-        Position,
-        EntityOwner,
-        Owner,
-        Realm,
-      ),
+    entityArmies,
   };
 };
 
@@ -191,6 +202,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
           Army,
           Protectee,
           EntityName,
+          Stamina,
         },
       },
       account: { account },
@@ -213,6 +225,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
         EntityOwner,
         Owner,
         Realm,
+        Stamina,
       );
     }, [allArmiesAtPosition]);
 
@@ -257,6 +270,7 @@ export const getArmyByEntityId = (entity_id: bigint) => {
         Army,
         Protectee,
         EntityName,
+        Stamina,
       },
     },
   } = useDojo();
@@ -277,5 +291,7 @@ export const getArmyByEntityId = (entity_id: bigint) => {
     EntityOwner,
     Owner,
     Realm,
+
+    Stamina,
   )[0];
 };

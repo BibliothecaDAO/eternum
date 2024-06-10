@@ -23,12 +23,16 @@ import {
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 import { useTour } from "@reactour/tour";
 import { useComponentValue } from "@dojoengine/react";
-import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { currencyFormat, getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { ArrowDown } from "lucide-react";
 import { useQuests } from "@/hooks/helpers/useQuests";
 import { motion } from "framer-motion";
+import { useArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { EternumGlobalConfig, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { TroopMenuRow } from "@/ui/components/military/TroopChip";
 
 export enum MenuEnum {
   realm = "realm",
@@ -59,6 +63,10 @@ export const BottomNavigation = () => {
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const toggleShowAllArmies = useUIStore((state) => state.toggleShowAllArmies);
   const showAllArmies = useUIStore((state) => state.showAllArmies);
+
+  const selectedEntityId = useUIStore((state) => state.selectedEntity);
+
+  const army = useArmyByEntityId({ entity_id: selectedEntityId?.id || BigInt("0") });
 
   const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
 
@@ -141,7 +149,7 @@ export const BottomNavigation = () => {
   }, [claimableQuests]);
 
   const slideUp = {
-    hidden: { y: "100%" },
+    hidden: { y: "100%", transition: { duration: 0.3 } },
     visible: { y: "0%", transition: { duration: 0.3 } },
   };
 
@@ -154,13 +162,58 @@ export const BottomNavigation = () => {
       variants={slideUp}
       initial="hidden"
       animate="visible"
-      className="flex justify-center flex-wrap first-step relative w-full duration-300 transition-all"
+      className="flex justify-center flex-wrap first-step relative w-full duration-300 transition-all "
     >
-      <div className="flex py-2 sixth-step">
-        {secondaryNavigation.map((a, index) => (
-          <div key={index}>{a.button}</div>
-        ))}
+      <div className="">
+        {selectedEntityId && army && (
+          <motion.div
+            variants={slideUp}
+            initial="hidden"
+            animate="visible"
+            className="bg-brown h-32 flex gap-4 text-gold p-3 ornate-borders-sm w-auto clip-angled-sm"
+          >
+            <div className="flex">
+              <img src="./images/avatars/1.png" className="w-24 h-24" alt="" />
+              <ProgressBar
+                fillColor="yellow"
+                // TODO: Make this the lowest stamina of the troop types
+                totalValue={Number(TROOPS_STAMINAS[250])}
+                filledValue={Number(army?.amount)}
+              />
+              <ProgressBar fillColor="green" totalValue={Number(army?.lifetime)} filledValue={Number(army?.current)} />
+            </div>
+            <div>
+              <div className="text-xl">{army.name}</div>
+              <TroopMenuRow army={army} />
+            </div>
+          </motion.div>
+        )}
+
+        <div className="flex py-2 sixth-step  px-10">
+          {secondaryNavigation.map((a, index) => (
+            <div key={index}>{a.button}</div>
+          ))}
+        </div>
       </div>
     </motion.div>
+  );
+};
+
+interface ProgressBarProps {
+  fillColor: string;
+  totalValue: number;
+  filledValue: number;
+}
+
+const ProgressBar: React.FC<ProgressBarProps> = ({ fillColor, totalValue, filledValue }) => {
+  const filledPercentage = (filledValue / totalValue) * 100;
+
+  return (
+    <div className="relative h-24 w-2 bg-gray-300">
+      <div
+        className="absolute bottom-0 w-full"
+        style={{ height: `${filledPercentage}%`, backgroundColor: fillColor }}
+      ></div>
+    </div>
   );
 };

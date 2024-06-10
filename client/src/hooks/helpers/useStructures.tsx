@@ -116,13 +116,15 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
   }, [realmsAtPosition])[0];
 
   const formattedStructureAtPosition = useMemo(() => {
-    return structuresAtPosition.map((hyperstructure_entity_id: any) => {
-      const structure = getComponentValue(Structure, hyperstructure_entity_id);
+    return structuresAtPosition.map((entity_id: any) => {
+      const structure = getComponentValue(Structure, entity_id);
       const name = structure ? getEntityName(structure?.entity_id) : "";
-
+      const entityOwner = getComponentValue(EntityOwner, entity_id);
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
       return {
         entity_id: structure!.entity_id,
         category: StructureType[structure!.category as keyof typeof StructureType],
+        self: owner?.address === BigInt(account.address),
         name,
       };
     });

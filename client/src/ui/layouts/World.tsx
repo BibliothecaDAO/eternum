@@ -43,15 +43,15 @@ export const World = () => {
   }, [realmEntityIds]);
 
   return (
-    <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden border-[10px] border-brown">
+    <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden ">
       <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
       <BlankOverlayContainer open={showBlankOverlay}>
         <Onboarding />
       </BlankOverlayContainer>
       <HooksComponent />
 
-      <BackgroundContainer className=" clip-angled relative">
-        <div className="h-full w-full main-scene">
+      <BackgroundContainer className=" clip-angled relative  ">
+        <div className="h-full w-full main-scene z-100 ornate-borders">
           <MainScene />
         </div>
       </BackgroundContainer>

@@ -12,8 +12,8 @@ interface SelectedUnitProps {
   };
 }
 
-const PARTICLES_COUNT = 15;
-const PARTICLE_SPEED = 0.01;
+const PARTICLES_COUNT = 30;
+const PARTICLE_SPEED = 0.1;
 const PARTICLE_RESET_Y = 5;
 const PARTICLE_START_Y = -5;
 const PARICLE_COLOR = 0xf9e076;
