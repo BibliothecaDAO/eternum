@@ -121,13 +121,7 @@ export const WorldMap = () => {
 
     // console.log(maxTravelPossible);
 
-    const path = findAccessiblePositions(
-      selectedEntity.position,
-      hexData,
-      exploredHexes,
-      maxTravelPossible,
-      canExplore,
-    );
+    const path = findAccessiblePositions(selectedEntity.position, exploredHexes, maxTravelPossible, canExplore);
 
     if (path.length <= 1) return;
 

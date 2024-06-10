@@ -376,7 +376,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     let start = selectedEntityRef!.current!.position;
     const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
     let end = { x: colRow.col, y: colRow.row };
-    let path = findShortestPathBFS(start, end, hexDataRef.current || [], exploredHexesRef.current, maxTravelPossible);
+    let path = findShortestPathBFS(start, end, exploredHexesRef.current, maxTravelPossible);
     if (path.length > 1) {
       setArmyMode(ArmyMode.Travel);
       const colors = {
