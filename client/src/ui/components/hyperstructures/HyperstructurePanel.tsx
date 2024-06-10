@@ -18,6 +18,7 @@ import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
 import TextInput from "@/ui/elements/TextInput";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import useLeaderBoardStore from "@/hooks/store/useLeaderBoardStore";
 
 export const HyperstructurePanel = ({ entity }: any) => {
   const {
@@ -161,6 +162,7 @@ const HyperstructureLeaderboard = ({ contributions }: any) => {
   } = useDojo();
 
   const { getAddressName, getAddressOrder } = useRealm();
+  const playerPointsLeaderboard = useLeaderBoardStore((state) => state.playerPointsLeaderboard);
 
   const sortingParams = useMemo(() => {
     return [
@@ -195,7 +197,14 @@ const HyperstructureLeaderboard = ({ contributions }: any) => {
           />
         ))}
       </SortPanel>
-      {computeHyperstructureLeaderboard(contributions, 1, account, getAddressName, getAddressOrder)
+      {computeHyperstructureLeaderboard(
+        playerPointsLeaderboard,
+        contributions,
+        1,
+        account,
+        getAddressName,
+        getAddressOrder,
+      )
         .sort((playerPointsA, playerPointsB) => playerPointsA.totalPoints - playerPointsB.totalPoints)
         .map((playerPoints: PlayerPointsLeaderboardInterface) => {
           return (

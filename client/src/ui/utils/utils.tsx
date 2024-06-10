@@ -2,6 +2,7 @@ import { Position, ResourcesIds, UIPosition, neighborOffsetsEven, neighborOffset
 import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import realmHexPositions from "../../data/geodata/hex/realmHexPositions.json";
+import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 
@@ -291,4 +292,47 @@ export const formatTime = (seconds: number): string => {
     const minutes = (seconds / 60).toFixed(2);
     return `${minutes} mins`;
   }
+};
+
+// Add override
+export function sortItems<T>(items: T[], activeSort: SortInterface): T[] {
+  const sortedItems = [...items];
+
+  if (activeSort.sort !== "none") {
+    return sortedItems.sort((a, b) => {
+      const keyA = getPropertyByPath(a, activeSort.sortKey);
+      const keyB = getPropertyByPath(b, activeSort.sortKey);
+
+      let comparison = 0;
+
+      if (typeof keyA === "string" && typeof keyB === "string") {
+        comparison = keyA.localeCompare(keyB);
+      } else if (typeof keyA === "number" && typeof keyB === "number") {
+        comparison = keyA - keyB;
+      }
+
+      return activeSort.sort === "asc" ? comparison : -comparison;
+    });
+  } else {
+    return sortedItems.sort((a, b) => {
+      const keyA = getPropertyByPath(a, "realmId") as number;
+      const keyB = getPropertyByPath(b, "realmId") as number;
+      return keyB - keyA;
+    });
+  }
+}
+
+function getPropertyByPath<T>(obj: T, path: string): any {
+  return path.split(".").reduce((o, p) => (o ? (o as any)[p] : 0), obj);
+}
+
+export const copyPlayerAddressToClipboard = (address: bigint, name: string) => {
+  navigator.clipboard
+    .writeText(address.toString())
+    .then(() => {
+      alert(`Address of ${name} copied to clipboard`);
+    })
+    .catch((err) => {
+      console.error("Failed to copy: ", err);
+    });
 };

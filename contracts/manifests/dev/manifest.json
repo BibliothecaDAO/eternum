@@ -3187,8 +3187,8 @@
     {
       "kind": "DojoContract",
       "address": "0x2d4304c3ac359b8852a70c4f029f94cd145da88ed2e4fcfb769708a1dd80ef",
-      "class_hash": "0x193fbc87eba977e6e799dede12f85ee37c30e2e33977e07725af5da12f36bcb",
-      "original_class_hash": "0x193fbc87eba977e6e799dede12f85ee37c30e2e33977e07725af5da12f36bcb",
+      "class_hash": "0x3d62508438fa3249e2d190b7359f146bce1fd365c1c681edab35c693314dc90",
+      "original_class_hash": "0x3d62508438fa3249e2d190b7359f146bce1fd365c1c681edab35c693314dc90",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -3302,6 +3302,22 @@
             },
             {
               "type": "function",
+              "name": "whitelist_player",
+              "inputs": [
+                {
+                  "name": "player_address_to_whitelist",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "guild_entity_id",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
               "name": "leave_guild",
               "inputs": [],
               "outputs": [],
@@ -3309,10 +3325,38 @@
             },
             {
               "type": "function",
-              "name": "whitelist_player",
+              "name": "transfer_guild_ownership",
               "inputs": [
                 {
-                  "name": "player_address",
+                  "name": "guild_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "to_player_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "remove_guild_member",
+              "inputs": [
+                {
+                  "name": "player_address_to_remove",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "remove_player_from_whitelist",
+              "inputs": [
+                {
+                  "name": "player_address_to_remove",
                   "type": "core::starknet::contract_address::ContractAddress"
                 },
                 {
@@ -13778,10 +13822,15 @@
           "name": "is_public",
           "type": "bool",
           "key": false
+        },
+        {
+          "name": "member_count",
+          "type": "u16",
+          "key": false
         }
       ],
-      "class_hash": "0x7d68656c40b761e1de534f29a47ed1a6a503214952543e75dcef094c324308a",
-      "original_class_hash": "0x7d68656c40b761e1de534f29a47ed1a6a503214952543e75dcef094c324308a",
+      "class_hash": "0x23c1242abea31ad62d1bc86e252c6a3bdbb01cac41603f67bd2f97856440a43",
+      "original_class_hash": "0x23c1242abea31ad62d1bc86e252c6a3bdbb01cac41603f67bd2f97856440a43",
       "abi": [
         {
           "type": "impl",
@@ -13981,6 +14030,10 @@
             {
               "name": "is_public",
               "type": "core::bool"
+            },
+            {
+              "name": "member_count",
+              "type": "core::integer::u16"
             }
           ]
         },
