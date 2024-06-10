@@ -119,6 +119,8 @@ export const WorldMap = () => {
     const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
     const canExplore = (stamina.amount || 0) >= EternumGlobalConfig.stamina.exploreCost;
 
+    console.log(maxTravelPossible);
+
     const path = findAccessiblePositions(
       selectedEntity.position,
       hexData,
@@ -138,7 +140,7 @@ export const WorldMap = () => {
     };
 
     setHighlightPositions(uiPath);
-  }, [selectedEntity, hexData, stamina, exploredHexes, setHighlightPositions]);
+  }, [selectedEntity, stamina, exploredHexes]);
 
   return (
     <>

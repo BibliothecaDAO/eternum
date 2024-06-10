@@ -11,7 +11,7 @@ type HeadlineProps = {
 };
 
 export const Headline = ({ children, className }: HeadlineProps) => (
-  <div className={clsx("flex items-center justify-center select-none w-full", className)}>
+  <div className={clsx("flex items-center justify-center select-none w-full clip-angled bg-gold/5 p-2 h6", className)}>
     <div className="flex flex-1 items-center">
       <svg width="28" height="11" viewBox="0 0 28 11" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
@@ -35,7 +35,7 @@ export const Headline = ({ children, className }: HeadlineProps) => (
         />
       </svg>
     </div>
-    <div className="mx-3 text-xs font-bold  whitespace-nowrap uppercase">{children}</div>
+    <div className="mx-3 whitespace-nowrap">{children}</div>
     <div className="flex flex-1 items-center">
       <svg width="5" height="5" viewBox="0 0 5 5" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path

@@ -152,26 +152,27 @@ export const findAccessiblePositions = (
   while (queue.length > 0) {
     const { position: current, distance } = queue.shift()!;
 
-    if (distance > maxHex) {
-      break; // Stop processing if the current distance exceeds maxHex
-    }
+    if (distance > maxHex) break; // Stop processing if the current distance exceeds maxHex
 
     const currentKey = posKey(current);
-    if (!visited.has(currentKey)) {
-      visited.add(currentKey);
-      const neighbors = getNeighbors(current, hexData); // Assuming getNeighbors is defined elsewhere
-      for (const neighbor of neighbors) {
-        const neighborKey = posKey(neighbor);
-        const isExplored = exploredHexes.get(neighbor.x - 2147483647)?.has(neighbor.y - 2147483647);
+    if (visited.has(currentKey)) continue;
 
-        if (!visited.has(neighborKey)) {
-          if (isExplored && distance + 1 <= maxHex) {
-            queue.push({ position: neighbor, distance: distance + 1 });
-            highlightPositions.add(neighborKey);
-          } else if (!isExplored && canExplore && distance + 1 === 1) {
-            highlightPositions.add(neighborKey);
-          }
-        }
+    visited.add(currentKey);
+    const neighbors = getNeighbors(current, hexData);
+
+    for (const neighbor of neighbors) {
+      const neighborKey = posKey(neighbor);
+      if (visited.has(neighborKey)) continue;
+
+      const { x, y } = neighbor;
+      const isExplored = exploredHexes.get(x - 2147483647)?.has(y - 2147483647);
+      const nextDistance = distance + 1;
+
+      if (isExplored && nextDistance <= maxHex) {
+        queue.push({ position: neighbor, distance: nextDistance });
+        highlightPositions.add(neighborKey);
+      } else if (!isExplored && canExplore && nextDistance === 1) {
+        highlightPositions.add(neighborKey);
       }
     }
   }
