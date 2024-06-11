@@ -120,7 +120,7 @@ export function useExplore() {
     const prevPaths = animationPaths.filter((p) => p.id !== explorerId);
     setAnimationPaths([...prevPaths, newPath]);
     setExploredHexes(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
-    playExplore();
+
     try {
       await explore({
         unit_id: explorerId,
