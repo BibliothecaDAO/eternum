@@ -18,8 +18,8 @@ export function WarriorModel({ id, position, rotationY, isRunning, isFriendly, .
   const model = useMemo(() => {
     gltf.scene.traverse((child: any) => {
       if (child.isMesh) {
-        child.material.userData.originalColor = child.material.color.getHex();
         child.material = child.material.clone(); // Clone the material to avoid mutating the original material
+        child.material.userData.originalColor = child.material.color.getHex();
       }
     });
     return gltf.scene.clone();
