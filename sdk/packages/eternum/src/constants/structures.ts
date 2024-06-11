@@ -1,1 +1,0 @@
-export const HYPERSTRUCTURE_POINTS_PER_CYCLE = 10;

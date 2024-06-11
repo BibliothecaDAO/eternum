@@ -1,3 +1,9 @@
+interface IOrder {
+  orderId: number;
+  orderName: string;
+  fullOrderName: string;
+}
+
 export const orderNameDict: { [key: number]: string } = {
   1: "power",
   2: "anger",
@@ -17,11 +23,6 @@ export const orderNameDict: { [key: number]: string } = {
   16: "protection",
   17: "gods",
 };
-interface IOrder {
-  orderId: number;
-  orderName: string;
-  fullOrderName: string;
-}
 
 export const orders: IOrder[] = [
   {

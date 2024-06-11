@@ -69,6 +69,18 @@ export const TROOPS_STAMINAS = {
 };
 
 export const WORLD_CONFIG_ID = 999999999999999999n;
-
 export const U32_MAX = 4294967295;
 export const MAX_NAME_LENGTH = 31;
+export const ONE_MONTH = 2628000;
+
+// Buildings
+export const BASE_POPULATION_CAPACITY = 5;
+export const STOREHOUSE_CAPACITY = 10000000;
+
+// Points
+export const HYPERSTRUCTURE_POINTS_PER_CYCLE = 10;
+
+// Entity Types
+export const DONKEY_ENTITY_TYPE = 256;
+export const REALM_ENTITY_TYPE = 257;
+export const ARMY_ENTITY_TYPE = 258;

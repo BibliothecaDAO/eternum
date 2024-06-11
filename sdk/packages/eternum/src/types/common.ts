@@ -84,7 +84,6 @@ export interface Resources {
   trait: string;
   value: number;
   colour: string;
-  colourClass: string;
   id: number;
   description: string;
   img: string;

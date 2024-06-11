@@ -4,9 +4,9 @@ import clsx from "clsx";
 import {
   type Resource,
   ResourcesIds,
-  EXPLORATION_REWARD_RESOURCE_AMOUNT,
   EXPLORATION_COSTS,
   WeightConfig,
+  EternumGlobalConfig,
 } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
@@ -109,7 +109,8 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
   const entityWeightInKg = useMemo(() => divideByPrecision(Number(weight?.value || 0)), [weight]);
 
   const canCarryNewReward = useMemo(
-    () => totalCapacityInKg >= entityWeightInKg + EXPLORATION_REWARD_RESOURCE_AMOUNT * WeightConfig[ResourcesIds.Wood],
+    () =>
+      totalCapacityInKg >= entityWeightInKg + EternumGlobalConfig.exploration.reward * WeightConfig[ResourcesIds.Wood],
     [totalCapacityInKg, entityWeightInKg],
   );
 
