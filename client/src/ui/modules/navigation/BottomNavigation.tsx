@@ -189,7 +189,7 @@ export const BottomNavigation = () => {
           </motion.div>
         )}
 
-        <div className="flex py-2 sixth-step  px-10">
+        <div className="flex py-2 sixth-step  px-10 gap-1">
           {secondaryNavigation.map((a, index) => (
             <div key={index}>{a.button}</div>
           ))}
