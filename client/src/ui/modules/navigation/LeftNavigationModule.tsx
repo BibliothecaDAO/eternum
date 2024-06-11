@@ -59,14 +59,9 @@ export const LeftNavigationModule = () => {
   );
 
   const { realmEntityId } = useRealmStore();
-  const { setIsOpen } = useTour();
   const [location, setLocation] = useLocation();
 
   const isWorldView = useMemo(() => location === "/map", [location]);
-
-  useEffect(() => {
-    console.log(`view is ${view}`);
-  }, [view]);
 
   const navigation = useMemo(() => {
     const navigation = [

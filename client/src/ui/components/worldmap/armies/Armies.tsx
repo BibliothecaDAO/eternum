@@ -11,7 +11,6 @@ export const Armies = ({}: {}) => {
   const { getArmies } = useArmies();
   const armies = getArmies();
   useUpdateAnimationPathsForEnnemies();
-
   return armies.map((army) => <Army key={army.entity_id} army={army} />);
 };
 

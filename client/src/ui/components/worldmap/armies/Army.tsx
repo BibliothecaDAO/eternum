@@ -20,7 +20,6 @@ type ArmyProps = {
 
 export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
   const { play: playBuildMilitary } = useUiSounds(soundSelector.hoverClick);
-
   const startAnimationTimeRef = useRef<number | null>(null);
 
   const [isRunning, setIsRunning] = useState(false);

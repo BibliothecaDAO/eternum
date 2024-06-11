@@ -2,7 +2,7 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm, getRealmNameById } from "@/ui/utils/realms";
 import { calculateDistance } from "@/ui/utils/utils";
-import { EternumGlobalConfig, Position, StructureType } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -90,7 +90,7 @@ export const useStructures = () => {
 export const useStructuresPosition = ({ position }: { position: Position }) => {
   const {
     setup: {
-      components: { Position, Realm, EntityOwner, Owner, Structure },
+      components: { Position, Realm, EntityOwner, Owner, Structure, Protector },
     },
     account: { account },
   } = useDojo();
@@ -119,16 +119,34 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
   }, [realmsAtPosition])[0];
 
   const formattedStructureAtPosition = useMemo(() => {
-    return structuresAtPosition.map((entity_id: any) => {
-      const structure = getComponentValue(Structure, entity_id);
-      const name = structure ? getEntityName(structure?.entity_id) : "";
-      const entityOwner = getComponentValue(EntityOwner, entity_id);
-      const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+    return structuresAtPosition.map((entityId: any) => {
+      const structure = getComponentValue(Structure, entityId) as unknown as ClientComponents["Structure"]["schema"];
+      if (!structure) {
+        return;
+      }
+      const entityOwner = getComponentValue(
+        EntityOwner,
+        entityId,
+      ) as unknown as ClientComponents["EntityOwner"]["schema"];
+      const owner = getComponentValue(
+        Owner,
+        getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id) || 0n]),
+      ) as unknown as ClientComponents["Owner"]["schema"];
+      const name = getRealmNameById(entityId);
+
+      let protector: ClientComponents["Protector"]["schema"] | undefined | ArmyInfo = getComponentValue(
+        Protector,
+        entityId,
+      ) as unknown as ClientComponents["Protector"]["schema"];
+      protector = protector ? getArmyByEntityId(BigInt(protector.army_id)) : undefined;
+
       return {
-        entity_id: structure!.entity_id,
-        category: StructureType[structure!.category as keyof typeof StructureType],
-        self: owner?.address === BigInt(account.address),
+        ...structure,
+        entityOwner,
+        owner,
         name,
+        protector: protector as ArmyInfo | undefined,
+        isMine: BigInt(owner!.address) === BigInt(account.address),
       };
     });
   }, [structuresAtPosition])[0];
