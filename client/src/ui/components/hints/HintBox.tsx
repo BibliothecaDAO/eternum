@@ -92,7 +92,7 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
       <div className="mt-1 grid grid-cols-3 gap-2">
         {quest.completed && (
           <Button isLoading={isLoading} variant="primary" onClick={() => handleAllClaims()}>
-            {"Claim All"}
+            {"Claim Rewards"}
           </Button>
         )}
       </div>
