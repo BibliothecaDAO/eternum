@@ -25,6 +25,10 @@ export const Armies = ({}: ArmiesProps) => {
 
   const { armies } = useArmies();
   const armiesList = armies();
+  0;
+
+  // armies -> position based on recs
+  // we want them to move from current hex to new hex
 
   const realmOrder = useMemo(() => {
     const realmId = realms[0]?.realmId || BigInt(0);

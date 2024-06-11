@@ -148,7 +148,7 @@ export function useExplore() {
       .finally(() => {
         setTimeout(() => {
           Position.removeOverride(overrideId);
-        }, 2000);
+        }, 10000);
       })
       .catch((e) => {
         setAnimationPaths([...prevPaths, { id: explorerId, path: path.reverse(), enemy: false }]);
