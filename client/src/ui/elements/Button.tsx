@@ -30,7 +30,7 @@ const STYLES = {
 };
 
 const SIZES = {
-  xs: "text-xxs h-4 clip-angled-sm",
+  xs: "text-xxs h-4 clip-angled-sm ",
   md: "",
 };
 

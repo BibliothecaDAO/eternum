@@ -45,7 +45,7 @@ export const HyperstructureResourceChip = ({
   return (
     <div className="flex mt-1">
       <div
-        className={`flex relative items-center text-xs px-2 p-1 border rounded-xl w-[80%]`}
+        className={`flex relative items-center text-xs px-2 p-1  w-[80%]`}
         style={{
           backgroundImage:
             progress.percentage > 0
@@ -84,12 +84,7 @@ export const HyperstructureResourceChip = ({
         </div>
       </div>
 
-      <NumberInput
-        value={inputValue}
-        className="rounded-xl ml-3 w-[20%]"
-        onChange={setInputValue}
-        max={maxContributableAmount}
-      />
+      <NumberInput value={inputValue} className=" w-[20%]" onChange={setInputValue} max={maxContributableAmount} />
       <div className="ml-2 pt-2" onClick={() => setInputValue(maxContributableAmount)}>
         MAX
       </div>

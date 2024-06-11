@@ -9,7 +9,7 @@ body {
   overflow: hidden;
   font-family: "Space Grotesk", sans-serif;
   touch-action: none;
-  text-shadow: 2px 2px 4px rgba(255, 255, 0, 0.3); 
+  text-shadow: 2px 2px 4px rgba(255, 255, 0, 0.1); 
   @apply cursor-fancy;
 }
 
@@ -188,6 +188,14 @@ h6 {
 
 .ornate-borders-sm {
   border: 5px solid transparent;
+  -moz-border-image: url("/border-2.png") 30 30 round; /* Old firefox */
+  -webkit-border-image: url("/border-2.png") 30 30 round; /* Safari */
+  -o-border-image: url("/border-2.png") 30 30 round; /* Opera */
+  border-image: url("/border-2.png") 30 30 round;
+}
+
+.ornate-borders-top {
+  border: 15px solid transparent;
   -moz-border-image: url("/border-2.png") 30 30 round; /* Old firefox */
   -webkit-border-image: url("/border-2.png") 30 30 round; /* Safari */
   -o-border-image: url("/border-2.png") 30 30 round; /* Opera */
