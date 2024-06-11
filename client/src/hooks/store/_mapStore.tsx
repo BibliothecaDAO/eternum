@@ -6,7 +6,7 @@ import { Position, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ClickedHex, HexPosition, Hexagon, HighlightPositions } from "../../types";
+import { ClickedHex, HexPosition, Hexagon, HighlightPositions, TravelPath } from "../../types";
 import { useDojo } from "../context/DojoContext";
 import useLeaderBoardStore from "./useLeaderBoardStore";
 import useUIStore from "./useUIStore";
@@ -30,8 +30,8 @@ export interface MapStore {
   setAnimationPaths: (path: { id: bigint; path: Position[]; enemy: boolean }[]) => void;
   armyMode: ArmyMode | null;
   setArmyMode: (mode: ArmyMode | null) => void;
-  highlightPath: HighlightPositions;
-  setHighlightPath: (positions: HighlightPositions) => void;
+  travelPaths: Map<string, TravelPath>;
+  setTravelPaths: (paths: Map<string, TravelPath>) => void;
   highlightPositions: HighlightPositions;
   setHighlightPositions: (positions: HighlightPositions) => void;
   hoveredHex: HexPosition | undefined;
@@ -64,20 +64,22 @@ export const createMapStoreSlice = (set: any) => ({
   setAnimationPaths: (animationPaths: { id: bigint; path: Position[]; enemy: boolean }[]) => set({ animationPaths }),
   armyMode: null,
   setArmyMode: (armyMode: ArmyMode | null) => set({ armyMode }),
-  highlightPath: { pos: [], color: 0 },
-  setHighlightPath: (positions: HighlightPositions) => set({ highlightPath: positions }),
+  travelPaths: new Map<string, TravelPath>(),
+  setTravelPaths: (paths: Map<string, TravelPath>) => set({ travelPaths: paths }),
   highlightPositions: { pos: [], color: 0 },
   setHighlightPositions: (positions: HighlightPositions) => {
     set({ highlightPositions: positions });
   },
   hoveredHex: undefined,
   setHoveredHex: (position: HexPosition | undefined) => set({ hoveredHex: position }),
+  hoveredHexColor: 0,
+  setHoveredHexColor: (color: number) => set({ hoveredHexColor: color }),
   clearSelection: () =>
     set({
       selectedEntity: undefined,
       armyMode: null,
-      highlightPath: { pos: [], color: 0 },
       highlightPositions: { pos: [], color: 0 },
+      hoveredHexColor: 0,
     }),
   showAllArmies: false,
   toggleShowAllArmies: () => {

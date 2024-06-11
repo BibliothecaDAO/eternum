@@ -8,10 +8,9 @@ import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { TRAVEL_COLOUR } from "@/ui/config";
 
 export const ActionInfo = () => {
-  const highlightPath = useUIStore((state) => state.highlightPath);
+  const travelPaths = useUIStore((state) => state.travelPaths);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const hoveredHex = useUIStore((state) => state.hoveredHex);
   const { getBalance } = useResourceBalance();
@@ -22,21 +21,16 @@ export const ActionInfo = () => {
     return getUIPositionFromColRow(hoveredHex.col, hoveredHex.row);
   }, [hoveredHex]);
 
-  const hoveredHexIsHighlighted = useMemo(() => {
-    if (!hoveredHex) return false;
-    return highlightPath.pos.some(
-      (highlightPos) => highlightPos[0] === hoveredHexPosition.x && highlightPos[1] === -hoveredHexPosition.y,
-    );
-  }, [hoveredHexPosition]);
+  const travelPath = useMemo(() => {
+    if (!hoveredHex) return null;
+    return travelPaths.get(`${hoveredHex.col},${hoveredHex.row}`);
+  }, [hoveredHex, travelPaths]);
 
-  const isExplored = useMemo(() => {
-    const isExplored = highlightPath.color === TRAVEL_COLOUR;
-    return isExplored;
-  }, [hoveredHexPosition]);
+  const isExplored = travelPath?.isExplored || false;
 
   return (
     <>
-      {hoveredHexIsHighlighted && selectedEntity && (
+      {hoveredHex && travelPath?.path && selectedEntity && (
         <group position={[hoveredHexPosition.x, 0.32, -hoveredHexPosition.y]}>
           <BaseThreeTooltip position={Position.CENTER} className="-mt-[230px]" distanceFactor={44}>
             <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
@@ -58,7 +52,7 @@ export const ActionInfo = () => {
             <StaminaResourceCost
               travelingEntityId={selectedEntity.id}
               isExplored={isExplored}
-              travelLength={highlightPath.pos.length - 1}
+              travelLength={travelPath.path.length - 1}
             />
           </BaseThreeTooltip>
         </group>
