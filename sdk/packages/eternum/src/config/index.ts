@@ -119,27 +119,26 @@ export const setWeightConfig = async (account: Account, provider: EternumProvide
 
 export const setCombatConfig = async (account: Account, provider: EternumProvider) => {
   const {
-    knightHealth: knight_health,
-    paladinHealth: paladin_health,
-    crossbowmanHealth: crossbowman_health,
+    health: health,
     knightStrength: knight_strength,
     paladinStrength: paladin_strength,
     crossbowmanStrength: crossbowman_strength,
     advantagePercent: advantage_percent,
     disadvantagePercent: disadvantage_percent,
+    pillageHealthDivisor: pillage_health_divisor
   } = EternumGlobalConfig.troop;
+  
 
   const tx = await provider.set_troop_config({
     signer: account,
     config_id: 0,
-    knight_health,
-    paladin_health,
-    crossbowman_health,
+    health,
     knight_strength,
     paladin_strength,
     crossbowman_strength,
     advantage_percent,
     disadvantage_percent,
+    pillage_health_divisor: pillage_health_divisor
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);

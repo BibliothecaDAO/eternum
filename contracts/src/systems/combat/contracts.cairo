@@ -231,7 +231,12 @@ mod combat_systems {
 
             // decrease from army health
             let mut from_army_health: Health = get!(world, from_army_id, Health);
-            from_army_health.decrease_by(troops.full_health(troop_config));
+            let troop_full_health = troops.full_health(troop_config);
+            if troop_full_health > from_army_health.current {
+                panic!("not enough health for troops");
+            }
+            from_army_health.decrease_by(troop_full_health);
+            from_army_health.lifetime -= (troop_full_health);
             set!(world, (from_army_health));
 
             // decrease from army  quantity
@@ -246,7 +251,7 @@ mod combat_systems {
 
             // increase to army health
             let mut to_army_health: Health = get!(world, to_army_id, Health);
-            to_army_health.increase_by(troops.full_health(troop_config));
+            to_army_health.increase_by(troop_full_health);
             set!(world, (to_army_health));
 
             // increase to army quantity
@@ -321,7 +326,7 @@ mod combat_systems {
             // create battle 
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
-            defending_army_health.assert_alive();
+            defending_army_health.assert_alive("Army");
 
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;
@@ -579,17 +584,16 @@ mod combat_systems {
             let mut structure_army_strength = structure_army.troops.full_strength(troop_config)
                 * structure_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
+            structure_army_strength += 1;
 
             // a percentage of it's full strength depending on structure army's health
             let mut attacking_army_health: Health = get!(world, army_id, Health);
-            let attacking_army_strength = attacking_army.troops.full_strength(troop_config)
+            attacking_army_health.assert_alive("Army");
+
+            let mut attacking_army_strength = attacking_army.troops.full_strength(troop_config)
                 * attacking_army_health.percentage_left()
                 / PercentageValueImpl::_100().into();
-
-            // prevent `weights sum is zero` error 
-            if attacking_army_strength == 0 {
-                panic!("attacking army strength too low");
-            }
+            attacking_army_strength += 1;
 
             let attack_successful: @bool = random::choices(
                 array![true, false].span(),
@@ -603,7 +607,7 @@ mod combat_systems {
             if *attack_successful {
                 let attack_success_probability = attacking_army_strength
                     * PercentageValueImpl::_100().into()
-                    / (attacking_army_strength + structure_army_strength + 1);
+                    / (attacking_army_strength + structure_army_strength);
 
                 // choose x random resource to be stolen
                 let mut chosen_resource_types: Span<u8> = random::choices(
@@ -771,24 +775,32 @@ mod combat_systems {
                 }
             }
 
-            // reduce attacking army's health by 10%
-            // (pending better formula for health reduction)
-            attacking_army_health
-                .decrease_by(
-                    attacking_army_health.current
-                        * PercentageValueImpl::_10().into()
-                        / PercentageValueImpl::_100().into()
-                );
-            set!(world, (attacking_army_health));
+            // Deduct health from both armies if structure has an army
+            if structure_army_health.is_alive() {
+                let mut mock_battle: Battle = Battle {
+                    entity_id: 45,
+                    attack_army: attacking_army.into(),
+                    defence_army: structure_army.into(),
+                    attack_army_health: attacking_army_health.into(),
+                    defence_army_health: structure_army_health.into(),
+                    attack_delta: 0,
+                    defence_delta: 0,
+                    last_updated: starknet::get_block_timestamp(),
+                    duration_left: 0
+                };
+                mock_battle.restart(troop_config);
 
-            // reduce structure army's health by 10%
-            // (pending better formula for health reduction)
-            if structure_army_id.is_non_zero() {
+                attacking_army_health
+                    .decrease_by(
+                        ((mock_battle.defence_delta.into() * mock_battle.duration_left.into())
+                            / troop_config.pillage_health_divisor.into())
+                    );
+                set!(world, (attacking_army_health));
+
                 structure_army_health
                     .decrease_by(
-                        structure_army_health.current
-                            * PercentageValueImpl::_10().into()
-                            / PercentageValueImpl::_100().into()
+                        ((mock_battle.attack_delta.into() * mock_battle.duration_left.into())
+                            / troop_config.pillage_health_divisor.into())
                     );
                 set!(world, (structure_army_health));
             }

@@ -44,14 +44,24 @@ export const EternumGlobalConfig = {
     army: 1,
   },
   troop: {
-    knightHealth: 7_200,
-    paladinHealth: 7_200,
-    crossbowmanHealth: 7_200,
+    // The 7,200 health value makes battles last up to 20hours at a maximum.
+    // This max will be reached if both armies are very similar in strength and health
+    // To reduce max battle time by 4x for example, change the health to (7,200 / 4) 
+    // which will make the max battle time = 5 hours.
+    health: 7_200,
     knightStrength: 1,
     paladinStrength: 1,
     crossbowmanStrength: 1,
     advantagePercent: 1000,
     disadvantagePercent: 1000,
+    // By setting the divisor to 8, the max health that can be taken from the weaker army
+    // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
+    //
+    // The closer the armies are in strength and health, the closer they both
+    // get to losing 12.5% each. If an army is far stronger than the order,
+    // they lose a small precentage (it goes closer to 0% health loss) while the
+    // weak army's loss is closer to 12.5%
+    pillageHealthDivisor: 8,
   },
 };
 
