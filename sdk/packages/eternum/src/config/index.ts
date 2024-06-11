@@ -3,24 +3,26 @@ import {
   ARMY_ENTITY_TYPE,
   BASE_POPULATION_CAPACITY,
   BUILDING_CAPACITY,
-  BUILDING_COSTS_SCALED,
   BUILDING_POPULATION,
   BUILDING_RESOURCE_PRODUCED,
   DONKEY_ENTITY_TYPE,
   EternumGlobalConfig,
-  QUEST_RESOURCES_SCALED,
   QuestType,
-  RESOURCE_BUILDING_COSTS_SCALED,
-  RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
   WeightConfig,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  TickIds,
   TROOPS_STAMINAS,
 } from "../constants";
 import { EternumProvider } from "../provider";
-import { BuildingType } from "../utils";
+import { BuildingType } from "../constants/structures";
+import { TickIds } from "../types";
+import {
+  RESOURCE_BUILDING_COSTS_SCALED,
+  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  RESOURCE_INPUTS_SCALED,
+  RESOURCE_OUTPUTS_SCALED,
+  QUEST_RESOURCES_SCALED,
+  BUILDING_COSTS_SCALED,
+} from "../utils";
 
 // Function to configure all resources
 export const setProductionConfig = async (account: Account, provider: EternumProvider) => {

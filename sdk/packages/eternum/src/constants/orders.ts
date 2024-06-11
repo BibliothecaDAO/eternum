@@ -1,8 +1,4 @@
-interface IOrder {
-  orderId: number;
-  orderName: string;
-  fullOrderName: string;
-}
+import { IOrder } from "../types";
 
 export const orderNameDict: { [key: number]: string } = {
   1: "power",

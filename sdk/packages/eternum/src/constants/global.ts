@@ -1,5 +1,3 @@
-import { ResourcesIds } from "./resources";
-
 export const EternumGlobalConfig = {
   stamina: {
     travelCost: 5,
@@ -55,17 +53,6 @@ export const EternumGlobalConfig = {
     advantagePercent: 1000,
     disadvantagePercent: 1000,
   },
-};
-
-export enum TickIds {
-  Default = 0,
-  Armies = 1,
-}
-
-export const TROOPS_STAMINAS = {
-  [ResourcesIds.Paladin]: 100,
-  [ResourcesIds.Knight]: 80,
-  [ResourcesIds.Crossbowmen]: 80,
 };
 
 export const WORLD_CONFIG_ID = 999999999999999999n;

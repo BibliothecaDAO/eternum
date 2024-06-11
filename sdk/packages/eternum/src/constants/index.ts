@@ -5,3 +5,5 @@ export * from "./travel";
 export * from "./hex";
 export * from "./buildings";
 export * from "./global";
+export * from "./troops";
+export * from "./structures";

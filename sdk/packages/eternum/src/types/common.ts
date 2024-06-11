@@ -1,17 +1,21 @@
-/// COMBAT
 export enum Winner {
   Attacker = "Attacker",
   Target = "Target",
 }
 
-export enum DESTINATION_TYPE {
-  HOME,
-  HYPERSTRUCTURE,
-  REALM,
-  BANK,
+export enum TickIds {
+  Default,
+  Armies,
 }
 
-export enum ENTITY_TYPE {
+export enum DestinationType {
+  Home,
+  Hyperstructure,
+  Realm,
+  Bank,
+}
+
+export enum EntityType {
   DONKEY,
   TROOP,
   UNKNOWN,
@@ -43,7 +47,7 @@ export interface CombatInfo {
   entityOwnerId?: bigint | undefined;
   owner?: bigint | undefined;
   locationEntityId?: bigint | undefined;
-  locationType?: DESTINATION_TYPE;
+  locationType?: DestinationType;
   originRealmId?: bigint | undefined;
   order: number;
   troops: {
@@ -118,7 +122,7 @@ export interface EntityInterface {
   position: Position | undefined;
   homePosition: Position | undefined;
   resources: Resource[];
-  entityType: ENTITY_TYPE;
+  entityType: EntityType;
 }
 
 /// REALMS
@@ -200,23 +204,8 @@ export interface UIPosition {
   z: number;
 }
 
-/// HYPESTRUCTURE
-export interface HyperStructureInterface {
-  hyperstructureId: bigint;
-  name: string;
+export interface IOrder {
   orderId: number;
-  progress: number;
-  hyperstructureResources: {
-    resourceId: number;
-    currentAmount: number;
-    completeAmount: number;
-  }[];
-  completed: boolean;
-  position: Position;
-  uiPosition: UIPosition;
-  defence: number;
-  attack: number;
-  health: number;
-  watchTowerQuantity: number;
-  distance: number;
+  orderName: string;
+  fullOrderName: string;
 }

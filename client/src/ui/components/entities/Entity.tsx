@@ -8,20 +8,20 @@ import { divideByPrecision } from "@/ui/utils/utils";
 import { useResources } from "@/hooks/helpers/useResources";
 import { TravelEntityPopup } from "./TravelEntityPopup";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { ENTITY_TYPE, EntityState, determineEntityState } from "@bibliothecadao/eternum";
+import { EntityType, EntityState, determineEntityState } from "@bibliothecadao/eternum";
 import { DepositResources } from "../resources/DepositResources";
 import { useState } from "react";
 
-const entityIcon: Record<ENTITY_TYPE, string> = {
-  [ENTITY_TYPE.DONKEY]: "🫏",
-  [ENTITY_TYPE.TROOP]: "🥷",
-  [ENTITY_TYPE.UNKNOWN]: "❓", // Add a default or placeholder icon for UNKNOWN
+const entityIcon: Record<EntityType, string> = {
+  [EntityType.DONKEY]: "🫏",
+  [EntityType.TROOP]: "🥷",
+  [EntityType.UNKNOWN]: "❓", // Add a default or placeholder icon for UNKNOWN
 };
 
-const entityName: Record<ENTITY_TYPE, string> = {
-  [ENTITY_TYPE.DONKEY]: "Trade Caravan",
-  [ENTITY_TYPE.TROOP]: "Army",
-  [ENTITY_TYPE.UNKNOWN]: "❓", // Add a default or placeholder icon for UNKNOWN
+const entityName: Record<EntityType, string> = {
+  [EntityType.DONKEY]: "Trade Caravan",
+  [EntityType.TROOP]: "Army",
+  [EntityType.UNKNOWN]: "❓", // Add a default or placeholder icon for UNKNOWN
 };
 
 type EntityProps = {

@@ -1,4 +1,4 @@
-import { BuildingType } from "../utils";
+import { BuildingType } from "./structures";
 import { ResourcesIds } from "./resources";
 
 export const BUILDING_INFORMATION: {

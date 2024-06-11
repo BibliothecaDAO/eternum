@@ -1,5 +1,5 @@
 import { Resource, Resources } from "../types";
-import { BuildingType, StructureType } from "../utils";
+import { BuildingType, StructureType } from "./structures";
 import { EternumGlobalConfig } from "./global";
 
 export const findResourceById = (value: number) => {
@@ -9,35 +9,6 @@ export const findResourceById = (value: number) => {
 export const findResourceIdByTrait = (trait: string) => {
   // @ts-ignore
   return resources.find((e) => e?.trait === trait).id;
-};
-
-const scaleResourceOutputs = (resourceOutputs: ResourceOutputs) => {
-  let multipliedCosts: ResourceOutputs = {};
-
-  for (let buildingType in resourceOutputs) {
-    multipliedCosts[buildingType] = resourceOutputs[buildingType] * EternumGlobalConfig.resources.resourceMultiplier;
-  }
-  return multipliedCosts;
-};
-
-const scaleResourceInputs = (resourceInputs: ResourceInputs) => {
-  let multipliedCosts: ResourceInputs = {};
-
-  for (let buildingType in resourceInputs) {
-    multipliedCosts[buildingType] = resourceInputs[buildingType].map((resourceInput) => ({
-      ...resourceInput,
-      amount: resourceInput.amount * EternumGlobalConfig.resources.resourceMultiplier,
-    }));
-  }
-
-  return multipliedCosts;
-};
-
-const scaleResources = (resources: any[]): any[] => {
-  return resources.map((resource) => ({
-    ...resource,
-    amount: resource.amount * EternumGlobalConfig.resources.resourceMultiplier,
-  }));
 };
 
 export const resources: Array<Resources> = [
@@ -491,15 +462,15 @@ export const RESOURCE_TIERS = {
   mythic: [ResourcesIds.Adamantine, ResourcesIds.Mithral, ResourcesIds.Dragonhide],
 };
 
-interface ResourceInputs {
+export interface ResourceInputs {
   [key: number]: { resource: ResourcesIds; amount: number }[];
 }
 
-interface ResourceOutputs {
+export interface ResourceOutputs {
   [key: number]: number;
 }
 
-const RESOURCE_OUTPUTS: ResourceOutputs = {
+export const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Wood]: 10,
   [ResourcesIds.Stone]: 10,
   [ResourcesIds.Coal]: 10,
@@ -532,7 +503,7 @@ const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Earthenshard]: 10,
 };
 
-const RESOURCE_INPUTS: ResourceInputs = {
+export const RESOURCE_INPUTS: ResourceInputs = {
   [ResourcesIds.Wood]: [
     { resource: ResourcesIds.Stone, amount: 1.5 },
     { resource: ResourcesIds.Coal, amount: 1.6 },
@@ -669,7 +640,7 @@ const RESOURCE_INPUTS: ResourceInputs = {
   [ResourcesIds.Earthenshard]: [],
 };
 
-const BUILDING_COSTS: ResourceInputs = {
+export const BUILDING_COSTS: ResourceInputs = {
   [BuildingType.Castle]: [],
   [BuildingType.Bank]: [],
   [BuildingType.ShardsMine]: [],
@@ -721,7 +692,7 @@ const BUILDING_COSTS: ResourceInputs = {
   ],
 };
 
-const RESOURCE_BUILDING_COSTS: ResourceInputs = {
+export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Wood]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
   [ResourcesIds.Stone]: [{ resource: ResourcesIds.Fish, amount: 500 }],
   [ResourcesIds.Coal]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
@@ -754,14 +725,14 @@ const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Earthenshard]: [{ resource: ResourcesIds.Fish, amount: 500 }],
 };
 
-const HYPERSTRUCTURE_CREATION_COSTS: { resource: number; amount: number }[] = [
+export const HYPERSTRUCTURE_CREATION_COSTS: { resource: number; amount: number }[] = [
   {
     resource: ResourcesIds.Earthenshard,
     amount: 1000,
   },
 ];
 
-const HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: number }[] = [
+export const HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: number }[] = [
   { resource: ResourcesIds.Wood, amount: 1000 },
   { resource: ResourcesIds.Stone, amount: 1000 },
   { resource: ResourcesIds.Coal, amount: 1000 },
@@ -786,12 +757,12 @@ const HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: number }[] 
   { resource: ResourcesIds.Dragonhide, amount: 100 },
 ];
 
-const HYPERSTRUCTURE_TOTAL_COSTS: { resource: number; amount: number }[] = [
+export const HYPERSTRUCTURE_TOTAL_COSTS: { resource: number; amount: number }[] = [
   ...HYPERSTRUCTURE_CONSTRUCTION_COSTS,
   ...HYPERSTRUCTURE_CREATION_COSTS,
 ];
 
-const STRUCTURE_COSTS: ResourceInputs = {
+export const STRUCTURE_COSTS: ResourceInputs = {
   [StructureType.Hyperstructure]: HYPERSTRUCTURE_CREATION_COSTS,
   [StructureType.Bank]: [{ resource: ResourcesIds.Gold, amount: 100_000 }],
   [StructureType.Settlement]: [
@@ -870,7 +841,7 @@ export enum QuestType {
   Earthenshard = 10,
 }
 
-const QUEST_RESOURCES = {
+export const QUEST_RESOURCES = {
   [QuestType.Food]: [
     { resource: ResourcesIds.Wheat, amount: 2000 },
     { resource: ResourcesIds.Fish, amount: 2000 },
@@ -920,18 +891,3 @@ const QUEST_RESOURCES = {
   ],
   [QuestType.Earthenshard]: [{ resource: ResourcesIds.Earthenshard, amount: 10 }],
 };
-
-export const RESOURCE_BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(RESOURCE_BUILDING_COSTS);
-export const RESOURCE_OUTPUTS_SCALED: ResourceOutputs = scaleResourceOutputs(RESOURCE_OUTPUTS);
-export const BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(BUILDING_COSTS);
-export const RESOURCE_INPUTS_SCALED: ResourceInputs = scaleResourceInputs(RESOURCE_INPUTS);
-export const QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(QUEST_RESOURCES);
-export const EXPLORATION_COSTS_SCALED: Resource[] = scaleResources(EXPLORATION_COSTS);
-export const STRUCTURE_COSTS_SCALED: ResourceInputs = scaleResourceInputs(STRUCTURE_COSTS);
-export const HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED: { resource: number; amount: number }[] = scaleResources(
-  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-);
-export const HYPERSTRUCTURE_CREATION_COSTS_SCALED: { resource: number; amount: number }[] =
-  scaleResources(HYPERSTRUCTURE_CREATION_COSTS);
-export const HYPERSTRUCTURE_TOTAL_COSTS_SCALED: { resource: number; amount: number }[] =
-  scaleResources(HYPERSTRUCTURE_TOTAL_COSTS);
