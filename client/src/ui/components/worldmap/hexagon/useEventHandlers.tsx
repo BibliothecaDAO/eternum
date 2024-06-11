@@ -17,14 +17,10 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     (state) => ({
       hexData: state.hexData,
       hoveredHex: state.hoveredHex,
-      armyMode: state.armyMode,
-      setArmyMode: state.setArmyMode,
       selectedEntity: state.selectedEntity,
-      setSelectedEntity: state.setSelectedEntity,
       setClickedHex: state.setClickedHex,
       clickedHex: state.clickedHex,
       travelPaths: state.travelPaths,
-      setHighlightPositions: state.setHighlightPositions,
       clearSelection: state.clearSelection,
     }),
   );

@@ -110,13 +110,12 @@ export const WorldMap = () => {
   const { useStaminaByEntityId } = useStamina();
   const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
 
-  const uiPath = useMemo(() => {
+  useMemo(() => {
     if (!selectedEntity || !hexData || !stamina) return;
 
     const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
     const canExplore = (stamina.amount || 0) >= EternumGlobalConfig.stamina.exploreCost;
 
-    // const path = findAccessiblePositions(selectedEntity.position, exploredHexes, maxTravelPossible, canExplore);
     const pathMap = findAccessiblePositionsAndPaths(
       selectedEntity.position,
       exploredHexes,
