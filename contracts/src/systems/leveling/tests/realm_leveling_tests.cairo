@@ -16,11 +16,7 @@ use eternum::systems::leveling::contracts::{
     leveling_systems, ILevelingSystemsDispatcher, ILevelingSystemsDispatcherTrait
 };
 
-use eternum::systems::realm::contracts::{
-    realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
-};
-
-use eternum::utils::testing::{spawn_eternum, deploy_system};
+use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos};
 
 use starknet::contract_address_const;
 
@@ -65,29 +61,7 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
             resource_3_costs
         );
 
-    // set realm entity
-    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
-    let realm_systems_dispatcher = IRealmSystemsDispatcher {
-        contract_address: realm_systems_address
-    };
-
-    // create realm
-
-    let realm_entity_id = realm_systems_dispatcher
-        .create(
-            1, // realm id
-            0x20309, // resource_types_packed // 2,3,9 // stone, coal, gold
-            3, // resource_types_count
-            5, // cities
-            5, // harbors
-            5, // rivers
-            5, // regions
-            1, // wonder
-            1, // order
-            Position { x: 500200, y: 1, entity_id: 1_u128 }, // position  
-        // x needs to be > 470200 to get zone
-
-        );
+    let realm_entity_id = spawn_realm(world, get_default_realm_pos());
 
     // mint 100_000 wheat and fish for the realm;
     set!(
