@@ -329,7 +329,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     travelPathsRef.current = travelPaths;
     travelPathRef.current = travelPath;
     currentArmiesTickRef.current = currentArmiesTick;
-  }, [selectedEntity, hexData, explored, clickedHex, currentArmiesTickRef]);
+  }, [travelPath, travelPaths, selectedEntity, hexData, explored, clickedHex, currentArmiesTickRef]);
 
   const hoverHandler = useCallback((e: any) => {
     const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
@@ -392,6 +392,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     // const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
     // let end = { x: colRow.col, y: colRow.row };
     // let path = findShortestPathBFS(start, end, exploredHexesRef.current, maxTravelPossible);
+    console.log({ path: travelPathRef.current });
     if (travelPathRef.current.length > 1) {
       setArmyMode(ArmyMode.Travel);
       // const colors = {

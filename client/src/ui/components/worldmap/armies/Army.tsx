@@ -116,7 +116,7 @@ export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElemen
     if (!isRunning && info.isMine) {
       playBuildMilitary();
     }
-    if (selectedEntity?.id !== info.id && info.isMine) {
+    if (selectedEntity?.id !== info.id) {
       setSelectedEntity({ id: info.id, position: info.contractPos });
     }
   }, [info.id, info.contractPos, selectedEntity, playBuildMilitary, setSelectedEntity]);

@@ -187,9 +187,4 @@ export const findAccessiblePositionsAndPaths = (
   console.log(`Execution Time: ${executionTime.toFixed(2)} ms`);
 
   return highlightPaths;
-  // // Convert paths from Map to array of objects with position and path
-  // return Array.from(highlightPaths.entries()).map(([key, path]) => {
-  //   const [x, y] = key.split(",").map(Number);
-  //   return { x, y, path };
-  // });
 };

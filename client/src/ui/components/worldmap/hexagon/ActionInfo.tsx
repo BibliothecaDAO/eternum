@@ -13,6 +13,7 @@ import { TRAVEL_COLOUR } from "@/ui/config";
 export const ActionInfo = () => {
   // const highlightPath = useUIStore((state) => state.highlightPath);
   const travelPath = useUIStore((state) => state.travelPath);
+  // console.log({ travelPath });
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const hoveredHex = useUIStore((state) => state.hoveredHex);
   const { getBalance } = useResourceBalance();
@@ -27,11 +28,11 @@ export const ActionInfo = () => {
   //   const isExplored = highlightPath.color === TRAVEL_COLOUR;
   //   return isExplored;
   // }, [hoveredHexPosition]);
-  const isExplored = false;
+  const isExplored = true;
 
   return (
     <>
-      {travelPath && selectedEntity && (
+      {travelPath.length > 0 && selectedEntity && (
         <group position={[hoveredHexPosition.x, 0.32, -hoveredHexPosition.y]}>
           <BaseThreeTooltip position={Position.CENTER} className="-mt-[230px]" distanceFactor={44}>
             <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
