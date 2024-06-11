@@ -58,8 +58,6 @@ export const WorldMap = () => {
     },
   } = useDojo();
 
-  const hexData = useUIStore((state) => state.hexData);
-
   const hexagonGrids = useMemo(() => {
     const hexagonGrids = [];
     for (let i = 0; i < ROWS; i += 50) {
@@ -86,7 +84,7 @@ export const WorldMap = () => {
       const observable = await exploreMapEvents();
       const subscription = observable.subscribe((event) => {
         if (!isComponentMounted.current) return;
-        if (event && hexData) {
+        if (event) {
           const col = Number(event.keys[2]) - FELT_CENTER;
           const row = Number(event.keys[3]) - FELT_CENTER;
           setExploredHexes(col, row);
@@ -101,7 +99,7 @@ export const WorldMap = () => {
       isComponentMounted.current = false;
       subscriptionRef.current?.unsubscribe(); // Ensure to unsubscribe on component unmount
     };
-  }, [hexData, setExploredHexes, exploreMapEvents]);
+  }, [setExploredHexes, exploreMapEvents]);
 
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
@@ -111,7 +109,7 @@ export const WorldMap = () => {
   const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
 
   useMemo(() => {
-    if (!selectedEntity || !hexData || !stamina) return;
+    if (!selectedEntity || !stamina) return;
 
     const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
     const canExplore = (stamina.amount || 0) >= EternumGlobalConfig.stamina.exploreCost;

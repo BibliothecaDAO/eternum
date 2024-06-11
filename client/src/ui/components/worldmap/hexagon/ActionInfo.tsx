@@ -8,7 +8,6 @@ import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { TRAVEL_COLOUR } from "@/ui/config";
 
 export const ActionInfo = () => {
   const travelPaths = useUIStore((state) => state.travelPaths);
@@ -25,7 +24,7 @@ export const ActionInfo = () => {
   const travelPath = useMemo(() => {
     if (!hoveredHex) return null;
     return travelPaths.get(`${hoveredHex.col},${hoveredHex.row}`);
-  }, [hoveredHex]);
+  }, [hoveredHex, travelPaths]);
 
   const isExplored = travelPath?.isExplored || false;
 

@@ -79,6 +79,7 @@ export const createMapStoreSlice = (set: any) => ({
       selectedEntity: undefined,
       armyMode: null,
       highlightPositions: { pos: [], color: 0 },
+      hoveredHexColor: 0,
     }),
   showAllArmies: false,
   toggleShowAllArmies: () => {
