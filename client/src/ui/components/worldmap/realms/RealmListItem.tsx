@@ -15,7 +15,7 @@ type RealmListItemProps = {
 
 export const RealmListItem = ({ realm, onClick, extraButton }: RealmListItemProps) => {
   return (
-    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3  ">
+    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3">
       <div className="flex items-center">
         {realm && (
           <div className="flex items-center p-1  border-gold font-bold  w-full">

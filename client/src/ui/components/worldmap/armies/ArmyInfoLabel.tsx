@@ -44,7 +44,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
     [army.arrives_at, nextBlockTimestamp],
   );
 
-  const realmId = BigInt(realm?.realm_id) || 0n;
+  const realmId = BigInt(realm?.realm_id || 0);
 
   const attackerAddressName = entity_owner_id ? getRealmAddressName(BigInt(entity_owner_id)) : "";
 

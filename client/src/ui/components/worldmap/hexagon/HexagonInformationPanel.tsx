@@ -2,7 +2,8 @@ import { usePositionArmies } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { useMemo } from "react";
-import { ArmiesAtLocation, StructureCard } from "../../military/Battle";
+import { ArmiesAtLocation } from "../../military/Battle";
+import { StructureCard } from "../../hyperstructures/StructureCard";
 
 export const HexagonInformationPanel = () => {
   const { clickedHex, selectedEntity, setSelectedEntity } = useUIStore(
@@ -18,9 +19,22 @@ export const HexagonInformationPanel = () => {
     if (clickedHex) return { x: clickedHex.contractPos.col, y: clickedHex.contractPos.row };
   }, [clickedHex, selectedEntity]);
 
-  const { allArmies, userArmies, enemyArmies } = usePositionArmies({
+  const { userArmies, enemyArmies } = usePositionArmies({
     position: { x: position?.x || 0, y: position?.y || 0 },
   });
+
+  const panelSelectedEntity = useMemo(() => {
+    if (selectedEntity) return selectedEntity;
+    if (userArmies.length > 0 && clickedHex) {
+      const entity = {
+        id: BigInt(userArmies[0].entity_id),
+        position: { x: clickedHex.contractPos.col, y: clickedHex.contractPos.row },
+      };
+      setSelectedEntity(entity);
+      return entity;
+    }
+    return selectedEntity;
+  }, [clickedHex]);
 
   const ownArmySelected = useMemo(() => {
     if (!selectedEntity) return;
@@ -28,8 +42,7 @@ export const HexagonInformationPanel = () => {
   }, [userArmies, selectedEntity]);
 
   return (
-    position &&
-    allArmies.length !== 0 && (
+    position && (
       <div className="p-2">
         <div className="p-2 flex justify-between">
           <h5>Coordinates</h5>
@@ -38,11 +51,11 @@ export const HexagonInformationPanel = () => {
             <div>{`y: ${position!.y?.toLocaleString()}`}</div>
           </div>
         </div>
-        {enemyArmies.length !== 0 && (
+        {panelSelectedEntity && (
           <div className="self-center flex flex-col justify-between w-full">
             <div className=" p-2">Select Army for battle</div>
             <Select
-              value={selectedEntity?.id.toString() || userArmies[0].entity_id.toString()}
+              value={panelSelectedEntity?.id.toString()}
               onValueChange={(a: string) => {
                 setSelectedEntity({ id: BigInt(a), position });
               }}
@@ -65,7 +78,7 @@ export const HexagonInformationPanel = () => {
           </div>
         )}
         <StructureCard position={position} ownArmySelected={ownArmySelected} />
-        <ArmiesAtLocation armies={enemyArmies} ownArmy={ownArmySelected}/>
+        <ArmiesAtLocation armies={enemyArmies} ownArmy={ownArmySelected} />
       </div>
     )
   );

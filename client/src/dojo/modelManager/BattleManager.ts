@@ -1,6 +1,6 @@
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
-import { BattleType } from "./types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { BattleType } from "./types";
 
 export class BattleManager {
   battleModel: Component<BattleType> | OverridableComponent<BattleType>;
@@ -17,12 +17,16 @@ export class BattleManager {
 
   public attackingDelta() {
     const battle = this.getBattle();
-    return battle ? battle.attack_delta : 0;
+    return battle ? battle.attack_delta : 0n;
   }
 
   public defendingDelta() {
     const battle = this.getBattle();
-    return battle ? battle.defence_delta : 0;
+    return battle ? battle.defence_delta : 0n;
+  }
+
+  private damagesDone(delta: bigint, durationPassed: number): bigint {
+    return delta * BigInt(durationPassed);
   }
 
   public getElapsedTime(currentTick: number): number {
@@ -36,7 +40,7 @@ export class BattleManager {
     }
   }
 
-  public battleActive() {
+  public battleActive(): boolean {
     const battle = this.getBattle();
     return battle ? battle.duration_left > 0n : false;
   }
@@ -46,21 +50,22 @@ export class BattleManager {
     if (!battle) return;
 
     const durationPassed: number = this.getElapsedTime(currentTick);
+
     const attackDelta = this.attackingDelta();
     const defenceDelta = this.defendingDelta();
 
-    if (BigInt(attackDelta) * BigInt(durationPassed) > battle.attack_army_health.current) {
-      battle.attack_army_health.current = 0n;
-    } else {
-      battle.attack_army_health.current -= BigInt(defenceDelta) * BigInt(durationPassed);
-    }
+    const damagesDoneToAttack = this.damagesDone(defenceDelta, durationPassed);
+    const damagesDoneToDefence = this.damagesDone(attackDelta, durationPassed);
 
-    if (BigInt(defenceDelta) * BigInt(durationPassed) > battle.defence_army_health.current) {
-      battle.defence_army_health.current = 0n;
-    } else {
-      battle.defence_army_health.current -= BigInt(attackDelta) * BigInt(durationPassed);
-    }
+    battle.attack_army_health.current =
+      damagesDoneToAttack > battle.attack_army_health.current
+        ? 0n
+        : battle.attack_army_health.current - damagesDoneToAttack;
 
+    battle.defence_army_health.current =
+      damagesDoneToDefence > battle.defence_army_health.current
+        ? 0n
+        : battle.defence_army_health.current - damagesDoneToDefence;
     return battle;
   }
 }

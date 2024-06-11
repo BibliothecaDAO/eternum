@@ -2,7 +2,7 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { Position, UIPosition } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Component, Entity, Has, HasValue, Not, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
@@ -131,6 +131,7 @@ export const useArmies = () => {
   const armies = useEntityQuery([
     Has(Army),
     Has(Health),
+    Not(Protectee),
     NotValue(Movable, { sec_per_km: 0 }),
     NotValue(Health, { current: 0n }),
   ]);

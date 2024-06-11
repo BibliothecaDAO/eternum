@@ -15,7 +15,6 @@ export const CombatLabel = ({ visible = true }: ArmyInfoLabelProps) => {
       <Button
         variant="primary"
         onClick={() => {
-          console.log("hey");
           setView(View.EntityView);
         }}
       >

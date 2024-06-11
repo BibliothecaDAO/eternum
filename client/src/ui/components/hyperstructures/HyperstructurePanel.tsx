@@ -1,24 +1,26 @@
-import { useMemo, useState } from "react";
-import { HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED, HYPERSTRUCTURE_POINTS_PER_CYCLE } from "@bibliothecadao/eternum";
-import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
-import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
-import useRealmStore from "@/hooks/store/useRealmStore";
-import { ProgressWithPercentage, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { useContributions } from "@/hooks/helpers/useContributions";
-import {
+import { ProgressWithPercentage, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import useLeaderBoardStore, {
   calculateShares,
   computeHyperstructureLeaderboard,
   PlayerPointsLeaderboardInterface,
 } from "@/hooks/store/useLeaderBoardStore";
-import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
-import { useRealm } from "@/hooks/helpers/useRealm";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import Button from "@/ui/elements/Button";
 import { OrderIcon } from "@/ui/elements/OrderIcon";
 import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
 import TextInput from "@/ui/elements/TextInput";
-import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
-import useLeaderBoardStore from "@/hooks/store/useLeaderBoardStore";
+import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
+import {
+  HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED,
+  HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  MAX_NAME_LENGTH,
+} from "@bibliothecadao/eternum";
+import { useMemo, useState } from "react";
+import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
 
 export const HyperstructurePanel = ({ entity }: any) => {
   const {
@@ -79,7 +81,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   }, [contributions]);
 
   return (
-    <div className="flex flex-col h-[50vh] justify-between">
+    <div className="flex flex-col h-[45vh] justify-between">
       <div className="flex flex-col mb-2 bg-blueish/10 p-3 clip-angled-sm">
         <div className=" align-text-bottom uppercase text-xs">Owner: {`${displayAddress(entity.owner)}`}</div>
         <div className="flex flex-row justify-between items-baseline">
@@ -126,15 +128,15 @@ export const HyperstructurePanel = ({ entity }: any) => {
       </div>
 
       <div className="w-[100%] grid justify-between  m-auto mb-2  gap-2 grid-cols-3">
-        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1">
+        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
           <div className="uppercase text-xs">Progress</div>
           <div className="font-bold text-xl">{currencyIntlFormat(progresses.percentage)}%</div>
         </div>
-        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1">
+        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
           <div className="uppercase text-xs">Your shares</div>
           <div className="font-bold text-xl">{currencyIntlFormat(shares * 100)}%</div>
         </div>
-        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1">
+        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
           <div className="uppercase text-xs">points/cycle</div>
           <div className="font-bold text-xl ">{currencyIntlFormat(shares * HYPERSTRUCTURE_POINTS_PER_CYCLE)}</div>
         </div>

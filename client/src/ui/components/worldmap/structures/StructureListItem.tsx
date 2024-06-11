@@ -1,3 +1,5 @@
+import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
+import { FullStructure } from "@/hooks/helpers/useStructures";
 import { Headline } from "@/ui/elements/Headline";
 import { RESOURCE_OUTPUTS_SCALED, ResourcesIds, StructureType, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
@@ -6,7 +8,7 @@ import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { InventoryResources } from "../../resources/InventoryResources";
 
 type StructureListItemProps = {
-  structure: { entity_id: bigint; name: string; category: StructureType };
+  structure: FullStructure;
   onClick?: () => void;
   extraButton?: JSX.Element;
 };
@@ -14,6 +16,9 @@ type StructureListItemProps = {
 export const StructureListItem = ({ structure, onClick, extraButton }: StructureListItemProps) => {
   const { getRealmAddressName } = useRealm();
   const addressName = getRealmAddressName(BigInt(structure.entity_id));
+
+  const { getHyperstructureProgress } = useHyperstructures();
+  const progress = getHyperstructureProgress(BigInt(structure.entity_id));
 
   return (
     <div className="flex flex-col clip-angled-sm bg-gold/20 p-3">
@@ -26,7 +31,7 @@ export const StructureListItem = ({ structure, onClick, extraButton }: Structure
       <div className="flex items-end mt-2">
         <div className={clsx("flex items-center justify-around flex-1")}>
           <div className="flex-1 text-gold flex items-center flex-wrap">
-            {structure.category === StructureType.ShardsMine && (
+            {String(structure.category) === "ShardsMine" && (
               <div className="flex text-gold items-center">
                 Produces {RESOURCE_OUTPUTS_SCALED[ResourcesIds.Earthenshard]}
                 <ResourceIcon
@@ -37,8 +42,8 @@ export const StructureListItem = ({ structure, onClick, extraButton }: Structure
                 / tick
               </div>
             )}
-            {structure.category === StructureType.Hyperstructure && (
-              <div className="uppercase w-full font-bold mb-1">Progress 0% (TBD)</div>
+            {String(structure.category) === "Hyperstructure" && (
+              <div className="uppercase w-full font-bold mb-1">{progress.percentage}%</div>
             )}
           </div>
         </div>
