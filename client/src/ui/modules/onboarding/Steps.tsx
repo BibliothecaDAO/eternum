@@ -167,7 +167,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   return (
     <StepContainer>
-      <div className="flex flex-col items-center p-3 ">
+      <div className="flex flex-col items-center p-3 relative z-10">
         <h3>Select Account</h3>
         <div className="flex space-x-6 pt-4 w-full justify-center">
           <div>
