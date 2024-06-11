@@ -786,25 +786,17 @@ mod combat_systems {
                 };
                 mock_battle.restart(troop_config);
 
-                // By setting the divisor to 8, the max health that can be taken from the weaker army
-                // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
-                //
-                // The closer the armies are in strength and health, the closer they both 
-                // get to losing 12.5% each. If an army is far stronger than the order, 
-                // they lose a small precentage (it goes closer to 0% health loss) while the
-                // weak army's loss is closer to 12.5% 
-                let pillage_divisor = 8;
                 attacking_army_health
                     .decrease_by(
                         ((mock_battle.defence_delta.into() * mock_battle.duration_left.into())
-                            / pillage_divisor)
+                            / troop_config.pillage_health_divisor.into())
                     );
                 set!(world, (attacking_army_health));
 
                 structure_army_health
                     .decrease_by(
                         ((mock_battle.attack_delta.into() * mock_battle.duration_left.into())
-                            / pillage_divisor)
+                            / troop_config.pillage_health_divisor.into())
                     );
                 set!(world, (structure_army_health));
             }

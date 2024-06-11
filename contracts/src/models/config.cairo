@@ -251,6 +251,14 @@ struct TroopConfig {
     crossbowman_strength: u16,
     advantage_percent: u16,
     disadvantage_percent: u16,
+    // By setting the divisor to 8, the max health that can be taken from the weaker army
+    // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
+    //
+    // The closer the armies are in strength and health, the closer they both 
+    // get to losing 12.5% each. If an army is far stronger than the order, 
+    // they lose a small precentage (it goes closer to 0% health loss) while the
+    // weak army's loss is closer to 12.5% 
+    pillage_health_divisor: u8
 }
 
 

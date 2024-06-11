@@ -369,6 +369,7 @@ export interface SetTroopConfigProps extends SystemSigner {
   crossbowman_strength: num.BigNumberish;
   advantage_percent: num.BigNumberish;
   disadvantage_percent: num.BigNumberish;
+  pillage_health_divisor: num.BigNumberish
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {

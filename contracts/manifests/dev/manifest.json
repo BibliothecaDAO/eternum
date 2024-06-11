@@ -1672,8 +1672,8 @@
     {
       "kind": "DojoContract",
       "address": "0x490d8572029a070064c52d09d2fdb4d5a538bd26f723abfcdeeaff38e47dfeb",
-      "class_hash": "0x1e7a05bcf6099ac2d9e0ff0278330c0be782fdf52dee97014932bada422063",
-      "original_class_hash": "0x1e7a05bcf6099ac2d9e0ff0278330c0be782fdf52dee97014932bada422063",
+      "class_hash": "0x3503b7d118c4134c1aef5d6dd9d8c59fc167ab60462ae8c09068c7c58345d78",
+      "original_class_hash": "0x3503b7d118c4134c1aef5d6dd9d8c59fc167ab60462ae8c09068c7c58345d78",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -2117,8 +2117,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6e5d27950b7aa8eece851aecb7864b8efb9c1c90e7548b8fdd949b9963c6123",
-      "class_hash": "0x40ace51f9c20df837cb246bc99a08236e719520ff0fd9cec0bfed5cb360e6e9",
-      "original_class_hash": "0x40ace51f9c20df837cb246bc99a08236e719520ff0fd9cec0bfed5cb360e6e9",
+      "class_hash": "0x312a303e4598ffef23fd785e8939c8bdfb3b47bbec66e433cf8d3b9907d36bf",
+      "original_class_hash": "0x312a303e4598ffef23fd785e8939c8bdfb3b47bbec66e433cf8d3b9907d36bf",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -2605,6 +2605,10 @@
             {
               "name": "disadvantage_percent",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "pillage_health_divisor",
+              "type": "core::integer::u8"
             }
           ]
         },
@@ -13056,10 +13060,15 @@
           "name": "disadvantage_percent",
           "type": "u16",
           "key": false
+        },
+        {
+          "name": "pillage_health_divisor",
+          "type": "u8",
+          "key": false
         }
       ],
-      "class_hash": "0x30d06161e1188f38589d4785b52dd5d833a4b2d0e675d1d249cc749c14f0dea",
-      "original_class_hash": "0x30d06161e1188f38589d4785b52dd5d833a4b2d0e675d1d249cc749c14f0dea",
+      "class_hash": "0x62b241de7aa48513181040967415addcbee750f0d4fcb6848ea52c5339d60c0",
+      "original_class_hash": "0x62b241de7aa48513181040967415addcbee750f0d4fcb6848ea52c5339d60c0",
       "abi": [
         {
           "type": "impl",
@@ -13265,6 +13274,10 @@
             {
               "name": "disadvantage_percent",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "pillage_health_divisor",
+              "type": "core::integer::u8"
             }
           ]
         },

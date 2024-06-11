@@ -676,6 +676,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       crossbowman_strength,
       advantage_percent,
       disadvantage_percent,
+      pillage_health_divisor
     } = props;
 
     return await this.executeAndCheckTransaction(signer, {
@@ -689,6 +690,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         crossbowman_strength,
         advantage_percent,
         disadvantage_percent,
+        pillage_health_divisor
       ],
     });
   }

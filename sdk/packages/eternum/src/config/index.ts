@@ -125,7 +125,9 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     crossbowmanStrength: crossbowman_strength,
     advantagePercent: advantage_percent,
     disadvantagePercent: disadvantage_percent,
+    pillageHealthDivisor: pillage_health_divisor
   } = EternumGlobalConfig.troop;
+  
 
   const tx = await provider.set_troop_config({
     signer: account,
@@ -136,6 +138,7 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     crossbowman_strength,
     advantage_percent,
     disadvantage_percent,
+    pillage_health_divisor: pillage_health_divisor
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);
