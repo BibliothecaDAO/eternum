@@ -4,12 +4,13 @@ import { useFrame } from "@react-three/fiber";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import * as THREE from "three";
+import { EXPLORE_COLOUR, TRAVEL_COLOUR } from "@/ui/config";
 
 export const HoveredHexagon = () => {
   const imageRef = useRef<any>();
-  const { hoveredHex, highlightPositions } = useUIStore((state) => ({
+  const { hoveredHex, travelPaths } = useUIStore((state) => ({
     hoveredHex: state.hoveredHex,
-    highlightPositions: state.highlightPositions,
+    travelPaths: state.travelPaths,
   }));
 
   useFrame(() => {
@@ -23,17 +24,16 @@ export const HoveredHexagon = () => {
     return getUIPositionFromColRow(hoveredHex.col, hoveredHex.row);
   }, [hoveredHex]);
 
-  const isHighlighted = useMemo(() => {
-    return highlightPositions.pos.some(
-      (highlightPos) => highlightPos[0] === hoveredHexPosition.x && highlightPos[1] === -hoveredHexPosition.y,
-    );
-  }, [highlightPositions, hoveredHexPosition]);
+  const travelPath = useMemo(() => {
+    return hoveredHex ? travelPaths.get(`${hoveredHex.col},${hoveredHex.row}`) : undefined;
+  }, [travelPaths, hoveredHex]);
 
   useEffect(() => {
+    const color = travelPath ? (travelPath.isExplored ? TRAVEL_COLOUR : EXPLORE_COLOUR) : 0xffffff;
     if (imageRef.current) {
-      imageRef.current.material.color.set(isHighlighted ? highlightPositions.color : 0xffffff);
+      imageRef.current.material.color.set(color);
     }
-  }, [isHighlighted, highlightPositions.color]);
+  }, [travelPath]);
 
   return (
     <Image
