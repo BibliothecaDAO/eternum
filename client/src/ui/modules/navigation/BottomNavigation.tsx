@@ -5,7 +5,7 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { TroopMenuRow } from "@/ui/components/military/TroopChip";
 import CircleButton from "@/ui/elements/CircleButton";
-import { getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getEntityIdFromKeys, isRealmSelected } from "@/ui/utils/utils";
 import { TROOPS_STAMINAS } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { motion } from "framer-motion";
@@ -58,11 +58,6 @@ export const BottomNavigation = () => {
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
 
-  const isRealmSelected = () => {
-    const selectedStructure = structures?.find((structure) => structure?.entity_id === realmEntityId);
-    return selectedStructure?.category === "Realm";
-  };
-
   const secondaryNavigation = useMemo(() => {
     return [
       {
@@ -88,8 +83,8 @@ export const BottomNavigation = () => {
               size="lg"
               onClick={() => togglePopup(quests)}
               className="forth-step"
-              notification={isRealmSelected() ? claimableQuests.length : undefined}
-              disabled={!isRealmSelected()}
+              notification={isRealmSelected(realmEntityId, structures) ? claimableQuests.length : undefined}
+              disabled={!isRealmSelected(realmEntityId, structures)}
             />
 
             {population?.population == null && location !== "/map" && (

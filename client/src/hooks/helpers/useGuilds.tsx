@@ -112,7 +112,7 @@ const formatGuilds = (
 ): GuildAndName[] => {
   return guilds.map((guild_entity_id) => {
     const guild = getComponentValue(Guild, guild_entity_id) as ClientComponents["Guild"]["schema"];
-    const name = getEntityName(BigInt(guild.entity_id));
+    const name = getEntityName(BigInt(guild?.entity_id));
 
     const index = guildPointsLeaderboard.findIndex((item) => item.guildEntityId === BigInt(guild.entity_id));
     const rank = index != -1 ? guildPointsLeaderboard[index].rank : "";
