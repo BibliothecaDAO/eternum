@@ -18,7 +18,7 @@ export const StaminaResourceCost = ({
   const destinationHex = useMemo(() => {
     if (!stamina) return;
     const costs =
-      travelLength * (isExplored ? EternumGlobalConfig.stamina.travelCost : EternumGlobalConfig.stamina.exploreCost);
+      travelLength * (isExplored ? -EternumGlobalConfig.stamina.travelCost : -EternumGlobalConfig.stamina.exploreCost);
     const balanceColor = stamina !== undefined && stamina.amount < costs ? "text-red/90" : "text-green/90";
     return { isExplored, costs, balanceColor, balance: stamina.amount };
   }, [stamina]);

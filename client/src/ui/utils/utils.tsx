@@ -336,3 +336,8 @@ export const copyPlayerAddressToClipboard = (address: bigint, name: string) => {
       console.error("Failed to copy: ", err);
     });
 };
+
+export const isRealmSelected = (realmEntityId: bigint, structures: any) => {
+  const selectedStructure = structures?.find((structure: any) => structure?.entity_id === realmEntityId);
+  return selectedStructure?.category === "Realm";
+};
