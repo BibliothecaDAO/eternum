@@ -670,9 +670,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const {
       signer,
       config_id,
-      knight_health,
-      paladin_health,
-      crossbowman_health,
+      health,
       knight_strength,
       paladin_strength,
       crossbowman_strength,
@@ -685,9 +683,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "set_troop_config",
       calldata: [
         config_id,
-        knight_health,
-        paladin_health,
-        crossbowman_health,
+        health,
         knight_strength,
         paladin_strength,
         crossbowman_strength,

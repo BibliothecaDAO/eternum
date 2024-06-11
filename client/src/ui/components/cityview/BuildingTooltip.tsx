@@ -4,7 +4,7 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../hooks/context/DojoContext";
 import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
-import { LABOR_CONFIG, findResourceById } from "@bibliothecadao/eternum";
+import { findResourceById } from "@bibliothecadao/eternum";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "./realm/labor/laborUtils";
 import ProgressBar from "../../elements/ProgressBar";

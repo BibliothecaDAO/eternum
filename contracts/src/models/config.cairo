@@ -245,9 +245,7 @@ impl BuildingConfigImpl of BuildingConfigTrait {
 struct TroopConfig {
     #[key]
     config_id: u128,
-    knight_health: u32,
-    paladin_health: u32,
-    crossbowman_health: u32,
+    health: u32,
     knight_strength: u8,
     paladin_strength: u8,
     crossbowman_strength: u16,

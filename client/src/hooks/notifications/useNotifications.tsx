@@ -7,7 +7,6 @@ import { EventType, NotificationType, useNotificationsStore } from "../store/use
 import { useResources } from "../helpers/useResources";
 import {
   generateEmptyChestNotifications,
-  generateLaborNotifications,
   // generateArrivedAtHyperstructureNotifications,
   generateEnemyRaidersHaveArrivedNotifications,
   generateYourRaidersHaveArrivedNotifications,
@@ -66,17 +65,16 @@ export const useNotifications = () => {
       let newNotifications: NotificationType[] = [];
 
       if (nextBlockTimestamp) {
-        let laborNotifications = generateLaborNotifications(
-          realmsResources,
-          getRealmLevelBonus,
-          getHyperstructureLevelBonus,
-          nextBlockTimestamp,
-          realmLevel,
-          hyperstructureLevel || 0,
-          components,
-        );
-        newNotifications = newNotifications.concat(laborNotifications);
-
+        // let laborNotifications = generateLaborNotifications(
+        //   realmsResources,
+        //   getRealmLevelBonus,
+        //   getHyperstructureLevelBonus,
+        //   nextBlockTimestamp,
+        //   realmLevel,
+        //   hyperstructureLevel || 0,
+        //   components,
+        // );
+        // newNotifications = newNotifications.concat(laborNotifications);
         // let emptyChestNotifications =
         // generateEmptyChestNotifications(
         //   realmPositions,
@@ -85,7 +83,6 @@ export const useNotifications = () => {
         //   getResourcesFromBalance,
         // );
         // newNotifications = newNotifications.concat(emptyChestNotifications);
-
         // if (hyperstructure) {
         //   let arrivedAtHyperstructureNotifications = generateArrivedAtHyperstructureNotifications(
         //     BigInt(account.address),

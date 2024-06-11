@@ -1,11 +1,3 @@
-# Dojo Core
+# Eternum SDK
 
-The goal of Dojo Core is to provide a set of low level reusable functions that integrate seamlessly into a Dojo world.
-
-It is simple and non-framework orientated, the core should represent the lowest level of the Dojo js stack.
-
-### Get started
-
-```
-yarn add @dojoengine/core
-```
+The Eternum SDK contains constants and a provider to enable the creation of clients easily.

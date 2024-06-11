@@ -64,7 +64,7 @@ mod map_systems {
             get!(world, unit_id, EntityOwner).assert_caller_owner(world);
 
             // ensure unit is alive
-            get!(world, unit_id, Health).assert_alive();
+            get!(world, unit_id, Health).assert_alive("Army");
 
             // check that entity owner is a realm
             // TODO: Do we need this?
