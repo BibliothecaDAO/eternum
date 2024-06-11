@@ -8,6 +8,7 @@ import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengi
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
+import { ArmyInfo, getArmyByEntityId } from "./useArmies";
 import { useEntities } from "./useEntities";
 
 export type Structure = ClientComponents["Realm"]["schema"] & { resources: number[] } & { self: boolean } & {
@@ -17,7 +18,7 @@ export type Structure = ClientComponents["Realm"]["schema"] & { resources: numbe
 export type FullStructure = ClientComponents["Structure"]["schema"] & {
   entityOwner: ClientComponents["EntityOwner"]["schema"];
   owner: ClientComponents["Owner"]["schema"];
-  protector: ClientComponents["Army"]["schema"];
+  protector: ArmyInfo | undefined;
   name: string;
   isMine: boolean;
 };
@@ -62,17 +63,19 @@ export const useStructures = () => {
       getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id) || 0n]),
     ) as unknown as ClientComponents["Owner"]["schema"];
     const name = getRealmNameById(entityId);
-    let protector: any = getComponentValue(Protector, getEntityIdFromKeys([entityId]));
-    if (protector) {
-      const protectorArmy = getComponentValue(Army, getEntityIdFromKeys([protector.entity_id]));
-      protector = protectorArmy;
-    }
+
+    let protector: ClientComponents["Protector"]["schema"] | undefined | ArmyInfo = getComponentValue(
+      Protector,
+      getEntityIdFromKeys([entityId]),
+    ) as unknown as ClientComponents["Protector"]["schema"];
+    protector = protector ? getArmyByEntityId(BigInt(protector.army_id)) : undefined;
+
     return {
       ...structure,
       entityOwner,
       owner,
       name,
-      protector,
+      protector: protector as ArmyInfo | undefined,
       isMine: BigInt(owner!.address) === BigInt(account.address),
     };
   };

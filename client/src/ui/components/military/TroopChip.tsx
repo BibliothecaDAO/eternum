@@ -1,8 +1,8 @@
-import { ArmyAndName } from "@/hooks/helpers/useArmies";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
 
-export const TroopMenuRow = ({ army }: { army: ArmyAndName }) => {
+export const TroopMenuRow = ({ army }: { army: ArmyInfo }) => {
   return (
     <div className="grid grid-cols-3 gap-2 relative justify-between w-full text-gold">
       <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between gap-2">

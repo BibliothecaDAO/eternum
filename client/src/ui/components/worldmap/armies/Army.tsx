@@ -1,8 +1,6 @@
-import { ArmyAndName } from "@/hooks/helpers/useArmies";
-import { useStructuresPosition } from "@/hooks/helpers/useStructures";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { getRealmOrderNameById } from "@/ui/utils/realms";
-import { Position, UIPosition } from "@bibliothecadao/eternum";
 import { Box } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -16,47 +14,24 @@ import { SelectedUnit } from "../hexagon/SelectedUnit";
 import { ArmyInfoLabel } from "./ArmyInfoLabel";
 import { CombatLabel } from "./CombatLabel";
 
-export type FullArmyInfo = ArmyAndName & Position & { isMine: boolean; uiPos: UIPosition };
-
 type ArmyProps = {
-  army: FullArmyInfo;
-  offset: { x: number; y: number };
+  army: ArmyInfo;
 };
 
-export function Army({ army, offset }: ArmyProps & JSX.IntrinsicElements["group"]) {
+export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
   const { play: playBuildMilitary } = useUiSounds(soundSelector.hoverClick);
-
-  const { formattedStructureAtPosition } = useStructuresPosition({ position: { x: army.x, y: army.y } });
 
   const startAnimationTimeRef = useRef<number | null>(null);
 
   const [isRunning, setIsRunning] = useState(false);
 
-  const {
-    animationPaths,
-    setAnimationPaths,
-    selectedEntity,
-    setSelectedEntity,
-    showAllArmies,
-    setTargetEntity,
-    targetEntity,
-  } = useUIStore(
-    ({
+  const { animationPaths, setAnimationPaths, selectedEntity, setSelectedEntity, showAllArmies } = useUIStore(
+    ({ animationPaths, setAnimationPaths, selectedEntity, setSelectedEntity, showAllArmies }) => ({
       animationPaths,
       setAnimationPaths,
       selectedEntity,
       setSelectedEntity,
       showAllArmies,
-      targetEntity,
-      setTargetEntity,
-    }) => ({
-      animationPaths,
-      setAnimationPaths,
-      selectedEntity,
-      setSelectedEntity,
-      showAllArmies,
-      targetEntity,
-      setTargetEntity,
     }),
   );
 
@@ -70,7 +45,7 @@ export function Army({ army, offset }: ArmyProps & JSX.IntrinsicElements["group"
   const [rotationY, setRotationY] = useState(deterministicRotation);
   const [hovered, setHovered] = useState(false);
   const [position, setPosition] = useState<Vector3>(
-    new Vector3(army.uiPos.x + offset.x, 0.32, -army.uiPos.y - offset.y),
+    new Vector3(army.uiPos.x + army.offset.x, 0.32, -army.uiPos.y - army.offset.y),
   );
 
   useFrame(() => {
@@ -99,8 +74,8 @@ export function Army({ army, offset }: ArmyProps & JSX.IntrinsicElements["group"
 
     const progressBetweenPoints = (progress - (1 / uiPath.length) * pathIndex) * uiPath.length;
     const applyOffset = (point: { x: number; y: number }, isFirstOrLast: boolean) => ({
-      x: point.x + (isFirstOrLast ? offset.x : 0),
-      y: point.y + (isFirstOrLast ? offset.y : 0),
+      x: point.x + (isFirstOrLast ? army.offset.x : 0),
+      y: point.y + (isFirstOrLast ? army.offset.y : 0),
     });
 
     const startPoint = applyOffset(currentPath[0], pathIndex === 0);
@@ -119,12 +94,7 @@ export function Army({ army, offset }: ArmyProps & JSX.IntrinsicElements["group"
     }
   });
 
-  const actionMenu = useMemo(() => {
-    return formattedStructureAtPosition?.entity_id !== null && selectedEntity != null;
-  }, [formattedStructureAtPosition, selectedEntity, position]);
-
   const onRightClick = useCallback(() => {
-    setTargetEntity(0n);
     if (!isRunning && army.isMine) {
       playBuildMilitary();
     }
@@ -151,21 +121,9 @@ export function Army({ army, offset }: ArmyProps & JSX.IntrinsicElements["group"
     return (selectedEntity?.id || 0n) === BigInt(army.entity_id);
   }, [selectedEntity, army.entity_id]);
 
-  const onClick = () => {
-    setTargetEntity(BigInt(army.entity_id));
-  };
-
   const showCombatLabel = useMemo(() => {
-    console.log(targetEntity, BigInt(army.entity_id));
-
-    return (
-      selectedEntity !== undefined &&
-      targetEntity !== 0n &&
-      selectedEntity.position.x === army.x &&
-      selectedEntity.position.y === army.y &&
-      targetEntity === BigInt(army.entity_id)
-    );
-  }, [selectedEntity, targetEntity]);
+    return selectedEntity !== undefined && selectedEntity.id === BigInt(army.entity_id);
+  }, [selectedEntity]);
 
   // Army can be self owned or enemy
   // location can have a structure or no strucutre and this strucutre can be owned by self or enemy
@@ -176,18 +134,12 @@ export function Army({ army, offset }: ArmyProps & JSX.IntrinsicElements["group"
         {showArmyInfo && <ArmyInfoLabel army={army} />}
         {army.isMine && <ArmyFlag rotationY={rotationY} position={position} />}
 
-        {showCombatLabel && <CombatLabel visible={actionMenu} targetArmy={army} />}
+        {showCombatLabel && <CombatLabel />}
 
-        <WarriorModel
-          id={Number(army.entity_id)}
-          rotationY={rotationY}
-          isRunning={isRunning}
-          isFriendly={army.isMine}
-        />
+        <WarriorModel rotationY={rotationY} />
         <mesh
           position={[0, 1.6, 0]}
           onContextMenu={onRightClick}
-          onClick={onClick}
           onPointerEnter={onPointerEnter}
           onPointerOut={onPointerOut}
           visible={false}

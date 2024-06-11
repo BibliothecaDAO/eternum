@@ -1,7 +1,7 @@
-import { ArmyChip } from "./ArmyChip";
-import { ArmyAndName, useEntityArmies } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, useEntityArmies } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { Headline } from "@/ui/elements/Headline";
+import { ArmyChip } from "./ArmyChip";
 
 type EntityArmyTableProps = {
   entityId: bigint | undefined;
@@ -13,7 +13,7 @@ export const EntityArmyTable = ({ entityId }: EntityArmyTableProps) => {
   }
   const { entityArmies } = useEntityArmies({ entity_id: entityId });
   const armyElements = () => {
-    return entityArmies.map((army: ArmyAndName) => {
+    return entityArmies.map((army: ArmyInfo) => {
       return <ArmyChip key={army.army_id} army={army} />;
     });
   };

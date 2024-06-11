@@ -36,7 +36,6 @@ type BattleChipProps = {
 
 const BattleChip = ({ battleEntityId, ownArmy }: BattleChipProps) => {
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
-  const setBattleView = useUIStore((state) => state.setBattleView);
 
   const { updatedBattle } = useBattleManager(battleEntityId);
   const { getExtraBattleInformation } = useBattles();

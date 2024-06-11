@@ -1,15 +1,11 @@
-import { findResourceById } from "@bibliothecadao/eternum";
-import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat } from "../../utils/utils";
-import { useMemo, useState } from "react";
-import { ArmyAndName } from "@/hooks/helpers/useArmies";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import Button from "@/ui/elements/Button";
+import { useState } from "react";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard, ViewOnMapButton } from "./ArmyManagementCard";
-import Button from "@/ui/elements/Button";
-import { StaminaResource } from "@/ui/elements/StaminaResource";
 import { TroopMenuRow } from "./TroopChip";
 
-export const ArmyChip = ({ army }: { army: ArmyAndName }) => {
+export const ArmyChip = ({ army, extraButton }: { army: ArmyInfo; extraButton?: JSX.Element }) => {
   const [editMode, setEditMode] = useState(false);
 
   return (
@@ -42,13 +38,9 @@ export const ArmyChip = ({ army }: { army: ArmyAndName }) => {
           </div>
 
           <div className="flex flex-col gap-4 mt-2 items-center justify-between">
-            {/* <div className="flex items-center flex-wrap">
-              <span className="">HP:</span>
-              <span>{Number((army.current || 0).toString()) / 1000}</span>
-            </div> */}
-
             <InventoryResources entityId={BigInt(army.entity_id)} max={3} className="flex text-xs" />
           </div>
+          {extraButton || ""}
         </>
       )}
     </div>

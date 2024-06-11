@@ -1,10 +1,10 @@
-import { FullArmyInfo } from "@/ui/components/worldmap/armies/Army";
-import { TargetType } from "@/ui/components/worldmap/armies/CombatLabel";
+import { CombatTarget } from "@/types";
+import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import React from "react";
 import { Vector3 } from "three";
 import { create } from "zustand";
 import { getRealmUIPosition, getUIPositionFromColRow } from "../../ui/utils/utils";
-import { ArmyAndName } from "../helpers/useArmies";
+import { ArmyInfo } from "../helpers/useArmies";
 import { FullStructure } from "../helpers/useStructures";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 import { createMapStoreSlice, MapStore } from "./_mapStore";
@@ -58,15 +58,17 @@ interface UIStore {
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
   battleView: {
-    attacker: ArmyAndName;
-    target: { type: TargetType; entity: FullArmyInfo | FullStructure };
+    attacker: ArmyInfo;
+    target: { type: CombatTarget; entity: ArmyInfo | FullStructure };
   } | null;
   setBattleView: (
     participants: {
-      attacker: ArmyAndName;
-      target: { type: TargetType; entity: FullArmyInfo | FullStructure };
+      attacker: ArmyInfo;
+      target: { type: CombatTarget; entity: ArmyInfo | FullStructure };
     } | null,
   ) => void;
+  leftNavigationView: View;
+  setLeftNavigationView: (view: View) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((set, get) => ({
@@ -195,13 +197,15 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   battleView: null,
   setBattleView: (
     participants: {
-      attacker: ArmyAndName;
-      target: { type: TargetType; entity: FullArmyInfo | FullStructure };
+      attacker: ArmyInfo;
+      target: { type: CombatTarget; entity: ArmyInfo | FullStructure };
     } | null,
   ) => set({ battleView: participants }),
   ...createPopupsSlice(set, get),
   ...createMapStoreSlice(set),
   ...createBuildModeStoreSlice(set),
+  leftNavigationView: View.None,
+  setLeftNavigationView: (view: View) => set({ leftNavigationView: view }),
 }));
 
 export default useUIStore;

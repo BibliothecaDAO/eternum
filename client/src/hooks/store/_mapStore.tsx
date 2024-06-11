@@ -26,8 +26,6 @@ export interface MapStore {
   setHexData: (hexData: Hexagon[]) => void;
   selectedEntity: { id: bigint; position: Position } | undefined;
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => void;
-  targetEntity: bigint;
-  setTargetEntity: (entityId: bigint) => void;
   animationPaths: { id: bigint; path: Position[]; enemy: boolean }[];
   setAnimationPaths: (path: { id: bigint; path: Position[]; enemy: boolean }[]) => void;
   armyMode: ArmyMode | null;
@@ -62,8 +60,6 @@ export const createMapStoreSlice = (set: any) => ({
   },
   selectedEntity: undefined,
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => set({ selectedEntity: entity }),
-  targetEntity: 0n,
-  setTargetEntity: (entityId: bigint | undefined) => set({ targetEntity: entityId }),
   animationPaths: [],
   setAnimationPaths: (animationPaths: { id: bigint; path: Position[]; enemy: boolean }[]) => set({ animationPaths }),
   armyMode: null,

@@ -1,10 +1,12 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyAndName, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useBattleManager } from "@/hooks/helpers/useBattles";
+import { FullStructure } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { useModal } from "@/hooks/store/useModal";
 import useUIStore from "@/hooks/store/useUIStore";
+import { CombatTarget } from "@/types";
 import { ModalContainer } from "@/ui/components/ModalContainer";
 import { nameMapping } from "@/ui/components/military/ArmyManagementCard";
 import { PillageHistory } from "@/ui/components/military/Battle";
@@ -20,8 +22,16 @@ export const BattleView = () => {
   const setBattleView = useUIStore((state) => state.setBattleView);
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
 
-  const attackerArmy = getArmyByEntityId(battleView?.attackerId || 0n);
-  const defenderArmy = getArmyByEntityId(battleView?.defenderId || 0n);
+  const attackerArmy = battleView?.attacker;
+
+  const defenderArmy = useMemo(() => {
+    if (!battleView) return;
+    if (battleView.target.type === CombatTarget.Army) return battleView.target.entity as ArmyInfo;
+    else if (battleView.target.type === CombatTarget.Structure) {
+      const target = battleView.target.entity as FullStructure;
+      return target.protector;
+    }
+  }, [battleView?.target]);
 
   const { updatedBattle } = useBattleManager(BigInt(defenderArmy?.battle_id || 0n));
 
@@ -35,59 +45,61 @@ export const BattleView = () => {
     battleAdjusted === undefined ? Number(defenderArmy?.current) : Number(battleAdjusted?.defence_army_health.current);
 
   return (
-    <div>
-      <motion.div
-        className="absolute top-0 flex w-full"
-        variants={{
-          hidden: { y: "-100%", opacity: 0 },
-          visible: { y: "0%", opacity: 1, transition: { duration: 0.3 } },
-        }}
-        initial="hidden"
-        animate="visible"
-        exit="hidden"
-      >
-        <div className="mx-auto bg-brown text-gold text-2xl  p-4 flex flex-col w-72 text-center clip-angled">
-          <div className="mb-4">Battle!</div>
+    attackerArmy &&
+    defenderArmy && (
+      <div>
+        <motion.div
+          className="absolute top-0 flex w-full"
+          variants={{
+            hidden: { y: "-100%", opacity: 0 },
+            visible: { y: "0%", opacity: 1, transition: { duration: 0.3 } },
+          }}
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
+        >
+          <div className="mx-auto bg-brown text-gold text-2xl  p-4 flex flex-col w-72 text-center clip-angled">
+            <div className="mb-4">Battle!</div>
 
-          <Button onClick={() => setBattleView(null)}>exit battle view</Button>
-        </div>
-      </motion.div>
-      <motion.div
-        className="absolute bottom-0"
-        variants={{
-          hidden: { y: "100%" },
-          visible: { y: "0%", opacity: 1, transition: { duration: 0.5 } },
-        }}
-        initial="hidden"
-        animate="visible"
-        exit="hidden"
-      >
-        <BattleProgressBar
-          attackingHealth={attackingHealth}
-          lifetimeAttackingHealth={Number(attackerArmy?.lifetime)}
-          attacker={attackerArmy.name}
-          defendingHealth={defendingHealth}
-          lifetimeDefendingHealth={Number(defenderArmy?.lifetime)}
-          defender={defenderArmy?.name}
-        />
-        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 grid grid-cols-12 p-6 mb-4">
-          <EntityAvatar />
-          <TroopRow army={attackerArmy} />
-
-          <Actions
-            battle={updatedBattle}
-            attacker={BigInt(attackerArmy?.entity_id || "0")}
-            attackerOwner={BigInt(attackerArmy?.entity_owner_id || "0")}
-            defender={BigInt(defenderArmy?.entity_id || "0")}
-            structure={BigInt(battleView?.structure || "0")}
-            battleId={BigInt(defenderArmy?.battle_id || "0")}
+            <Button onClick={() => setBattleView(null)}>exit battle view</Button>
+          </div>
+        </motion.div>
+        <motion.div
+          className="absolute bottom-0"
+          variants={{
+            hidden: { y: "100%" },
+            visible: { y: "0%", opacity: 1, transition: { duration: 0.5 } },
+          }}
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
+        >
+          <BattleProgressBar
+            attackingHealth={attackingHealth}
+            lifetimeAttackingHealth={Number(attackerArmy?.lifetime)}
+            attacker={attackerArmy.name}
+            defendingHealth={defendingHealth}
+            lifetimeDefendingHealth={Number(defenderArmy?.lifetime)}
+            defender={defenderArmy?.name}
           />
+          <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 grid grid-cols-12 p-6 mb-4">
+            <EntityAvatar />
+            <TroopRow army={attackerArmy} />
 
-          <TroopRow army={defenderArmy as ArmyAndName} defending />
-          <EntityAvatar />
-        </div>
-      </motion.div>
-    </div>
+            <Actions
+              battle={updatedBattle}
+              attacker={attackerArmy}
+              defender={defenderArmy}
+              //   structure={BigInt(battleView?.structure || "0")}
+              battleId={BigInt(defenderArmy?.battle_id || "0")}
+            />
+
+            <TroopRow army={defenderArmy as ArmyInfo} defending />
+            <EntityAvatar />
+          </div>
+        </motion.div>
+      </div>
+    )
   );
 };
 
@@ -174,16 +186,14 @@ export const EntityAvatar = () => {
 export const Actions = ({
   battle,
   attacker,
-  attackerOwner,
   defender,
-  structure,
+  //   structure,
   battleId,
 }: {
   battle: BattleManager;
-  attacker: bigint;
-  attackerOwner: bigint;
-  defender: bigint;
-  structure: bigint;
+  attacker: ArmyInfo;
+  defender: ArmyInfo;
+  //   structure: bigint;
   battleId: bigint;
 }) => {
   const [loading, setLoading] = useState(false);
@@ -203,33 +213,35 @@ export const Actions = ({
 
   const isActive = useMemo(() => battle.battleActive(), [battle]);
 
-  const protector = useComponentValue(Protector, getEntityIdFromKeys([structure]))?.army_id;
-  const isRealm = useComponentValue(Realm, getEntityIdFromKeys([structure]));
+  const isRealm = useComponentValue(Realm, getEntityIdFromKeys([BigInt(defender.protectee_id)]));
 
   const canClaimBecauseNotRealm = useMemo(() => {
-    if (protector) {
+    if (defender) {
       const updatedBattle = battle.getUpdatedBattle(currentDefaultTick);
       if (updatedBattle?.defence_army_health.current === 0n) {
         return !isRealm;
       }
     }
-    return !isRealm && !protector;
-  }, [isRealm, protector]);
+    return !isRealm && !defender;
+  }, [isRealm, defender]);
 
   const handleRaid = async () => {
     setLoading(true);
 
     await provider.battle_pillage({
       signer: account,
-      army_id: attacker,
-      structure_id: structure,
+      army_id: attacker.army_id,
+      structure_id: defender.protectee_id,
     });
 
     setLoading(false);
     setBattleView(null);
     toggleModal(
       <ModalContainer size="half">
-        <PillageHistory structureId={structure} attackerRealmEntityId={attackerOwner} />
+        <PillageHistory
+          structureId={BigInt(defender.protectee_id)}
+          attackerRealmEntityId={BigInt(attacker.entity_owner_id)}
+        />
       </ModalContainer>,
     );
   };
@@ -239,8 +251,8 @@ export const Actions = ({
 
     await battle_start({
       signer: account,
-      attacking_army_id: attacker,
-      defending_army_id: defender,
+      attacking_army_id: attacker.army_id,
+      defending_army_id: defender.army_id,
     });
 
     setLoading(false);
@@ -251,8 +263,8 @@ export const Actions = ({
 
     await provider.battle_claim({
       signer: account,
-      army_id: attacker,
-      structure_id: structure,
+      army_id: attacker.army_id,
+      structure_id: defender.protectee_id,
     });
 
     setLoading(false);
@@ -263,7 +275,7 @@ export const Actions = ({
 
     await battle_leave({
       signer: account,
-      army_id: attacker,
+      army_id: attacker.army_id,
       battle_id: battleId,
     });
 
@@ -306,7 +318,7 @@ export const Actions = ({
   );
 };
 
-export const TroopRow = ({ army, defending = false }: { army: ArmyAndName; defending?: boolean }) => {
+export const TroopRow = ({ army, defending = false }: { army: ArmyInfo; defending?: boolean }) => {
   const noArmy = useMemo(() => !army, [army]);
   return (
     <div className=" grid-cols-3 col-span-3 gap-2 flex ">

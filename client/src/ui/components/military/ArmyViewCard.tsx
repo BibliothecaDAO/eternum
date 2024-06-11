@@ -1,10 +1,10 @@
-import { ArmyAndName } from "@/hooks/helpers/useArmies";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Headline } from "@/ui/elements/Headline";
-import { currencyFormat } from "@/ui/utils/utils";
-import { InventoryResources } from "../resources/InventoryResources";
-import { getRealmNameById } from "@/ui/utils/realms";
 import { OrderIcon } from "@/ui/elements/OrderIcon";
+import { getRealmNameById } from "@/ui/utils/realms";
+import { currencyFormat } from "@/ui/utils/utils";
 import { orderNameDict } from "@bibliothecadao/eternum";
+import { InventoryResources } from "../resources/InventoryResources";
 
 export const ArmyViewCard = ({
   army,
@@ -12,7 +12,7 @@ export const ArmyViewCard = ({
   active,
   actions,
 }: {
-  army: ArmyAndName;
+  army: ArmyInfo;
   onClick?: (entityId: string) => void;
   active?: boolean;
   actions?: boolean;

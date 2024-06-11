@@ -281,7 +281,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     clickedHex,
     setHighlightPath,
     clearSelection,
-    setTargetEntity,
   } = useUIStore((state) => ({
     hexData: state.hexData,
     highlightPath: state.highlightPath,
@@ -292,7 +291,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     clickedHex: state.clickedHex,
     setHighlightPath: state.setHighlightPath,
     clearSelection: state.clearSelection,
-    setTargetEntity: state.setTargetEntity,
   }));
 
   const setExploreNotification = useNotificationsStore((state) => state.setExploreNotification);
@@ -493,7 +491,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
             });
 
             if (path.length > 0) {
-              setTargetEntity(0n);
               clearSelection();
             }
           }

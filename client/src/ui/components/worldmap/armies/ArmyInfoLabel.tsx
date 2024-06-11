@@ -2,6 +2,7 @@ import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { currencyFormat } from "../../../utils/utils";
 
 import { useDojo } from "@/hooks/context/DojoContext";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
@@ -12,10 +13,9 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
 import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
 import { InventoryResources } from "../../resources/InventoryResources";
-import { FullArmyInfo } from "./Army";
 
 interface ArmyInfoLabelProps {
-  army: FullArmyInfo;
+  army: ArmyInfo;
 }
 
 export const ArmyInfoLabel = ({ army }: ArmyInfoLabelProps) => {
@@ -27,7 +27,7 @@ export const ArmyInfoLabel = ({ army }: ArmyInfoLabelProps) => {
 };
 
 interface ArmyInfoLabelProps {
-  army: FullArmyInfo;
+  army: ArmyInfo;
 }
 
 const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
