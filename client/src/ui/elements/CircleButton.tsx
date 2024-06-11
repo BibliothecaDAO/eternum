@@ -41,56 +41,58 @@ const CircleButton = ({
   const { play: playClick } = useUiSounds(soundSelector.click);
 
   return (
-    <button
-      onMouseEnter={() => {
-        hoverClick();
-        label &&
-          setTooltip({
-            position: tooltipLocation,
-            content: <span className="whitespace-nowrap pointer-events-none">{label}</span>,
-          });
-      }}
-      onMouseLeave={() => setTooltip(null)}
-      onClick={() => {
-        if (!disabled) {
-          onClick();
-          playClick();
-        }
-      }}
-      className={clsx(
-        "flex relative transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold  rounded    shadow-2xl   group ornate-borders-sm clip-angled-sm",
-        className,
-        sizes[size],
-        { "opacity-50 cursor-not-allowed": disabled },
-        { " !border-gold sepia-0 ": active },
-        { " border-brown/30 sepia-[.50] ": !active },
-      )}
-      disabled={disabled}
-      {...props}
-    >
+    <>
+      <button
+        onMouseEnter={() => {
+          hoverClick();
+          label &&
+            setTooltip({
+              position: tooltipLocation,
+              content: <span className="whitespace-nowrap pointer-events-none">{label}</span>,
+            });
+        }}
+        onMouseLeave={() => setTooltip(null)}
+        onClick={() => {
+          if (!disabled) {
+            onClick();
+            playClick();
+          }
+        }}
+        className={clsx(
+          "flex transition-all duration-150  cursor-pointer items-center justify-center shadow-black/50 fill-current text-gold hover:border-gold  rounded    shadow-2xl   group ornate-borders-sm clip-angled-sm",
+          className,
+          sizes[size],
+          { "opacity-50 cursor-not-allowed": disabled },
+          { " !border-gold sepia-0 ": active },
+          { " border-brown/30 sepia-[.50] ": !active },
+        )}
+        disabled={disabled}
+        {...props}
+      >
+        {children}
+        <div
+          style={{
+            backgroundImage: image ? `url(${image})` : active ? "" : "",
+            backgroundSize: "calc(100% - 10px)", // Ensure the image covers the button
+            backgroundPosition: "center", // Center the background image
+            padding: image ? "5px" : "0",
+          }}
+          className={`absolute w-[calc(100%)] h-[calc(100%)] bg-no-repeat z-10 hover:bg-gold duration-300 ${
+            active ? "bg-gold/60" : "bg-brown/80"
+          }`}
+        ></div>
+        <div
+          className={`absolute w-[calc(100%+2px)] h-[calc(100%+2px)] clip-angled-sm ${active ? "bg-gold/40" : " "}`}
+        ></div>
+      </button>
       {notification ? (
-        <div className="animate-bounce absolute -top-1 -left-1 rounded-full border border-green/30 bg-green/90 text-brown px-2 text-xxs z-[100] font-bold">
+        <div className="absolute animate-bounce -top-1 -left-1 rounded-full border border-green/30 bg-green/90 text-brown px-2 text-xxs z-[100] font-bold">
           {notification}
         </div>
       ) : (
         <></>
       )}
-      {children}
-      <div
-        style={{
-          backgroundImage: image ? `url(${image})` : active ? "" : "",
-          backgroundSize: "calc(100% - 10px)", // Ensure the image covers the button
-          backgroundPosition: "center", // Center the background image
-          padding: image ? "5px" : "0",
-        }}
-        className={`absolute w-[calc(100%)] h-[calc(100%)] bg-no-repeat z-10   hover:bg-gold duration-300 ${
-          active ? "bg-gold/60" : "bg-brown/80"
-        }`}
-      ></div>
-      <div
-        className={`absolute  w-[calc(100%+2px)] h-[calc(100%+2px)] clip-angled-sm ${active ? "bg-gold/40" : " "}`}
-      ></div>
-    </button>
+    </>
   );
 };
 
