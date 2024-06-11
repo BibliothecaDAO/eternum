@@ -1,50 +1,46 @@
-import { Bvh } from "@react-three/drei";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { Color, InstancedMesh, Matrix4 } from "three";
 import { EternumGlobalConfig, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { createHexagonGeometry } from "./HexagonGeometry";
-import useUIStore from "../../../../hooks/store/useUIStore";
-import { findDirection, getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
+import { Bvh } from "@react-three/drei";
 import { throttle } from "lodash";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { DesertBiome } from "../../models/biomes/DesertBiome";
-import { SnowBiome } from "../../models/biomes/SnowBiome";
-import { GrasslandBiome } from "../../models/biomes/GrasslandBiome";
-import { TaigaBiome } from "../../models/biomes/TaigaBiome";
-import { OceanBiome } from "../../models/biomes/OceanBiome";
-import { DeepOceanBiome } from "../../models/biomes/DeepOceanBiome";
-import { TemperateDesertBiome } from "../../models/biomes/TemperateDesertBiome";
+import { Color, InstancedMesh, Matrix4 } from "three";
+import useUIStore from "../../../../hooks/store/useUIStore";
+import { Hexagon, HighlightPositions } from "../../../../types/index";
+import { findDirection, getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
 import { BeachBiome } from "../../models/biomes/BeachBiome";
+import { DeciduousForestBiome } from "../../models/biomes/DeciduousForestBiome";
+import { DeepOceanBiome } from "../../models/biomes/DeepOceanBiome";
+import { DesertBiome } from "../../models/biomes/DesertBiome";
+import { GrasslandBiome } from "../../models/biomes/GrasslandBiome";
+import { OceanBiome } from "../../models/biomes/OceanBiome";
 import { ScorchedBiome } from "../../models/biomes/ScorchedBiome";
 import { ShrublandBiome } from "../../models/biomes/ShrublandBiome";
+import { SnowBiome } from "../../models/biomes/SnowBiome";
 import { SubtropicalDesertBiome } from "../../models/biomes/SubtropicalDesertBiome";
-import { DeciduousForestBiome } from "../../models/biomes/DeciduousForestBiome";
+import { TaigaBiome } from "../../models/biomes/TaigaBiome";
+import { TemperateDesertBiome } from "../../models/biomes/TemperateDesertBiome";
+import { TemperateRainforestBiome } from "../../models/biomes/TemperateRainforestBiome";
 import { TropicalRainforestBiome } from "../../models/biomes/TropicalRainforestBiome";
 import { TropicalSeasonalForestBiome } from "../../models/biomes/TropicalSeasonalForestBiome";
 import { TundraBiome } from "../../models/biomes/TundraBiome.js";
-import { TemperateRainforestBiome } from "../../models/biomes/TemperateRainforestBiome";
-import { Hexagon, HighlightPositions } from "../../../../types/index";
+import { createHexagonGeometry } from "./HexagonGeometry";
 
-import { findAccessiblePositions, findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
+import { useStamina } from "@/hooks/helpers/useStamina";
+import { ArmyMode } from "@/hooks/store/_mapStore";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { useLocation } from "wouter";
 import { useExplore } from "../../../../hooks/helpers/useExplore";
 import { useTravel } from "../../../../hooks/helpers/useTravel";
 import { useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
-import { useLocation } from "wouter";
 import { HexGrid } from "../../models/biomes/HexGrid";
-import { ArmyMode } from "@/hooks/store/_mapStore";
-import { useStamina } from "@/hooks/helpers/useStamina";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import {
-  ACCESSIBLE_POSITIONS_COLOUR,
-  CLICKED_HEX_COLOR,
-  DEPTH,
-  EXPLORE_COLOUR,
-  FELT_CENTER,
-  HEX_RADIUS,
-  TRAVEL_COLOUR,
-} from "@/ui/config";
-import { useExploredHexesStore } from "./WorldHexagon";
+import { findAccessiblePositions, findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
+import { DEPTH, FELT_CENTER, HEX_RADIUS } from "@/ui/config";
+
+export const EXPLORE_COLOUR = 0x2563eb;
+export const TRAVEL_COLOUR = 0xffce31;
+const CLICKED_HEX_COLOR = 0xff5733;
+const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
 
 type HexagonGridProps = {
   startRow: number;
@@ -284,7 +280,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     setClickedHex,
     clickedHex,
     setHighlightPath,
-    setHighlightPositions,
     clearSelection,
   } = useUIStore((state) => ({
     hexData: state.hexData,
@@ -292,11 +287,9 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     armyMode: state.armyMode,
     setArmyMode: state.setArmyMode,
     selectedEntity: state.selectedEntity,
-    setSelectedEntity: state.setSelectedEntity,
     setClickedHex: state.setClickedHex,
     clickedHex: state.clickedHex,
     setHighlightPath: state.setHighlightPath,
-    setHighlightPositions: state.setHighlightPositions,
     clearSelection: state.clearSelection,
   }));
 
@@ -372,6 +365,12 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     });
     if (!stamina) return;
     const colRow = getColRowFromUIPosition(pos.x, pos.y);
+
+    if (!exploredHexesRef.current.get(colRow.col - FELT_CENTER)?.has(colRow.row - FELT_CENTER)) {
+      setArmyMode(null);
+      setHighlightPath({ pos: [], color: 0 });
+      return;
+    }
 
     let start = selectedEntityRef!.current!.position;
     const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
@@ -486,7 +485,14 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
           ) {
             handleArmyModeClick(selectedEntityRef.current.id);
           } else {
-            clearSelection();
+            const path = highlightPathRef.current.pos.map((p) => {
+              const colRow = getColRowFromUIPosition(p[0], -p[1]);
+              return { x: colRow.col, y: colRow.row };
+            });
+
+            if (path.length > 0) {
+              clearSelection();
+            }
           }
         }
       } else {
@@ -507,7 +513,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       .filter((d) => d !== undefined) as number[];
     clearSelection();
     await travelToHex({ travelingEntityId, directions, path });
-    // reset the state
   }
 
   async function handleExploreModeClick({ id, path }: { id: bigint; path: any[] }) {

@@ -1,17 +1,12 @@
-import * as THREE from "three";
-import { useMemo, useRef } from "react";
-import { Vector3 } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
+import { useMemo, useRef } from "react";
+import * as THREE from "three";
 
 type WarriorModelProps = {
-  id: number;
-  position?: Vector3;
   rotationY: number;
-  isRunning: boolean;
-  isFriendly: boolean;
 };
 
-export function WarriorModel({ id, position, rotationY, isRunning, isFriendly, ...props }: WarriorModelProps) {
+export function WarriorModel({ rotationY, ...props }: WarriorModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   const gltf = useGLTF("/models/chess_piece_king.glb");
 

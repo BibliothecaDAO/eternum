@@ -1,23 +1,22 @@
-import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
-import Button from "@/ui/elements/Button";
-import TextInput from "@/ui/elements/TextInput";
-import { Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
-import { useEffect, useMemo, useState } from "react";
-import { useComponentValue } from "@dojoengine/react";
-import { NumberInput } from "@/ui/elements/NumberInput";
-import useUIStore from "@/hooks/store/useUIStore";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import { formatSecondsInHoursMinutes } from "../cityview/realm/labor/laborUtils";
+import useUIStore from "@/hooks/store/useUIStore";
+import Button from "@/ui/elements/Button";
+import { NumberInput } from "@/ui/elements/NumberInput";
+import TextInput from "@/ui/elements/TextInput";
+import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
+import { formatSecondsInHoursMinutes } from "../cityview/realm/labor/laborUtils";
 
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
-import { ArmyAndName } from "@/hooks/helpers/useArmies";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { resources } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import { LucideArrowRight } from "lucide-react";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 export const nameMapping: { [key: number]: string } = {
   [ResourcesIds.Knight]: "Knight",
@@ -27,7 +26,7 @@ export const nameMapping: { [key: number]: string } = {
 
 type ArmyManagementCardProps = {
   owner_entity: bigint;
-  entity: ArmyAndName;
+  entity: ArmyInfo;
 };
 
 // TODO Unify this. Push all useComponentValues up to the top level
@@ -317,7 +316,7 @@ interface TravelToLocationProps {
   isTraveling: boolean;
   checkSamePosition: boolean;
   entityOwnerPosition: Position;
-  entity: ArmyAndName;
+  entity: ArmyInfo;
   position: Position;
   onClose: () => void;
 }

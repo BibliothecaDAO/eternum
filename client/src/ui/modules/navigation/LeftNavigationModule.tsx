@@ -1,47 +1,27 @@
-import { ReactComponent as Settings } from "@/assets/icons/common/settings.svg";
-import { ReactComponent as Close } from "@/assets/icons/common/collapse.svg";
-import { ReactComponent as Expand } from "@/assets/icons/common/expand.svg";
-import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
-import {
-  banks,
-  entityDetails,
-  eventLog,
-  worldStructures,
-  leaderboard,
-  military,
-  resources,
-  settings,
-  trade,
-  construction,
-  assistant,
-  structures,
-} from "../../components/navigation/Config";
-import useUIStore from "../../../hooks/store/useUIStore";
-import { useMemo, useState } from "react";
-import CircleButton from "../../elements/CircleButton";
-import { SettingsWindow } from "../settings/Settings";
-import useRealmStore from "../../../hooks/store/useRealmStore";
-import { ArrowRight } from "lucide-react";
-import { Banks } from "../banking/Banks";
-import { Leaderboard } from "../leaderboard/LeaderBoard";
-import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
-import { Resources } from "@/ui/modules/resources/Resources";
-import { Military } from "@/ui/modules/military/Military";
-import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
-import { Trading } from "../trade/Trading";
-import { Construction } from "../construction/Construction";
-import { Assistant } from "../assistant/Assistant";
-import { useTour } from "@reactour/tour";
-import { Questing } from "../questing/Questing";
-import { Guilds } from "../guilds/Guilds";
-import { MenuEnum } from "./BottomNavigation";
-import { useLocation } from "wouter";
-import { BaseContainer } from "@/ui/containers/BaseContainer";
-import Button from "@/ui/elements/Button";
+import useUIStore from "@/hooks/store/useUIStore";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
-import _, { debounce } from "lodash";
+import { BaseContainer } from "@/ui/containers/BaseContainer";
+import Button from "@/ui/elements/Button";
+import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
+import { Military } from "@/ui/modules/military/Military";
+import { useTour } from "@reactour/tour";
 import { motion } from "framer-motion";
+import { debounce } from "lodash";
+import { ArrowRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
+import useRealmStore from "../../../hooks/store/useRealmStore";
+import { construction, military, worldStructures } from "../../components/navigation/Config";
+import CircleButton from "../../elements/CircleButton";
+import { Assistant } from "../assistant/Assistant";
+import { Banks } from "../banking/Banks";
+import { Guilds } from "../guilds/Guilds";
+import { Leaderboard } from "../leaderboard/LeaderBoard";
+import { Questing } from "../questing/Questing";
+import { SettingsWindow } from "../settings/Settings";
+import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
+import { MenuEnum } from "./BottomNavigation";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -60,7 +40,8 @@ export const BuildingThumbs = {
   guild: "/images/buildings/thumb/guilds.png",
 };
 
-enum View {
+export enum View {
+  None,
   MilitaryView,
   EntityView,
   ConstructionView,
@@ -69,14 +50,23 @@ enum View {
 }
 
 export const LeftNavigationModule = () => {
-  const [isOffscreen, setIsOffscreen] = useState(true);
-  const [view, setView] = useState<View>(View.ConstructionView);
+  const [lastView, setLastView] = useState<View>(View.None);
+  const { leftNavigationView: view, setLeftNavigationView: setView } = useUIStore(
+    ({ leftNavigationView, setLeftNavigationView }) => ({
+      leftNavigationView,
+      setLeftNavigationView,
+    }),
+  );
 
   const { realmEntityId } = useRealmStore();
   const { setIsOpen } = useTour();
   const [location, setLocation] = useLocation();
 
   const isWorldView = useMemo(() => location === "/map", [location]);
+
+  useEffect(() => {
+    console.log(`view is ${view}`);
+  }, [view]);
 
   const navigation = useMemo(() => {
     const navigation = [
@@ -91,7 +81,7 @@ export const LeftNavigationModule = () => {
             active={view === View.EntityView}
             size="xl"
             onClick={() => {
-              setIsOffscreen(false);
+              setLastView(View.EntityView);
               setView(View.EntityView);
             }}
           />
@@ -108,7 +98,7 @@ export const LeftNavigationModule = () => {
             active={view === View.MilitaryView}
             size="xl"
             onClick={() => {
-              setIsOffscreen(false);
+              setLastView(View.MilitaryView);
               setView(View.MilitaryView);
             }}
           />
@@ -125,7 +115,7 @@ export const LeftNavigationModule = () => {
             active={view === View.ConstructionView}
             size="xl"
             onClick={() => {
-              setIsOffscreen(false);
+              setLastView(View.ConstructionView);
               setView(View.ConstructionView);
             }}
           />
@@ -142,7 +132,7 @@ export const LeftNavigationModule = () => {
             active={view === View.WorldStructuresView}
             size="xl"
             onClick={() => {
-              setIsOffscreen(false);
+              setLastView(View.WorldStructuresView);
               setView(View.WorldStructuresView);
             }}
           />
@@ -173,7 +163,7 @@ export const LeftNavigationModule = () => {
 
   // Making UX smoother by not closing the menu immediatly. The cursor often moves a little further than the menu edge
   const debouncedSetIsOffscreen = debounce(() => {
-    setIsOffscreen(true);
+    setView(View.None);
   }, 1500);
 
   const slideLeft = {
@@ -194,15 +184,23 @@ export const LeftNavigationModule = () => {
 
       <div
         className={`max-h-full transition-all duration-200 space-x-1 gap-1  flex z-0 w-[600px] text-gold left-10 self-center pointer-events-auto ${
-          isOffscreen ? "-translate-x-[86%] " : ""
+          isOffscreen(view) ? "-translate-x-[86%] " : ""
         }`}
         onPointerEnter={() => {
           debouncedSetIsOffscreen.cancel();
-          setIsOffscreen(false);
+          if (view === View.None && lastView === View.None) {
+            const newView = View.ConstructionView;
+            setView(newView);
+            setLastView(newView);
+          } else if (view === View.None) {
+            setView(lastView);
+          } else {
+            setLastView(view);
+          }
         }}
         onPointerLeave={debouncedSetIsOffscreen}
       >
-        <BaseContainer className={`w-full overflow-y-scroll ${isOffscreen ? "h-[20vh]" : "h-[60vh]"}`}>
+        <BaseContainer className={`w-full overflow-y-scroll ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}>
           {view === View.EntityView && <EntityDetails />}
           {view === View.MilitaryView && <Military entityId={realmEntityId} />}
           {!isWorldView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
@@ -216,8 +214,8 @@ export const LeftNavigationModule = () => {
           className="gap-2 flex flex-col justify-center self-center"
         >
           <div>
-            <Button onClick={() => setIsOffscreen(!isOffscreen)} variant="primary">
-              <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen ? "" : "rotate-180"}`} />
+            <Button onClick={() => setView(isOffscreen(view) ? lastView : View.None)} variant="primary">
+              <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen(view) ? "" : "rotate-180"}`} />
             </Button>
           </div>
           <div className="flex flex-col gap-2 mb-auto">
@@ -231,4 +229,8 @@ export const LeftNavigationModule = () => {
       </div>
     </>
   );
+};
+
+const isOffscreen = (view: View) => {
+  return view === View.None;
 };

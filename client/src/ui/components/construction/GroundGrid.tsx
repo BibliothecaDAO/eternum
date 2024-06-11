@@ -56,6 +56,7 @@ const GroundGrid = () => {
 
   useEffect(() => {
     setPreviewBuilding(null);
+    console.log(`Currently selected realm entity id ${realmEntityId}`);
   }, [realmEntityId]);
 
   return (

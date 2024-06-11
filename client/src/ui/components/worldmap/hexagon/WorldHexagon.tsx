@@ -1,23 +1,21 @@
 import { useEffect, useMemo, useRef } from "react";
 // @ts-ignore
 import { Flags } from "@/ui/components/worldmap/Flags.jsx";
-import useUIStore from "../../../../hooks/store/useUIStore.js";
-import { useDojo } from "../../../../hooks/context/DojoContext";
 import { Subscription } from "rxjs";
-import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
-import { Armies } from "../armies/Armies.js";
 import { create } from "zustand";
+import { useDojo } from "../../../../hooks/context/DojoContext";
+import useUIStore from "../../../../hooks/store/useUIStore.js";
 import { ShardsMines } from "../../models/buildings/worldmap/ShardsMines.js";
 import { Structures } from "../../models/buildings/worldmap/Structures.js";
+import { Armies } from "../armies/Armies.js";
+import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
 
 import { ACCESSIBLE_POSITIONS_COLOUR, COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
-import { useStamina } from "@/hooks/helpers/useStamina.js";
 import { EternumGlobalConfig } from "@bibliothecadao/eternum";
-import { findAccessiblePositions } from "./utils.js";
-import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
-import { HighlightPositions } from "@/types/index.js";
-import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { useStamina } from "@/hooks/helpers/useStamina";
+import { findAccessiblePositions } from "./utils";
+import { HighlightPositions } from "@/types";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -91,8 +89,6 @@ export const WorldMap = () => {
         if (event && hexData) {
           const col = Number(event.keys[2]) - FELT_CENTER;
           const row = Number(event.keys[3]) - FELT_CENTER;
-
-          console.log(col, row);
           setExploredHexes(col, row);
         }
       });

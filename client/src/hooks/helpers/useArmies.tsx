@@ -1,14 +1,19 @@
-import { useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../context/DojoContext";
-import { Component, Entity, Has, HasValue, Not, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { Position } from "@bibliothecadao/eternum";
-import { shortString } from "starknet";
-import { useMemo } from "react";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { getForeignKeyEntityId } from "@/ui/utils/utils";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
+import { Position, UIPosition } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useMemo } from "react";
+import { shortString } from "starknet";
+import { useDojo } from "../context/DojoContext";
 
-export type ArmyAndName = ClientComponents["Army"]["schema"] & { name: string } & ClientComponents["Health"]["schema"] &
+export type ArmyInfo = ClientComponents["Army"]["schema"] & {
+  name: string;
+  isMine: boolean;
+  uiPos: UIPosition;
+  offset: Position;
+} & ClientComponents["Health"]["schema"] &
   ClientComponents["Protectee"]["schema"] &
   ClientComponents["Quantity"]["schema"] &
   ClientComponents["Movable"]["schema"] &
@@ -23,6 +28,7 @@ export type ArmyAndName = ClientComponents["Army"]["schema"] & { name: string } 
 
 const formatArmies = (
   armies: Entity[],
+  playerAddress: string,
   Army: Component,
   Protectee: Component,
   Name: Component,
@@ -36,7 +42,7 @@ const formatArmies = (
   Owner: Component,
   Realm: Component,
   Stamina: Component,
-): ArmyAndName[] => {
+): ArmyInfo[] => {
   return armies.map((id) => {
     const army = getComponentValue(Army, id) as ClientComponents["Army"]["schema"];
     const protectee = getComponentValue(Protectee, id) as ClientComponents["Protectee"]["schema"];
@@ -69,6 +75,12 @@ const formatArmies = (
         getEntityIdFromKeys([BigInt(realm.realm_id)]),
       ) as ClientComponents["Position"]["schema"]);
 
+    const isMine = BigInt(owner.address) === BigInt(playerAddress);
+    const ownGroupIndex = Number(army.entity_id) % 12;
+    const offset = calculateOffset(ownGroupIndex, 12);
+    const offsetToAvoidOverlapping = Math.random() * 1 - 0.5;
+    offset.y += offsetToAvoidOverlapping;
+
     return {
       ...army,
       ...protectee,
@@ -83,11 +95,13 @@ const formatArmies = (
       ...owner,
       realm,
       homePosition,
+      isMine,
+      offset,
+      uiPos: { ...getUIPositionFromColRow(position?.x || 0, position?.y || 0), z: 0.32 },
+
       name: name
         ? shortString.decodeShortString(name.name.toString())
         : `${protectee ? "🛡️" : "🗡️"}` + `Army ${army?.entity_id}`,
-      // note: have to explicitly specify entity id as the army entity id or else it's realm entity id
-      entity_id: army.entity_id,
     };
   });
 };
@@ -111,14 +125,21 @@ export const useArmies = () => {
         Stamina,
       },
     },
+    account: { account },
   } = useDojo();
 
-  const armies = useEntityQuery([Has(Army), Has(Health), NotValue(Health, { lifetime: 0n })]);
+  const armies = useEntityQuery([
+    Has(Army),
+    Has(Health),
+    NotValue(Movable, { sec_per_km: 0 }),
+    NotValue(Health, { current: 0n }),
+  ]);
 
   return {
-    armies: () =>
+    getArmies: () =>
       formatArmies(
         armies,
+        account.address,
         Army,
         Protectee,
         EntityName,
@@ -155,6 +176,7 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
         Stamina,
       },
     },
+    account: { account },
   } = useDojo();
 
   const armies = useEntityQuery([Has(Army), HasValue(EntityOwner, { entity_owner_id: entity_id })]);
@@ -162,6 +184,7 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
   const entityArmies = useMemo(() => {
     return formatArmies(
       armies,
+      account.address,
       Army,
       Protectee,
       EntityName,
@@ -211,6 +234,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
     const allArmies = useMemo(() => {
       return formatArmies(
         allArmiesAtPosition,
+        account.address,
         Army,
         Protectee,
         EntityName,
@@ -252,7 +276,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
   }
 };
 
-export const useArmyByEntityId = ({ entity_id }: { entity_id: bigint }) => {
+export const getArmyByEntityId = (entity_id: bigint) => {
   const {
     setup: {
       components: {
@@ -271,12 +295,14 @@ export const useArmyByEntityId = ({ entity_id }: { entity_id: bigint }) => {
         Stamina,
       },
     },
+    account: { account },
   } = useDojo();
 
-  const armies = runQuery([Has(Army), HasValue(Army, { entity_id })]);
+  const armies = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
 
   return formatArmies(
     Array.from(armies),
+    account.address,
     Army,
     Protectee,
     EntityName,
@@ -292,4 +318,24 @@ export const useArmyByEntityId = ({ entity_id }: { entity_id: bigint }) => {
 
     Stamina,
   )[0];
+};
+
+const calculateOffset = (index: number, total: number) => {
+  if (total === 1) return { x: 0, y: 0 };
+
+  const radius = 1.5; // Radius where the armies will be placed
+  const angleIncrement = (2 * Math.PI) / 6; // Maximum 6 points on the circumference for the first layer
+  let angle = angleIncrement * (index % 6);
+  let offsetRadius = radius;
+
+  if (index >= 6) {
+    // Adjustments for more than 6 armies, placing them in another layer
+    offsetRadius += 0.5; // Increase radius for each new layer
+    angle += angleIncrement / 2; // Offset angle to interleave with previous layer
+  }
+
+  return {
+    x: offsetRadius * Math.cos(angle),
+    y: offsetRadius * Math.sin(angle),
+  };
 };

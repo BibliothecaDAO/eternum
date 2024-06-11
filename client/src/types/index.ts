@@ -21,3 +21,8 @@ export interface HighlightPositions {
   pos: Position2D[];
   color: number;
 }
+
+export enum CombatTarget {
+  Structure,
+  Army,
+}

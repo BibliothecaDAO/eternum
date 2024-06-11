@@ -1,50 +1,48 @@
-import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { currencyFormat } from "../../../utils/utils";
 
-import { useMemo } from "react";
-import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
-import clsx from "clsx";
-import { OrderIcon } from "../../../elements/OrderIcon";
-import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
-import { useRealm } from "../../../../hooks/helpers/useRealm";
-import { InventoryResources } from "../../resources/InventoryResources";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ArmyAndName } from "@/hooks/helpers/useArmies";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
+import clsx from "clsx";
+import { useMemo } from "react";
+import { useRealm } from "../../../../hooks/helpers/useRealm";
+import { OrderIcon } from "../../../elements/OrderIcon";
+import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
+import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
+import { InventoryResources } from "../../resources/InventoryResources";
 
 interface ArmyInfoLabelProps {
-  accountAddress: string;
-  info: ArmyAndName;
+  army: ArmyInfo;
 }
 
-export const ArmyInfoLabel = ({ info, accountAddress }: ArmyInfoLabelProps) => {
+export const ArmyInfoLabel = ({ army }: ArmyInfoLabelProps) => {
   return (
     <BaseThreeTooltip position={Position.TOP_CENTER} className={`bg-transparent pointer-events-none -mt-[320px]`}>
-      <RaiderInfo key={info.entity_id} info={info} accountAddress={accountAddress} />
+      <RaiderInfo key={army.entity_id} army={army} />
     </BaseThreeTooltip>
   );
 };
 
 interface ArmyInfoLabelProps {
-  info: ArmyAndName;
-  accountAddress: string;
+  army: ArmyInfo;
 }
 
-const RaiderInfo = ({ info, accountAddress }: ArmyInfoLabelProps) => {
+const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
+  const {
+    account: { account },
+  } = useDojo();
+
   const { getRealmAddressName } = useRealm();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const { entity_id, entity_owner_id, address, arrives_at, realm, troops, battle_id, battle_side } = info;
+  const { entity_id, entity_owner_id, address, arrives_at, realm, troops, battle_id } = army;
 
   const isPassiveTravel = useMemo(
-    () => (info.arrives_at && nextBlockTimestamp ? info.arrives_at > nextBlockTimestamp : false),
-    [info.arrives_at, nextBlockTimestamp],
+    () => (army.arrives_at && nextBlockTimestamp ? army.arrives_at > nextBlockTimestamp : false),
+    [army.arrives_at, nextBlockTimestamp],
   );
-
-  const battle = useMemo(() => {
-    return !Number.isNaN(battle_side);
-  }, [battle_id, battle_side]);
 
   const realmId = BigInt(realm?.realm_id) || 0n;
 
@@ -54,13 +52,11 @@ const RaiderInfo = ({ info, accountAddress }: ArmyInfoLabelProps) => {
 
   const isTraveling = isPassiveTravel;
 
-  // TODO: Check if in battle - if so, display in battle
-
   return (
     <div
       className={clsx(
         "w-auto flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold shadow-2xl border-2 border-gradient",
-        accountAddress ? (BigInt(accountAddress) === BigInt(address) ? "bg-crimson" : "bg-brown") : undefined,
+        account.address ? (BigInt(account.address) === BigInt(address) ? "bg-crimson" : "bg-brown") : undefined,
       )}
     >
       <div className="flex items-center w-full mt-1 justify-between text-xs">
@@ -76,11 +72,10 @@ const RaiderInfo = ({ info, accountAddress }: ArmyInfoLabelProps) => {
           </div>
           <div className="self-center flex justify-between w-full">
             {!isTraveling && <div className="flex   italic text-gold self-center">Idle</div>}
-            {info.arrives_at && isTraveling && nextBlockTimestamp && (
-              <div className="flex   italic text-light-pink">
+            {army.arrives_at && isTraveling && nextBlockTimestamp && (
+              <div className="flex italic text-light-pink">
                 {isPassiveTravel ? formatSecondsLeftInDaysHours(arrives_at - nextBlockTimestamp) : "Arrives Next Tick"}
-
-                {battle && `In Battle`}
+                {battle_id && `In Battle`}
               </div>
             )}
             <StaminaResource entityId={BigInt(entity_id)} />

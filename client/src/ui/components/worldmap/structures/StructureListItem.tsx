@@ -1,16 +1,17 @@
-import { ResourceIcon } from "../../../elements/ResourceIcon";
+import { Headline } from "@/ui/elements/Headline";
 import { RESOURCE_OUTPUTS_SCALED, ResourcesIds, StructureType, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
+import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { InventoryResources } from "../../resources/InventoryResources";
-import { Headline } from "@/ui/elements/Headline";
 
 type StructureListItemProps = {
   structure: { entity_id: bigint; name: string; category: StructureType };
   onClick?: () => void;
+  extraButton?: JSX.Element;
 };
 
-export const StructureListItem = ({ structure, onClick }: StructureListItemProps) => {
+export const StructureListItem = ({ structure, onClick, extraButton }: StructureListItemProps) => {
   const { getRealmAddressName } = useRealm();
   const addressName = getRealmAddressName(BigInt(structure.entity_id));
 
@@ -43,6 +44,7 @@ export const StructureListItem = ({ structure, onClick }: StructureListItemProps
         </div>
       </div>
       <InventoryResources entityId={BigInt(structure.entity_id)} title="Balance" />
+      {extraButton || ""}
     </div>
   );
 };
