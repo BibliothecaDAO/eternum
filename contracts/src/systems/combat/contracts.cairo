@@ -231,8 +231,12 @@ mod combat_systems {
 
             // decrease from army health
             let mut from_army_health: Health = get!(world, from_army_id, Health);
-            from_army_health.decrease_by(troops.full_health(troop_config));
-            from_army_health.lifetime -= (troops.full_health(troop_config));
+            let troop_full_health = troops.full_health(troop_config);
+            if troop_full_health > from_army_health.current {
+                panic!("not enough health for troops");
+            }
+            from_army_health.decrease_by(troop_full_health);
+            from_army_health.lifetime -= (troop_full_health);
             set!(world, (from_army_health));
 
             // decrease from army  quantity
@@ -247,7 +251,7 @@ mod combat_systems {
 
             // increase to army health
             let mut to_army_health: Health = get!(world, to_army_id, Health);
-            to_army_health.increase_by(troops.full_health(troop_config));
+            to_army_health.increase_by(troop_full_health);
             set!(world, (to_army_health));
 
             // increase to army quantity
