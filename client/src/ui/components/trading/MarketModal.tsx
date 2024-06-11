@@ -151,6 +151,10 @@ export const TransferView = () => {
         { entities: playerRealms(), name: "Player Realms" },
         { entities: playerAccounts(), name: "Player Bank Accounts" },
         {
+          entities: playerStructures().filter((structure) => structure.category === "Hyperstructure"),
+          name: "Player Hyperstructures",
+        },
+        {
           entities: playerStructures().filter((structure) => structure.category === "ShardsMine"),
           name: "Player Shards Mines",
         },

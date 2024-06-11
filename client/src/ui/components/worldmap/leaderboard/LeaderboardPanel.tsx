@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
 import { PlayersLeaderboard } from "./PlayersLeaderboard";
+import { GuildsLeaderboard } from "./GuildsLeaderboard";
 
 export const LeaderboardPanel = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -8,13 +9,22 @@ export const LeaderboardPanel = () => {
   const tabs = useMemo(
     () => [
       {
-        key: "leaderboard",
+        key: "playersLeaderboard",
         label: (
           <div className="flex group relative flex-col items-center">
             <div>Players</div>
           </div>
         ),
         component: <PlayersLeaderboard />,
+      },
+      {
+        key: "guildsLeaderboard",
+        label: (
+          <div className="flex group relative flex-col items-center">
+            <div>Guilds</div>
+          </div>
+        ),
+        component: <GuildsLeaderboard />,
       },
       // {
       //   key: "leaderboard",
@@ -31,14 +41,6 @@ export const LeaderboardPanel = () => {
 
   return (
     <>
-      <div className="my-3 p-4">
-        {/* {resourceName && <ResourceIcon className="mr-2 self-center" size="lg" resource={resourceName} />} */}
-        <h4 className="flex mt-2 justify-center w-full">
-          <div>Leaderboard</div>
-        </h4>
-        <p className="text-center">Find these on the map....</p>
-      </div>
-
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => setSelectedTab(index)}

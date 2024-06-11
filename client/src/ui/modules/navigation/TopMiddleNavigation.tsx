@@ -79,12 +79,12 @@ export const TopMiddleNavigation = () => {
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
 
   return (
-    <motion.div className="flex" variants={slideDown} initial="hidden" animate="visible">
+    <motion.div className="flex ornate-borders-top bg-brown" variants={slideDown} initial="hidden" animate="visible">
       <div className="self-center px-3 flex space-x-2">
         <TickProgress />
       </div>
 
-      <div className="flex min-w-96 bg-brown clip-angled  border-gradient py-2 px-4 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center">
+      <div className="flex min-w-96  clip-angled  border-gradient py-2 px-4 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center ">
         <div className="self-center flex justify-between w-full">
           <Select
             value={realmEntityId.toString()}

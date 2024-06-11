@@ -15,6 +15,7 @@ import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { guilds, leaderboard, quests, settings } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
+import { useEntities } from "@/hooks/helpers/useEntities";
 
 export enum MenuEnum {
   realm = "realm",
@@ -54,6 +55,14 @@ export const BottomNavigation = () => {
 
   const { claimableQuests } = useQuests({ entityId: realmEntityId || BigInt("0") });
 
+  const { playerStructures } = useEntities();
+  const structures = useMemo(() => playerStructures(), [playerStructures]);
+
+  const isRealmSelected = () => {
+    const selectedStructure = structures?.find((structure) => structure?.entity_id === realmEntityId);
+    return selectedStructure?.category === "Realm";
+  };
+
   const secondaryNavigation = useMemo(() => {
     return [
       {
@@ -79,7 +88,8 @@ export const BottomNavigation = () => {
               size="lg"
               onClick={() => togglePopup(quests)}
               className="forth-step"
-              notification={claimableQuests.length}
+              notification={isRealmSelected() ? claimableQuests.length : undefined}
+              disabled={!isRealmSelected()}
             />
 
             {population?.population == null && location !== "/map" && (
@@ -171,7 +181,7 @@ export const BottomNavigation = () => {
           </motion.div>
         )}
 
-        <div className="flex py-2 sixth-step  px-10">
+        <div className="flex py-2 sixth-step  px-10 gap-1">
           {secondaryNavigation.map((a, index) => (
             <div key={index}>{a.button}</div>
           ))}

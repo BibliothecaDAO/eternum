@@ -22,6 +22,7 @@ import { RightNavigationModule } from "../modules/navigation/RightNavigationModu
 import { BattleContainer } from "../containers/BattleContainer";
 import { BattleView } from "../modules/military/BattleView";
 import { LoadingContainer } from "../containers/LoadingContainer";
+import { Redirect } from "wouter";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -89,7 +90,7 @@ export const World = () => {
           </RightMiddleContainer>
         </>
       )}
-
+      <Redirect to="/" />
       <Leva
         hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU}
         collapsed

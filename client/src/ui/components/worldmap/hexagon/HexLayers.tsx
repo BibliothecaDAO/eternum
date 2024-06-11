@@ -527,7 +527,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       entityId: id,
       biome,
     });
-    playExplore();
+
     clearSelection();
 
     await exploreHex({

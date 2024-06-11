@@ -3,24 +3,26 @@ import {
   ARMY_ENTITY_TYPE,
   BASE_POPULATION_CAPACITY,
   BUILDING_CAPACITY,
-  BUILDING_COSTS_SCALED,
   BUILDING_POPULATION,
   BUILDING_RESOURCE_PRODUCED,
   DONKEY_ENTITY_TYPE,
   EternumGlobalConfig,
-  QUEST_RESOURCES_SCALED,
   QuestType,
-  RESOURCE_BUILDING_COSTS_SCALED,
-  RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
   WeightConfig,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  TickIds,
   TROOPS_STAMINAS,
 } from "../constants";
 import { EternumProvider } from "../provider";
-import { BuildingType } from "../utils";
+import { BuildingType } from "../constants/structures";
+import { TickIds } from "../types";
+import {
+  RESOURCE_BUILDING_COSTS_SCALED,
+  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  RESOURCE_INPUTS_SCALED,
+  RESOURCE_OUTPUTS_SCALED,
+  QUEST_RESOURCES_SCALED,
+  BUILDING_COSTS_SCALED,
+} from "../utils";
 
 // Function to configure all resources
 export const setProductionConfig = async (account: Account, provider: EternumProvider) => {
@@ -117,27 +119,26 @@ export const setWeightConfig = async (account: Account, provider: EternumProvide
 
 export const setCombatConfig = async (account: Account, provider: EternumProvider) => {
   const {
-    knightHealth: knight_health,
-    paladinHealth: paladin_health,
-    crossbowmanHealth: crossbowman_health,
+    health: health,
     knightStrength: knight_strength,
     paladinStrength: paladin_strength,
     crossbowmanStrength: crossbowman_strength,
     advantagePercent: advantage_percent,
     disadvantagePercent: disadvantage_percent,
+    pillageHealthDivisor: pillage_health_divisor
   } = EternumGlobalConfig.troop;
+  
 
   const tx = await provider.set_troop_config({
     signer: account,
     config_id: 0,
-    knight_health,
-    paladin_health,
-    crossbowman_health,
+    health,
     knight_strength,
     paladin_strength,
     crossbowman_strength,
     advantage_percent,
     disadvantage_percent,
+    pillage_health_divisor: pillage_health_divisor
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);

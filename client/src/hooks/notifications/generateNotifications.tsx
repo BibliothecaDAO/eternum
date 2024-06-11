@@ -1,7 +1,6 @@
 import { divideByPrecision, getEntityIdFromKeys } from "../../ui/utils/utils";
 import {
   type CombatInfo,
-  LABOR_CONFIG,
   type Position,
   type Resource,
   ResourcesIds,
@@ -64,64 +63,6 @@ export const generateTradeNotifications = (entityUpdates: UpdatedEntity[], compo
     }
     return acc;
   }, []);
-};
-
-/**
- * Generate labor notifications from realm resources
- * @param resourcesPerRealm list of objects with realmEntityId and resourceIds of the realm
- * @param nextBlockTimestamp next block timestamp
- * @param Labor Component
- * @returns
- */
-export const generateLaborNotifications = (
-  resourcesPerRealm: Array<{ realmEntityId: bigint; resourceIds: number[] }>,
-  getRealmLevelBonus: (level: number, levelIndex: LevelIndex) => number,
-  getHyperstructureLevelBonus: (level: number, levelIndex: LevelIndex) => number,
-  nextBlockTimestamp: number,
-  realmLevel: number,
-  hyperstructureLevel: number,
-  components: Components,
-) => {
-  const notifications: NotificationType[] = [];
-  resourcesPerRealm.forEach(({ realmEntityId, resourceIds }) => {
-    resourceIds.forEach((resourceId) => {
-      const isFood = [ResourcesIds.Wheat, ResourcesIds.Fish].includes(resourceId);
-      const labor = getComponentValue(
-        components.Labor,
-        getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
-      ) as { balance: number; last_harvest: number; multiplier: number } | undefined;
-      const realmLevelBonus = getRealmLevelBonus(realmLevel, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
-      const hyperstructureLevelBonus = getHyperstructureLevelBonus(
-        hyperstructureLevel,
-        isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
-      );
-      const harvest =
-        labor && nextBlockTimestamp
-          ? calculateNextHarvest(
-              labor.balance,
-              labor.last_harvest,
-              labor.multiplier,
-              LABOR_CONFIG.base_labor_units,
-              isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
-              nextBlockTimestamp,
-              realmLevelBonus,
-              hyperstructureLevelBonus,
-            )
-          : 0;
-
-      if (harvest > 0) {
-        notifications.push({
-          eventType: EventType.Harvest,
-          keys: [realmEntityId.toString(), resourceId.toString()],
-          data: {
-            harvestAmount: divideByPrecision(harvest),
-          },
-        });
-      }
-    });
-  });
-
-  return notifications;
 };
 
 /**

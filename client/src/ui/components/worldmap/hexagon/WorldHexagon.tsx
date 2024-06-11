@@ -10,7 +10,12 @@ import { Structures } from "../../models/buildings/worldmap/Structures.js";
 import { Armies } from "../armies/Armies.js";
 import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
 
-import { COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
+import { ACCESSIBLE_POSITIONS_COLOUR, COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { useStamina } from "@/hooks/helpers/useStamina";
+import { findAccessiblePositions } from "./utils";
+import { HighlightPositions } from "@/types";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -76,6 +81,7 @@ export const WorldMap = () => {
   const isComponentMounted = useRef(true);
 
   useEffect(() => {
+    if (!exploreMapEvents) return;
     const subscribeToExploreEvents = async () => {
       const observable = await exploreMapEvents();
       const subscription = observable.subscribe((event) => {
@@ -95,7 +101,48 @@ export const WorldMap = () => {
       isComponentMounted.current = false;
       subscriptionRef.current?.unsubscribe(); // Ensure to unsubscribe on component unmount
     };
-  }, [hexData, setExploredHexes]);
+  }, [hexData, setExploredHexes, exploreMapEvents]);
+
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
+
+  const { useStaminaByEntityId } = useStamina();
+  const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
+
+  const uiPath = useMemo(() => {
+    if (!selectedEntity || !hexData || !stamina) return;
+
+    const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
+    const canExplore = (stamina.amount || 0) >= EternumGlobalConfig.stamina.exploreCost;
+
+    // console.log(maxTravelPossible);
+
+    const path = findAccessiblePositions(
+      selectedEntity.position,
+      hexData,
+      exploredHexes,
+      maxTravelPossible,
+      canExplore,
+    );
+
+    if (path.length <= 1) return;
+
+    const uiPath: HighlightPositions = {
+      pos: path.map(({ x, y }) => {
+        const pos = getUIPositionFromColRow(x, y);
+        return [pos.x, -pos.y];
+      }),
+      color: ACCESSIBLE_POSITIONS_COLOUR,
+    };
+
+    return uiPath;
+  }, [selectedEntity, stamina, exploredHexes]);
+
+  useEffect(() => {
+    if (uiPath) {
+      setHighlightPositions(uiPath);
+    }
+  }, [uiPath]);
 
   return (
     <>

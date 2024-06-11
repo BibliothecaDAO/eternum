@@ -963,11 +963,12 @@ export function defineContractComponents(world: World) {
         {
           entity_id: RecsType.BigInt,
           is_public: RecsType.Boolean,
+          member_count: RecsType.Number,
         },
         {
           metadata: {
             name: "Guild",
-            types: ["u128", "bool"],
+            types: ["u128", "bool", "u16"],
             customTypes: [],
           },
         },

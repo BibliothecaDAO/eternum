@@ -1672,8 +1672,8 @@
     {
       "kind": "DojoContract",
       "address": "0x490d8572029a070064c52d09d2fdb4d5a538bd26f723abfcdeeaff38e47dfeb",
-      "class_hash": "0x526cdc9a1fe1e6af2d74a97872d7c798d0d9e823fc6fc257ceacea401301bc7",
-      "original_class_hash": "0x526cdc9a1fe1e6af2d74a97872d7c798d0d9e823fc6fc257ceacea401301bc7",
+      "class_hash": "0x1759f8e15f892e20428ac3dffaf764b7bc25725bce28a02e0be999a31dad360",
+      "original_class_hash": "0x1759f8e15f892e20428ac3dffaf764b7bc25725bce28a02e0be999a31dad360",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -2117,8 +2117,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6e5d27950b7aa8eece851aecb7864b8efb9c1c90e7548b8fdd949b9963c6123",
-      "class_hash": "0x6f116ec9034d74e2ce2164a1624830efa0ea5f1de4081ffaccdcd2d2612779",
-      "original_class_hash": "0x6f116ec9034d74e2ce2164a1624830efa0ea5f1de4081ffaccdcd2d2612779",
+      "class_hash": "0x312a303e4598ffef23fd785e8939c8bdfb3b47bbec66e433cf8d3b9907d36bf",
+      "original_class_hash": "0x312a303e4598ffef23fd785e8939c8bdfb3b47bbec66e433cf8d3b9907d36bf",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -2583,16 +2583,8 @@
               "type": "core::integer::u128"
             },
             {
-              "name": "knight_health",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "paladin_health",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "crossbowman_health",
-              "type": "core::integer::u8"
+              "name": "health",
+              "type": "core::integer::u32"
             },
             {
               "name": "knight_strength",
@@ -2613,6 +2605,10 @@
             {
               "name": "disadvantage_percent",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "pillage_health_divisor",
+              "type": "core::integer::u8"
             }
           ]
         },
@@ -3187,8 +3183,8 @@
     {
       "kind": "DojoContract",
       "address": "0x2d4304c3ac359b8852a70c4f029f94cd145da88ed2e4fcfb769708a1dd80ef",
-      "class_hash": "0x193fbc87eba977e6e799dede12f85ee37c30e2e33977e07725af5da12f36bcb",
-      "original_class_hash": "0x193fbc87eba977e6e799dede12f85ee37c30e2e33977e07725af5da12f36bcb",
+      "class_hash": "0x74f2d632afdec1a4d5227b2c09a294fa53b516fd35ede842d7047a64d7161d",
+      "original_class_hash": "0x74f2d632afdec1a4d5227b2c09a294fa53b516fd35ede842d7047a64d7161d",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -3302,6 +3298,22 @@
             },
             {
               "type": "function",
+              "name": "whitelist_player",
+              "inputs": [
+                {
+                  "name": "player_address_to_whitelist",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "guild_entity_id",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
               "name": "leave_guild",
               "inputs": [],
               "outputs": [],
@@ -3309,10 +3321,38 @@
             },
             {
               "type": "function",
-              "name": "whitelist_player",
+              "name": "transfer_guild_ownership",
               "inputs": [
                 {
-                  "name": "player_address",
+                  "name": "guild_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "to_player_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "remove_guild_member",
+              "inputs": [
+                {
+                  "name": "player_address_to_remove",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "remove_player_from_whitelist",
+              "inputs": [
+                {
+                  "name": "player_address_to_remove",
                   "type": "core::starknet::contract_address::ContractAddress"
                 },
                 {
@@ -3765,8 +3805,8 @@
     {
       "kind": "DojoContract",
       "address": "0xe41bb92d0734340f4d6ad423426f5bf2f611fa13b3c94d325c5f3b64c7ddea",
-      "class_hash": "0x60b64efaa2eb9d2bc3434db695750225552447136aa088d6327adef744f7a9e",
-      "original_class_hash": "0x60b64efaa2eb9d2bc3434db695750225552447136aa088d6327adef744f7a9e",
+      "class_hash": "0x59b3df157c7dd3683a0010f209642d8c14ab5e67abc8b9cab766409fb2d930c",
+      "original_class_hash": "0x59b3df157c7dd3683a0010f209642d8c14ab5e67abc8b9cab766409fb2d930c",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -4235,8 +4275,8 @@
     {
       "kind": "DojoContract",
       "address": "0x78954c3172d81b184a548c25b9ac6831881f2a1bf0eda25a7576529fe70811e",
-      "class_hash": "0x224dceac90c1d064eca8346eca73d1cb832d1aca3045e7536e7da7de8ad12d8",
-      "original_class_hash": "0x224dceac90c1d064eca8346eca73d1cb832d1aca3045e7536e7da7de8ad12d8",
+      "class_hash": "0x3ed3b4775073599fe2d95a6716dadb894e1ebea83e8cd2a6ed1ab423f61f6f",
+      "original_class_hash": "0x3ed3b4775073599fe2d95a6716dadb894e1ebea83e8cd2a6ed1ab423f61f6f",
       "base_class_hash": "0x679177a2cb757694ac4f326d01052ff0963eac0bc2a17116a2b87badcdf6f76",
       "abi": [
         {
@@ -12992,18 +13032,8 @@
           "key": true
         },
         {
-          "name": "knight_health",
-          "type": "u8",
-          "key": false
-        },
-        {
-          "name": "paladin_health",
-          "type": "u8",
-          "key": false
-        },
-        {
-          "name": "crossbowman_health",
-          "type": "u8",
+          "name": "health",
+          "type": "u32",
           "key": false
         },
         {
@@ -13030,10 +13060,15 @@
           "name": "disadvantage_percent",
           "type": "u16",
           "key": false
+        },
+        {
+          "name": "pillage_health_divisor",
+          "type": "u8",
+          "key": false
         }
       ],
-      "class_hash": "0x472dca664def31070a4737a7953d27991b6019ffe19504c630f9683a108687c",
-      "original_class_hash": "0x472dca664def31070a4737a7953d27991b6019ffe19504c630f9683a108687c",
+      "class_hash": "0x62b241de7aa48513181040967415addcbee750f0d4fcb6848ea52c5339d60c0",
+      "original_class_hash": "0x62b241de7aa48513181040967415addcbee750f0d4fcb6848ea52c5339d60c0",
       "abi": [
         {
           "type": "impl",
@@ -13217,16 +13252,8 @@
               "type": "core::integer::u128"
             },
             {
-              "name": "knight_health",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "paladin_health",
-              "type": "core::integer::u8"
-            },
-            {
-              "name": "crossbowman_health",
-              "type": "core::integer::u8"
+              "name": "health",
+              "type": "core::integer::u32"
             },
             {
               "name": "knight_strength",
@@ -13247,6 +13274,10 @@
             {
               "name": "disadvantage_percent",
               "type": "core::integer::u16"
+            },
+            {
+              "name": "pillage_health_divisor",
+              "type": "core::integer::u8"
             }
           ]
         },
@@ -13778,10 +13809,15 @@
           "name": "is_public",
           "type": "bool",
           "key": false
+        },
+        {
+          "name": "member_count",
+          "type": "u16",
+          "key": false
         }
       ],
-      "class_hash": "0x7d68656c40b761e1de534f29a47ed1a6a503214952543e75dcef094c324308a",
-      "original_class_hash": "0x7d68656c40b761e1de534f29a47ed1a6a503214952543e75dcef094c324308a",
+      "class_hash": "0x23c1242abea31ad62d1bc86e252c6a3bdbb01cac41603f67bd2f97856440a43",
+      "original_class_hash": "0x23c1242abea31ad62d1bc86e252c6a3bdbb01cac41603f67bd2f97856440a43",
       "abi": [
         {
           "type": "impl",
@@ -13981,6 +14017,10 @@
             {
               "name": "is_public",
               "type": "core::bool"
+            },
+            {
+              "name": "member_count",
+              "type": "core::integer::u16"
             }
           ]
         },
