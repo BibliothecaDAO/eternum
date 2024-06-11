@@ -1,7 +1,8 @@
 use eternum::models::buildings::{BuildingCategory};
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Population {
     #[key]
     entity_id: u128,

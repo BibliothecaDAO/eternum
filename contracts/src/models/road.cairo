@@ -6,7 +6,8 @@ use eternum::models::config::{RoadConfig};
 use eternum::models::position::Coord;
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Road {
     #[key]
     start_coord_x: u128,

@@ -5,7 +5,8 @@ use eternum::{
     constants::{ResourceTypes, TravelTypes, TravelTypesImpl, WORLD_CONFIG_ID}
 };
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Stamina {
     #[key]
     entity_id: u128,

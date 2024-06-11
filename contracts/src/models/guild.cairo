@@ -1,6 +1,7 @@
 use starknet::ContractAddress;
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Guild {
     #[key]
     entity_id: u128,
@@ -8,14 +9,16 @@ struct Guild {
     member_count: u16
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct GuildMember {
     #[key]
     address: ContractAddress,
     guild_entity_id: u128
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct GuildWhitelist {
     #[key]
     address: ContractAddress,

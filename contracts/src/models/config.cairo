@@ -13,7 +13,8 @@ use starknet::ContractAddress;
 // GLOBAL CONFIGS
 //
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct WorldConfig {
     #[key]
     config_id: u128,
@@ -21,7 +22,8 @@ struct WorldConfig {
     realm_l2_contract: ContractAddress,
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct RealmFreeMintConfig {
     #[key]
     config_id: u128,
@@ -30,7 +32,8 @@ struct RealmFreeMintConfig {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct RoadConfig {
     #[key]
     config_id: u128,
@@ -39,7 +42,8 @@ struct RoadConfig {
     speed_up_by: u64
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct HyperstructureResourceConfig {
     #[key]
     config_id: u128,
@@ -53,7 +57,8 @@ struct HyperstructureResourceConfig {
 // that it's a config for one specific entity type?
 // and not the same as world config 
 // e.g. EntityTypeCapacityConfig?
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct CapacityConfig {
     #[key]
     config_id: u128,
@@ -71,7 +76,8 @@ impl CapacityConfigImpl of CapacityConfigTrait {
 }
 
 // speed
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct SpeedConfig {
     #[key]
     config_id: u128,
@@ -82,7 +88,8 @@ struct SpeedConfig {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct MapExploreConfig {
     #[key]
     config_id: u128,
@@ -93,7 +100,8 @@ struct MapExploreConfig {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct TickConfig {
     #[key]
     config_id: u128,
@@ -102,7 +110,8 @@ struct TickConfig {
     tick_interval_in_seconds: u64
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct StaminaConfig {
     #[key]
     config_id: u128,
@@ -150,7 +159,8 @@ impl TickImpl of TickTrait {
 
 
 // weight
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct WeightConfig {
     #[key]
     config_id: u128,
@@ -169,7 +179,8 @@ impl WeightConfigImpl of WeightConfigTrait {
     }
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct LevelingConfig {
     #[key]
     config_id: u128,
@@ -191,7 +202,8 @@ struct LevelingConfig {
     resource_3_cost_count: u32
 }
 
-#[derive(Model, Clone, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct ProductionConfig {
     #[key]
     resource_type: u8,
@@ -204,7 +216,8 @@ struct ProductionConfig {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct BankConfig {
     #[key]
     config_id: u128,
@@ -212,7 +225,8 @@ struct BankConfig {
     lp_fee_scaled: u128,
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct BuildingConfig {
     #[key]
     config_id: u128,
@@ -241,7 +255,8 @@ impl BuildingConfigImpl of BuildingConfigTrait {
     }
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct TroopConfig {
     #[key]
     config_id: u128,
@@ -270,7 +285,8 @@ impl TroopConfigImpl of TroopConfigTrait {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct BattleConfig {
     #[key]
     entity_id: u128,
@@ -285,7 +301,8 @@ impl BattleConfigImpl of BattleConfigTrait {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct BuildingCategoryPopConfig {
     #[key]
     config_id: u128,
@@ -295,7 +312,8 @@ struct BuildingCategoryPopConfig {
     capacity: u32, // increase capacity by this amount
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct PopulationConfig {
     #[key]
     config_id: u128,
@@ -318,7 +336,8 @@ impl HyperstructureConfigImpl of HyperstructureConfigTrait {
     }
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct HasClaimedStartingResources {
     #[key]
     entity_id: u128,

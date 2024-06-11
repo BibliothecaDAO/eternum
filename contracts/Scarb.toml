@@ -7,14 +7,14 @@ version = "0.5.0"
 sierra-replace-ids = true
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v0.6.1-alpha.4" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v0.7.0-alpha.5" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "cairo-v2.5.4" }
 alexandria_data_structures = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "cairo-v2.5.4" }
 cubit = { git = "https://github.com/ponderingdemocritus/cubit" }
 
 [tool.dojo.env]
 ## dev
-world_address = "0x177a3f3d912cf4b55f0f74eccf3b7def7c6144efeba033e9f21d9cdb0230c64"
+world_address = "0x455860f93fad20b93ab401eaf9bb63bf86a8222ffe4b0a4216d4694603f4723"
 account_address = "0xb3ff441a68610b30fd5e2abbf3a1548eb6ba6f3559f2862bf2dc757e5828ca"
 private_key = "0x2bbf4f9fd0bbb2e60b0316c1fe0b76cf7a4d0198bd493ced9b8df2a3a24d68a"
 

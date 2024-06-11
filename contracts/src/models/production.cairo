@@ -8,7 +8,8 @@ use eternum::models::config::{TickConfig, TickImpl, TickTrait};
 use eternum::models::resources::{Resource, ResourceImpl};
 use starknet::get_block_timestamp;
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Production {
     #[key]
     entity_id: u128,
@@ -155,7 +156,8 @@ impl ProductionRateImpl of ProductionRateTrait {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct ProductionInput {
     #[key]
     output_resource_type: u8,
@@ -206,7 +208,8 @@ impl ProductionInputImpl of ProductionInputTrait {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct ProductionOutput {
     #[key]
     input_resource_type: u8,

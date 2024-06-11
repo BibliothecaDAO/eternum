@@ -4,7 +4,8 @@ use eternum::models::config::{SpeedConfig};
 use eternum::models::position::Coord;
 
 // speed seconds per km
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Movable {
     #[key]
     entity_id: u128,
@@ -35,7 +36,8 @@ impl MovableImpl of MovableTrait {
 // DISCUSS: separated from the Movable component because
 // we want to attach an ArrivalTime to the trading order
 // without having to attach a Movable component to the order
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct ArrivalTime {
     #[key]
     entity_id: u128,

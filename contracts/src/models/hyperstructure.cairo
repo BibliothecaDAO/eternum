@@ -1,6 +1,7 @@
 use starknet::ContractAddress;
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Progress {
     #[key]
     hyperstructure_entity_id: u128,
@@ -9,7 +10,8 @@ struct Progress {
     amount: u128,
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Contribution {
     #[key]
     hyperstructure_entity_id: u128,
