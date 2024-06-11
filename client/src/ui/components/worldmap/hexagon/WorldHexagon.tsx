@@ -57,7 +57,6 @@ export const WorldMap = () => {
       updates: {
         eventUpdates: { createExploreMapEvents: exploreMapEvents },
       },
-      components: { Tile, Structure, Position },
     },
   } = useDojo();
 
@@ -84,6 +83,7 @@ export const WorldMap = () => {
   const isComponentMounted = useRef(true);
 
   useEffect(() => {
+    if (!exploreMapEvents) return;
     const subscribeToExploreEvents = async () => {
       const observable = await exploreMapEvents();
       const subscription = observable.subscribe((event) => {
@@ -105,7 +105,7 @@ export const WorldMap = () => {
       isComponentMounted.current = false;
       subscriptionRef.current?.unsubscribe(); // Ensure to unsubscribe on component unmount
     };
-  }, [hexData, setExploredHexes]);
+  }, [hexData, setExploredHexes, exploreMapEvents]);
 
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
@@ -113,7 +113,7 @@ export const WorldMap = () => {
   const { useStaminaByEntityId } = useStamina();
   const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
 
-  useMemo(() => {
+  const uiPath = useMemo(() => {
     if (!selectedEntity || !hexData || !stamina) return;
 
     const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
@@ -139,8 +139,14 @@ export const WorldMap = () => {
       color: ACCESSIBLE_POSITIONS_COLOUR,
     };
 
-    setHighlightPositions(uiPath);
+    return uiPath;
   }, [selectedEntity, stamina, exploredHexes]);
+
+  useEffect(() => {
+    if (uiPath) {
+      setHighlightPositions(uiPath);
+    }
+  }, [uiPath]);
 
   return (
     <>
