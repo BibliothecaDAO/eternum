@@ -1,5 +1,5 @@
 import { Account, AccountInterface, CairoOption, num } from "starknet";
-import { BuildingType } from "../utils";
+import { BuildingType } from "../constants/structures";
 import { ResourcesIds } from "../constants";
 
 interface SystemSigner {

@@ -5,7 +5,7 @@ import { divideByPrecision, getEntityIdFromKeys, getPosition, numberToHex } from
 import { getRealmNameById } from "@/ui/utils/realms";
 import { hexToAscii } from "@dojoengine/utils";
 import { useResources } from "./useResources";
-import { ENTITY_TYPE, EntityInterface } from "@bibliothecadao/eternum";
+import { EntityType, EntityInterface } from "@bibliothecadao/eternum";
 
 export const useEntities = () => {
   const {
@@ -75,7 +75,7 @@ export const useEntities = () => {
       isMine: BigInt(owner?.address || "") === BigInt(account.address),
       isRoundTrip: movable?.round_trip || false,
       resources,
-      entityType: army ? ENTITY_TYPE.TROOP : ENTITY_TYPE.DONKEY,
+      entityType: army ? EntityType.TROOP : EntityType.DONKEY,
     };
   };
 
