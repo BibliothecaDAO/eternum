@@ -10,6 +10,7 @@ import { Subscription } from "rxjs";
 import { useExploredHexesStore } from "@/ui/components/worldmap/hexagon/WorldHexagon";
 import { FELT_CENTER } from "@/ui/config";
 import { soundSelector, useUiSounds } from "../useUISound";
+import { uuid } from "@latticexyz/utils";
 
 interface ExploreHexProps {
   explorerId: bigint | undefined;
@@ -20,7 +21,7 @@ interface ExploreHexProps {
 export function useExplore() {
   const {
     setup: {
-      components: { Tile },
+      components: { Tile, Position },
       updates: {
         eventUpdates: { createExploreEntityMapEvents: exploreEntityMapEvents },
       },
@@ -114,6 +115,22 @@ export function useExplore() {
     }
   };
 
+  const optimisticExplore = (entityId: bigint, col: number, row: number) => {
+    let overrideId = uuid();
+
+    const entity = getEntityIdFromKeys([entityId]);
+
+    Position.addOverride(overrideId, {
+      entity,
+      value: {
+        entity_id: entityId,
+        x: col,
+        y: row,
+      },
+    });
+    return overrideId;
+  };
+
   const exploreHex = async ({ explorerId, direction, path }: ExploreHexProps) => {
     if (!explorerId || direction === undefined) return;
     const newPath = { id: explorerId, path, enemy: false };
@@ -121,17 +138,23 @@ export function useExplore() {
     setAnimationPaths([...prevPaths, newPath]);
     setExploredHexes(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
 
-    try {
-      await explore({
-        unit_id: explorerId,
-        direction,
-        signer: account,
+    const overrideId = optimisticExplore(explorerId, path[1].x, path[1].y);
+
+    await explore({
+      unit_id: explorerId,
+      direction,
+      signer: account,
+    })
+      .finally(() => {
+        setTimeout(() => {
+          Position.removeOverride(overrideId);
+        }, 2000);
+      })
+      .catch((e) => {
+        setAnimationPaths([...prevPaths, { id: explorerId, path: path.reverse(), enemy: false }]);
+        Position.removeOverride(overrideId);
+        removeHex(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
       });
-    } catch (e) {
-      // revert animation so that it goes back to the original position
-      setAnimationPaths([...prevPaths, { id: explorerId, path: path.reverse(), enemy: false }]);
-      // removeHex(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
-    }
   };
   return { isExplored, exploredColsRows, useFoundResources, getExplorationInput, exploreHex };
 }
