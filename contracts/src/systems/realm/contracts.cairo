@@ -33,7 +33,7 @@ mod realm_systems {
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::QuantityTracker;
-    use eternum::models::realm::Realm;
+    use eternum::models::realm::{Realm, RealmTrait};
     use eternum::models::resources::{DetachedResource, Resource, ResourceImpl, ResourceTrait};
     use eternum::models::structure::{
         Structure, StructureCategory, StructureCount, StructureCountTrait
@@ -46,9 +46,9 @@ mod realm_systems {
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
-        // TODO: mint_starting_resources
-        // exploit as any entity can do this, not just Realms
         fn mint_starting_resources(world: IWorldDispatcher, config_id: u32, entity_id: u128) -> ID {
+            get!(world, (entity_id), Realm).assert_is_set();
+
             let mut claimed_resources = get!(
                 world, (entity_id, config_id), HasClaimedStartingResources
             );

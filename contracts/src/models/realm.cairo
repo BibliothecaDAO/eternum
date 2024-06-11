@@ -25,6 +25,7 @@ struct Realm {
 
 trait RealmTrait {
     fn has_resource(self: Realm, resource_type: u8) -> bool;
+    fn assert_is_set(self: Realm);
 }
 
 impl RealmImpl of RealmTrait {
@@ -43,5 +44,9 @@ impl RealmImpl of RealmTrait {
             };
         };
         has_resource
+    }
+
+    fn assert_is_set(self: Realm) {
+        assert(self.realm_id != 0, 'Entity is not a realm');
     }
 }
