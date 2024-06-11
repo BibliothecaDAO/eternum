@@ -390,6 +390,7 @@ export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: strin
   const [_location, setLocation] = useLocation();
   const { playerRealms } = useEntities();
   const { setIsOpen } = useTour();
+  const [isLoading, setIsLoading] = useState(false);
 
   const { quests } = useQuests({ entityId: playerRealms()[0].entity_id || BigInt("0") });
 
@@ -397,13 +398,16 @@ export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: strin
     <Button
       size="md"
       variant="primary"
+      isLoading={isLoading}
       onClick={async () => {
         if (showWalkthrough) {
+          setIsLoading(true);
           await mint_starting_resources({
             signer: account,
             config_id: QuestType.Food,
             realm_entity_id: playerRealms()[0].entity_id || "0",
           });
+          setIsLoading(false);
         }
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
