@@ -1,4 +1,4 @@
-import { ClickedHex, HexPosition, Hexagon, HighlightPositions, Position2D } from "../../types";
+import { ClickedHex, HexPosition, Hexagon, HighlightPositions, TravelPath } from "../../types";
 import { Position, StructureType } from "@bibliothecadao/eternum";
 import { Has, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
@@ -30,10 +30,8 @@ export interface MapStore {
   setAnimationPaths: (path: { id: bigint; path: Position[]; enemy: boolean }[]) => void;
   armyMode: ArmyMode | null;
   setArmyMode: (mode: ArmyMode | null) => void;
-  travelPath: Position[];
-  setTravelPath: (paths: Position[]) => void;
-  travelPaths: Map<string, Position[]>;
-  setTravelPaths: (paths: Map<string, Position[]>) => void;
+  travelPaths: Map<string, TravelPath>;
+  setTravelPaths: (paths: Map<string, TravelPath>) => void;
   highlightPositions: HighlightPositions;
   setHighlightPositions: (positions: HighlightPositions) => void;
   hoveredHex: HexPosition | undefined;
@@ -66,10 +64,8 @@ export const createMapStoreSlice = (set: any) => ({
   setAnimationPaths: (animationPaths: { id: bigint; path: Position[]; enemy: boolean }[]) => set({ animationPaths }),
   armyMode: null,
   setArmyMode: (armyMode: ArmyMode | null) => set({ armyMode }),
-  travelPath: [],
-  setTravelPath: (paths: Position[]) => set({ travelPath: paths }),
-  travelPaths: new Map<string, Position[]>(),
-  setTravelPaths: (paths: Map<string, Position[]>) => set({ travelPaths: paths }),
+  travelPaths: new Map<string, TravelPath>(),
+  setTravelPaths: (paths: Map<string, TravelPath>) => set({ travelPaths: paths }),
   highlightPositions: { pos: [], color: 0 },
   setHighlightPositions: (positions: HighlightPositions) => {
     set({ highlightPositions: positions });

@@ -153,7 +153,7 @@ export const findAccessiblePositionsAndPaths = (
   ];
   const visited = new Set<string>();
   const posKey = (pos: Position) => `${pos.x},${pos.y}`;
-  const highlightPaths = new Map<string, Position[]>(); // Store paths for highlighted positions
+  const travelPaths = new Map<string, { path: Position[]; isExplored: boolean }>(); // Store paths for highlighted positions
 
   while (queue.length > 0) {
     const { position: current, distance, path } = queue.shift()!;
@@ -177,7 +177,7 @@ export const findAccessiblePositionsAndPaths = (
 
       if ((isExplored && nextDistance <= maxHex) || (!isExplored && canExplore && nextDistance === 1)) {
         queue.push({ position: { x, y }, distance: nextDistance, path: nextPath });
-        highlightPaths.set(neighborKey, nextPath); // Store path along with position
+        travelPaths.set(neighborKey, { path: nextPath, isExplored: isExplored || false }); // Store path along with position
       }
     }
   }
@@ -186,5 +186,5 @@ export const findAccessiblePositionsAndPaths = (
   const executionTime = endTime - startTime;
   console.log(`Execution Time: ${executionTime.toFixed(2)} ms`);
 
-  return highlightPaths;
+  return travelPaths;
 };

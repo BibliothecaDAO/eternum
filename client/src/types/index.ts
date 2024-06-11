@@ -1,3 +1,5 @@
+import { Position } from "@bibliothecadao/eternum";
+
 export interface Hexagon {
   idx: number;
   col: number;
@@ -20,4 +22,9 @@ export interface ClickedHex {
 export interface HighlightPositions {
   pos: Position2D[];
   color: number;
+}
+
+export interface TravelPath {
+  path: Position[];
+  isExplored: boolean;
 }
