@@ -13,37 +13,44 @@ type WarriorModelProps = {
 
 export function WarriorModel({ id, position, rotationY, isRunning, isFriendly, ...props }: WarriorModelProps) {
   const groupRef = useRef<THREE.Group>(null);
-
-  const part1Height = 1; // 1/3 of the total height
-  const part2Height = 1; // 1/3 of the total height
-  const part3Height = 1; // 1/3 of the total height
-
-  const part1TopRadius = 0.5;
-  const part1BottomRadius = 0.6;
-  const part2TopRadius = part1TopRadius;
-  const part2BottomRadius = 0.5;
-  const part3TopRadius = 0.4;
-  const part3BottomRadius = part2TopRadius;
+  const gltf = useGLTF("/models/chess_piece_king.glb");
 
   const model = useMemo(() => {
-    return useGLTF("/models/chess_piece_king.glb").scene.clone();
+    gltf.scene.traverse((child: any) => {
+      if (child.isMesh) {
+        child.material.userData.originalColor = child.material.color.getHex();
+        child.material = child.material.clone(); // Clone the material to avoid mutating the original material
+      }
+    });
+    return gltf.scene.clone();
   }, []);
 
+  const handlePointerEnter = () => {
+    model.traverse((child: any) => {
+      if (child.isMesh) {
+        child.material.color.set("yellow"); // Change color to yellow on hover
+      }
+    });
+  };
+
+  const handlePointerOut = () => {
+    model.traverse((child: any) => {
+      if (child.isMesh) {
+        child.material.color.setHex(child.material.userData.originalColor); // Revert to original color
+      }
+    });
+  };
+
   return (
-    <group {...props} ref={groupRef} scale={12} rotation={[0, rotationY, 0]}>
+    <group
+      {...props}
+      ref={groupRef}
+      scale={12}
+      rotation={[0, rotationY, 0]}
+      onPointerEnter={handlePointerEnter}
+      onPointerOut={handlePointerOut}
+    >
       <primitive castShadow receiveShadow object={model} />
-      {/* <mesh position={[0, part1Height / 2 + 0.3, 0]} castShadow>
-        <cylinderGeometry args={[part1TopRadius, part1BottomRadius, part1Height, 10]} />
-        <meshStandardMaterial color={"#582C4D"} />
-      </mesh>
-      <mesh position={[0, part1Height + part2Height / 2 + 0.3, 0]} castShadow>
-        <cylinderGeometry args={[part2TopRadius, part2BottomRadius, part2Height, 10]} />
-        <meshStandardMaterial color={"#582C4D"} />
-      </mesh>
-      <mesh position={[0, part1Height + part2Height + part3Height / 2 + 0.3, 0]} castShadow>
-        <cylinderGeometry args={[part3TopRadius, part3BottomRadius, part3Height, 10]} />
-        <meshStandardMaterial color={"#582C4D"} />
-      </mesh> */}
     </group>
   );
 }
