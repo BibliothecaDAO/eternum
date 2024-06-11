@@ -1,40 +1,25 @@
-import clsx from "clsx";
-
 import useUIStore from "@/hooks/store/useUIStore";
 import {
-  BASE_POPULATION_CAPACITY,
   BUILDING_CAPACITY,
-  BUILDING_INFORMATION,
   BUILDING_POPULATION,
-  BUILDING_RESOURCE_PRODUCED,
-  BuildingEnumToString,
   BuildingType,
   EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
   RESOURCE_INFORMATION,
   RESOURCE_INPUTS_SCALED,
-  ResourcesIds,
   STRUCTURE_COSTS_SCALED,
   StructureType,
   findResourceById,
 } from "@bibliothecadao/eternum";
-import { Tabs } from "@/ui/elements/tab";
 
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { useGetRealm } from "@/hooks/helpers/useRealm";
-import React, { useMemo, useState } from "react";
-import { unpackResources } from "@/ui/utils/packedData";
+import React from "react";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
-import { usePlayResourceSound } from "@/hooks/useUISound";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
-import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 import { StructureCard } from "./StructureCard";
-
-// TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {

@@ -1,11 +1,11 @@
-import { useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../context/DojoContext";
-import { Has, HasValue, NotValue, getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
-import { divideByPrecision, getEntityIdFromKeys, getPosition, numberToHex } from "@/ui/utils/utils";
 import { getRealmNameById } from "@/ui/utils/realms";
+import { divideByPrecision, getEntityIdFromKeys, getPosition, numberToHex } from "@/ui/utils/utils";
+import { EntityType } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { Has, HasValue, NotValue, getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
 import { hexToAscii } from "@dojoengine/utils";
+import { useDojo } from "../context/DojoContext";
 import { useResources } from "./useResources";
-import { ENTITY_TYPE, EntityInterface } from "@bibliothecadao/eternum";
 
 export const useEntities = () => {
   const {
@@ -75,7 +75,7 @@ export const useEntities = () => {
       isMine: BigInt(owner?.address || "") === BigInt(account.address),
       isRoundTrip: movable?.round_trip || false,
       resources,
-      entityType: army ? ENTITY_TYPE.TROOP : ENTITY_TYPE.DONKEY,
+      entityType: army ? EntityType.TROOP : EntityType.DONKEY,
     };
   };
 

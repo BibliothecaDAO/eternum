@@ -28,3 +28,8 @@ export interface TravelPath {
   path: Position[];
   isExplored: boolean;
 }
+
+export enum CombatTarget {
+  Structure,
+  Army,
+}

@@ -1,25 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
-import Button from "@/ui/elements/Button";
+import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
+import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
+import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
+import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useEntities } from "@/hooks/helpers/useEntities";
+import { useQuests } from "@/hooks/helpers/useQuests";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import { useAddressStore } from "@/hooks/store/useAddressStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
-import { useAddressStore } from "@/hooks/store/useAddressStore";
-import { useDojo } from "@/hooks/context/DojoContext";
-import TextInput from "@/ui/elements/TextInput";
+import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
-import { displayAddress } from "@/ui/utils/utils";
-import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
-import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
-import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
-import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
-import { useRealm } from "@/hooks/helpers/useRealm";
-import { motion } from "framer-motion";
-import { useLocation } from "wouter";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { useTour } from "@reactour/tour";
-import { LucideArrowRight } from "lucide-react";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { useQuests } from "@/hooks/helpers/useQuests";
+import TextInput from "@/ui/elements/TextInput";
+import { displayAddress } from "@/ui/utils/utils";
 import { QuestType } from "@bibliothecadao/eternum";
+import { useTour } from "@reactour/tour";
+import { motion } from "framer-motion";
+import { LucideArrowRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
 
 export const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -30,8 +30,7 @@ export const StepContainer = ({ children }: { children: React.ReactNode }) => {
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center bg-brown/80 p-8 text-gold sharp-corners min-w-[800px] max-w-[800px] rounded border-2 border-gold backdrop-blur-lg border-gradient overflow-hidden  clip-angled relative ">
-        <div className="absolute h-full w-full ornate-borders top-0 left-0 z-0" />
+      <div className="self-center ornate-borders bg-brown/80 p-8 text-gold sharp-corners min-w-[800px] max-w-[800px] rounded border-2 border-gold backdrop-blur-lg border-gradient overflow-hidden  clip-angled relative ">
         {children}
       </div>
     </motion.div>
@@ -167,7 +166,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   return (
     <StepContainer>
-      <div className="flex flex-col items-center p-3 ">
+      <div className="flex flex-col items-center p-3 relative z-10">
         <h3>Select Account</h3>
         <div className="flex space-x-6 pt-4 w-full justify-center">
           <div>
@@ -177,7 +176,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
               ) : addressName ? (
                 <div className="p-2">{addressName}</div>
               ) : (
-                <div className="flex w-full h-full">
+                <div className="flex w-full h-full z-1000">
                   <TextInput
                     placeholder="Your Name... (Max 31 characters)"
                     maxLength={31}
@@ -390,6 +389,7 @@ export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: strin
   const [_location, setLocation] = useLocation();
   const { playerRealms } = useEntities();
   const { setIsOpen } = useTour();
+  const [isLoading, setIsLoading] = useState(false);
 
   const { quests } = useQuests({ entityId: playerRealms()[0].entity_id || BigInt("0") });
 
@@ -397,13 +397,16 @@ export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: strin
     <Button
       size="md"
       variant="primary"
+      isLoading={isLoading}
       onClick={async () => {
         if (showWalkthrough) {
+          setIsLoading(true);
           await mint_starting_resources({
             signer: account,
             config_id: QuestType.Food,
             realm_entity_id: playerRealms()[0].entity_id || "0",
           });
+          setIsLoading(false);
         }
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {

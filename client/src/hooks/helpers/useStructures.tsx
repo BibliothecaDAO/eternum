@@ -1,24 +1,32 @@
-import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../context/DojoContext";
-import { Position, StructureType } from "@bibliothecadao/eternum";
-import { useEntityQuery } from "@dojoengine/react";
-import { useMemo } from "react";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm, getRealmNameById } from "@/ui/utils/realms";
 import { calculateDistance } from "@/ui/utils/utils";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, Position, StructureType } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useMemo } from "react";
+import { useDojo } from "../context/DojoContext";
+import { ArmyInfo, getArmyByEntityId } from "./useArmies";
 import { useEntities } from "./useEntities";
 
 export type Structure = ClientComponents["Realm"]["schema"] & { resources: number[] } & { self: boolean } & {
   name: string;
 };
 
+export type FullStructure = ClientComponents["Structure"]["schema"] & {
+  entityOwner: ClientComponents["EntityOwner"]["schema"];
+  owner: ClientComponents["Owner"]["schema"];
+  protector: ArmyInfo | undefined;
+  name: string;
+  isMine: boolean;
+};
+
 export const useStructures = () => {
   const {
     setup: {
-      components: { Position, Bank, Realm },
+      components: { Position, Bank, Realm, Structure, EntityOwner, Owner, Protector, Army },
       account: { account },
       systemCalls: { create_hyperstructure },
     },
@@ -38,9 +46,44 @@ export const useStructures = () => {
     await create_hyperstructure({ signer: account, coords: { x: col, y: row }, creator_entity_id });
   };
 
+  const getStructure = (entityId: bigint): FullStructure | undefined => {
+    const structure = getComponentValue(
+      Structure,
+      getEntityIdFromKeys([entityId]),
+    ) as unknown as ClientComponents["Structure"]["schema"];
+    if (!structure) {
+      return;
+    }
+    const entityOwner = getComponentValue(
+      EntityOwner,
+      getEntityIdFromKeys([entityId]),
+    ) as unknown as ClientComponents["EntityOwner"]["schema"];
+    const owner = getComponentValue(
+      Owner,
+      getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id) || 0n]),
+    ) as unknown as ClientComponents["Owner"]["schema"];
+    const name = getRealmNameById(entityId);
+
+    let protector: ClientComponents["Protector"]["schema"] | undefined | ArmyInfo = getComponentValue(
+      Protector,
+      getEntityIdFromKeys([entityId]),
+    ) as unknown as ClientComponents["Protector"]["schema"];
+    protector = protector ? getArmyByEntityId(BigInt(protector.army_id)) : undefined;
+
+    return {
+      ...structure,
+      entityOwner,
+      owner,
+      name,
+      protector: protector as ArmyInfo | undefined,
+      isMine: BigInt(owner!.address) === BigInt(account.address),
+    };
+  };
+
   return {
     hasStructures,
     createHyperstructure,
+    getStructure,
   };
 };
 

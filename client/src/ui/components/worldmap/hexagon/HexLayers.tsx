@@ -1,50 +1,42 @@
-import { Bvh } from "@react-three/drei";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { Color, InstancedMesh, Matrix4 } from "three";
 import { EternumGlobalConfig, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { createHexagonGeometry } from "./HexagonGeometry";
-import useUIStore from "../../../../hooks/store/useUIStore";
-import { findDirection, getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
+import { Bvh } from "@react-three/drei";
 import { throttle } from "lodash";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { DesertBiome } from "../../models/biomes/DesertBiome";
-import { SnowBiome } from "../../models/biomes/SnowBiome";
-import { GrasslandBiome } from "../../models/biomes/GrasslandBiome";
-import { TaigaBiome } from "../../models/biomes/TaigaBiome";
-import { OceanBiome } from "../../models/biomes/OceanBiome";
-import { DeepOceanBiome } from "../../models/biomes/DeepOceanBiome";
-import { TemperateDesertBiome } from "../../models/biomes/TemperateDesertBiome";
+import { Color, InstancedMesh, Matrix4 } from "three";
+import useUIStore from "../../../../hooks/store/useUIStore";
+import { Hexagon, HighlightPositions } from "../../../../types/index";
+import { findDirection, getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
 import { BeachBiome } from "../../models/biomes/BeachBiome";
+import { DeciduousForestBiome } from "../../models/biomes/DeciduousForestBiome";
+import { DeepOceanBiome } from "../../models/biomes/DeepOceanBiome";
+import { DesertBiome } from "../../models/biomes/DesertBiome";
+import { GrasslandBiome } from "../../models/biomes/GrasslandBiome";
+import { OceanBiome } from "../../models/biomes/OceanBiome";
 import { ScorchedBiome } from "../../models/biomes/ScorchedBiome";
 import { ShrublandBiome } from "../../models/biomes/ShrublandBiome";
+import { SnowBiome } from "../../models/biomes/SnowBiome";
 import { SubtropicalDesertBiome } from "../../models/biomes/SubtropicalDesertBiome";
-import { DeciduousForestBiome } from "../../models/biomes/DeciduousForestBiome";
+import { TaigaBiome } from "../../models/biomes/TaigaBiome";
+import { TemperateDesertBiome } from "../../models/biomes/TemperateDesertBiome";
+import { TemperateRainforestBiome } from "../../models/biomes/TemperateRainforestBiome";
 import { TropicalRainforestBiome } from "../../models/biomes/TropicalRainforestBiome";
 import { TropicalSeasonalForestBiome } from "../../models/biomes/TropicalSeasonalForestBiome";
 import { TundraBiome } from "../../models/biomes/TundraBiome.js";
-import { TemperateRainforestBiome } from "../../models/biomes/TemperateRainforestBiome";
-import { Hexagon, HighlightPositions } from "../../../../types/index";
-
-import { findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
+import { createHexagonGeometry } from "./HexagonGeometry";
+import { useLocation } from "wouter";
 import { useExplore } from "../../../../hooks/helpers/useExplore";
 import { useTravel } from "../../../../hooks/helpers/useTravel";
 import { useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
-import { useLocation } from "wouter";
 import { HexGrid } from "../../models/biomes/HexGrid";
-import { ArmyMode } from "@/hooks/store/_mapStore";
-import { useStamina } from "@/hooks/helpers/useStamina";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import {
-  ACCESSIBLE_POSITIONS_COLOUR,
-  CLICKED_HEX_COLOR,
-  DEPTH,
-  EXPLORE_COLOUR,
-  FELT_CENTER,
-  HEX_RADIUS,
-  TRAVEL_COLOUR,
-} from "@/ui/config";
-import { useExploredHexesStore } from "./WorldHexagon";
+import { getPositionsAtIndex } from "./utils";
+import { DEPTH, FELT_CENTER, HEX_RADIUS } from "@/ui/config";
+
+export const EXPLORE_COLOUR = 0x2563eb;
+export const TRAVEL_COLOUR = 0xffce31;
+const CLICKED_HEX_COLOR = 0xff5733;
+const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
 
 type HexagonGridProps = {
   startRow: number;
@@ -402,7 +394,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       entityId: id,
       biome,
     });
-    playExplore();
+
     clearSelection();
 
     await exploreHex({

@@ -1,5 +1,5 @@
 import { Account, AccountInterface, CairoOption, num } from "starknet";
-import { BuildingType } from "../utils";
+import { BuildingType } from "../constants/structures";
 import { ResourcesIds } from "../constants";
 
 interface SystemSigner {
@@ -363,14 +363,13 @@ export interface SetBankConfigProps extends SystemSigner {
 
 export interface SetTroopConfigProps extends SystemSigner {
   config_id: num.BigNumberish;
-  knight_health: num.BigNumberish;
-  paladin_health: num.BigNumberish;
-  crossbowman_health: num.BigNumberish;
+  health: num.BigNumberish;
   knight_strength: num.BigNumberish;
   paladin_strength: num.BigNumberish;
   crossbowman_strength: num.BigNumberish;
   advantage_percent: num.BigNumberish;
   disadvantage_percent: num.BigNumberish;
+  pillage_health_divisor: num.BigNumberish
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {

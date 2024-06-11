@@ -1,22 +1,19 @@
-import { OrderIcon } from "../../../elements/OrderIcon";
-import { ResourceIcon } from "../../../elements/ResourceIcon";
-import { findResourceById, orderNameDict } from "@bibliothecadao/eternum";
-import clsx from "clsx";
-import { RealmExtended, useRealm } from "../../../../hooks/helpers/useRealm";
-import { InventoryResources } from "../../resources/InventoryResources";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { Headline } from "@/ui/elements/Headline";
+import { findResourceById, orderNameDict } from "@bibliothecadao/eternum";
+import clsx from "clsx";
+import { RealmExtended } from "../../../../hooks/helpers/useRealm";
+import { OrderIcon } from "../../../elements/OrderIcon";
+import { ResourceIcon } from "../../../elements/ResourceIcon";
+import { InventoryResources } from "../../resources/InventoryResources";
 
 type RealmListItemProps = {
   realm: Structure | RealmExtended;
   onClick?: () => void;
+  extraButton?: JSX.Element;
 };
 
-export const RealmListItem = ({ realm, onClick }: RealmListItemProps) => {
-  const { getRealmAddressName } = useRealm();
-
-  const addressName = getRealmAddressName(BigInt(realm.entity_id));
-
+export const RealmListItem = ({ realm, onClick, extraButton }: RealmListItemProps) => {
   return (
     <div className="flex flex-col clip-angled-sm bg-gold/20 p-3  ">
       <div className="flex items-center">
@@ -46,6 +43,7 @@ export const RealmListItem = ({ realm, onClick }: RealmListItemProps) => {
         </div>
       </div>
       <InventoryResources entityId={BigInt(realm.entity_id)} title="Balance" />
+      {extraButton || ""}
     </div>
   );
 };

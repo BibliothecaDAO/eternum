@@ -14,7 +14,7 @@ export const LoadingContainer = () => {
   return (
     <div
       className={clsx(
-        "absolute bottom-0 left-0 z-[49] w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-map duration-300 transition-opacity bg-brown",
+        "absolute bottom-0 left-0 z-[49] w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-old-map duration-300 transition-opacity bg-brown",
         isLoading ? "opacity-100" : "opacity-0",
       )}
     >

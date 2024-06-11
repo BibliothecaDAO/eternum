@@ -1,23 +1,21 @@
 import { useEffect, useMemo, useRef } from "react";
 // @ts-ignore
 import { Flags } from "@/ui/components/worldmap/Flags.jsx";
-import useUIStore from "../../../../hooks/store/useUIStore.js";
-import { useDojo } from "../../../../hooks/context/DojoContext";
 import { Subscription } from "rxjs";
-import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
-import { Armies } from "../armies/Armies.js";
 import { create } from "zustand";
+import { useDojo } from "../../../../hooks/context/DojoContext";
+import useUIStore from "../../../../hooks/store/useUIStore.js";
 import { ShardsMines } from "../../models/buildings/worldmap/ShardsMines.js";
 import { Structures } from "../../models/buildings/worldmap/Structures.js";
+import { Armies } from "../armies/Armies.js";
+import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
 
 import { ACCESSIBLE_POSITIONS_COLOUR, COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
-import { useStamina } from "@/hooks/helpers/useStamina.js";
 import { EternumGlobalConfig } from "@bibliothecadao/eternum";
-import { findAccessiblePositions, findAccessiblePositionsAndPaths } from "./utils.js";
-import { getUIPositionFromColRow } from "@/ui/utils/utils.js";
-import { HighlightPositions } from "@/types/index.js";
-import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { findAccessiblePositionsAndPaths } from "./utils.js";
+import { useStamina } from "@/hooks/helpers/useStamina";
+import { HighlightPositions } from "@/types";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -57,7 +55,6 @@ export const WorldMap = () => {
       updates: {
         eventUpdates: { createExploreMapEvents: exploreMapEvents },
       },
-      components: { Tile, Structure, Position },
     },
   } = useDojo();
 
@@ -84,6 +81,7 @@ export const WorldMap = () => {
   const isComponentMounted = useRef(true);
 
   useEffect(() => {
+    if (!exploreMapEvents) return;
     const subscribeToExploreEvents = async () => {
       const observable = await exploreMapEvents();
       const subscription = observable.subscribe((event) => {
@@ -91,8 +89,6 @@ export const WorldMap = () => {
         if (event && hexData) {
           const col = Number(event.keys[2]) - FELT_CENTER;
           const row = Number(event.keys[3]) - FELT_CENTER;
-
-          console.log(col, row);
           setExploredHexes(col, row);
         }
       });
@@ -105,7 +101,7 @@ export const WorldMap = () => {
       isComponentMounted.current = false;
       subscriptionRef.current?.unsubscribe(); // Ensure to unsubscribe on component unmount
     };
-  }, [hexData, setExploredHexes]);
+  }, [hexData, setExploredHexes, exploreMapEvents]);
 
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
@@ -114,7 +110,7 @@ export const WorldMap = () => {
   const { useStaminaByEntityId } = useStamina();
   const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
 
-  useMemo(() => {
+  const uiPath = useMemo(() => {
     if (!selectedEntity || !hexData || !stamina) return;
 
     const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);

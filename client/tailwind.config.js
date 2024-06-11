@@ -8,6 +8,7 @@ export default {
       backgroundImage: {
         map: "url(/map.svg)",
         "battle-one": "url(/test-bg.png)",
+        "old-map": "url(/textures/paper/worldmap-bg.png)",
       },
       fontSize: {
         xxs: ".625rem",

@@ -1,38 +1,21 @@
-import CircleButton from "@/ui/elements/CircleButton";
-import { useMemo, useState } from "react";
-import { RealmListBoxes } from "@/ui/components/list/RealmListBoxes";
-import { ReactComponent as Settings } from "@/assets/icons/common/settings.svg";
-import { ReactComponent as Close } from "@/assets/icons/common/collapse.svg";
-import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import useUIStore from "@/hooks/store/useUIStore";
-import { useQuery } from "@/hooks/helpers/useQuery";
-import { BuildingThumbs } from "./LeftNavigationModule";
-import { useLocation } from "wouter";
-import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
-import {
-  banks,
-  leaderboard,
-  military,
-  resources,
-  trade,
-  construction,
-  settings,
-  quests,
-  guilds,
-} from "../../components/navigation/Config";
-import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
-import { useTour } from "@reactour/tour";
-import { useComponentValue } from "@dojoengine/react";
-import { currencyFormat, getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { useDojo } from "@/hooks/context/DojoContext";
-import useRealmStore from "@/hooks/store/useRealmStore";
-import { ArrowDown } from "lucide-react";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useQuests } from "@/hooks/helpers/useQuests";
-import { motion } from "framer-motion";
-import { useArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { EternumGlobalConfig, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { TroopMenuRow } from "@/ui/components/military/TroopChip";
+import CircleButton from "@/ui/elements/CircleButton";
+import { getEntityIdFromKeys, isRealmSelected } from "@/ui/utils/utils";
+import { TROOPS_STAMINAS } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
+import { motion } from "framer-motion";
+import { ArrowDown } from "lucide-react";
+import { useMemo } from "react";
+import { useLocation } from "wouter";
+import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
+import { guilds, leaderboard, quests, settings } from "../../components/navigation/Config";
+import { BuildingThumbs } from "./LeftNavigationModule";
+import { useEntities } from "@/hooks/helpers/useEntities";
 
 export enum MenuEnum {
   realm = "realm",
@@ -66,11 +49,14 @@ export const BottomNavigation = () => {
 
   const selectedEntityId = useUIStore((state) => state.selectedEntity);
 
-  const army = useArmyByEntityId({ entity_id: selectedEntityId?.id || BigInt("0") });
+  const army = getArmyByEntityId(selectedEntityId?.id || BigInt("0"));
 
   const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
 
   const { claimableQuests } = useQuests({ entityId: realmEntityId || BigInt("0") });
+
+  const { playerStructures } = useEntities();
+  const structures = useMemo(() => playerStructures(), [playerStructures]);
 
   const secondaryNavigation = useMemo(() => {
     return [
@@ -97,7 +83,8 @@ export const BottomNavigation = () => {
               size="lg"
               onClick={() => togglePopup(quests)}
               className="forth-step"
-              notification={claimableQuests.length}
+              notification={isRealmSelected(realmEntityId, structures) ? claimableQuests.length : undefined}
+              disabled={!isRealmSelected(realmEntityId, structures)}
             />
 
             {population?.population == null && location !== "/map" && (
@@ -189,7 +176,7 @@ export const BottomNavigation = () => {
           </motion.div>
         )}
 
-        <div className="flex py-2 sixth-step  px-10">
+        <div className="flex py-2 sixth-step  px-10 gap-1">
           {secondaryNavigation.map((a, index) => (
             <div key={index}>{a.button}</div>
           ))}

@@ -40,7 +40,6 @@ const GroundGrid = () => {
     if (isLoading) return; // Prevent multiple submissions
     setIsLoading(true);
     try {
-      await placeBuilding(realmEntityId, col, row, previewBuilding.type, previewBuilding.resource ?? 0);
       setPreviewBuilding(null);
       setHoveredBuildHex(null);
       playBuildingSound(
@@ -48,6 +47,7 @@ const GroundGrid = () => {
           ? (ResourceIdToMiningType[previewBuilding.resource as ResourcesIds] as ResourceMiningTypes)
           : previewBuilding.type,
       );
+      await placeBuilding(realmEntityId, col, row, previewBuilding.type, previewBuilding.resource ?? 0);
     } catch (error) {
       console.error("Failed to place building:", error);
     }
@@ -56,6 +56,7 @@ const GroundGrid = () => {
 
   useEffect(() => {
     setPreviewBuilding(null);
+    console.log(`Currently selected realm entity id ${realmEntityId}`);
   }, [realmEntityId]);
 
   return (

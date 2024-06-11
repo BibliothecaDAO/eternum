@@ -1,68 +1,54 @@
-import useUIStore from "@/hooks/store/useUIStore";
+import { Event } from "@/dojo/events/graphqlClient";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useStructuresPosition } from "@/hooks/helpers/useStructures";
-import { ArmyAndName, usePositionArmies } from "@/hooks/helpers/useArmies";
-import { ArmyViewCard } from "./ArmyViewCard";
+import { ArmyInfo, usePositionArmies } from "@/hooks/helpers/useArmies";
+import { FullStructure, Structure, useStructuresPosition } from "@/hooks/helpers/useStructures";
+import useUIStore from "@/hooks/store/useUIStore";
+import { CombatTarget } from "@/types";
 import Button from "@/ui/elements/Button";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { RealmListItem } from "../worldmap/realms/RealmListItem";
 import { Headline } from "@/ui/elements/Headline";
-import { useModal } from "@/hooks/store/useModal";
-import { ModalContainer } from "../ModalContainer";
+import { NumberInput } from "@/ui/elements/NumberInput";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { currencyFormat, divideByPrecision } from "@/ui/utils/utils";
+import { BuildingType, EternumGlobalConfig, Position, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { currencyFormat, divideByPrecision } from "@/ui/utils/utils";
-import { Event } from "@/dojo/events/graphqlClient";
-import { BuildingType, Resource } from "@bibliothecadao/eternum";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { ArrowRight } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Subscription } from "rxjs";
 import { BUILDING_IMAGES_PATH } from "../construction/SelectPreviewBuilding";
-import { ArmyChip } from "./ArmyChip";
+import { ModalContainer } from "../ModalContainer";
+import { RealmListItem } from "../worldmap/realms/RealmListItem";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
+import { ArmyChip } from "./ArmyChip";
+import { ArmyViewCard } from "./ArmyViewCard";
 
-export const ArmiesAtLocation = () => {
-  const clickedHex = useUIStore((state) => state.clickedHex);
-  const { col: x, row: y } = clickedHex!.contractPos;
-
-  const { structuresAtPosition } = useStructuresPosition({ position: { x, y } });
-  const { allArmies, userArmies } = usePositionArmies({ position: { x, y } });
-
-  const { toggleModal } = useModal();
+export const ArmiesAtLocation = ({ armies, ownArmy }: { armies: ArmyInfo[]; ownArmy: ArmyInfo | undefined }) => {
+  const setBattleView = useUIStore((state) => state.setBattleView);
 
   return (
     <div>
-      {/* {userArmies.length !== 0 && (
-        <div className="my-3">
-          <Headline className="my-3">Armies</Headline>
-          <div className="grid grid-cols-3 gap-4">
-            {userArmies.map((entity, index) => (
-              <ArmyViewCard
-                // active={entity.entity_id.toString() == selectedArmy}
-                onClick={(value) => console.log(value)}
-                key={index}
-                army={entity}
-              />
-            ))}
-          </div>
-        </div>
-      )} */}
-      {allArmies.length !== 0 && (
+      {armies.length !== 0 && (
         <>
-          <Headline className="my-3">Armies</Headline>
+          <Headline className="my-3">Ennemy armies</Headline>
           <div className="grid grid-cols-1 gap-2">
-            {allArmies.map((entity: any, index) => (
-              <ArmyChip key={index} army={entity} />
-              // <ArmyViewCard
-              //   actions={structuresAtPosition}
-              //   onClick={() => {
-              //     structuresAtPosition
-              //       ? toggleModal(<ArmyActions armyId={entity.entity_id} />)
-              //       : console.log("no structures");
-              //   }}
-              //   key={index}
-              //   army={entity}
-              // />
-            ))}
+            {armies.map((army: ArmyInfo, index) => {
+              const extraButton =
+                ownArmy && !army.isMine ? (
+                  <Button
+                    onClick={() =>
+                      setBattleView({
+                        attacker: ownArmy!,
+                        target: { type: CombatTarget.Army, entity: army },
+                      })
+                    }
+                  >
+                    Combat
+                  </Button>
+                ) : undefined;
+              return <ArmyChip key={index} army={army} extraButton={extraButton} />;
+            })}
           </div>
         </>
       )}
@@ -74,17 +60,11 @@ export const ArmyActions = ({ armyId }: { armyId: bigint }) => {
   const clickedHex = useUIStore((state) => state.clickedHex);
   const { col: x, row: y } = clickedHex!.contractPos;
 
-  const { allArmies, userArmies } = usePositionArmies({ position: { x, y } });
+  const { allArmies } = usePositionArmies({ position: { x, y } });
 
-  const army = allArmies.find((entity: any) => entity.entity_id === armyId) as ArmyAndName;
+  const army = allArmies.find((entity: any) => entity.entity_id === armyId) as ArmyInfo;
 
   const { formattedRealmAtPosition } = useStructuresPosition({ position: { x, y } });
-
-  const filteredArmies = useMemo(() => {
-    return allArmies.filter((entity) => entity.entity_id !== army.entity_id);
-  }, [allArmies]);
-
-  const [selectedArmyToAttack, setSelectedArmyToAttack] = useState<any>(null);
 
   const {
     account: { account },
@@ -175,22 +155,6 @@ export const ArmyActions = ({ armyId }: { armyId: bigint }) => {
             <Headline className="my-3">
               <h4>Attackable</h4>
             </Headline>
-            {/* {filteredArmies.length !== 0 ? (
-              <>
-                <div className="grid grid-cols-1">
-                  {filteredArmies.map((entity, index) => (
-                    <ArmyViewCard
-                      active={entity.entity_id == selectedArmyToAttack}
-                      onClick={setSelectedArmyToAttack}
-                      key={index}
-                      army={entity}
-                    />
-                  ))}
-                </div>
-              </>
-            ) : (
-              ""
-            )} */}
             {formattedRealmAtPosition && (
               <div className="grid ">
                 <RealmListItem realm={formattedRealmAtPosition} />
@@ -211,22 +175,84 @@ export const TroopCard = ({ count, id }: { count: number; id: number }) => {
   );
 };
 
-export const Battle = () => {
-  const clickedHex = useUIStore((state) => state.clickedHex);
-  const { col: x, row: y } = clickedHex!.contractPos;
-  const { formattedRealmAtPosition, formattedStructureAtPosition } = useStructuresPosition({ position: { x, y } });
+export const StructureCard = ({
+  position,
+  ownArmySelected,
+}: {
+  position: Position;
+  ownArmySelected: ArmyInfo | undefined;
+}) => {
+  const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
+  const { formattedRealmAtPosition, formattedStructureAtPosition } = useStructuresPosition({ position });
+  const setBattleView = useUIStore((state) => state.setBattleView);
+
+  const button = useMemo(() => {
+    if (
+      (formattedRealmAtPosition && formattedRealmAtPosition.self) ||
+      (formattedStructureAtPosition && formattedStructureAtPosition.self)
+    ) {
+      return (
+        ownArmySelected && (
+          <Button variant="primary" onClick={() => setShowMergeTroopsPopup(true)}>
+            Protect
+          </Button>
+        )
+      );
+    } else if (
+      (formattedStructureAtPosition && !formattedStructureAtPosition.self) ||
+      (formattedRealmAtPosition && !formattedRealmAtPosition.self)
+    ) {
+      const target = formattedStructureAtPosition || formattedRealmAtPosition;
+      return (
+        ownArmySelected && (
+          <Button
+            variant="primary"
+            onClick={() =>
+              setBattleView({
+                attacker: ownArmySelected,
+                target: { type: CombatTarget.Army, entity: target as unknown as FullStructure },
+              })
+            }
+          >
+            Combat
+          </Button>
+        )
+      );
+    }
+  }, [formattedRealmAtPosition, formattedStructureAtPosition, ownArmySelected]);
 
   return (
-    <>
-      <Headline className="my-3">Structures</Headline>
+    Boolean(formattedStructureAtPosition) && (
+      <div>
+        <Headline className="my-3">Structure</Headline>
 
-      <div className="grid grid-cols-2">
-        {formattedRealmAtPosition && <RealmListItem realm={formattedRealmAtPosition} />}
-        {!formattedRealmAtPosition && formattedStructureAtPosition && (
-          <StructureListItem structure={formattedStructureAtPosition} />
-        )}
+        <div className="flex">
+          {!showMergeTroopsPopup && formattedRealmAtPosition && (
+            <RealmListItem realm={formattedRealmAtPosition} extraButton={button} />
+          )}
+          {!showMergeTroopsPopup && !formattedRealmAtPosition && formattedStructureAtPosition && (
+            <StructureListItem structure={formattedStructureAtPosition} />
+          )}
+          {showMergeTroopsPopup && (
+            <div className="flex flex-col w-[100%]">
+              <Button
+                className="mb-3 w-[30%]"
+                variant="default"
+                size="xs"
+                onClick={() => setShowMergeTroopsPopup(false)}
+              >
+                &lt; Back to combats
+              </Button>
+
+              <MergeTroopsPanel
+                giverArmy={ownArmySelected!}
+                structure={formattedRealmAtPosition || formattedStructureAtPosition}
+              />
+            </div>
+          )}
+        </div>
       </div>
-    </>
+    )
   );
 };
 
@@ -408,4 +434,229 @@ const formatPillageEvent = (event: Event) => {
     pillagedResources,
     destroyedBuildingType,
   };
+};
+
+type MergeTroopsPanelProps = {
+  giverArmy: ArmyInfo;
+  structure: Structure;
+};
+
+const MergeTroopsPanel = ({ giverArmy, structure }: MergeTroopsPanelProps) => {
+  const {
+    setup: {
+      account: { account },
+      components: { Protector },
+      systemCalls: { create_army },
+    },
+  } = useDojo();
+
+  const protector = useComponentValue(Protector, getEntityIdFromKeys([BigInt(structure.entity_id!)]));
+
+  useEffect(() => {
+    const createProtector = async () => {
+      await create_army({
+        signer: account,
+        army_is_protector: true,
+        army_owner_id: structure.entity_id!,
+      });
+    };
+
+    if (protector) return;
+    createProtector();
+  }, [protector]);
+
+  return (
+    protector && (
+      <div className="flex flex-col clip-angled-sm bg-gold/20 p-3">
+        <Headline>Reinforce {structure.name}'s troops</Headline>
+        <TroopExchange giverArmyEntityId={BigInt(giverArmy.entity_id)} takerArmyEntityId={BigInt(protector.army_id)} />
+      </div>
+    )
+  );
+};
+
+type TroopsProps = {
+  giverArmyEntityId: bigint;
+  takerArmyEntityId: bigint;
+};
+
+const troopsToFormat = (troops: { knight_count: number; paladin_count: number; crossbowman_count: number }) => {
+  return {
+    [ResourcesIds.Crossbowmen]: troops.crossbowman_count,
+    [ResourcesIds.Knight]: troops.knight_count,
+    [ResourcesIds.Paladin]: troops.paladin_count,
+  };
+};
+
+const TroopExchange = ({ giverArmyEntityId, takerArmyEntityId }: TroopsProps) => {
+  const [troopsGiven, setTroopsGiven] = useState<Record<number, number>>({
+    [ResourcesIds.Crossbowmen]: 0,
+    [ResourcesIds.Knight]: 0,
+    [ResourcesIds.Paladin]: 0,
+  });
+  const {
+    setup: {
+      account: { account },
+      components: { Army },
+      systemCalls: { army_merge_troops },
+    },
+  } = useDojo();
+
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const [transferDirection, setTransferDirection] = useState<"to" | "from">("to");
+
+  const mergeTroops = async () => {
+    setLoading(true);
+    await army_merge_troops({
+      signer: account,
+      from_army_id: transferDirection === "to" ? giverArmyEntityId : takerArmyEntityId,
+      to_army_id: transferDirection === "to" ? takerArmyEntityId : giverArmyEntityId,
+      troops: {
+        knight_count: troopsGiven[ResourcesIds.Knight] * EternumGlobalConfig.resources.resourceMultiplier,
+        paladin_count: troopsGiven[ResourcesIds.Paladin] * EternumGlobalConfig.resources.resourceMultiplier,
+        crossbowman_count: troopsGiven[ResourcesIds.Crossbowmen] * EternumGlobalConfig.resources.resourceMultiplier,
+      },
+    });
+    setLoading(false);
+    setTroopsGiven({
+      [ResourcesIds.Crossbowmen]: 0,
+      [ResourcesIds.Knight]: 0,
+      [ResourcesIds.Paladin]: 0,
+    });
+  };
+
+  const handleTroopsGivenChange = (resourceId: string, amount: number) => {
+    setTroopsGiven((prev) => ({ ...prev, [resourceId]: amount }));
+  };
+
+  // const giverArmyTroops = troopsToFormat(getComponentValue(Army, getEntityIdFromKeys([giverArmyEntityId]))!.troops);
+  // const receiverArmyTroops = troopsToFormat(getComponentValue(Army, getEntityIdFromKeys([takerArmyEntityId]))!.troops);
+  const giverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([giverArmyEntityId]))!.troops;
+  const receiverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([takerArmyEntityId]))!.troops;
+
+  return (
+    <div className="flex flex-col">
+      <div className="flex flex-row justify-around items-center">
+        <div className="w-[40%]">
+          <p className="pt-2 pb-5">Current Army</p>
+          {Object.entries(troopsToFormat(giverArmyTroops)).map(([resourceId, amount]: [string, number]) => {
+            return (
+              <div
+                className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4"
+                key={resourceId}
+              >
+                <div className=" flex gap-3">
+                  <div>
+                    <Troop troopId={Number(resourceId)} amount={amount} />
+                  </div>
+
+                  <div className=" flex flex-col text-xs font-bold">
+                    <p>Avail.</p>
+                    <p>
+                      {transferDirection === "to"
+                        ? `[${currencyFormat(
+                            amount - troopsGiven[Number(resourceId)] * EternumGlobalConfig.resources.resourceMultiplier,
+                            0,
+                          )}]`
+                        : `[${currencyFormat(amount, 0)}]` + ` +${troopsGiven[Number(resourceId)]}`}
+                    </p>
+                  </div>
+                </div>
+
+                {transferDirection === "to" && (
+                  <NumberInput
+                    className="w-1/2"
+                    max={amount / EternumGlobalConfig.resources.resourceMultiplier}
+                    min={0}
+                    step={100}
+                    value={troopsGiven[Number(resourceId)]}
+                    onChange={(amount) => handleTroopsGivenChange(resourceId, amount)}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <Button
+          onClick={() => {
+            setTransferDirection(transferDirection === "to" ? "from" : "to");
+          }}
+        >
+          <ArrowRight className={`${transferDirection === "to" ? "" : "rotate-180"} duration-300`} />
+        </Button>
+
+        <div className="w-[40%]">
+          <p className=" pt-2 pb-5">Transfer {transferDirection} Structure</p>
+          {Object.entries(troopsToFormat(receiverArmyTroops)).map(([resourceId, amount]: [string, number]) => {
+            return (
+              <div
+                className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4"
+                key={resourceId}
+              >
+                <div className=" flex gap-3">
+                  <div>
+                    <Troop troopId={Number(resourceId)} amount={amount} />
+                  </div>
+
+                  <div className="flex flex-col text-xs font-bold">
+                    <p>Avail.</p>
+                    <p>
+                      {transferDirection === "from"
+                        ? `[${currencyFormat(
+                            amount - troopsGiven[Number(resourceId)] * EternumGlobalConfig.resources.resourceMultiplier,
+                            0,
+                          )}]`
+                        : `[${currencyFormat(amount, 0)}]` + ` +${troopsGiven[Number(resourceId)]}`}
+                    </p>
+                  </div>
+                </div>
+                {transferDirection === "from" && (
+                  <NumberInput
+                    className="w-1/2"
+                    max={amount / EternumGlobalConfig.resources.resourceMultiplier}
+                    min={0}
+                    step={100}
+                    value={troopsGiven[Number(resourceId)]}
+                    onChange={(amount) => handleTroopsGivenChange(resourceId, amount)}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <Button
+        onClick={mergeTroops}
+        isLoading={loading}
+        className="mt-5"
+        disabled={Object.values(troopsGiven).every((amount) => amount === 0)}
+      >
+        Reinforce
+      </Button>
+    </div>
+  );
+};
+
+const Troop = ({ troopId, amount }: { troopId: number; amount: number }) => {
+  const setTooltip = useUIStore((state) => state.setTooltip);
+
+  return (
+    <div
+      onMouseEnter={() => {
+        setTooltip({
+          position: "top",
+          content: <>{ResourcesIds[troopId]}</>,
+        });
+      }}
+      onMouseLeave={() => {
+        setTooltip(null);
+      }}
+      className="flex flex-col font-bold"
+    >
+      <div className="bg-white/10 clip-angled-sm flex justify-between p-1">
+        <ResourceIcon withTooltip={false} resource={ResourcesIds[troopId]} size="lg" />
+      </div>
+    </div>
+  );
 };

@@ -80,7 +80,8 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   return (
     <div className="flex flex-col h-[50vh] justify-between">
-      <div className="flex flex-col mb-2">
+      <div className="flex flex-col mb-2 bg-blueish/10 p-3 clip-angled-sm">
+        <div className=" align-text-bottom uppercase text-xs">Owner: {`${displayAddress(entity.owner)}`}</div>
         <div className="flex flex-row justify-between items-baseline">
           {editName ? (
             <div className="flex space-x-2">
@@ -122,27 +123,23 @@ export const HyperstructurePanel = ({ entity }: any) => {
             </>
           )}
         </div>
-
-        <div className=" align-text-bottom">Creator: {`${displayAddress(entity.owner)}`}</div>
       </div>
 
-      <div className="w-[100%] flex flex-row justify-between border m-auto p-2">
-        <div className="flex flex-col text-center p-4">
-          <div className="text-xl">Progress</div>
-          <div className="font-bold text-base">{currencyIntlFormat(progresses.percentage)}%</div>
+      <div className="w-[100%] grid justify-between  m-auto mb-2  gap-2 grid-cols-3">
+        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1">
+          <div className="uppercase text-xs">Progress</div>
+          <div className="font-bold text-xl">{currencyIntlFormat(progresses.percentage)}%</div>
         </div>
-        <div className="flex flex-col text-center p-4">
-          <div className="text-xl">Your shares</div>
-          <div className="font-bold text-base">{currencyIntlFormat(shares * 100)}%</div>
+        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1">
+          <div className="uppercase text-xs">Your shares</div>
+          <div className="font-bold text-xl">{currencyIntlFormat(shares * 100)}%</div>
         </div>
-        <div className="flex flex-col text-center p-4">
-          <div className="text-xl">You receive </div>
-          <div className="font-bold text-base">
-            {currencyIntlFormat(shares * HYPERSTRUCTURE_POINTS_PER_CYCLE)} points/cycle
-          </div>
+        <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1">
+          <div className="uppercase text-xs">points/cycle</div>
+          <div className="font-bold text-xl ">{currencyIntlFormat(shares * HYPERSTRUCTURE_POINTS_PER_CYCLE)}</div>
         </div>
       </div>
-      <div className="overflow-y-scroll h-[40vh] border p-2">
+      <div className="overflow-y-scroll h-[40vh] bg-gold/10 clip-angled-sm p-2">
         {progresses.percentage === 100 ? (
           <HyperstructureLeaderboard contributions={contributions} />
         ) : (

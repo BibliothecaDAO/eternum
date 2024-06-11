@@ -17,7 +17,7 @@ export const biomes = {
   tropical_rain_forest: { color: "#6B4927", depth: 0.6, name: "Tropical Rain Forest" },
 };
 
-export enum DIRECTION {
+export enum Direction {
   EAST,
   NORTH_EAST,
   NORTH_WEST,
@@ -28,22 +28,22 @@ export enum DIRECTION {
 
 // if row is even
 export const neighborOffsetsEven = [
-  { i: 1, j: 0, direction: DIRECTION.EAST },
-  { i: 1, j: 1, direction: DIRECTION.NORTH_EAST },
-  { i: 0, j: 1, direction: DIRECTION.NORTH_WEST },
-  { i: -1, j: 0, direction: DIRECTION.WEST },
-  { i: 0, j: -1, direction: DIRECTION.SOUTH_WEST },
-  { i: 1, j: -1, direction: DIRECTION.SOUTH_EAST },
+  { i: 1, j: 0, direction: Direction.EAST },
+  { i: 1, j: 1, direction: Direction.NORTH_EAST },
+  { i: 0, j: 1, direction: Direction.NORTH_WEST },
+  { i: -1, j: 0, direction: Direction.WEST },
+  { i: 0, j: -1, direction: Direction.SOUTH_WEST },
+  { i: 1, j: -1, direction: Direction.SOUTH_EAST },
 ];
 
 // if row is odd
 export const neighborOffsetsOdd = [
-  { i: 1, j: 0, direction: DIRECTION.EAST },
-  { i: 0, j: 1, direction: DIRECTION.NORTH_EAST },
-  { i: -1, j: 1, direction: DIRECTION.NORTH_WEST },
-  { i: -1, j: 0, direction: DIRECTION.WEST },
-  { i: -1, j: -1, direction: DIRECTION.SOUTH_WEST },
-  { i: 0, j: -1, direction: DIRECTION.SOUTH_EAST },
+  { i: 1, j: 0, direction: Direction.EAST },
+  { i: 0, j: 1, direction: Direction.NORTH_EAST },
+  { i: -1, j: 1, direction: Direction.NORTH_WEST },
+  { i: -1, j: 0, direction: Direction.WEST },
+  { i: -1, j: -1, direction: Direction.SOUTH_WEST },
+  { i: 0, j: -1, direction: Direction.SOUTH_EAST },
 ];
 
 export const getNeighborHexes = (col: number, row: number) => {

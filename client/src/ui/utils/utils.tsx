@@ -1,7 +1,9 @@
 import { Position, ResourcesIds, UIPosition, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import realmHexPositions from "../../data/geodata/hex/realmHexPositions.json";
+import {
+  default as realmHexPositions,
+  default as realmsHexPositions,
+} from "../../data/geodata/hex/realmHexPositions.json";
 import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
@@ -335,4 +337,9 @@ export const copyPlayerAddressToClipboard = (address: bigint, name: string) => {
     .catch((err) => {
       console.error("Failed to copy: ", err);
     });
+};
+
+export const isRealmSelected = (realmEntityId: bigint, structures: any) => {
+  const selectedStructure = structures?.find((structure: any) => structure?.entity_id === realmEntityId);
+  return selectedStructure?.category === "Realm";
 };

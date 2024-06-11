@@ -1,13 +1,11 @@
-import { BakeShadows, Detailed, useGLTF } from "@react-three/drei";
+import { biomes } from "@bibliothecadao/eternum";
+import { useGLTF } from "@react-three/drei";
+import { useMemo } from "react";
 import realmHexPositions from "../../../../../data/geodata/hex/realmHexPositions.json";
-import { useMemo, useState } from "react";
 import { useGetRealms } from "../../../../../hooks/helpers/useRealm";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { HexPositions, getRealmUIPosition, getUIPositionFromColRow, pseudoRandom } from "../../../../utils/utils";
-import { biomes } from "@bibliothecadao/eternum";
-import useUIStore from "../../../../../hooks/store/useUIStore";
 import { Hexagon } from "../../../../../types";
-import { useControls } from "leva";
+import { HexPositions, getRealmUIPosition, pseudoRandom } from "../../../../utils/utils";
 
 type Castle = {
   uiPos: { x: number; y: number };
@@ -27,8 +25,6 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
   const realms = useGetRealms();
   const model = useGLTF("/models/buildings/castle.glb");
 
-  const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const realmPositions = realmHexPositions as HexPositions;
@@ -51,29 +47,13 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
       .filter(Boolean) as Castle[];
   }, []);
 
-  const { intensity, power, lpos } = useControls("castles", {
-    intensity: { value: 0.1, min: 0, max: 100, step: 0.1 },
-    power: { value: 275, min: 0, max: 1000, step: 1 },
-    lpos: {
-      value: {
-        x: -2,
-        y: 4,
-        z: 1,
-      },
-      min: -10,
-      max: 10,
-      step: 0.1,
-    },
-  });
-
   return (
     <group>
       {castles.map((castle) => {
-        const { uiPos: position, index, depth } = castle;
+        const { uiPos: position, index } = castle;
         if (index === -1) return null;
         return (
           <group key={index} position={[position.x, 0.31, -position.y]}>
-            {/* {selectedEntity && selectedEntity.id == castle.id && <ArmyMenu entityId={castle.id} />} */}
             <primitive
               object={model.scene.clone()}
               scale={3}
