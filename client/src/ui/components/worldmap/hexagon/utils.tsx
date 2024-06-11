@@ -5,6 +5,7 @@ import { Hexagon } from "../../../../types";
 const matrix = new Matrix4();
 const positions = new Vector3();
 import { InstancedMesh, Matrix4, Vector3 } from "three";
+import { FELT_CENTER } from "@/ui/config";
 
 export const isNeighbor = (pos1: Position, pos2: Position) => {
   const neighborOffsets = pos1.y % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
@@ -54,7 +55,7 @@ export const findAccessiblePositionsAndPaths = (
 
     if (!shortestDistances.has(currentKey) || distance < shortestDistances.get(currentKey)!) {
       shortestDistances.set(currentKey, distance);
-      const isExplored = exploredHexes.get(current.x - 2147483647)?.has(current.y - 2147483647) || false;
+      const isExplored = exploredHexes.get(current.x - FELT_CENTER)?.has(current.y - FELT_CENTER) || false;
       travelPaths.set(currentKey, { path: path, isExplored });
       if (!isExplored) continue;
 
@@ -64,7 +65,7 @@ export const findAccessiblePositionsAndPaths = (
         const nextDistance = distance + 1;
         const nextPath = [...path, { x, y }];
 
-        const isExplored = exploredHexes.get(x - 2147483647)?.has(y - 2147483647) || false;
+        const isExplored = exploredHexes.get(x - FELT_CENTER)?.has(y - FELT_CENTER) || false;
         if ((isExplored && nextDistance <= maxHex) || (!isExplored && canExplore && nextDistance === 1)) {
           if (!shortestDistances.has(neighborKey) || nextDistance < shortestDistances.get(neighborKey)!) {
             priorityQueue.push({ position: { x, y }, distance: nextDistance, path: nextPath });

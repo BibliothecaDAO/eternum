@@ -1,12 +1,12 @@
-import { EternumGlobalConfig, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { Bvh } from "@react-three/drei";
 import { throttle } from "lodash";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Color, InstancedMesh, Matrix4 } from "three";
 import useUIStore from "../../../../hooks/store/useUIStore";
-import { Hexagon, HighlightPositions } from "../../../../types/index";
-import { findDirection, getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
+import { Hexagon } from "../../../../types/index";
+import { getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
 import { BeachBiome } from "../../models/biomes/BeachBiome";
 import { DeciduousForestBiome } from "../../models/biomes/DeciduousForestBiome";
 import { DeepOceanBiome } from "../../models/biomes/DeepOceanBiome";
@@ -25,18 +25,10 @@ import { TropicalSeasonalForestBiome } from "../../models/biomes/TropicalSeasona
 import { TundraBiome } from "../../models/biomes/TundraBiome.js";
 import { createHexagonGeometry } from "./HexagonGeometry";
 import { useLocation } from "wouter";
-import { useExplore } from "../../../../hooks/helpers/useExplore";
-import { useTravel } from "../../../../hooks/helpers/useTravel";
-import { useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
-import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { HexGrid } from "../../models/biomes/HexGrid";
 import { getPositionsAtIndex } from "./utils";
 import { DEPTH, FELT_CENTER, HEX_RADIUS } from "@/ui/config";
-
-export const EXPLORE_COLOUR = 0x2563eb;
-export const TRAVEL_COLOUR = 0xffce31;
-const CLICKED_HEX_COLOR = 0xff5733;
-const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
+import { useEventHandlers } from "./useEventHandlers";
 
 type HexagonGridProps = {
   startRow: number;
@@ -135,7 +127,6 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const previewBuilding = useUIStore((state) => state.previewBuilding);
 
   const { hoverHandler, clickHandler, mouseOutHandler } = useEventHandlers(explored);
 
@@ -219,11 +210,6 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     return instancedMesh;
   }, [revealedHexes]);
 
-  // // Animation logic
-  // useFrame((state, delta) => {
-  //   const opacityIncrease = delta * 0.5; // Adjust speed here
-  //   mesh.material.opacity = Math.min(mesh.material.opacity + opacityIncrease, 0.4); // Ensure it does not exceed the maximum
-  // });
   const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
 
   const [_, setLocation] = useLocation();
@@ -255,154 +241,4 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
       </group>
     </Bvh>
   );
-};
-
-export const useEventHandlers = (explored: Map<number, Set<number>>) => {
-  const { exploreHex } = useExplore();
-  const { travelToHex } = useTravel();
-  const { play: playExplore } = useUiSounds(soundSelector.explore);
-  const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
-  const setHoveredHex = useUIStore((state) => state.setHoveredHex);
-
-  const { hexData, hoveredHex, selectedEntity, setClickedHex, clickedHex, travelPaths, clearSelection } = useUIStore(
-    (state) => ({
-      hexData: state.hexData,
-      hoveredHex: state.hoveredHex,
-      armyMode: state.armyMode,
-      setArmyMode: state.setArmyMode,
-      selectedEntity: state.selectedEntity,
-      setSelectedEntity: state.setSelectedEntity,
-      setClickedHex: state.setClickedHex,
-      clickedHex: state.clickedHex,
-      travelPaths: state.travelPaths,
-      setHighlightPositions: state.setHighlightPositions,
-      clearSelection: state.clearSelection,
-    }),
-  );
-
-  const setExploreNotification = useNotificationsStore((state) => state.setExploreNotification);
-
-  // refs
-  const selectedEntityRef = useRef(selectedEntity);
-  const hoveredHexRef = useRef<any>(hoveredHex);
-  const clickedHexRef = useRef(clickedHex);
-  const travelPathsRef = useRef(travelPaths);
-
-  useEffect(() => {
-    selectedEntityRef.current = selectedEntity;
-    clickedHexRef.current = clickedHex;
-    travelPathsRef.current = travelPaths;
-    hoveredHexRef.current = hoveredHex;
-  }, [hoveredHex, travelPaths, selectedEntity, hexData, explored, clickedHex]);
-
-  const hoverHandler = useCallback((e: any) => {
-    const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
-    if (!intersect) return;
-
-    const instanceId = intersect.instanceId;
-    const mesh = intersect.object;
-    const pos = getPositionsAtIndex(mesh, instanceId);
-    if (!pos) return;
-
-    const coord = getColRowFromUIPosition(pos.x, pos.y, false);
-    setHoveredHex({
-      col: coord.col,
-      row: coord.row,
-    });
-    setHoveredBuildHex({
-      col: coord.col,
-      row: coord.row,
-    });
-  }, []);
-
-  const mouseOutHandler = useCallback((e: any) => {
-    setHoveredHex(undefined);
-  }, []);
-
-  const clickHandler = useCallback(
-    (e: any) => {
-      const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
-      if (!intersect) {
-        clearSelection();
-        return;
-      }
-
-      const instanceId = intersect.instanceId;
-      const mesh = intersect.object;
-      const pos = getPositionsAtIndex(mesh, instanceId);
-
-      if (!pos) return;
-
-      const handleHexClick = (pos: any, instanceId: any) => {
-        const clickedColRow = getColRowFromUIPosition(pos.x, pos.y);
-        if (
-          clickedHexRef.current?.contractPos.col === clickedColRow.col &&
-          clickedHexRef.current?.contractPos.row === clickedColRow.row
-        ) {
-          setClickedHex(undefined);
-        } else {
-          setClickedHex({
-            contractPos: { col: clickedColRow.col, row: clickedColRow.row },
-            uiPos: [pos.x, -pos.y, pos.z],
-            hexIndex: instanceId,
-          });
-        }
-      };
-
-      const handleArmyActionClick = (id: bigint) => {
-        const travelPath = travelPathsRef.current.get(`${hoveredHexRef.current.col},${hoveredHexRef.current.row}`);
-        if (!travelPath) return;
-        const { path, isExplored } = travelPath;
-        if (travelPath.path.length > 1) {
-          if (isExplored) {
-            handleTravelClick({ id, path });
-          } else {
-            handleExploreClick({ id, path });
-          }
-        }
-      };
-
-      if (!selectedEntityRef.current) {
-        handleHexClick(pos, instanceId);
-      } else {
-        handleArmyActionClick(selectedEntityRef.current.id);
-      }
-    },
-    [hexData],
-  );
-
-  async function handleTravelClick({ id, path }: { id: bigint; path: any[] }) {
-    const directions = path
-      .map((_, i) => {
-        if (path[i + 1] === undefined) return undefined;
-        return findDirection({ col: path[i].x, row: path[i].y }, { col: path[i + 1].x, row: path[i + 1].y });
-      })
-      .filter((d) => d !== undefined) as number[];
-    clearSelection();
-    await travelToHex({ travelingEntityId: id, directions, path });
-  }
-
-  async function handleExploreClick({ id, path }: { id: bigint; path: any[] }) {
-    if (!hexData) return;
-    const direction =
-      path.length === 2
-        ? findDirection({ col: path[0].x, row: path[0].y }, { col: path[1].x, row: path[1].y })
-        : undefined;
-    const hexIndex = hexData.findIndex((h) => h.col === path[1].x && h.row === path[1].y);
-    const biome = hexData[hexIndex].biome;
-    setExploreNotification({
-      entityId: id,
-      biome,
-    });
-
-    clearSelection();
-
-    await exploreHex({
-      explorerId: id,
-      direction,
-      path,
-    });
-  }
-
-  return { hoverHandler, clickHandler, mouseOutHandler };
 };
