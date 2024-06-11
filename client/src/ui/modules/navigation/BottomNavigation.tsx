@@ -9,6 +9,7 @@ import { useQuery } from "@/hooks/helpers/useQuery";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
+
 import {
   banks,
   leaderboard,
@@ -33,6 +34,7 @@ import { useArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { EternumGlobalConfig, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { TroopMenuRow } from "@/ui/components/military/TroopChip";
+import { isRealmSelected } from "@/ui/utils/utils";
 import { useEntities } from "@/hooks/helpers/useEntities";
 
 export enum MenuEnum {
@@ -76,11 +78,6 @@ export const BottomNavigation = () => {
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
 
-  const isRealmSelected = () => {
-    const selectedStructure = structures?.find((structure) => structure?.entity_id === realmEntityId);
-    return selectedStructure?.category === "Realm";
-  };
-
   const secondaryNavigation = useMemo(() => {
     return [
       {
@@ -106,8 +103,8 @@ export const BottomNavigation = () => {
               size="lg"
               onClick={() => togglePopup(quests)}
               className="forth-step"
-              notification={isRealmSelected() ? claimableQuests.length : undefined}
-              disabled={!isRealmSelected()}
+              notification={isRealmSelected(realmEntityId, structures) ? claimableQuests.length : undefined}
+              disabled={!isRealmSelected(realmEntityId, structures)}
             />
 
             {population?.population == null && location !== "/map" && (
