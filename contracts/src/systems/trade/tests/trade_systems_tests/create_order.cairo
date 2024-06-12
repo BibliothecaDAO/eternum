@@ -22,7 +22,9 @@ use eternum::systems::trade::contracts::trade_systems::{
     trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos};
+use eternum::utils::testing::{
+    spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos, deploy_realm_systems
+};
 
 use starknet::contract_address_const;
 
@@ -40,7 +42,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, ITradeSystemsDispatcher) {
     IWeightConfigDispatcher { contract_address: config_systems_address }
         .set_weight_config(ResourceTypes::GOLD.into(), 200);
 
-    let realm_entity_id = spawn_realm(world, get_default_realm_pos());
+    let realm_systems_dispatcher = deploy_realm_systems(world);
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
     let maker_id = realm_entity_id;
     let taker_id = 12_u128;

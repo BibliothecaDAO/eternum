@@ -23,7 +23,7 @@ use eternum::systems::trade::contracts::trade_systems::{
     trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm};
+use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, deploy_realm_systems};
 
 use starknet::contract_address_const;
 
@@ -58,8 +58,9 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     let maker_position = Position { x: 100000, y: 1000000, entity_id: 1_u128 };
     let taker_position = Position { x: 100000, y: 1000000, entity_id: 1_u128 };
 
-    let maker_realm_entity_id = spawn_realm(world, maker_position);
-    let taker_realm_entity_id = spawn_realm(world, taker_position);
+    let realm_systems_dispatcher = deploy_realm_systems(world);
+    let maker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, maker_position);
+    let taker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, taker_position);
 
     let maker_id = maker_realm_entity_id;
     let taker_id = taker_realm_entity_id;

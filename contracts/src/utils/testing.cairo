@@ -71,9 +71,29 @@ fn spawn_eternum() -> IWorldDispatcher {
 
 fn deploy_system(world: IWorldDispatcher, class_hash_felt: felt252) -> ContractAddress {
     let contract_address = world
-        .deploy_contract(class_hash_felt, class_hash_felt.try_into().unwrap());
+        .deploy_contract(class_hash_felt, class_hash_felt.try_into().unwrap(), array![].span());
 
     contract_address
+}
+
+fn deploy_realm_systems(world: IWorldDispatcher) -> IRealmSystemsDispatcher {
+    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
+    let realm_systems_dispatcher = IRealmSystemsDispatcher {
+        contract_address: realm_systems_address
+    };
+
+    realm_systems_dispatcher
+}
+
+fn deploy_hyperstructure_systems(world: IWorldDispatcher) -> IHyperstructureSystemsDispatcher {
+    let hyperstructure_systems_address = deploy_system(
+        world, hyperstructure_systems::TEST_CLASS_HASH
+    );
+    let hyperstructure_systems_dispatcher = IHyperstructureSystemsDispatcher {
+        contract_address: hyperstructure_systems_address
+    };
+
+    hyperstructure_systems_dispatcher
 }
 
 fn get_default_realm_pos() -> Position {
@@ -119,12 +139,9 @@ fn explore_tile(world: IWorldDispatcher, explorer_id: u128, coords: Coord) {
     );
 }
 
-fn spawn_realm(world: IWorldDispatcher, position: Position) -> u128 {
-    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
-    let realm_systems_dispatcher = IRealmSystemsDispatcher {
-        contract_address: realm_systems_address
-    };
-
+fn spawn_realm(
+    world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsDispatcher, position: Position
+) -> u128 {
     let realm_entity_id = realm_systems_dispatcher
         .create(
             1, // realm id
@@ -142,14 +159,12 @@ fn spawn_realm(world: IWorldDispatcher, position: Position) -> u128 {
     realm_entity_id
 }
 
-fn spawn_hyperstructure(world: IWorldDispatcher, realm_entity_id: u128, coord: Coord) -> u128 {
-    let hyperstructure_systems_address = deploy_system(
-        world, hyperstructure_systems::TEST_CLASS_HASH
-    );
-    let hyperstructure_systems_dispatcher = IHyperstructureSystemsDispatcher {
-        contract_address: hyperstructure_systems_address
-    };
-
+fn spawn_hyperstructure(
+    world: IWorldDispatcher,
+    hyperstructure_systems_dispatcher: IHyperstructureSystemsDispatcher,
+    realm_entity_id: u128,
+    coord: Coord
+) -> u128 {
     explore_tile(world, realm_entity_id, coord);
 
     let hyperstructure_entity_id = hyperstructure_systems_dispatcher.create(realm_entity_id, coord);

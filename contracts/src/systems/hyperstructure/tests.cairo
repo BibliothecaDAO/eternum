@@ -17,6 +17,7 @@ use eternum::systems::config::contracts::{
     config_systems, config_systems::HyperstructureConfigImpl, IHyperstructureConfigDispatcher,
     IHyperstructureConfig, IHyperstructureConfigDispatcherTrait
 };
+
 use eternum::systems::hyperstructure::contracts::{
     hyperstructure_systems, IHyperstructureSystems, IHyperstructureSystemsDispatcher,
     IHyperstructureSystemsDispatcherTrait
@@ -24,7 +25,7 @@ use eternum::systems::hyperstructure::contracts::{
 
 use eternum::utils::testing::{
     spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos, spawn_hyperstructure,
-    get_default_hyperstructure_coord
+    get_default_hyperstructure_coord, deploy_realm_systems, deploy_hyperstructure_systems
 };
 
 use starknet::contract_address_const;
@@ -34,12 +35,15 @@ const TEST_AMOUNT: u128 = 1_000_000;
 fn setup() -> (IWorldDispatcher, u128, IHyperstructureSystemsDispatcher) {
     let world = spawn_eternum();
 
+    let realm_systems_dispatcher = deploy_realm_systems(world);
+    let hyperstructure_systems_dispatcher = deploy_hyperstructure_systems(world);
+
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 
     // increment to start with a realm_entity_id != 0
     world.uuid();
 
-    let realm_entity_id = spawn_realm(world, get_default_realm_pos());
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher {
@@ -74,24 +78,21 @@ fn setup() -> (IWorldDispatcher, u128, IHyperstructureSystemsDispatcher) {
 
     hyperstructure_config_dispatcher.set_hyperstructure_config(resources_for_completion.span());
 
-    let hyperstructure_systems_address = deploy_system(
-        world, hyperstructure_systems::TEST_CLASS_HASH
-    );
-    let hyperstructure_systems_dispatcher = IHyperstructureSystemsDispatcher {
-        contract_address: hyperstructure_systems_address
-    };
     (world, realm_entity_id, hyperstructure_systems_dispatcher)
 }
 
 #[test]
 #[available_gas(3000000000000)]
 fn test_create_hyperstructure() {
-    let (world, realm_entity_id, _) = setup();
+    let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 
     let hyperstructure_entity_id = spawn_hyperstructure(
-        world, realm_entity_id, get_default_hyperstructure_coord()
+        world,
+        hyperstructure_systems_dispatcher,
+        realm_entity_id,
+        get_default_hyperstructure_coord()
     );
 
     let structure = get!(world, hyperstructure_entity_id, Structure);
@@ -144,7 +145,7 @@ fn test_create_hyperstructure() {
     )
 )]
 fn test_create_hyperstructure_not_enough_eartenshards() {
-    let (world, realm_entity_id, _) = setup();
+    let (world, realm_entity_id, hyperstructure_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 
@@ -157,7 +158,12 @@ fn test_create_hyperstructure_not_enough_eartenshards() {
         )
     );
 
-    spawn_hyperstructure(world, realm_entity_id, get_default_hyperstructure_coord());
+    spawn_hyperstructure(
+        world,
+        hyperstructure_systems_dispatcher,
+        realm_entity_id,
+        get_default_hyperstructure_coord()
+    );
 }
 
 #[test]
@@ -169,7 +175,10 @@ fn test_contribute_one_resource() {
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 
     let hyperstructure_entity_id = spawn_hyperstructure(
-        world, realm_entity_id, get_default_hyperstructure_coord()
+        world,
+        hyperstructure_systems_dispatcher,
+        realm_entity_id,
+        get_default_hyperstructure_coord()
     );
 
     let contributions = array![(ResourceTypes::WOOD, contribution_amount),].span();
@@ -209,7 +218,10 @@ fn test_contribute_two_resources() {
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 
     let hyperstructure_entity_id = spawn_hyperstructure(
-        world, realm_entity_id, get_default_hyperstructure_coord()
+        world,
+        hyperstructure_systems_dispatcher,
+        realm_entity_id,
+        get_default_hyperstructure_coord()
     );
 
     let contributions = array![
@@ -277,7 +289,10 @@ fn test_finish_hyperstructure() {
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
 
     let hyperstructure_entity_id = spawn_hyperstructure(
-        world, realm_entity_id, get_default_hyperstructure_coord()
+        world,
+        hyperstructure_systems_dispatcher,
+        realm_entity_id,
+        get_default_hyperstructure_coord()
     );
 
     let resources_without_earthenshards = get_resources_without_earthenshards();

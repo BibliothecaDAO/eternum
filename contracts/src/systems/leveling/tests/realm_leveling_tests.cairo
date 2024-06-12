@@ -16,7 +16,11 @@ use eternum::systems::leveling::contracts::{
     leveling_systems, ILevelingSystemsDispatcher, ILevelingSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos};
+use eternum::systems::realm::contracts::{IRealmSystemsDispatcher};
+
+use eternum::utils::testing::{
+    spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos, deploy_realm_systems
+};
 
 use starknet::contract_address_const;
 
@@ -61,7 +65,8 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
             resource_3_costs
         );
 
-    let realm_entity_id = spawn_realm(world, get_default_realm_pos());
+    let realm_systems_dispatcher = deploy_realm_systems(world);
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
     // mint 100_000 wheat and fish for the realm;
     set!(
@@ -110,7 +115,7 @@ fn test_level_up_realm() {
 #[test]
 #[available_gas(300000000000)]
 #[should_panic(expected: ('not realm owner', 'ENTRYPOINT_FAILED'))]
-fn test_level_up__not_realm_owner() {
+fn test_level_up_not_realm_owner() {
     let (_, realm_entity_id, leveling_systems_dispatcher) = setup();
 
     // set unknown caller
@@ -124,7 +129,7 @@ fn test_level_up__not_realm_owner() {
 #[test]
 #[available_gas(300000000000)]
 #[should_panic(expected: ('not a realm', 'ENTRYPOINT_FAILED'))]
-fn test_level_up__not_realm() {
+fn test_level_up_not_realm() {
     let (_, _, leveling_systems_dispatcher) = setup();
 
     // set abritrary realm entity id
