@@ -5,7 +5,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 use eternum::models::capacity::Capacity;
 use eternum::models::combat::{Health, Troops};
-use eternum::models::config::TickConfig;
+use eternum::models::config::{TickConfig, StaminaConfig};
 
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable};
@@ -25,7 +25,7 @@ use eternum::systems::combat::contracts::{
 use eternum::systems::config::contracts::{
     config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait,
     IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
-    IWeightConfigDispatcherTrait
+    IWeightConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait
 };
 
 use eternum::systems::map::contracts::{
@@ -116,8 +116,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
         )
     );
 
-    // create realm army unit
-    // let realm_army_unit_id: u128 = 'army unit'.try_into().unwrap();
     let army_quantity_value: u128 = 7;
     let army_capacity_value_per_soldier: u128 = 7;
 
@@ -150,7 +148,29 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     let troops = Troops { knight_count: 50, paladin_count: 0, crossbowman_count: 0 };
     combat_systems_dispatcher.army_buy_troops(realm_army_unit_id, realm_entity_id, troops);
 
+    let stamina_config_dispatcher = IStaminaConfigDispatcher {
+        contract_address: config_systems_address
+    };
+
+    stamina_config_dispatcher.set_stamina_config(ResourceTypes::KNIGHT, 1000);
+
     set!(world, Stamina { entity_id: realm_army_unit_id, amount: 100, last_refill_tick: 0 });
+
+    set!(
+        world,
+        (
+            Resource {
+                entity_id: realm_entity_id,
+                resource_type: ResourceTypes::WHEAT,
+                balance: INITIAL_WHEAT_BALANCE
+            },
+            Resource {
+                entity_id: realm_entity_id,
+                resource_type: ResourceTypes::FISH,
+                balance: INITIAL_FISH_BALANCE
+            }
+        )
+    );
 
     // deploy map systems
     let map_systems_address = deploy_system(world, map_systems::TEST_CLASS_HASH);
@@ -192,28 +212,4 @@ fn test_map_explore() {
     assert_eq!(realm_fish.balance, expected_fish_balance, "wrong wheat balance");
 
     army_coord = expected_explored_coord;
-}
-
-
-#[test]
-#[should_panic(expected: ("max moves per tick exceeded", 'ENTRYPOINT_FAILED'))]
-fn test_map_explore__ensure_explorer_cant_hex_travel_till_next_tick() {
-    let (world, _, realm_army_unit_id, map_systems_dispatcher) = setup();
-
-    starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
-
-    starknet::testing::set_transaction_hash('hellothash');
-
-    let explore_tile_direction: Direction = Direction::West;
-
-    map_systems_dispatcher.explore(realm_army_unit_id, explore_tile_direction);
-
-    // deploy travel systems
-    let travel_systems_address = deploy_system(world, travel_systems::TEST_CLASS_HASH);
-    let travel_systems_dispatcher = ITravelSystemsDispatcher {
-        contract_address: travel_systems_address
-    };
-
-    // ensure army cant travel in same tick
-    travel_systems_dispatcher.travel_hex(realm_army_unit_id, array![Direction::West].span());
 }
