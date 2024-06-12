@@ -37,7 +37,7 @@ impl RoadImpl of RoadTrait {
         world: IWorldDispatcher, travel_time: u64, start_coord: Coord, end_coord: Coord
     ) -> u64 {
         let mut new_travel_time = travel_time;
-        let mut road = RoadImpl::get(world, start_coord, end_coord);
+        let mut road = Self::get(world, start_coord, end_coord);
         if road.usage_count > 0 {
             let road_config = get!(world, ROAD_CONFIG_ID, RoadConfig);
 

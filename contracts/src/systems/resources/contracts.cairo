@@ -304,9 +304,7 @@ mod resource_systems {
             }
 
             // emit transfer event
-            InternalResourceSystemsImpl::emit_transfer_event(
-                world, owner_id, actual_recipient_id, resources
-            );
+            Self::emit_transfer_event(world, owner_id, actual_recipient_id, resources);
 
             (actual_recipient_id, hash(resources_felt_arr.span()), total_resources_weight)
         }

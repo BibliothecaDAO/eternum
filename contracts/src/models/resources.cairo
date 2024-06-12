@@ -121,7 +121,7 @@ impl ResourceFoodImpl of ResourceFoodTrait {
     fn pay(
         world: IWorldDispatcher, entity_id: u128, mut wheat_amount: u128, mut fish_amount: u128,
     ) {
-        let (mut wheat, mut fish) = ResourceFoodImpl::get(world, entity_id);
+        let (mut wheat, mut fish) = Self::get(world, entity_id);
 
         if wheat_amount > wheat.balance {
             panic!("Insufficient wheat balance");

@@ -57,7 +57,7 @@ impl LevelImpl of LevelTrait {
                 current_level / 4
             };
 
-            let multiplier = LevelTrait::get_multiplier(leveling_config, tier - start_tier);
+            let multiplier = Self::get_multiplier(leveling_config, tier - start_tier);
 
             multiplier + 100
         }
