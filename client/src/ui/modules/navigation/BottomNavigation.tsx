@@ -1,12 +1,13 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuests } from "@/hooks/helpers/useQuests";
+import { useStamina } from "@/hooks/helpers/useStamina";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { TroopMenuRow } from "@/ui/components/military/TroopChip";
 import CircleButton from "@/ui/elements/CircleButton";
 import { getEntityIdFromKeys, isRealmSelected } from "@/ui/utils/utils";
-import { TROOPS_STAMINAS } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
@@ -15,7 +16,6 @@ import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { guilds, leaderboard, quests, settings } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
-import { useEntities } from "@/hooks/helpers/useEntities";
 
 export enum MenuEnum {
   realm = "realm",
@@ -39,6 +39,7 @@ export const BottomNavigation = () => {
   } = useDojo();
 
   const [location, setLocation] = useLocation();
+  const { getMaxStaminaByEntityId } = useStamina();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const { realmEntityId } = useRealmStore();
@@ -163,9 +164,8 @@ export const BottomNavigation = () => {
               <img src="./images/avatars/1.png" className="w-24 h-24" alt="" />
               <ProgressBar
                 fillColor="yellow"
-                // TODO: Make this the lowest stamina of the troop types
-                totalValue={Number(TROOPS_STAMINAS[250])}
-                filledValue={Number(army?.amount)}
+                totalValue={getMaxStaminaByEntityId(selectedEntityId.id)}
+                entityId={selectedEntityId.id}
               />
               <ProgressBar fillColor="green" totalValue={Number(army?.lifetime)} filledValue={Number(army?.current)} />
             </div>
@@ -189,11 +189,15 @@ export const BottomNavigation = () => {
 interface ProgressBarProps {
   fillColor: string;
   totalValue: number;
-  filledValue: number;
+  entityId?: bigint;
+  filledValue?: number;
 }
 
-const ProgressBar: React.FC<ProgressBarProps> = ({ fillColor, totalValue, filledValue }) => {
-  const filledPercentage = (filledValue / totalValue) * 100;
+const ProgressBar: React.FC<ProgressBarProps> = ({ fillColor, totalValue, entityId, filledValue }) => {
+  const { useStaminaByEntityId } = useStamina();
+  const stamina = useStaminaByEntityId({ travelingEntityId: entityId || 0n });
+
+  const filledPercentage = ((stamina?.amount || filledValue || 0) / totalValue) * 100;
 
   return (
     <div className="relative h-24 w-2 bg-gray-300">
