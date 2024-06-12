@@ -6,7 +6,6 @@ import { placeholderMaterial } from "@/shaders/placeholderMaterial";
 import { createHexagonShape } from "./HexagonGeometry";
 
 const hexMaterial = placeholderMaterial.clone();
-hexMaterial.depthTest = false;
 
 const bigHexagonShape = createHexagonShape(3);
 const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);

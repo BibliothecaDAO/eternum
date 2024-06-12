@@ -28,7 +28,8 @@ export function ScorchedBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: bo
 
   const geometry2 = nodes.Lava.geometry.clone();
   geometry2.applyMatrix4(defaultTransform);
-
+  materials["Scorched Rock"].depthWrite = false;
+  materials.Lava.depthWrite = false;
   const meshes = useMemo(() => {
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["Scorched Rock"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials.Lava, hexes.length);
@@ -56,8 +57,8 @@ export function ScorchedBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: bo
 
   return (
     <>
-      <primitive object={meshes[0]} />
-      <primitive object={meshes[1]} />
+      <primitive object={meshes[0]} renderOrder={1} />
+      <primitive object={meshes[1]} renderOrder={1} />
     </>
   );
 }

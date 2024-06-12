@@ -45,7 +45,7 @@ export function WarriorModel({ rotationY, ...props }: WarriorModelProps) {
       onPointerEnter={handlePointerEnter}
       onPointerOut={handlePointerOut}
     >
-      <primitive castShadow receiveShadow object={model} />
+      <primitive castShadow receiveShadow object={model} renderOrder={1} />
     </group>
   );
 }

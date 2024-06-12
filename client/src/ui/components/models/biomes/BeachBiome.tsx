@@ -34,6 +34,8 @@ export function BeachBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boole
   const geometry3 = nodes.Palm_Trees_2.geometry.clone();
   geometry3.applyMatrix4(defaultTransform);
 
+  materials["White Sand"].depthWrite = false;
+
   const meshes = useMemo(() => {
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["White Sand"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials["Palm Trunk"], hexes.length);
@@ -66,7 +68,7 @@ export function BeachBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boole
 
   return (
     <>
-      <primitive object={meshes[0]} />
+      <primitive object={meshes[0]} renderOrder={1} />
       <primitive object={meshes[1]} />
       <primitive object={meshes[2]} />
     </>

@@ -14,6 +14,8 @@ export function DesertBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: bool
   const desertGeometry = nodes.Desert.geometry.clone();
   desertGeometry.applyMatrix4(defaultTransform);
 
+  materials.Sand.depthWrite = false;
+
   const mesh = useMemo(() => {
     const instancedMesh = new THREE.InstancedMesh(desertGeometry, materials.Sand, hexes.length);
     instancedMesh.receiveShadow = true;
@@ -35,5 +37,5 @@ export function DesertBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: bool
     return instancedMesh;
   }, [hexes]);
 
-  return <primitive object={mesh} />;
+  return <primitive object={mesh} renderOrder={1} />;
 }

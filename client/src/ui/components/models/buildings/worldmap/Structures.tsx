@@ -81,7 +81,7 @@ const BuiltStructure = ({
 
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>
-      <primitive dropShadow scale={scale} object={model!} />
+      <primitive dropShadow scale={scale} object={model!} renderOrder={2} />
     </group>
   );
 };

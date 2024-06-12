@@ -57,6 +57,9 @@ export function TundraBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: bool
       _materials["Tundra Snow"],
     ];
   }, [_materials]);
+  materials[0].depthWrite = false;
+  materials[1].depthWrite = false;
+  materials[2].depthWrite = false;
 
   const meshes = useMemo(() => {
     const instancedMeshes = [...geometries].map((geometry, idx) => {
@@ -92,7 +95,7 @@ export function TundraBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: bool
   return (
     <>
       {meshes.map((mesh, idx) => (
-        <primitive object={mesh} key={idx} />
+        <primitive object={mesh} key={idx} renderOrder={1} />
       ))}
     </>
   );

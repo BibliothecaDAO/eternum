@@ -34,6 +34,8 @@ export function DeciduousForestBiome({ hexes, zOffsets }: { hexes: any[]; zOffse
   const geometry3 = nodes.Deciduous_Trees_2.geometry.clone();
   geometry3.applyMatrix4(defaultTransform);
 
+  materials["Lush Grass"].depthWrite = false;
+
   const meshes = useMemo(() => {
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["Lush Grass"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials["Deciduous Leaves"], hexes.length);
@@ -65,7 +67,7 @@ export function DeciduousForestBiome({ hexes, zOffsets }: { hexes: any[]; zOffse
 
   return (
     <>
-      <primitive object={meshes[0]} />
+      <primitive object={meshes[0]} renderOrder={1} />
       <primitive object={meshes[1]} />
       <primitive object={meshes[2]} />
     </>
