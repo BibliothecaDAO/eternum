@@ -956,8 +956,8 @@
       }
     ],
     "address": "0x455860f93fad20b93ab401eaf9bb63bf86a8222ffe4b0a4216d4694603f4723",
-    "transaction_hash": "0x728dd0e964200e900ffad3a6484a2c2f411ee33073d5cf4b2093bde35074146",
-    "block_number": 4,
+    "transaction_hash": "0x4fbfb8faf344e3f8a79b6953ee5834d51e078f7106aba74274dd726973ed71",
+    "block_number": 3,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -2043,8 +2043,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6b8160ef19de56744f1a46d5e24c40b2c1b85e0b17eee6b435fd9e7b836313d",
-      "class_hash": "0x45dbc8d4fdb744c10f1bd98640fd64affcfe13fd64c5c95ee7899fa9812a655",
-      "original_class_hash": "0x45dbc8d4fdb744c10f1bd98640fd64affcfe13fd64c5c95ee7899fa9812a655",
+      "class_hash": "0x6e2853684011aee4979f06a59422a3e4ad329464ba5f0d0be49ea935bd4b8da",
+      "original_class_hash": "0x6e2853684011aee4979f06a59422a3e4ad329464ba5f0d0be49ea935bd4b8da",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -2173,7 +2173,11 @@
                   "type": "core::bool"
                 }
               ],
-              "outputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
               "state_mutability": "view"
             },
             {
