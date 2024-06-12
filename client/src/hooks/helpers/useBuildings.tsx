@@ -14,7 +14,7 @@ export function useBuildings() {
     },
   } = useDojo();
 
-  const optimisticBuilding = (entityId: bigint, col: number, row: number, buildingType: BuildingType) => {
+  const optimisticBuilding = (entityId: bigint, col: number, row: number, buildingType: BuildingType, resourceType?: number) => {
     let overrideId = uuid();
     const realmPosition = getComponentValue(Position, getEntityIdFromKeys([entityId]));
     const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
@@ -27,7 +27,7 @@ export function useBuildings() {
         inner_col: BigInt(col),
         inner_row: BigInt(row),
         category: BuildingType[buildingType],
-        produced_resource_type: 0,
+        produced_resource_type: resourceType,
         bonus_percent: 0n,
         entity_id: entityId,
         outer_entity_id: entityId,
@@ -66,7 +66,7 @@ export function useBuildings() {
     resourceType?: number,
   ) => {
     // add optimisitc rendering
-    let overrideId = optimisticBuilding(realmEntityId, col, row, buildingType);
+    let overrideId = optimisticBuilding(realmEntityId, col, row, buildingType, resourceType);
 
     await create_building({
       signer: account,
