@@ -43,7 +43,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   private async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
-    const tx = await this.executeMulti(signer, transactionDetails);
+    const tx = await this.execute(signer, transactionDetails);
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
     // const transactionResultCpy = { ...transactionResult };
     this.emit("transactionComplete", transactionResult);
@@ -148,7 +148,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       signer,
     } = props;
 
-    const tx = await this.executeMulti(signer, [
+    const tx = await this.execute(signer, [
       {
         contractAddress: getContractByName(this.manifest, "realm_systems"),
         entrypoint: "create",
@@ -676,7 +676,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       crossbowman_strength,
       advantage_percent,
       disadvantage_percent,
-      pillage_health_divisor
+      pillage_health_divisor,
     } = props;
 
     return await this.executeAndCheckTransaction(signer, {
@@ -690,7 +690,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         crossbowman_strength,
         advantage_percent,
         disadvantage_percent,
-        pillage_health_divisor
+        pillage_health_divisor,
       ],
     });
   }

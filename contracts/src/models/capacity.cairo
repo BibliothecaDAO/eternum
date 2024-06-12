@@ -1,7 +1,9 @@
 use eternum::models::quantity::{Quantity, QuantityTrait};
 use eternum::models::weight::{Weight};
 
-#[derive(Model, Copy, Drop, Serde)]
+
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Capacity {
     #[key]
     entity_id: u128,

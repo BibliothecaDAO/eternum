@@ -1,7 +1,8 @@
 use eternum::models::position::Coord;
 use eternum::utils::map::biomes::Biome;
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Tile {
     #[key]
     _col: u128,

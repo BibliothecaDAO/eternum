@@ -15,7 +15,8 @@ use eternum::models::realm::Realm;
 use eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Resource {
     #[key]
     entity_id: u128,
@@ -38,7 +39,8 @@ impl ResourceDisplay of Display<Resource> {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct ResourceAllowance {
     #[key]
     owner_entity_id: u128,
@@ -49,7 +51,8 @@ struct ResourceAllowance {
     amount: u128,
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct ResourceCost {
     #[key]
     entity_id: u128,
@@ -60,7 +63,8 @@ struct ResourceCost {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct DetachedResource {
     #[key]
     entity_id: u128,
@@ -71,14 +75,16 @@ struct DetachedResource {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct OwnedResourcesTracker {
     #[key]
     entity_id: u128,
     resource_types: u256
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct ResourceTransferLock {
     #[key]
     entity_id: u128,

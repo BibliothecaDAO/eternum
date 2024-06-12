@@ -7,13 +7,13 @@ echo "Build contracts..."
 sozo --profile prod build
 
 echo "Deploying world to Realms L3..."
-sozo --profile prod migrate apply --name eternum12
+sozo --profile prod migrate apply --name eternum
 
 echo "Deleting previous indexer..."
 slot deployments delete eternum torii
 
 echo "Setting up remote indexer on slot..."
-slot deployments create eternum-14 torii --version 0.6.1-alpha.4 --world 0x1944af28414270d176375f1303795247a122a68184065b36d5c1f129dac9751 --rpc https://api.cartridge.gg/x/realms/katana/ --start-block 0
+slot deployments create eternum-18 torii --version v0.7.0-alpha.5 --world 0x455860f93fad20b93ab401eaf9bb63bf86a8222ffe4b0a4216d4694603f4723 --rpc https://api.cartridge.gg/x/eternum-17/katana --start-block 0  --index-pending true
 
 bun --env-file=../client/.env.production ../config/index.ts
 
