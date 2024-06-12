@@ -1,11 +1,10 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useQuests } from "@/hooks/helpers/useQuests";
 import Button from "@/ui/elements/Button";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Check, ShieldQuestion } from "lucide-react";
 import { useMemo, useState } from "react";
-
+import useUIStore from "@/hooks/store/useUIStore";
+import { quests } from "../../components/navigation/Config";
 interface Quest {
   name: string;
   description: string;
@@ -27,11 +26,12 @@ interface Prize {
 export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint }) => {
   const {
     setup: {
-      components: { HasClaimedStartingResources },
       systemCalls: { mint_starting_resources },
     },
     account: { account },
   } = useDojo();
+
+  const togglePopup = useUIStore((state) => state.togglePopup);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -68,6 +68,7 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
       console.error("Failed to claim resources:", error);
     } finally {
       setIsLoading(false);
+      togglePopup(quests);
     }
   };
 
