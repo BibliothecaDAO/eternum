@@ -10,14 +10,15 @@ use eternum::models::owner::{Owner, OwnerTrait, EntityOwner};
 use eternum::models::population::{Population, PopulationTrait};
 use eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
 use eternum::models::production::{
-    Production, ProductionInput, ProductionRateTrait, ProductionInputImpl
+    Production, ProductionInput, ProductionRateTrait, ProductionInputImpl, ProductionInputTrait
 };
 use eternum::models::resources::ResourceTrait;
 use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
 
 //todo we need to define border of innner hexes
 
-#[derive(Model, PartialEq, Copy, Drop, Serde, PrintTrait)]
+#[derive(PartialEq, Copy, Drop, Serde, PrintTrait)]
+#[dojo::model]
 struct Building {
     #[key]
     outer_col: u128,
@@ -34,7 +35,8 @@ struct Building {
     outer_entity_id: u128,
 }
 
-#[derive(Model, PartialEq, Copy, Drop, Serde, PrintTrait)]
+#[derive(PartialEq, Copy, Drop, Serde, PrintTrait)]
+#[dojo::model]
 struct BuildingQuantityv2 {
     #[key]
     entity_id: u128,
@@ -45,6 +47,7 @@ struct BuildingQuantityv2 {
 
 
 #[derive(PartialEq, Copy, Drop, Serde, PrintTrait, Introspect)]
+#[dojo::model]
 enum BuildingCategory {
     None,
     Castle,

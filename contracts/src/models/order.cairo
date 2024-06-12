@@ -1,4 +1,5 @@
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Orders {
     #[key]
     order_id: u128,

@@ -2,21 +2,20 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 // Dojo imports
-use dojo::database::introspect::{Struct, Ty, Introspect, Member, serialize_member};
+use dojo::database::introspect::{Struct, Ty, Introspect, Member};
 
 // Starknet imports
 use starknet::ContractAddress;
 
 impl IntrospectFixed of Introspect<Fixed> {
     #[inline(always)]
-    fn size() -> usize {
-        2
+    fn size() -> Option<usize> {
+        Option::Some(2)
     }
 
     #[inline(always)]
-    fn layout(ref layout: Array<u8>) {
-        layout.append(128);
-        layout.append(1);
+    fn layout() -> dojo::database::introspect::Layout {
+        dojo::database::introspect::Layout::Fixed(array![128, 1].span())
     }
 
     #[inline(always)]
@@ -26,12 +25,8 @@ impl IntrospectFixed of Introspect<Fixed> {
                 name: 'Fixed',
                 attrs: array![].span(),
                 children: array![
-                    serialize_member(
-                        @Member { name: 'mag', ty: Ty::Primitive('u128'), attrs: array![].span() }
-                    ),
-                    serialize_member(
-                        @Member { name: 'sign', ty: Ty::Primitive('bool'), attrs: array![].span() }
-                    )
+                    Member { name: 'mag', ty: Ty::Primitive('u128'), attrs: array![].span() },
+                    Member { name: 'sign', ty: Ty::Primitive('bool'), attrs: array![].span() }
                 ]
                     .span()
             }
@@ -39,7 +34,8 @@ impl IntrospectFixed of Introspect<Fixed> {
     }
 }
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Market {
     #[key]
     bank_entity_id: u128,
