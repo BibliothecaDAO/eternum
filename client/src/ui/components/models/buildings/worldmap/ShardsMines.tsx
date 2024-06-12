@@ -14,7 +14,7 @@ export const ShardsMines = () => {
       const position = getComponentValue(setup.components.Position, mine);
       return {
         position: position!,
-        entityId: position!.entity_id,
+        entityId: position?.entity_id,
         uiPos: getUIPositionFromColRow(position!.x, position!.y, false),
       };
     });
