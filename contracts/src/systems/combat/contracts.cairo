@@ -85,7 +85,9 @@ mod combat_systems {
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
-        fn army_create(world: IWorldDispatcher, army_owner_id: u128, army_is_protector: bool) -> u128 {
+        fn army_create(
+            world: IWorldDispatcher, army_owner_id: u128, army_is_protector: bool
+        ) -> u128 {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
@@ -528,16 +530,19 @@ mod combat_systems {
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
                 // ensure structure army is in battle
-                let structure_army: Army = get!(world, structure_army_id, Army);
-                structure_army.assert_in_battle();
+                let structure_army_health: Health = get!(world, structure_army_id, Health);
+                if structure_army_health.is_alive() {
+                    let structure_army: Army = get!(world, structure_army_id, Army);
+                    structure_army.assert_in_battle();
 
-                // update battle state before checking battle winner
-                let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
-                battle.update_state();
-                set!(world, (battle));
+                    // update battle state before checking battle winner
+                    let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
+                    battle.update_state();
+                    set!(world, (battle));
 
-                // ensure structure lost the battle
-                assert!(structure_army.battle_side != battle.winner(), "structure army won");
+                    // ensure structure lost the battle
+                    assert!(structure_army.battle_side != battle.winner(), "structure army won");
+                }
             }
 
             // pass ownership of structure to claimer
