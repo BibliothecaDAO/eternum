@@ -74,23 +74,23 @@ export function useBuildings() {
     // add optimisitc rendering
     let overrideId = optimisticBuilding(realmEntityId, col, row, buildingType, resourceType);
 
-    // await create_building({
-    //   signer: account,
-    //   entity_id: realmEntityId as bigint,
-    //   building_coord: {
-    //     x: col.toString(),
-    //     y: row.toString(),
-    //   },
-    //   building_category: buildingType,
-    //   produce_resource_type:
-    //     buildingType == BuildingType.Resource && resourceType
-    //       ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
-    //       : new CairoOption<Number>(CairoOptionVariant.None, 0),
-    // }).finally(() => {
-    //   setTimeout(() => {
-    //     Building.removeOverride(overrideId);
-    //   }, 2000);
-    // });
+    await create_building({
+      signer: account,
+      entity_id: realmEntityId as bigint,
+      building_coord: {
+        x: col.toString(),
+        y: row.toString(),
+      },
+      building_category: buildingType,
+      produce_resource_type:
+        buildingType == BuildingType.Resource && resourceType
+          ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
+          : new CairoOption<Number>(CairoOptionVariant.None, 0),
+    }).finally(() => {
+      setTimeout(() => {
+        Building.removeOverride(overrideId);
+      }, 2000);
+    });
   };
 
   const destroyBuilding = async (realmEntityId: bigint, col: number, row: number) => {
