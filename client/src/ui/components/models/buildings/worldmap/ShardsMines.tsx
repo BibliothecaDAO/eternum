@@ -15,7 +15,7 @@ export const ShardsMines = () => {
       return {
         position: position!,
         entityId: position?.entity_id,
-        uiPos: getUIPositionFromColRow(position!.x, position!.y, false),
+        uiPos: getUIPositionFromColRow(position?.x || 0, position?.y || 0, false),
       };
     });
   }, [mines]);
