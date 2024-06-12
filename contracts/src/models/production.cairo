@@ -254,18 +254,24 @@ impl ProductionOutputImpl of ProductionOutputTrait {
                 world, (resource.entity_id, output_resource_type), Production
             );
 
-            // Update the end tick for the output resource based on changes in the current resource
-            let output_resource_finish_tick = ProductionInputImpl::first_input_finish_tick(
-                @output_resource_production, world
-            );
-            output_resource_production
-                .set_input_finish_tick(ref output_resource, @tick, output_resource_finish_tick);
+            if output_resource_production.building_count > 0 {
+                // Update the end tick for the output resource
+                let output_resource_production_finish_tick =
+                    ProductionInputImpl::first_input_finish_tick(
+                    @output_resource_production, world
+                );
+
+                output_resource_production
+                    .set_input_finish_tick(
+                        ref output_resource, @tick, output_resource_production_finish_tick
+                    );
+
+                // Save the updated production details of the output resource back to the world
+                set!(world, (output_resource, output_resource_production));
+            }
 
             count += 1;
-
-            // Save the updated production details of the output resource back to the world
-            set!(world, (output_resource, output_resource_production));
-        }
+        };
     }
 }
 
