@@ -19,15 +19,11 @@ use eternum::systems::config::contracts::{
     ICapacityConfigDispatcherTrait
 };
 
-use eternum::systems::realm::contracts::{
-    realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
-};
-
 use eternum::systems::trade::contracts::trade_systems::{
     trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system};
+use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, deploy_realm_systems};
 
 use starknet::contract_address_const;
 
@@ -57,54 +53,14 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     IWeightConfigDispatcher { contract_address: config_systems_address }
         .set_weight_config(ResourceTypes::SILVER.into(), 200);
 
-    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
-    let realm_systems_dispatcher = IRealmSystemsDispatcher {
-        contract_address: realm_systems_address
-    };
-
     // maker and taker are at the same location
     // so they can trade without transport
     let maker_position = Position { x: 100000, y: 1000000, entity_id: 1_u128 };
     let taker_position = Position { x: 100000, y: 1000000, entity_id: 1_u128 };
 
-    let realm_id = 1;
-    let resource_types_packed = 1;
-    let resource_types_count = 1;
-    let cities = 6;
-    let harbors = 5;
-    let rivers = 5;
-    let regions = 5;
-    let wonder = 1;
-    let order = 1;
-
-    // create maker's realm
-    let maker_realm_entity_id = realm_systems_dispatcher
-        .create(
-            realm_id,
-            resource_types_packed,
-            resource_types_count,
-            cities,
-            harbors,
-            rivers,
-            regions,
-            wonder,
-            order,
-            maker_position.clone(),
-        );
-    // create taker's realm
-    let taker_realm_entity_id = realm_systems_dispatcher
-        .create(
-            realm_id,
-            resource_types_packed,
-            resource_types_count,
-            cities,
-            harbors,
-            rivers,
-            regions,
-            wonder,
-            order,
-            taker_position.clone(),
-        );
+    let realm_systems_dispatcher = deploy_realm_systems(world);
+    let maker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, maker_position);
+    let taker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, taker_position);
 
     let maker_id = maker_realm_entity_id;
     let taker_id = taker_realm_entity_id;

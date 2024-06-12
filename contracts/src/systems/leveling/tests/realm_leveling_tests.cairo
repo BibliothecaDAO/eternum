@@ -16,11 +16,11 @@ use eternum::systems::leveling::contracts::{
     leveling_systems, ILevelingSystemsDispatcher, ILevelingSystemsDispatcherTrait
 };
 
-use eternum::systems::realm::contracts::{
-    realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
-};
+use eternum::systems::realm::contracts::{IRealmSystemsDispatcher};
 
-use eternum::utils::testing::{spawn_eternum, deploy_system};
+use eternum::utils::testing::{
+    spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos, deploy_realm_systems
+};
 
 use starknet::contract_address_const;
 
@@ -65,29 +65,8 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
             resource_3_costs
         );
 
-    // set realm entity
-    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
-    let realm_systems_dispatcher = IRealmSystemsDispatcher {
-        contract_address: realm_systems_address
-    };
-
-    // create realm
-
-    let realm_entity_id = realm_systems_dispatcher
-        .create(
-            1, // realm id
-            0x20309, // resource_types_packed // 2,3,9 // stone, coal, gold
-            3, // resource_types_count
-            5, // cities
-            5, // harbors
-            5, // rivers
-            5, // regions
-            1, // wonder
-            1, // order
-            Position { x: 500200, y: 1, entity_id: 1_u128 }, // position  
-        // x needs to be > 470200 to get zone
-
-        );
+    let realm_systems_dispatcher = deploy_realm_systems(world);
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
     // mint 100_000 wheat and fish for the realm;
     set!(
@@ -136,7 +115,7 @@ fn test_level_up_realm() {
 #[test]
 #[available_gas(300000000000)]
 #[should_panic(expected: ('not realm owner', 'ENTRYPOINT_FAILED'))]
-fn test_level_up__not_realm_owner() {
+fn test_level_up_not_realm_owner() {
     let (_, realm_entity_id, leveling_systems_dispatcher) = setup();
 
     // set unknown caller
@@ -150,7 +129,7 @@ fn test_level_up__not_realm_owner() {
 #[test]
 #[available_gas(300000000000)]
 #[should_panic(expected: ('not a realm', 'ENTRYPOINT_FAILED'))]
-fn test_level_up__not_realm() {
+fn test_level_up_not_realm() {
     let (_, _, leveling_systems_dispatcher) = setup();
 
     // set abritrary realm entity id

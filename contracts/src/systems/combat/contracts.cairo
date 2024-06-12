@@ -2,7 +2,7 @@ use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
 #[dojo::interface]
 trait ICombatContract<TContractState> {
-    fn army_create(army_owner_id: u128, army_is_protector: bool);
+    fn army_create(army_owner_id: u128, army_is_protector: bool) -> u128;
     fn army_buy_troops(army_id: u128, payer_id: u128, troops: Troops);
     fn army_merge_troops(from_army_id: u128, to_army_id: u128, troops: Troops);
 
@@ -85,7 +85,7 @@ mod combat_systems {
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
-        fn army_create(world: IWorldDispatcher, army_owner_id: u128, army_is_protector: bool) {
+        fn army_create(world: IWorldDispatcher, army_owner_id: u128, army_is_protector: bool) -> u128 {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
@@ -170,6 +170,7 @@ mod combat_systems {
                     })
                 )
             }
+            army_id
         }
 
 

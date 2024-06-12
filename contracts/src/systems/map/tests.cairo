@@ -4,10 +4,11 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 use eternum::models::capacity::Capacity;
-use eternum::models::combat::{Health};
+use eternum::models::combat::{Health, Troops};
 use eternum::models::config::TickConfig;
 
 use eternum::models::map::Tile;
+use eternum::models::stamina::Stamina;
 use eternum::models::movable::{Movable};
 use eternum::models::owner::Owner;
 use eternum::models::owner::{EntityOwner};
@@ -23,18 +24,19 @@ use eternum::systems::config::contracts::{
     IWeightConfigDispatcherTrait
 };
 
-use eternum::systems::map::contracts::map_systems;
-
-use eternum::systems::map::contracts::{IMapSystemsDispatcher, IMapSystemsDispatcherTrait};
-
-use eternum::systems::realm::contracts::{
-    realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
+use eternum::systems::map::contracts::{
+    map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait
 };
+
 use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system};
+use eternum::systems::combat::contracts::{
+    combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait
+};
+
+use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos};
 use starknet::contract_address_const;
 
 const INITIAL_WHEAT_BALANCE: u128 = 7000;
@@ -88,48 +90,37 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     };
     set!(world, (tick_config));
 
-    // create realm
-    let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
-    let realm_systems_dispatcher = IRealmSystemsDispatcher {
-        contract_address: realm_systems_address
-    };
-
-    let realm_position = Position { x: 20, y: 30, entity_id: 1_u128 };
-
-    let realm_id = 1;
-    let resource_types_packed = 1;
-    let resource_types_count = 1;
-    let cities = 6;
-    let harbors = 5;
-    let rivers = 5;
-    let regions = 5;
-    let wonder = 1;
-    let order = 1;
-
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
 
-    let realm_entity_id = realm_systems_dispatcher
-        .create(
-            realm_id,
-            resource_types_packed,
-            resource_types_count,
-            cities,
-            harbors,
-            rivers,
-            regions,
-            wonder,
-            order,
-            realm_position.clone(),
-        );
+    let realm_position = get_default_realm_pos();
+    let realm_entity_id = spawn_realm(world, realm_position);
 
     let realm_owner: Owner = get!(world, realm_entity_id, Owner);
 
+    let combat_systems_address = deploy_system(world, combat_systems::TEST_CLASS_HASH);
+    let combat_systems_dispatcher = ICombatContractDispatcher {
+        contract_address: combat_systems_address
+    };
+
+    let realm_army_unit_id: u128 = combat_systems_dispatcher.army_create(realm_entity_id, false);
+
+    set!(
+        world,
+        (
+            Resource {
+                entity_id: realm_entity_id,
+                resource_type: ResourceTypes::KNIGHT,
+                balance: 100
+            },
+        )
+    );
+
     // create realm army unit
-    let realm_army_unit_id: u128 = 'army unit'.try_into().unwrap();
+    // let realm_army_unit_id: u128 = 'army unit'.try_into().unwrap();
     let army_quantity_value: u128 = 7;
     let army_capacity_value_per_soldier: u128 = 7;
 
-    // set army health value to make it alive
+    // // set army health value to make it alive
     set!(world, (Health { entity_id: realm_army_unit_id, current: 1, lifetime: 1 }));
 
     set!(
@@ -154,6 +145,11 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
             }
         )
     );
+
+    let troops = Troops {knight_count: 50, paladin_count: 0, crossbowman_count: 0};
+    combat_systems_dispatcher.army_buy_troops(realm_army_unit_id, realm_entity_id, troops);
+
+    set!(world, Stamina {entity_id: realm_army_unit_id, amount: 100, last_refill_tick: 0});
 
     // deploy map systems
     let map_systems_address = deploy_system(world, map_systems::TEST_CLASS_HASH);

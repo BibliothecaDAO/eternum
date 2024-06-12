@@ -144,7 +144,7 @@ mod hyperstructure_systems {
             let (resource_type, contribution_amount) = contribution;
 
             let (max_contributable_amount, will_complete_resource) =
-                InternalHyperstructureSystemsImpl::get_max_contribution_size(
+                Self::get_max_contribution_size(
                 world, hyperstructure_entity_id, resource_type, contribution_amount
             );
 
@@ -152,14 +152,14 @@ mod hyperstructure_systems {
                 return false;
             }
 
-            InternalHyperstructureSystemsImpl::add_contribution(
+            Self::add_contribution(
                 world, hyperstructure_entity_id, resource_type, max_contributable_amount,
             );
-            InternalHyperstructureSystemsImpl::burn_player_resources(
+            Self::burn_player_resources(
                 world, resource_type, max_contributable_amount, contributor_entity_id
             );
 
-            InternalHyperstructureSystemsImpl::update_progress(
+            Self::update_progress(
                 world, hyperstructure_entity_id, resource_type, max_contributable_amount
             );
 
@@ -243,7 +243,7 @@ mod hyperstructure_systems {
             let mut i = 0;
             while (i < all_resources.len()) {
                 done =
-                    InternalHyperstructureSystemsImpl::check_if_resource_completed(
+                    Self::check_if_resource_completed(
                         world, hyperstructure_entity_id, *all_resources.at(i)
                     );
                 if (done == false) {
