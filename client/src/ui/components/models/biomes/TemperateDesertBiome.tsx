@@ -27,7 +27,8 @@ export function TemperateDesertBiome({ hexes, zOffsets }: { hexes: any[]; zOffse
 
   const geometry2 = nodes.Temperate_Desert_Terrain_2.geometry.clone();
   geometry2.applyMatrix4(defaultTransform);
-
+  materials["Red Rock"].depthWrite = false;
+  materials["Orange Sand"].depthWrite = false;
   const meshes = useMemo(() => {
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["Red Rock"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials["Orange Sand"], hexes.length);
@@ -56,8 +57,8 @@ export function TemperateDesertBiome({ hexes, zOffsets }: { hexes: any[]; zOffse
 
   return (
     <>
-      <primitive object={meshes[0]} />
-      <primitive object={meshes[1]} />
+      <primitive object={meshes[0]} renderOrder={1} />
+      <primitive object={meshes[1]} renderOrder={1} />
     </>
   );
 }

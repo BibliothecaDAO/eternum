@@ -239,8 +239,8 @@ export function Flags(props) {
                 setTooltipPosition(posVector);
               }}
             >
-              <primitive object={woodInstance} />
-              <primitive object={flagInstances[index]} />
+              <primitive object={woodInstance} renderOrder={3} />
+              <primitive object={flagInstances[index]} renderOrder={3} />
             </group>
           );
         })}

@@ -47,6 +47,8 @@ export function TemperateRainforestBiome({ hexes, zOffsets }: { hexes: any[]; zO
     ];
   }, [_materials]);
 
+  materials[0].depthWrite = false;
+
   const meshes = useMemo(() => {
     const instancedMeshes = [...geometries].map((geometry, idx) => {
       const instancedMesh = new THREE.InstancedMesh(geometry, materials[idx], hexes.length);
@@ -80,7 +82,7 @@ export function TemperateRainforestBiome({ hexes, zOffsets }: { hexes: any[]; zO
   return (
     <>
       {meshes.map((mesh, idx) => (
-        <primitive object={mesh} key={idx} />
+        <primitive object={mesh} key={idx} renderOrder={1} />
       ))}
     </>
   );

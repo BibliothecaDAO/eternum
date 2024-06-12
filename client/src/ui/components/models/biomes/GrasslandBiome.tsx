@@ -14,6 +14,8 @@ export function GrasslandBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: b
   const geometry = nodes.Grassland.geometry.clone();
   geometry.applyMatrix4(defaultTransform);
 
+  materials["Lush Grass"].depthWrite = false;
+
   const mesh = useMemo(() => {
     const instancedMesh = new THREE.InstancedMesh(geometry, materials["Lush Grass"], hexes.length);
     instancedMesh.receiveShadow = true;
@@ -34,5 +36,5 @@ export function GrasslandBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: b
     return instancedMesh;
   }, [hexes]);
 
-  return <primitive object={mesh} />;
+  return <primitive object={mesh} renderOrder={1} />;
 }
