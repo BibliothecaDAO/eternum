@@ -14,7 +14,13 @@ export function useBuildings() {
     },
   } = useDojo();
 
-  const optimisticBuilding = (entityId: bigint, col: number, row: number, buildingType: BuildingType) => {
+  const optimisticBuilding = (
+    entityId: bigint,
+    col: number,
+    row: number,
+    buildingType: BuildingType,
+    resourceType?: number,
+  ) => {
     let overrideId = uuid();
     const realmPosition = getComponentValue(Position, getEntityIdFromKeys([entityId]));
     const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
@@ -27,7 +33,7 @@ export function useBuildings() {
         inner_col: BigInt(col),
         inner_row: BigInt(row),
         category: BuildingType[buildingType],
-        produced_resource_type: 0,
+        produced_resource_type: resourceType ? resourceType : 0,
         bonus_percent: 0n,
         entity_id: entityId,
         outer_entity_id: entityId,
@@ -66,25 +72,25 @@ export function useBuildings() {
     resourceType?: number,
   ) => {
     // add optimisitc rendering
-    let overrideId = optimisticBuilding(realmEntityId, col, row, buildingType);
+    let overrideId = optimisticBuilding(realmEntityId, col, row, buildingType, resourceType);
 
-    await create_building({
-      signer: account,
-      entity_id: realmEntityId as bigint,
-      building_coord: {
-        x: col.toString(),
-        y: row.toString(),
-      },
-      building_category: buildingType,
-      produce_resource_type:
-        buildingType == BuildingType.Resource && resourceType
-          ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
-          : new CairoOption<Number>(CairoOptionVariant.None, 0),
-    }).finally(() => {
-      setTimeout(() => {
-        Building.removeOverride(overrideId);
-      }, 2000);
-    });
+    // await create_building({
+    //   signer: account,
+    //   entity_id: realmEntityId as bigint,
+    //   building_coord: {
+    //     x: col.toString(),
+    //     y: row.toString(),
+    //   },
+    //   building_category: buildingType,
+    //   produce_resource_type:
+    //     buildingType == BuildingType.Resource && resourceType
+    //       ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
+    //       : new CairoOption<Number>(CairoOptionVariant.None, 0),
+    // }).finally(() => {
+    //   setTimeout(() => {
+    //     Building.removeOverride(overrideId);
+    //   }, 2000);
+    // });
   };
 
   const destroyBuilding = async (realmEntityId: bigint, col: number, row: number) => {
