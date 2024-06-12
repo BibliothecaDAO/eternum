@@ -8,7 +8,6 @@ use eternum::models::combat::{Health, Troops};
 use eternum::models::config::TickConfig;
 
 use eternum::models::map::Tile;
-use eternum::models::stamina::Stamina;
 use eternum::models::movable::{Movable};
 use eternum::models::owner::Owner;
 use eternum::models::owner::{EntityOwner};
@@ -16,7 +15,12 @@ use eternum::models::position::{Position, Coord, CoordTrait, Direction};
 use eternum::models::quantity::Quantity;
 use eternum::models::realm::Realm;
 use eternum::models::resources::{Resource, ResourceFoodImpl};
+use eternum::models::stamina::Stamina;
 use eternum::models::weight::Weight;
+
+use eternum::systems::combat::contracts::{
+    combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait
+};
 
 use eternum::systems::config::contracts::{
     config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait,
@@ -30,10 +34,6 @@ use eternum::systems::map::contracts::{
 
 use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
-};
-
-use eternum::systems::combat::contracts::{
-    combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait
 };
 
 use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos};
@@ -108,9 +108,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
         world,
         (
             Resource {
-                entity_id: realm_entity_id,
-                resource_type: ResourceTypes::KNIGHT,
-                balance: 100
+                entity_id: realm_entity_id, resource_type: ResourceTypes::KNIGHT, balance: 100
             },
         )
     );
@@ -146,10 +144,10 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
         )
     );
 
-    let troops = Troops {knight_count: 50, paladin_count: 0, crossbowman_count: 0};
+    let troops = Troops { knight_count: 50, paladin_count: 0, crossbowman_count: 0 };
     combat_systems_dispatcher.army_buy_troops(realm_army_unit_id, realm_entity_id, troops);
 
-    set!(world, Stamina {entity_id: realm_army_unit_id, amount: 100, last_refill_tick: 0});
+    set!(world, Stamina { entity_id: realm_army_unit_id, amount: 100, last_refill_tick: 0 });
 
     // deploy map systems
     let map_systems_address = deploy_system(world, map_systems::TEST_CLASS_HASH);
