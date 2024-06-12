@@ -26,7 +26,7 @@ mod donkey_systems {
     impl InternalDonkeySystemsImpl of InternalDonkeySystemsTrait {
         fn burn_donkey(world: IWorldDispatcher, payer_id: ID, weight: u128) {
             // get number of donkeys needed
-            let donkey_amount = InternalDonkeySystemsImpl::get_donkey_needed(world, weight);
+            let donkey_amount = Self::get_donkey_needed(world, weight);
 
             // burn amount of donkey needed
             let mut donkeys: Resource = ResourceImpl::get(world, (payer_id, ResourceTypes::DONKEY));
@@ -36,7 +36,7 @@ mod donkey_systems {
 
         fn return_donkey(world: IWorldDispatcher, payer_id: ID, weight: u128) {
             // get number of donkeys needed
-            let donkey_amount = InternalDonkeySystemsImpl::get_donkey_needed(world, weight);
+            let donkey_amount = Self::get_donkey_needed(world, weight);
 
             // return amount of donkey needed
             let mut donkeys: Resource = ResourceImpl::get(world, (payer_id, ResourceTypes::DONKEY));
@@ -53,7 +53,7 @@ mod donkey_systems {
             intermediate_coord: Coord
         ) -> ID {
             let arrives_at: u64 = starknet::get_block_timestamp()
-                + InternalDonkeySystemsImpl::get_donkey_travel_time(
+                + Self::get_donkey_travel_time(
                     world,
                     start_coord,
                     intermediate_coord,

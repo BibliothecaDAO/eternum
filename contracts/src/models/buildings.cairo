@@ -96,7 +96,7 @@ impl BuildingQuantityv2TrackerImpl of BuildingQuantityv2TrackerTrait {
     }
     fn key(entity_id: u128, category: felt252, resource_type: u8) -> felt252 {
         let q: Array<felt252> = array![
-            entity_id.into(), BuildingQuantityv2TrackerImpl::salt(), category, resource_type.into()
+            entity_id.into(), Self::salt(), category, resource_type.into()
         ];
         hash(q.span())
     }

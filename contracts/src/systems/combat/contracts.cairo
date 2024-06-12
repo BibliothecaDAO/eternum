@@ -85,7 +85,9 @@ mod combat_systems {
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
-        fn army_create(world: IWorldDispatcher, army_owner_id: u128, army_is_protector: bool) -> u128 {
+        fn army_create(
+            world: IWorldDispatcher, army_owner_id: u128, army_is_protector: bool
+        ) -> u128 {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
