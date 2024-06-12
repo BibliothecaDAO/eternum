@@ -2,8 +2,8 @@ import { usePositionArmies } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { useMemo } from "react";
-import { ArmiesAtLocation } from "../../military/Battle";
 import { StructureCard } from "../../hyperstructures/StructureCard";
+import { ArmiesAtLocation } from "../../military/Battle";
 
 export const HexagonInformationPanel = () => {
   const { clickedHex, selectedEntity, setSelectedEntity } = useUIStore(
@@ -19,15 +19,15 @@ export const HexagonInformationPanel = () => {
     if (clickedHex) return { x: clickedHex.contractPos.col, y: clickedHex.contractPos.row };
   }, [clickedHex, selectedEntity]);
 
-  const { userArmies, enemyArmies } = usePositionArmies({
+  const { userAttackingArmies, enemyArmies } = usePositionArmies({
     position: { x: position?.x || 0, y: position?.y || 0 },
   });
 
   const panelSelectedEntity = useMemo(() => {
     if (selectedEntity) return selectedEntity;
-    if (userArmies.length > 0 && clickedHex) {
+    if (userAttackingArmies.length > 0 && clickedHex) {
       const entity = {
-        id: BigInt(userArmies[0].entity_id),
+        id: BigInt(userAttackingArmies[0].entity_id),
         position: { x: clickedHex.contractPos.col, y: clickedHex.contractPos.row },
       };
       setSelectedEntity(entity);
@@ -38,8 +38,8 @@ export const HexagonInformationPanel = () => {
 
   const ownArmySelected = useMemo(() => {
     if (!selectedEntity) return;
-    return userArmies.find((army) => BigInt(army.entity_id) === selectedEntity.id);
-  }, [userArmies, selectedEntity]);
+    return userAttackingArmies.find((army) => BigInt(army.entity_id) === selectedEntity.id);
+  }, [userAttackingArmies, selectedEntity]);
 
   return (
     position && (
@@ -64,7 +64,7 @@ export const HexagonInformationPanel = () => {
                 <SelectValue placeholder="Your armies" />
               </SelectTrigger>
               <SelectContent className="bg-brown text-gold">
-                {userArmies.map((army, index) => (
+                {userAttackingArmies.map((army, index) => (
                   <SelectItem
                     className="flex justify-between text-sm"
                     key={index}

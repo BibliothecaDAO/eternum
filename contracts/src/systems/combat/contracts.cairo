@@ -91,7 +91,6 @@ mod combat_systems {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
-            // make army 
             let mut army_id: u128 = world.uuid().into();
             set!(
                 world,
@@ -103,23 +102,17 @@ mod combat_systems {
                 })
             );
 
-            // set army owner entity
             set!(world, (EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id }));
             set!(world, (Owner { entity_id: army_id, address: starknet::get_caller_address() }));
 
-            // set army position to be owner position
             let owner_position: Position = get!(world, army_owner_id, Position);
             set!(
                 world, (Position { entity_id: army_id, x: owner_position.x, y: owner_position.y })
             );
 
             if army_is_protector {
-                ////// it's a structure protector //////////////
-
-                // ensure entity is a structure
                 get!(world, army_owner_id, Structure).assert_is_structure();
 
-                // ensure entity does not already have a protector
                 let mut protector: Protector = get!(world, army_owner_id, Protector);
                 assert!(
                     protector.army_id.is_zero(),
@@ -127,16 +120,11 @@ mod combat_systems {
                     army_owner_id
                 );
 
-                // set structure protector
                 protector.army_id = army_id;
                 set!(world, (protector));
 
-                // set army protectee
                 set!(world, (Protectee { army_id, protectee_id: army_owner_id }));
             } else {
-                ////// it's a moving army (raider) //////////////
-
-                // set movable model
                 let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
                     .sec_per_km;
                 set!(
@@ -153,7 +141,6 @@ mod combat_systems {
                     }
                 );
 
-                // set army carry capacity
                 let army_carry_capacity: CapacityConfig = CapacityConfigImpl::get(
                     world, ARMY_ENTITY_TYPE
                 );
@@ -265,34 +252,27 @@ mod combat_systems {
 
 
         fn battle_start(world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128) {
-            // ensure attacking army is not in any battle
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             attacking_army.assert_not_in_battle();
 
-            // ensure caller owns attacking army
             get!(world, attacking_army_id, EntityOwner).assert_caller_owner(world);
 
-            // ensure defending army is not in any battle
             let mut defending_army: Army = get!(world, defending_army_id, Army);
             defending_army.assert_not_in_battle();
 
-            // ensure attacker and defender are in same location
             let attacking_army_position: Position = get!(world, attacking_army_id, Position);
             let defending_army_position: Position = get!(world, defending_army_id, Position);
             attacking_army_position.assert_same_location(defending_army_position.into());
 
-            // update attacking army battle details
             let battle_id: u128 = world.uuid().into();
             attacking_army.battle_id = battle_id;
             attacking_army.battle_side = BattleSide::Attack;
             set!(world, (attacking_army));
 
-            // update defending army battle details
             defending_army.battle_id = battle_id;
             defending_army.battle_side = BattleSide::Defence;
             set!(world, (defending_army));
 
-            // make attacking army immovable
             let mut attacking_army_protectee: Protectee = get!(world, attacking_army_id, Protectee);
             let mut attacking_army_movable: Movable = get!(world, attacking_army_id, Movable);
             if attacking_army_protectee.is_none() {
@@ -301,7 +281,6 @@ mod combat_systems {
                 set!(world, (attacking_army_movable));
             }
 
-            // make defending army immovable
             let mut defending_army_protectee: Protectee = get!(world, defending_army_id, Protectee);
             let mut defending_army_movable: Movable = get!(world, defending_army_id, Movable);
             if defending_army_protectee.is_none() {
@@ -326,7 +305,6 @@ mod combat_systems {
             defending_army_protectee_resource_lock.release_at = BoundedInt::max();
             set!(world, (defending_army_protectee_resource_lock));
 
-            // create battle 
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
             defending_army_health.assert_alive("Army");
@@ -339,13 +317,11 @@ mod combat_systems {
             battle.defence_army_health = defending_army_health.into();
             battle.last_updated = starknet::get_block_timestamp();
 
-            // set battle position 
             let mut battle_position: Position = Default::default();
             battle_position.y = attacking_army_position.x;
             battle_position.y = attacking_army_position.y;
             set!(world, (battle_position));
 
-            // start battle
             let troop_config = TroopConfigImpl::get(world);
             battle.restart(troop_config);
             set!(world, (battle));

@@ -6,12 +6,6 @@ import { currencyFormat } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 
-const nameMapping: { [key: number]: string } = {
-  [ResourcesIds.Knight]: "Knight",
-  [ResourcesIds.Crossbowmen]: "Crossbowman",
-  [ResourcesIds.Paladin]: "Paladin",
-};
-
 const troops = [
   { name: ResourcesIds.Knight, cost: 10, attack: 10, defense: 10, strong: "Cavalry", weak: "Archers" },
   { name: ResourcesIds.Crossbowmen, cost: 10, attack: 10, defense: 10, strong: "Swordsmen", weak: "Cavalry" },
@@ -74,7 +68,7 @@ export const TroopSelect = ({ entity }: any) => {
       <div className="grid grid-cols-3 gap-2">
         {troops.map((troop) => (
           <div className="p-2 border" key={troop.name}>
-            <h5 className="font-bold">{nameMapping[troop.name]}</h5>
+            <h5 className="font-bold">{ResourcesIds[troop.name]}</h5>
             <div>
               Available:{" "}
               {currencyFormat(
@@ -107,13 +101,13 @@ export const TroopSelect = ({ entity }: any) => {
       <div className="mb-3 border p-2">
         <h4>Enlisting</h4>
         <div>
-          {nameMapping[ResourcesIds.Knight]}: {troopCounts[ResourcesIds.Knight]}
+          {ResourcesIds[ResourcesIds.Knight]}: {troopCounts[ResourcesIds.Knight]}
         </div>
         <div>
-          {nameMapping[ResourcesIds.Crossbowmen]}: {troopCounts[ResourcesIds.Crossbowmen]}
+          {ResourcesIds[ResourcesIds.Crossbowmen]}: {troopCounts[ResourcesIds.Crossbowmen]}
         </div>
         <div>
-          {nameMapping[ResourcesIds.Paladin]}: {troopCounts[ResourcesIds.Paladin]}
+          {ResourcesIds[ResourcesIds.Paladin]}: {troopCounts[ResourcesIds.Paladin]}
         </div>
       </div>
       <hr />

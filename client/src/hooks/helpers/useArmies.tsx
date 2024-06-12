@@ -269,10 +269,19 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
       });
     }, [allArmies]);
 
+    const userAttackingArmies = useMemo(() => {
+      return allArmies.filter((army: any) => {
+        const entityOwner = getComponentValue(Protectee, getEntityIdFromKeys([army?.entity_id || 0n]));
+        console.log(entityOwner);
+        return !entityOwner;
+      });
+    }, [allArmies]);
+
     return {
       allArmies,
       enemyArmies,
       userArmies,
+      userAttackingArmies,
     };
   }
 };

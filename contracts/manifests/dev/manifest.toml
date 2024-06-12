@@ -4,8 +4,8 @@ class_hash = "0xf6f44afb3cacbcc01a371aff62c86ca9a45feba065424c99f7cd8637514d8f"
 original_class_hash = "0xf6f44afb3cacbcc01a371aff62c86ca9a45feba065424c99f7cd8637514d8f"
 abi = "manifests/dev/abis/deployments/dojo_world_world.json"
 address = "0x455860f93fad20b93ab401eaf9bb63bf86a8222ffe4b0a4216d4694603f4723"
-transaction_hash = "0x728dd0e964200e900ffad3a6484a2c2f411ee33073d5cf4b2093bde35074146"
-block_number = 4
+transaction_hash = "0x4fbfb8faf344e3f8a79b6953ee5834d51e078f7106aba74274dd726973ed71"
+block_number = 3
 seed = "eternum"
 name = "dojo::world::world"
 
@@ -1262,23 +1262,6 @@ key = false
 
 [[models.members]]
 name = "valid_until"
-type = "u64"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x7f7358235c8d086b40038dd305c40caa278fc9d5edebc8645e209b52fca5bea"
-original_class_hash = "0x7f7358235c8d086b40038dd305c40caa278fc9d5edebc8645e209b52fca5bea"
-abi = "manifests/dev/abis/deployments/models/eternum_models_loyalty_loyalty.json"
-name = "eternum::models::loyalty::loyalty"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "last_updated_tick"
 type = "u64"
 key = false
 
