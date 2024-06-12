@@ -136,7 +136,7 @@ export const useSetExistingStructures = () => {
     subCreated.current = true;
   }, []);
 
-  useMemo(() => {
+  useEffect(() => {
     const _tmp = builtStructures
       .map((entity) => {
         const position = getComponentValue(setup.components.Position, entity);

@@ -108,7 +108,7 @@ export const WorldMap = () => {
   const { useStaminaByEntityId } = useStamina();
   const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
 
-  useMemo(() => {
+  useEffect(() => {
     if (!selectedEntity || !stamina) return;
 
     const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
