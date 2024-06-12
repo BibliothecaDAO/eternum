@@ -4,7 +4,8 @@ use eternum::models::realm::Realm;
 use starknet::ContractAddress;
 
 // contract address owning an entity
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Owner {
     #[key]
     entity_id: u128,
@@ -12,7 +13,8 @@ struct Owner {
 }
 
 // entity owning an entity
-#[derive(Model, Copy, Drop, Serde, Default)]
+#[derive(Copy, Drop, Serde, Default)]
+#[dojo::model]
 struct EntityOwner {
     #[key]
     entity_id: u128,

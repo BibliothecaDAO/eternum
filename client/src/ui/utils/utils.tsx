@@ -5,6 +5,7 @@ import {
   default as realmsHexPositions,
 } from "../../data/geodata/hex/realmHexPositions.json";
 import { SortInterface } from "../elements/SortButton";
+import { FELT_CENTER } from "../config";
 
 export { getEntityIdFromKeys };
 
@@ -114,14 +115,6 @@ export function getPosition(realm_id: bigint): { x: number; y: number } {
   return { x: position.col, y: position.row };
 }
 
-const HIGHEST_X = 2147484147;
-const LOWEST_X = 2147483647;
-
-// get zone for labor auction
-export function getZone(x: number): number {
-  return 1 + Math.floor(((x - LOWEST_X) * 10) / (HIGHEST_X - LOWEST_X));
-}
-
 export function addressToNumber(address: string) {
   // Convert the address to a big integer
   let numericValue = BigInt(address);
@@ -174,8 +167,8 @@ export const getUIPositionFromColRow = (col: number, row: number, normalized?: b
   const vertDist = hexHeight * 0.75;
   const horizDist = hexWidth;
 
-  const colNorm = col - (!normalized ? 2147483647 : 0);
-  const rowNorm = row - (!normalized ? 2147483647 : 0);
+  const colNorm = col - (!normalized ? FELT_CENTER : 0);
+  const rowNorm = row - (!normalized ? FELT_CENTER : 0);
   const x = normalized
     ? colNorm * horizDist - ((rowNorm % 2) * horizDist) / 2
     : colNorm * horizDist + ((rowNorm % 2) * horizDist) / 2;
@@ -201,8 +194,8 @@ export const getColRowFromUIPosition = (x: number, y: number, normalized?: boole
     ? Math.round((x + ((rowNorm % 2) * horizDist) / 2) / horizDist)
     : Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);
 
-  const col = colNorm + (!normalized ? 2147483647 : 0);
-  const row = rowNorm + (!normalized ? 2147483647 : 0);
+  const col = colNorm + (!normalized ? FELT_CENTER : 0);
+  const row = rowNorm + (!normalized ? FELT_CENTER : 0);
 
   return {
     col,

@@ -4,7 +4,8 @@ use eternum::utils::unpack::unpack_resource_types;
 use starknet::ContractAddress;
 use traits::Into;
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Realm {
     #[key]
     entity_id: u128,

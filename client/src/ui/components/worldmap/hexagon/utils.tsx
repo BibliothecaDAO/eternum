@@ -1,46 +1,11 @@
 import { Color } from "three";
-import { Position, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { Position, getNeighborHexes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { Hexagon } from "../../../../types";
 
 const matrix = new Matrix4();
 const positions = new Vector3();
 import { InstancedMesh, Matrix4, Vector3 } from "three";
-
-export const findShortestPathDFS = (startPos: Position, endPos: Position, hexData: Hexagon[], maxHex: number) => {
-  const stack = [startPos];
-  const visited = new Set<Position>();
-  const path = new Map<string, Position>();
-  let count = 0;
-
-  const posKey = (pos: Position) => `${pos.x},${pos.y}`; // Create a unique string key for each position
-
-  while (stack.length > 0 && count <= maxHex) {
-    const current = stack.pop() as Position; // Use pop to take from the stack
-    if (current.x === endPos.x && current.y === endPos.y) {
-      const result = [current];
-      let next = path.get(posKey(current));
-      while (next) {
-        result.push(next);
-        next = path.get(posKey(next));
-      }
-      return result.reverse();
-    }
-
-    if (!visited.has(current)) {
-      visited.add(current);
-      const neighbors = getNeighbors(current, hexData);
-      count++;
-      for (const neighbor of neighbors) {
-        if (!visited.has(neighbor)) {
-          path.set(posKey(neighbor), current);
-          stack.push(neighbor); // Push neighbors onto the stack
-        }
-      }
-    }
-  }
-
-  return [];
-};
+import { FELT_CENTER } from "@/ui/config";
 
 export const isNeighbor = (pos1: Position, pos2: Position) => {
   const neighborOffsets = pos1.y % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
@@ -50,19 +15,6 @@ export const isNeighbor = (pos1: Position, pos2: Position) => {
     }
   }
   return false;
-};
-
-export const getNeighbors = (pos: Position, hexData: Hexagon[]) => {
-  const neighborOffsets = pos.y % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-
-  return neighborOffsets
-    .map((offset) => {
-      const col = pos.x + offset.i;
-      const row = pos.y + offset.j;
-      const hex = hexData.find((h) => h.col === col && h.row === row);
-      return hex ? { x: hex.col, y: hex.row } : null;
-    })
-    .filter(Boolean) as Position[];
 };
 
 export const getGrayscaleColor = (color: Color) => {
@@ -83,102 +35,45 @@ export const getPositionsAtIndex = (mesh: InstancedMesh<any, any>, index: number
   return positions;
 };
 
-export const findShortestPathBFS = (
+export const findAccessiblePositionsAndPaths = (
   startPos: Position,
-  endPos: Position,
-  hexData: Hexagon[],
   exploredHexes: Map<number, Set<number>>,
   maxHex: number,
+  canExplore: boolean,
 ) => {
-  const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
-  const visited = new Set<string>();
-  const path = new Map<string, Position>();
-
   const posKey = (pos: Position) => `${pos.x},${pos.y}`;
+  const priorityQueue: { position: Position; distance: number; path: Position[] }[] = [
+    { position: startPos, distance: 0, path: [startPos] },
+  ];
+  const travelPaths = new Map<string, { path: Position[]; isExplored: boolean }>();
+  const shortestDistances = new Map<string, number>();
 
-  while (queue.length > 0) {
-    const { position: current, distance } = queue.shift()!;
-    if (current.x === endPos.x && current.y === endPos.y) {
-      // Reconstruct the path upon reaching the end position
-      let temp = current;
-      const result = [];
-      while (temp) {
-        result.unshift(temp); // Add to the beginning of the result array
-        //@ts-ignore:
-        temp = path.get(posKey(temp)); // Move backwards through the path
-      }
-      return result;
-    }
-
-    if (distance > maxHex) {
-      break; // Stop processing if the current distance exceeds maxHex
-    }
-
+  while (priorityQueue.length > 0) {
+    priorityQueue.sort((a, b) => a.distance - b.distance); // This makes the queue work as a priority queue
+    const { position: current, distance, path } = priorityQueue.shift()!;
     const currentKey = posKey(current);
-    if (!visited.has(currentKey)) {
-      visited.add(currentKey);
-      const neighbors = getNeighbors(current, hexData); // Assuming getNeighbors is defined elsewhere
-      for (const neighbor of neighbors) {
-        const neighborKey = posKey(neighbor);
-        const isExplored = exploredHexes.get(neighbor.x - 2147483647)?.has(neighbor.y - 2147483647);
-        if (
-          !visited.has(neighborKey) &&
-          !queue.some((e) => posKey(e.position) === neighborKey) &&
-          isExplored &&
-          distance + 1 <= maxHex
-        ) {
-          path.set(neighborKey, current); // Map each neighbor back to the current position
-          queue.push({ position: neighbor, distance: distance + 1 });
+
+    if (!shortestDistances.has(currentKey) || distance < shortestDistances.get(currentKey)!) {
+      shortestDistances.set(currentKey, distance);
+      const isExplored = exploredHexes.get(current.x - FELT_CENTER)?.has(current.y - FELT_CENTER) || false;
+      travelPaths.set(currentKey, { path: path, isExplored });
+      if (!isExplored) continue;
+
+      const neighbors = getNeighborHexes(current.x, current.y); // This function needs to be defined
+      for (const { col: x, row: y } of neighbors) {
+        const neighborKey = posKey({ x, y });
+        const nextDistance = distance + 1;
+        const nextPath = [...path, { x, y }];
+
+        const isExplored = exploredHexes.get(x - FELT_CENTER)?.has(y - FELT_CENTER) || false;
+        if ((isExplored && nextDistance <= maxHex) || (!isExplored && canExplore && nextDistance === 1)) {
+          if (!shortestDistances.has(neighborKey) || nextDistance < shortestDistances.get(neighborKey)!) {
+            priorityQueue.push({ position: { x, y }, distance: nextDistance, path: nextPath });
+          }
         }
       }
     }
   }
 
-  return []; // Return empty array if no path is found within maxHex distance
-};
-
-export const findAccessiblePositions = (
-  startPos: Position,
-  hexData: Hexagon[],
-  exploredHexes: Map<number, Set<number>>,
-  maxHex: number,
-  canExplore: boolean,
-) => {
-  const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
-  const visited = new Set<string>();
-  const posKey = (pos: Position) => `${pos.x},${pos.y}`;
-  const highlightPositions = new Set<string>();
-
-  while (queue.length > 0) {
-    const { position: current, distance } = queue.shift()!;
-
-    if (distance > maxHex) break; // Stop processing if the current distance exceeds maxHex
-
-    const currentKey = posKey(current);
-    if (visited.has(currentKey)) continue;
-
-    visited.add(currentKey);
-    const neighbors = getNeighbors(current, hexData);
-
-    for (const neighbor of neighbors) {
-      const neighborKey = posKey(neighbor);
-      if (visited.has(neighborKey)) continue;
-
-      const { x, y } = neighbor;
-      const isExplored = exploredHexes.get(x - 2147483647)?.has(y - 2147483647);
-      const nextDistance = distance + 1;
-
-      if (isExplored && nextDistance <= maxHex) {
-        queue.push({ position: neighbor, distance: nextDistance });
-        highlightPositions.add(neighborKey);
-      } else if (!isExplored && canExplore && nextDistance === 1) {
-        highlightPositions.add(neighborKey);
-      }
-    }
-  }
-
-  return Array.from(highlightPositions).map((key) => {
-    const [x, y] = key.split(",").map(Number);
-    return { x, y };
-  });
+  return travelPaths;
 };

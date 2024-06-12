@@ -5,7 +5,8 @@ use eternum::constants::{LevelIndex};
 use eternum::models::config::{LevelingConfig};
 use eternum::models::resources::{ResourceCost};
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Level {
     #[key]
     entity_id: u128,

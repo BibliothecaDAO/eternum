@@ -5,7 +5,8 @@ use eternum::utils::unpack::unpack_resource_types;
 use starknet::ContractAddress;
 use traits::Into;
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct Structure {
     #[key]
     entity_id: u128,
@@ -46,7 +47,8 @@ impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
 struct StructureCount {
     #[key]
     coord: Coord,

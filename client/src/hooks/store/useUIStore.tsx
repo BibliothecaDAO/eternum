@@ -58,13 +58,13 @@ interface UIStore {
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
   battleView: {
-    attacker: ArmyInfo;
-    target: { type: CombatTarget; entity: ArmyInfo | FullStructure };
+    ownArmy: ArmyInfo;
+    opponentEntity: { type: CombatTarget; entity: ArmyInfo | FullStructure };
   } | null;
   setBattleView: (
     participants: {
-      attacker: ArmyInfo;
-      target: { type: CombatTarget; entity: ArmyInfo | FullStructure };
+      ownArmy: ArmyInfo;
+      opponentEntity: { type: CombatTarget; entity: ArmyInfo | FullStructure };
     } | null,
   ) => void;
   leftNavigationView: View;
@@ -197,8 +197,8 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   battleView: null,
   setBattleView: (
     participants: {
-      attacker: ArmyInfo;
-      target: { type: CombatTarget; entity: ArmyInfo | FullStructure };
+      ownArmy: ArmyInfo;
+      opponentEntity: { type: CombatTarget; entity: ArmyInfo | FullStructure };
     } | null,
   ) => set({ battleView: participants }),
   ...createPopupsSlice(set, get),

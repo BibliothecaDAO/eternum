@@ -1,11 +1,11 @@
-import { useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../context/DojoContext";
-import { Component, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { HYPERSTRUCTURE_TOTAL_COSTS_SCALED, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { HYPERSTRUCTURE_TOTAL_COSTS_SCALED } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { Component, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { toInteger } from "lodash";
-import { ResourceMultipliers, TOTAL_CONTRIBUTABLE_AMOUNT } from "../store/useLeaderBoardStore";
 import { shortString } from "starknet";
+import { useDojo } from "../context/DojoContext";
+import { ResourceMultipliers, TOTAL_CONTRIBUTABLE_AMOUNT } from "../store/useLeaderBoardStore";
 
 export type Hyperstructure = ClientComponents["Structure"]["schema"] &
   ClientComponents["Progress"]["schema"][] &
@@ -88,7 +88,36 @@ export const useHyperstructures = () => {
     return { percentage: toInteger(percentage * 100), progresses: allProgresses };
   };
 
-  return { hyperstructures, useProgress };
+  const getHyperstructureProgress = (hyperstructureEntityId: bigint) => {
+    let percentage = 0;
+    let progressQueryResult = runQuery([
+      Has(Progress),
+      HasValue(Progress, { hyperstructure_entity_id: hyperstructureEntityId }),
+    ]);
+    let progresses = Array.from(progressQueryResult).map((progressEntityId) => {
+      return getComponentValue(Progress, progressEntityId);
+    });
+    let allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource }) => {
+      let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
+      const resourceCost = Object.values(HYPERSTRUCTURE_TOTAL_COSTS_SCALED).find(
+        ({ resource }) => resource === resource,
+      )!.amount;
+      let progress = {
+        hyperstructure_entity_id: hyperstructureEntityId,
+        resource_type: resource,
+        amount: !foundProgress ? 0 : foundProgress.amount,
+        percentage: !foundProgress ? 0 : Math.floor((foundProgress.amount / resourceCost!) * 100),
+        costNeeded: resourceCost,
+      };
+      percentage +=
+        (progress.amount * ResourceMultipliers[progress.resource_type as keyof typeof ResourceMultipliers]!) /
+        TOTAL_CONTRIBUTABLE_AMOUNT;
+      return progress;
+    });
+    return { percentage: toInteger(percentage * 100), progresses: allProgresses };
+  };
+
+  return { hyperstructures, useProgress, getHyperstructureProgress };
 };
 
 const getContributions = (hyperstructureEntityId: bigint, Contribution: Component) => {
