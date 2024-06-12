@@ -108,6 +108,17 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
       });
     });
 
+    // Please dont remove until mainnet
+    // Uncomment to enable graphics test with all explored hexes
+    //
+    // Object.keys(biomeComponents).forEach((biome) => {
+    //   biomesAccumulator[biome] = group.filter((hex) => hex.biome === biome);
+    //   biomesAccumulator[biome] = biomesAccumulator[biome].map((hex: any) => {
+    //     const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
+    //     return { ...hex, x, y, z };
+    //   });
+    // });
+
     return biomesAccumulator;
   }, [explored]);
 
@@ -121,6 +132,23 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
     </>
   );
 };
+
+const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
+const hexTransparentMaterial = new THREE.MeshStandardMaterial({
+  color: "green",
+  vertexColors: false,
+  transparent: true,
+  opacity: 0, // Start fully transparent
+  wireframe: false,
+});
+
+const hexMaterial = new THREE.MeshStandardMaterial({
+  color: "green",
+  vertexColors: false,
+  transparent: true,
+  opacity: 0.4, // Start fully transparent
+  wireframe: false,
+});
 
 export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
   const hexData = useUIStore((state) => state.hexData);
@@ -141,8 +169,9 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     return { group: filteredGroup };
   }, [startRow, endRow, startCol, endCol, hexData]);
 
-  const revealedHexes = useMemo(() => {
+  const { revealed: revealedHexes, borders } = useMemo(() => {
     const revealed: Hexagon[] = [];
+    const borders: Hexagon[] = [];
     explored.forEach((rowSet, col) => {
       if (col < startCol || col > endCol) return;
       rowSet.forEach((row) => {
@@ -152,55 +181,39 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
         const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
         if (group[hexIndex]) {
           revealed.push(group[hexIndex]);
-          const neighborOffsets = row % 2 !== 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-          neighborOffsets.forEach((neighbor: { i: number; j: number; direction: number }) => {
-            const tmpCol = col + neighbor.i + FELT_CENTER;
-            const tmpRow = row + neighbor.j + FELT_CENTER;
-            const ind = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
-            if (group[ind] && !revealed.some((hex) => hex.col === tmpCol && hex.row === tmpRow)) {
-              revealed.push(group[ind]);
-            }
-          });
         }
       });
     });
-    return revealed;
+    revealed.forEach((hex) => {
+      const neighborOffsets = hex.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+      neighborOffsets.forEach((neighbor: { i: number; j: number; direction: number }) => {
+        const tmpCol = hex.col + neighbor.i;
+        const tmpRow = hex.row + neighbor.j;
+        const ind = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
+        if (
+          group[ind] &&
+          !revealed.some((hex) => hex.col === tmpCol && hex.row === tmpRow) &&
+          !borders.some((hex) => hex.col === tmpCol && hex.row === tmpRow)
+        ) {
+          borders.push(group[ind]);
+        }
+      });
+    });
+    return { revealed, borders };
   }, [group, explored]);
 
   // Create the mesh only once when the component is mounted
   const mesh: InstancedMesh = useMemo(() => {
-    const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
-    const hexMaterial = new THREE.MeshStandardMaterial({
-      color: "green",
-      vertexColors: false,
-      transparent: true,
-      opacity: 0.4, // Start fully transparent
-      wireframe: false,
-    });
-
-    const edgesGeometry = new THREE.EdgesGeometry(hexagonGeometry);
-    const edgesMaterial = new THREE.LineBasicMaterial({
-      color: "black",
-      linewidth: 1,
-      transparent: true,
-      opacity: 0.4,
-    });
-    const edgesMesh = new THREE.LineSegments(edgesGeometry, edgesMaterial);
-
-    const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, revealedHexes.length);
+    const instancedMesh = new InstancedMesh(hexagonGeometry, hexTransparentMaterial, revealedHexes.length);
     let idx = 0;
     let matrix = new Matrix4();
+
     revealedHexes.forEach((hex) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
       matrix.setPosition(x, y, 0.31);
 
       instancedMesh.setMatrixAt(idx, matrix);
       instancedMesh.setColorAt(idx, color.setRGB(0.4, 0.4, 0.4));
-
-      // Add edges to each hexagon instance
-      const edges = edgesMesh.clone();
-      edges.applyMatrix4(matrix);
-      instancedMesh.add(edges);
 
       idx++;
     });
@@ -209,6 +222,22 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     instancedMesh.frustumCulled = true;
     return instancedMesh;
   }, [revealedHexes]);
+
+  const borderMesh: InstancedMesh = useMemo(() => {
+    const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, borders.length);
+    let idx = 0;
+    let matrix = new Matrix4();
+    borders.forEach((hex) => {
+      const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
+      matrix.setPosition(x, y, 0.31);
+      instancedMesh.setMatrixAt(idx, matrix);
+      instancedMesh.setColorAt(idx, color.setRGB(0.4, 0.4, 0.4));
+      idx++;
+    });
+    instancedMesh.computeBoundingSphere();
+    instancedMesh.frustumCulled = true;
+    return instancedMesh;
+  }, [borders]);
 
   const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
 
@@ -238,6 +267,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     <Bvh firstHitOnly>
       <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler} onPointerOut={mouseOutHandler}>
         <primitive object={mesh} onDoubleClick={goToHex} />
+        <primitive object={borderMesh} onDoubleClick={goToHex} />
       </group>
     </Bvh>
   );

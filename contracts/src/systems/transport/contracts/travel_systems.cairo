@@ -170,7 +170,7 @@ mod travel_systems {
                 to_coord = to_coord.neighbor(*directions.at(index));
 
                 // ensure tile is explored
-                InternalTravelSystemsImpl::assert_tile_explored(world, to_coord);
+                Self::assert_tile_explored(world, to_coord);
 
                 // add coord to travel path 
                 travel_path.append(to_coord);
@@ -223,7 +223,7 @@ mod travel_systems {
             to_coord: Coord
         ) {
             // ensure destination tile is explored
-            InternalTravelSystemsImpl::assert_tile_explored(world, to_coord);
+            Self::assert_tile_explored(world, to_coord);
 
             let mut travel_time = from_coord
                 .calculate_travel_time(to_coord, transport_movable.sec_per_km);
@@ -233,10 +233,7 @@ mod travel_systems {
             let realm = get!(world, entity_owner.entity_owner_id, Realm);
 
             if realm.cities > 0 {
-                travel_time =
-                    InternalTravelSystemsImpl::use_travel_bonus(
-                        world, @realm, @entity_owner, travel_time
-                    );
+                travel_time = Self::use_travel_bonus(world, @realm, @entity_owner, travel_time);
             }
 
             // reduce travel time if there is a road
@@ -325,9 +322,7 @@ mod travel_systems {
 
             if realm.cities > 0 {
                 one_way_trip_time =
-                    InternalTravelSystemsImpl::use_travel_bonus(
-                        world, @realm, @entity_owner, one_way_trip_time
-                    );
+                    Self::use_travel_bonus(world, @realm, @entity_owner, one_way_trip_time);
             }
 
             let round_trip_time: u64 = 2 * one_way_trip_time;

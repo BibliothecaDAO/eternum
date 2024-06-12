@@ -51,6 +51,12 @@ export function TropicalSeasonalForestBiome({ hexes, zOffsets }: { hexes: any[];
     ];
   }, [_materials]);
 
+  materials[0].depthWrite = false;
+  materials[1].depthWrite = false;
+  // materials[2].depthWrite = false;
+  // materials[3].depthWrite = false;
+  // materials[4].depthWrite = false;
+
   const meshes = useMemo(() => {
     const instancedMeshes = [...geometries].map((geometry, idx) => {
       const instancedMesh = new THREE.InstancedMesh(geometry, materials[idx], hexes.length);
@@ -84,7 +90,7 @@ export function TropicalSeasonalForestBiome({ hexes, zOffsets }: { hexes: any[];
   return (
     <>
       {meshes.map((mesh, idx) => (
-        <primitive object={mesh} key={idx} />
+        <primitive object={mesh} key={idx} renderOrder={1} />
       ))}
     </>
   );

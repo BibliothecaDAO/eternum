@@ -14,6 +14,8 @@ export function OceanBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boole
   const geometry = nodes.Ocean.geometry.clone();
   geometry.applyMatrix4(defaultTransform);
 
+  materials["Ocean Water"].depthWrite = false;
+
   const mesh = useMemo(() => {
     const instancedMesh = new THREE.InstancedMesh(geometry, materials["Ocean Water"], hexes.length);
     instancedMesh.receiveShadow = true;
@@ -34,5 +36,5 @@ export function OceanBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boole
     return instancedMesh;
   }, [hexes]);
 
-  return <primitive object={mesh} />;
+  return <primitive object={mesh} renderOrder={1} />;
 }

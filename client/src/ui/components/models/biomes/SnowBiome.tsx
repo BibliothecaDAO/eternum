@@ -38,7 +38,8 @@ export function SnowBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boolea
 
   const mountains2Geometry = nodes.Mountains_2.geometry.clone();
   mountains2Geometry.applyMatrix4(defaultTransform);
-
+  materials["Rock"].depthWrite = false;
+  materials["Snow"].depthWrite = false;
   const meshes = useMemo(() => {
     const instancedMeshRock = new THREE.InstancedMesh(mountains1Geometry, rockMaterial, hexes.length);
     const instancedMeshSnow = new THREE.InstancedMesh(mountains2Geometry, snowMaterial, hexes.length);
@@ -67,8 +68,8 @@ export function SnowBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boolea
 
   return (
     <>
-      <primitive object={meshes[0]} />
-      <primitive object={meshes[1]} />
+      <primitive object={meshes[0]} renderOrder={1} />
+      <primitive object={meshes[1]} renderOrder={1} />
     </>
   );
 }

@@ -32,7 +32,8 @@ export function ShrublandBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: b
 
   const geometry3 = nodes.Schrubs.geometry.clone();
   geometry3.applyMatrix4(defaultTransform);
-
+  materials["Gray Dirt"].depthWrite = false;
+  materials["Yellow Rock"].depthWrite = false;
   const meshes = useMemo(() => {
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["Gray Dirt"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials["Yellow Rock"], hexes.length);
@@ -64,8 +65,8 @@ export function ShrublandBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: b
 
   return (
     <>
-      <primitive object={meshes[0]} />
-      <primitive object={meshes[1]} />
+      <primitive object={meshes[0]} renderOrder={1} />
+      <primitive object={meshes[1]} renderOrder={1} />
       <primitive object={meshes[2]} />
     </>
   );

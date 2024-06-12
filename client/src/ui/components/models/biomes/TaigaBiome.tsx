@@ -33,7 +33,7 @@ export function TaigaBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boole
 
   const geometry3 = nodes.Trees_2.geometry.clone();
   geometry3.applyMatrix4(defaultTransform);
-
+  materials["Barren Grass"].depthWrite = false;
   const meshes = useMemo(() => {
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["Barren Grass"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials["Evergreen Leaves"], hexes.length);
@@ -66,7 +66,7 @@ export function TaigaBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boole
 
   return (
     <>
-      <primitive object={meshes[0]} />
+      <primitive object={meshes[0]} renderOrder={1} />
       <primitive object={meshes[1]} />
       <primitive object={meshes[2]} />
     </>

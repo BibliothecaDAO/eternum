@@ -33,7 +33,8 @@ export function SubtropicalDesertBiome({ hexes, zOffsets }: { hexes: any[]; zOff
 
   const geometry3 = nodes.Cacti.geometry.clone();
   geometry3.applyMatrix4(defaultTransform);
-
+  materials["Orange Sand"].depthWrite = false;
+  materials["Gray Dirt"].depthWrite = false;
   const meshes = useMemo(() => {
     const instancedMesh1 = new THREE.InstancedMesh(geometry1, materials["Orange Sand"], hexes.length);
     const instancedMesh2 = new THREE.InstancedMesh(geometry2, materials["Gray Dirt"], hexes.length);
@@ -65,8 +66,8 @@ export function SubtropicalDesertBiome({ hexes, zOffsets }: { hexes: any[]; zOff
 
   return (
     <>
-      <primitive object={meshes[0]} />
-      <primitive object={meshes[1]} />
+      <primitive object={meshes[0]} renderOrder={1} />
+      <primitive object={meshes[1]} renderOrder={1} />
       <primitive object={meshes[2]} />
     </>
   );

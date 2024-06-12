@@ -21,6 +21,7 @@ mod internal_leveling_systems {
     use eternum::utils::testing::{spawn_eternum, deploy_system};
 
     const LEVELING_CONFIG_ID: u128 = 8888;
+    const MAX_LEVEL: u64 = 10_u64;
 
     fn setup() -> (IWorldDispatcher, u128) {
         let world = spawn_eternum();
@@ -36,7 +37,7 @@ mod internal_leveling_systems {
         // half a day of average production
         let fish_base_amount: u128 = 1260;
         let decay_interval = 604600;
-        let max_level = 1000;
+        let max_level = MAX_LEVEL;
 
         // 3 tier resources
         let mut resource_1_costs = array![(ResourceTypes::WOOD, 1000), (ResourceTypes::STONE, 1000)]
@@ -204,5 +205,21 @@ mod internal_leveling_systems {
 
         let silver_resource = get!(world, (entity_id, ResourceTypes::SILVER), Resource);
         assert(silver_resource.balance == 97750, 'failed resource amount');
+    }
+
+    #[test]
+    #[available_gas(300000000000)]
+    #[should_panic(expected: ('reached max level',))]
+    fn test_level_up_past_max() {
+        let (world, entity_id) = setup();
+
+        let level = get!(world, (entity_id), Level);
+        assert(level.level == 0, 'wrong level');
+
+        let mut count = 0;
+        while (count < MAX_LEVEL + 1) {
+            leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
+            count += 1;
+        }
     }
 }
