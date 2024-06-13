@@ -16,6 +16,7 @@ import { ACCESSIBLE_POSITIONS_COLOUR, COLS, FELT_CENTER, ROWS } from "@/ui/confi
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { findAccessiblePositionsAndPaths } from "./utils.js";
+import { Battles } from "../../models/buildings/worldmap/Battles";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -153,6 +154,7 @@ export const WorldMap = () => {
       <Armies />
       <ShardsMines />
       <Structures />
+      <Battles />
       <Flags />
     </>
   );

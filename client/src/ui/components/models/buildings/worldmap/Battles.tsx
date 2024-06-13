@@ -7,11 +7,15 @@ export const Battles = () => {
   const { allBattles } = useBattles();
   const battles = allBattles();
 
-  battles.map((battle, index) => {
-    if (!battle?.x || !battle?.y) return null;
-    const { x, y } = getUIPositionFromColRow(battle.x, battle.y, false);
-    return <BattleModel key={index} position={[x, 0.31, -y]} onClick={() => {}} />;
-  });
+  return (
+    <group>
+      {battles.map((battle, index) => {
+        if (!battle?.x || !battle?.y) return null;
+        const { x, y } = getUIPositionFromColRow(battle.x, battle.y, false);
+        return <BattleModel key={index} position={[x, 0.31, -y]} onClick={() => {}} />;
+      })}
+    </group>
+  );
 };
 
 const BattleModel = ({ position, onClick }: { position: any; onClick: () => void }) => {
