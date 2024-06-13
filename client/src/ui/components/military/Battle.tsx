@@ -38,8 +38,8 @@ export const ArmiesAtLocation = ({ armies, ownArmy }: { armies: ArmyInfo[]; ownA
                   <Button
                     onClick={() =>
                       setBattleView({
-                        ownArmy: ownArmy!,
-                        opponentEntity: { type: CombatTarget.Army, entity: army },
+                        attackers: [ownArmy!],
+                        defenders: { type: CombatTarget.Army, entities: [army] },
                       })
                     }
                   >

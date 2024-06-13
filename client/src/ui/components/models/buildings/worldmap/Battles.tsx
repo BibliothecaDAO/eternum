@@ -16,10 +16,6 @@ export const Battles = () => {
     setSelectedBattle({ id: BigInt(battle_id), position });
   }, []);
 
-  useEffect(() => {
-    console.log({ selectedBattle });
-  }, [selectedBattle]);
-
   return (
     <group>
       {battles.map((battle, index) => {
@@ -52,7 +48,7 @@ const BattleModel = ({ battle_id, position, onClick }: { battle_id: any; positio
 
   return (
     <group position={position}>
-      {showCombatLabel && <BattleLabel />}
+      {showCombatLabel && <BattleLabel selectedBattle={selectedBattle!.id} />}
       <primitive scale={3} object={clone} onContextMenu={onClick} />
     </group>
   );
