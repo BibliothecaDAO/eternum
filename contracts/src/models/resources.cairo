@@ -106,7 +106,7 @@ impl ResourceTransferLockImpl of ResourceTransferLockTrait {
 
     fn is_open(self: ResourceTransferLock) -> bool {
         let now = starknet::get_block_timestamp();
-        now > self.release_at
+        now >= self.release_at
     }
 }
 

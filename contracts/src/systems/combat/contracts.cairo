@@ -28,7 +28,7 @@ mod combat_systems {
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
     use eternum::models::buildings::{Building, BuildingImpl, BuildingCategory};
     use eternum::models::capacity::Capacity;
-    use eternum::models::combat::BattleBoxTrait;
+    use eternum::models::combat::BattleEscrowTrait;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
         TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig,
@@ -51,7 +51,7 @@ mod combat_systems {
         combat::{
             Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait,
             Battle, BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait,
-            BattleHealthTrait, BattleBoxImpl
+            BattleHealthTrait, BattleEscrowImpl
         },
     };
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
@@ -309,8 +309,8 @@ mod combat_systems {
             battle.last_updated = starknet::get_block_timestamp();
 
             // deposit resources protected by armies into battle pots/boxes
-            battle.balance_deposit(world, attacking_army, attacking_army_protectee);
-            battle.balance_deposit(world, defending_army, defending_army_protectee);
+            battle.deposit_balance(world, attacking_army, attacking_army_protectee);
+            battle.deposit_balance(world, defending_army, defending_army_protectee);
 
             // set battle position 
             let mut battle_position: Position = Default::default();
@@ -319,7 +319,7 @@ mod combat_systems {
             set!(world, (battle_position));
 
             let troop_config = TroopConfigImpl::get(world);
-            battle.restart(troop_config);
+            battle.reset_delta(troop_config);
             set!(world, (battle));
         }
 
@@ -362,7 +362,7 @@ mod combat_systems {
             }
 
             // lock resources being protected by army
-            battle.balance_deposit(world, caller_army, caller_army_protectee);
+            battle.deposit_balance(world, caller_army, caller_army_protectee);
 
             // add caller army troops to battle army troops
             let mut battle_army = battle.attack_army;
@@ -386,7 +386,7 @@ mod combat_systems {
             }
 
             let troop_config = TroopConfigImpl::get(world);
-            battle.restart(troop_config);
+            battle.reset_delta(troop_config);
             set!(world, (battle));
         }
 
@@ -414,7 +414,7 @@ mod combat_systems {
             }
 
             // withdraw resources stuck in battle
-            battle.withdraw_deposit(world, caller_army, caller_army_protectee);
+            battle.withdraw_balance_and_reward(world, caller_army, caller_army_protectee);
 
             // remove caller army from army troops 
             let mut battle_army = battle.attack_army;
@@ -447,7 +447,7 @@ mod combat_systems {
             }
 
             let troop_config = TroopConfigImpl::get(world);
-            battle.restart(troop_config);
+            battle.reset_delta(troop_config);
             set!(world, (battle));
 
             caller_army.battle_id = 0;
@@ -541,7 +541,8 @@ mod combat_systems {
                     // force pillager to join battle if it hasnt ended
                     let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
                     battle.update_state();
-                    battle.restart(troop_config);
+                    set!(world, (battle));
+
                     if !battle.has_ended() {
                         panic!("Join the battle or wait for it to end");
                     }
@@ -775,7 +776,7 @@ mod combat_systems {
                     last_updated: starknet::get_block_timestamp(),
                     duration_left: 0
                 };
-                mock_battle.restart(troop_config);
+                mock_battle.reset_delta(troop_config);
 
                 attacking_army_health
                     .decrease_by(

@@ -36,7 +36,9 @@ use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos,deploy_realm_systems};
+use eternum::utils::testing::{
+    spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos, deploy_realm_systems
+};
 use starknet::contract_address_const;
 
 const INITIAL_WHEAT_BALANCE: u128 = 7000;
