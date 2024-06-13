@@ -525,6 +525,8 @@ impl BattleBoxImpl of BattleBoxTrait {
                                 // army forfeits resources
                                 to_army_resource.burn((to_army_resource.balance));
                                 to_army_resource.save(world);
+
+                                //todo@credence remove weight from army
                             } else {
                                 // army can leave with its resources so 
                                 // we remove items from from battle box
