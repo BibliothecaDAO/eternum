@@ -36,7 +36,7 @@ use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos};
+use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos,deploy_realm_systems};
 use starknet::contract_address_const;
 
 const INITIAL_WHEAT_BALANCE: u128 = 7000;
@@ -93,7 +93,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
 
     let realm_position = get_default_realm_pos();
-    let realm_entity_id = spawn_realm(world, realm_position);
+    let realm_systems_dispatcher = deploy_realm_systems(world);
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, realm_position);
 
     let realm_owner: Owner = get!(world, realm_entity_id, Owner);
 
