@@ -23,6 +23,8 @@ import { BattleContainer } from "../containers/BattleContainer";
 import { BattleView } from "../modules/military/BattleView";
 import { LoadingContainer } from "../containers/LoadingContainer";
 import { Redirect } from "wouter";
+import TopLeftContainer from "../containers/TopLeftContainer";
+import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -71,6 +73,10 @@ export const World = () => {
             <TopMiddleNavigation />
           </TopMiddleContainer>
 
+          <TopLeftContainer>
+            <TopLeftNavigation />
+          </TopLeftContainer>
+
           {/* LEFT */}
           <LeftMiddleContainer>
             <LeftNavigationModule />
@@ -80,6 +86,7 @@ export const World = () => {
           <BottomMiddleContainer>
             <BottomNavigation />
           </BottomMiddleContainer>
+
           <BottomRightContainer>
             <Transactions />
           </BottomRightContainer>

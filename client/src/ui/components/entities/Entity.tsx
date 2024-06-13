@@ -100,7 +100,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
               resource && (
                 <ResourceCost
                   key={resource.resourceId}
-                  className="!text-gold !w-5 mt-0.5"
+                  className="!text-gold "
                   type="vertical"
                   resourceId={resource.resourceId}
                   amount={divideByPrecision(resource.amount)}
