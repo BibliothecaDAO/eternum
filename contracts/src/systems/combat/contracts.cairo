@@ -318,7 +318,7 @@ mod combat_systems {
             battle.last_updated = starknet::get_block_timestamp();
 
             let mut battle_position: Position = Default::default();
-            battle.entity_id = battle_id;
+            battle_position.entity_id = battle_id;
             battle_position.x = attacking_army_position.x;
             battle_position.y = attacking_army_position.y;
             set!(world, (battle_position));
