@@ -49,8 +49,9 @@ export const useBattles = () => {
     const entityIds = useEntityQuery([Has(Battle)]);
     return Array.from(entityIds).map((entityId) => {
       const army = getComponentValue(Battle, entityId);
+      const position = getComponentValue(Position, entityId);
       if (!army) return;
-      return army;
+      return { ...army, ...position };
     });
   };
 
