@@ -81,7 +81,7 @@ export const MarketModal = () => {
             resourceBidOffers={bidOffers}
           />
         </div>
-        <div className="col-span-9   h-full row-span-10">
+        <div className="col-span-9 h-full row-span-10 overflow-y-auto">
           {panel === "market" ? (
             <MarketOrderPanel
               resourceId={selectedResource}
