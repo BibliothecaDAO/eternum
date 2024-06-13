@@ -1,12 +1,23 @@
+use core::array::ArrayTrait;
+use core::integer::BoundedInt;
 use core::option::OptionTrait;
 use core::traits::Into;
 use core::traits::TryInto;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::constants::all_resource_ids;
 use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
 use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
-use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+use eternum::models::resources::OwnedResourcesTrackerTrait;
+use eternum::models::resources::ResourceTrait;
+use eternum::models::resources::ResourceTransferLockTrait;
+use eternum::models::resources::{
+    Resource, ResourceImpl, ResourceCost, ResourceTransferLock, OwnedResourcesTracker,
+    OwnedResourcesTrackerImpl
+};
+use eternum::models::structure::{Structure, StructureImpl};
 use eternum::utils::math::{PercentageImpl, PercentageValueImpl};
 use eternum::utils::number::NumberTrait;
+
 
 const STRENGTH_PRECISION: u256 = 10_000;
 
@@ -398,6 +409,8 @@ struct Battle {
     entity_id: u128,
     attack_army: BattleArmy,
     defence_army: BattleArmy,
+    attack_box_id: u128,
+    defence_box_id: u128,
     attack_army_health: BattleHealth,
     defence_army_health: BattleHealth,
     attack_delta: u64,
@@ -405,6 +418,7 @@ struct Battle {
     last_updated: u64,
     duration_left: u64
 }
+
 
 #[derive(Copy, Drop, Serde, PartialEq, Introspect)]
 enum BattleSide {
@@ -426,6 +440,115 @@ impl BattleSideIntoFelt252 of Into<BattleSide, felt252> {
             BattleSide::Attack => 1,
             BattleSide::Defence => 2,
         }
+    }
+}
+
+#[generate_trait]
+impl BattleBoxImpl of BattleBoxTrait {
+    fn balance_deposit(
+        ref self: Battle, world: IWorldDispatcher, from_army: Army, from_army_protectee: Protectee
+    ) {
+        let from_army_protectee_id = from_army_protectee.protected_resources_owner();
+        let from_army_protectee_is_self: bool = !get!(world, from_army_protectee_id, Structure)
+            .is_structure();
+        if from_army_protectee_is_self {
+            // detail items locked in box
+            let box_id = match from_army.battle_side {
+                BattleSide::None => { panic!("wrong battle side") },
+                BattleSide::Attack => { self.attack_box_id },
+                BattleSide::Defence => { self.defence_box_id }
+            };
+            let from_army_owned_resources: OwnedResourcesTracker = get!(
+                world, from_army_protectee_id, OwnedResourcesTracker
+            );
+
+            let mut all_resources = all_resource_ids();
+            loop {
+                match all_resources.pop_front() {
+                    Option::Some(resource_id) => {
+                        if from_army_owned_resources.owns_resource_type(resource_id) {
+                            let from_army_resource = ResourceImpl::get(
+                                world, (from_army_protectee_id, resource_id)
+                            );
+                            let mut box_resource = ResourceImpl::get(world, (box_id, resource_id));
+                            box_resource.add(from_army_resource.balance);
+                            box_resource.save(world);
+                        }
+                    },
+                    Option::None => { break; }
+                }
+            };
+        }
+
+        // lock the resources protected by the army
+        let mut from_army_resource_lock: ResourceTransferLock = get!(
+            world, from_army_protectee_id, ResourceTransferLock
+        );
+        from_army_resource_lock.assert_not_locked();
+        from_army_resource_lock.release_at = BoundedInt::max();
+        set!(world, (from_army_resource_lock));
+    }
+
+    fn withdraw_deposit(
+        ref self: Battle, world: IWorldDispatcher, to_army: Army, to_army_protectee: Protectee
+    ) {
+        let box_id = match to_army.battle_side {
+            BattleSide::None => { panic!("wrong battle side") },
+            BattleSide::Attack => { self.attack_box_id },
+            BattleSide::Defence => { self.defence_box_id }
+        };
+
+        // note: now everyone can leave the battle
+        // also: you can no longer join battle after it has been won
+
+        let to_army_protectee_id = to_army_protectee.protected_resources_owner();
+        let to_army_protectee_is_self: bool = !get!(world, to_army_protectee_id, Structure)
+            .is_structure();
+        if to_army_protectee_is_self {
+            let winner_side: BattleSide = self.winner();
+            let to_army_lost = (winner_side != to_army.battle_side
+                && winner_side != BattleSide::None);
+            let to_army_forfeits_resources = !self.has_ended()
+                || (self.has_ended() && to_army_lost);
+            let to_army_owned_resources: OwnedResourcesTracker = get!(
+                world, to_army_protectee_id, OwnedResourcesTracker
+            );
+            let mut all_resources = all_resource_ids();
+            loop {
+                match all_resources.pop_front() {
+                    Option::Some(resource_id) => {
+                        if to_army_owned_resources.owns_resource_type(resource_id) {
+                            let mut to_army_resource = ResourceImpl::get(
+                                world, (to_army_protectee_id, resource_id)
+                            );
+                            if to_army_forfeits_resources {
+                                // army forfeits resources
+                                to_army_resource.burn((to_army_resource.balance));
+                                to_army_resource.save(world);
+                            } else {
+                                // army can leave with its resources so 
+                                // we remove items from from battle box
+                                let mut box_resource = ResourceImpl::get(
+                                    world, (box_id, resource_id)
+                                );
+                                box_resource.burn(to_army_resource.balance);
+                                box_resource.save(world);
+                            }
+                        }
+                    // note: logic for splitting resource to be done later
+                    },
+                    Option::None => { break; }
+                }
+            };
+        }
+
+        // release lock on resource
+        let mut to_army_resource_lock: ResourceTransferLock = get!(
+            world, to_army_protectee_id, ResourceTransferLock
+        );
+        to_army_resource_lock.assert_locked();
+        to_army_resource_lock.release_at = starknet::get_block_timestamp();
+        set!(world, (to_army_resource_lock));
     }
 }
 
@@ -503,7 +626,6 @@ impl BattleImpl of BattleTrait {
     }
 
     fn winner(self: Battle) -> BattleSide {
-        assert!(self.has_ended(), "Battle has not ended");
         if self.attack_army_health.current > 0 {
             return BattleSide::Attack;
         }
@@ -511,7 +633,7 @@ impl BattleImpl of BattleTrait {
             return BattleSide::Defence;
         }
 
-        // it's possible that both killed each other soo
+        // it's possible that both killed each other or it's a draw
         return BattleSide::None;
     }
 }

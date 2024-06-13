@@ -230,6 +230,18 @@ mod resource_systems {
             let mut total_resources_weight = 0;
             let mut resources_felt_arr: Array<felt252> = array![];
             let mut resources_clone = resources.clone();
+
+            // ensure resource spending is not locked 
+            let owner_resource_lock: ResourceTransferLock = get!(
+                world, owner_id, ResourceTransferLock
+            );
+            owner_resource_lock.assert_not_locked();
+
+            // ensure resource receipt is not locked 
+            let recipient_resource_lock: ResourceTransferLock = get!(
+                world, actual_recipient_id, ResourceTransferLock
+            );
+            recipient_resource_lock.assert_not_locked();
             loop {
                 match resources_clone.pop_front() {
                     Option::Some((
@@ -238,12 +250,6 @@ mod resource_systems {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
                         if enforce_owner_payment {
-                            // ensure resource spending is not locked 
-                            let resource_lock: ResourceTransferLock = get!(
-                                world, owner_id, ResourceTransferLock
-                            );
-                            resource_lock.assert_not_locked();
-
                             // burn resources from sender's balance
                             let mut owner_resource = ResourceImpl::get(
                                 world, (owner_id, resource_type)

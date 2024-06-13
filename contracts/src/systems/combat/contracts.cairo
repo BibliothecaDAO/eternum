@@ -11,7 +11,6 @@ trait ICombatContract<TContractState> {
     fn battle_leave(battle_id: u128, army_id: u128);
     fn battle_pillage(army_id: u128, structure_id: u128);
     fn battle_claim(army_id: u128, structure_id: u128);
-// fn end_battle(battle_entity_id: u128, army_entity_id: u128 );
 }
 
 
@@ -29,6 +28,7 @@ mod combat_systems {
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
     use eternum::models::buildings::{Building, BuildingImpl, BuildingCategory};
     use eternum::models::capacity::Capacity;
+    use eternum::models::combat::BattleBoxTrait;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
         TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig,
@@ -51,7 +51,7 @@ mod combat_systems {
         combat::{
             Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait,
             Battle, BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait,
-            BattleHealthTrait
+            BattleHealthTrait, BattleBoxImpl
         },
     };
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
@@ -133,6 +133,10 @@ mod combat_systems {
 
                 // set army protectee
                 set!(world, (Protectee { army_id, protectee_id: army_owner_id }));
+                set!(
+                    world,
+                    (ResourceTransferLock { entity_id: army_id, release_at: BoundedInt::max() })
+                );
             } else {
                 ////// it's a moving army (raider) //////////////
 
@@ -310,22 +314,6 @@ mod combat_systems {
                 set!(world, (defending_army_movable));
             }
 
-            // lock resources being protected by attacking army
-            let mut attacking_army_protectee_resource_lock: ResourceTransferLock = get!(
-                world, attacking_army_protectee.protected_resources_owner(), ResourceTransferLock
-            );
-            attacking_army_protectee_resource_lock.assert_not_locked();
-            attacking_army_protectee_resource_lock.release_at = BoundedInt::max();
-            set!(world, (attacking_army_protectee_resource_lock));
-
-            // lock resources being protected by defending army
-            let mut defending_army_protectee_resource_lock: ResourceTransferLock = get!(
-                world, defending_army_protectee.protected_resources_owner(), ResourceTransferLock
-            );
-            defending_army_protectee_resource_lock.assert_not_locked();
-            defending_army_protectee_resource_lock.release_at = BoundedInt::max();
-            set!(world, (defending_army_protectee_resource_lock));
-
             // create battle 
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
@@ -335,13 +323,19 @@ mod combat_systems {
             battle.entity_id = battle_id;
             battle.attack_army = attacking_army.into();
             battle.defence_army = defending_army.into();
+            battle.attack_box_id = world.uuid().into();
+            battle.defence_box_id = world.uuid().into();
             battle.attack_army_health = attacking_army_health.into();
             battle.defence_army_health = defending_army_health.into();
             battle.last_updated = starknet::get_block_timestamp();
 
+            // deposit resources protected by armies into battle pots/boxes
+            battle.balance_deposit(world, attacking_army, attacking_army_protectee);
+            battle.balance_deposit(world, defending_army, defending_army_protectee);
+
             // set battle position 
             let mut battle_position: Position = Default::default();
-            battle_position.y = attacking_army_position.x;
+            battle_position.x = attacking_army_position.x;
             battle_position.y = attacking_army_position.y;
             set!(world, (battle_position));
 
@@ -390,12 +384,7 @@ mod combat_systems {
             }
 
             // lock resources being protected by army
-            let mut caller_army_protectee_resource_lock: ResourceTransferLock = get!(
-                world, caller_army_protectee.protected_resources_owner(), ResourceTransferLock
-            );
-            caller_army_protectee_resource_lock.assert_not_locked();
-            caller_army_protectee_resource_lock.release_at = BoundedInt::max();
-            set!(world, (caller_army_protectee_resource_lock));
+            battle.balance_deposit(world, caller_army, caller_army_protectee);
 
             // add caller army troops to battle army troops
             let mut battle_army = battle.attack_army;
@@ -446,24 +435,8 @@ mod combat_systems {
                 set!(world, (caller_army_movable));
             }
 
-            if battle.has_ended() {
-                if battle.winner() == caller_army.battle_side
-                    || battle.winner() == BattleSide::None {
-                    // release lock on protected resources
-                    let mut caller_army_protectee: Protectee = get!(world, army_id, Protectee);
-                    let mut caller_army_protectee_resource_lock: ResourceTransferLock = get!(
-                        world,
-                        caller_army_protectee.protected_resources_owner(),
-                        ResourceTransferLock
-                    );
-                    caller_army_protectee_resource_lock.assert_locked();
-                    let now = starknet::get_block_timestamp();
-                    caller_army_protectee_resource_lock.release_at = now;
-                    set!(world, (caller_army_protectee_resource_lock));
-                } else {
-                    panic!("Battle has ended and your team lost");
-                }
-            }
+            // withdraw resources stuck in battle
+            battle.withdraw_deposit(world, caller_army, caller_army_protectee);
 
             // remove caller army from army troops 
             let mut battle_army = battle.attack_army;
@@ -580,10 +553,38 @@ mod combat_systems {
 
             let mut structure_army: Army = Default::default();
             let mut structure_army_health: Health = Default::default();
+            let mut can_pillage_only_once = false;
             if structure_army_id.is_non_zero() {
-                structure_army = get!(world, structure_army_id, Army);
-                structure_army.assert_not_in_battle();
                 structure_army_health = get!(world, structure_army_id, Health);
+                structure_army = get!(world, structure_army_id, Army);
+                if structure_army.battle_id.is_non_zero() {
+                    // structure army is in battle
+
+                    // force pillager to join battle if it hasnt ended
+                    let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
+                    battle.update_state();
+                    battle.restart(troop_config);
+                    if !battle.has_ended() {
+                        panic!("Join the battle or wait for it to end");
+                    }
+
+                    // battle has ended
+                    //
+                    // allow continuous pillage when structure army loses battle
+                    let battle_has_winner = !(battle.winner() == BattleSide::None);
+                    let structure_army_didnt_win = structure_army.battle_side != battle.winner();
+                    if battle_has_winner && structure_army_didnt_win {
+                        can_pillage_only_once = false;
+                    } else {
+                        can_pillage_only_once = true;
+                    }
+                } else {
+                    // structure army is not in battle
+                    if structure_army_health.current.is_non_zero() {
+                        // structure army is alive
+                        can_pillage_only_once = true;
+                    }
+                }
             }
 
             // a percentage of it's full strength depending on structure army's health
@@ -787,6 +788,8 @@ mod combat_systems {
                     entity_id: 45,
                     attack_army: attacking_army.into(),
                     defence_army: structure_army.into(),
+                    attack_box_id: 0,
+                    defence_box_id: 0,
                     attack_army_health: attacking_army_health.into(),
                     defence_army_health: structure_army_health.into(),
                     attack_delta: 0,
@@ -811,15 +814,16 @@ mod combat_systems {
                 set!(world, (structure_army_health));
             }
 
-            // army goes home 
-
             let army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
-            let army_owner_position: Position = get!(world, army_owner_entity_id, Position);
-            let army_movable: Movable = get!(world, army_id, Movable);
+            if can_pillage_only_once {
+                // army goes home if structure cant be continuously pillage
+                let army_owner_position: Position = get!(world, army_owner_entity_id, Position);
+                let army_movable: Movable = get!(world, army_id, Movable);
 
-            InternalTravelSystemsImpl::travel(
-                world, army_id, army_movable, army_position.into(), army_owner_position.into()
-            );
+                InternalTravelSystemsImpl::travel(
+                    world, army_id, army_movable, army_position.into(), army_owner_position.into()
+                );
+            }
 
             // emit pillage event
             emit!(
