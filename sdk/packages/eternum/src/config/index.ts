@@ -26,9 +26,10 @@ import {
 
 // Function to configure all resources
 export const setProductionConfig = async (account: Account, provider: EternumProvider) => {
+  const calldataArray = [];
+
   for (const resourceId of Object.keys(RESOURCE_INPUTS_SCALED) as unknown as ResourcesIds[]) {
-    const tx = await provider.set_production_config({
-      signer: account,
+    const calldata = {
       amount: RESOURCE_OUTPUTS_SCALED[resourceId],
       resource_type: resourceId,
       cost: RESOURCE_INPUTS_SCALED[resourceId].map((cost) => {
@@ -37,25 +38,38 @@ export const setProductionConfig = async (account: Account, provider: EternumPro
           amount: cost.amount,
         };
       }),
-    });
+    };
 
-    console.log(`Configuring resource production ${resourceId} ${tx.statusReceipt}...`);
+    calldataArray.push(calldata);
   }
+
+  const tx = await provider.set_production_config({ signer: account, calls: calldataArray });
+
+  console.log(`Configuring resource production ${tx.statusReceipt}...`);
 };
 
 export const setBuildingCategoryPopConfig = async (account: Account, provider: EternumProvider) => {
+  const calldataArray = [];
+
   for (const buildingId of Object.keys(BUILDING_POPULATION) as unknown as BuildingType[]) {
     // if both 0, tx will fail
     if (BUILDING_POPULATION[buildingId] !== 0 || BUILDING_CAPACITY[buildingId] !== 0) {
-      const tx = await provider.set_building_category_pop_config({
-        signer: account,
+      const callData = {
         building_category: buildingId,
         population: BUILDING_POPULATION[buildingId],
         capacity: BUILDING_CAPACITY[buildingId],
-      });
-      console.log(`Configuring building category population ${buildingId} ${tx.statusReceipt}...`);
+      };
+
+      calldataArray.push(callData);
     }
   }
+
+  const tx = await provider.set_building_category_pop_config({
+    signer: account,
+    calls: calldataArray,
+  });
+
+  console.log(`Configuring building category population ${tx.statusReceipt}...`);
 };
 
 export const setPopulationConfig = async (account: Account, provider: EternumProvider) => {
@@ -125,9 +139,8 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     crossbowmanStrength: crossbowman_strength,
     advantagePercent: advantage_percent,
     disadvantagePercent: disadvantage_percent,
-    pillageHealthDivisor: pillage_health_divisor
+    pillageHealthDivisor: pillage_health_divisor,
   } = EternumGlobalConfig.troop;
-  
 
   const tx = await provider.set_troop_config({
     signer: account,
@@ -138,7 +151,7 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     crossbowman_strength,
     advantage_percent,
     disadvantage_percent,
-    pillage_health_divisor: pillage_health_divisor
+    pillage_health_divisor: pillage_health_divisor,
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);

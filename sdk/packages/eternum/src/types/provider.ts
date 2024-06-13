@@ -351,9 +351,11 @@ export interface SetTickConfigProps extends SystemSigner {
 }
 
 export interface SetProductionConfigProps extends SystemSigner {
-  resource_type: num.BigNumberish;
-  amount: num.BigNumberish;
-  cost: ResourceCosts[];
+  calls: {
+    resource_type: num.BigNumberish;
+    amount: num.BigNumberish;
+    cost: ResourceCosts[];
+  }[];
 }
 
 export interface SetBankConfigProps extends SystemSigner {
@@ -369,13 +371,11 @@ export interface SetTroopConfigProps extends SystemSigner {
   crossbowman_strength: num.BigNumberish;
   advantage_percent: num.BigNumberish;
   disadvantage_percent: num.BigNumberish;
-  pillage_health_divisor: num.BigNumberish
+  pillage_health_divisor: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
-  building_category: BuildingType;
-  population: num.BigNumberish;
-  capacity: num.BigNumberish;
+  calls: { building_category: BuildingType; population: num.BigNumberish; capacity: num.BigNumberish }[];
 }
 
 export interface SetPopulationConfigProps extends SystemSigner {
