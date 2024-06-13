@@ -346,7 +346,7 @@ export const OrderCreation = ({
               size="xs"
               resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
             />{" "}
-            sell
+            Trade
           </div>
           {!isBuy ? (
             <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
@@ -387,7 +387,7 @@ export const OrderCreation = ({
               size="xs"
               resource={isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
             />{" "}
-            Buy
+            Receive
           </div>
           {!isBuy ? (
             <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
@@ -398,24 +398,27 @@ export const OrderCreation = ({
           <div className="text-sm">
             {!isBuy
               ? currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)
-              : currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)}
+              : currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)}{" "}
+            avail.
           </div>
         </div>
       </div>
-      <div className="mt-8 ml-auto text-right w-56">
-        <div className="text-sm">
-          <div className="flex justify-between">
+      <div className="mt-8 ml-auto text-right w-auto font-bold text-lg">
+        <div>
+          <div className="flex justify-between gap-8">
             <div>Donkeys Used</div>
             <div className="flex gap-2">
-              {donkeysNeeded}{" "}
-              <div className="text-green">[{currencyFormat(donkeyBalance ? Number(donkeyBalance) : 0, 0)}]</div>
+              {donkeysNeeded.toLocaleString()}{" "}
+              <div className="text-green text-xs self-center">
+                [{currencyFormat(donkeyBalance ? Number(donkeyBalance) : 0, 0).toLocaleString()} avail.]
+              </div>
             </div>
           </div>
 
           <div className="flex justify-between">
             <div>Weight</div>
             <div className="flex gap-2">
-              <div>{divideByPrecision(orderWeight)} kgs</div>
+              <div>{divideByPrecision(orderWeight).toLocaleString()} kgs</div>
             </div>
           </div>
         </div>
@@ -428,7 +431,7 @@ export const OrderCreation = ({
           size="md"
           variant="primary"
         >
-          Create {isBuy ? "Buy" : "Sell"} Order
+          {isBuy ? "Buy" : `Sell `} {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
         </Button>
       </div>
     </div>

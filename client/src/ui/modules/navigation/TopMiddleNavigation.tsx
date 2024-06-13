@@ -8,9 +8,7 @@ import CircleButton from "@/ui/elements/CircleButton";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { useLocation } from "wouter";
 import { useMemo } from "react";
-
 import { useDojo } from "@/hooks/context/DojoContext";
-
 import { useModal } from "@/hooks/store/useModal";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import { useEntities } from "@/hooks/helpers/useEntities";
@@ -36,27 +34,30 @@ const structureIcons: Record<string, JSX.Element> = {
 };
 
 export const TopMiddleNavigation = () => {
-  const { setup } = useDojo();
-
   const [location, setLocation] = useLocation();
 
+  const { setup } = useDojo();
   const { toggleModal } = useModal();
-
   const { playerStructures } = useEntities();
-
-  // realms always first
-  const structures = playerStructures().sort((a, b) => {
-    if (a.category === "Realm") return -1;
-    if (b.category === "Realm") return 1;
-    return a.category!.localeCompare(b.category!);
-  });
+  const { hexPosition } = useQuery();
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
-
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
 
-  const isHexView = location.includes(`/hex`);
+  // realms always first
+  const structures = useMemo(() => {
+    return playerStructures().sort((a, b) => {
+      if (a.category === "Realm") return -1;
+      if (b.category === "Realm") return 1;
+      return a.category!.localeCompare(b.category!);
+    });
+  }, [playerStructures().length]);
+
+  const isHexView = useMemo(() => {
+    return location.includes(`/hex`);
+  }, [location]);
 
   const goToHexView = (entityId: any) => {
     const structure = structures.find((structure) => structure.entity_id?.toString() === entityId);
@@ -74,9 +75,6 @@ export const TopMiddleNavigation = () => {
 
     setRealmEntityId(BigInt(entityId));
   };
-
-  const { hexPosition } = useQuery();
-  const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
 
   return (
     <motion.div className="flex ornate-borders-top bg-brown" variants={slideDown} initial="hidden" animate="visible">

@@ -627,13 +627,18 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_weight_config(props: SystemProps.SetWeightConfigProps) {
-    const { entity_type, weight_gram, signer } = props;
+    const { calls, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
-      entrypoint: "set_weight_config",
-      calldata: [entity_type, weight_gram],
-    });
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, "config_systems"),
+          entrypoint: "set_weight_config",
+          calldata: [call.entity_type, call.weight_gram],
+        };
+      }),
+    );
   }
 
   public async set_tick_config(props: SystemProps.SetTickConfigProps) {
@@ -647,13 +652,23 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_production_config(props: SystemProps.SetProductionConfigProps) {
-    const { resource_type, amount, cost, signer } = props;
+    const { signer, calls } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
-      entrypoint: "set_production_config",
-      calldata: [resource_type, amount, cost.length, ...cost.flatMap(({ resource, amount }) => [resource, amount])],
-    });
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, "config_systems"),
+          entrypoint: "set_production_config",
+          calldata: [
+            call.resource_type,
+            call.amount,
+            call.cost.length,
+            ...call.cost.flatMap(({ resource, amount }) => [resource, amount]),
+          ],
+        };
+      }),
+    );
   }
 
   public async set_bank_config(props: SystemProps.SetBankConfigProps) {
@@ -696,13 +711,18 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_building_category_pop_config(props: SystemProps.SetBuildingCategoryPopConfigProps) {
-    const { building_category, population, capacity, signer } = props;
+    const { calls, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
-      entrypoint: "set_building_category_pop_config",
-      calldata: [building_category, population, capacity],
-    });
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, "config_systems"),
+          entrypoint: "set_building_category_pop_config",
+          calldata: [call.building_category, call.population, call.capacity],
+        };
+      }),
+    );
   }
 
   public async set_population_config(props: SystemProps.SetPopulationConfigProps) {
@@ -716,18 +736,23 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_building_config(props: SystemProps.SetBuildingConfigProps) {
-    const { building_category, building_resource_type, cost_of_building, signer } = props;
+    const { calls, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
-      entrypoint: "set_building_config",
-      calldata: [
-        building_category,
-        building_resource_type,
-        cost_of_building.length,
-        ...cost_of_building.flatMap(({ resource, amount }) => [resource, amount]),
-      ],
-    });
+    return await this.executeAndCheckTransaction(
+      signer,
+      calls.map((call) => {
+        return {
+          contractAddress: getContractByName(this.manifest, "config_systems"),
+          entrypoint: "set_building_config",
+          calldata: [
+            call.building_category,
+            call.building_resource_type,
+            call.cost_of_building.length,
+            ...call.cost_of_building.flatMap(({ resource, amount }) => [resource, amount]),
+          ],
+        };
+      }),
+    );
   }
 
   public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
