@@ -409,8 +409,8 @@ struct Battle {
     entity_id: u128,
     attack_army: BattleArmy,
     defence_army: BattleArmy,
-    attack_box_id: u128,
-    defence_box_id: u128,
+    attackers_resources_escrow_id: u128,
+    defenders_resources_escrow_id: u128,
     attack_army_health: BattleHealth,
     defence_army_health: BattleHealth,
     attack_delta: u64,
@@ -455,8 +455,8 @@ impl BattleBoxImpl of BattleBoxTrait {
             // detail items locked in box
             let box_id = match from_army.battle_side {
                 BattleSide::None => { panic!("wrong battle side") },
-                BattleSide::Attack => { self.attack_box_id },
-                BattleSide::Defence => { self.defence_box_id }
+                BattleSide::Attack => { self.attackers_resources_escrow_id },
+                BattleSide::Defence => { self.defenders_resources_escrow_id }
             };
             let from_army_owned_resources: OwnedResourcesTracker = get!(
                 world, from_army_protectee_id, OwnedResourcesTracker
@@ -494,8 +494,8 @@ impl BattleBoxImpl of BattleBoxTrait {
     ) {
         let box_id = match to_army.battle_side {
             BattleSide::None => { panic!("wrong battle side") },
-            BattleSide::Attack => { self.attack_box_id },
-            BattleSide::Defence => { self.defence_box_id }
+            BattleSide::Attack => { self.attackers_resources_escrow_id },
+            BattleSide::Defence => { self.defenders_resources_escrow_id }
         };
 
         // note: now everyone can leave the battle

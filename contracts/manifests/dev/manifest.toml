@@ -510,12 +510,12 @@ type = "BattleArmy"
 key = false
 
 [[models.members]]
-name = "attack_box_id"
+name = "attackers_resources_escrow_id"
 type = "u128"
 key = false
 
 [[models.members]]
-name = "defence_box_id"
+name = "defenders_resources_escrow_id"
 type = "u128"
 key = false
 

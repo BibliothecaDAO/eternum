@@ -9690,12 +9690,12 @@
           "key": false
         },
         {
-          "name": "attack_box_id",
+          "name": "attackers_resources_escrow_id",
           "type": "u128",
           "key": false
         },
         {
-          "name": "defence_box_id",
+          "name": "defenders_resources_escrow_id",
           "type": "u128",
           "key": false
         },
@@ -10141,11 +10141,11 @@
               "type": "eternum::models::combat::BattleArmy"
             },
             {
-              "name": "attack_box_id",
+              "name": "attackers_resources_escrow_id",
               "type": "core::integer::u128"
             },
             {
-              "name": "defence_box_id",
+              "name": "defenders_resources_escrow_id",
               "type": "core::integer::u128"
             },
             {

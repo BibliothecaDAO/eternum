@@ -323,8 +323,8 @@ mod combat_systems {
             battle.entity_id = battle_id;
             battle.attack_army = attacking_army.into();
             battle.defence_army = defending_army.into();
-            battle.attack_box_id = world.uuid().into();
-            battle.defence_box_id = world.uuid().into();
+            battle.attackers_resources_escrow_id = world.uuid().into();
+            battle.defenders_resources_escrow_id = world.uuid().into();
             battle.attack_army_health = attacking_army_health.into();
             battle.defence_army_health = defending_army_health.into();
             battle.last_updated = starknet::get_block_timestamp();
@@ -788,8 +788,8 @@ mod combat_systems {
                     entity_id: 45,
                     attack_army: attacking_army.into(),
                     defence_army: structure_army.into(),
-                    attack_box_id: 0,
-                    defence_box_id: 0,
+                    attackers_resources_escrow_id: 0,
+                    defenders_resources_escrow_id: 0,
                     attack_army_health: attacking_army_health.into(),
                     defence_army_health: structure_army_health.into(),
                     attack_delta: 0,
