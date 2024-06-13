@@ -498,8 +498,6 @@ impl BattleBoxImpl of BattleBoxTrait {
             BattleSide::Defence => { self.defenders_resources_escrow_id }
         };
 
-        // note: now everyone can leave the battle
-        // also: you can no longer join battle after it has been won
 
         let to_army_protectee_id = to_army_protectee.protected_resources_owner();
         let to_army_protectee_is_self: bool = !get!(world, to_army_protectee_id, Structure)
