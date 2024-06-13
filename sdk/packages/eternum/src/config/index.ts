@@ -82,10 +82,11 @@ export const setPopulationConfig = async (account: Account, provider: EternumPro
 };
 
 export const setBuildingConfig = async (account: Account, provider: EternumProvider) => {
+  const calldataArray = [];
+
   for (const buildingId of Object.keys(BUILDING_RESOURCE_PRODUCED) as unknown as BuildingType[]) {
     if (BUILDING_COSTS_SCALED[buildingId].length !== 0) {
-      const tx = await provider.set_building_config({
-        signer: account,
+      const calldata = {
         building_category: buildingId,
         building_resource_type: BUILDING_RESOURCE_PRODUCED[buildingId],
         cost_of_building: BUILDING_COSTS_SCALED[buildingId].map((cost) => {
@@ -94,17 +95,22 @@ export const setBuildingConfig = async (account: Account, provider: EternumProvi
             amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
           };
         }),
-      });
+      };
 
-      console.log(`Configuring building cost config ${buildingId} ${tx.statusReceipt}...`);
+      calldataArray.push(calldata);
     }
   }
+
+  const tx = await provider.set_building_config({ signer: account, calls: calldataArray });
+
+  console.log(`Configuring building cost config ${tx.statusReceipt}...`);
 };
 
 export const setResourceBuildingConfig = async (account: Account, provider: EternumProvider) => {
+  const calldataArray = [];
+
   for (const resourceId of Object.keys(RESOURCE_BUILDING_COSTS_SCALED) as unknown as ResourcesIds[]) {
-    const tx = await provider.set_building_config({
-      signer: account,
+    const calldata = {
       building_category: BuildingType.Resource,
       building_resource_type: resourceId,
       cost_of_building: RESOURCE_BUILDING_COSTS_SCALED[resourceId].map((cost) => {
@@ -113,22 +119,33 @@ export const setResourceBuildingConfig = async (account: Account, provider: Eter
           amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
         };
       }),
-    });
+    };
 
-    console.log(`Configuring resource building cost config ${resourceId} ${tx.statusReceipt}...`);
+    calldataArray.push(calldata);
   }
+
+  const tx = await provider.set_building_config({ signer: account, calls: calldataArray });
+
+  console.log(`Configuring resource building cost config ${tx.statusReceipt}...`);
 };
 
 export const setWeightConfig = async (account: Account, provider: EternumProvider) => {
+  const calldataArray = [];
   for (const resourceId of Object.keys(WeightConfig) as unknown as ResourcesIds[]) {
-    const tx = await provider.set_weight_config({
-      signer: account,
+    const callData = {
       entity_type: resourceId,
       weight_gram: WeightConfig[resourceId],
-    });
+    };
 
-    console.log(`Configuring weight config ${resourceId} ${tx.statusReceipt}...`);
+    calldataArray.push(callData);
   }
+
+  const tx = await provider.set_weight_config({
+    signer: account,
+    calls: calldataArray,
+  });
+
+  console.log(`Configuring weight config  ${tx.statusReceipt}...`);
 };
 
 export const setCombatConfig = async (account: Account, provider: EternumProvider) => {
