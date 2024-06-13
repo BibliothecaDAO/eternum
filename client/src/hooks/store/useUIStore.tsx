@@ -61,8 +61,8 @@ interface UIStore {
   battleView: BattleViewInfo | null;
   setBattleView: (
     participants: {
-      ownArmy: ArmyInfo;
-      opponentEntity: { type: CombatTarget; entity: ArmyInfo | FullStructure };
+      attackers: ArmyInfo[];
+      defenders: { type: CombatTarget; entities: ArmyInfo[] | FullStructure };
     } | null,
   ) => void;
   leftNavigationView: View;
@@ -195,8 +195,8 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   battleView: null,
   setBattleView: (
     participants: {
-      ownArmy: ArmyInfo;
-      opponentEntity: { type: CombatTarget; entity: ArmyInfo | FullStructure };
+      attackers: ArmyInfo[];
+      defenders: { type: CombatTarget; entities: FullStructure | ArmyInfo[] };
     } | null,
   ) => set({ battleView: participants }),
   ...createPopupsSlice(set, get),

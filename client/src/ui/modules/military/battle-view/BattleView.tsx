@@ -28,7 +28,7 @@ export const BattleView = () => {
 
   const { attackerArmy, defenderArmy, structure } = useMemo(
     () => getArmiesAndStructure(battleView!),
-    [battleView?.opponentEntity],
+    [battleView?.defenders],
   );
 
   const updatedBattle = cheat(BigInt(defenderArmy?.battle_id || 0n));
@@ -107,14 +107,14 @@ export const BattleView = () => {
 const getArmiesAndStructure = (
   battleView: BattleViewInfo,
 ): { attackerArmy: ArmyInfo | undefined; defenderArmy: ArmyInfo | undefined; structure: FullStructure | undefined } => {
-  if (battleView.opponentEntity.type === CombatTarget.Army) {
+  if (battleView.defenders.type === CombatTarget.Army) {
     return {
-      ...getAttackerDefender(battleView.ownArmy, battleView.opponentEntity.entity as ArmyInfo),
+      ...getAttackerDefender(battleView.attackers[0], (battleView.defenders.entities as ArmyInfo[])[0]),
       structure: undefined,
     };
-  } else if (battleView.opponentEntity.type === CombatTarget.Structure) {
-    const target = battleView.opponentEntity.entity as FullStructure;
-    return { attackerArmy: battleView.ownArmy, defenderArmy: target.protector, structure: target };
+  } else if (battleView.defenders.type === CombatTarget.Structure) {
+    const target = battleView.defenders.entities as FullStructure;
+    return { attackerArmy: battleView.attackers[0], defenderArmy: target.protector, structure: target };
   }
   return { attackerArmy: undefined, defenderArmy: undefined, structure: undefined };
 };

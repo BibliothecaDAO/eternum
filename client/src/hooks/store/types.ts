@@ -3,6 +3,6 @@ import { ArmyInfo } from "../helpers/useArmies";
 import { FullStructure } from "../helpers/useStructures";
 
 export type BattleViewInfo = {
-  ownArmy: ArmyInfo;
-  opponentEntity: { type: CombatTarget; entity: ArmyInfo | FullStructure };
+  attackers: ArmyInfo[];
+  defenders: { type: CombatTarget; entities: ArmyInfo[] | FullStructure };
 };
