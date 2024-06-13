@@ -82,7 +82,7 @@ export const TopMiddleNavigation = () => {
         <TickProgress />
       </div>
 
-      <div className="flex min-w-96  clip-angled  border-gradient py-2 px-4 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center ">
+      <div className="flex min-w-96 gap-1  clip-angled  border-gradient py-2 px-4 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center ">
         <div className="self-center flex justify-between w-full">
           <Select
             value={realmEntityId.toString()}
@@ -110,6 +110,7 @@ export const TopMiddleNavigation = () => {
           </Select>
         </div>
         <Button
+          variant="primary"
           onClick={() => {
             if (location !== "/map") {
               setIsLoadingScreenEnabled(true);
@@ -130,16 +131,6 @@ export const TopMiddleNavigation = () => {
         >
           {location === "/map" ? "Hex" : "World"}
         </Button>
-      </div>
-      <div className="self-center px-3 flex space-x-2">
-        <CircleButton
-          image={BuildingThumbs.question}
-          label={"Hints"}
-          // active={isPopupOpen(quests)}
-          className="fifth-step"
-          size="sm"
-          onClick={() => toggleModal(<HintModal />)}
-        />
       </div>
     </motion.div>
   );

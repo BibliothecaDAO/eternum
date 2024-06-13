@@ -6,7 +6,7 @@ import { divideByPrecision } from "@/ui/utils/utils";
 export const InventoryResources = ({
   entityId,
   max = Infinity,
-  className = "flex flex-wrap",
+  className = "flex flex-wrap gap-1",
   title,
 }: {
   entityId: bigint;
@@ -20,7 +20,6 @@ export const InventoryResources = ({
 
   return (
     <div className={className}>
-      {/* <div className="w-full uppercase font-bold p-2">{title && title}</div> */}
       {inventoryResources &&
         inventoryResources
           .slice(0, max)

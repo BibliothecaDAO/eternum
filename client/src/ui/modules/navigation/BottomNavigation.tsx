@@ -62,18 +62,6 @@ export const BottomNavigation = () => {
     return [
       {
         button: (
-          <CircleButton
-            tooltipLocation="top"
-            active={isPopupOpen(settings)}
-            image={BuildingThumbs.settings}
-            label={"Settings"}
-            size="lg"
-            onClick={() => togglePopup(settings)}
-          />
-        ),
-      },
-      {
-        button: (
           <div className="relative">
             <CircleButton
               tooltipLocation="top"
