@@ -10,7 +10,7 @@ import { useMemo } from "react";
 export const useQuests = ({ entityId }: { entityId: bigint | undefined }) => {
   const {
     setup: {
-      components: { BuildingQuantityv2 },
+      components: { BuildingQuantityv2, HasClaimedStartingResources },
     },
   } = useDojo();
 
@@ -27,127 +27,65 @@ export const useQuests = ({ entityId }: { entityId: bigint | undefined }) => {
   const { entityArmies } = useEntityArmies({ entity_id: entityId || BigInt("0") });
 
   const quests = useMemo(() => {
-    return [
+    const updatedQuests = [
       {
         name: "Claim Food",
         description: "A gift from the gods to start your journey.",
         completed: true,
-        steps: [
-          {
-            description: "Claim Food",
-          },
-          {
-            description: "Build a farm",
-          },
-        ],
-        prizes: [
-          {
-            id: QuestType.Food,
-            title: "Resources Claim",
-          },
-        ],
+        steps: [{ description: "Claim Food" }, { description: "Build a farm" }],
+        prizes: [{ id: QuestType.Food, title: "Resources Claim" }],
       },
       {
         name: "Build a Farm",
         description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm.",
         completed: farms > 0,
-        steps: [
-          {
-            description: "Claim Food",
-          },
-          {
-            description: "Build a farm",
-          },
-        ],
+        steps: [{ description: "Claim Food" }, { description: "Build a farm" }],
         prizes: [
-          {
-            id: QuestType.CommonResources,
-            title: "Common Resources",
-          },
-          {
-            id: QuestType.UncommonResources,
-            title: "Uncommon Resources",
-          },
-          {
-            id: QuestType.RareResources,
-            title: "Rare Claim",
-          },
-          {
-            id: QuestType.UniqueResources,
-            title: "Unique Claim",
-          },
-          {
-            id: QuestType.LegendaryResources,
-            title: "Legendary Claim",
-          },
-          {
-            id: QuestType.MythicResources,
-            title: "Mythic Claim",
-          },
+          { id: QuestType.CommonResources, title: "Common Resources" },
+          { id: QuestType.UncommonResources, title: "Uncommon Resources" },
+          { id: QuestType.RareResources, title: "Rare Claim" },
+          { id: QuestType.UniqueResources, title: "Unique Claim" },
+          { id: QuestType.LegendaryResources, title: "Legendary Claim" },
+          { id: QuestType.MythicResources, title: "Mythic Claim" },
         ],
       },
       {
         name: "Build a Resource",
         description: "Eternum thrives on resources. Construct resource facilities to harvest them efficiently.",
         completed: resource > 0,
-        steps: [
-          {
-            description: "Claim Food",
-          },
-          {
-            description: "Build a farm",
-          },
-        ],
-        prizes: [
-          {
-            id: QuestType.Trade,
-            title: "Donkeys and Lords",
-          },
-        ],
+        steps: [{ description: "Claim Food" }, { description: "Build a farm" }],
+        prizes: [{ id: QuestType.Trade, title: "Donkeys and Lords" }],
       },
       {
         name: "Create a Trade",
         description: "Trading is the lifeblood of Eternum. Create a trade to start your economy.",
         completed: orders.length > 0,
-        steps: [
-          {
-            description: "Claim Food",
-          },
-          {
-            description: "Build a farm",
-          },
-        ],
-        prizes: [
-          {
-            id: QuestType.Military,
-            title: "Claim Starting Army",
-          },
-        ],
+        steps: [{ description: "Claim Food" }, { description: "Build a farm" }],
+        prizes: [{ id: QuestType.Military, title: "Claim Starting Army" }],
       },
       {
         name: "Create an Army",
-        description: "Conquest is fufilling. Create an army to conquer your enemies.",
+        description: "Conquest is fulfilling. Create an army to conquer your enemies.",
         completed: entityArmies.length > 0,
-        steps: [
-          {
-            description: "Claim Food",
-          },
-          {
-            description: "Build a farm",
-          },
-        ],
-        prizes: [
-          {
-            id: QuestType.Earthenshard,
-            title: "Claim Earthen Shard",
-          },
-        ],
+        steps: [{ description: "Claim Food" }, { description: "Build a farm" }],
+        prizes: [{ id: QuestType.Earthenshard, title: "Claim Earthen Shard" }],
       },
     ];
-  }, [farms, resource, orders, entityArmies]);
+
+    return updatedQuests.map((quest) => {
+      const claimed = quest.prizes.every((prize) => {
+        const value = getComponentValue(
+          HasClaimedStartingResources,
+          getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(prize.id)]),
+        );
+        return value?.claimed;
+      });
+      return { ...quest, claimed };
+    });
+  }, [farms, resource, orders, entityArmies, HasClaimedStartingResources, entityId]);
 
   const claimableQuests = useMemo(() => {
-    return quests.filter((quest) => !quest.completed);
+    return quests.filter((quest) => !quest.claimed);
   }, [quests, farms, resource, orders, entityArmies]);
 
   return {
