@@ -1,6 +1,6 @@
-import { SetupNetworkResult } from "./setupNetwork";
-import { toast } from "react-toastify";
 import * as SystemProps from "@bibliothecadao/eternum";
+import { toast } from "react-toastify";
+import { SetupNetworkResult } from "./setupNetwork";
 
 export type SystemCallFunctions = ReturnType<typeof createSystemCalls>;
 type SystemCallFunction = (...args: any[]) => any;
@@ -58,6 +58,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const travel = async (props: SystemProps.TravelProps) => {
+    console.log(props);
     await provider.travel(props);
   };
 

@@ -20,11 +20,11 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
 import { BattleContainer } from "../containers/BattleContainer";
-import { BattleView } from "../modules/military/BattleView";
 import { LoadingContainer } from "../containers/LoadingContainer";
 import { Redirect } from "wouter";
 import TopLeftContainer from "../containers/TopLeftContainer";
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
+import { BattleView } from "../modules/military/battle-view/BattleView";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);

@@ -18,12 +18,6 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import { LucideArrowRight } from "lucide-react";
 
-export const nameMapping: { [key: number]: string } = {
-  [ResourcesIds.Knight]: "Knight",
-  [ResourcesIds.Crossbowmen]: "Crossbowmen",
-  [ResourcesIds.Paladin]: "Paladin",
-};
-
 type ArmyManagementCardProps = {
   owner_entity: bigint;
   entity: ArmyInfo;
@@ -231,16 +225,13 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
             const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
 
             return (
-              <div
-                className="p-3 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col border-gold/10 border"
-                key={troop.name}
-              >
+              <div className="p-2 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
                 <div className="font-bold mb-4">
                   <div className="flex justify-between">
-                    <div className="text-md">{nameMapping[troop.name]}</div>
+                    <div className="text-md">{ResourcesIds[troop.name]}</div>
                   </div>
                   <div className="px-2 py-1 bg-white/10 clip-angled-sm flex justify-between">
-                    <ResourceIcon withTooltip={false} resource={nameMapping[troop.name]} size="lg" />
+                    <ResourceIcon withTooltip={false} resource={ResourcesIds[troop.name]} size="lg" />
                     <div className="text-green self-center">x {troop.current}</div>
                   </div>
                 </div>

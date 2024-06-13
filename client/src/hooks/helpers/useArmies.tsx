@@ -207,6 +207,48 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
   };
 };
 
+export const getArmiesByBattleId = (battle_id: bigint) => {
+  const {
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+        Stamina,
+      },
+    },
+    account: { account },
+  } = useDojo();
+
+  const armiesEntityIds = runQuery([HasValue(Army, { battle_id })]);
+  return formatArmies(
+    Array.from(armiesEntityIds),
+    account.address,
+    Army,
+    Protectee,
+    EntityName,
+    Health,
+    Quantity,
+    Movable,
+    Capacity,
+    ArrivalTime,
+    Position,
+    EntityOwner,
+    Owner,
+    Realm,
+    Stamina,
+  );
+};
+
 export const usePositionArmies = ({ position }: { position: Position }) => {
   {
     const {
@@ -269,10 +311,19 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
       });
     }, [allArmies]);
 
+    const userAttackingArmies = useMemo(() => {
+      return allArmies.filter((army: any) => {
+        const entityOwner = getComponentValue(Protectee, getEntityIdFromKeys([army?.entity_id || 0n]));
+        console.log(entityOwner);
+        return !entityOwner;
+      });
+    }, [allArmies]);
+
     return {
       allArmies,
       enemyArmies,
       userArmies,
+      userAttackingArmies,
     };
   }
 };

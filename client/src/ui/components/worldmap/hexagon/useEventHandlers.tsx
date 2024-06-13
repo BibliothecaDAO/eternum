@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
-import useUIStore from "../../../../hooks/store/useUIStore";
-import { findDirection, getColRowFromUIPosition } from "../../../utils/utils";
 import { useExplore } from "../../../../hooks/helpers/useExplore";
 import { useTravel } from "../../../../hooks/helpers/useTravel";
 import { useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
+import useUIStore from "../../../../hooks/store/useUIStore";
+import { findDirection, getColRowFromUIPosition } from "../../../utils/utils";
 import { getPositionsAtIndex } from "./utils";
 
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {

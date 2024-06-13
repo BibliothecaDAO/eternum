@@ -9,6 +9,7 @@ import { FullStructure } from "../helpers/useStructures";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 import { createMapStoreSlice, MapStore } from "./_mapStore";
 import { createPopupsSlice, PopupsStore } from "./_popups";
+import { BattleViewInfo } from "./types";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -57,14 +58,11 @@ interface UIStore {
   modalContent: React.ReactNode;
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
-  battleView: {
-    ownArmy: ArmyInfo;
-    opponentEntity: { type: CombatTarget; entity: ArmyInfo | FullStructure };
-  } | null;
+  battleView: BattleViewInfo | null;
   setBattleView: (
     participants: {
-      ownArmy: ArmyInfo;
-      opponentEntity: { type: CombatTarget; entity: ArmyInfo | FullStructure };
+      attackers: ArmyInfo[];
+      defenders: { type: CombatTarget; entities: ArmyInfo[] | FullStructure };
     } | null,
   ) => void;
   leftNavigationView: View;
@@ -197,8 +195,8 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   battleView: null,
   setBattleView: (
     participants: {
-      ownArmy: ArmyInfo;
-      opponentEntity: { type: CombatTarget; entity: ArmyInfo | FullStructure };
+      attackers: ArmyInfo[];
+      defenders: { type: CombatTarget; entities: FullStructure | ArmyInfo[] };
     } | null,
   ) => set({ battleView: participants }),
   ...createPopupsSlice(set, get),

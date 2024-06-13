@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { FullStructure, Structure, useStructuresPosition } from "@/hooks/helpers/useStructures";
+import { FullStructure, useStructuresPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { CombatTarget } from "@/types";
 import Button from "@/ui/elements/Button";
@@ -12,7 +12,7 @@ import { EternumGlobalConfig, Position, ResourcesIds } from "@bibliothecadao/ete
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { RealmListItem } from "../worldmap/realms/RealmListItem";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
 
@@ -50,8 +50,8 @@ export const StructureCard = ({
             variant="primary"
             onClick={() =>
               setBattleView({
-                ownArmy: ownArmySelected,
-                opponentEntity: { type: CombatTarget.Structure, entity: target as unknown as FullStructure },
+                attackers: [ownArmySelected],
+                defenders: { type: CombatTarget.Structure, entities: target as unknown as FullStructure },
               })
             }
           >
@@ -61,6 +61,8 @@ export const StructureCard = ({
       );
     }
   }, [formattedRealmAtPosition, formattedStructureAtPosition, ownArmySelected]);
+
+  const target = formattedStructureAtPosition || formattedRealmAtPosition;
 
   return (
     Boolean(formattedStructureAtPosition) && (
@@ -87,7 +89,8 @@ export const StructureCard = ({
 
               <MergeTroopsPanel
                 giverArmy={ownArmySelected!}
-                structure={formattedRealmAtPosition || formattedStructureAtPosition}
+                structureEntityId={BigInt(target.entity_id)}
+                structureName={target.name}
               />
             </div>
           )}
@@ -97,43 +100,24 @@ export const StructureCard = ({
   );
 };
 
-const MergeTroopsPanel = ({ giverArmy, structure }: MergeTroopsPanelProps) => {
-  const {
-    setup: {
-      account: { account },
-      components: { Protector },
-      systemCalls: { create_army },
-    },
-  } = useDojo();
+type MergeTroopsPanelProps = {
+  giverArmy: ArmyInfo;
+  structureEntityId: bigint;
+  structureName: string;
+};
 
-  const protector = useComponentValue(Protector, getEntityIdFromKeys([BigInt(structure.entity_id!)]));
-
-  useEffect(() => {
-    const createProtector = async () => {
-      await create_army({
-        signer: account,
-        army_is_protector: true,
-        army_owner_id: structure.entity_id!,
-      });
-    };
-
-    if (protector) return;
-    createProtector();
-  }, [protector]);
-
+const MergeTroopsPanel = ({ giverArmy, structureEntityId, structureName }: MergeTroopsPanelProps) => {
   return (
-    protector && (
-      <div className="flex flex-col clip-angled-sm bg-gold/20 p-3">
-        <Headline>Reinforce {structure.name}'s troops</Headline>
-        <TroopExchange giverArmyEntityId={BigInt(giverArmy.entity_id)} takerArmyEntityId={BigInt(protector.army_id)} />
-      </div>
-    )
+    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3">
+      <Headline>Reinforce {structureName}'s troops</Headline>
+      <TroopExchange giverArmyEntityId={BigInt(giverArmy.entity_id)} structureEntityId={structureEntityId} />
+    </div>
   );
 };
 
 type TroopsProps = {
   giverArmyEntityId: bigint;
-  takerArmyEntityId: bigint;
+  structureEntityId: bigint;
 };
 
 const troopsToFormat = (troops: { knight_count: number; paladin_count: number; crossbowman_count: number }) => {
@@ -144,19 +128,30 @@ const troopsToFormat = (troops: { knight_count: number; paladin_count: number; c
   };
 };
 
-const TroopExchange = ({ giverArmyEntityId, takerArmyEntityId }: TroopsProps) => {
+const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) => {
   const [troopsGiven, setTroopsGiven] = useState<Record<number, number>>({
     [ResourcesIds.Crossbowmen]: 0,
     [ResourcesIds.Knight]: 0,
     [ResourcesIds.Paladin]: 0,
   });
+
   const {
     setup: {
       account: { account },
-      components: { Army },
-      systemCalls: { army_merge_troops },
+      components: { Army, Protector },
+      systemCalls: { army_merge_troops, create_army },
     },
   } = useDojo();
+
+  const protector = useComponentValue(Protector, getEntityIdFromKeys([structureEntityId]));
+
+  const createProtector = async () => {
+    await create_army({
+      signer: account,
+      army_is_protector: true,
+      army_owner_id: structureEntityId,
+    });
+  };
 
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -166,8 +161,8 @@ const TroopExchange = ({ giverArmyEntityId, takerArmyEntityId }: TroopsProps) =>
     setLoading(true);
     await army_merge_troops({
       signer: account,
-      from_army_id: transferDirection === "to" ? giverArmyEntityId : takerArmyEntityId,
-      to_army_id: transferDirection === "to" ? takerArmyEntityId : giverArmyEntityId,
+      from_army_id: transferDirection === "to" ? giverArmyEntityId : protector!.army_id,
+      to_army_id: transferDirection === "to" ? protector!.army_id : giverArmyEntityId,
       troops: {
         knight_count: troopsGiven[ResourcesIds.Knight] * EternumGlobalConfig.resources.resourceMultiplier,
         paladin_count: troopsGiven[ResourcesIds.Paladin] * EternumGlobalConfig.resources.resourceMultiplier,
@@ -187,7 +182,7 @@ const TroopExchange = ({ giverArmyEntityId, takerArmyEntityId }: TroopsProps) =>
   };
 
   const giverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([giverArmyEntityId]))!.troops;
-  const receiverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([takerArmyEntityId]))!.troops;
+  const receiverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([protector?.army_id || 0n]))?.troops;
 
   return (
     <div className="flex flex-col">
@@ -242,59 +237,62 @@ const TroopExchange = ({ giverArmyEntityId, takerArmyEntityId }: TroopsProps) =>
 
         <div className="w-[40%]">
           <p className=" pt-2 pb-5">Transfer {transferDirection} Structure</p>
-          {Object.entries(troopsToFormat(receiverArmyTroops)).map(([resourceId, amount]: [string, number]) => {
-            return (
-              <div
-                className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4"
-                key={resourceId}
-              >
-                <div className=" flex gap-3">
-                  <div>
-                    <Troop troopId={Number(resourceId)} />
-                  </div>
+          {!protector ? (
+            <Button variant={"primary"} onClick={createProtector}>
+              Create protector army
+            </Button>
+          ) : (
+            receiverArmyTroops &&
+            Object.entries(troopsToFormat(receiverArmyTroops!)).map(([resourceId, amount]: [string, number]) => {
+              return (
+                <div
+                  className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4"
+                  key={resourceId}
+                >
+                  <div className=" flex gap-3">
+                    <div>
+                      <Troop troopId={Number(resourceId)} />
+                    </div>
 
-                  <div className="flex flex-col text-xs font-bold">
-                    <p>Avail.</p>
-                    <p>
-                      {transferDirection === "from"
-                        ? `[${currencyFormat(
-                            amount - troopsGiven[Number(resourceId)] * EternumGlobalConfig.resources.resourceMultiplier,
-                            0,
-                          )}]`
-                        : `[${currencyFormat(amount, 0)}]` + ` +${troopsGiven[Number(resourceId)]}`}
-                    </p>
+                    <div className="flex flex-col text-xs font-bold">
+                      <p>Avail.</p>
+                      <p>
+                        {transferDirection === "from"
+                          ? `[${currencyFormat(
+                              amount -
+                                troopsGiven[Number(resourceId)] * EternumGlobalConfig.resources.resourceMultiplier,
+                              0,
+                            )}]`
+                          : `[${currencyFormat(amount, 0)}]` + ` +${troopsGiven[Number(resourceId)]}`}
+                      </p>
+                    </div>
                   </div>
+                  {transferDirection === "from" && (
+                    <NumberInput
+                      className="w-1/2"
+                      max={amount / EternumGlobalConfig.resources.resourceMultiplier}
+                      min={0}
+                      step={100}
+                      value={troopsGiven[Number(resourceId)]}
+                      onChange={(amount) => handleTroopsGivenChange(resourceId, amount)}
+                    />
+                  )}
                 </div>
-                {transferDirection === "from" && (
-                  <NumberInput
-                    className="w-1/2"
-                    max={amount / EternumGlobalConfig.resources.resourceMultiplier}
-                    min={0}
-                    step={100}
-                    value={troopsGiven[Number(resourceId)]}
-                    onChange={(amount) => handleTroopsGivenChange(resourceId, amount)}
-                  />
-                )}
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
       <Button
         onClick={mergeTroops}
         isLoading={loading}
         className="mt-5"
-        disabled={Object.values(troopsGiven).every((amount) => amount === 0)}
+        disabled={Object.values(troopsGiven).every((amount) => amount === 0) || !protector}
       >
         Reinforce
       </Button>
     </div>
   );
-};
-
-type MergeTroopsPanelProps = {
-  giverArmy: ArmyInfo;
-  structure: Structure;
 };
 
 const Troop = ({ troopId }: { troopId: number }) => {
