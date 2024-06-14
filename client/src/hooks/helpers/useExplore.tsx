@@ -120,6 +120,8 @@ export function useExplore() {
 
     const entity = getEntityIdFromKeys([entityId]);
 
+    //todo: add stamina
+
     Position.addOverride(overrideId, {
       entity,
       value: {
@@ -140,21 +142,16 @@ export function useExplore() {
 
     const overrideId = optimisticExplore(explorerId, path[1].x, path[1].y);
 
-    await explore({
+    explore({
       unit_id: explorerId,
       direction,
       signer: account,
-    })
-      .finally(() => {
-        setTimeout(() => {
-          Position.removeOverride(overrideId);
-        }, 10000);
-      })
-      .catch((e) => {
-        setAnimationPaths([...prevPaths, { id: explorerId, path: path.reverse(), enemy: false }]);
-        Position.removeOverride(overrideId);
-        removeHex(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
-      });
+    }).catch((e) => {
+      removeHex(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
+      Position.removeOverride(overrideId);
+      setAnimationPaths([...prevPaths, { id: explorerId, path: [path[path.length - 1]], enemy: false }]);
+      console.log("error exploring", e);
+    });
   };
   return { isExplored, exploredColsRows, useFoundResources, getExplorationInput, exploreHex };
 }
