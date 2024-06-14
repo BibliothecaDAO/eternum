@@ -52,7 +52,7 @@ export const MarketResource = ({
       }`}
     >
       <ResourceIcon size="sm" resource={resource.trait} withTooltip={false} />
-      {resource.trait}
+      <div className="truncate">{resource.trait}</div>
 
       <div className="ml-auto flex gap-3">
         {currencyFormat(balance ? Number(balance) : 0, 0)}
@@ -131,10 +131,10 @@ export const MarketOrders = ({
         </div>
       </div>
 
-      <div className=" p-4 bg-white/10  flex-col flex gap-1 clip-angled-sm   flex-grow ">
+      <div className="p-4 bg-white/10  flex-col flex gap-1 clip-angled-sm flex-grow">
         <OrderRowHeader isBuy={isBuy} resourceId={resourceId} />
 
-        <div className="  flex-col flex gap-1 flex-grow overflow-y-auto">
+        <div className="flex-col flex gap-1 flex-grow overflow-y-auto">
           {offers.map((offer, index) => (
             <OrderRow key={index} offer={offer} entityId={entityId} isBuy={isBuy} />
           ))}
@@ -148,14 +148,13 @@ export const MarketOrders = ({
 
 export const OrderRowHeader = ({ isBuy, resourceId }: { isBuy: boolean; resourceId: number }) => {
   return (
-    <div className="flex justify-between p-2 uppercase text-xs font-bold">
-      <div className="w-3/12">quantity</div>
+    <div className="grid grid-cols-4 gap-4 p-2 uppercase text-xs font-bold">
+      <div>quantity</div>
       <div>distance</div>
       <div className="flex">
         <ResourceIcon size="xs" resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"} /> per/
         <ResourceIcon size="xs" resource={isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"} />
       </div>
-      <div>accept</div>
     </div>
   );
 };
@@ -188,15 +187,23 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
 
   const onAccept = async () => {
     setLoading(true);
-    // todo: only delete if success
     await accept_order({
       signer: account,
       taker_id: entityId,
       trade_id: offer.tradeId,
       maker_gives_resources: [offer.takerGets[0].resourceId, offer.takerGets[0].amount],
       taker_gives_resources: [offer.makerGets[0].resourceId, offer.makerGets[0].amount],
-    });
-    deleteTrade(offer.tradeId);
+    })
+      .then(() => {
+        deleteTrade(offer.tradeId);
+      })
+      .catch((error) => {
+        // Add failure indicator in UI
+        console.error("Failed to accept order", error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   const isSelf = useMemo(() => {
@@ -205,36 +212,38 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
 
   return (
     <div
-      className={`flex justify-between p-1  px-2 clip-angled-sm hover:bg-white/15 duration-150 ${
+      key={offer.tradeId}
+      className={`flex flex-col p-1  px-2 clip-angled-sm hover:bg-white/15 duration-150 ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
       }`}
     >
-      <div className="w-3/12">{currencyFormat(offer.takerGets[0].amount, 2)}</div>
-      <div>{travelTime}hrs</div>
-      <div>{offer.ratio.toFixed(2)}</div>
-
-      {isSelf ? (
-        <Button
-          onClick={async () => {
-            setLoading(true);
-            await cancel_order({
-              signer: account,
-              trade_id: offer.tradeId,
-              return_resources: returnResources,
-            });
-            setLoading(false);
-          }}
-          variant="danger"
-          size="xs"
-          className="self-center"
-        >
-          {loading ? "cancelling" : "cancel"}
-        </Button>
-      ) : (
-        <Button isLoading={loading} onClick={onAccept} size="xs" className="self-center">
-          accept
-        </Button>
-      )}
+      <div className="grid grid-cols-4 gap-4">
+        <div>{currencyFormat(offer.takerGets[0].amount, 2)}</div>
+        <div>{travelTime}hrs</div>
+        <div>{offer.ratio.toFixed(2)}</div>
+        {isSelf ? (
+          <Button
+            onClick={async () => {
+              setLoading(true);
+              await cancel_order({
+                signer: account,
+                trade_id: offer.tradeId,
+                return_resources: returnResources,
+              });
+              setLoading(false);
+            }}
+            variant="danger"
+            size="xs"
+            className="self-center"
+          >
+            {loading ? "cancelling" : "cancel"}
+          </Button>
+        ) : (
+          <Button isLoading={loading} onClick={onAccept} size="xs" className="self-center flex flex-grow">
+            accept
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
@@ -280,8 +289,9 @@ export const OrderCreation = ({
       taker_id: 0,
       taker_gives_resources: takerGives,
       expires_at: nextBlockTimestamp + ONE_MONTH,
+    }).finally(() => {
+      setLoading(false);
     });
-    setLoading(false);
   };
 
   const bid = useMemo(() => {
