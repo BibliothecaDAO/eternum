@@ -63,18 +63,6 @@ export const BottomNavigation = () => {
     return [
       {
         button: (
-          <CircleButton
-            tooltipLocation="top"
-            active={isPopupOpen(settings)}
-            image={BuildingThumbs.settings}
-            label={"Settings"}
-            size="lg"
-            onClick={() => togglePopup(settings)}
-          />
-        ),
-      },
-      {
-        button: (
           <div className="relative">
             <CircleButton
               tooltipLocation="top"
@@ -84,8 +72,8 @@ export const BottomNavigation = () => {
               size="lg"
               onClick={() => togglePopup(quests)}
               className="forth-step"
-              notification={isRealmSelected(realmEntityId, structures) ? claimableQuests.length : undefined}
-              disabled={!isRealmSelected(realmEntityId, structures)}
+              notification={isRealmSelected(realmEntityId, structures) ? claimableQuests?.length : undefined}
+              disabled={!isRealmSelected(realmEntityId, structures) || !claimableQuests?.length}
             />
 
             {population?.population == null && location !== "/map" && (

@@ -147,7 +147,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
 
   return (
     <>
-      <div className="flex justify-between  bg-gold/5 p-2 text-xs">
+      <div className="flex justify-between   p-2 text-xs">
         {/* <Button size="xs" variant="default" onClick={() => setSetTravelWindow(true)}>
           travel
         </Button> */}
@@ -218,14 +218,17 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
           </Button>
         </div>
 
-        <div className="grid grid-cols-3 gap-6 my-4">
+        <div className="grid grid-cols-3 gap-3 my-4">
           {troops.map((troop) => {
             const balance = getBalance(owner_entity, troop.name).balance;
 
             const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
 
             return (
-              <div className="p-2 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
+              <div
+                className="p-3 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col border-gold/10 border"
+                key={troop.name}
+              >
                 <div className="font-bold mb-4">
                   <div className="flex justify-between">
                     <div className="text-md">{ResourcesIds[troop.name]}</div>
@@ -299,7 +302,7 @@ export const ViewOnMapButton = ({ position, className }: { position: Position; c
         moveCameraToColRow(position.x, position.y, 1.5);
       }}
     >
-      <span> view on map</span>
+      <span> map</span>
     </Button>
   );
 };

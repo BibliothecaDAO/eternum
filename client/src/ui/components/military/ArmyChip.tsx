@@ -4,31 +4,37 @@ import { useState } from "react";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard, ViewOnMapButton } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
+import { StaminaResource } from "@/ui/elements/StaminaResource";
 
 export const ArmyChip = ({ army, extraButton }: { army: ArmyInfo; extraButton?: JSX.Element }) => {
   const [editMode, setEditMode] = useState(false);
 
   return (
-    <div className=" items-center text-xs p-4 hover:bg-gold/20 clip-angled-sm bg-brown/70 border-gray-300 rounded-md ornate-borders-sm ">
+    <div className=" items-center text-xs px-4 hover:bg-blueish/20 clip-angled-sm bg-blueish/10 rounded-md ornate-borders-sm ">
       {editMode ? (
         <>
-          <Button size="xs" onClick={() => setEditMode(!editMode)}>
-            Close Edit
+          <Button className="mb-2" size="xs" onClick={() => setEditMode(!editMode)}>
+            Close Manager
           </Button>
           <ArmyManagementCard entity={army} owner_entity={BigInt(army.entity_owner_id)} />
         </>
       ) : (
         <>
           <div className=" text-xl w-full  justify-between">
+            <div className="my-1 border-b border-gold/5 w-full py-2 flex text-xs justify-between uppercase">
+              <div className="text-green">hp: {(BigInt(army.value.toString()) / BigInt(1000n)).toString()}</div>
+
+              <StaminaResource entityId={BigInt(army.entity_id)} />
+            </div>
+
             <div className="flex justify-between mb-4">
-              <div className="flex justify-between">
-                <div className="h5">{army.name}</div>
-                {/* <StaminaResource entityId={BigInt(army.entity_id)} /> */}
+              <div className="flex justify-between ">
+                <div className="h4 text-2xl">{army.name}</div>
               </div>
-              <div className="flex  justify-end">
+              <div className="flex  justify-end gap-2">
                 <ViewOnMapButton position={{ x: army.x, y: army.y }} />
                 <Button size="xs" onClick={() => setEditMode(!editMode)}>
-                  edit
+                  Manage
                 </Button>
               </div>
             </div>
@@ -37,8 +43,8 @@ export const ArmyChip = ({ army, extraButton }: { army: ArmyInfo; extraButton?: 
             <TroopMenuRow army={army} />
           </div>
 
-          <div className="flex flex-col gap-4 mt-2 items-center justify-between">
-            <InventoryResources entityId={BigInt(army.entity_id)} max={3} className="flex text-xs" />
+          <div className="flex flex-col  mt-2 items-center justify-between">
+            <InventoryResources entityId={BigInt(army.entity_id)} max={3} className="flex" />
           </div>
           {extraButton || ""}
         </>

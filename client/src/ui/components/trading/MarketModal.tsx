@@ -42,9 +42,9 @@ export const MarketModal = () => {
 
   return (
     <ModalContainer>
-      <div className="container border mx-auto  grid grid-cols-12 bg-brown/90 border-gold/30 clip-angled h-full row-span-12">
+      <div className="container border mx-auto  grid grid-cols-12 bg-brown border-gold/30 clip-angled h-full row-span-12 ornate-borders">
         <div className="col-span-12 border-b p-2 flex justify-between row-span-2">
-          <div className="self-center">
+          <div className="self-center text-xl">
             <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(BigInt(trait))}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select Realm" />
@@ -57,6 +57,9 @@ export const MarketModal = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="self-center text-3xl">
+            <h2 className="text-center">The Lords Market</h2>
           </div>
           <div className="self-center flex gap-4">
             <Button onClick={() => setPanel("market")} variant={panel == "market" ? "primary" : "default"}>
