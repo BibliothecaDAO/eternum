@@ -474,6 +474,53 @@ mod combat_systems {
         }
 
 
+        /// Joins an existing battle with the specified army, assigning it to a specific side in the battle.
+        ///
+        /// # Preconditions:
+        /// - The specified `battle_side` must be either `BattleSide::Attack` or `BattleSide::Defence`.
+        /// - The caller must own the `army_id`.
+        /// - The battle must be ongoing.
+        /// - The army must not already be in a battle.
+        /// - The army must be at the same location as the battle.
+        ///
+        /// # Arguments:
+        /// * `world` - The game world dispatcher interface.
+        /// * `battle_id` - The id of the battle to join.
+        /// * `battle_side` - The side to join in the battle (attack or defense).
+        /// * `army_id` - The id of the army joining the battle.
+        ///
+        /// # Implementation Details:
+        /// 1. **Initial Checks and Setup**:
+        ///     - Ensures the specified `battle_side` is valid (not `BattleSide::None`).
+        ///     - Verifies the caller owns the army.
+        /// 2. **Battle State Update**:
+        ///     - Updates the battle state before performing any other actions.
+        ///     - Ensures the battle is still ongoing.
+        /// 3. **Army Validations**:
+        ///     - Ensures the army is not already in a battle.
+        ///     - Checks that the army is at the same location as the battle.
+        /// 4. **Army Assignment to Battle**:
+        ///     - Assigns the battle ID and side to the army.
+        ///     - Blocks the army's movement if it is not protecting any entity.
+        /// 5. **Resource Locking**:
+        ///     - Locks the resources protected by the army, transferring them to the battle escrow if necessary.
+        /// 6. **Troop and Health Addition**:
+        ///     - Adds the army's troops and health to the respective side in the battle.
+        ///     - Updates the battle state with the new army's contributions.
+        /// 7. **Battle Delta Reset**:
+        ///     - Resets the battle delta with the troop configuration.
+        ///
+        /// # Note:
+        ///     When an army joins a battle, its protected resources are locked and transferred 
+        ///     to the battle escrow. This ensures that resources cannot be transferred in or out 
+        ///     of the army while it is engaged in the battle. 
+        ///     
+        ///     For defensive armies, the resources owned by the structures they protect are locked 
+        ///     but not transferred into the escrow to avoid continuous donation issues.
+        ///     see. the `battle_start` function for more info on this
+        ///
+        /// # Returns:
+        /// * None
         fn battle_join(
             world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128
         ) {
