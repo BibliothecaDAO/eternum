@@ -355,6 +355,56 @@ mod combat_systems {
         }
 
 
+        /// Initiates a battle between an attacking and defending army within the game world.
+        ///
+        /// # Preconditions:
+        /// - The caller must own the `attacking_army_id`.
+        /// - Both `attacking_army_id` and `defending_army_id` must not already be in battle.
+        /// - Both armies must be at the same location.
+        ///
+        /// # Arguments:
+        /// * `world` - The game world dispatcher interface.
+        /// * `attacking_army_id` - The id of the attacking army.
+        /// * `defending_army_id` - The id of the defending army.
+        ///
+        /// # Implementation Details:
+        /// 1. **Initial Checks and Setup**:
+        ///     - Verifies the attacking and defending armies are not already in battle.
+        ///     - Ensures the caller owns the attacking army.
+        ///     - Checks that both armies are at the same position.
+        /// 2. **Battle ID Assignment**:
+        ///     - Generates a new unique battle ID and assigns it to both armies.
+        ///     - Sets the battle side for each army (attack or defense).
+        /// 3. **Movement Blocking**:
+        ///     - Blocks movement for both armies if they are not protecting any entity.
+        /// 4. **Battle Creation**:
+        ///     - Initializes the battle with both armies and their respective health.
+        ///     - Deposits resources protected by the armies into the battle escrow.
+        ///     - Sets the battle position and resets the battle delta.
+        ///
+        /// # Note:
+        ///     This is how the deposited resources are escrowed. Whenever any army joins a 
+        ///     battle, the items which they are securing are locked from being transferred 
+        ///     and they will also not be able to receive resources. 
+        /// 
+        ///     For example;
+        ///     - If an army is not a defensive army, the items they are securing are the items they hold. 
+        ///       So we lock these items. We also transfer the items into the battle escrow pool
+        ///      
+        ///     - If an army is a defensive army, the items they are securing are the items owned 
+        ///       by the structure they are protecting and so these items are lock. The structures can't
+        ///       receive or send any resources.
+        /// 
+        ///       However, for a couple of reasons, we do not transfer resources owned by structures into the
+        ///       escrow pool because if a structure is producing resources, it would be impossible to 
+        ///       continously donate resources into the battle escrow. Even if it was possible, it would take
+        ///       too much gas.
+        /// 
+        ///       Instead, what we do is that we just lock up the structure's resources and if you win the battle
+        ///       against the structure, you can continuously pillage it without being sent back to your base.
+        ///             
+        /// # Returns:
+        /// * None
         fn battle_start(world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128) {
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             attacking_army.assert_not_in_battle();
@@ -408,7 +458,7 @@ mod combat_systems {
             battle.defence_army_health = defending_army_health.into();
             battle.last_updated = starknet::get_block_timestamp();
 
-            // deposit resources protected by armies into battle pots/boxes
+            // deposit resources protected by armies into battle escrow pots/boxes
             battle.deposit_balance(world, attacking_army, attacking_army_protectee);
             battle.deposit_balance(world, defending_army, defending_army_protectee);
 
