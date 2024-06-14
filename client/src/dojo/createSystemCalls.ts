@@ -58,7 +58,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const travel = async (props: SystemProps.TravelProps) => {
-    console.log(props);
     await provider.travel(props);
   };
 
