@@ -2,9 +2,10 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useQuests } from "@/hooks/helpers/useQuests";
 import Button from "@/ui/elements/Button";
 import { Check, ShieldQuestion } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
-import { quests } from "../../components/navigation/Config";
+import { quests as QuestOSWindow } from "../../components/navigation/Config";
+
 interface Quest {
   name: string;
   description: string;
@@ -31,9 +32,13 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
     account: { account },
   } = useDojo();
 
-  const togglePopup = useUIStore((state) => state.togglePopup);
-
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (quest.completed === false) {
+      setIsLoading(false);
+    }
+  }, [quest]);
 
   const handleClaimResources = async (config_id: string) => {
     setIsLoading(true);
@@ -66,9 +71,7 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
       }
     } catch (error) {
       console.error("Failed to claim resources:", error);
-    } finally {
       setIsLoading(false);
-      togglePopup(quests);
     }
   };
 
@@ -100,6 +103,15 @@ export const QuestList = ({ entityId }: { entityId: bigint | undefined }) => {
   const firstUnclaimedQuest = useMemo(() => {
     return quests.find((quest: Quest) => !quest.claimed);
   }, [quests]);
+
+  const togglePopup = useUIStore((state) => state.togglePopup);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+
+  useEffect(() => {
+    if (firstUnclaimedQuest === undefined && isPopupOpen(QuestOSWindow)) {
+      togglePopup(QuestOSWindow);
+    }
+  }, [firstUnclaimedQuest]);
 
   return (
     <div className="p-3 flex flex-col gap-2">
