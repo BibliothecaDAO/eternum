@@ -13,6 +13,7 @@ type CircleButtonProps = {
   image?: string; // Added image prop
   tooltipLocation?: "top" | "bottom" | "left" | "right";
   notification?: number;
+  notificationLocation?: "topleft" | "topright" | "bottomleft" | "bottomright";
 } & React.ComponentPropsWithRef<"button">;
 
 const sizes = {
@@ -34,14 +35,22 @@ const CircleButton = ({
   image,
   tooltipLocation = "bottom",
   notification,
+  notificationLocation = "topleft",
   ...props
 }: CircleButtonProps) => {
   const { play: hoverClick } = useUiSounds(soundSelector.hoverClick);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const { play: playClick } = useUiSounds(soundSelector.click);
 
+  const notificationPositions = {
+    topleft: "-top-1 -left-1",
+    topright: "-top-1 -right-1",
+    bottomleft: "-bottom-1 -left-1",
+    bottomright: "-bottom-1 -right-1",
+  };
+
   return (
-    <>
+    <div className="relative">
       <button
         onMouseEnter={() => {
           hoverClick();
@@ -86,13 +95,18 @@ const CircleButton = ({
         ></div>
       </button>
       {notification ? (
-        <div className="absolute animate-bounce -top-1 -left-1 rounded-full border border-green/30 bg-green/90 text-brown px-2 text-xxs z-[100] font-bold">
+        <div
+          className={clsx(
+            "absolute animate-bounce rounded-full border border-green/30 bg-green/90 text-brown px-2 text-xxs z-[100] font-bold",
+            notificationPositions[notificationLocation],
+          )}
+        >
           {notification}
         </div>
       ) : (
         <></>
       )}
-    </>
+    </div>
   );
 };
 
