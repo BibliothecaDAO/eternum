@@ -3,7 +3,7 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import { getRealmOrderNameById } from "@/ui/utils/realms";
 import { Box } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Vector3 } from "three";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
@@ -24,15 +24,11 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
 
   const [isRunning, setIsRunning] = useState(false);
 
-  const { animationPaths, setAnimationPaths, selectedEntity, setSelectedEntity, showAllArmies } = useUIStore(
-    ({ animationPaths, setAnimationPaths, selectedEntity, setSelectedEntity, showAllArmies }) => ({
-      animationPaths,
-      setAnimationPaths,
-      selectedEntity,
-      setSelectedEntity,
-      showAllArmies,
-    }),
-  );
+  const animationPaths = useUIStore((state) => state.animationPaths);
+  const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
+  const showAllArmies = useUIStore((state) => state.showAllArmies);
 
   const animationPath = animationPaths.find((path) => path.id === BigInt(army.entity_id));
 
@@ -43,9 +39,17 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
 
   const [rotationY, setRotationY] = useState(deterministicRotation);
   const [hovered, setHovered] = useState(false);
+
   const [position, setPosition] = useState<Vector3>(
     new Vector3(army.uiPos.x + army.offset.x, 0.32, -army.uiPos.y - army.offset.y),
   );
+
+  useEffect(() => {
+    if (animationPath) return;
+    const vectorPos = new Vector3(army.uiPos.x + army.offset.x, 0.32, -army.uiPos.y - army.offset.y);
+    if (vectorPos.x === position.x && vectorPos.y === position.y) return;
+    setPosition(vectorPos);
+  }, [army.uiPos]);
 
   useFrame(() => {
     if (!animationPath) return;
