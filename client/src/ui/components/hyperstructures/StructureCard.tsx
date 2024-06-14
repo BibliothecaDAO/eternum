@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { FullStructure, useStructuresPosition } from "@/hooks/helpers/useStructures";
+import { Realm, Structure, useStructuresPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { CombatTarget } from "@/types";
 import Button from "@/ui/elements/Button";
@@ -43,7 +43,7 @@ export const StructureCard = ({
       (formattedRealmAtPosition && !formattedRealmAtPosition.self) ||
       (formattedStructureAtPosition && !formattedStructureAtPosition.isMine)
     ) {
-      const target = formattedStructureAtPosition || formattedRealmAtPosition;
+      const target = Boolean(formattedRealmAtPosition) ? formattedRealmAtPosition : formattedStructureAtPosition;
       return (
         ownArmySelected && (
           <Button
@@ -51,7 +51,7 @@ export const StructureCard = ({
             onClick={() =>
               setBattleView({
                 attackers: [ownArmySelected],
-                defenders: { type: CombatTarget.Structure, entities: target as unknown as FullStructure },
+                defenders: { type: CombatTarget.Structure, entities: target as Realm | Structure },
               })
             }
           >

@@ -1,5 +1,5 @@
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { FullStructure } from "@/hooks/helpers/useStructures";
+import { Realm, Structure } from "@/hooks/helpers/useStructures";
 import Button from "@/ui/elements/Button";
 import { motion } from "framer-motion";
 
@@ -8,7 +8,7 @@ export const EntityAvatar = ({
   structure,
 }: {
   army: ArmyInfo | undefined;
-  structure: FullStructure | undefined;
+  structure: Realm | Structure | undefined;
 }) => {
   const imgSource =
     !Boolean(army) && Boolean(structure) ? "./images/buildings/thumb/castle.png" : "./images/avatars/2.png";

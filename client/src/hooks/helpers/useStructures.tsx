@@ -9,10 +9,12 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
-import { useEntities } from "./useEntities";
 
-export type Realm = ClientComponents["Realm"]["schema"] & { resources: number[] } & { self: boolean } & {
+export type Realm = ClientComponents["Realm"]["schema"] & {
+  resources: number[];
+  self: boolean;
   name: string;
+  protector: ArmyInfo | undefined;
 };
 
 export type Structure = ClientComponents["Structure"]["schema"] &
@@ -23,7 +25,6 @@ export type FullStructure = ClientComponents["Structure"]["schema"] & {
   entityOwner: ClientComponents["EntityOwner"]["schema"];
   owner: ClientComponents["Owner"]["schema"];
   protector: ArmyInfo | undefined;
-  name: string;
   isMine: boolean;
 };
 
@@ -66,7 +67,6 @@ export const useStructures = () => {
       Owner,
       getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id) || 0n]),
     ) as unknown as ClientComponents["Owner"]["schema"];
-    const name = getRealmNameById(entityId);
 
     let protector: ClientComponents["Protector"]["schema"] | undefined | ArmyInfo = getComponentValue(
       Protector,
@@ -78,7 +78,6 @@ export const useStructures = () => {
       ...structure,
       entityOwner,
       owner,
-      name,
       protector: protector as ArmyInfo | undefined,
       isMine: BigInt(owner!.address) === BigInt(account.address),
     };
@@ -99,8 +98,6 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
     account: { account },
   } = useDojo();
 
-  const { getEntityName } = useEntities();
-
   // structures at position
   const realmsAtPosition = useEntityQuery([HasValue(Position, position), HasValue(Structure, { category: "Realm" })]);
   const structuresAtPosition = useEntityQuery([HasValue(Position, position), Has(Structure)]);
@@ -113,12 +110,20 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
       const resources = unpackResources(BigInt(realm?.resource_types_packed || 0n), realm?.resource_types_count || 0);
       const name = getRealmNameById(BigInt(realm?.realm_id) || 0n);
 
-      return {
+      let protector: ClientComponents["Protector"]["schema"] | undefined | ArmyInfo = getComponentValue(
+        Protector,
+        realm_entity_id,
+      ) as unknown as ClientComponents["Protector"]["schema"];
+      protector = protector ? getArmyByEntityId(BigInt(protector.army_id)) : undefined;
+
+      const fullRealm = {
         ...realm,
+        protector: protector as ArmyInfo | undefined,
         resources,
         self: owner?.address === BigInt(account.address),
-        name,
+        name: name,
       };
+      return fullRealm;
     });
   }, [realmsAtPosition])[0];
 
@@ -128,6 +133,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
       if (!structure) {
         return;
       }
+
       const entityOwner = getComponentValue(
         EntityOwner,
         entityId,

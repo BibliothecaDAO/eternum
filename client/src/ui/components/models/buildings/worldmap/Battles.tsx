@@ -4,11 +4,10 @@ import { BattleLabel } from "@/ui/components/worldmap/armies/BattleLabel";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { Position } from "@bibliothecadao/eternum";
 import { useGLTF } from "@react-three/drei";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 export const Battles = () => {
   const setSelectedBattle = useUIStore((state) => state.setSelectedBattle);
-  const selectedBattle = useUIStore((state) => state.selectedBattle);
   const { allBattles } = useBattles();
   const battles = allBattles();
 

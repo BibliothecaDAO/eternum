@@ -1,21 +1,18 @@
-import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import useUIStore from "@/hooks/store/useUIStore";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useEntities } from "@/hooks/helpers/useEntities";
+import { useQuery } from "@/hooks/helpers/useQuery";
+import { useModal } from "@/hooks/store/useModal";
 import useRealmStore from "@/hooks/store/useRealmStore";
+import useUIStore from "@/hooks/store/useUIStore";
+import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
-import { useQuery } from "@/hooks/helpers/useQuery";
-import CircleButton from "@/ui/elements/CircleButton";
-import { BuildingThumbs } from "./LeftNavigationModule";
-import { useLocation } from "wouter";
-import { useMemo } from "react";
-import { useDojo } from "@/hooks/context/DojoContext";
-import { useModal } from "@/hooks/store/useModal";
-import { HintModal } from "@/ui/components/hints/HintModal";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { Crown, Landmark, Sparkles, Pickaxe } from "lucide-react";
-import Button from "@/ui/elements/Button";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { Crown, Landmark, Pickaxe, Sparkles } from "lucide-react";
+import { useMemo } from "react";
+import { useLocation } from "wouter";
+import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
 import { motion } from "framer-motion";
 
