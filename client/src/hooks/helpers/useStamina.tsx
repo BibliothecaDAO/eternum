@@ -1,10 +1,10 @@
-import { useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../context/DojoContext";
-import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { ClientComponents } from "@/dojo/createClientComponents";
-import useBlockchainStore from "../store/useBlockchainStore";
+import { ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useDojo } from "../context/DojoContext";
+import useBlockchainStore from "../store/useBlockchainStore";
 
 export const useStamina = () => {
   const {

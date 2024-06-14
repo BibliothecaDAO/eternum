@@ -2,7 +2,6 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ExtraBattleInfo, useBattleManager, useBattles } from "@/hooks/helpers/useBattles";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import useUIStore from "@/hooks/store/useUIStore";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { findResourceById } from "@bibliothecadao/eternum";

@@ -1,4 +1,4 @@
-import { Structure } from "@/hooks/helpers/useStructures";
+import { Realm } from "@/hooks/helpers/useStructures";
 import { Headline } from "@/ui/elements/Headline";
 import { findResourceById, orderNameDict } from "@bibliothecadao/eternum";
 import clsx from "clsx";
@@ -8,7 +8,7 @@ import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { InventoryResources } from "../../resources/InventoryResources";
 
 type RealmListItemProps = {
-  realm: Structure | RealmExtended;
+  realm: Realm | RealmExtended;
   onClick?: () => void;
   extraButton?: JSX.Element;
 };

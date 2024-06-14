@@ -22,9 +22,9 @@ import { RightNavigationModule } from "../modules/navigation/RightNavigationModu
 import { BattleContainer } from "../containers/BattleContainer";
 import { LoadingContainer } from "../containers/LoadingContainer";
 import { Redirect } from "wouter";
+import { BattleView } from "../modules/military/battle-view/BattleView";
 import TopLeftContainer from "../containers/TopLeftContainer";
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
-import { BattleView } from "../modules/military/battle-view/BattleView";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);

@@ -73,9 +73,6 @@ export const BattleActions = ({
   
 	const handleBattleStart = async () => {
 	  setLoading(true);
-	  console.log(attacker);
-	  console.log(defender);
-	  console.log(ownArmy!.entity_id);
 	  await battle_start({
 		signer: account,
 		attacking_army_id: ownArmy!.entity_id,
@@ -87,7 +84,6 @@ export const BattleActions = ({
   
 	const handleBattleClaim = async () => {
 	  setLoading(true);
-	  console.log(ownArmy);
 	  await provider.battle_claim({
 		signer: account,
 		army_id: ownArmy!.entity_id,

@@ -1,13 +1,12 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { Position } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import useBlockchainStore from "../store/useBlockchainStore";
-import { getArmyByEntityId } from "./useArmies";
 
 export type FullArmyType = ClientComponents["Army"]["schema"] & ClientComponents["Health"]["schema"];
 
@@ -37,8 +36,6 @@ export const useBattleManager = (battleId: bigint) => {
 };
 
 export const useBattles = () => {
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
-
   const {
     setup: {
       components: { Battle, Army, Owner, EntityName, Position },
@@ -101,61 +98,18 @@ export const useBattles = () => {
       .filter(Boolean);
   };
 
-  const battleByEntityId = (attackerEntityId: bigint, defenderEntityId: bigint) => {
-    const attackerArmy = getArmyByEntityId(attackerEntityId);
-    const defenderArmy = getArmyByEntityId(defenderEntityId);
-
-    if (
-      !attackerArmy ||
-      !defenderArmy ||
-      BigInt(defenderArmy.battle_id) === 0n ||
-      attackerArmy.battle_id !== defenderArmy.battle_id
-    ) {
-      return { battle: null, attackerArmy, defenderArmy };
-    }
-
-    const battle = useComponentValue(
-      Battle,
-      getEntityIdFromKeys([BigInt(defenderArmy.battle_id)]),
-    ) as unknown as ClientComponents["Battle"]["schema"];
-
-    if (!battle) return;
-
-    if (battle.last_updated !== currentDefaultTick) {
-      updateBattle(battle, BigInt(currentDefaultTick));
-    }
-    return { battle, attackerArmy, defenderArmy };
-  };
-
-  return { allBattles, battleByEntityId, playerBattles, getExtraBattleInformation };
+  return { allBattles, playerBattles, getExtraBattleInformation };
 };
 
-const updateBattle = (battle: any, currentDefaultTick: bigint) => {
-  const durationPassed = getDurationPassed(battle, currentDefaultTick);
-  decreaseHealthBy(battle.attack_army_health, BigInt(battle.attack_delta) * durationPassed);
-  decreaseHealthBy(battle.defence_army_health, BigInt(battle.attack_delta) * durationPassed);
-};
+export const useBattlesByPosition = ({ x, y }: Position) => {
+  const {
+    setup: {
+      components: { Battle, Army, Owner, EntityName, Position, Protectee, Health },
+    },
+  } = useDojo();
 
-const decreaseHealthBy = (health: { current: bigint; lifetime: bigint }, value: bigint) => {
-  if (health.current > value) {
-    health.current -= value;
-  } else {
-    health.current = 0n;
-  }
-};
-
-const getDurationPassed = (battle: any, currentDefaultTick: bigint) => {
-  const duractionSinceLastUpdate = currentDefaultTick - battle.last_updated;
-  if (battle.duration_left >= duractionSinceLastUpdate) {
-    battle.duration_left -= duractionSinceLastUpdate;
-    battle.last_updated = currentDefaultTick;
-    return duractionSinceLastUpdate;
-  } else {
-    // battle is over
-    const duration = battle.duration_left;
-    battle.duration_left = 0n;
-    battle.last_updated = currentDefaultTick;
-
-    return duration;
-  }
+  const battleEntityIds = useEntityQuery([Has(Battle), HasValue(Position, { x, y })]);
+  const battle = getComponentValue(Battle, battleEntityIds[0]);
+  if (!battle) return;
+  return battle.entity_id;
 };

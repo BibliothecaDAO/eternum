@@ -14,11 +14,6 @@ import { EntityAvatar } from "./EntityAvatar";
 import { TroopRow } from "./Troops";
 import { getAttackerDefender } from "./utils";
 
-const cheat = (battleId: bigint) => {
-  const { updatedBattle } = useBattleManager(BigInt(battleId || 0n));
-  return updatedBattle;
-};
-
 export const BattleView = () => {
   const { battleView, setBattleView } = useUIStore((state) => ({
     battleView: state.battleView,
@@ -30,8 +25,8 @@ export const BattleView = () => {
     () => getArmiesAndStructure(battleView!),
     [battleView?.defenders],
   );
-
-  const updatedBattle = cheat(BigInt(defenderArmy?.battle_id || 0n));
+  
+  const { updatedBattle } = useBattleManager(BigInt(defenderArmy?.battle_id || 0n));
 
   const battleAdjusted = useMemo(() => {
     return updatedBattle.getUpdatedBattle(currentDefaultTick);
