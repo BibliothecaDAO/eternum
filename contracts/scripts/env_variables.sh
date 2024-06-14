@@ -14,7 +14,7 @@ if [[ ! -z "$1" ]]; then
         STARKNET_RPC_URL="https://api.cartridge.gg/x/eternum-17/katana/"
         DOJO_ACCOUNT_ADDRESS="0x6bd82a20984e638c8e1d45770e2924e274e315b9609eb15c26384eac0094cf1"
         DOJO_PRIVATE_KEY="0x15ffe6ee85bcd75f93b395ec4471819d5dbebb77ea2f2a50b30ce7f67372ce4"
-        SOZO_WORLD="0x455860f93fad20b93ab401eaf9bb63bf86a8222ffe4b0a4216d4694603f4723"
+        SOZO_WORLD="0x3731cc419863d4112dde39187122286dcbd9950d89053892087481d3ad6bb82"
         KATANA_TOML_PATH="./manifests/prod/manifest.toml"
     elif [[ "$1" != "dev" ]]; then
         echo "Invalid argument. Use 'dev' or 'prod'."
