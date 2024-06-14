@@ -1,9 +1,9 @@
-import { create } from "zustand";
-import { useEffect } from "react";
-import { EternumGlobalConfig, TickIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
-import { useDojo } from "../context/DojoContext";
+import { TickIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useEffect } from "react";
+import { create } from "zustand";
+import { useDojo } from "../context/DojoContext";
 
 interface BlockchainState {
   nextBlockTimestamp: number | undefined;
@@ -69,7 +69,8 @@ export const useFetchBlockchainData = () => {
 };
 
 const fetchBlockTimestamp = async (): Promise<number | undefined> => {
-  return Math.floor(Date.now() / 1000);
+  const currentTimestamp = Math.floor(Date.now() / 1000);
+  return currentTimestamp;
 };
 
 export default useBlockchainStore;

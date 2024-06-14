@@ -11,9 +11,13 @@ import { useDojo } from "../context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
 import { useEntities } from "./useEntities";
 
-export type Structure = ClientComponents["Realm"]["schema"] & { resources: number[] } & { self: boolean } & {
+export type Realm = ClientComponents["Realm"]["schema"] & { resources: number[] } & { self: boolean } & {
   name: string;
 };
+
+export type Structure = ClientComponents["Structure"]["schema"] &
+  ClientComponents["EntityOwner"]["schema"] &
+  ClientComponents["Owner"]["schema"] & { isMine: boolean; name: string; protector: ArmyInfo | undefined };
 
 export type FullStructure = ClientComponents["Structure"]["schema"] & {
   entityOwner: ClientComponents["EntityOwner"]["schema"];
@@ -101,7 +105,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
   const realmsAtPosition = useEntityQuery([HasValue(Position, position), HasValue(Structure, { category: "Realm" })]);
   const structuresAtPosition = useEntityQuery([HasValue(Position, position), Has(Structure)]);
 
-  const formattedRealmAtPosition: Structure = useMemo(() => {
+  const formattedRealmAtPosition: Realm = useMemo(() => {
     return realmsAtPosition.map((realm_entity_id: any) => {
       const realm = getComponentValue(Realm as Component, realm_entity_id) as ClientComponents["Realm"]["schema"];
       const entityOwner = getComponentValue(EntityOwner, realm_entity_id);
@@ -118,7 +122,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
     });
   }, [realmsAtPosition])[0];
 
-  const formattedStructureAtPosition = useMemo(() => {
+  const formattedStructureAtPosition: Structure | undefined = useMemo(() => {
     return structuresAtPosition.map((entityId: any) => {
       const structure = getComponentValue(Structure, entityId) as unknown as ClientComponents["Structure"]["schema"];
       if (!structure) {
@@ -142,8 +146,8 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
 
       return {
         ...structure,
-        entityOwner,
-        owner,
+        ...entityOwner,
+        ...owner,
         name,
         protector: protector as ArmyInfo | undefined,
         isMine: BigInt(owner!.address) === BigInt(account.address),

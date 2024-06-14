@@ -1,14 +1,14 @@
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
-import { FullStructure } from "@/hooks/helpers/useStructures";
 import { Headline } from "@/ui/elements/Headline";
 import { RESOURCE_OUTPUTS_SCALED, ResourcesIds, StructureType, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { InventoryResources } from "../../resources/InventoryResources";
+import { Structure } from "@/hooks/helpers/useStructures";
 
 type StructureListItemProps = {
-  structure: FullStructure;
+  structure: Structure;
   onClick?: () => void;
   extraButton?: JSX.Element;
 };

@@ -1,31 +1,29 @@
 import { Event } from "@/dojo/events/graphqlClient";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, usePositionArmies } from "@/hooks/helpers/useArmies";
-import { FullStructure, Structure, useStructuresPosition } from "@/hooks/helpers/useStructures";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
 import { CombatTarget } from "@/types";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
-import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { currencyFormat, divideByPrecision } from "@/ui/utils/utils";
-import { BuildingType, EternumGlobalConfig, Position, Resource, ResourcesIds } from "@bibliothecadao/eternum";
-import { useComponentValue } from "@dojoengine/react";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ArrowRight } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { divideByPrecision } from "@/ui/utils/utils";
+import { BuildingType, Resource } from "@bibliothecadao/eternum";
+import { useEffect, useRef, useState } from "react";
 import { Subscription } from "rxjs";
 import { BUILDING_IMAGES_PATH } from "../construction/SelectPreviewBuilding";
-import { ModalContainer } from "../ModalContainer";
-import { RealmListItem } from "../worldmap/realms/RealmListItem";
-import { StructureListItem } from "../worldmap/structures/StructureListItem";
 import { ArmyChip } from "./ArmyChip";
-import { ArmyViewCard } from "./ArmyViewCard";
 
-export const ArmiesAtLocation = ({ armies, ownArmy }: { armies: ArmyInfo[]; ownArmy: ArmyInfo | undefined }) => {
-  const setBattleView = useUIStore((state) => state.setBattleView);
+export const EnnemyArmies = ({
+  armies,
+  ownArmySelected,
+}: {
+  armies: ArmyInfo[];
+  ownArmySelected: ArmyInfo | undefined;
+}) => {
+  const { setBattleView } = useUIStore(({ setBattleView }) => ({
+    setBattleView,
+  }));
+
   return (
     <div>
       {armies.length !== 0 && (
@@ -34,11 +32,11 @@ export const ArmiesAtLocation = ({ armies, ownArmy }: { armies: ArmyInfo[]; ownA
           <div className="grid grid-cols-1 gap-2">
             {armies.map((army: ArmyInfo, index) => {
               const extraButton =
-                ownArmy && !army.isMine ? (
+                ownArmySelected && !army.isMine ? (
                   <Button
                     onClick={() =>
                       setBattleView({
-                        attackers: [ownArmy!],
+                        attackers: [ownArmySelected!],
                         defenders: { type: CombatTarget.Army, entities: [army] },
                       })
                     }
@@ -52,175 +50,6 @@ export const ArmiesAtLocation = ({ armies, ownArmy }: { armies: ArmyInfo[]; ownA
         </>
       )}
     </div>
-  );
-};
-
-export const ArmyActions = ({ armyId }: { armyId: bigint }) => {
-  const clickedHex = useUIStore((state) => state.clickedHex);
-  const { col: x, row: y } = clickedHex!.contractPos;
-
-  const { allArmies } = usePositionArmies({ position: { x, y } });
-
-  const army = allArmies.find((entity: any) => entity.entity_id === armyId) as ArmyInfo;
-
-  const { formattedRealmAtPosition } = useStructuresPosition({ position: { x, y } });
-
-  const {
-    account: { account },
-    network: { provider },
-    setup: {
-      components: { Protector, Army, Health },
-    },
-  } = useDojo();
-
-  const [loading, setLoading] = useState(false);
-
-  const getProtector = useMemo(() => {
-    const protector = getComponentValue(
-      Protector,
-      getEntityIdFromKeys([BigInt(formattedRealmAtPosition?.entity_id || 0n)]),
-    );
-    const protectorArmy = getComponentValue(Army, getEntityIdFromKeys([BigInt(protector?.army_id || 0n)]));
-    const health = getComponentValue(Health, getEntityIdFromKeys([BigInt(protectorArmy?.entity_id || 0n)]));
-
-    return { ...protectorArmy, ...health };
-  }, [allArmies]);
-
-  const handlePillage = async () => {
-    setLoading(true);
-
-    await provider.battle_pillage({
-      signer: account,
-      army_id: army.entity_id,
-      structure_id: formattedRealmAtPosition?.entity_id || 0n,
-    });
-
-    setLoading(false);
-  };
-
-  return (
-    <ModalContainer>
-      <div className="flex justify-center">
-        <div className="grid grid-cols-12 gap-12 container ">
-          <div className="col-span-3">
-            <Headline className="my-3">
-              <h4> Your Army</h4>
-            </Headline>
-            <ArmyViewCard army={army} />
-          </div>
-          <div className="border p-8 text-center col-span-6 space-y-8 flex flex-col justify-between">
-            <div className="w-64">
-              <Headline>
-                <h5>{army?.name}</h5>
-              </Headline>
-              <p>
-                You have a fighting chance to steal some resources. If victorious you will steal resources and return
-                home.
-              </p>
-            </div>
-
-            <div>
-              {" "}
-              <Button className=" h-32" isLoading={loading} variant="primary" onClick={() => handlePillage()}>
-                Pillage {formattedRealmAtPosition.name}
-              </Button>
-            </div>
-
-            <div className="w-64 ml-auto">
-              <Headline>
-                <h5>{formattedRealmAtPosition.name}</h5>
-              </Headline>
-
-              {getProtector.current ? (
-                <>
-                  {" "}
-                  <h6> {Number(getProtector.current?.toString() || 0) / 1000}HP</h6>
-                  <div className="flex justify-center gap-8 mt-4">
-                    <div>Crossbowmen: {currencyFormat(getProtector?.troops?.crossbowman_count || 0, 0)}</div>
-                    <div>Knight: {currencyFormat(getProtector?.troops?.knight_count || 0, 0)}</div>
-                    <div>Paladin: {currencyFormat(getProtector?.troops?.paladin_count || 0, 0)}</div>
-                  </div>
-                </>
-              ) : (
-                "No Defending Army! Pillage Away"
-              )}
-            </div>
-            <PillageHistory
-              structureId={BigInt(formattedRealmAtPosition?.entity_id) || 0n}
-              attackerRealmEntityId={BigInt(army.entity_owner_id)}
-            />
-          </div>
-          <div className="col-span-3">
-            <Headline className="my-3">
-              <h4>Attackable</h4>
-            </Headline>
-            {formattedRealmAtPosition && (
-              <div className="grid ">
-                <RealmListItem realm={formattedRealmAtPosition} />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </ModalContainer>
-  );
-};
-
-export const TroopCard = ({ count, id }: { count: number; id: number }) => {
-  return (
-    <div className="border p-4">
-      <h5>{count}</h5>
-    </div>
-  );
-};
-
-export const BattleStatusBar = ({
-  healthArmyOne,
-  healthArmyTwo,
-  damagePerSecondArmyOne,
-  damagePerSecondArmyTwo,
-}: {
-  healthArmyOne: number;
-  healthArmyTwo: number;
-  damagePerSecondArmyOne: number;
-  damagePerSecondArmyTwo: number;
-}) => {
-  // Calculate the total health initially (could be set outside and passed as props if it changes)
-  const totalHealth = healthArmyOne + healthArmyTwo;
-
-  // Calculate the percentage of the bar each army occupies
-  const armyOnePercentage = (healthArmyOne / totalHealth) * 100;
-  const armyTwoPercentage = (healthArmyTwo / totalHealth) * 100;
-
-  return (
-    <>
-      <div>
-        <div className="flex justify-between my-3 mt-6">
-          <div>
-            {" "}
-            <h4>Loaf</h4> Defending (-{damagePerSecondArmyOne} per tick)
-          </div>
-          <div>
-            {" "}
-            <h4>Click</h4> Attacking (-{damagePerSecondArmyTwo} per tick)
-          </div>
-        </div>
-      </div>
-      <div className="w-full flex h-8 border-2 border-gold">
-        <div
-          className="bg-blue-600/60 border-r-2 border-gold animate-pulse"
-          style={{ width: `${armyOnePercentage}%` }}
-        ></div>
-        <div
-          className="bg-red/60 border-l-2 border-gold animate-pulse"
-          style={{ width: `${armyTwoPercentage}%` }}
-        ></div>
-      </div>
-      <div className="flex justify-between">
-        <div>{healthArmyOne} hp</div>
-        <div>{healthArmyTwo} hp</div>
-      </div>
-    </>
   );
 };
 
