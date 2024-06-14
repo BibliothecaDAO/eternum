@@ -63,7 +63,7 @@ export function useTravel() {
     }).catch(() => {
       components.Position.removeOverride(overrideId);
       // revert animation so that it goes back to the original position
-      setAnimationPaths([...prevPaths, { id: travelingEntityId, path: [path[path.length - 1]], enemy: false }]);
+      setAnimationPaths([...prevPaths]);
     });
   };
 

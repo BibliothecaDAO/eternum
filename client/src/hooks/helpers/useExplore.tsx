@@ -148,9 +148,8 @@ export function useExplore() {
       signer: account,
     }).catch((e) => {
       removeHex(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
+      setAnimationPaths([...prevPaths]);
       Position.removeOverride(overrideId);
-      setAnimationPaths([...prevPaths, { id: explorerId, path: [path[path.length - 1]], enemy: false }]);
-      console.log("error exploring", e);
     });
   };
   return { isExplored, exploredColsRows, useFoundResources, getExplorationInput, exploreHex };

@@ -32,10 +32,8 @@ const useUpdateAnimationPathsForEnnemies = () => {
     },
   } = useDojo();
 
-  const { animationPaths, setAnimationPaths } = useUIStore(({ animationPaths, setAnimationPaths }) => ({
-    animationPaths,
-    setAnimationPaths,
-  }));
+  const animationPaths = useUIStore((state) => state.animationPaths);
+  const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
 
   const subscriptionRef = useRef<Subscription | undefined>();
   const isComponentMounted = useRef(true);
