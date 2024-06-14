@@ -97,8 +97,6 @@ export const PillageHistory = ({
     return history.pillagedResources.length > 0 || history.destroyedBuildingType !== "None";
   };
 
-  console.log(pillageHistory);
-
   return (
     <div className=" p-6 overflow-auto h-full ">
       <div className="m-3 text-center">

@@ -1,4 +1,5 @@
-import { ArmyInfo, getArmiesByBattleId, useArmies } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, getArmiesByBattleId } from "@/hooks/helpers/useArmies";
+import { Realm, Structure, useStructuresPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { CombatTarget } from "@/types";
 import Button from "@/ui/elements/Button";
@@ -15,6 +16,9 @@ export const BattleLabel = ({ selectedBattle, visible = true }: BattleLabelProps
   const setSelectedBattle = useUIStore((state) => state.setSelectedBattle);
 
   const armies = getArmiesByBattleId(selectedBattle);
+  const { formattedRealmAtPosition, formattedStructureAtPosition } = useStructuresPosition({
+    position: { x: Number(armies[0]?.x) || 0, y: Number(armies[0]?.y) || 0 },
+  });
 
   const [attackers, defenders] = useMemo(() => {
     const attackers = armies.filter((army) => army?.battle_side.toString() === "Attack") as ArmyInfo[];
@@ -24,11 +28,20 @@ export const BattleLabel = ({ selectedBattle, visible = true }: BattleLabelProps
 
   const onClick = () => {
     if (attackers.length === 0 || defenders.length === 0) return null;
-    setSelectedBattle(undefined);
-    setBattleView({
-      attackers: attackers,
-      defenders: { type: CombatTarget.Army, entities: defenders },
-    });
+    const target = Boolean(formattedRealmAtPosition) ? formattedRealmAtPosition : formattedStructureAtPosition;
+    if (target) {
+      setSelectedBattle(undefined);
+      setBattleView({
+        attackers: attackers,
+        defenders: { type: CombatTarget.Structure, entities: target as Realm | Structure },
+      });
+    } else {
+      setSelectedBattle(undefined);
+      setBattleView({
+        attackers: attackers,
+        defenders: { type: CombatTarget.Army, entities: defenders },
+      });
+    }
   };
 
   return (

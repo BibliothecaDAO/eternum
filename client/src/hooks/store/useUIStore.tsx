@@ -5,7 +5,7 @@ import { Vector3 } from "three";
 import { create } from "zustand";
 import { getRealmUIPosition, getUIPositionFromColRow } from "../../ui/utils/utils";
 import { ArmyInfo } from "../helpers/useArmies";
-import { FullStructure } from "../helpers/useStructures";
+import { Realm, Structure } from "../helpers/useStructures";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 import { createMapStoreSlice, MapStore } from "./_mapStore";
 import { createPopupsSlice, PopupsStore } from "./_popups";
@@ -62,7 +62,7 @@ interface UIStore {
   setBattleView: (
     participants: {
       attackers: ArmyInfo[];
-      defenders: { type: CombatTarget; entities: ArmyInfo[] | FullStructure };
+      defenders: { type: CombatTarget; entities: ArmyInfo[] | Realm | Structure };
     } | null,
   ) => void;
   leftNavigationView: View;
@@ -196,7 +196,7 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   setBattleView: (
     participants: {
       attackers: ArmyInfo[];
-      defenders: { type: CombatTarget; entities: FullStructure | ArmyInfo[] };
+      defenders: { type: CombatTarget; entities: ArmyInfo[] | Realm | Structure };
     } | null,
   ) => set({ battleView: participants }),
   ...createPopupsSlice(set, get),

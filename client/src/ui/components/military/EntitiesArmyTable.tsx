@@ -15,6 +15,7 @@ export const EntityArmyTable = ({ entityId }: EntityArmyTableProps) => {
   if (entityArmies.length === 0) {
     return <div className="m-auto">No armies</div>;
   }
+
   const armyElements = () => {
     return entityArmies.map((army: ArmyInfo) => {
       return <ArmyChip key={army.entity_id} army={army} />;

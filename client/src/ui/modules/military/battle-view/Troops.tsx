@@ -8,8 +8,8 @@ export const TroopRow = ({ army, defending = false }: { army: ArmyInfo; defendin
   return (
     <div className=" grid-cols-3 col-span-3 gap-2 flex ">
       {noArmy ? (
-        <div className="text-2xl text-gold  bg-white/10 p-5 border-4 border-gradient">
-          Nothing Defending this poor structure. The residents are shaking in terror.
+        <div className="w-40 text-s text-gold bg-white/10 m-auto p-4 border-4 border-gradient">
+          Nothing defending this poor structure. The residents are shaking in terror.
         </div>
       ) : (
         <>

@@ -196,7 +196,7 @@ const checkWhatToShow = (
         return {
           showBattle: false,
           showSelectableUnits: false,
-          showEnnemies: true,
+          showEnnemies: true && enemyArmies.length > 0,
           showStructure: true && Boolean(structure),
         };
       }

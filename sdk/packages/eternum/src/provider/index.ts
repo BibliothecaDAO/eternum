@@ -1,7 +1,7 @@
 import { DojoProvider } from "@dojoengine/core";
-import * as SystemProps from "../types/provider";
-import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
 import EventEmitter from "eventemitter3";
+import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
+import * as SystemProps from "../types/provider";
 
 export const getContractByName = (manifest: any, name: string) => {
   const contract = manifest.contracts.find((contract: any) => contract.name.includes("::" + name));

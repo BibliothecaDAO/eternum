@@ -40,9 +40,10 @@ export class BattleManager {
     }
   }
 
-  public battleActive(): boolean {
+  public battleActive(currentTick: number): boolean {
     const battle = this.getBattle();
-    return battle ? battle.duration_left > 0n : false;
+    const timeSinceLastUpdate = this.getElapsedTime(currentTick);
+    return battle ? timeSinceLastUpdate < battle.duration_left : false;
   }
 
   public getUpdatedBattle(currentTick: number) {
