@@ -9,7 +9,7 @@ import { useTour } from "@reactour/tour";
 import { motion } from "framer-motion";
 import { debounce } from "lodash";
 import { ArrowRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { construction, military, worldStructures } from "../../components/navigation/Config";
@@ -22,6 +22,9 @@ import { Questing } from "../questing/Questing";
 import { SettingsWindow } from "../settings/Settings";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
+import { useEntityArmies } from "@/hooks/helpers/useArmies";
+import { useStamina } from "@/hooks/helpers/useStamina";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -59,9 +62,18 @@ export const LeftNavigationModule = () => {
   );
 
   const { realmEntityId } = useRealmStore();
+  const { getStamina } = useStamina();
+  const { entityArmies } = useEntityArmies({ entity_id: realmEntityId });
+
   const [location, setLocation] = useLocation();
 
   const isWorldView = useMemo(() => location === "/map", [location]);
+
+  const armiesWithStaminaLeft = entityArmies?.filter((entity) => {
+    return (
+      getStamina({ travelingEntityId: BigInt(entity.entity_id) })?.amount >= EternumGlobalConfig.stamina.travelCost
+    );
+  });
 
   const navigation = useMemo(() => {
     const navigation = [
@@ -96,6 +108,8 @@ export const LeftNavigationModule = () => {
               setLastView(View.MilitaryView);
               setView(View.MilitaryView);
             }}
+            notification={armiesWithStaminaLeft.length}
+            notificationLocation="topright"
           />
         ),
       },
@@ -150,7 +164,7 @@ export const LeftNavigationModule = () => {
             item.name === MenuEnum.construction ||
             item.name === MenuEnum.worldStructures,
         );
-  }, [location, view]);
+  }, [location, view, armiesWithStaminaLeft]);
 
   if (realmEntityId === undefined) {
     return null;

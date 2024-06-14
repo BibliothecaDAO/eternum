@@ -73,6 +73,7 @@ export const BottomNavigation = () => {
               onClick={() => togglePopup(quests)}
               className="forth-step"
               notification={isRealmSelected(realmEntityId, structures) ? claimableQuests?.length : undefined}
+              notificationLocation={"topleft"}
               disabled={!isRealmSelected(realmEntityId, structures) || !claimableQuests?.length}
             />
 

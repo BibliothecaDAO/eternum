@@ -17,7 +17,7 @@ export const EntityArmyTable = ({ entityId }: EntityArmyTableProps) => {
   }
   const armyElements = () => {
     return entityArmies.map((army: ArmyInfo) => {
-      return <ArmyChip key={army.army_id} army={army} />;
+      return <ArmyChip key={army.entity_id} army={army} />;
     });
   };
 
@@ -29,7 +29,7 @@ export const EntitiesArmyTable = () => {
 
   return playerStructures().map((entity: any) => {
     return (
-      <div className="p-2">
+      <div key={entity.entity_id} className="p-2">
         <Headline className="my-3">{entity.name}</Headline>
         <div className="grid grid-cols-1 gap-4">
           <EntityArmyTable entityId={entity.entity_id} />

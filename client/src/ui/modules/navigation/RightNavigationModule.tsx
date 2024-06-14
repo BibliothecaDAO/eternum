@@ -120,6 +120,7 @@ export const RightNavigationModule = () => {
                 setCurrentView(View.ResourceArrivals);
               }}
               notification={getAllArrivalsWithResources().length}
+              notificationLocation="topleft"
             />
             <CircleButton
               className="trade-selector"
