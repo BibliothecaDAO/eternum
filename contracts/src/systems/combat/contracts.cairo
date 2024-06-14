@@ -663,6 +663,8 @@ mod combat_systems {
                 caller_army_movable.assert_blocked();
                 caller_army_movable.blocked = false;
                 set!(world, (caller_army_movable));
+            } else {
+                assert!(battle.has_ended(), "structure can only leave battle after it ends");
             }
 
             // withdraw resources stuck in battle
