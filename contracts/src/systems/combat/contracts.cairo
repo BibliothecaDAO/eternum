@@ -2,16 +2,348 @@ use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
 #[dojo::interface]
 trait ICombatContract<TContractState> {
-    fn army_create(army_owner_id: u128, army_is_protector: bool) -> u128;
+    /// Creates an army entity.
+    /// 
+    /// This function allows the creation of two types of armies:
+    /// 
+    /// 1. **Defensive Army**:
+    ///     - Assigned to protect a specific structure.
+    ///     - Cannot move or hold resources.
+    ///     - Ensures the safety of the structure and any resources it holds.
+    ///     - Only one defensive army is allowed per structure. Attempting to create more than one for
+    ///       the same structure will result in an error.
+    ///     - Specify `is_defensive_army` as `true` to create this type of army.
+    /// 
+    /// 2. **Roaming Army**:
+    ///     - Can move freely across the map.
+    ///     - Engages in exploring hexes, joining battles, and pillaging structures.
+    ///     - There is no limit to the number of roaming armies you can create.
+    ///     - Specify `is_defensive_army` as `false` to create this type of army.
+    /// 
+    /// # Preconditions:
+    /// - The caller must own the entity identified by `army_owner_id`.
+    ///
+    /// # Arguments:
+    /// * `world` - The game world dispatcher interface.
+    /// * `army_owner_id` - The id of the army owner entity.
+    /// * `is_defensive_army` - A boolean flag indicating the type of army to create.
+    ///
+    /// # Returns:
+    /// * `u128` - The id of the created army.
+    ///
+    /// # Implementation Details:
+    /// - The function checks if the caller owns the entity specified by `army_owner_id`.
+    /// - It generates a unique ID for the new army and sets common properties such as entity ownership,
+    ///   initial position, and default battle settings.
+    /// - For a defensive army:
+    ///     - Validates that the owning entity is a structure.
+    ///     - Ensures no other defensive army is assigned to the structure.
+    ///     - Assigns the new army to protect the structure.
+    ///     - Locks the army from resource transfer operations.
+    /// - For a roaming army:
+    ///     - Configures the army's movement speed and carrying capacity based on game world settings.
+    ///     - Initializes the army's stamina for map exploration.
+    fn army_create(army_owner_id: u128, is_defensive_army: bool) -> u128;
+
+    /// Purchases and adds troops to an existing army entity.
+    ///
+    /// # Preconditions:
+    /// - The caller must own the entity identified by `payer_id`.
+    /// - The payer and the army must be at the same position. E.g
+    ///   if the payer is a structure (a realm for example), the army 
+    ///   must be at the realm in order to add troops to its army.
+    ///
+    /// # Arguments:
+    /// * `world` - The game world dispatcher interface.
+    /// * `army_id` - The id of the army entity receiving the troops.
+    /// * `payer_id` - The id of the entity paying for the troops.
+    /// * `troops` - The troops to be purchased and added to the army.
+    ///
+    /// # Implementation Details:
+    /// 1. **Ownership and Position Check**:
+    ///     - Ensures the caller owns the `payer_id` entity.
+    ///     - Verifies that `payer_id` and `army_id` are at the same location.
+    /// 2. **Payment Processing**:
+    ///     - Deducts the appropriate resources from `payer_id`.
+    /// 3. **Army Update**:
+    ///     - Adds the purchased troops to the army.
+    ///     - Updates the army's health and troop quantity.
+    ///
+    /// # Returns:
+    /// * None
     fn army_buy_troops(army_id: u128, payer_id: u128, troops: Troops);
+
+    /// Transfer of troops from one army to another.
+    ///
+    /// # Preconditions:
+    /// - The caller must own both the `from_army_id` and `to_army_id` entities.
+    /// - The `from_army_id` and `to_army_id` entities must be at the same location.
+    ///
+    /// # Arguments:
+    /// * `world` - The game world dispatcher interface.
+    /// * `from_army_id` - The id of the army transferring troops.
+    /// * `to_army_id` - The id of the army receiving troops.
+    /// * `troops` - The troops to be transferred.
+    ///
+    /// # Implementation Details:
+    /// 1. **Ownership and Position Check**:
+    ///     - Ensures the caller owns both `from_army_id` and `to_army_id`.
+    ///     - Verifies that `from_army_id` and `to_army_id` are at the same location.
+    /// 2. **Troop Transfer**:
+    ///     - Decreases the number of troops, health, and quantity in the `from_army_id`.
+    ///     - Increases the number of troops, health, and quantity in the `to_army_id`.
+    /// 
+    /// # Note:
+    ///     It is important to know that you can only transfer troops with full health from 
+    ///     one army to another. e.g if the first army has 
+    ///     `FirstArmy(100 knights, 100 paladins,100 crossbowman)` but it went to battle and now
+    ///     it only has half it's initial `Health`` left, you'll only be able to transfer half, i.e 
+    ///     `(100 knights, 100 paladins,100 crossbowman)``, to the SecondArmy.
+    ///
+    /// # Returns:
+    /// * None
     fn army_merge_troops(from_army_id: u128, to_army_id: u128, troops: Troops);
 
+    /// Initiates a battle between an attacking and defending army within the game world.
+    ///
+    /// # Preconditions:
+    /// - The caller must own the `attacking_army_id`.
+    /// - Both `attacking_army_id` and `defending_army_id` must not already be in battle.
+    /// - Both armies must be at the same location.
+    ///
+    /// # Arguments:
+    /// * `world` - The game world dispatcher interface.
+    /// * `attacking_army_id` - The id of the attacking army.
+    /// * `defending_army_id` - The id of the defending army.
+    ///
+    /// # Implementation Details:
+    /// 1. **Initial Checks and Setup**:
+    ///     - Verifies the attacking and defending armies are not already in battle.
+    ///     - Ensures the caller owns the attacking army.
+    ///     - Checks that both armies are at the same position.
+    /// 2. **Battle ID Assignment**:
+    ///     - Generates a new unique battle ID and assigns it to both armies.
+    ///     - Sets the battle side for each army (attack or defense).
+    /// 3. **Movement Blocking**:
+    ///     - Blocks movement for both armies if they are not protecting any entity.
+    /// 4. **Battle Creation**:
+    ///     - Initializes the battle with both armies and their respective health.
+    ///     - Deposits resources protected by the armies into the battle escrow.
+    ///     - Sets the battle position and resets the battle delta.
+    ///
+    /// # Note:
+    ///     This is how the deposited resources are escrowed. Whenever any army joins a 
+    ///     battle, the items which they are securing are locked from being transferred 
+    ///     and they will also not be able to receive resources. 
+    /// 
+    ///     For example;
+    ///     - If an army is not a defensive army, the items they are securing are the items they hold. 
+    ///       So we lock these items. We also transfer the items into the battle escrow pool
+    ///      
+    ///     - If an army is a defensive army, the items they are securing are the items owned 
+    ///       by the structure they are protecting and so these items are lock. The structures can't
+    ///       receive or send any resources.
+    /// 
+    ///       However, for a couple of reasons, we do not transfer resources owned by structures into the
+    ///       escrow pool because if a structure is producing resources, it would be impossible to 
+    ///       continously donate resources into the battle escrow. Even if it was possible, it would take
+    ///       too much gas.
+    /// 
+    ///       Instead, what we do is that we just lock up the structure's resources and if you win the battle
+    ///       against the structure, you can continuously pillage it without being sent back to your base.
+    ///             
+    /// # Returns:
+    /// * None
     fn battle_start(attacking_army_id: u128, defending_army_id: u128);
+
+    /// Join an existing battle with the specified army, assigning it to a specific side in the battle.
+    ///
+    /// # Preconditions:
+    /// - The specified `battle_side` must be either `BattleSide::Attack` or `BattleSide::Defence`.
+    /// - The caller must own the `army_id`.
+    /// - The battle must be ongoing.
+    /// - The army must not already be in a battle.
+    /// - The army must be at the same location as the battle.
+    ///
+    /// # Arguments:
+    /// * `world` - The game world dispatcher interface.
+    /// * `battle_id` - The id of the battle to join.
+    /// * `battle_side` - The side to join in the battle (attack or defense).
+    /// * `army_id` - The id of the army joining the battle.
+    ///
+    /// # Implementation Details:
+    /// 1. **Initial Checks and Setup**:
+    ///     - Ensures the specified `battle_side` is valid (not `BattleSide::None`).
+    ///     - Verifies the caller owns the army.
+    /// 2. **Battle State Update**:
+    ///     - Updates the battle state before performing any other actions.
+    ///     - Ensures the battle is still ongoing.
+    /// 3. **Army Validations**:
+    ///     - Ensures the army is not already in a battle.
+    ///     - Checks that the army is at the same location as the battle.
+    /// 4. **Army Assignment to Battle**:
+    ///     - Assigns the battle ID and side to the army.
+    ///     - Blocks the army's movement if it is not protecting any entity.
+    /// 5. **Resource Locking**:
+    ///     - Locks the resources protected by the army, transferring them to the battle escrow if necessary.
+    /// 6. **Troop and Health Addition**:
+    ///     - Adds the army's troops and health to the respective side in the battle.
+    ///     - Updates the battle state with the new army's contributions.
+    /// 7. **Battle Delta Reset**:
+    ///     - Resets the battle delta with the troop configuration.
+    ///
+    /// # Note:
+    ///     When an army joins a battle, its protected resources are locked and transferred 
+    ///     to the battle escrow. This ensures that resources cannot be transferred in or out 
+    ///     of the army while it is engaged in the battle. 
+    ///     
+    ///     For defensive armies, the resources owned by the structures they protect are locked 
+    ///     but not transferred into the escrow to avoid continuous donation issues.
+    ///     see. the `battle_start` function for more info on this
+    ///
+    /// # Returns:
+    /// * None
     fn battle_join(battle_id: u128, battle_side: BattleSide, army_id: u128);
+
+    /// Allows an army to leave an ongoing battle, releasing its resources and restoring its mobility 
+    /// (if it was previously mobile).
+    ///
+    /// # Preconditions:
+    /// - The caller must own the `army_id`.
+    /// - The battle ID must match the current battle of the army.
+    /// - The army must have a valid battle side (`BattleSide::Attack` or `BattleSide::Defence`).
+    ///
+    /// # Arguments:
+    /// * `world` - The game world dispatcher interface.
+    /// * `battle_id` - The id of the battle from which the army is leaving.
+    /// * `army_id` - The id of the army leaving the battle.
+    ///
+    /// # Implementation Details:
+    /// 1. **Initial Validations**:
+    ///     - Verifies the caller owns the army.
+    ///     - Updates the state of the battle before any actions.
+    /// 2. **Battle Validation**:
+    ///     - Ensures the battle ID matches the army's current battle ID.
+    ///     - Checks that the army is participating in a valid battle side.
+    /// 3. **Army Restoration**:
+    ///     - Restores mobility for the army if it is not protecting any entity.
+    ///     - Withdraws any resources stuck in the battle escrow and any rewards due.
+    /// 4. **Resource and Troop Management**:
+    ///     - Deducts the army's original troops and health from the battle army.
+    ///     - Adjusts the army's health based on its remaining battle contribution.
+    /// 5. **Battle State Update**:
+    ///     - Updates the battle with the adjusted troop and health values.
+    ///     - Resets the battle delta
+    /// 6. **Final Army State Update**:
+    ///     - Clears the army's battle ID and battle side, indicating it is no longer in battle.
+    ///
+    /// # Notes on Reward:
+    ///     -   If you leave in the middle of a battle that doesn't yet have a decided outcome,
+    ///         you lose all the resources deposited in the battle escrow. 
+    ///     
+    ///         Because Structures` rescources are not deposited into escrow, and so we can't make
+    ///         them lose all their resources, structure defensive armies CAN NOT leave a battle until
+    ///         it is done. There must be a winner, loser or it must have been a draw
+    /// 
+    ///     -   If you leave after a battle has ended;
+    ///             a. if you won, you leave with your initial resources and you also take a portion 
+    ///                 of the resources deposited in escrow by the opposing team based on the number
+    ///                 of troops you contributed to the battle.
+    ///                 
+    ///                 This method has the downside that a big army can just swoop in, close to the 
+    ///                 end of the battle, and take the giant share of the loot. But such is life.
+    /// 
+    ///                 If you won against a structure, you can pillage them to infinity.
+    /// 
+    ///             b. if you lost, you lose all the resources deposited in escrow
+    ///             c. if the battle was drawn, you can leave with your deposited resources
+    /// 
+    /// # Returns:
+    /// * None
     fn battle_leave(battle_id: u128, army_id: u128);
+
+    /// Pillage a structure.
+    ///
+    /// # Preconditions:
+    /// - The caller must own the `army_id`.
+    /// - The entity being pillaged (`structure_id`) must be a valid structure.
+    /// - The attacking army (`army_id`) must not be currently in battle.
+    /// - The attacking army must be at the same location as the structure.
+    /// - If the structure has a protecting army in battle, the attacking army must join the battle 
+    ///   or wait till the structure's defensive army is done with the battle.
+    ///
+    /// # Arguments:
+    /// * `world` - The game world dispatcher interface.
+    /// * `army_id` - The id of the attacking army.
+    /// * `structure_id` - The id of the structure being pillaged.
+    ///
+    /// # Implementation Details:
+    /// 1. **Initial Validations**:
+    ///     - Verifies the caller owns the attacking army (`army_id`).
+    ///     - Ensures the entity being pillaged is indeed a structure.
+    ///     - Checks that the attacking army is not currently in battle.
+    ///     - Confirms that the attacking army is at the same location as the structure.
+    /// 2. **Protection Check**:
+    ///     - Determines if the structure is protected by another army (`structure_army_id`).
+    ///     - If the protecting army is in battle, ensure that outcome is finalized.
+    /// 3. **Pillage Calculation**:
+    ///     - Calculates the strength of the attacking and defending armies based on their troops and health.
+    ///     - Uses a probabilistic model to determine if the pillaging attempt is successful.
+    ///     - Randomly selects resources from the structure to pillage, considering army capacity and resource availability.
+    /// 4. **Outcome Effects**:
+    ///     - If the pillage attempt is successful, transfers resources from the structure to the attacking army.
+    ///     - Optionally destroys a building within the structure based on specific conditions.
+    ///     - Deducts health from both armies involved in the battle. 
+    ///         If any army is dead, no health is deducted.
+    /// 
+    /// 5. **Final Actions**:
+    ///     - Handles the movement of the attacking army back to its owner after a successful pillage, 
+    ///       if continuous pillaging is not possible.
+    ///     - Emits a `PillageEvent` to signify the outcome of the pillage action.
+    ///
+    /// # Note:
+    ///     - Continous pillaging simply means you are allowed to pillage without being sent back
+    ///       to base if the structure army is dead.
+    ///
+    /// # Returns:
+    /// * None
     fn battle_pillage(army_id: u128, structure_id: u128);
+
+    /// Claims ownership of a non realm structure by an army after meeting all necessary conditions.
+    ///
+    /// # Preconditions:
+    /// - The caller must own the `army_id`.
+    /// - The entity being claimed (`structure_id`) must be a valid structure.
+    /// - The structure must not be a realm (StructureCategory::Realm).
+    /// - The claiming army (`army_id`) must not be currently in battle.
+    /// - The claiming army must be at the same location as the structure.
+    /// - If the structure has a defensive army, that army must be dead (in battle or otherwise).
+    ///
+    /// # Arguments:
+    /// * `world` - The game world dispatcher interface.
+    /// * `army_id` - The id of the army claiming ownership of the structure.
+    /// * `structure_id` - The id of the structure being claimed.
+    ///
+    /// # Implementation Details:
+    /// 1. **Initial Validations**:
+    ///     - Verifies the caller owns the army (`army_id`).
+    ///     - Ensures the entity being claimed is indeed a structure.
+    ///     - Checks that the structure is not a realm, which cannot be claimed.
+    /// 2. **Location and Battle Checks**:
+    ///     - Confirms that the claiming army is not currently in battle.
+    ///     - Verifies that the claiming army is at the same location as the structure.
+    ///     - Checks if the structure has a defensive army (`structure_army_id`).
+    ///     - If the structure has a defensive army, ensures that army is dead.
+    /// 4. **Ownership Transfer**:
+    ///     - Transfers ownership of the structure to the claiming army.
+    ///
+    /// # Note:
+    ///     - This function is used to transfer ownership of non-realm structures.
+    ///     - Realms cannot be claimed due to their unique status in the game.
+    ///
+    /// # Returns:
+    /// * None
     fn battle_claim(army_id: u128, structure_id: u128);
-// fn end_battle(battle_entity_id: u128, army_entity_id: u128 );
 }
 
 
@@ -29,6 +361,8 @@ mod combat_systems {
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
     use eternum::models::buildings::{Building, BuildingImpl, BuildingCategory};
     use eternum::models::capacity::Capacity;
+    use eternum::models::combat::BattleEscrowTrait;
+    use eternum::models::combat::ProtectorTrait;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
         TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig,
@@ -51,7 +385,7 @@ mod combat_systems {
         combat::{
             Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait,
             Battle, BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait,
-            BattleHealthTrait
+            BattleHealthTrait, BattleEscrowImpl
         },
     };
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
@@ -86,76 +420,84 @@ mod combat_systems {
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
         fn army_create(
-            world: IWorldDispatcher, army_owner_id: u128, army_is_protector: bool
+            world: IWorldDispatcher, army_owner_id: u128, is_defensive_army: bool
         ) -> u128 {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
+            // set common army models
             let mut army_id: u128 = world.uuid().into();
+            let army_owner_position: Position = get!(world, army_owner_id, Position);
             set!(
                 world,
-                (Army {
-                    entity_id: army_id,
-                    troops: Default::default(),
-                    battle_id: 0,
-                    battle_side: Default::default()
-                })
+                (
+                    Army {
+                        entity_id: army_id,
+                        troops: Default::default(),
+                        battle_id: 0,
+                        battle_side: Default::default()
+                    },
+                    EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id },
+                    Owner { entity_id: army_id, address: starknet::get_caller_address() },
+                    Position {
+                        entity_id: army_id, x: army_owner_position.x, y: army_owner_position.y
+                    }
+                )
             );
 
-            set!(world, (EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id }));
-            set!(world, (Owner { entity_id: army_id, address: starknet::get_caller_address() }));
-
-            let owner_position: Position = get!(world, army_owner_id, Position);
-            set!(
-                world, (Position { entity_id: army_id, x: owner_position.x, y: owner_position.y })
-            );
-
-            if army_is_protector {
+            if is_defensive_army {
+                // Defensive armies can only be assigned as structure protectors
                 get!(world, army_owner_id, Structure).assert_is_structure();
 
-                let mut protector: Protector = get!(world, army_owner_id, Protector);
-                assert!(
-                    protector.army_id.is_zero(),
-                    "entity {} already has an army protector",
-                    army_owner_id
+                // ensure the structure does not have a defensive army 
+                let mut structure_protector: Protector = get!(world, army_owner_id, Protector);
+                structure_protector.assert_has_no_defensive_army();
+
+                // add army as structure protector
+                structure_protector.army_id = army_id;
+                set!(
+                    world, (structure_protector, Protectee { army_id, protectee_id: army_owner_id })
                 );
 
-                protector.army_id = army_id;
-                set!(world, (protector));
-
-                set!(world, (Protectee { army_id, protectee_id: army_owner_id }));
-            } else {
-                let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
-                    .sec_per_km;
+                // stop the army from sending or receiving resources
                 set!(
                     world,
-                    Movable {
-                        entity_id: army_id,
-                        sec_per_km: army_sec_per_km,
-                        blocked: false,
-                        round_trip: false,
-                        start_coord_x: owner_position.x,
-                        start_coord_y: owner_position.y,
-                        intermediate_coord_x: 0,
-                        intermediate_coord_y: 0,
-                    }
+                    (ResourceTransferLock { entity_id: army_id, release_at: BoundedInt::max() })
                 );
-
+            } else {
+                // set the army's speed and capacity
+                let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
+                    .sec_per_km;
                 let army_carry_capacity: CapacityConfig = CapacityConfigImpl::get(
                     world, ARMY_ENTITY_TYPE
                 );
                 set!(
                     world,
-                    (Capacity { entity_id: army_id, weight_gram: army_carry_capacity.weight_gram },)
+                    (
+                        Movable {
+                            entity_id: army_id,
+                            sec_per_km: army_sec_per_km,
+                            blocked: false,
+                            round_trip: false,
+                            start_coord_x: army_owner_position.x,
+                            start_coord_y: army_owner_position.y,
+                            intermediate_coord_x: 0,
+                            intermediate_coord_y: 0,
+                        },
+                        Capacity {
+                            entity_id: army_id, weight_gram: army_carry_capacity.weight_gram
+                        }
+                    )
                 );
 
+                // create stamina for map exploration
                 let armies_tick_config = TickImpl::get_armies_tick_config(world);
                 set!(
                     world,
                     (Stamina {
                         entity_id: army_id,
                         amount: 0,
-                        last_refill_tick: armies_tick_config.current()
+                        last_refill_tick: armies_tick_config.current() - 1
                     })
                 )
             }
@@ -199,6 +541,7 @@ mod combat_systems {
             army_quantity.value += troops.count().into();
             set!(world, (army_quantity));
         }
+
 
         fn army_merge_troops(
             world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops,
@@ -289,22 +632,7 @@ mod combat_systems {
                 set!(world, (defending_army_movable));
             }
 
-            // lock resources being protected by attacking army
-            let mut attacking_army_protectee_resource_lock: ResourceTransferLock = get!(
-                world, attacking_army_protectee.protected_resources_owner(), ResourceTransferLock
-            );
-            attacking_army_protectee_resource_lock.assert_not_locked();
-            attacking_army_protectee_resource_lock.release_at = BoundedInt::max();
-            set!(world, (attacking_army_protectee_resource_lock));
-
-            // lock resources being protected by defending army
-            let mut defending_army_protectee_resource_lock: ResourceTransferLock = get!(
-                world, defending_army_protectee.protected_resources_owner(), ResourceTransferLock
-            );
-            defending_army_protectee_resource_lock.assert_not_locked();
-            defending_army_protectee_resource_lock.release_at = BoundedInt::max();
-            set!(world, (defending_army_protectee_resource_lock));
-
+            // create battle 
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
             defending_army_health.assert_alive("Army");
@@ -313,18 +641,24 @@ mod combat_systems {
             battle.entity_id = battle_id;
             battle.attack_army = attacking_army.into();
             battle.defence_army = defending_army.into();
+            battle.attackers_resources_escrow_id = world.uuid().into();
+            battle.defenders_resources_escrow_id = world.uuid().into();
             battle.attack_army_health = attacking_army_health.into();
             battle.defence_army_health = defending_army_health.into();
             battle.last_updated = starknet::get_block_timestamp();
 
+            // deposit resources protected by armies into battle escrow pots/boxes
+            battle.deposit_balance(world, attacking_army, attacking_army_protectee);
+            battle.deposit_balance(world, defending_army, defending_army_protectee);
+
+            // set battle position 
             let mut battle_position: Position = Default::default();
-            battle_position.entity_id = battle_id;
             battle_position.x = attacking_army_position.x;
             battle_position.y = attacking_army_position.y;
             set!(world, (battle_position));
 
             let troop_config = TroopConfigImpl::get(world);
-            battle.restart(troop_config);
+            battle.reset_delta(troop_config);
             set!(world, (battle));
         }
 
@@ -367,12 +701,7 @@ mod combat_systems {
             }
 
             // lock resources being protected by army
-            let mut caller_army_protectee_resource_lock: ResourceTransferLock = get!(
-                world, caller_army_protectee.protected_resources_owner(), ResourceTransferLock
-            );
-            caller_army_protectee_resource_lock.assert_not_locked();
-            caller_army_protectee_resource_lock.release_at = BoundedInt::max();
-            set!(world, (caller_army_protectee_resource_lock));
+            battle.deposit_balance(world, caller_army, caller_army_protectee);
 
             // add caller army troops to battle army troops
             let mut battle_army = battle.attack_army;
@@ -396,7 +725,7 @@ mod combat_systems {
             }
 
             let troop_config = TroopConfigImpl::get(world);
-            battle.restart(troop_config);
+            battle.reset_delta(troop_config);
             set!(world, (battle));
         }
 
@@ -421,26 +750,12 @@ mod combat_systems {
                 caller_army_movable.assert_blocked();
                 caller_army_movable.blocked = false;
                 set!(world, (caller_army_movable));
+            } else {
+                assert!(battle.has_ended(), "structure can only leave battle after it ends");
             }
 
-            if battle.has_ended() {
-                if battle.winner() == caller_army.battle_side
-                    || battle.winner() == BattleSide::None {
-                    // release lock on protected resources
-                    let mut caller_army_protectee: Protectee = get!(world, army_id, Protectee);
-                    let mut caller_army_protectee_resource_lock: ResourceTransferLock = get!(
-                        world,
-                        caller_army_protectee.protected_resources_owner(),
-                        ResourceTransferLock
-                    );
-                    caller_army_protectee_resource_lock.assert_locked();
-                    let now = starknet::get_block_timestamp();
-                    caller_army_protectee_resource_lock.release_at = now;
-                    set!(world, (caller_army_protectee_resource_lock));
-                } else {
-                    panic!("Battle has ended and your team lost");
-                }
-            }
+            // withdraw resources stuck in battle
+            battle.withdraw_balance_and_reward(world, caller_army, caller_army_protectee);
 
             // remove caller army from army troops 
             let mut battle_army = battle.attack_army;
@@ -473,7 +788,7 @@ mod combat_systems {
             }
 
             let troop_config = TroopConfigImpl::get(world);
-            battle.restart(troop_config);
+            battle.reset_delta(troop_config);
             set!(world, (battle));
 
             caller_army.battle_id = 0;
@@ -506,9 +821,11 @@ mod combat_systems {
             // or it has lost the battle it is currently in
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
-                // ensure structure army is in battle
+                // ensure structure army is either dead or it died in battle
                 let structure_army_health: Health = get!(world, structure_army_id, Health);
-                if structure_army_health.is_alive() {
+                if structure_army_health.is_alive() { // army appears alive
+                    // ensure army died in battle
+
                     let structure_army: Army = get!(world, structure_army_id, Army);
                     structure_army.assert_in_battle();
 
@@ -517,7 +834,8 @@ mod combat_systems {
                     battle.update_state();
                     set!(world, (battle));
 
-                    // ensure structure lost the battle
+                    // ensure structure lost or drew the battle. Either way,
+                    // the army must be dead
                     assert!(structure_army.battle_side != battle.winner(), "structure army won");
                 }
             }
@@ -557,10 +875,39 @@ mod combat_systems {
 
             let mut structure_army: Army = Default::default();
             let mut structure_army_health: Health = Default::default();
+            let mut can_pillage_only_once = false;
             if structure_army_id.is_non_zero() {
-                structure_army = get!(world, structure_army_id, Army);
-                structure_army.assert_not_in_battle();
                 structure_army_health = get!(world, structure_army_id, Health);
+                structure_army = get!(world, structure_army_id, Army);
+                if structure_army.battle_id.is_non_zero() {
+                    // structure army is in battle
+
+                    // force pillager to join battle if it hasnt ended
+                    let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
+                    battle.update_state();
+                    set!(world, (battle));
+
+                    if !battle.has_ended() {
+                        panic!("Join the battle or wait for it to end");
+                    }
+
+                    // battle has ended
+                    //
+                    // allow continuous pillage when structure army loses battle
+                    let battle_has_winner = !(battle.winner() == BattleSide::None);
+                    let structure_army_didnt_win = structure_army.battle_side != battle.winner();
+                    if battle_has_winner && structure_army_didnt_win {
+                        can_pillage_only_once = false;
+                    } else {
+                        can_pillage_only_once = true;
+                    }
+                } else {
+                    // structure army is not in battle
+                    if structure_army_health.current.is_non_zero() {
+                        // structure army is alive
+                        can_pillage_only_once = true;
+                    }
+                }
             }
 
             // a percentage of it's full strength depending on structure army's health
@@ -764,6 +1111,8 @@ mod combat_systems {
                     entity_id: 45,
                     attack_army: attacking_army.into(),
                     defence_army: structure_army.into(),
+                    attackers_resources_escrow_id: 0,
+                    defenders_resources_escrow_id: 0,
                     attack_army_health: attacking_army_health.into(),
                     defence_army_health: structure_army_health.into(),
                     attack_delta: 0,
@@ -771,7 +1120,7 @@ mod combat_systems {
                     last_updated: starknet::get_block_timestamp(),
                     duration_left: 0
                 };
-                mock_battle.restart(troop_config);
+                mock_battle.reset_delta(troop_config);
 
                 attacking_army_health
                     .decrease_by(
@@ -788,15 +1137,16 @@ mod combat_systems {
                 set!(world, (structure_army_health));
             }
 
-            // army goes home 
-
             let army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
-            let army_owner_position: Position = get!(world, army_owner_entity_id, Position);
-            let army_movable: Movable = get!(world, army_id, Movable);
+            if can_pillage_only_once {
+                // army goes home if structure cant be continuously pillage
+                let army_owner_position: Position = get!(world, army_owner_entity_id, Position);
+                let army_movable: Movable = get!(world, army_id, Movable);
 
-            InternalTravelSystemsImpl::travel(
-                world, army_id, army_movable, army_position.into(), army_owner_position.into()
-            );
+                InternalTravelSystemsImpl::travel(
+                    world, army_id, army_movable, army_position.into(), army_owner_position.into()
+                );
+            }
 
             // emit pillage event
             emit!(

@@ -225,10 +225,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
             const balanceFloor = Math.floor(balance / EternumGlobalConfig.resources.resourcePrecision);
 
             return (
-              <div
-                className="p-3 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col border-gold/10 border"
-                key={troop.name}
-              >
+              <div className="p-2 bg-gold/10 clip-angled-sm hover:bg-gold/30 flex flex-col" key={troop.name}>
                 <div className="font-bold mb-4">
                   <div className="flex justify-between">
                     <div className="text-md">{ResourcesIds[troop.name]}</div>

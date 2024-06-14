@@ -53,6 +53,47 @@ impl TravelTypesImpl of TravelTypesTrait {
     }
 }
 
+// Note: Please update this list whenever ResourceTypes are updated
+fn all_resource_ids() -> Array<u8> {
+    array![
+        //
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        //
+        28,
+        29,
+        //
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255
+    ]
+}
+
+// Note: Please update the all_resources_ids list whenever ResourceTypes are updated
 mod ResourceTypes {
     const WOOD: u8 = 1;
     const STONE: u8 = 2;

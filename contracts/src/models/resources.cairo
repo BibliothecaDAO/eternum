@@ -12,6 +12,8 @@ use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait}
 
 use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
 use eternum::models::realm::Realm;
+use eternum::models::structure::Structure;
+use eternum::models::structure::StructureTrait;
 use eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
 
 
@@ -104,7 +106,7 @@ impl ResourceTransferLockImpl of ResourceTransferLockTrait {
 
     fn is_open(self: ResourceTransferLock) -> bool {
         let now = starknet::get_block_timestamp();
-        now > self.release_at
+        now >= self.release_at
     }
 }
 
@@ -196,9 +198,9 @@ impl ResourceImpl of ResourceTrait {
         };
 
         // ensure realm has enough store houses to keep resource balance
-        let entity_realm: Realm = get!(world, self.entity_id, Realm);
-        let entity_is_realm = entity_realm.realm_id != 0;
-        if entity_is_realm {
+        let entity_structure: Structure = get!(world, self.entity_id, Structure);
+        let entity_is_structure = entity_structure.is_structure();
+        if entity_is_structure {
             let mut storehouse_building_quantity: BuildingQuantityv2 = get!(
                 world, (self.entity_id, BuildingCategory::Storehouse), BuildingQuantityv2
             );
@@ -212,10 +214,14 @@ impl ResourceImpl of ResourceTrait {
         // save the updated resource
         set!(world, (self));
 
-        // sync end ticks of resources that depend on this one
-        ProductionOutputImpl::sync_all_inputs_exhaustion_ticks_for(@self, world);
+        if entity_is_structure {
+            // sync end ticks of resources that use this resource in their production
+            // e.g `self` may be wheat resource and is stone, coal and gold are used
+            // in production of wheat, we update their exhaustion ticks
+            ProductionOutputImpl::sync_all_inputs_exhaustion_ticks_for(@self, world);
+        }
 
-        // Update the entity's owned resources
+        // Update the entity's owned resources tracker
 
         let mut entity_owned_resources = get!(world, self.entity_id, OwnedResourcesTracker);
 
@@ -237,7 +243,7 @@ impl ResourceImpl of ResourceTrait {
             world, (self.entity_id, self.resource_type), Production
         );
         let tick = TickImpl::get_default_tick_config(world);
-        if production.last_updated_tick != tick.current() {
+        if production.is_active() && production.last_updated_tick != tick.current() {
             production.harvest(ref self, @tick);
             set!(world, (self));
             set!(world, (production));

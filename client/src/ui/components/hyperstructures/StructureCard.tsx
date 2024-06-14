@@ -148,7 +148,7 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
   const createProtector = async () => {
     await create_army({
       signer: account,
-      army_is_protector: true,
+      is_defensive_army: true,
       army_owner_id: structureEntityId,
     });
   };

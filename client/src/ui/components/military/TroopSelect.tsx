@@ -43,7 +43,7 @@ export const TroopSelect = ({ entity }: any) => {
     create_army({
       signer: account,
       army_owner_id: entity.entity_id,
-      army_is_protector: false,
+      is_defensive_army: false,
     }).finally(() => setIsLoading(false));
   };
 
