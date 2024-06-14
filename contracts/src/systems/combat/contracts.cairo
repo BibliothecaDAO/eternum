@@ -588,6 +588,61 @@ mod combat_systems {
         }
 
 
+        /// Allows an army to leave an ongoing battle, releasing its resources and restoring its mobility 
+        /// (if it was previously mobile).
+        ///
+        /// # Preconditions:
+        /// - The caller must own the `army_id`.
+        /// - The battle ID must match the current battle of the army.
+        /// - The army must have a valid battle side (`BattleSide::Attack` or `BattleSide::Defence`).
+        ///
+        /// # Arguments:
+        /// * `world` - The game world dispatcher interface.
+        /// * `battle_id` - The id of the battle from which the army is leaving.
+        /// * `army_id` - The id of the army leaving the battle.
+        ///
+        /// # Implementation Details:
+        /// 1. **Initial Validations**:
+        ///     - Verifies the caller owns the army.
+        ///     - Updates the state of the battle before any actions.
+        /// 2. **Battle Validation**:
+        ///     - Ensures the battle ID matches the army's current battle ID.
+        ///     - Checks that the army is participating in a valid battle side.
+        /// 3. **Army Restoration**:
+        ///     - Restores mobility for the army if it is not protecting any entity.
+        ///     - Withdraws any resources stuck in the battle escrow and any rewards due.
+        /// 4. **Resource and Troop Management**:
+        ///     - Deducts the army's original troops and health from the battle army.
+        ///     - Adjusts the army's health based on its remaining battle contribution.
+        /// 5. **Battle State Update**:
+        ///     - Updates the battle with the adjusted troop and health values.
+        ///     - Resets the battle delta
+        /// 6. **Final Army State Update**:
+        ///     - Clears the army's battle ID and battle side, indicating it is no longer in battle.
+        ///
+        /// # Notes on Reward:
+        ///     -   If you leave in the middle of a battle that doesn't yet have a decided outcome,
+        ///         you lose all the resources deposited in the battle escrow. 
+        ///     
+        ///         Because Structures` rescources are not deposited into escrow, and so we can't make
+        ///         them lose all their resources, structure defensive armies CAN NOT leave a battle until
+        ///         it is done. There must be a winner, loser or it must have been a draw
+        /// 
+        ///     -   If you leave after a battle has ended;
+        ///             a. if you won, you leave with your initial resources and you also take a portion 
+        ///                 of the resources deposited in escrow by the opposing team based on the number
+        ///                 of troops you contributed to the battle.
+        ///                 
+        ///                 This method has the downside that a big army can just swoop in, close to the 
+        ///                 end of the battle, and take the giant share of the loot. But such is life.
+        /// 
+        ///                 If you won against a structure, you can pillage them to infinity.
+        /// 
+        ///             b. if you lost, you lose all the resources deposited in escrow
+        ///             c. if the battle was drawn, you can leave with your deposited resources
+        /// 
+        /// # Returns:
+        /// * None
         fn battle_leave(world: IWorldDispatcher, battle_id: u128, army_id: u128) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
@@ -652,7 +707,40 @@ mod combat_systems {
             set!(world, (caller_army));
         }
 
-
+        /// Claims ownership of a non realm structure by an army after meeting all necessary conditions.
+        ///
+        /// # Preconditions:
+        /// - The caller must own the `army_id`.
+        /// - The entity being claimed (`structure_id`) must be a valid structure.
+        /// - The structure must not be a realm (StructureCategory::Realm).
+        /// - The claiming army (`army_id`) must not be currently in battle.
+        /// - The claiming army must be at the same location as the structure.
+        /// - If the structure has a defensive army, that army must be dead (in battle or otherwise).
+        ///
+        /// # Arguments:
+        /// * `world` - The game world dispatcher interface.
+        /// * `army_id` - The id of the army claiming ownership of the structure.
+        /// * `structure_id` - The id of the structure being claimed.
+        ///
+        /// # Implementation Details:
+        /// 1. **Initial Validations**:
+        ///     - Verifies the caller owns the army (`army_id`).
+        ///     - Ensures the entity being claimed is indeed a structure.
+        ///     - Checks that the structure is not a realm, which cannot be claimed.
+        /// 2. **Location and Battle Checks**:
+        ///     - Confirms that the claiming army is not currently in battle.
+        ///     - Verifies that the claiming army is at the same location as the structure.
+        ///     - Checks if the structure has a defensive army (`structure_army_id`).
+        ///     - If the structure has a defensive army, ensures that army is dead.
+        /// 4. **Ownership Transfer**:
+        ///     - Transfers ownership of the structure to the claiming army.
+        ///
+        /// # Note:
+        ///     - This function is used to transfer ownership of non-realm structures.
+        ///     - Realms cannot be claimed due to their unique status in the game.
+        ///
+        /// # Returns:
+        /// * None
         fn battle_claim(world: IWorldDispatcher, army_id: u128, structure_id: u128) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
@@ -677,9 +765,11 @@ mod combat_systems {
             // or it has lost the battle it is currently in
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
-                // ensure structure army is in battle
+                // ensure structure army is either dead or it died in battle
                 let structure_army_health: Health = get!(world, structure_army_id, Health);
-                if structure_army_health.is_alive() {
+                if structure_army_health.is_alive() { // army appears alive
+                    // ensure army died in battle
+
                     let structure_army: Army = get!(world, structure_army_id, Army);
                     structure_army.assert_in_battle();
 
@@ -688,7 +778,8 @@ mod combat_systems {
                     battle.update_state();
                     set!(world, (battle));
 
-                    // ensure structure lost the battle
+                    // ensure structure lost or drew the battle. Either way,
+                    // the army must be dead
                     assert!(structure_army.battle_side != battle.winner(), "structure army won");
                 }
             }
@@ -702,6 +793,51 @@ mod combat_systems {
         }
 
 
+        /// Pillage a structure.
+        ///
+        /// # Preconditions:
+        /// - The caller must own the `army_id`.
+        /// - The entity being pillaged (`structure_id`) must be a valid structure.
+        /// - The attacking army (`army_id`) must not be currently in battle.
+        /// - The attacking army must be at the same location as the structure.
+        /// - If the structure has a protecting army in battle, the attacking army must join the battle 
+        ///   or wait till the structure's defensive army is done with the battle.
+        ///
+        /// # Arguments:
+        /// * `world` - The game world dispatcher interface.
+        /// * `army_id` - The id of the attacking army.
+        /// * `structure_id` - The id of the structure being pillaged.
+        ///
+        /// # Implementation Details:
+        /// 1. **Initial Validations**:
+        ///     - Verifies the caller owns the attacking army (`army_id`).
+        ///     - Ensures the entity being pillaged is indeed a structure.
+        ///     - Checks that the attacking army is not currently in battle.
+        ///     - Confirms that the attacking army is at the same location as the structure.
+        /// 2. **Protection Check**:
+        ///     - Determines if the structure is protected by another army (`structure_army_id`).
+        ///     - If the protecting army is in battle, ensure that outcome is finalized.
+        /// 3. **Pillage Calculation**:
+        ///     - Calculates the strength of the attacking and defending armies based on their troops and health.
+        ///     - Uses a probabilistic model to determine if the pillaging attempt is successful.
+        ///     - Randomly selects resources from the structure to pillage, considering army capacity and resource availability.
+        /// 4. **Outcome Effects**:
+        ///     - If the pillage attempt is successful, transfers resources from the structure to the attacking army.
+        ///     - Optionally destroys a building within the structure based on specific conditions.
+        ///     - Deducts health from both armies involved in the battle. 
+        ///         If any army is dead, no health is deducted.
+        /// 
+        /// 5. **Final Actions**:
+        ///     - Handles the movement of the attacking army back to its owner after a successful pillage, 
+        ///       if continuous pillaging is not possible.
+        ///     - Emits a `PillageEvent` to signify the outcome of the pillage action.
+        ///
+        /// # Note:
+        ///     - Continous pillaging simply means you are allowed to pillage without being sent back
+        ///       to base if the structure army is dead.
+        ///
+        /// # Returns:
+        /// * None
         fn battle_pillage(world: IWorldDispatcher, army_id: u128, structure_id: u128,) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
