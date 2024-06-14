@@ -10,12 +10,13 @@ import { Structures } from "../../models/buildings/worldmap/Structures.js";
 import { Armies } from "../armies/Armies.js";
 import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
 
-import { ACCESSIBLE_POSITIONS_COLOUR, COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
-import { findAccessiblePositionsAndPaths } from "./utils.js";
 import { useStamina } from "@/hooks/helpers/useStamina";
 import { HighlightPositions } from "@/types";
+import { ACCESSIBLE_POSITIONS_COLOUR, COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { findAccessiblePositionsAndPaths } from "./utils.js";
+import { Battles } from "../../models/buildings/worldmap/Battles";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -153,6 +154,7 @@ export const WorldMap = () => {
       <Armies />
       <ShardsMines />
       <Structures />
+      <Battles />
       <Flags />
     </>
   );
