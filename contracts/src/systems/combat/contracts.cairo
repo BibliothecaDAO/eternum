@@ -86,7 +86,7 @@ mod combat_systems {
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
-        /// Creates an army entity within the game world.
+        /// Creates an army entity.
         /// 
         /// This function allows the creation of two types of armies:
         /// 
@@ -109,11 +109,11 @@ mod combat_systems {
         ///
         /// # Arguments:
         /// * `world` - The game world dispatcher interface.
-        /// * `army_owner_id` - The unique identifier of the army owner entity.
+        /// * `army_owner_id` - The id of the army owner entity.
         /// * `is_defensive_army` - A boolean flag indicating the type of army to create.
         ///
         /// # Returns:
-        /// * `u128` - The unique identifier of the created army.
+        /// * `u128` - The id of the created army.
         ///
         /// # Implementation Details:
         /// - The function checks if the caller owns the entity specified by `army_owner_id`.
@@ -212,7 +212,32 @@ mod combat_systems {
             army_id
         }
 
-
+        /// Purchases and adds troops to an existing army entity.
+        ///
+        /// # Preconditions:
+        /// - The caller must own the entity identified by `payer_id`.
+        /// - The payer and the army must be at the same position. E.g
+        ///   if the payer is a structure (a realm for example), the army 
+        ///   must be at the realm in order to add troops to its army.
+        ///
+        /// # Arguments:
+        /// * `world` - The game world dispatcher interface.
+        /// * `army_id` - The id of the army entity receiving the troops.
+        /// * `payer_id` - The id of the entity paying for the troops.
+        /// * `troops` - The troops to be purchased and added to the army.
+        ///
+        /// # Implementation Details:
+        /// 1. **Ownership and Position Check**:
+        ///     - Ensures the caller owns the `payer_id` entity.
+        ///     - Verifies that `payer_id` and `army_id` are at the same location.
+        /// 2. **Payment Processing**:
+        ///     - Deducts the appropriate resources from `payer_id`.
+        /// 3. **Army Update**:
+        ///     - Adds the purchased troops to the army.
+        ///     - Updates the army's health and troop quantity.
+        ///
+        /// # Returns:
+        /// * None
         fn army_buy_troops(world: IWorldDispatcher, army_id: u128, payer_id: u128, troops: Troops) {
             // ensure caller owns the entity paying
             get!(world, payer_id, EntityOwner).assert_caller_owner(world);
@@ -250,6 +275,35 @@ mod combat_systems {
             set!(world, (army_quantity));
         }
 
+        /// This function facilitates the transfer of troops from one army to another.
+        ///
+        /// # Preconditions:
+        /// - The caller must own both the `from_army_id` and `to_army_id` entities.
+        /// - The `from_army_id` and `to_army_id` entities must be at the same location.
+        ///
+        /// # Arguments:
+        /// * `world` - The game world dispatcher interface.
+        /// * `from_army_id` - The id of the army transferring troops.
+        /// * `to_army_id` - The id of the army receiving troops.
+        /// * `troops` - The troops to be transferred.
+        ///
+        /// # Implementation Details:
+        /// 1. **Ownership and Position Check**:
+        ///     - Ensures the caller owns both `from_army_id` and `to_army_id`.
+        ///     - Verifies that `from_army_id` and `to_army_id` are at the same location.
+        /// 2. **Troop Transfer**:
+        ///     - Decreases the number of troops, health, and quantity in the `from_army_id`.
+        ///     - Increases the number of troops, health, and quantity in the `to_army_id`.
+        /// 
+        /// # Note:
+        ///     It is important to know that you can only transfer troops with full health from 
+        ///     one army to another. e.g if the first army has 
+        ///     `FirstArmy(100 knights, 100 paladins,100 crossbowman)` but it went to battle and now
+        ///     it only has half it's initial `Health`` left, you'll only be able to transfer half, i.e 
+        ///     `(100 knights, 100 paladins,100 crossbowman)``, to the SecondArmy.
+        ///
+        /// # Returns:
+        /// * None
         fn army_merge_troops(
             world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops,
         ) {
