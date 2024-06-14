@@ -2,7 +2,7 @@ use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
 #[dojo::interface]
 trait ICombatContract<TContractState> {
-    fn army_create(army_owner_id: u128, army_is_protector: bool) -> u128;
+    fn army_create(army_owner_id: u128, is_defensive_army: bool) -> u128;
     fn army_buy_troops(army_id: u128, payer_id: u128, troops: Troops);
     fn army_merge_troops(from_army_id: u128, to_army_id: u128, troops: Troops);
 
@@ -29,6 +29,7 @@ mod combat_systems {
     use eternum::models::buildings::{Building, BuildingImpl, BuildingCategory};
     use eternum::models::capacity::Capacity;
     use eternum::models::combat::BattleEscrowTrait;
+    use eternum::models::combat::ProtectorTrait;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
         TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig,
@@ -85,81 +86,126 @@ mod combat_systems {
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
+        /// Creates an army entity within the game world.
+        /// 
+        /// This function allows the creation of two types of armies:
+        /// 
+        /// 1. **Defensive Army**:
+        ///     - Assigned to protect a specific structure.
+        ///     - Cannot move or hold resources.
+        ///     - Ensures the safety of the structure and any resources it holds.
+        ///     - Only one defensive army is allowed per structure. Attempting to create more than one for
+        ///       the same structure will result in an error.
+        ///     - Specify `is_defensive_army` as `true` to create this type of army.
+        /// 
+        /// 2. **Roaming Army**:
+        ///     - Can move freely across the map.
+        ///     - Engages in exploring hexes, joining battles, and pillaging structures.
+        ///     - There is no limit to the number of roaming armies you can create.
+        ///     - Specify `is_defensive_army` as `false` to create this type of army.
+        /// 
+        /// # Preconditions:
+        /// - The caller must own the entity identified by `army_owner_id`.
+        ///
+        /// # Arguments:
+        /// * `world` - The game world dispatcher interface.
+        /// * `army_owner_id` - The unique identifier of the army owner entity.
+        /// * `is_defensive_army` - A boolean flag indicating the type of army to create.
+        ///
+        /// # Returns:
+        /// * `u128` - The unique identifier of the created army.
+        ///
+        /// # Implementation Details:
+        /// - The function checks if the caller owns the entity specified by `army_owner_id`.
+        /// - It generates a unique ID for the new army and sets common properties such as entity ownership,
+        ///   initial position, and default battle settings.
+        /// - For a defensive army:
+        ///     - Validates that the owning entity is a structure.
+        ///     - Ensures no other defensive army is assigned to the structure.
+        ///     - Assigns the new army to protect the structure.
+        ///     - Locks the army from resource transfer operations.
+        /// - For a roaming army:
+        ///     - Configures the army's movement speed and carrying capacity based on game world settings.
+        ///     - Initializes the army's stamina for map exploration.
         fn army_create(
-            world: IWorldDispatcher, army_owner_id: u128, army_is_protector: bool
+            world: IWorldDispatcher, army_owner_id: u128, is_defensive_army: bool
         ) -> u128 {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
+            // set common army models
             let mut army_id: u128 = world.uuid().into();
+            let army_owner_position: Position = get!(world, army_owner_id, Position);
             set!(
                 world,
-                (Army {
-                    entity_id: army_id,
-                    troops: Default::default(),
-                    battle_id: 0,
-                    battle_side: Default::default()
-                })
+                (
+                    Army {
+                        entity_id: army_id,
+                        troops: Default::default(),
+                        battle_id: 0,
+                        battle_side: Default::default()
+                    },
+                    EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id },
+                    Owner { entity_id: army_id, address: starknet::get_caller_address() },
+                    Position {
+                        entity_id: army_id, x: army_owner_position.x, y: army_owner_position.y
+                    }
+                )
             );
 
-            set!(world, (EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id }));
-            set!(world, (Owner { entity_id: army_id, address: starknet::get_caller_address() }));
-
-            let owner_position: Position = get!(world, army_owner_id, Position);
-            set!(
-                world, (Position { entity_id: army_id, x: owner_position.x, y: owner_position.y })
-            );
-
-            if army_is_protector {
+            if is_defensive_army {
+                // Defensive armies can only be assigned as structure protectors
                 get!(world, army_owner_id, Structure).assert_is_structure();
 
-                let mut protector: Protector = get!(world, army_owner_id, Protector);
-                assert!(
-                    protector.army_id.is_zero(),
-                    "entity {} already has an army protector",
-                    army_owner_id
+                // ensure the structure does not have a defensive army 
+                let mut structure_protector: Protector = get!(world, army_owner_id, Protector);
+                structure_protector.assert_has_no_defensive_army();
+
+                // add army as structure protector
+                structure_protector.army_id = army_id;
+                set!(
+                    world, (structure_protector, Protectee { army_id, protectee_id: army_owner_id })
                 );
 
-                protector.army_id = army_id;
-                set!(world, (protector));
-
-                set!(world, (Protectee { army_id, protectee_id: army_owner_id }));
+                // stop the army from sending or receiving resources
                 set!(
                     world,
                     (ResourceTransferLock { entity_id: army_id, release_at: BoundedInt::max() })
                 );
             } else {
+                // set the army's speed and capacity
                 let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
                     .sec_per_km;
-                set!(
-                    world,
-                    Movable {
-                        entity_id: army_id,
-                        sec_per_km: army_sec_per_km,
-                        blocked: false,
-                        round_trip: false,
-                        start_coord_x: owner_position.x,
-                        start_coord_y: owner_position.y,
-                        intermediate_coord_x: 0,
-                        intermediate_coord_y: 0,
-                    }
-                );
-
                 let army_carry_capacity: CapacityConfig = CapacityConfigImpl::get(
                     world, ARMY_ENTITY_TYPE
                 );
                 set!(
                     world,
-                    (Capacity { entity_id: army_id, weight_gram: army_carry_capacity.weight_gram },)
+                    (
+                        Movable {
+                            entity_id: army_id,
+                            sec_per_km: army_sec_per_km,
+                            blocked: false,
+                            round_trip: false,
+                            start_coord_x: army_owner_position.x,
+                            start_coord_y: army_owner_position.y,
+                            intermediate_coord_x: 0,
+                            intermediate_coord_y: 0,
+                        },
+                        Capacity {
+                            entity_id: army_id, weight_gram: army_carry_capacity.weight_gram
+                        }
+                    )
                 );
 
+                // create stamina for map exploration
                 let armies_tick_config = TickImpl::get_armies_tick_config(world);
                 set!(
                     world,
                     (Stamina {
                         entity_id: army_id,
                         amount: 0,
-                        last_refill_tick: armies_tick_config.current()
+                        last_refill_tick: armies_tick_config.current() - 1
                     })
                 )
             }

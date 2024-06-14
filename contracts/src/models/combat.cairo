@@ -377,6 +377,15 @@ struct Protector {
     army_id: u128,
 }
 
+#[generate_trait]
+impl ProtectorImpl of ProtectorTrait {
+    fn assert_has_no_defensive_army(self: Protector) {
+        assert!(
+            self.army_id.is_zero(), "Structure {} already has a defensive army", self.entity_id
+        );
+    }
+}
+
 #[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
 struct Protectee {

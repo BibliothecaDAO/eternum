@@ -427,12 +427,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_army(props: SystemProps.ArmyCreateProps) {
-    const { army_owner_id, army_is_protector, signer } = props;
+    const { army_owner_id, is_defensive_army, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "army_create",
-      calldata: [army_owner_id, army_is_protector],
+      calldata: [army_owner_id, is_defensive_army],
     });
   }
 

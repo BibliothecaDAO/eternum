@@ -24,12 +24,12 @@ export const EntityArmyList = ({ entity_id }: any) => {
 
   const canCreateProtector = useMemo(() => !entityArmies.find((army) => army.protectee_id), [entityArmies]);
 
-  const handleCreateArmy = (army_is_protector: boolean) => {
+  const handleCreateArmy = (is_defensive_army: boolean) => {
     setIsLoading(true);
     create_army({
       signer: account,
       army_owner_id: entity_id.entity_id,
-      army_is_protector,
+      is_defensive_army,
     }).finally(() => setIsLoading(false));
   };
 

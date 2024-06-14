@@ -2169,7 +2169,7 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "army_is_protector",
+                  "name": "is_defensive_army",
                   "type": "core::bool"
                 }
               ],

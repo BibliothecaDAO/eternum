@@ -244,7 +244,7 @@ export interface Troops {
 
 export interface ArmyCreateProps extends SystemSigner {
   army_owner_id: num.BigNumberish;
-  army_is_protector: boolean;
+  is_defensive_army: boolean;
 }
 
 export interface ArmyBuyTroopsProps extends SystemSigner {
@@ -422,5 +422,5 @@ export interface SetStaminaConfigProps extends SystemSigner {
   max_stamina: num.BigNumberish;
 }
 
-export type ProtectStructureProps = Omit<ArmyCreateProps, "army_is_protector">;
+export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
 //  & ArmyMergeTroopsProps;
