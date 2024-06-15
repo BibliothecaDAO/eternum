@@ -1,4 +1,3 @@
-import { BattleType } from "@/dojo/modelManager/types";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Realm, Structure } from "@/hooks/helpers/useStructures";
@@ -7,20 +6,18 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { ModalContainer } from "@/ui/components/ModalContainer";
 import { PillageHistory } from "@/ui/components/military/Battle";
 import Button from "@/ui/elements/Button";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
 import { getOwnArmy } from "./utils";
 
 export const BattleActions = ({
   isActive,
-  battle,
   attacker,
   defender,
   structure,
   battleId,
 }: {
-  battle: ComponentValue<BattleType, unknown> | undefined;
   attacker: ArmyInfo;
   defender: ArmyInfo | undefined;
   structure: Realm | Structure | undefined;
@@ -74,8 +71,6 @@ export const BattleActions = ({
       attacking_army_id: ownArmy!.entity_id,
       defending_army_id: defender!.entity_id,
     });
-
-    setLoading(false);
   };
 
   const handleBattleClaim = async () => {
@@ -91,7 +86,6 @@ export const BattleActions = ({
 
   const handleLeaveBattle = async () => {
     setLoading(true);
-	console.log()
     await battle_leave({
       signer: account,
       army_id: ownArmy!.entity_id,
@@ -113,7 +107,7 @@ export const BattleActions = ({
           className="flex flex-col gap-2"
           isLoading={loading}
           onClick={handleRaid}
-          disabled={!ownArmy || isActive}
+          disabled={!structure || !ownArmy || isActive}
         >
           <img className="w-10" src="/images/icons/raid.png" alt="coin" />
           Raid!

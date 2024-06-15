@@ -1,11 +1,8 @@
-import { CombatTarget } from "@/types";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import React from "react";
 import { Vector3 } from "three";
 import { create } from "zustand";
 import { getRealmUIPosition, getUIPositionFromColRow } from "../../ui/utils/utils";
-import { ArmyInfo } from "../helpers/useArmies";
-import { Realm, Structure } from "../helpers/useStructures";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 import { createMapStoreSlice, MapStore } from "./_mapStore";
 import { createPopupsSlice, PopupsStore } from "./_popups";
@@ -59,12 +56,7 @@ interface UIStore {
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
   battleView: BattleViewInfo | null;
-  setBattleView: (
-    participants: {
-      attackers: ArmyInfo[];
-      defenders: { type: CombatTarget; entities: ArmyInfo[] | Realm | Structure };
-    } | null,
-  ) => void;
+  setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: View;
   setLeftNavigationView: (view: View) => void;
 }
@@ -193,12 +185,7 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   toggleModal: (content) => set({ modalContent: content, showModal: !get().showModal }),
   showModal: false,
   battleView: null,
-  setBattleView: (
-    participants: {
-      attackers: ArmyInfo[];
-      defenders: { type: CombatTarget; entities: ArmyInfo[] | Realm | Structure };
-    } | null,
-  ) => set({ battleView: participants }),
+  setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
   ...createPopupsSlice(set, get),
   ...createMapStoreSlice(set),
   ...createBuildModeStoreSlice(set),

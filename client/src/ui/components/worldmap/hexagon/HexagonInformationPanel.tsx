@@ -77,7 +77,7 @@ export const HexagonInformationPanel = () => {
         )}
         {toShow.showBattle && <div>Hello World</div>}
         {toShow.showStructure && <StructureCard position={hexPosition} ownArmySelected={ownArmySelected} />}
-        {toShow.showEnnemies && <EnnemyArmies armies={enemyArmies} ownArmySelected={ownArmySelected} />}
+        {toShow.showEnnemies && <EnnemyArmies armies={enemyArmies} ownArmySelected={ownArmySelected!} />}
         {!toShow.showBattle && !toShow.showEnnemies && !toShow.showStructure && "Nothing to show here"}
       </div>
     )

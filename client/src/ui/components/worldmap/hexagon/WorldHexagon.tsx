@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef } from "react";
 // @ts-ignore
 import { Flags } from "@/ui/components/worldmap/Flags.jsx";
+import { COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
 import { Subscription } from "rxjs";
 import { create } from "zustand";
 import { useDojo } from "../../../../hooks/context/DojoContext";
+import { Battles } from "../../models/buildings/worldmap/Battles";
 import { ShardsMines } from "../../models/buildings/worldmap/ShardsMines.js";
 import { Structures } from "../../models/buildings/worldmap/Structures.js";
 import { Armies } from "../armies/Armies.js";
 import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
-import { COLS, FELT_CENTER, ROWS } from "@/ui/config.js";
-import { Battles } from "../../models/buildings/worldmap/Battles";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -94,8 +94,6 @@ export const WorldMap = () => {
       subscriptionRef.current?.unsubscribe(); // Ensure to unsubscribe on component unmount
     };
   }, [setExploredHexes, exploreMapEvents]);
-
-  console.log("hello");
 
   return (
     <>
