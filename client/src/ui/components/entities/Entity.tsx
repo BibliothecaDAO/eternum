@@ -5,7 +5,7 @@ import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { useResources } from "@/hooks/helpers/useResources";
+import { useResources, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
 import { TravelEntityPopup } from "./TravelEntityPopup";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { EntityType, EntityState, determineEntityState } from "@bibliothecadao/eternum";
@@ -35,6 +35,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
 
   const { getEntityInfo } = useEntities();
   const { getResourcesFromBalance } = useResources();
+  const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
 
   const entity = getEntityInfo(entityId);
 
@@ -45,6 +46,9 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const hasResources = entityResources.length > 0;
 
   const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
+
+  const depositEntityId = getOwnedEntityOnPosition(entityId);
+
   if (entityState === EntityState.NotApplicable) {
     return null;
   }
@@ -76,14 +80,16 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
             Trade Bound <Pen className="ml-1 fill-gold" />
           </div>
         )}
-        {entityState === EntityState.WaitingToOffload && <div className="flex ml-auto italic ">Waiting to offload</div>}
 
-        {entityState === EntityState.Idle && (
-          <div className="flex ml-auto  italic ">
-            Idle
-            <Pen className="ml-1 fill-gold" />
-          </div>
-        )}
+        {(entityState === EntityState.Idle || entityState === EntityState.WaitingToOffload) &&
+          (depositEntityId !== undefined && entityResources.length > 0 ? (
+            <div className="flex ml-auto italic ">Waiting to offload</div>
+          ) : (
+            <div className="flex ml-auto  italic ">
+              Idle
+              <Pen className="ml-1 fill-gold" />
+            </div>
+          ))}
 
         {entity.arrivalTime && entityState === EntityState.Traveling && nextBlockTimestamp && (
           <div className="flex ml-auto -mt-2 italic ">
@@ -108,7 +114,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
               ),
           )}
       </div>
-      <DepositResources entityId={entityId} />
+      {entityState !== EntityState.Traveling && <DepositResources entityId={entityId} />}
     </div>
   );
 };
