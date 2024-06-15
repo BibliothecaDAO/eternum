@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useGetOwnedEntityOnPosition, useResources } from "@/hooks/helpers/useResources";
+import { useOwnedEntitiesOnPosition, useResources } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -17,14 +17,13 @@ export const DepositResources = ({ entityId }: DepositResourcesProps) => {
   const { nextBlockTimestamp } = useBlockchainStore((state) => state);
   const { account, setup } = useDojo();
   const { getResourcesFromBalance } = useResources();
+  const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
 
   const inventoryResources = getResourcesFromBalance(BigInt(entityId));
 
-  const position = getComponentValue(setup.components.Position, getEntityIdFromKeys([entityId]));
   const arrivalTime = getComponentValue(setup.components.ArrivalTime, getEntityIdFromKeys([entityId]));
 
-  const depositEntityIds = position ? useGetOwnedEntityOnPosition(BigInt(account.account.address), position) : [];
-  const depositEntityId = depositEntityIds[0];
+  const depositEntityId = getOwnedEntityOnPosition(entityId);
 
   const entityState = determineEntityState(
     nextBlockTimestamp,

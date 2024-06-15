@@ -222,29 +222,43 @@ export const useGetBankAccountOnPosition = (address: bigint, position: Position)
     .filter(Boolean) as bigint[];
 };
 
-export const useGetOwnedEntityOnPosition = (address: bigint, position: Position) => {
+export function useOwnedEntitiesOnPosition() {
   const {
+    account: { account },
     setup: {
       components: { Owner, Position, Movable, Bank, Realm },
     },
   } = useDojo();
 
-  const { x, y } = position;
+  const getOwnedEntitiesOnPosition = (address: bigint, position: Position) => {
+    const { x, y } = position;
 
-  const entities = runQuery([
-    HasValue(Owner, { address }),
-    Not(Movable),
-    // don't want bank but bank accounts
-    Not(Bank),
-    // @note: safer to do like this rather than deconstruct because there's a chance entity_id is also there
-    HasValue(Position, { x, y }),
-  ]);
+    const entities = runQuery([
+      HasValue(Owner, { address }),
+      Not(Movable),
+      // don't want bank but bank accounts
+      Not(Bank),
+      // @note: safer to do like this rather than deconstruct because there's a chance entity_id is also there
+      HasValue(Position, { x, y }),
+    ]);
 
-  return Array.from(entities)
-    .map((entityId) => {
-      const position = getComponentValue(Position, entityId);
-      if (!position) return;
-      return position?.entity_id;
-    })
-    .filter(Boolean) as bigint[];
-};
+    return Array.from(entities)
+      .map((entityId) => {
+        const position = getComponentValue(Position, entityId);
+        if (!position) return;
+        return position?.entity_id;
+      })
+      .filter(Boolean) as bigint[];
+  };
+
+  const getOwnedEntityOnPosition = (entityId: bigint) => {
+    const position = getComponentValue(Position, getEntityIdFromKeys([entityId]));
+    const depositEntityIds = position ? getOwnedEntitiesOnPosition(BigInt(account.address), position) : [];
+    return depositEntityIds[0];
+  };
+
+  return {
+    getOwnedEntitiesOnPosition,
+    getOwnedEntityOnPosition,
+  };
+}
