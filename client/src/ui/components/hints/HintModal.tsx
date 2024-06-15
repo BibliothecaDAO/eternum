@@ -1,3 +1,4 @@
+import { Headline } from "@/ui/elements/Headline";
 import { ModalContainer } from "../ModalContainer";
 import { useState } from "react";
 
@@ -24,21 +25,21 @@ export const HintModal = () => {
 
   return (
     <ModalContainer>
-      <div className="grid grid-cols-12 container mx-auto gap-8">
-        <div className="col-span-4 border p-1 space-y-1">
+      <div className="grid grid-cols-12 container mx-auto gap-4 bg-brown my-10 p-4 ornate-borders">
+        <div className="col-span-4 border p-3 space-y-1 clip-angled border-gold/10">
           {sections.map((section) => (
             <div
-              className={`p-4 hover:bg-gold hover:text-brown ${
+              className={`p-2 hover:bg-gold hover:text-brown clip-angled  ${
                 activeSection.name === section.name ? "bg-gold text-brown" : ""
               }`}
               key={section.name}
               onClick={() => setActiveSection(section)}
             >
-              <h4>{section.name}</h4>
+              <h5>{section.name}</h5>
             </div>
           ))}
         </div>
-        <div className="col-span-8 border p-4">{activeSection.content}</div>
+        <div className="col-span-8 border clip-angled border-gold/10 p-4">{activeSection.content}</div>
       </div>
     </ModalContainer>
   );
@@ -75,7 +76,7 @@ export const GettingStarted = () => {
 
   return (
     <div>
-      <h4>Key Concepts</h4>
+      <Headline>Key Concepts</Headline>
 
       {concepts.map((concept) => (
         <div key={concept.name} className="my-4">
@@ -90,13 +91,14 @@ export const GettingStarted = () => {
 export const Resources = () => {
   return (
     <div>
-      <h4>Resources & Food</h4>
-      <p>
+      <Headline>Resources & Food</Headline>
+
+      <p className="my-5">
         All resources except for Food have a resource input cost associated. You must have these resources in your
         balance otherwise production stops. Trade with others or banks in order to keep your balances in check.
       </p>
       <h4>Storage of Food</h4>
-      <p>
+      <p className="my-5">
         You can only store a certain capacity of resources per your storehouses. Each storehouse grants you 10k per
         resource. You can build more storehouses to increase your capacity.
       </p>
@@ -107,14 +109,14 @@ export const Resources = () => {
 export const Banking = () => {
   return (
     <div>
-      <h4>Trading</h4>
-      <p>
+      <Headline>Trading</Headline>
+      <p className="my-5">
         Trading is done through Donkeys. You must have Donkeys in your balance in order to trade. You can generate these
         with a market. You can also trade donkeys as they are fungible.
       </p>
 
       <h5>Banking</h5>
-      <p>
+      <p className="my-5">
         Banks exist around the map. You can trade with them or deposit resources. You can even provide liquidity. If you
         have enough money you can create your own bank and set fees.
       </p>
@@ -125,14 +127,16 @@ export const Banking = () => {
 export const Combat = () => {
   return (
     <div>
-      <h4>Armies</h4>
-      <p>
+      <Headline>Armies</Headline>
+      <p className="my-5">
         Armies can be created using your balance of Troops. Remember, everything is fungible so you must generate troops
         in order to build an Army.
       </p>
 
       <h4>Protecting your Base</h4>
-      <p>To protect your Base you must build a defensive Army. This Army will help protect from raiders.</p>
+      <p className="my-5">
+        To protect your Base you must build a defensive Army. This Army will help protect from raiders.
+      </p>
     </div>
   );
 };
