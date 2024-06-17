@@ -735,66 +735,14 @@ mod combat_systems {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
-            // update battle state before any other actions
-            let mut battle: Battle = get!(world, battle_id, Battle);
-            battle.update_state();
-
-            // ensure battle id is correct
+            // ensure caller is in the correct battle
             let mut caller_army: Army = get!(world, army_id, Army);
             assert!(caller_army.battle_id == battle_id, "wrong battle id");
             assert!(caller_army.battle_side != BattleSide::None, "choose correct battle side");
 
-            // make caller army mobile again
-            let mut caller_army_protectee: Protectee = get!(world, army_id, Protectee);
-            let mut caller_army_movable: Movable = get!(world, army_id, Movable);
-            if caller_army_protectee.is_none() {
-                caller_army_movable.assert_blocked();
-                caller_army_movable.blocked = false;
-                set!(world, (caller_army_movable));
-            } else {
-                assert!(battle.has_ended(), "structure can only leave battle after it ends");
-            }
-
-            // withdraw resources stuck in battle
-            battle.withdraw_balance_and_reward(world, caller_army, caller_army_protectee);
-
-            // remove caller army from army troops 
-            let mut battle_army = battle.attack_army;
-            let mut battle_army_health = battle.attack_army_health;
-            if caller_army.battle_side == BattleSide::Defence {
-                battle_army = battle.defence_army;
-                battle_army_health = battle.defence_army_health;
-            }
-
-            let mut caller_army_health: Health = get!(world, army_id, Health);
-            let caller_army_original_health: u128 = caller_army_health.current;
-            let caller_army_original_troops: Troops = caller_army.troops;
-
-            let caller_army_health_left: u128 = (caller_army_health.current
-                * battle_army_health.current)
-                / battle_army_health.lifetime;
-
-            caller_army_health.decrease_by(caller_army_health.current - caller_army_health_left);
-            set!(world, (caller_army_health));
-
-            battle_army.troops.deduct(caller_army_original_troops);
-            battle_army_health.decrease_by(caller_army_original_health);
-
-            if caller_army.battle_side == BattleSide::Defence {
-                battle.defence_army = battle_army;
-                battle.defence_army_health = battle_army_health;
-            } else {
-                battle.attack_army = battle_army;
-                battle.attack_army_health = battle_army_health;
-            }
-
-            let troop_config = TroopConfigImpl::get(world);
-            battle.reset_delta(troop_config);
-            set!(world, (battle));
-
-            caller_army.battle_id = 0;
-            caller_army.battle_side = BattleSide::None;
-            set!(world, (caller_army));
+            // leave battle
+            let mut battle: Battle = get!(world, battle_id, Battle);
+            InternalCombatImpl::leave_battle(world, ref battle, ref caller_army);
         }
 
 
@@ -819,26 +767,21 @@ mod combat_systems {
             claimer_army_position.assert_same_location(structure_position.into());
 
             // ensure structure has no army protecting it 
-            // or it has lost the battle it is currently in
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
-                // ensure structure army is either dead or it died in battle
-                let structure_army_health: Health = get!(world, structure_army_id, Health);
-                if structure_army_health.is_alive() { // army appears alive
-                    // ensure army died in battle
-
-                    let structure_army: Army = get!(world, structure_army_id, Army);
-                    structure_army.assert_in_battle();
-
-                    // update battle state before checking battle winner
+                let mut structure_army: Army = get!(world, structure_army_id, Army);
+                if structure_army.is_in_battle() {
                     let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
-                    battle.update_state();
-                    set!(world, (battle));
-
-                    // ensure structure lost or drew the battle. Either way,
-                    // the army must be dead
-                    assert!(structure_army.battle_side != battle.winner(), "structure army won");
+                    InternalCombatImpl::update_battle_and_army(
+                        world, ref battle, ref structure_army
+                    );
                 }
+
+                // ensure structure army is dead
+                let structure_army_health: Health = get!(world, structure_army_id, Health);
+                assert!(
+                    !structure_army_health.is_alive(), "can only claim when structure army is dead"
+                );
             }
 
             // pass ownership of structure to claimer
@@ -876,39 +819,17 @@ mod combat_systems {
 
             let mut structure_army: Army = Default::default();
             let mut structure_army_health: Health = Default::default();
-            let mut can_pillage_only_once = false;
             if structure_army_id.is_non_zero() {
-                structure_army_health = get!(world, structure_army_id, Health);
                 structure_army = get!(world, structure_army_id, Army);
-                if structure_army.battle_id.is_non_zero() {
-                    // structure army is in battle
-
-                    // force pillager to join battle if it hasnt ended
+                if structure_army.is_in_battle() {
                     let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
-                    battle.update_state();
-                    set!(world, (battle));
-
-                    if !battle.has_ended() {
-                        panic!("Join the battle or wait for it to end");
-                    }
-
-                    // battle has ended
-                    //
-                    // allow continuous pillage when structure army loses battle
-                    let battle_has_winner = !(battle.winner() == BattleSide::None);
-                    let structure_army_didnt_win = structure_army.battle_side != battle.winner();
-                    if battle_has_winner && structure_army_didnt_win {
-                        can_pillage_only_once = false;
-                    } else {
-                        can_pillage_only_once = true;
-                    }
-                } else {
-                    // structure army is not in battle
-                    if structure_army_health.current.is_non_zero() {
-                        // structure army is alive
-                        can_pillage_only_once = true;
-                    }
+                    InternalCombatImpl::update_battle_and_army(
+                        world, ref battle, ref structure_army
+                    );
                 }
+
+                // get accurate structure army health
+                structure_army_health = get!(world, structure_army_id, Health);
             }
 
             // a percentage of it's full strength depending on structure army's health
@@ -1137,19 +1058,9 @@ mod combat_systems {
                     );
                 set!(world, (structure_army_health));
             }
-
-            let army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
-            if can_pillage_only_once {
-                // army goes home if structure cant be continuously pillage
-                let army_owner_position: Position = get!(world, army_owner_entity_id, Position);
-                let army_movable: Movable = get!(world, army_id, Movable);
-
-                InternalTravelSystemsImpl::travel(
-                    world, army_id, army_movable, army_position.into(), army_owner_position.into()
-                );
-            }
-
+            
             // emit pillage event
+            let army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
             emit!(
                 world,
                 (
@@ -1169,6 +1080,76 @@ mod combat_systems {
                     ),
                 )
             );
+        }
+    }
+
+
+    #[generate_trait]
+    impl InternalCombatImpl of InternalCombatTrait {
+        fn update_battle_and_army(world: IWorldDispatcher, ref battle: Battle, ref army: Army) {
+            assert!(battle.entity_id == army.battle_id, "army must be in same battle");
+            battle.update_state();
+            if battle.has_ended() {
+                // leave battle to update structure army's health
+                Self::leave_battle(world, ref battle, ref army);
+            }
+        }
+
+
+        fn leave_battle(world: IWorldDispatcher, ref battle: Battle, ref army: Army) {
+            battle.update_state();
+
+            // make caller army mobile again
+            let army_id = army.entity_id;
+            let mut army_protectee: Protectee = get!(world, army_id, Protectee);
+            let mut army_movable: Movable = get!(world, army_id, Movable);
+            if army_protectee.is_none() {
+                army_movable.assert_blocked();
+                army_movable.blocked = false;
+                set!(world, (army_movable));
+            } else {
+                assert!(battle.has_ended(), "structure can only leave battle after it ends");
+            }
+
+            // withdraw resources stuck in battle
+            battle.withdraw_balance_and_reward(world, army, army_protectee);
+
+            // remove caller army from army troops 
+            let mut battle_army = battle.attack_army;
+            let mut battle_army_health = battle.attack_army_health;
+            if army.battle_side == BattleSide::Defence {
+                battle_army = battle.defence_army;
+                battle_army_health = battle.defence_army_health;
+            }
+
+            let mut army_health: Health = get!(world, army_id, Health);
+            let army_original_health: u128 = army_health.current;
+            let army_original_troops: Troops = army.troops;
+
+            let army_health_left: u128 = (army_health.current * battle_army_health.current)
+                / battle_army_health.lifetime;
+
+            army_health.decrease_by(army_health.current - army_health_left);
+            set!(world, (army_health));
+
+            battle_army.troops.deduct(army_original_troops);
+            battle_army_health.decrease_by(army_original_health);
+
+            if army.battle_side == BattleSide::Defence {
+                battle.defence_army = battle_army;
+                battle.defence_army_health = battle_army_health;
+            } else {
+                battle.attack_army = battle_army;
+                battle.attack_army_health = battle_army_health;
+            }
+
+            let troop_config = TroopConfigImpl::get(world);
+            battle.reset_delta(troop_config);
+            set!(world, (battle));
+
+            army.battle_id = 0;
+            army.battle_side = BattleSide::None;
+            set!(world, (army));
         }
     }
 }
