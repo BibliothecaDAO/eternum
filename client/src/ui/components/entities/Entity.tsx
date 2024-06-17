@@ -97,7 +97,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
           </div>
         )}
       </div>
-      <div className="flex  items-center space-x-2 flex-wrap mt-2">
+      <div className="flex  items-center gap-2 flex-wrap my-2">
         {entityState !== EntityState.Idle &&
           entityState !== EntityState.WaitingForDeparture &&
           entity.resources &&
