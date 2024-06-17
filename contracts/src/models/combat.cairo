@@ -359,6 +359,14 @@ impl BattleHealthImpl of BattleHealthTrait {
 
 #[generate_trait]
 impl ArmyImpl of ArmyTrait {
+    fn won_battle(self: Army, battle: Battle) -> bool {
+        self.battle_side == battle.winner()
+    }
+
+    fn is_in_battle(self: Army) -> bool {
+        self.battle_id.is_non_zero()
+    }
+
     fn assert_in_battle(self: Army) {
         assert!(self.battle_id.is_non_zero(), "army not in battle")
     }
@@ -709,6 +717,10 @@ impl BattleImpl of BattleTrait {
 
     fn has_ended(self: Battle) -> bool {
         self.duration_left == 0
+    }
+
+    fn has_winner(self: Battle) -> bool {
+        self.winner() != BattleSide::None
     }
 
     fn winner(self: Battle) -> BattleSide {
