@@ -65,7 +65,7 @@ export const OngoingBattle = ({
         </div>
       </motion.div>
       <motion.div
-        className="absolute bottom-0"
+        className="absolute bottom-0 "
         variants={{
           hidden: { y: "100%" },
           visible: { y: "0%", opacity: 1, transition: { duration: 0.5 } },

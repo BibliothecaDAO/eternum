@@ -59,7 +59,7 @@ export const NoOngoingBattle = ({
           defendingHealth={defendingHealth}
           defender={defenderArmy ? `${defenderArmy.name} ${defenderArmy.isMine ? "(Yours)" : ""}` : structure!.name}
         />
-        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between">
+        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between ">
           <div className="flex flex-row w-[70vw]">
             <EntityAvatar army={attackerArmy} structure={structure} />
             <TroopRow army={attackerArmy} />

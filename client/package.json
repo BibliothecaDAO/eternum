@@ -66,6 +66,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.13",
     "@types/lodash": "^4.14.202",
     "@types/react": "^18.2.74",
     "@types/react-dom": "^18.2.21",
