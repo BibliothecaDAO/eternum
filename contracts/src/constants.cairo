@@ -274,7 +274,7 @@ fn get_resource_probabilities() -> Span<(u8, u128)> {
         (ResourceTypes::ADAMANTINE, 22133),
         (ResourceTypes::MITHRAL, 14889),
         (ResourceTypes::DRAGONHIDE, 9256),
-        (ResourceTypes::EARTHEN_SHARD, 96177), // SHARDS
+        (ResourceTypes::EARTHEN_SHARD, 22133), // SHARDS
     ]
         .span();
 }

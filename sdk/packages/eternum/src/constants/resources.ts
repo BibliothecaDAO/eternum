@@ -659,29 +659,33 @@ export const BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Wheat, amount: 1500 },
     { resource: ResourcesIds.Stone, amount: 100 },
     { resource: ResourcesIds.Gold, amount: 20 },
+    { resource: ResourcesIds.Ruby, amount: 20 },
   ],
   [BuildingType.ArcheryRange]: [
     { resource: ResourcesIds.Wheat, amount: 2000 },
     { resource: ResourcesIds.Wood, amount: 100 },
-    { resource: ResourcesIds.Stone, amount: 40 },
+    { resource: ResourcesIds.Obsidian, amount: 40 },
   ],
   [BuildingType.Stable]: [
     { resource: ResourcesIds.Wheat, amount: 2000 },
     { resource: ResourcesIds.Wood, amount: 100 },
-    { resource: ResourcesIds.Stone, amount: 40 },
+    { resource: ResourcesIds.ColdIron, amount: 40 },
   ],
   [BuildingType.DonkeyFarm]: [],
   [BuildingType.TradingPost]: [],
   [BuildingType.WorkersHut]: [
     { resource: ResourcesIds.Wheat, amount: 500 },
     { resource: ResourcesIds.Stone, amount: 10 },
+    { resource: ResourcesIds.Wood, amount: 10 },
+    { resource: ResourcesIds.Coal, amount: 20 },
   ],
   [BuildingType.WatchTower]: [],
   [BuildingType.Walls]: [],
   [BuildingType.Storehouse]: [
     { resource: ResourcesIds.Wheat, amount: 2000 },
     { resource: ResourcesIds.Wood, amount: 10 },
-    { resource: ResourcesIds.Coal, amount: 10 },
+    { resource: ResourcesIds.Ironwood, amount: 10 },
+    { resource: ResourcesIds.Silver, amount: 10 },
   ],
 };
 
@@ -836,8 +840,8 @@ export enum QuestType {
 
 export const QUEST_RESOURCES = {
   [QuestType.Food]: [
-    { resource: ResourcesIds.Wheat, amount: 2000 },
-    { resource: ResourcesIds.Fish, amount: 2000 },
+    { resource: ResourcesIds.Wheat, amount: 1500 },
+    { resource: ResourcesIds.Fish, amount: 1500 },
   ],
   [QuestType.CommonResources]: [
     { resource: ResourcesIds.Wood, amount: 20 },

@@ -6,7 +6,7 @@ export const TheWorld = () => {
     {
       name: "It's time to build the hyperstructures",
       content:
-        "The world is a vast place, and you are a small part of it. You must build your empire and expand your influence. You can do this by building structures and armies.",
+        "The world is a vast place, and you are a small part of it. You must build your empire and expand your influence.",
     },
   ];
 
