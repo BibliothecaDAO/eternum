@@ -1,11 +1,11 @@
 import { getRealmNameById } from "@/ui/utils/realms";
-import { divideByPrecision, getEntityIdFromKeys, getPosition, numberToHex } from "@/ui/utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, getPosition } from "@/ui/utils/utils";
 import { EntityType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, NotValue, getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
-import { hexToAscii } from "@dojoengine/utils";
 import { useDojo } from "../context/DojoContext";
 import { useResources } from "./useResources";
+import { shortString } from "starknet";
 
 export const useEntities = () => {
   const {
@@ -37,7 +37,7 @@ export const useEntities = () => {
 
   const getEntityName = (entityId: bigint) => {
     const entityName = getComponentValue(EntityName, getEntityIdFromKeys([entityId]));
-    return entityName ? hexToAscii(numberToHex(Number(entityName.name))) : entityId.toString();
+    return entityName ? shortString.decodeShortString(entityName.name.toString()) : entityId.toString();
   };
 
   const getEntityInfo = (entityId: bigint) => {
