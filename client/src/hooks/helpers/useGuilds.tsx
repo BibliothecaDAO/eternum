@@ -80,7 +80,7 @@ export const useGuilds = () => {
         (id) => getComponentValue(GuildMember, id),
       )[0]?.guild_entity_id;
 
-      const guildName = userGuildEntityId ? getEntityName(BigInt(userGuildEntityId!)) : undefined;
+      const guildName = userGuildEntityId ? getEntityName(BigInt(userGuildEntityId)) : undefined;
 
       const owner = Array.from(
         runQuery([HasValue(Owner, { address: BigInt(accountAddress), entity_id: userGuildEntityId })]),
@@ -91,6 +91,7 @@ export const useGuilds = () => {
       const memberCount = Array.from(runQuery([HasValue(Guild, { entity_id: userGuildEntityId })])).map((id) =>
         getComponentValue(Guild, id),
       )[0]?.member_count;
+
       return {
         userGuildEntityId,
         guildName,
@@ -113,9 +114,9 @@ const formatGuilds = (
   return guilds.map((guild_entity_id) => {
     const guild = getComponentValue(Guild, guild_entity_id) as ClientComponents["Guild"]["schema"];
     const name = getEntityName(BigInt(guild?.entity_id));
-
     const index = guildPointsLeaderboard.findIndex((item) => item.guildEntityId === BigInt(guild.entity_id));
     const rank = index != -1 ? guildPointsLeaderboard[index].rank : "";
+
     return {
       ...guild,
       rank,
