@@ -178,6 +178,19 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.battle_leave(props);
   };
 
+  const battle_leave_and_claim = async (props: SystemProps.BattleClaimAndLeaveProps) => {
+    await provider.battle_claim_and_leave(props);
+  };
+
+  const battle_claim = async (props: SystemProps.BattleClaimProps) => {
+    console.log(props);
+    await provider.battle_claim(props);
+  };
+
+  const battle_pillage = async (props: SystemProps.BattlePillageProps) => {
+    await provider.battle_pillage(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -232,6 +245,9 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
     battle_start,
     battle_leave,
+    battle_claim,
+    battle_pillage,
+    battle_leave_and_claim,
   };
 
   // TODO: Fix Type

@@ -16,7 +16,7 @@ export const BattleView = () => {
     selectedEntity: state.selectedEntity,
   }));
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
-  
+
   const { attackerArmy, defenderArmy, structure } = useMemo(() => {
     return getArmiesAndStructure(battleView!);
   }, [battleView?.defenders]);
@@ -77,7 +77,7 @@ export const BattleView = () => {
             : undefined
         }
         defenderArmyHealth={
-          battleAdjusted ? battleAdjusted.defence_army_health.current : BigInt(updatedDefender.current)
+          battleAdjusted ? battleAdjusted.defence_army_health.current : BigInt(updatedDefender?.current || 0)
         }
         structure={structure}
       />

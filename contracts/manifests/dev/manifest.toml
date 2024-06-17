@@ -5,7 +5,7 @@ original_class_hash = "0xf6f44afb3cacbcc01a371aff62c86ca9a45feba065424c99f7cd863
 abi = "manifests/dev/abis/deployments/dojo_world_world.json"
 address = "0x455860f93fad20b93ab401eaf9bb63bf86a8222ffe4b0a4216d4694603f4723"
 transaction_hash = "0x4fbfb8faf344e3f8a79b6953ee5834d51e078f7106aba74274dd726973ed71"
-block_number = 18
+block_number = 23
 seed = "eternum"
 name = "dojo::world::world"
 
@@ -74,8 +74,8 @@ name = "eternum::systems::buildings::contracts::building_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x6b8160ef19de56744f1a46d5e24c40b2c1b85e0b17eee6b435fd9e7b836313d"
-class_hash = "0x413560a53d58dc0928ed0d8977f771476e3c85317415c370c7fff8f33bcac25"
-original_class_hash = "0x413560a53d58dc0928ed0d8977f771476e3c85317415c370c7fff8f33bcac25"
+class_hash = "0xeffd824163db1983a754c0da44d6beb413beab0e7fba20c6d4de3e8d3cb87c"
+original_class_hash = "0xeffd824163db1983a754c0da44d6beb413beab0e7fba20c6d4de3e8d3cb87c"
 base_class_hash = "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46"
 abi = "manifests/dev/abis/deployments/contracts/eternum_systems_combat_contracts_combat_systems.json"
 reads = []
@@ -165,8 +165,8 @@ name = "eternum::systems::leveling::contracts::leveling_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x91d23f4fadfd2a3377dcc590e08f9a78863bced66de67e8f49ed3412a8144c"
-class_hash = "0x284e4cb1e08ced62df5395f1d09849d9387e2dcc54cddddece84f4f19fbf588"
-original_class_hash = "0x284e4cb1e08ced62df5395f1d09849d9387e2dcc54cddddece84f4f19fbf588"
+class_hash = "0x22a171a4fb02ee4fdf2eaa0df6827fab190b1f4d73a3f9564718603d1e2cc3"
+original_class_hash = "0x22a171a4fb02ee4fdf2eaa0df6827fab190b1f4d73a3f9564718603d1e2cc3"
 base_class_hash = "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46"
 abi = "manifests/dev/abis/deployments/contracts/eternum_systems_map_contracts_map_systems.json"
 reads = []
@@ -1272,23 +1272,6 @@ key = false
 
 [[models.members]]
 name = "valid_until"
-type = "u64"
-key = false
-
-[[models]]
-kind = "DojoModel"
-class_hash = "0x7f7358235c8d086b40038dd305c40caa278fc9d5edebc8645e209b52fca5bea"
-original_class_hash = "0x7f7358235c8d086b40038dd305c40caa278fc9d5edebc8645e209b52fca5bea"
-abi = "manifests/dev/abis/deployments/models/eternum_models_loyalty_loyalty.json"
-name = "eternum::models::loyalty::loyalty"
-
-[[models.members]]
-name = "entity_id"
-type = "u128"
-key = true
-
-[[models.members]]
-name = "last_updated_tick"
 type = "u64"
 key = false
 

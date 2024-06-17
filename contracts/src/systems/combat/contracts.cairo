@@ -349,6 +349,7 @@ trait ICombatContract<TContractState> {
 
 #[dojo::contract]
 mod combat_systems {
+    use core::traits::Destruct;
     use core::array::SpanTrait;
     use core::integer::BoundedInt;
     use core::option::OptionTrait;
@@ -782,6 +783,10 @@ mod combat_systems {
                 assert!(
                     !structure_army_health.is_alive(), "can only claim when structure army is dead"
                 );
+
+                let mut structure_army_owner: Owner = get!(world, structure_army_id, Owner);
+                structure_army_owner.address = starknet::get_caller_address();
+                set!(world, (structure_army_owner))
             }
 
             // pass ownership of structure to claimer
@@ -790,6 +795,10 @@ mod combat_systems {
                 .entity_owner_id;
             structure_owner_entity.entity_owner_id = claimer_army_owner_entity_id;
             set!(world, (structure_owner_entity));
+
+            let mut structure_owner: Owner = get!(world, structure_id, Owner);
+            structure_owner.address = starknet::get_caller_address();
+            set!(world, (structure_owner));
         }
 
 

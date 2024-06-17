@@ -87,11 +87,13 @@ export const StructureCard = ({
                 &lt; Back
               </Button>
 
-              <MergeTroopsPanel
-                giverArmy={ownArmySelected!}
-                structureEntityId={BigInt(target.entity_id)}
-                structureName={target.name}
-              />
+              {ownArmySelected && (
+                <MergeTroopsPanel
+                  giverArmy={ownArmySelected}
+                  structureEntityId={BigInt(target.entity_id)}
+                  structureName={target.name}
+                />
+              )}
             </div>
           )}
         </div>
