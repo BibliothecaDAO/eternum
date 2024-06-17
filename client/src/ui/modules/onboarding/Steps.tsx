@@ -14,7 +14,7 @@ import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import { displayAddress } from "@/ui/utils/utils";
-import { QuestType } from "@bibliothecadao/eternum";
+import { QuestType, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { useTour } from "@reactour/tour";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
@@ -96,6 +96,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
       setLoading(false);
     }
   };
+
   const onCopy = () => {
     const burners = localStorage.getItem("burners");
     if (burners) {
@@ -179,7 +180,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                 <div className="flex w-full h-full z-1000">
                   <TextInput
                     placeholder="Your Name... (Max 31 characters)"
-                    maxLength={31}
+                    maxLength={MAX_NAME_LENGTH}
                     value={inputName}
                     onChange={setInputName}
                   />
@@ -266,7 +267,13 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
         {playerRealms().length > 0 ? (
           <NavigateToRealm text={"begin"} />
         ) : (
-          <Button disabled={!name || addressIsMaster} size="md" className="mx-auto" variant="primary" onClick={onNext}>
+          <Button
+            disabled={!addressName || addressIsMaster}
+            size="md"
+            className="mx-auto"
+            variant="primary"
+            onClick={onNext}
+          >
             Continue <ArrowRight className="w-2 fill-current ml-3" />
           </Button>
         )}
