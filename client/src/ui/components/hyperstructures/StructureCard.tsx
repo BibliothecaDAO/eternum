@@ -50,7 +50,7 @@ export const StructureCard = ({
             variant="primary"
             onClick={() =>
               setBattleView({
-                attackers: [ownArmySelected],
+                attackers: [BigInt(ownArmySelected.entity_id)],
                 defenders: { type: CombatTarget.Structure, entities: target as Realm | Structure },
               })
             }
@@ -87,11 +87,13 @@ export const StructureCard = ({
                 &lt; Back
               </Button>
 
-              <MergeTroopsPanel
-                giverArmy={ownArmySelected!}
-                structureEntityId={BigInt(target.entity_id)}
-                structureName={target.name}
-              />
+              {ownArmySelected && (
+                <MergeTroopsPanel
+                  giverArmy={ownArmySelected}
+                  structureEntityId={BigInt(target.entity_id)}
+                  structureName={target.name}
+                />
+              )}
             </div>
           )}
         </div>

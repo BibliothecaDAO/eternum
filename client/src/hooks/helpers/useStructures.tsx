@@ -17,9 +17,13 @@ export type Realm = ClientComponents["Realm"]["schema"] & {
   protector: ArmyInfo | undefined;
 };
 
-export type Structure = ClientComponents["Structure"]["schema"] &
-  ClientComponents["EntityOwner"]["schema"] &
-  ClientComponents["Owner"]["schema"] & { isMine: boolean; name: string; protector: ArmyInfo | undefined };
+export type Structure = ClientComponents["Structure"]["schema"] & {
+  isMine: boolean;
+  name: string;
+  protector: ArmyInfo | undefined;
+  owner: ClientComponents["Owner"]["schema"];
+  entityOwner: ClientComponents["EntityOwner"]["schema"];
+};
 
 export type FullStructure = ClientComponents["Structure"]["schema"] & {
   entityOwner: ClientComponents["EntityOwner"]["schema"];
@@ -143,7 +147,6 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
         getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id) || 0n]),
       ) as unknown as ClientComponents["Owner"]["schema"];
       const name = getRealmNameById(entityId);
-
       let protector: ClientComponents["Protector"]["schema"] | undefined | ArmyInfo = getComponentValue(
         Protector,
         entityId,
@@ -152,8 +155,8 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
 
       return {
         ...structure,
-        ...entityOwner,
-        ...owner,
+        entityOwner,
+        owner,
         name,
         protector: protector as ArmyInfo | undefined,
         isMine: BigInt(owner!.address) === BigInt(account.address),

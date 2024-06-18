@@ -1,7 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuery } from "@/hooks/helpers/useQuery";
-import { useModal } from "@/hooks/store/useModal";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
@@ -34,7 +33,6 @@ export const TopMiddleNavigation = () => {
   const [location, setLocation] = useLocation();
 
   const { setup } = useDojo();
-  const { toggleModal } = useModal();
   const { playerStructures } = useEntities();
   const { hexPosition } = useQuery();
 

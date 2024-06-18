@@ -21,7 +21,6 @@ export const MiniMap = () => {
 };
 
 export const MiniMapMesh = () => {
-  const setCameraPosition = useUIStore((state) => state.setCameraPosition);
   const setCameraTarget = useUIStore((state) => state.setCameraTarget);
 
   const { mouse, camera, raycaster } = useThree();

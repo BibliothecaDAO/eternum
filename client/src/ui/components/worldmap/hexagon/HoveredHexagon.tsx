@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import useUIStore from "@/hooks/store/useUIStore";
+import { EXPLORE_COLOUR, TRAVEL_COLOUR } from "@/ui/config";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { Image } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import useUIStore from "@/hooks/store/useUIStore";
-import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import * as THREE from "three";
-import { EXPLORE_COLOUR, TRAVEL_COLOUR } from "@/ui/config";
+import { useEffect, useMemo, useRef } from "react";
 
 export const HoveredHexagon = () => {
   const imageRef = useRef<any>();

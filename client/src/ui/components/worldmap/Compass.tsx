@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 
 export const Compass = () => {

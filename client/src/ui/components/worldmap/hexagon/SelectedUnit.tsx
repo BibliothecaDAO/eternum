@@ -1,9 +1,7 @@
-import React, { useMemo, useRef, useState } from "react";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { Image, Points } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import useUIStore from "@/hooks/store/useUIStore";
-import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { PointLight } from "three";
+import { useMemo, useRef, useState } from "react";
 
 interface SelectedUnitProps {
   position: {

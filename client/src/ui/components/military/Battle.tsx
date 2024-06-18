@@ -13,31 +13,27 @@ import { Subscription } from "rxjs";
 import { BUILDING_IMAGES_PATH } from "../construction/SelectPreviewBuilding";
 import { ArmyChip } from "./ArmyChip";
 
-export const EnnemyArmies = ({
-  armies,
-  ownArmySelected,
-}: {
-  armies: ArmyInfo[];
-  ownArmySelected: ArmyInfo | undefined;
-}) => {
-  const { setBattleView } = useUIStore(({ setBattleView }) => ({
-    setBattleView,
-  }));
+export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; ownArmySelected: ArmyInfo }) => {
+  const setBattleView = useUIStore((state) => state.setBattleView);
 
   return (
     <div>
       {armies.length !== 0 && (
         <>
-          <Headline className="my-3">Ennemy armies</Headline>
+          <Headline className="my-3">Enemy armies</Headline>
           <div className="grid grid-cols-1 gap-2">
             {armies.map((army: ArmyInfo, index) => {
+              const { attacker, defender } =
+                String(army.battle_side) === "Attacker"
+                  ? { attacker: army, defender: ownArmySelected }
+                  : { attacker: ownArmySelected, defender: army };
               const extraButton =
                 ownArmySelected && !army.isMine ? (
                   <Button
                     onClick={() =>
                       setBattleView({
-                        attackers: [ownArmySelected!],
-                        defenders: { type: CombatTarget.Army, entities: [army] },
+                        attackers: [BigInt(attacker.entity_id)],
+                        defenders: { type: CombatTarget.Army, entities: [BigInt(defender.entity_id)] },
                       })
                     }
                   >

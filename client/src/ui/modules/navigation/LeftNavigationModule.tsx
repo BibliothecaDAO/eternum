@@ -1,3 +1,5 @@
+import { useEntityArmies } from "@/hooks/helpers/useArmies";
+import { useStamina } from "@/hooks/helpers/useStamina";
 import useUIStore from "@/hooks/store/useUIStore";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
@@ -5,7 +7,7 @@ import { BaseContainer } from "@/ui/containers/BaseContainer";
 import Button from "@/ui/elements/Button";
 import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
 import { Military } from "@/ui/modules/military/Military";
-import { useTour } from "@reactour/tour";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { debounce } from "lodash";
 import { ArrowRight } from "lucide-react";
@@ -22,9 +24,6 @@ import { Questing } from "../questing/Questing";
 import { SettingsWindow } from "../settings/Settings";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
-import { useEntityArmies } from "@/hooks/helpers/useArmies";
-import { useStamina } from "@/hooks/helpers/useStamina";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -54,12 +53,9 @@ export enum View {
 
 export const LeftNavigationModule = () => {
   const [lastView, setLastView] = useState<View>(View.None);
-  const { leftNavigationView: view, setLeftNavigationView: setView } = useUIStore(
-    ({ leftNavigationView, setLeftNavigationView }) => ({
-      leftNavigationView,
-      setLeftNavigationView,
-    }),
-  );
+
+  const view = useUIStore((state) => state.leftNavigationView);
+  const setView = useUIStore((state) => state.setLeftNavigationView);
 
   const { realmEntityId } = useRealmStore();
   const { getStamina } = useStamina();

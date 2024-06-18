@@ -10,20 +10,16 @@ import { getPositionsAtIndex } from "./utils";
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const { exploreHex } = useExplore();
   const { travelToHex } = useTravel();
+
   const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
   const setHoveredHex = useUIStore((state) => state.setHoveredHex);
-
-  const { hexData, hoveredHex, selectedEntity, setClickedHex, clickedHex, travelPaths, clearSelection } = useUIStore(
-    (state) => ({
-      hexData: state.hexData,
-      hoveredHex: state.hoveredHex,
-      selectedEntity: state.selectedEntity,
-      setClickedHex: state.setClickedHex,
-      clickedHex: state.clickedHex,
-      travelPaths: state.travelPaths,
-      clearSelection: state.clearSelection,
-    }),
-  );
+  const hexData = useUIStore((state) => state.hexData);
+  const hoveredHex = useUIStore((state) => state.hoveredHex);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const setClickedHex = useUIStore((state) => state.setClickedHex);
+  const clickedHex = useUIStore((state) => state.clickedHex);
+  const travelPaths = useUIStore((state) => state.travelPaths);
+  const clearSelection = useUIStore((state) => state.clearSelection);
 
   const setExploreNotification = useNotificationsStore((state) => state.setExploreNotification);
 

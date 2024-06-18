@@ -1,28 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { useDojo } from "../context/DojoContext";
-import useBlockchainStore from "../store/useBlockchainStore";
-import useRealmStore from "../store/useRealmStore";
-import { useLevel } from "../helpers/useLevel";
-import { EventType, NotificationType, useNotificationsStore } from "../store/useNotificationsStore";
-import { useResources } from "../helpers/useResources";
-import {
-  generateEmptyChestNotifications,
-  // generateArrivedAtHyperstructureNotifications,
-  generateEnemyRaidersHaveArrivedNotifications,
-  generateYourRaidersHaveArrivedNotifications,
-} from "./generateNotifications";
-import { useRealmsPosition, useRealmsResource, createCombatNotification, createDirectOfferNotification } from "./utils";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-// import { useHyperstructure } from "../helpers/useHyperstructure";
-import { parseCombatEvent } from "../../ui/utils/combat";
-import useUIStore from "../store/useUIStore";
+import { useEffect, useState } from "react";
 import { Subscription } from "rxjs";
+import { parseCombatEvent } from "../../ui/utils/combat";
+import { useDojo } from "../context/DojoContext";
+import { useResources } from "../helpers/useResources";
+import useBlockchainStore from "../store/useBlockchainStore";
+import { NotificationType, useNotificationsStore } from "../store/useNotificationsStore";
+import useRealmStore from "../store/useRealmStore";
+import { generateEmptyChestNotifications } from "./generateNotifications";
+import { createCombatNotification, createDirectOfferNotification, useRealmsPosition } from "./utils";
 
 export const useNotifications = () => {
   const {
     setup: {
-      account: { account },
       updates: {
         eventUpdates: { createCombatEvents, createTravelEvents, createDirectOffersEvents },
       },
@@ -32,68 +23,16 @@ export const useNotifications = () => {
 
   const [closedNotifications, setClosedNotifications] = useState<Record<string, boolean>>({});
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const { realmEntityIds, realmEntityId } = useRealmStore();
-  const realmsResources = useRealmsResource(realmEntityIds);
+  const { realmEntityIds } = useRealmStore();
   const realmPositions = useRealmsPosition(realmEntityIds);
-  // const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
-  const conqueredHyperstructureNumber = 0;
 
-  // const hyperstructure = useMemo(() => {
-  //   const hyperstructureId = getHyperstructureIdByRealmEntityId(realmEntityId);
-  //   if (hyperstructureId) {
-  //     const position = getComponentValue(components.Position, getEntityIdFromKeys([hyperstructureId]));
-  //     return position ? { hyperstructureId, position: { x: position.x, y: position.y } } : undefined;
-  //   }
-  // }, [hyperstructureId]);
-
-  const { getEntityLevel, getHyperstructureLevelBonus, getRealmLevelBonus } = useLevel();
   const { getResourcesFromBalance } = useResources();
 
   const { notifications, addUniqueNotifications } = useNotificationsStore();
 
-  // get harvest bonuses
-  const [realmLevel, hyperstructureLevel] = useMemo(() => {
-    const realmLevel = getEntityLevel(realmEntityId)?.level || 0;
-    return [realmLevel, conqueredHyperstructureNumber * 25 + 100];
-  }, [realmEntityId]);
-
-  /**
-   * Labor notifications
-   */
   useEffect(() => {
     const updateNotifications = () => {
       let newNotifications: NotificationType[] = [];
-
-      if (nextBlockTimestamp) {
-        // let laborNotifications = generateLaborNotifications(
-        //   realmsResources,
-        //   getRealmLevelBonus,
-        //   getHyperstructureLevelBonus,
-        //   nextBlockTimestamp,
-        //   realmLevel,
-        //   hyperstructureLevel || 0,
-        //   components,
-        // );
-        // newNotifications = newNotifications.concat(laborNotifications);
-        // let emptyChestNotifications =
-        // generateEmptyChestNotifications(
-        //   realmPositions,
-        //   components,
-        //   nextBlockTimestamp,
-        //   getResourcesFromBalance,
-        // );
-        // newNotifications = newNotifications.concat(emptyChestNotifications);
-        // if (hyperstructure) {
-        //   let arrivedAtHyperstructureNotifications = generateArrivedAtHyperstructureNotifications(
-        //     BigInt(account.address),
-        //     nextBlockTimestamp,
-        //     components,
-        //     hyperstructure,
-        //     getResourcesFromBalance,
-        //   );
-        //   newNotifications = newNotifications.concat(arrivedAtHyperstructureNotifications);
-        // }
-      }
       // add only add if not already in there
       addUniqueNotifications(newNotifications);
     };
@@ -151,10 +90,7 @@ export const useNotifications = () => {
         const subscription = observable.subscribe((event) => {
           if (event) {
             let parsedEvent = parseCombatEvent(event);
-            parsedEvent.stolenResources = parsedEvent.stolenResources
-              .concat
-              // getResourcesFromResourceChestIds(parsedEvent.stolenChestsIds),
-              ();
+            parsedEvent.stolenResources = parsedEvent.stolenResources.concat();
             const newNotification = createCombatNotification(parsedEvent);
             addUniqueNotifications([newNotification]);
           }
