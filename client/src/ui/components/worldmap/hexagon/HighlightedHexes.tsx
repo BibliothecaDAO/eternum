@@ -1,8 +1,8 @@
-import useUIStore from "../../../../hooks/store/useUIStore";
-import * as THREE from "three";
-import { useFrame } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
 import { placeholderMaterial } from "@/shaders/placeholderMaterial";
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+import * as THREE from "three";
+import useUIStore from "../../../../hooks/store/useUIStore";
 import { createHexagonShape } from "./HexagonGeometry";
 
 const hexMaterial = placeholderMaterial.clone();

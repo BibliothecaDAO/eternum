@@ -21,9 +21,7 @@ export const BattleStarter = ({
   defenderArmyHealth: bigint;
   structure: Structure | Realm | undefined;
 }) => {
-  const { setBattleView } = useUIStore((state) => ({
-    setBattleView: state.setBattleView,
-  }));
+  const setBattleView = useUIStore((state) => state.setBattleView);
   const attackingHealth = { current: Number(attackerArmyHealth), lifetime: Number(attackerArmy.lifetime) };
   const defendingHealth = defenderArmy
     ? { current: Number(defenderArmyHealth), lifetime: Number(defenderArmy.lifetime) }

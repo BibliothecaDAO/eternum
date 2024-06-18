@@ -1,9 +1,5 @@
-import { useMemo, useState } from "react";
-import { SecondaryPopup } from "../../elements/SecondaryPopup";
-import TextInput from "../../elements/TextInput";
-import Button from "../../elements/Button";
-import { SortPanel } from "../../elements/SortPanel";
-import { SortButton, SortInterface } from "../../elements/SortButton";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { useTravel } from "@/hooks/helpers/useTravel";
 import {
   EternumGlobalConfig,
   MarketInterface,
@@ -12,23 +8,24 @@ import {
   orderNameDict,
   resources,
 } from "@bibliothecadao/eternum";
-import { ResourceIcon } from "../../elements/ResourceIcon";
-import { useGetMyOffers, useTrade } from "../../../hooks/helpers/useTrade";
-import { FiltersPanel } from "../../elements/FiltersPanel";
-import { FilterButton } from "../../elements/FilterButton";
-import { useGetRealm } from "../../../hooks/helpers/useRealm";
-import * as realmsData from "../../../data/geodata/realms.json";
-import { OrderIcon } from "../../elements/OrderIcon";
-import useRealmStore from "../../../hooks/store/useRealmStore";
-import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
 import clsx from "clsx";
-import useUIStore from "../../../hooks/store/useUIStore";
-import { getComponentValue } from "@dojoengine/recs";
+import { useMemo, useState } from "react";
+import * as realmsData from "../../../data/geodata/realms.json";
 import { useDojo } from "../../../hooks/context/DojoContext";
+import { useGetRealm } from "../../../hooks/helpers/useRealm";
+import { useGetMyOffers, useTrade } from "../../../hooks/helpers/useTrade";
 import useMarketStore from "../../../hooks/store/useMarketStore";
-import { useCaravan } from "../../../hooks/helpers/useCaravans";
-import { useTravel } from "@/hooks/helpers/useTravel";
-import { useProductionManager, useResourceBalance } from "@/hooks/helpers/useResources";
+import useRealmStore from "../../../hooks/store/useRealmStore";
+import useUIStore from "../../../hooks/store/useUIStore";
+import Button from "../../elements/Button";
+import { FilterButton } from "../../elements/FilterButton";
+import { FiltersPanel } from "../../elements/FiltersPanel";
+import { OrderIcon } from "../../elements/OrderIcon";
+import { ResourceIcon } from "../../elements/ResourceIcon";
+import { SortButton, SortInterface } from "../../elements/SortButton";
+import { SortPanel } from "../../elements/SortPanel";
+import TextInput from "../../elements/TextInput";
+import { currencyFormat, divideByPrecision } from "../../utils/utils";
 
 interface MarketplaceProps {
   onCreateOffer: (resourceId: number | null, isBuy: boolean) => void;

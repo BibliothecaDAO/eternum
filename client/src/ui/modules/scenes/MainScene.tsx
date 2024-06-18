@@ -1,20 +1,20 @@
+import { AdaptiveDpr, Bvh, CameraShake, Cloud, Clouds, Stats } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { WorldMapScene } from "./WorldMapScene";
-import { HexceptionViewScene } from "./HexceptionViewScene";
-import useUIStore from "../../../hooks/store/useUIStore";
+import { Bloom, BrightnessContrast, EffectComposer, Noise, SMAA } from "@react-three/postprocessing";
 import { Perf } from "r3f-perf";
-import { useLocation, Switch, Route } from "wouter";
-import { AdaptiveDpr, Bvh, BakeShadows, CameraShake, Stats, Clouds, Cloud } from "@react-three/drei";
 import { Suspense, useMemo } from "react";
-import { EffectComposer, Bloom, Noise, SMAA, BrightnessContrast, ToneMapping } from "@react-three/postprocessing";
+import { Route, Switch, useLocation } from "wouter";
+import useUIStore from "../../../hooks/store/useUIStore";
+import { HexceptionViewScene } from "./HexceptionViewScene";
+import { WorldMapScene } from "./WorldMapScene";
 // @ts-ignore
-import { useControls } from "leva";
-import { CameraControls } from "../../utils/Camera";
-import { BlendFunction } from "postprocessing";
-import FPSLimiter from "../../utils/FPSLimiter";
+import { DepthOfField, Vignette } from "@react-three/postprocessing";
 import clsx from "clsx";
-import { DepthOfField, Pixelation, Vignette, ColorAverage } from "@react-three/postprocessing";
+import { useControls } from "leva";
+import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
+import { CameraControls } from "../../utils/Camera";
+import FPSLimiter from "../../utils/FPSLimiter";
 
 export const Camera = () => {
   const cameraPosition = useUIStore((state) => state.cameraPosition);

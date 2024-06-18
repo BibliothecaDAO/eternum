@@ -11,10 +11,9 @@ import { BattleStarter } from "./BattleStarter";
 import { OngoingBattle } from "./OngoingBattle";
 
 export const BattleView = () => {
-  const { battleView, selectedEntity } = useUIStore((state) => ({
-    battleView: state.battleView,
-    selectedEntity: state.selectedEntity,
-  }));
+  const battleView = useUIStore((state) => state.battleView);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
 
   const { attackerArmy, defenderArmy, structure } = useMemo(() => {

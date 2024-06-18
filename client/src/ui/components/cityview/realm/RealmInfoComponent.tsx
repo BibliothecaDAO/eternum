@@ -50,7 +50,6 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
   const [showRealmLevelUp, setShowRealmLevelUp] = useState(false);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
-  const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const { realmEntityId } = useRealmStore();

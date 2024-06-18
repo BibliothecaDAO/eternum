@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { SortButton, SortInterface } from "../../../elements/SortButton";
-import { SortPanel } from "../../../elements/SortPanel";
-import { OrderIcon } from "../../../elements/OrderIcon";
-import useUIStore from "../../../../hooks/store/useUIStore";
 import useLeaderBoardStore, { GuildPointsLeaderboardInterface } from "../../../../hooks/store/useLeaderBoardStore";
 import Button from "../../../elements/Button";
+import { SortButton, SortInterface } from "../../../elements/SortButton";
+import { SortPanel } from "../../../elements/SortPanel";
 import { currencyIntlFormat, sortItems } from "../../../utils/utils";
 
 type GuildPointsLeaderboardKeys = keyof GuildPointsLeaderboardInterface;
@@ -23,8 +21,6 @@ export const GuildsLeaderboard = () => {
   });
 
   const guildPointsLeaderboard = useLeaderBoardStore((state) => state.guildPointsLeaderboard);
-
-  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const sortingParams: SortingParamGuildPointsLeaderboard[] = useMemo(() => {
     return [

@@ -33,7 +33,6 @@ export const World = () => {
 
   const showModal = useUIStore((state) => state.showModal);
   const modalContent = useUIStore((state) => state.modalContent);
-  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const battleView = useUIStore((state) => state.battleView);
 

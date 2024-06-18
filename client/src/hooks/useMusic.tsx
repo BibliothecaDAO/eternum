@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import useSound from "use-sound";
 import useUIStore from "./store/useUIStore";
 

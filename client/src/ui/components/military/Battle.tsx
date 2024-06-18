@@ -14,9 +14,7 @@ import { BUILDING_IMAGES_PATH } from "../construction/SelectPreviewBuilding";
 import { ArmyChip } from "./ArmyChip";
 
 export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; ownArmySelected: ArmyInfo }) => {
-  const { setBattleView } = useUIStore(({ setBattleView }) => ({
-    setBattleView,
-  }));
+  const setBattleView = useUIStore((state) => state.setBattleView);
 
   return (
     <div>

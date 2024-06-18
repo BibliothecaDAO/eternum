@@ -17,13 +17,9 @@ type ToShow = {
 };
 
 export const HexagonInformationPanel = () => {
-  const { clickedHex, selectedEntity, setSelectedEntity } = useUIStore(
-    ({ clickedHex, selectedEntity, setSelectedEntity }) => ({
-      clickedHex,
-      selectedEntity,
-      setSelectedEntity,
-    }),
-  );
+  const clickedHex = useUIStore((state) => state.clickedHex);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
 
   const hexPosition = useMemo(() => {
     if (selectedEntity) return { x: selectedEntity.position.x, y: selectedEntity.position.y };

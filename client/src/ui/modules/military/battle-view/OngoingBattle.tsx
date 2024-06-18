@@ -26,10 +26,7 @@ export const OngoingBattle = ({
   const battleAdjusted = useMemo(() => {
     return battleManager.getUpdatedBattle(currentDefaultTick);
   }, [currentDefaultTick]);
-
-  const { setBattleView } = useUIStore((state) => ({
-    setBattleView: state.setBattleView,
-  }));
+  const setBattleView = useUIStore((state) => state.setBattleView);
 
   const attackingHealth =
     battleAdjusted === undefined
