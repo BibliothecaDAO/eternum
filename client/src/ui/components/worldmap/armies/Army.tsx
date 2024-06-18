@@ -39,7 +39,7 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
       const uiPath = findShortestPathBFS(startPos, endPos, exploredHexes).map((pos) =>
         getUIPositionFromColRow(pos.x, pos.y),
       );
-      setAnimationPath(uiPath);
+      setAnimationPath(uiPath.map((pos) => applyOffset(pos)));
       prevPositionRef.current = { x: army.x, y: army.y };
     }
   }, [army]);
@@ -82,13 +82,9 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
     }
 
     const progressBetweenPoints = (progress - (1 / animationPath.length) * pathIndex) * animationPath.length;
-    const applyOffset = (point: { x: number; y: number }, isFirstOrLast: boolean) => ({
-      x: point.x + (isFirstOrLast ? army.offset.x : 0),
-      y: point.y + (isFirstOrLast ? army.offset.y : 0),
-    });
 
-    const startPoint = applyOffset(currentPath[0], pathIndex === 0);
-    const endPoint = applyOffset(currentPath[1], pathIndex === animationPath.length - 2);
+    const startPoint = currentPath[0];
+    const endPoint = currentPath[1];
     const currentPos = {
       x: startPoint.x + (endPoint.x - startPoint.x) * progressBetweenPoints,
       y: startPoint.y + (endPoint.y - startPoint.y) * progressBetweenPoints,
@@ -118,6 +114,15 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
     e.stopPropagation();
     setHovered(false);
   }, []);
+
+  const applyOffset = useCallback(
+    (point: UIPosition) => ({
+      x: point.x + army.offset.x,
+      y: point.y + army.offset.y,
+      z: point.z,
+    }),
+    [army],
+  );
 
   const showArmyInfo = useMemo(() => {
     return showAllArmies || hovered;
