@@ -1,3 +1,4 @@
+import React from "react";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { getRealmOrderNameById } from "@/ui/utils/realms";
@@ -21,16 +22,16 @@ type ArmyProps = {
   army: ArmyInfo;
 };
 
-export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
+export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["group"]) => {
   const { play: playBuildMilitary } = useUiSounds(soundSelector.hoverClick);
   const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
 
   const [animationPath, setAnimationPath] = useState<UIPosition[] | null>(null);
   const [hovered, setHovered] = useState(false);
 
-  const startAnimationTimeRef = useRef<number | null>(null);
   const prevPositionRef = useRef<Position | null>(null);
   const groupRef = useRef<Group>(null);
+  const currentIndex = useRef(1);
 
   useEffect(() => {
     if (!prevPositionRef.current) {
@@ -46,7 +47,7 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
       setAnimationPath(uiPath.map((pos) => applyOffset(pos)));
       prevPositionRef.current = { x: army.x, y: army.y };
     }
-  }, [army]);
+  }, [army.x, army.y]);
 
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
@@ -61,42 +62,21 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
     return new Vector3(army.uiPos.x + army.offset.x, 0.32, -army.uiPos.y - army.offset.y);
   }, []);
 
+  const vec = new Vector3();
+
   useFrame(() => {
-    if (!animationPath) return;
+    if (!animationPath || !groupRef.current) return;
+    const pos = animationPath[currentIndex.current];
+    vec.set(pos.x, 0.32, -pos.y);
+    groupRef.current.position.lerp(vec, 0.2);
 
-    const now = Date.now();
-    const startTime = startAnimationTimeRef.current ?? now;
-    if (!startAnimationTimeRef.current) {
-      startAnimationTimeRef.current = now;
+    if (vec.distanceTo(groupRef.current.position) < 0.1) {
+      currentIndex.current++;
     }
 
-    const timeElapsed = now - startTime;
-    const timeToComplete = animationPath.length * 1000;
-    const progress = Math.min(timeElapsed / timeToComplete, 1);
-    const pathIndex = Math.floor(progress * animationPath.length);
-    const currentPath = animationPath.slice(pathIndex, pathIndex + 2);
-
-    if (progress >= 1 || currentPath.length < 2) {
+    if (currentIndex.current >= animationPath.length) {
       setAnimationPath(null);
-      startAnimationTimeRef.current = null;
-      return;
-    }
-
-    const progressBetweenPoints = (progress - (1 / animationPath.length) * pathIndex) * animationPath.length;
-
-    const startPoint = currentPath[0];
-    const endPoint = currentPath[1];
-    const currentPos = {
-      x: startPoint.x + (endPoint.x - startPoint.x) * progressBetweenPoints,
-      y: startPoint.y + (endPoint.y - startPoint.y) * progressBetweenPoints,
-    };
-
-    const direction = new Vector3(endPoint.x - startPoint.x, 0, -(endPoint.y - startPoint.y)).normalize();
-    groupRef.current?.position.set(currentPos.x, 0.32, -currentPos.y);
-
-    if (!direction.equals(new Vector3(0, 0, 0))) {
-      const rotation = Math.atan2(direction.x, direction.z);
-      groupRef.current?.rotation.set(0, rotation, 0);
+      currentIndex.current = 1;
     }
   });
 
@@ -157,6 +137,14 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
       {isSelected && <SelectedUnit position={{ x: army.x, y: army.y }} />}
     </>
   );
+}, arePropsEqual);
+
+// Comparison function to determine if props are equal
+function arePropsEqual(
+  prevProps: ArmyProps & JSX.IntrinsicElements["group"],
+  nextProps: ArmyProps & JSX.IntrinsicElements["group"],
+) {
+  return prevProps.army.x === nextProps.army.x && prevProps.army.y === nextProps.army.y;
 }
 
 export const ArmyFlag = ({ position, rotationY }: { position: Vector3; rotationY: number }) => {
