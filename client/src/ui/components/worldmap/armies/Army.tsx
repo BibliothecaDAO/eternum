@@ -13,6 +13,9 @@ import { BannerFlag } from "../BannerFlag";
 import { SelectedUnit } from "../hexagon/SelectedUnit";
 import { ArmyInfoLabel } from "./ArmyInfoLabel";
 import { CombatLabel } from "./CombatLabel";
+import { Position, UIPosition } from "@bibliothecadao/eternum";
+import { findShortestPathBFS } from "../hexagon/utils";
+import { useExploredHexesStore } from "../hexagon/WorldHexagon";
 
 type ArmyProps = {
   army: ArmyInfo;
@@ -21,16 +24,32 @@ type ArmyProps = {
 export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
   const { play: playBuildMilitary } = useUiSounds(soundSelector.hoverClick);
   const startAnimationTimeRef = useRef<number | null>(null);
+  const prevPositionRef = useRef<Position | null>(null);
+  const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
+  const [animationPath, setAnimationPath] = useState<UIPosition[] | null>(null);
+
+  useEffect(() => {
+    if (!prevPositionRef.current) {
+      prevPositionRef.current = { x: army.x, y: army.y };
+      return;
+    }
+    if (prevPositionRef.current.x === army.x && prevPositionRef.current.y === army.y) {
+    } else {
+      const startPos = { x: prevPositionRef.current.x, y: prevPositionRef.current.y };
+      const endPos = { x: army.x, y: army.y };
+      const uiPath = findShortestPathBFS(startPos, endPos, exploredHexes).map((pos) =>
+        getUIPositionFromColRow(pos.x, pos.y),
+      );
+
+      setAnimationPath(uiPath);
+    }
+  }, [army]);
 
   const [isRunning, setIsRunning] = useState(false);
 
-  const animationPaths = useUIStore((state) => state.animationPaths);
-  const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const showAllArmies = useUIStore((state) => state.showAllArmies);
-
-  const animationPath = animationPaths.find((path) => path.id === BigInt(army.entity_id));
 
   // Deterministic rotation based on the id
   const deterministicRotation = useMemo(() => {
@@ -44,13 +63,6 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
     new Vector3(army.uiPos.x + army.offset.x, 0.32, -army.uiPos.y - army.offset.y),
   );
 
-  useEffect(() => {
-    if (animationPath) return;
-    const vectorPos = new Vector3(army.uiPos.x + army.offset.x, 0.32, -army.uiPos.y - army.offset.y);
-    if (vectorPos.x === position.x && vectorPos.y === position.y) return;
-    setPosition(vectorPos);
-  }, [army.uiPos]);
-
   useFrame(() => {
     if (!animationPath) return;
 
@@ -61,28 +73,27 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
       startAnimationTimeRef.current = now;
     }
 
-    const uiPath = animationPath.path.map((pos) => getUIPositionFromColRow(pos.x, pos.y));
     const timeElapsed = now - startTime;
-    const timeToComplete = uiPath.length * 1000;
+    const timeToComplete = animationPath.length * 1000;
     const progress = Math.min(timeElapsed / timeToComplete, 1);
-    const pathIndex = Math.floor(progress * uiPath.length);
-    const currentPath = uiPath.slice(pathIndex, pathIndex + 2);
+    const pathIndex = Math.floor(progress * animationPath.length);
+    const currentPath = animationPath.slice(pathIndex, pathIndex + 2);
 
     if (progress >= 1 || currentPath.length < 2) {
       setIsRunning(false);
-      setAnimationPaths(animationPaths.filter((path) => path.id !== animationPath.id));
+      setAnimationPath(null);
       startAnimationTimeRef.current = null;
       return;
     }
 
-    const progressBetweenPoints = (progress - (1 / uiPath.length) * pathIndex) * uiPath.length;
+    const progressBetweenPoints = (progress - (1 / animationPath.length) * pathIndex) * animationPath.length;
     const applyOffset = (point: { x: number; y: number }, isFirstOrLast: boolean) => ({
       x: point.x + (isFirstOrLast ? army.offset.x : 0),
       y: point.y + (isFirstOrLast ? army.offset.y : 0),
     });
 
     const startPoint = applyOffset(currentPath[0], pathIndex === 0);
-    const endPoint = applyOffset(currentPath[1], pathIndex === uiPath.length - 2);
+    const endPoint = applyOffset(currentPath[1], pathIndex === animationPath.length - 2);
     const currentPos = {
       x: startPoint.x + (endPoint.x - startPoint.x) * progressBetweenPoints,
       y: startPoint.y + (endPoint.y - startPoint.y) * progressBetweenPoints,

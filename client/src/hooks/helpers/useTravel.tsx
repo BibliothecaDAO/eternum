@@ -12,8 +12,6 @@ interface TravelToHexProps {
 }
 
 export function useTravel() {
-  const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
-  const animationPaths = useUIStore((state) => state.animationPaths);
   const {
     account: { account },
     setup: {
@@ -50,9 +48,6 @@ export function useTravel() {
 
   const travelToHex = async ({ travelingEntityId, directions, path }: TravelToHexProps) => {
     if (!travelingEntityId) return;
-    const newPath = { id: travelingEntityId, path, enemy: false };
-    const prevPaths = animationPaths.filter((p) => p.id !== travelingEntityId);
-    setAnimationPaths([...prevPaths, newPath]);
 
     const overrideId = optimisticTravelHex(travelingEntityId, path[path.length - 1].x, path[path.length - 1].y);
 
@@ -62,8 +57,6 @@ export function useTravel() {
       directions,
     }).catch(() => {
       components.Position.removeOverride(overrideId);
-      // revert animation so that it goes back to the original position
-      setAnimationPaths([...prevPaths]);
     });
   };
 
