@@ -33,19 +33,16 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
       prevPositionRef.current = { x: army.x, y: army.y };
       return;
     }
-    if (prevPositionRef.current.x === army.x && prevPositionRef.current.y === army.y) {
-    } else {
+    if (prevPositionRef.current.x !== army.x || prevPositionRef.current.y !== army.y) {
       const startPos = { x: prevPositionRef.current.x, y: prevPositionRef.current.y };
       const endPos = { x: army.x, y: army.y };
       const uiPath = findShortestPathBFS(startPos, endPos, exploredHexes).map((pos) =>
         getUIPositionFromColRow(pos.x, pos.y),
       );
-
       setAnimationPath(uiPath);
+      prevPositionRef.current = { x: army.x, y: army.y };
     }
   }, [army]);
-
-  const [isRunning, setIsRunning] = useState(false);
 
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
@@ -69,7 +66,6 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
     const now = Date.now();
     const startTime = startAnimationTimeRef.current ?? now;
     if (!startAnimationTimeRef.current) {
-      setIsRunning(true);
       startAnimationTimeRef.current = now;
     }
 
@@ -80,7 +76,6 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
     const currentPath = animationPath.slice(pathIndex, pathIndex + 2);
 
     if (progress >= 1 || currentPath.length < 2) {
-      setIsRunning(false);
       setAnimationPath(null);
       startAnimationTimeRef.current = null;
       return;
@@ -109,13 +104,10 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
   });
 
   const onRightClick = useCallback(() => {
-    if (!isRunning && army.isMine) {
-      playBuildMilitary();
-    }
-    if ((selectedEntity?.id || 0n) !== BigInt(army.entity_id) && army.isMine) {
+    if (!animationPath && (selectedEntity?.id || 0n) !== BigInt(army.entity_id) && army.isMine) {
       setSelectedEntity({ id: BigInt(army.entity_id), position: { x: army.x, y: army.y } });
     }
-  }, [army.entity_id, army.x, army.y, selectedEntity, playBuildMilitary, setSelectedEntity]);
+  }, [animationPath, army.entity_id, army.x, army.y, selectedEntity, playBuildMilitary, setSelectedEntity]);
 
   const onPointerEnter = useCallback((e: any) => {
     e.stopPropagation();
@@ -138,9 +130,6 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
   const showCombatLabel = useMemo(() => {
     return selectedEntity !== undefined && selectedEntity.id === BigInt(army.entity_id);
   }, [selectedEntity]);
-
-  // Army can be self owned or enemy
-  // location can have a structure or no strucutre and this strucutre can be owned by self or enemy
 
   return (
     <>
