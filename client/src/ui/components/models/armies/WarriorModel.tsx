@@ -2,11 +2,9 @@ import { useGLTF } from "@react-three/drei";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
-type WarriorModelProps = {
-  rotationY: number;
-};
+type WarriorModelProps = {};
 
-export function WarriorModel({ rotationY, ...props }: WarriorModelProps) {
+export function WarriorModel({ ...props }: WarriorModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   const gltf = useGLTF("/models/chess_piece_king.glb");
 
@@ -37,14 +35,7 @@ export function WarriorModel({ rotationY, ...props }: WarriorModelProps) {
   };
 
   return (
-    <group
-      {...props}
-      ref={groupRef}
-      scale={12}
-      rotation={[0, rotationY, 0]}
-      onPointerEnter={handlePointerEnter}
-      onPointerOut={handlePointerOut}
-    >
+    <group {...props} ref={groupRef} scale={12} onPointerEnter={handlePointerEnter} onPointerOut={handlePointerOut}>
       <primitive castShadow receiveShadow object={model} renderOrder={1} />
     </group>
   );

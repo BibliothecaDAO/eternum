@@ -4,7 +4,7 @@ import { getRealmOrderNameById } from "@/ui/utils/realms";
 import { Box } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Vector3 } from "three";
+import { Euler, Group, Vector3 } from "three";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { getUIPositionFromColRow } from "../../../utils/utils";
@@ -23,10 +23,14 @@ type ArmyProps = {
 
 export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
   const { play: playBuildMilitary } = useUiSounds(soundSelector.hoverClick);
+  const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
+
+  const [animationPath, setAnimationPath] = useState<UIPosition[] | null>(null);
+  const [hovered, setHovered] = useState(false);
+
   const startAnimationTimeRef = useRef<number | null>(null);
   const prevPositionRef = useRef<Position | null>(null);
-  const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
-  const [animationPath, setAnimationPath] = useState<UIPosition[] | null>(null);
+  const groupRef = useRef<Group>(null);
 
   useEffect(() => {
     if (!prevPositionRef.current) {
@@ -53,12 +57,9 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
     return (Number(army.entity_id) % 12) * (Math.PI / 6); // Convert to one of 12 directions in radians
   }, []);
 
-  const [rotationY, setRotationY] = useState(deterministicRotation);
-  const [hovered, setHovered] = useState(false);
-
-  const [position, setPosition] = useState<Vector3>(
-    new Vector3(army.uiPos.x + army.offset.x, 0.32, -army.uiPos.y - army.offset.y),
-  );
+  const initialPos = useMemo(() => {
+    return new Vector3(army.uiPos.x + army.offset.x, 0.32, -army.uiPos.y - army.offset.y);
+  }, []);
 
   useFrame(() => {
     if (!animationPath) return;
@@ -91,11 +92,11 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
     };
 
     const direction = new Vector3(endPoint.x - startPoint.x, 0, -(endPoint.y - startPoint.y)).normalize();
-    setPosition(new Vector3(currentPos.x, 0.32, -currentPos.y));
+    groupRef.current?.position.set(currentPos.x, 0.32, -currentPos.y);
 
     if (!direction.equals(new Vector3(0, 0, 0))) {
       const rotation = Math.atan2(direction.x, direction.z);
-      setRotationY(rotation);
+      groupRef.current?.rotation.set(0, rotation, 0);
     }
   });
 
@@ -138,13 +139,11 @@ export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
 
   return (
     <>
-      <group position={position}>
+      <group position={initialPos} ref={groupRef} rotation={new Euler(0, deterministicRotation, 0)}>
         {showArmyInfo && <ArmyInfoLabel army={army} />}
-        {army.isMine && <ArmyFlag rotationY={rotationY} position={position} />}
-
+        {army.isMine && <ArmyFlag rotationY={deterministicRotation} position={initialPos} />}
         {showCombatLabel && <CombatLabel />}
-
-        <WarriorModel rotationY={rotationY} />
+        <WarriorModel />
         <mesh
           position={[0, 1.6, 0]}
           onContextMenu={onRightClick}
@@ -170,11 +169,7 @@ export const ArmyFlag = ({ position, rotationY }: { position: Vector3; rotationY
 
   return (
     <group position={[0, 3, 0]} rotation={[0, rotationY - Math.PI / 2, 0]} scale={0.7}>
-      <BannerFlag
-        angle={rotationY}
-        order={realmOrder}
-        position={[position.x, position.y, position.z + 10]}
-      ></BannerFlag>
+      <BannerFlag order={realmOrder} position={[position.x, position.y, position.z + 10]}></BannerFlag>
     </group>
   );
 };
