@@ -1,14 +1,19 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { ArmyInfo, getUserArmiesAtPosition } from "@/hooks/helpers/useArmies";
 import { Realm, Structure } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { BattleSide } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { BattleActions } from "./BattleActions";
+import { BattleDetails } from "./BattleDetails";
 import { BattleProgressBar } from "./BattleProgressBar";
 import { EntityAvatar } from "./EntityAvatar";
+import { LockedResources } from "./LockedResources";
 import { TroopRow } from "./Troops";
 
 export const OngoingBattle = ({
@@ -16,32 +21,59 @@ export const OngoingBattle = ({
   defenderArmy,
   battleManager,
   structure,
+  ownArmyEntityId,
 }: {
   attackerArmy: ArmyInfo;
   defenderArmy: ArmyInfo;
   battleManager: BattleManager;
   structure: Structure | Realm | undefined;
+  ownArmyEntityId: bigint | undefined;
 }) => {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [selectedUnit, setSelectedUnit] = useState<bigint | undefined>(ownArmyEntityId);
+  const [showBattleDetails, setShowBattleDetails] = useState<boolean>(false);
+
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { battle_join },
+    },
+  } = useDojo();
+
+  const userArmies = getUserArmiesAtPosition({ x: attackerArmy.x, y: attackerArmy.y });
+  const userArmyInBattle = userArmies.find((army) => BigInt(army.battle_id) === battleManager.battleId);
+
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+
   const battleAdjusted = useMemo(() => {
     return battleManager.getUpdatedBattle(currentDefaultTick);
   }, [currentDefaultTick]);
+
   const setBattleView = useUIStore((state) => state.setBattleView);
 
-  const attackingHealth =
-    battleAdjusted === undefined
-      ? { current: Number(attackerArmy.current), lifetime: Number(attackerArmy.lifetime) }
-      : {
-          current: Number(battleAdjusted.attack_army_health.current),
-          lifetime: Number(battleAdjusted.attack_army_health.lifetime),
-        };
-  const defendingHealth =
-    battleAdjusted === undefined
-      ? { current: Number(defenderArmy.current), lifetime: Number(defenderArmy.lifetime) }
-      : {
-          current: Number(battleAdjusted.defence_army_health.current),
-          lifetime: Number(battleAdjusted.defence_army_health.lifetime),
-        };
+  const attackingHealth = {
+    current: Number(battleAdjusted!.attack_army_health.current),
+    lifetime: Number(battleAdjusted!.attack_army_health.lifetime),
+  };
+  const defendingHealth = {
+    current: Number(battleAdjusted!.defence_army_health.current),
+    lifetime: Number(battleAdjusted!.defence_army_health.lifetime),
+  };
+
+  const joinBattle = async (side: BattleSide, armyId: bigint) => {
+    if (selectedUnit) {
+      setLoading(true);
+      await battle_join({
+        signer: account,
+        army_id: armyId,
+        battle_id: battleManager.battleId,
+        battle_side: BigInt(side),
+      });
+      setLoading(false);
+    } else {
+      setSelectedUnit(0n);
+    }
+  };
 
   return (
     <div>
@@ -57,7 +89,6 @@ export const OngoingBattle = ({
       >
         <div className="mx-auto bg-brown text-gold text-2xl  p-4 flex flex-col w-72 text-center clip-angled">
           <div className="mb-4">Battle!</div>
-
           <Button onClick={() => setBattleView(null)}>exit battle view</Button>
         </div>
       </motion.div>
@@ -73,28 +104,113 @@ export const OngoingBattle = ({
       >
         <BattleProgressBar
           attackingHealth={attackingHealth}
-          attacker={`${attackerArmy.name} ${attackerArmy.isMine ? "(Yours)" : ""}`}
+          attacker={`Attackers ${String(userArmyInBattle?.battle_side || "") === "Attack" ? "(⚔️)" : ""}`}
           defendingHealth={defendingHealth}
-          defender={`${defenderArmy.name} ${defenderArmy.isMine ? "(Yours)" : ""}`}
+          defender={`Defenders ${String(userArmyInBattle?.battle_side || "") === "Defence" ? "(⚔️)" : ""}`}
         />
-        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between">
-          <div className="flex flex-row w-[70vw]">
-            <EntityAvatar army={attackerArmy} structure={structure} />
-            <TroopRow army={attackerArmy} />
+        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4">
+          <div className="flex flex-row justify-between h-[20vh]">
+            <div className="flex flex-row w-[70vw]">
+              <div>
+                <EntityAvatar army={attackerArmy} structure={structure} />
+                {!userArmyInBattle && (
+                  <div className="flex w-full">
+                    <SelectActiveArmy
+                      setSelectedUnit={setSelectedUnit}
+                      userAttackingArmies={userArmies}
+                      selectedUnit={selectedUnit}
+                    />
+                    <Button
+                      onClick={() => joinBattle(BattleSide.Attack, selectedUnit!)}
+                      isLoading={loading}
+                      className="size-xs"
+                    >
+                      Join
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {showBattleDetails ? <BattleDetails /> : <TroopRow troops={battleAdjusted!.attack_army.troops} />}
+            </div>
+            {showBattleDetails ? (
+              <LockedResources />
+            ) : (
+              <BattleActions
+                ownArmyEntityId={selectedUnit}
+                defender={defenderArmy}
+                structure={structure}
+                battle={battleAdjusted}
+                isActive
+              />
+            )}
+            <div className="flex flex-row w-[70vw]">
+              {showBattleDetails ? (
+                <div className="w-[25vw]"></div>
+              ) : (
+                <TroopRow troops={battleAdjusted!.defence_army.troops} defending />
+              )}
+              <div className="">
+                <EntityAvatar army={defenderArmy} structure={structure} />
+                {!userArmyInBattle && (
+                  <div className="flex">
+                    <SelectActiveArmy
+                      setSelectedUnit={setSelectedUnit}
+                      userAttackingArmies={userArmies}
+                      selectedUnit={selectedUnit}
+                    />
+                    <Button
+                      onClick={() => joinBattle(BattleSide.Defence, selectedUnit!)}
+                      isLoading={loading}
+                      className="size-xs"
+                    >
+                      Join
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-          <BattleActions
-            attacker={attackerArmy}
-            defender={defenderArmy}
-            structure={structure}
-            battleId={BigInt(defenderArmy.battle_id)}
-            isActive
-          />
-          <div className="flex flex-row w-[70vw]">
-            <TroopRow army={defenderArmy as ArmyInfo} defending />
-            <EntityAvatar army={defenderArmy} structure={structure} />
+          <div className="flex justify-center mt-4">
+            <Button onClick={() => setShowBattleDetails(!showBattleDetails)}>Details</Button>
           </div>
         </div>
       </motion.div>
+    </div>
+  );
+};
+
+const SelectActiveArmy = ({
+  selectedUnit,
+  setSelectedUnit,
+  userAttackingArmies,
+}: {
+  selectedUnit: bigint | undefined;
+  setSelectedUnit: (val: any) => void;
+  userAttackingArmies: ArmyInfo[];
+}) => {
+  return (
+    <div className="self-center flex flex-col justify-between bg-gold clip-angled size-xs mb-1 mr-1">
+      <Select
+        value={""}
+        onValueChange={(a: string) => {
+          setSelectedUnit(BigInt(a));
+        }}
+      >
+        <SelectTrigger className="">
+          <SelectValue
+            placeholder={
+              userAttackingArmies.find((army) => selectedUnit === BigInt(army.entity_id))?.name || "Select army"
+            }
+          />
+        </SelectTrigger>
+        <SelectContent className="bg-brown text-gold">
+          {userAttackingArmies.map((army, index) => (
+            <SelectItem className="flex justify-between text-sm" key={index} value={army.entity_id?.toString() || ""}>
+              <h5 className="self-center flex gap-4">{army.name}</h5>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 };

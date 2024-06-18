@@ -177,12 +177,15 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.battle_leave(props);
   };
 
+  const battle_join = async (props: SystemProps.BattleJoinProps) => {
+    await provider.battle_join(props);
+  };
+
   const battle_leave_and_claim = async (props: SystemProps.BattleClaimAndLeaveProps) => {
     await provider.battle_claim_and_leave(props);
   };
 
   const battle_claim = async (props: SystemProps.BattleClaimProps) => {
-    console.log(props);
     await provider.battle_claim(props);
   };
 
@@ -244,6 +247,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
 
     battle_start,
     battle_leave,
+    battle_join,
     battle_claim,
     battle_pillage,
     battle_leave_and_claim,

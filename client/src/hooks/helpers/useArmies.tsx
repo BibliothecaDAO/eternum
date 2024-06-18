@@ -414,6 +414,55 @@ export const getArmyByEntityId = (entity_id: bigint) => {
   )[0];
 };
 
+export const getUserArmiesAtPosition = (position: Position) => {
+  const {
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+        Stamina,
+      },
+    },
+    account: { account },
+  } = useDojo();
+
+  const allArmiesAtPosition = runQuery([Has(Army), HasValue(Position, position)]);
+
+  const userArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
+    const entityOwner = getComponentValue(EntityOwner, armyEntityId);
+    const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+    return owner?.address === BigInt(account.address);
+  });
+  return formatArmies(
+    userArmies,
+    account.address,
+    Army,
+    Protectee,
+    EntityName,
+    Health,
+    Quantity,
+    Movable,
+    Capacity,
+    ArrivalTime,
+    Position,
+    EntityOwner,
+    Owner,
+    Realm,
+
+    Stamina,
+  );
+};
+
 const calculateOffset = (index: number, total: number) => {
   if (total === 1) return { x: 0, y: 0 };
 

@@ -1,6 +1,5 @@
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Realm, Structure } from "@/hooks/helpers/useStructures";
-import Button from "@/ui/elements/Button";
 import { motion } from "framer-motion";
 
 export const EntityAvatar = ({
@@ -29,7 +28,6 @@ export const EntityAvatar = ({
           src={imgSource}
           alt=""
         />
-        <Button className="w-full">Reinforce Army</Button>
       </div>
     </div>
   );

@@ -49,7 +49,7 @@ export class BattleManager {
   public getUpdatedBattle(currentTick: number) {
     const battle = this.getBattle();
     if (!battle) return;
-
+	
     const durationPassed: number = this.getElapsedTime(currentTick);
 
     const attackDelta = this.attackingDelta();

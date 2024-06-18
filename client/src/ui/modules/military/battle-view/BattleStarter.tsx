@@ -61,20 +61,20 @@ export const BattleStarter = ({
           defendingHealth={defendingHealth}
           defender={defenderArmy ? `${defenderArmy.name} ${defenderArmy.isMine ? "(Yours)" : ""}` : structure!.name}
         />
-        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between ">
+        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between">
           <div className="flex flex-row w-[70vw]">
             <EntityAvatar army={attackerArmy} structure={structure} />
-            <TroopRow army={attackerArmy} />
+            <TroopRow troops={attackerArmy!.troops} />
           </div>
           <BattleActions
-            attacker={attackerArmy}
+            ownArmyEntityId={undefined}
             defender={defenderArmy}
             structure={structure}
-            battleId={BigInt(attackerArmy.battle_id)}
+            battle={undefined}
             isActive={false}
           />
           <div className="flex flex-row w-[70vw]">
-            <TroopRow army={defenderArmy as ArmyInfo} defending />
+            <TroopRow troops={defenderArmy?.troops} defending />
             <EntityAvatar army={defenderArmy} structure={structure} />
           </div>
         </div>

@@ -21,6 +21,12 @@ export enum EntityType {
   UNKNOWN,
 }
 
+export enum BattleSide {
+  None,
+  Attack,
+  Defence,
+}
+
 export interface CombatResultInterface {
   attackerRealmEntityId: bigint;
   targetRealmEntityId: bigint;

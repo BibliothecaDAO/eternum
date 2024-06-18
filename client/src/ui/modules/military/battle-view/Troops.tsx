@@ -1,14 +1,13 @@
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { currencyFormat } from "@/ui/utils/utils";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ResourcesIds, Troops } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
-export const TroopRow = ({ army, defending = false }: { army: ArmyInfo; defending?: boolean }) => {
-  const noArmy = useMemo(() => !army, [army]);
+export const TroopRow = ({ troops, defending = false }: { troops: Troops | undefined; defending?: boolean }) => {
+  const noArmy = useMemo(() => !troops, [troops]);
   return (
-    <div className=" grid-cols-3 col-span-3 gap-2 flex ">
+    <div className=" grid-cols-3 col-span-3 gap-2 flex mx-2">
       {noArmy ? (
-        <div className="w-40 text-s text-gold bg-white/10 m-auto p-4 border-4 border-gradient">
+        <div className="w-40 text-s text-gold bg-white/10 m-auto border-4 border-gradient">
           Nothing defending this poor structure. The residents are shaking in terror.
         </div>
       ) : (
@@ -18,19 +17,19 @@ export const TroopRow = ({ army, defending = false }: { army: ArmyInfo; defendin
             defending={defending}
             className={`${defending ? "order-last" : ""} w-1/3`}
             id={ResourcesIds.Crossbowmen}
-            count={army?.troops?.crossbowman_count || 0}
+            count={Number(troops?.crossbowman_count || 0)}
           />
           <TroopCard
             defending={defending}
             className={`w-1/3`}
             id={ResourcesIds.Paladin}
-            count={army?.troops?.paladin_count || 0}
+            count={Number(troops?.paladin_count || 0)}
           />
           <TroopCard
             defending={defending}
             className={`${defending ? "order-first" : ""} w-1/3`}
             id={ResourcesIds.Knight}
-            count={army?.troops?.knight_count || 0}
+            count={Number(troops?.knight_count || 0)}
           />
         </>
       )}

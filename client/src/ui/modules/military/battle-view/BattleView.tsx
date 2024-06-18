@@ -16,12 +16,12 @@ export const BattleView = () => {
 
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
 
-  const { attackerArmy, defenderArmy, structure } = useMemo(() => {
+  const { attackers, defenders, structure } = useMemo(() => {
     return getArmiesAndStructure(battleView!);
   }, [battleView?.defenders]);
 
-  const updatedAttacker = useArmyByArmyEntityId(BigInt(attackerArmy || 0n));
-  const updatedDefender = useArmyByArmyEntityId(BigInt(defenderArmy || 0n));
+  const updatedAttacker = useArmyByArmyEntityId(BigInt(attackers?.[0] || 0n));
+  const updatedDefender = useArmyByArmyEntityId(BigInt(defenders?.[0] || 0n));
   const { updatedBattle } = useBattleManager(BigInt(updatedDefender?.battle_id || 0n));
 
   const battleAdjusted = useMemo(() => {
@@ -29,7 +29,7 @@ export const BattleView = () => {
   }, [currentDefaultTick]);
 
   const elem = useMemo(() => {
-    if (!attackerArmy) return;
+    if (!attackers) return;
     if (updatedBattle.battleActive(currentDefaultTick)) {
       return (
         <OngoingBattle
@@ -37,26 +37,17 @@ export const BattleView = () => {
           defenderArmy={updatedDefender!}
           structure={structure}
           battleManager={updatedBattle}
+          ownArmyEntityId={selectedEntity?.id}
         />
       );
     }
-    if (selectedEntity && !attackerArmy) {
+    if (battleAdjusted === undefined && selectedEntity) {
       return (
         <BattleStarter
           attackerArmy={updatedAttacker}
-          attackerArmyHealth={
-            battleAdjusted ? battleAdjusted.attack_army_health.current : BigInt(updatedAttacker.current)
-          }
-          defenderArmy={
-            !structure
-              ? updatedDefender
-              : (battleAdjusted?.defence_army_health.current === undefined ? updatedDefender?.current || 0 : 0) > 0
-              ? updatedDefender
-              : undefined
-          }
-          defenderArmyHealth={
-            battleAdjusted ? battleAdjusted.defence_army_health.current : BigInt(updatedDefender.current)
-          }
+          attackerArmyHealth={BigInt(updatedAttacker.current)}
+          defenderArmy={!structure ? updatedDefender : undefined}
+          defenderArmyHealth={BigInt(updatedDefender?.current || 0)}
           structure={structure}
         />
       );
@@ -79,6 +70,7 @@ export const BattleView = () => {
           battleAdjusted ? battleAdjusted.defence_army_health.current : BigInt(updatedDefender?.current || 0)
         }
         structure={structure}
+        updatedBattle={updatedBattle}
       />
     );
   }, [updatedAttacker, updatedDefender, battleView, battleAdjusted, selectedEntity]);
@@ -89,23 +81,23 @@ export const BattleView = () => {
 const getArmiesAndStructure = (
   battleView: BattleViewInfo,
 ): {
-  attackerArmy: bigint | undefined;
-  defenderArmy: bigint | undefined;
+  attackers: bigint[] | undefined;
+  defenders: bigint[] | undefined;
   structure: Realm | Structure | undefined;
 } => {
   if (battleView.defenders.type === CombatTarget.Army) {
     return {
-      attackerArmy: battleView.attackers[0],
-      defenderArmy: (battleView.defenders.entities as bigint[])[0],
+      attackers: battleView.attackers,
+      defenders: battleView.defenders.entities as bigint[],
       structure: undefined,
     };
   } else if (battleView.defenders.type === CombatTarget.Structure) {
     const target = battleView.defenders.entities as Realm | Structure;
     return {
-      attackerArmy: battleView.attackers[0],
-      defenderArmy: BigInt(target.protector?.entity_id || 0n),
+      attackers: battleView.attackers,
+      defenders: [BigInt(target.protector?.entity_id || 0n)],
       structure: target,
     };
   }
-  return { attackerArmy: undefined, defenderArmy: undefined, structure: undefined };
+  return { attackers: undefined, defenders: undefined, structure: undefined };
 };
