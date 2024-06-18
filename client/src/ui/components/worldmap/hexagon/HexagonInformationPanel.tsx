@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Position } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { StructureCard } from "../../hyperstructures/StructureCard";
-import { EnnemyArmies } from "../../military/Battle";
+import { EnemyArmies } from "../../military/Battle";
 
 type ToShow = {
   showBattle: boolean;
@@ -77,7 +77,7 @@ export const HexagonInformationPanel = () => {
         )}
         {toShow.showBattle && <div>Hello World</div>}
         {toShow.showStructure && <StructureCard position={hexPosition} ownArmySelected={ownArmySelected} />}
-        {toShow.showEnnemies && <EnnemyArmies armies={enemyArmies} ownArmySelected={ownArmySelected!} />}
+        {toShow.showEnnemies && <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmySelected!} />}
         {!toShow.showBattle && !toShow.showEnnemies && !toShow.showStructure && "Nothing to show here"}
       </div>
     )

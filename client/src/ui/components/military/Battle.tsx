@@ -13,7 +13,7 @@ import { Subscription } from "rxjs";
 import { BUILDING_IMAGES_PATH } from "../construction/SelectPreviewBuilding";
 import { ArmyChip } from "./ArmyChip";
 
-export const EnnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; ownArmySelected: ArmyInfo }) => {
+export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; ownArmySelected: ArmyInfo }) => {
   const { setBattleView } = useUIStore(({ setBattleView }) => ({
     setBattleView,
   }));
@@ -22,7 +22,7 @@ export const EnnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; 
     <div>
       {armies.length !== 0 && (
         <>
-          <Headline className="my-3">Ennemy armies</Headline>
+          <Headline className="my-3">Enemy armies</Headline>
           <div className="grid grid-cols-1 gap-2">
             {armies.map((army: ArmyInfo, index) => {
               const { attacker, defender } =
