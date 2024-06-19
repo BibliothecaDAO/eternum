@@ -746,9 +746,6 @@ mod combat_systems {
             let mut battle: Battle = get!(world, battle_id, Battle);
             battle.update_state();
 
-            // ensure battle is still ongoing
-            assert!(battle.duration_left > 0, "Battle has ended");
-
             // ensure caller army is not in battle
             let mut caller_army: Army = get!(world, army_id, Army);
             caller_army.assert_not_in_battle();
