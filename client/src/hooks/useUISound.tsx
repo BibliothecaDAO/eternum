@@ -61,6 +61,11 @@ export const soundSelector = {
   unitRunningAlternative: "units/running_2.mp3",
   battleDefeat: "events/battle_defeat.mp3",
   battleVictory: "events/battle_victory.mp3",
+  unitSelected1: "units/army_selected1.mp3",
+  unitSelected2: "units/army_selected2.mp3",
+  unitSelected3: "units/army_selected3.mp3",
+  unitMarching1: "units/marching1.mp3",
+  unitMarching2: "units/marching2.mp3",
 };
 
 export const useUiSounds = (selector: string) => {
@@ -75,10 +80,18 @@ export const useUiSounds = (selector: string) => {
     sound && sound.fade(isSoundOn ? effectsLevel / 100 : 0, 0, 250);
   }, [effectsLevel, isSoundOn, sound]);
 
+  const repeat = useCallback(() => {
+    if (sound) {
+      sound.loop(true);
+      play();
+    }
+  }, [sound, play]);
+
   return {
     play,
     stop,
     fade,
+    repeat,
   };
 };
 
@@ -214,6 +227,57 @@ export const useRunningSound = () => {
     fadeFirst();
     fadeSecond();
   }, [fadeFirst, fadeSecond, isFirst]);
+
+  return {
+    play,
+    stop,
+  };
+};
+
+export const useMarchingSound = () => {
+  const { repeat: playFirst, fade: fadeFirst, stop: stopFirst } = useUiSounds(soundSelector.unitMarching1);
+  const { repeat: playSecond, fade: fadeSecond, stop: stopSecond } = useUiSounds(soundSelector.unitMarching2);
+  const [isFirst, setIsFirst] = useState(true);
+
+  const play = useCallback(() => {
+    if (isFirst) {
+      playFirst();
+    } else {
+      playSecond();
+    }
+    setIsFirst((prev) => !prev);
+  }, [isFirst, playFirst, playSecond]);
+
+  const stop = useCallback(() => {
+    console.log("stop");
+    // fadeFirst();
+    // fadeSecond();
+    stopFirst();
+    stopSecond();
+    // }, [fadeFirst, fadeSecond, isFirst]);
+  }, [stopFirst, stopSecond, isFirst]);
+
+  return {
+    play,
+    stop,
+  };
+};
+
+export const useSelectedArmySound = () => {
+  const soundSelectors = [soundSelector.unitSelected1, soundSelector.unitSelected2, soundSelector.unitSelected3];
+
+  const soundHooks = soundSelectors.map((selector) => useUiSounds(selector));
+
+  const [index, setIndex] = useState(0);
+
+  const play = useCallback(() => {
+    soundHooks[index].play();
+    setIndex((prev) => (prev + 1) % soundHooks.length);
+  }, [index, soundHooks]);
+
+  const stop = useCallback(() => {
+    soundHooks.forEach(({ stop }) => stop());
+  }, [soundHooks]);
 
   return {
     play,

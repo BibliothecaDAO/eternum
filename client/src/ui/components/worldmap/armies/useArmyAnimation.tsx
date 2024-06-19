@@ -6,8 +6,10 @@ import { getUIPositionFromColRow } from "../../../utils/utils";
 import { Group, Vector3 } from "three";
 import { useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
+import { useMarchingSound, useRunningSound } from "@/hooks/useUISound";
 
 export const useArmyAnimation = (position: Position, offset: Position) => {
+  const { play: playMarchingSound, stop: stopMarchingSound } = useMarchingSound();
   const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
   const prevPositionRef = useRef<Position | null>(null);
   const [animationPath, setAnimationPath] = useState<UIPosition[] | null>(null);
@@ -30,6 +32,7 @@ export const useArmyAnimation = (position: Position, offset: Position) => {
       );
       setAnimationPath(uiPath.map((pos) => applyOffset(pos, offset)));
       prevPositionRef.current = { x, y };
+      playMarchingSound(); // Play marching sound when animation starts
     }
   }, [x, y]);
 
@@ -47,6 +50,7 @@ export const useArmyAnimation = (position: Position, offset: Position) => {
     if (currentIndex.current >= animationPath.length) {
       setAnimationPath(null);
       currentIndex.current = 1;
+      stopMarchingSound(); // Stop marching sound when animation ends
     }
   });
 
