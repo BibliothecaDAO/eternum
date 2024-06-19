@@ -509,7 +509,7 @@ mod combat_systems {
         fn army_buy_troops(world: IWorldDispatcher, army_id: u128, payer_id: u128, troops: Troops) {
             // ensure caller owns the entity paying
             get!(world, payer_id, EntityOwner).assert_caller_owner(world);
-            
+
             // ensure payer and army are at the same position
             let payer_position: Position = get!(world, payer_id, Position);
             let army_position: Position = get!(world, army_id, Position);
@@ -526,7 +526,6 @@ mod combat_systems {
             knight_resource.save(world);
             paladin_resource.save(world);
             crossbowman_resource.save(world);
-
 
             let mut army: Army = get!(world, army_id, Army);
             if army.is_in_battle() {
@@ -570,8 +569,6 @@ mod combat_systems {
                     set!(world, (battle));
                 }
             }
-
-
 
             // increase troops number
             let mut army: Army = get!(world, army_id, Army);

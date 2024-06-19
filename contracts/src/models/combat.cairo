@@ -273,7 +273,6 @@ impl TroopsImpl of TroopsTrait {
     /// the actual remaining paladin count is 50 * 10 /100 = 5;
 
     fn actual_type_count(self: Troops, _type: TroopType, health: @Health) -> u64 {
-
         let count = match _type {
             TroopType::Knight => { self.knight_count },
             TroopType::Paladin => { self.paladin_count },
@@ -697,7 +696,6 @@ impl BattleImpl of BattleTrait {
     fn reset_delta(ref self: Battle, troop_config: TroopConfig) {
         // ensure state has been updated 
         assert!(self.last_updated == starknet::get_block_timestamp(), "state not updated");
-
 
         // reset attack and defence delta 
         let (attack_delta, defence_delta) = self
