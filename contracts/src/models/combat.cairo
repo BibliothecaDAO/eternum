@@ -273,21 +273,18 @@ impl TroopsImpl of TroopsTrait {
     /// the actual remaining paladin count is 50 * 10 /100 = 5;
 
     fn actual_type_count(self: Troops, _type: TroopType, health: @Health) -> u64 {
-        print!("\n\n FA 1 \n\n");
-        
+
         let count = match _type {
             TroopType::Knight => { self.knight_count },
             TroopType::Paladin => { self.paladin_count },
             TroopType::Crossbowman => { self.crossbowman_count }
         };
-        print!("\n\n FA 3 \n\n");
-        print!("\n\n FA {} {} {} \n\n", count, health.current, health.lifetime);
-        if *health.current == 0 {return 0;};
-        let a = ((count.into() * *health.current)
-            / (*health).lifetime).try_into().unwrap();
-        print!("\n\n FA 4 \n\n");
-        a
 
+        if *health.current == 0 {
+            return 0;
+        };
+
+        ((count.into() * *health.current) / (*health).lifetime).try_into().unwrap()
     }
 
     /// Get the actual count of a all troops using 
@@ -701,8 +698,7 @@ impl BattleImpl of BattleTrait {
         // ensure state has been updated 
         assert!(self.last_updated == starknet::get_block_timestamp(), "state not updated");
 
-        print!("\n\n ====A====== \n\n");
-        
+
         // reset attack and defence delta 
         let (attack_delta, defence_delta) = self
             .attack_army
@@ -713,16 +709,12 @@ impl BattleImpl of BattleTrait {
                 @self.defence_army_health.into(),
                 troop_config
             );
-        print!("\n\n ====B====== \n\n");
 
         self.attack_delta = attack_delta;
         self.defence_delta = defence_delta;
-        print!("\n\n ====c====== \n\n");
 
         // get duration with latest delta
         self.duration_left = self.duration();
-        print!("\n\n ========== \n\n");
-
     }
 
 

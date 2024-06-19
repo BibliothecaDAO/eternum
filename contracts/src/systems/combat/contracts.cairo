@@ -349,10 +349,10 @@ trait ICombatContract<TContractState> {
 
 #[dojo::contract]
 mod combat_systems {
-    use core::traits::Destruct;
     use core::array::SpanTrait;
     use core::integer::BoundedInt;
     use core::option::OptionTrait;
+    use core::traits::Destruct;
     use core::traits::Into;
     use eternum::alias::ID;
     use eternum::constants::{
@@ -509,17 +509,7 @@ mod combat_systems {
         fn army_buy_troops(world: IWorldDispatcher, army_id: u128, payer_id: u128, troops: Troops) {
             // ensure caller owns the entity paying
             get!(world, payer_id, EntityOwner).assert_caller_owner(world);
-
-            // ensure army is not in battle
-            let mut army: Army = get!(world, army_id, Army);
-            if army.is_in_battle() {
-                let mut battle: Battle = get!(world, army.battle_id, Battle);
-                InternalCombatImpl::update_battle_and_army(
-                    world, ref battle, ref army
-                );
-            }
-            army.assert_not_in_battle();
-
+            
             // ensure payer and army are at the same position
             let payer_position: Position = get!(world, payer_id, Position);
             let army_position: Position = get!(world, army_id, Position);
@@ -537,6 +527,52 @@ mod combat_systems {
             paladin_resource.save(world);
             crossbowman_resource.save(world);
 
+
+            let mut army: Army = get!(world, army_id, Army);
+            if army.is_in_battle() {
+                // update army health and troop count 
+                let mut battle: Battle = get!(world, army.battle_id, Battle);
+                InternalCombatImpl::update_battle_and_army(world, ref battle, ref army);
+
+                // add the troops being bought to battle
+                if !battle.has_ended() {
+                    let battle_side = army.battle_side;
+                    // add troops to battle army troops
+                    let (mut battle_army, mut battle_army_health, mut battle_army_lifetime) =
+                        if battle_side == BattleSide::Defence {
+                        (
+                            battle.defence_army,
+                            battle.defence_army_health,
+                            battle.defence_army_lifetime
+                        )
+                    } else {
+                        (battle.attack_army, battle.attack_army_health, battle.attack_army_lifetime)
+                    };
+                    battle_army.troops.add(troops);
+                    battle_army_lifetime.troops.add(troops);
+
+                    // add troop health to battle army health 
+                    let troop_config = TroopConfigImpl::get(world);
+                    battle_army_health.increase_by(troops.full_health(troop_config));
+
+                    // update battle
+                    if battle_side == BattleSide::Defence {
+                        battle.defence_army = battle_army;
+                        battle.defence_army_health = battle_army_health;
+                        battle.defence_army_lifetime = battle_army_lifetime;
+                    } else {
+                        battle.attack_army = battle_army;
+                        battle.attack_army_health = battle_army_health;
+                        battle.attack_army_lifetime = battle_army_lifetime;
+                    }
+
+                    battle.reset_delta(troop_config);
+                    set!(world, (battle));
+                }
+            }
+
+
+
             // increase troops number
             let mut army: Army = get!(world, army_id, Army);
             army.troops.add(troops);
@@ -547,7 +583,7 @@ mod combat_systems {
             army_health.increase_by(troops.full_health(TroopConfigImpl::get(world)));
             set!(world, (army_health));
 
-            // set troop quantity
+            // set troop quantity (for capacity calculation)
             let mut army_quantity: Quantity = get!(world, army_id, Quantity);
             army_quantity.value += troops.count().into();
             set!(world, (army_quantity));
@@ -572,9 +608,7 @@ mod combat_systems {
             let mut from_army: Army = get!(world, from_army_id, Army);
             if from_army.is_in_battle() {
                 let mut battle: Battle = get!(world, from_army.battle_id, Battle);
-                InternalCombatImpl::update_battle_and_army(
-                    world, ref battle, ref from_army
-                );
+                InternalCombatImpl::update_battle_and_army(world, ref battle, ref from_army);
             }
             from_army.assert_not_in_battle();
             from_army.troops.deduct(troops);
@@ -599,9 +633,7 @@ mod combat_systems {
             let mut to_army: Army = get!(world, to_army_id, Army);
             if to_army.is_in_battle() {
                 let mut battle: Battle = get!(world, to_army.battle_id, Battle);
-                InternalCombatImpl::update_battle_and_army(
-                    world, ref battle, ref to_army
-                );
+                InternalCombatImpl::update_battle_and_army(world, ref battle, ref to_army);
             }
             to_army.assert_not_in_battle();
             to_army.troops.add(troops);
@@ -623,8 +655,6 @@ mod combat_systems {
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             attacking_army.assert_not_in_battle();
 
-            print!("\n\n A \n\n");
-
             get!(world, attacking_army_id, EntityOwner).assert_caller_owner(world);
 
             let mut defending_army: Army = get!(world, defending_army_id, Army);
@@ -633,7 +663,6 @@ mod combat_systems {
             let attacking_army_position: Position = get!(world, attacking_army_id, Position);
             let defending_army_position: Position = get!(world, defending_army_id, Position);
             attacking_army_position.assert_same_location(defending_army_position.into());
-            print!("\n\n B \n\n");
 
             let battle_id: u128 = world.uuid().into();
             attacking_army.battle_id = battle_id;
@@ -643,9 +672,6 @@ mod combat_systems {
             defending_army.battle_id = battle_id;
             defending_army.battle_side = BattleSide::Defence;
             set!(world, (defending_army));
-
-
-            print!("\n\n C \n\n");
 
             let mut attacking_army_protectee: Protectee = get!(world, attacking_army_id, Protectee);
             let mut attacking_army_movable: Movable = get!(world, attacking_army_id, Movable);
@@ -662,8 +688,6 @@ mod combat_systems {
                 defending_army_movable.blocked = true;
                 set!(world, (defending_army_movable));
             }
-
-            print!("\n\n D \n\n");
 
             // create battle 
             let troop_config = TroopConfigImpl::get(world);
@@ -683,7 +707,6 @@ mod combat_systems {
 
             // ensure defending army is alive
             defending_army_health.assert_alive("Army");
-            print!("\n\n E \n\n");
 
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;
@@ -696,12 +719,10 @@ mod combat_systems {
             battle.attack_army_health = attacking_army_health.into();
             battle.defence_army_health = defending_army_health.into();
             battle.last_updated = starknet::get_block_timestamp();
-            print!("\n\n F \n\n");
 
             // deposit resources protected by armies into battle escrow pots/boxes
             battle.deposit_balance(world, attacking_army, attacking_army_protectee);
             battle.deposit_balance(world, defending_army, defending_army_protectee);
-            print!("\n\n G \n\n");
 
             // set battle position 
             let mut battle_position: Position = Default::default();
@@ -711,7 +732,6 @@ mod combat_systems {
             set!(world, (battle_position));
 
             battle.reset_delta(troop_config);
-            print!("\n\n H \n\n");
 
             set!(world, (battle));
         }
@@ -1128,8 +1148,7 @@ mod combat_systems {
 
                 attacking_army.troops.reset(ref attacking_army_health, troop_config);
                 let attacking_army_quantity = Quantity {
-                    entity_id: attacking_army.entity_id,
-                    value: attacking_army.troops.count().into()
+                    entity_id: attacking_army.entity_id, value: attacking_army.troops.count().into()
                 };
                 set!(world, (attacking_army, attacking_army_health, attacking_army_quantity));
 
@@ -1142,8 +1161,7 @@ mod combat_systems {
                 structure_army.troops.reset(ref structure_army_health, troop_config);
 
                 let structure_army_quantity = Quantity {
-                    entity_id: structure_army_id,
-                    value: structure_army.troops.count().into()
+                    entity_id: structure_army_id, value: structure_army.troops.count().into()
                 };
                 set!(world, (structure_army, structure_army_health, structure_army_quantity));
             }
@@ -1189,7 +1207,6 @@ mod combat_systems {
             let unmodified_army = army;
 
             battle.update_state();
-            print!("\n\n RNAAAAAA 1 \n\n");
 
             // make caller army mobile again
             let army_id = army.entity_id;
@@ -1202,7 +1219,6 @@ mod combat_systems {
             } else {
                 assert!(battle.has_ended(), "structure can only leave battle after it ends");
             }
-        print!("\n\n RNAAAAAA 2 \n\n");
 
             // withdraw resources stuck in battle
             battle.withdraw_balance_and_reward(world, army, army_protectee);
@@ -1215,23 +1231,30 @@ mod combat_systems {
                 (battle.attack_army, battle.attack_army_health, battle.attack_army_lifetime)
             };
             let troop_config = TroopConfigImpl::get(world);
-            battle_army.troops.knight_count = ((battle_army_health.current
-                * battle_army.troops.knight_count.into())
-                / battle_army_health.lifetime).try_into().unwrap();
-            battle_army.troops.paladin_count = ((battle_army_health.current
-                * battle_army.troops.paladin_count.into())
-                / battle_army_health.lifetime).try_into().unwrap();
-            battle_army.troops.crossbowman_count = ((battle_army_health.current
-                * battle_army.troops.crossbowman_count.into())
-                / battle_army_health.lifetime).try_into().unwrap();
+            battle_army
+                .troops
+                .knight_count =
+                    ((battle_army_health.current * battle_army.troops.knight_count.into())
+                        / battle_army_health.lifetime)
+                .try_into()
+                .unwrap();
+            battle_army
+                .troops
+                .paladin_count =
+                    ((battle_army_health.current * battle_army.troops.paladin_count.into())
+                        / battle_army_health.lifetime)
+                .try_into()
+                .unwrap();
+            battle_army
+                .troops
+                .crossbowman_count =
+                    ((battle_army_health.current * battle_army.troops.crossbowman_count.into())
+                        / battle_army_health.lifetime)
+                .try_into()
+                .unwrap();
 
             battle_army_health.current = battle_army.troops.full_health(troop_config);
             battle_army_health.lifetime = battle_army.troops.full_health(troop_config);
-        print!("\n\n HABA: {} \n\n", battle_army_health.current);
-            
-
-        print!("\n\n RNAAAAAA 3 \n\n");
-        print!("\n\n Knight count: {} \n\n", battle_army.troops.knight_count);
 
             // reset the army leaving battle
             army.troops.knight_count = army.troops.knight_count
@@ -1248,16 +1271,11 @@ mod combat_systems {
                 current: army.troops.full_health(troop_config),
                 lifetime: army.troops.full_health(troop_config)
             };
-        print!("\n\n RNAAAAAA 4 \n\n");
-        print!("\n\n Knight count: {} \n\n", battle_army.troops.knight_count);
 
             army.battle_id = 0;
             army.battle_side = BattleSide::None;
 
-            let army_quantity = Quantity {
-                entity_id: army_id,
-                value: army.troops.count().into()
-            };
+            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
 
             set!(world, (army, army_health, army_quantity));
 
@@ -1267,8 +1285,6 @@ mod combat_systems {
             battle_army.troops.crossbowman_count -= army.troops.crossbowman_count;
             battle_army_health.current = battle_army.troops.full_health(troop_config);
             battle_army_health.lifetime = battle_army.troops.full_health(troop_config);
-        print!("\n\n RNAAAAAA 5 \n\n");
-        print!("\n\n Knight count: {} \n\n", battle_army.troops.knight_count);
 
             // reduce battle army lifetime count by the original army count
             battle_army_lifetime.troops.knight_count -= unmodified_army.troops.knight_count;
@@ -1278,7 +1294,6 @@ mod combat_systems {
                 .crossbowman_count -= unmodified_army
                 .troops
                 .crossbowman_count;
-        print!("\n\n RNAAAAAA 6 \n\n");
 
             if unmodified_army.battle_side == BattleSide::Defence {
                 battle.defence_army = battle_army;
@@ -1289,10 +1304,8 @@ mod combat_systems {
                 battle.attack_army_lifetime = battle_army_lifetime;
                 battle.attack_army_health = battle_army_health;
             }
-        print!("\n\n Knight count: {} \n\n", battle_army.troops.knight_count);
 
             battle.reset_delta(troop_config);
-        print!("\n\n RNAAAAAA 7 \n\n");
 
             set!(world, (battle));
         }
