@@ -32,23 +32,17 @@ export const useStamina = () => {
     return staminaEntity as unknown as ClientComponents["Stamina"]["schema"];
   };
 
-  const getStamina = ({
-    travelingEntityId,
-    armiesTick = currentArmiesTick,
-  }: {
-    travelingEntityId: bigint;
-    armiesTick?: number;
-  }) => {
+  const getStamina = ({ travelingEntityId }: { travelingEntityId: bigint; armiesTick?: number }) => {
     const staminasEntityIds = runQuery([HasValue(Stamina, { entity_id: travelingEntityId })]);
     let staminaEntity = getComponentValue(Stamina, staminasEntityIds.values().next().value);
 
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: travelingEntityId })]);
     const armyEntity = getComponentValue(Army, armiesEntityIds.values().next().value);
 
-    if (staminaEntity && armiesTick !== staminaEntity?.last_refill_tick) {
+    if (staminaEntity && currentArmiesTick !== staminaEntity?.last_refill_tick) {
       staminaEntity = {
         ...staminaEntity!,
-        last_refill_tick: armiesTick,
+        last_refill_tick: currentArmiesTick,
         amount: getMaxStamina(armyEntity!.troops, StaminaConfig),
       };
     }
