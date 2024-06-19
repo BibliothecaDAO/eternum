@@ -43,7 +43,7 @@ impl HealthImpl of HealthTrait {
         self.lifetime += value;
     }
 
-    fn reset(ref self: Health) {
+    fn clear(ref self: Health) {
         self.current = 0;
         self.lifetime = 0;
     }
@@ -256,13 +256,14 @@ impl TroopsImpl of TroopsTrait {
         self.knight_count + self.paladin_count + self.crossbowman_count
     }
 
-    // make the troop count a percentage of the health
-    fn reset(ref self: Troops, ref health: Health, troop_config: TroopConfig) {
+    fn reset_count_and_health(ref self: Troops, ref health: Health, troop_config: TroopConfig) {
+        // make the troop count a percentage of the old health
         self.knight_count = self.actual_type_count(TroopType::Knight, @health);
         self.paladin_count = self.actual_type_count(TroopType::Paladin, @health);
         self.crossbowman_count = self.actual_type_count(TroopType::Crossbowman, @health);
 
-        health.reset();
+        // make the new health be the full health of updated troops
+        health.clear();
         health.increase_by(self.full_health(troop_config));
     }
 

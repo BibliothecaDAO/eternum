@@ -1143,7 +1143,9 @@ mod combat_systems {
                             / troop_config.pillage_health_divisor.into())
                     );
 
-                attacking_army.troops.reset(ref attacking_army_health, troop_config);
+                attacking_army
+                    .troops
+                    .reset_count_and_health(ref attacking_army_health, troop_config);
                 let attacking_army_quantity = Quantity {
                     entity_id: attacking_army.entity_id, value: attacking_army.troops.count().into()
                 };
@@ -1155,7 +1157,9 @@ mod combat_systems {
                         ((mock_battle.attack_delta.into() * mock_battle.duration_left.into())
                             / troop_config.pillage_health_divisor.into())
                     );
-                structure_army.troops.reset(ref structure_army_health, troop_config);
+                structure_army
+                    .troops
+                    .reset_count_and_health(ref structure_army_health, troop_config);
 
                 let structure_army_quantity = Quantity {
                     entity_id: structure_army_id, value: structure_army.troops.count().into()
@@ -1190,6 +1194,8 @@ mod combat_systems {
 
     #[generate_trait]
     impl InternalCombatImpl of InternalCombatTrait {
+        /// Updates battle and removes army if battle has ended
+        ///
         fn update_battle_and_army(world: IWorldDispatcher, ref battle: Battle, ref army: Army) {
             assert!(battle.entity_id == army.battle_id, "army must be in same battle");
             battle.update_state();
@@ -1200,6 +1206,7 @@ mod combat_systems {
         }
 
 
+        /// Make army leave battle
         fn leave_battle(world: IWorldDispatcher, ref battle: Battle, ref army: Army) {
             let unmodified_army = army;
 
