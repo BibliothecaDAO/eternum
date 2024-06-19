@@ -6,8 +6,10 @@ import { useNotificationsStore } from "../../../../hooks/store/useNotificationsS
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { findDirection, getColRowFromUIPosition } from "../../../utils/utils";
 import { getPositionsAtIndex } from "./utils";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {
+  const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
   const { exploreHex } = useExplore();
   const { travelToHex } = useTravel();
 
@@ -95,9 +97,9 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         if (!travelPath) return;
         const { path, isExplored } = travelPath;
         if (isExplored) {
-          handleTravelClick({ id, path });
+          handleTravelClick({ id, path, currentArmiesTick });
         } else {
-          handleExploreClick({ id, path });
+          handleExploreClick({ id, path, currentArmiesTick });
         }
       };
 
@@ -107,10 +109,18 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         handleArmyActionClick(selectedEntityRef.current.id);
       }
     },
-    [hexData],
+    [hexData, currentArmiesTick],
   );
 
-  async function handleTravelClick({ id, path }: { id: bigint; path: any[] }) {
+  async function handleTravelClick({
+    id,
+    path,
+    currentArmiesTick,
+  }: {
+    id: bigint;
+    path: any[];
+    currentArmiesTick: number;
+  }) {
     const directions = path
       .map((_, i) => {
         if (path[i + 1] === undefined) return undefined;
@@ -118,10 +128,18 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       })
       .filter((d) => d !== undefined) as number[];
     clearSelection();
-    await travelToHex({ travelingEntityId: id, directions, path });
+    await travelToHex({ travelingEntityId: id, directions, path, currentArmiesTick });
   }
 
-  async function handleExploreClick({ id, path }: { id: bigint; path: any[] }) {
+  async function handleExploreClick({
+    id,
+    path,
+    currentArmiesTick,
+  }: {
+    id: bigint;
+    path: any[];
+    currentArmiesTick: number;
+  }) {
     if (!hexData) return;
     const direction =
       path.length === 2
@@ -140,6 +158,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       explorerId: id,
       direction,
       path,
+      currentArmiesTick,
     });
   }
 
