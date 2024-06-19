@@ -2,7 +2,7 @@ import { DEPTH, FELT_CENTER, HEX_RADIUS } from "@/ui/config";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { Bvh } from "@react-three/drei";
 import { throttle } from "lodash";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useRef } from "react";
 import * as THREE from "three";
 import { Color, InstancedMesh, Matrix4 } from "three";
 import { useLocation } from "wouter";
@@ -158,6 +158,30 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   const { hoverHandler, clickHandler, mouseOutHandler } = useEventHandlers(explored);
 
+  const mouseDownRef = useRef(false);
+  const mouseMoveRef = useRef(false);
+
+  const onMouseDown = useCallback(() => {
+    mouseDownRef.current = true;
+  }, []);
+
+  const onMouseMove = useCallback(() => {
+    if (mouseDownRef.current) {
+      mouseMoveRef.current = true;
+    }
+  }, []);
+
+  const onMouseUp = useCallback(
+    (e: any) => {
+      if (!mouseMoveRef.current) {
+        clickHandler(e);
+      }
+      mouseDownRef.current = false;
+      mouseMoveRef.current = false;
+    },
+    [clickHandler],
+  );
+
   const { group } = useMemo(() => {
     if (!hexData) return { group: [], colors: [] };
     const filteredGroup = hexData.filter((hex) => {
@@ -265,7 +289,13 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   return (
     <Bvh firstHitOnly>
-      <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler} onPointerOut={mouseOutHandler}>
+      <group
+        onPointerEnter={(e) => throttledHoverHandler(e)}
+        onPointerMove={onMouseMove}
+        onPointerDown={onMouseDown}
+        onPointerUp={onMouseUp}
+        onPointerOut={mouseOutHandler}
+      >
         <primitive object={mesh} onDoubleClick={goToHex} />
         <primitive object={borderMesh} onDoubleClick={goToHex} />
       </group>
