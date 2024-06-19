@@ -1,10 +1,10 @@
-import { Position } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
 import { useDojo } from "../context/DojoContext";
-import useUIStore from "../store/useUIStore";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { calculateDistance } from "@/ui/utils/utils";
 import { uuid } from "@latticexyz/utils";
+import { useStamina } from "./useStamina";
 interface TravelToHexProps {
   travelingEntityId: bigint | undefined;
   directions: number[];
@@ -19,6 +19,7 @@ export function useTravel() {
       systemCalls: { travel_hex },
     },
   } = useDojo();
+  const { optimisticStaminaUpdate } = useStamina();
 
   const computeTravelTime = (fromId: bigint, toId: bigint, speed: number) => {
     const fromPosition = getComponentValue(components.Position, getEntityIdFromKeys([fromId]));
@@ -33,7 +34,7 @@ export function useTravel() {
 
     const entity = getEntityIdFromKeys([entityId]);
 
-    // todo: add stamina
+    optimisticStaminaUpdate(overrideId, entityId, EternumGlobalConfig.stamina.travelCost);
 
     components.Position.addOverride(overrideId, {
       entity,
@@ -57,6 +58,7 @@ export function useTravel() {
       directions,
     }).catch(() => {
       components.Position.removeOverride(overrideId);
+      components.Stamina.removeOverride(overrideId);
     });
   };
 

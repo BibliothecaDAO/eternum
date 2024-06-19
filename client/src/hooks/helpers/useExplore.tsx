@@ -1,6 +1,12 @@
 import { useExploredHexesStore } from "@/ui/components/worldmap/hexagon/WorldHexagon";
 import { FELT_CENTER } from "@/ui/config";
-import { Position, Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import {
+  EternumGlobalConfig,
+  Position,
+  Resource,
+  neighborOffsetsEven,
+  neighborOffsetsOdd,
+} from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
@@ -9,7 +15,7 @@ import { Subscription } from "rxjs";
 import { findDirection } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useRealmStore from "../store/useRealmStore";
-import useUIStore from "../store/useUIStore";
+import { useStamina } from "./useStamina";
 
 interface ExploreHexProps {
   explorerId: bigint | undefined;
@@ -20,7 +26,7 @@ interface ExploreHexProps {
 export function useExplore() {
   const {
     setup: {
-      components: { Tile, Position },
+      components: { Tile, Position, Stamina },
       updates: {
         eventUpdates: { createExploreEntityMapEvents: exploreEntityMapEvents },
       },
@@ -30,6 +36,7 @@ export function useExplore() {
   } = useDojo();
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const setExploredHexes = useExploredHexesStore((state) => state.setExploredHexes);
+  const { optimisticStaminaUpdate } = useStamina();
 
   const removeHex = useExploredHexesStore((state) => state.removeHex);
 
@@ -116,7 +123,7 @@ export function useExplore() {
 
     const entity = getEntityIdFromKeys([entityId]);
 
-    //todo: add stamina
+    optimisticStaminaUpdate(overrideId, entityId, EternumGlobalConfig.stamina.exploreCost);
 
     Position.addOverride(overrideId, {
       entity,
@@ -142,6 +149,7 @@ export function useExplore() {
     }).catch((e) => {
       removeHex(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
       Position.removeOverride(overrideId);
+      Stamina.removeOverride(overrideId);
     });
   };
   return { isExplored, exploredColsRows, useFoundResources, getExplorationInput, exploreHex };
