@@ -65,7 +65,9 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     // set initial food resources
     let mint_config_index = 0;
     let initial_resources = array![
-        (ResourceTypes::WHEAT, INITIAL_WHEAT_BALANCE), (ResourceTypes::FISH, INITIAL_FISH_BALANCE), (ResourceTypes::KNIGHT, INITIAL_KNIGHT_BALANCE) 
+        (ResourceTypes::WHEAT, INITIAL_WHEAT_BALANCE),
+        (ResourceTypes::FISH, INITIAL_FISH_BALANCE),
+        (ResourceTypes::KNIGHT, INITIAL_KNIGHT_BALANCE)
     ];
 
     IRealmFreeMintConfigDispatcher { contract_address: config_systems_address }
@@ -96,7 +98,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
 
     let realm_position = get_default_realm_pos();
     let realm_systems_dispatcher = deploy_realm_systems(world);
-    
+
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, realm_position);
     let realm_owner: Owner = get!(world, realm_entity_id, Owner);
 
@@ -160,10 +162,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
             (Health { entity_id: realm_army_unit_id, current: 1, lifetime: 1 })
         )
     );
-
-    
-
-    
 
     let stamina_config_dispatcher = IStaminaConfigDispatcher {
         contract_address: config_systems_address
