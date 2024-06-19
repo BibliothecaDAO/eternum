@@ -67,7 +67,6 @@ export const useStamina = () => {
   const optimisticStaminaUpdate = (overrideId: string, entityId: bigint, cost: number, currentArmiesTick: number) => {
     const entity = getEntityIdFromKeys([entityId]);
 
-    // todo: add stamina
     const stamina = getStamina({ travelingEntityId: entityId, currentArmiesTick });
 
     // substract the costs
