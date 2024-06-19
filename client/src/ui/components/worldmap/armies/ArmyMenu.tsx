@@ -18,7 +18,7 @@ import { useResourceBalance } from "../../../../hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import { DojoHtml } from "@/ui/elements/DojoHtml";
 import { ArmyMode } from "@/hooks/store/_mapStore";
-
+ 
 const EXPLORE_DESCRIPTION = "Explore the area to discover resources. Limit: 1 hex per tick.";
 const TRAVEL_DESCRIPTION = "Move to a new location. Limit: 5 hexes per tick.";
 
