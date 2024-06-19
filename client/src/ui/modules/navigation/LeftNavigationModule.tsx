@@ -24,6 +24,7 @@ import { Questing } from "../questing/Questing";
 import { SettingsWindow } from "../settings/Settings";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -54,6 +55,7 @@ export enum View {
 export const LeftNavigationModule = () => {
   const [lastView, setLastView] = useState<View>(View.None);
 
+  const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
@@ -67,7 +69,8 @@ export const LeftNavigationModule = () => {
 
   const armiesWithStaminaLeft = entityArmies?.filter((entity) => {
     return (
-      getStamina({ travelingEntityId: BigInt(entity.entity_id) })?.amount >= EternumGlobalConfig.stamina.travelCost
+      getStamina({ travelingEntityId: BigInt(entity.entity_id), currentArmiesTick })?.amount >=
+      EternumGlobalConfig.stamina.travelCost
     );
   });
 

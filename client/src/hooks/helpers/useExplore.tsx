@@ -21,6 +21,7 @@ interface ExploreHexProps {
   explorerId: bigint | undefined;
   direction: number | undefined;
   path: Position[];
+  currentArmiesTick: number;
 }
 
 export function useExplore() {
@@ -118,12 +119,12 @@ export function useExplore() {
     }
   };
 
-  const optimisticExplore = (entityId: bigint, col: number, row: number) => {
+  const optimisticExplore = (entityId: bigint, col: number, row: number, currentArmiesTick: number) => {
     let overrideId = uuid();
 
     const entity = getEntityIdFromKeys([entityId]);
 
-    optimisticStaminaUpdate(overrideId, entityId, EternumGlobalConfig.stamina.exploreCost);
+    optimisticStaminaUpdate(overrideId, entityId, EternumGlobalConfig.stamina.exploreCost, currentArmiesTick);
 
     Position.addOverride(overrideId, {
       entity,
@@ -136,11 +137,11 @@ export function useExplore() {
     return overrideId;
   };
 
-  const exploreHex = async ({ explorerId, direction, path }: ExploreHexProps) => {
+  const exploreHex = async ({ explorerId, direction, path, currentArmiesTick }: ExploreHexProps) => {
     if (!explorerId || direction === undefined) return;
     setExploredHexes(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
 
-    const overrideId = optimisticExplore(explorerId, path[1].x, path[1].y);
+    const overrideId = optimisticExplore(explorerId, path[1].x, path[1].y, currentArmiesTick);
 
     explore({
       unit_id: explorerId,
