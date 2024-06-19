@@ -2043,8 +2043,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6b8160ef19de56744f1a46d5e24c40b2c1b85e0b17eee6b435fd9e7b836313d",
-      "class_hash": "0x413560a53d58dc0928ed0d8977f771476e3c85317415c370c7fff8f33bcac25",
-      "original_class_hash": "0x413560a53d58dc0928ed0d8977f771476e3c85317415c370c7fff8f33bcac25",
+      "class_hash": "0x65d83d73e4bb6dd0829371b22af9e7961bfce27ccaf14141c482e67d8217a7a",
+      "original_class_hash": "0x65d83d73e4bb6dd0829371b22af9e7961bfce27ccaf14141c482e67d8217a7a",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -2126,15 +2126,15 @@
           "members": [
             {
               "name": "knight_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "paladin_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "crossbowman_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             }
           ]
         },
@@ -4313,8 +4313,8 @@
     {
       "kind": "DojoContract",
       "address": "0x91d23f4fadfd2a3377dcc590e08f9a78863bced66de67e8f49ed3412a8144c",
-      "class_hash": "0x284e4cb1e08ced62df5395f1d09849d9387e2dcc54cddddece84f4f19fbf588",
-      "original_class_hash": "0x284e4cb1e08ced62df5395f1d09849d9387e2dcc54cddddece84f4f19fbf588",
+      "class_hash": "0x4de42a57ad829e1a40118336c0c45d08a6a202f21a3003ee18faa9991499e0b",
+      "original_class_hash": "0x4de42a57ad829e1a40118336c0c45d08a6a202f21a3003ee18faa9991499e0b",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -5939,8 +5939,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6c51b7ecf0f0cf6d3ab936a3bc732753fd071e30afb5e6bc05c074856b0ac5",
-      "class_hash": "0x5233c8ee6954d8cd6dcb54565c98d258ec298d85d20307d26afcb82a0c91b98",
-      "original_class_hash": "0x5233c8ee6954d8cd6dcb54565c98d258ec298d85d20307d26afcb82a0c91b98",
+      "class_hash": "0x567a6f70f12d44664c0a6f4879dbf1afcb4de881807ee120c1b3234b92a249d",
+      "original_class_hash": "0x567a6f70f12d44664c0a6f4879dbf1afcb4de881807ee120c1b3234b92a249d",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -9260,8 +9260,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x76db07ae740e96e758d4183ac2af0e376109dd899c1535307ab7067f2ba3b5c",
-      "original_class_hash": "0x76db07ae740e96e758d4183ac2af0e376109dd899c1535307ab7067f2ba3b5c",
+      "class_hash": "0x2dce37bdcb9013878609afdaa4d95bad365dfe47cfacbab307210b470b256f",
+      "original_class_hash": "0x2dce37bdcb9013878609afdaa4d95bad365dfe47cfacbab307210b470b256f",
       "abi": [
         {
           "type": "impl",
@@ -9592,15 +9592,15 @@
           "members": [
             {
               "name": "knight_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "paladin_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "crossbowman_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             }
           ]
         },
@@ -9685,7 +9685,17 @@
           "key": false
         },
         {
+          "name": "attack_army_lifetime",
+          "type": "BattleArmy",
+          "key": false
+        },
+        {
           "name": "defence_army",
+          "type": "BattleArmy",
+          "key": false
+        },
+        {
+          "name": "defence_army_lifetime",
           "type": "BattleArmy",
           "key": false
         },
@@ -9730,8 +9740,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x196582b8ed865499a1a3c11f14861752dc8310c9bf44019137379c70ee32ea4",
-      "original_class_hash": "0x196582b8ed865499a1a3c11f14861752dc8310c9bf44019137379c70ee32ea4",
+      "class_hash": "0x2ea36755d03810c5ce8e7f1374e397e76f078358a329b645dfcb76876ecba16",
+      "original_class_hash": "0x2ea36755d03810c5ce8e7f1374e397e76f078358a329b645dfcb76876ecba16",
       "abi": [
         {
           "type": "impl",
@@ -10062,15 +10072,15 @@
           "members": [
             {
               "name": "knight_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "paladin_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "crossbowman_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             }
           ]
         },
@@ -10137,7 +10147,15 @@
               "type": "eternum::models::combat::BattleArmy"
             },
             {
+              "name": "attack_army_lifetime",
+              "type": "eternum::models::combat::BattleArmy"
+            },
+            {
               "name": "defence_army",
+              "type": "eternum::models::combat::BattleArmy"
+            },
+            {
+              "name": "defence_army_lifetime",
               "type": "eternum::models::combat::BattleArmy"
             },
             {
