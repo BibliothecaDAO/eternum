@@ -36,7 +36,7 @@ export function useExplore() {
   } = useDojo();
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const setExploredHexes = useExploredHexesStore((state) => state.setExploredHexes);
-  const { getStamina } = useStamina();
+  const { optimisticStaminaUpdate } = useStamina();
 
   const removeHex = useExploredHexesStore((state) => state.removeHex);
 
@@ -123,18 +123,7 @@ export function useExplore() {
 
     const entity = getEntityIdFromKeys([entityId]);
 
-    // get stamina
-    const stamina = getStamina({ travelingEntityId: entityId });
-
-    // substract the costs
-    Stamina.addOverride(overrideId, {
-      entity,
-      value: {
-        entity_id: entityId,
-        last_refill_tick: stamina.last_refill_tick,
-        amount: stamina.amount - EternumGlobalConfig.stamina.exploreCost,
-      },
-    });
+    optimisticStaminaUpdate(overrideId, entityId, EternumGlobalConfig.stamina.exploreCost);
 
     Position.addOverride(overrideId, {
       entity,
