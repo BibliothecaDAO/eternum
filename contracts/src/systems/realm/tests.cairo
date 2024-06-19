@@ -186,6 +186,21 @@ fn test_mint_starting_resources() {
 
 #[test]
 #[available_gas(3000000000000)]
+#[should_panic(expected: ('already claimed', 'ENTRYPOINT_FAILED'))]
+fn test_mint_starting_resources_twice() {
+    let (world, realm_systems_dispatcher) = setup();
+
+    starknet::testing::set_block_timestamp(TIMESTAMP);
+
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
+
+    realm_systems_dispatcher.mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, realm_entity_id);
+
+    realm_systems_dispatcher.mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, realm_entity_id);
+}
+
+#[test]
+#[available_gas(3000000000000)]
 #[should_panic(expected: ('Entity is not a realm', 'ENTRYPOINT_FAILED'))]
 fn test_mint_starting_resources_as_not_realm() {
     let (world, realm_systems_dispatcher) = setup();
