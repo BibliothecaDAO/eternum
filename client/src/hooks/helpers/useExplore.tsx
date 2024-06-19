@@ -28,8 +28,6 @@ export function useExplore() {
     },
     account: { account },
   } = useDojo();
-  const animationPaths = useUIStore((state) => state.animationPaths);
-  const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const setExploredHexes = useExploredHexesStore((state) => state.setExploredHexes);
 
@@ -133,9 +131,6 @@ export function useExplore() {
 
   const exploreHex = async ({ explorerId, direction, path }: ExploreHexProps) => {
     if (!explorerId || direction === undefined) return;
-    const newPath = { id: explorerId, path, enemy: false };
-    const prevPaths = animationPaths.filter((p) => p.id !== explorerId);
-    setAnimationPaths([...prevPaths, newPath]);
     setExploredHexes(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
 
     const overrideId = optimisticExplore(explorerId, path[1].x, path[1].y);
@@ -146,7 +141,6 @@ export function useExplore() {
       signer: account,
     }).catch((e) => {
       removeHex(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
-      setAnimationPaths([...prevPaths]);
       Position.removeOverride(overrideId);
     });
   };

@@ -7,6 +7,7 @@ type BaseThreeTooltipProps = {
   position?: Position;
   distanceFactor?: number;
   className?: string;
+  visible?: boolean;
 };
 
 export enum Position {
@@ -23,9 +24,10 @@ export const BaseThreeTooltip = ({
   distanceFactor,
   position = Position.CENTER,
   className,
+  visible = true,
 }: BaseThreeTooltipProps) => {
   return (
-    <DojoHtml distanceFactor={distanceFactor}>
+    <DojoHtml visible={visible} distanceFactor={distanceFactor}>
       <div className={clsx("min-w-[215px] clip-angled relative p-2 bg-brown/90 text-gold", position, className)}>
         {children}
         <svg

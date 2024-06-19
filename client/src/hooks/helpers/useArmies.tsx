@@ -129,6 +129,7 @@ export const useArmies = () => {
   } = useDojo();
 
   const armies = useEntityQuery([
+    Has(Position),
     Has(Army),
     Has(Health),
     Not(Protectee),

@@ -1,175 +1,49 @@
+import React from "react";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import useRealmStore from "@/hooks/store/useRealmStore";
-import { getRealmOrderNameById } from "@/ui/utils/realms";
-import { Box } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Vector3 } from "three";
+import { useMemo } from "react";
+import { Euler, Vector3 } from "three";
 import useUIStore from "../../../../hooks/store/useUIStore";
-import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
-import { getUIPositionFromColRow } from "../../../utils/utils";
 import { WarriorModel } from "../../models/armies/WarriorModel";
-import { BannerFlag } from "../BannerFlag";
 import { SelectedUnit } from "../hexagon/SelectedUnit";
-import { ArmyInfoLabel } from "./ArmyInfoLabel";
 import { CombatLabel } from "./CombatLabel";
+import { arePropsEqual } from "./utils";
+import { ArmyHitBox } from "./ArmyHitBox";
+import { ArmyFlag } from "./ArmyFlag";
+import { useArmyAnimation } from "./useArmyAnimation";
 
 type ArmyProps = {
   army: ArmyInfo;
 };
 
-export function Army({ army }: ArmyProps & JSX.IntrinsicElements["group"]) {
-  const { play: playBuildMilitary } = useUiSounds(soundSelector.hoverClick);
-  const startAnimationTimeRef = useRef<number | null>(null);
-
-  const [isRunning, setIsRunning] = useState(false);
-
-  const animationPaths = useUIStore((state) => state.animationPaths);
-  const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
+export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["group"]) => {
   const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
-  const showAllArmies = useUIStore((state) => state.showAllArmies);
 
-  const animationPath = animationPaths.find((path) => path.id === BigInt(army.entity_id));
+  // animation path for the army
+  const armyPosition = { x: army.x, y: army.y };
+  const groupRef = useArmyAnimation(armyPosition, army.offset);
 
   // Deterministic rotation based on the id
   const deterministicRotation = useMemo(() => {
     return (Number(army.entity_id) % 12) * (Math.PI / 6); // Convert to one of 12 directions in radians
   }, []);
 
-  const [rotationY, setRotationY] = useState(deterministicRotation);
-  const [hovered, setHovered] = useState(false);
-
-  const [position, setPosition] = useState<Vector3>(
-    new Vector3(army.uiPos.x + army.offset.x, 0.32, -army.uiPos.y - army.offset.y),
-  );
-
-  useEffect(() => {
-    if (animationPath) return;
-    const vectorPos = new Vector3(army.uiPos.x + army.offset.x, 0.32, -army.uiPos.y - army.offset.y);
-    if (vectorPos.x === position.x && vectorPos.y === position.y) return;
-    setPosition(vectorPos);
-  }, [army.uiPos]);
-
-  useFrame(() => {
-    if (!animationPath) return;
-
-    const now = Date.now();
-    const startTime = startAnimationTimeRef.current ?? now;
-    if (!startAnimationTimeRef.current) {
-      setIsRunning(true);
-      startAnimationTimeRef.current = now;
-    }
-
-    const uiPath = animationPath.path.map((pos) => getUIPositionFromColRow(pos.x, pos.y));
-    const timeElapsed = now - startTime;
-    const timeToComplete = uiPath.length * 1000;
-    const progress = Math.min(timeElapsed / timeToComplete, 1);
-    const pathIndex = Math.floor(progress * uiPath.length);
-    const currentPath = uiPath.slice(pathIndex, pathIndex + 2);
-
-    if (progress >= 1 || currentPath.length < 2) {
-      setIsRunning(false);
-      setAnimationPaths(animationPaths.filter((path) => path.id !== animationPath.id));
-      startAnimationTimeRef.current = null;
-      return;
-    }
-
-    const progressBetweenPoints = (progress - (1 / uiPath.length) * pathIndex) * uiPath.length;
-    const applyOffset = (point: { x: number; y: number }, isFirstOrLast: boolean) => ({
-      x: point.x + (isFirstOrLast ? army.offset.x : 0),
-      y: point.y + (isFirstOrLast ? army.offset.y : 0),
-    });
-
-    const startPoint = applyOffset(currentPath[0], pathIndex === 0);
-    const endPoint = applyOffset(currentPath[1], pathIndex === uiPath.length - 2);
-    const currentPos = {
-      x: startPoint.x + (endPoint.x - startPoint.x) * progressBetweenPoints,
-      y: startPoint.y + (endPoint.y - startPoint.y) * progressBetweenPoints,
-    };
-
-    const direction = new Vector3(endPoint.x - startPoint.x, 0, -(endPoint.y - startPoint.y)).normalize();
-    setPosition(new Vector3(currentPos.x, 0.32, -currentPos.y));
-
-    if (!direction.equals(new Vector3(0, 0, 0))) {
-      const rotation = Math.atan2(direction.x, direction.z);
-      setRotationY(rotation);
-    }
-  });
-
-  const onRightClick = useCallback(() => {
-    if (!isRunning && army.isMine) {
-      playBuildMilitary();
-    }
-    if ((selectedEntity?.id || 0n) !== BigInt(army.entity_id) && army.isMine) {
-      setSelectedEntity({ id: BigInt(army.entity_id), position: { x: army.x, y: army.y } });
-    }
-  }, [army.entity_id, army.x, army.y, selectedEntity, playBuildMilitary, setSelectedEntity]);
-
-  const onPointerEnter = useCallback((e: any) => {
-    e.stopPropagation();
-    setHovered(true);
+  const initialPos = useMemo(() => {
+    return new Vector3(army.uiPos.x + army.offset.x, 0.32, -army.uiPos.y - army.offset.y);
   }, []);
-
-  const onPointerOut = useCallback((e: any) => {
-    e.stopPropagation();
-    setHovered(false);
-  }, []);
-
-  const showArmyInfo = useMemo(() => {
-    return showAllArmies || hovered;
-  }, [showAllArmies, hovered]);
 
   const isSelected = useMemo(() => {
     return (selectedEntity?.id || 0n) === BigInt(army.entity_id);
   }, [selectedEntity, army.entity_id]);
 
-  const showCombatLabel = useMemo(() => {
-    return selectedEntity !== undefined && selectedEntity.id === BigInt(army.entity_id);
-  }, [selectedEntity]);
-
-  // Army can be self owned or enemy
-  // location can have a structure or no strucutre and this strucutre can be owned by self or enemy
-
   return (
     <>
-      <group position={position}>
-        {showArmyInfo && <ArmyInfoLabel army={army} />}
-        {army.isMine && <ArmyFlag rotationY={rotationY} position={position} />}
-
-        {showCombatLabel && <CombatLabel />}
-
-        <WarriorModel rotationY={rotationY} />
-        <mesh
-          position={[0, 1.6, 0]}
-          onContextMenu={onRightClick}
-          onPointerEnter={onPointerEnter}
-          onPointerOut={onPointerOut}
-          visible={false}
-        >
-          <Box args={[1, 3, 1]} />
-        </mesh>
+      <group position={initialPos} ref={groupRef} rotation={new Euler(0, deterministicRotation, 0)}>
+        <ArmyFlag visible={army.isMine} rotationY={deterministicRotation} position={initialPos} />
+        <CombatLabel visible={isSelected} />
+        <WarriorModel />
+        <ArmyHitBox army={army} />
       </group>
       {isSelected && <SelectedUnit position={{ x: army.x, y: army.y }} />}
     </>
   );
-}
-
-export const ArmyFlag = ({ position, rotationY }: { position: Vector3; rotationY: number }) => {
-  const realms = useRealmStore((state) => state.realmEntityIds);
-  const realmOrder = useMemo(() => {
-    const realmId = realms[0]?.realmId || BigInt(0);
-    const orderName = getRealmOrderNameById(realmId);
-    return orderName.charAt(0).toUpperCase() + orderName.slice(1);
-  }, []);
-
-  return (
-    <group position={[0, 3, 0]} rotation={[0, rotationY - Math.PI / 2, 0]} scale={0.7}>
-      <BannerFlag
-        angle={rotationY}
-        order={realmOrder}
-        position={[position.x, position.y, position.z + 10]}
-      ></BannerFlag>
-    </group>
-  );
-};
+}, arePropsEqual);
