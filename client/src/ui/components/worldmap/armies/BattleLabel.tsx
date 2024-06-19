@@ -1,3 +1,4 @@
+import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmiesByBattleId } from "@/hooks/helpers/useArmies";
 import { Realm, Structure, useStructuresPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -12,6 +13,12 @@ interface BattleLabelProps {
 }
 
 export const BattleLabel = ({ selectedBattle, visible = true }: BattleLabelProps) => {
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { battle_leave },
+    },
+  } = useDojo();
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setSelectedBattle = useUIStore((state) => state.setSelectedBattle);
 
@@ -27,28 +34,54 @@ export const BattleLabel = ({ selectedBattle, visible = true }: BattleLabelProps
   }, [armies]);
 
   const onClick = () => {
-    if (attackers.length === 0 || defenders.length === 0) return null;
     const target = Boolean(formattedRealmAtPosition) ? formattedRealmAtPosition : formattedStructureAtPosition;
     if (target) {
       setSelectedBattle(undefined);
       setBattleView({
-        attackers: attackers,
+        attackers: attackers.map((army) => BigInt(army.entity_id)),
         defenders: { type: CombatTarget.Structure, entities: target as Realm | Structure },
       });
     } else {
       setSelectedBattle(undefined);
       setBattleView({
-        attackers: attackers,
-        defenders: { type: CombatTarget.Army, entities: defenders },
+        attackers: attackers.map((army) => BigInt(army.entity_id)),
+        defenders: { type: CombatTarget.Army, entities: defenders.map((army) => BigInt(army.entity_id)) },
       });
     }
   };
 
   return (
     <DojoHtml visible={visible} className="relative -left-[15px] -top-[70px]">
-      <Button variant="primary" onClick={onClick}>
-        View
-      </Button>
+      {attackers.length === 0 || defenders.length === 0 ? (
+        <Button
+          variant="primary"
+          onClick={() => handleOneEmptySide(attackers, defenders, battle_leave, account, selectedBattle)}
+        >
+          Leave battle
+        </Button>
+      ) : (
+        <Button variant="primary" onClick={onClick}>
+          View
+        </Button>
+      )}
     </DojoHtml>
   );
+};
+
+const handleOneEmptySide = (
+  attackers: ArmyInfo[],
+  defenders: ArmyInfo[],
+  battle_leave: any,
+  account: any,
+  battleId: bigint,
+) => {
+  let ownArmy: ArmyInfo | undefined;
+  if (attackers.length === 0) {
+    ownArmy = defenders.find((army) => army.isMine);
+  }
+  if (defenders.length === 0) {
+    ownArmy = attackers.find((army) => army.isMine);
+  }
+  if (!ownArmy) return;
+  battle_leave({ signer: account, battle_id: battleId, army_id: ownArmy.entity_id });
 };

@@ -129,6 +129,7 @@ export const useArmies = () => {
   } = useDojo();
 
   const armies = useEntityQuery([
+    Has(Position),
     Has(Army),
     Has(Health),
     Not(Protectee),
@@ -247,6 +248,48 @@ export const getArmiesByBattleId = (battle_id: bigint) => {
     Realm,
     Stamina,
   );
+};
+
+export const useArmyByArmyEntityId = (entityId: bigint) => {
+  const {
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+        Stamina,
+      },
+    },
+    account: { account },
+  } = useDojo();
+
+  const armiesEntityIds = useEntityQuery([HasValue(Army, { entity_id: entityId })]);
+  return formatArmies(
+    Array.from(armiesEntityIds),
+    account.address,
+    Army,
+    Protectee,
+    EntityName,
+    Health,
+    Quantity,
+    Movable,
+    Capacity,
+    ArrivalTime,
+    Position,
+    EntityOwner,
+    Owner,
+    Realm,
+    Stamina,
+  )[0];
 };
 
 export const usePositionArmies = ({ position }: { position: Position }) => {

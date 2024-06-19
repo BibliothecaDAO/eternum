@@ -1,16 +1,7 @@
-import { useMemo } from "react";
-import { ResourceIcon } from "../../elements/ResourceIcon";
-import useRealmStore from "../../../hooks/store/useRealmStore";
-import { useComponentValue } from "@dojoengine/react";
-import { useDojo } from "../../../hooks/context/DojoContext";
-import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
-import { findResourceById } from "@bibliothecadao/eternum";
-import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "./realm/labor/laborUtils";
-import ProgressBar from "../../elements/ProgressBar";
-import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
-import useUIStore from "../../../hooks/store/useUIStore";
 import { BaseThreeTooltip } from "@/ui/elements/BaseThreeTooltip";
+import { findResourceById } from "@bibliothecadao/eternum";
+import ProgressBar from "../../elements/ProgressBar";
+import { ResourceIcon } from "../../elements/ResourceIcon";
 
 type BuildingTooltipProps = {
   resourceId: number;

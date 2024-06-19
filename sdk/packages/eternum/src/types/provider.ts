@@ -1,6 +1,6 @@
 import { Account, AccountInterface, CairoOption, num } from "starknet";
-import { BuildingType } from "../constants/structures";
 import { ResourcesIds } from "../constants";
+import { BuildingType } from "../constants/structures";
 
 interface SystemSigner {
   signer: AccountInterface | Account;
@@ -284,6 +284,9 @@ export interface BattleClaimProps extends SystemSigner {
   army_id: num.BigNumberish;
   structure_id: num.BigNumberish;
 }
+
+type BattleClaimAndLeave = BattleClaimProps & BattleLeaveProps;
+export interface BattleClaimAndLeaveProps extends SystemSigner, BattleClaimAndLeave {}
 
 export interface CreateGuildProps extends SystemSigner {
   is_public: boolean;

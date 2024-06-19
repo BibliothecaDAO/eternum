@@ -1,47 +1,31 @@
-import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Realm, Structure } from "@/hooks/helpers/useStructures";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { motion } from "framer-motion";
-import { useMemo } from "react";
 import { BattleActions } from "./BattleActions";
 import { BattleProgressBar } from "./BattleProgressBar";
 import { EntityAvatar } from "./EntityAvatar";
 import { TroopRow } from "./Troops";
 
-export const OngoingBattle = ({
+export const BattleStarter = ({
   attackerArmy,
+  attackerArmyHealth,
   defenderArmy,
-  battleManager,
+  defenderArmyHealth,
   structure,
 }: {
   attackerArmy: ArmyInfo;
-  defenderArmy: ArmyInfo;
-  battleManager: BattleManager;
+  attackerArmyHealth: bigint;
+  defenderArmy: ArmyInfo | undefined;
+  defenderArmyHealth: bigint;
   structure: Structure | Realm | undefined;
 }) => {
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
-  const battleAdjusted = useMemo(() => {
-    return battleManager.getUpdatedBattle(currentDefaultTick);
-  }, [currentDefaultTick]);
   const setBattleView = useUIStore((state) => state.setBattleView);
-
-  const attackingHealth =
-    battleAdjusted === undefined
-      ? { current: Number(attackerArmy.current), lifetime: Number(attackerArmy.lifetime) }
-      : {
-          current: Number(battleAdjusted.attack_army_health.current),
-          lifetime: Number(battleAdjusted.attack_army_health.lifetime),
-        };
-  const defendingHealth =
-    battleAdjusted === undefined
-      ? { current: Number(defenderArmy.current), lifetime: Number(defenderArmy.lifetime) }
-      : {
-          current: Number(battleAdjusted.defence_army_health.current),
-          lifetime: Number(battleAdjusted.defence_army_health.lifetime),
-        };
+  const attackingHealth = { current: Number(attackerArmyHealth), lifetime: Number(attackerArmy.lifetime) };
+  const defendingHealth = defenderArmy
+    ? { current: Number(defenderArmyHealth), lifetime: Number(defenderArmy.lifetime) }
+    : undefined;
 
   return (
     <div>
@@ -62,7 +46,7 @@ export const OngoingBattle = ({
         </div>
       </motion.div>
       <motion.div
-        className="absolute bottom-0 "
+        className="absolute bottom-0"
         variants={{
           hidden: { y: "100%" },
           visible: { y: "0%", opacity: 1, transition: { duration: 0.5 } },
@@ -75,9 +59,9 @@ export const OngoingBattle = ({
           attackingHealth={attackingHealth}
           attacker={`${attackerArmy.name} ${attackerArmy.isMine ? "(Yours)" : ""}`}
           defendingHealth={defendingHealth}
-          defender={`${defenderArmy.name} ${defenderArmy.isMine ? "(Yours)" : ""}`}
+          defender={defenderArmy ? `${defenderArmy.name} ${defenderArmy.isMine ? "(Yours)" : ""}` : structure!.name}
         />
-        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between">
+        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between ">
           <div className="flex flex-row w-[70vw]">
             <EntityAvatar army={attackerArmy} structure={structure} />
             <TroopRow army={attackerArmy} />
@@ -86,8 +70,8 @@ export const OngoingBattle = ({
             attacker={attackerArmy}
             defender={defenderArmy}
             structure={structure}
-            battleId={BigInt(defenderArmy.battle_id)}
-            isActive
+            battleId={BigInt(attackerArmy.battle_id)}
+            isActive={false}
           />
           <div className="flex flex-row w-[70vw]">
             <TroopRow army={defenderArmy as ArmyInfo} defending />

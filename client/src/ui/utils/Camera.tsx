@@ -1,14 +1,12 @@
 import { MapControls } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import gsap from "gsap";
-import { useEffect, useRef, useMemo, useCallback, useState } from "react";
+import { button, useControls } from "leva";
+import { useCallback, useEffect, useRef } from "react";
+import * as THREE from "three";
 import { Vector3 } from "three";
-import { useControls, button } from "leva";
 import { useRoute } from "wouter";
 import { soundSelector, useUiSounds } from "../../hooks/useUISound";
-import * as THREE from "three";
-import useUIStore from "@/hooks/store/useUIStore";
-import { throttle } from "lodash";
 
 interface Props {
   position: {
@@ -37,9 +35,6 @@ const minPan = new THREE.Vector3(0, -Infinity, -1400);
 const maxPan = new THREE.Vector3(2700, Infinity, 0);
 
 const CameraControls = ({ position, target }: Props) => {
-  const direction = useUIStore((state) => state.compassDirection);
-  const setCompassDirection = useUIStore((state) => state.setCompassDirection);
-
   const {
     camera,
     gl: { domElement },

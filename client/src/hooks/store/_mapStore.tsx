@@ -28,8 +28,6 @@ export interface MapStore {
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => void;
   selectedBattle: { id: bigint; position: Position } | undefined;
   setSelectedBattle: (battle: { id: bigint; position: Position } | undefined) => void;
-  animationPaths: { id: bigint; path: Position[]; enemy: boolean }[];
-  setAnimationPaths: (path: { id: bigint; path: Position[]; enemy: boolean }[]) => void;
   armyMode: ArmyMode | null;
   setArmyMode: (mode: ArmyMode | null) => void;
   travelPaths: Map<string, TravelPath>;
@@ -64,8 +62,6 @@ export const createMapStoreSlice = (set: any) => ({
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => set({ selectedEntity: entity }),
   selectedBattle: undefined,
   setSelectedBattle: (battle: { id: bigint; position: Position } | undefined) => set({ selectedBattle: battle }),
-  animationPaths: [],
-  setAnimationPaths: (animationPaths: { id: bigint; path: Position[]; enemy: boolean }[]) => set({ animationPaths }),
   armyMode: null,
   setArmyMode: (armyMode: ArmyMode | null) => set({ armyMode }),
   travelPaths: new Map<string, TravelPath>(),

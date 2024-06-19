@@ -35,6 +35,45 @@ export const getPositionsAtIndex = (mesh: InstancedMesh<any, any>, index: number
   return positions;
 };
 
+export const findShortestPathBFS = (startPos: Position, endPos: Position, exploredHexes: Map<number, Set<number>>) => {
+  const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
+  const visited = new Set<string>();
+  const path = new Map<string, Position>();
+
+  const posKey = (pos: Position) => `${pos.x},${pos.y}`;
+
+  while (queue.length > 0) {
+    const { position: current, distance } = queue.shift()!;
+    if (current.x === endPos.x && current.y === endPos.y) {
+      // Reconstruct the path upon reaching the end position
+      let temp = current;
+      const result = [];
+      while (temp) {
+        result.unshift(temp); // Add to the beginning of the result array
+        //@ts-ignore:
+        temp = path.get(posKey(temp)); // Move backwards through the path
+      }
+      return result;
+    }
+
+    const currentKey = posKey(current);
+    if (!visited.has(currentKey)) {
+      visited.add(currentKey);
+      const neighbors = getNeighborHexes(current.x, current.y); // Assuming getNeighbors is defined elsewhere
+      for (const { col: x, row: y } of neighbors) {
+        const neighborKey = posKey({ x, y });
+        const isExplored = exploredHexes.get(x - FELT_CENTER)?.has(y - FELT_CENTER);
+        if (!visited.has(neighborKey) && !queue.some((e) => posKey(e.position) === neighborKey) && isExplored) {
+          path.set(neighborKey, current); // Map each neighbor back to the current position
+          queue.push({ position: { x, y }, distance: distance + 1 });
+        }
+      }
+    }
+  }
+
+  return []; // Return empty array if no path is found within maxHex distance
+};
+
 export const findAccessiblePositionsAndPaths = (
   startPos: Position,
   exploredHexes: Map<number, Set<number>>,

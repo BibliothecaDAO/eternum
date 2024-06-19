@@ -1,9 +1,11 @@
+import { DEPTH, FELT_CENTER, HEX_RADIUS } from "@/ui/config";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { Bvh } from "@react-three/drei";
 import { throttle } from "lodash";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useMemo } from "react";
 import * as THREE from "three";
 import { Color, InstancedMesh, Matrix4 } from "three";
+import { useLocation } from "wouter";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { Hexagon } from "../../../../types/index";
 import { getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
@@ -12,6 +14,7 @@ import { DeciduousForestBiome } from "../../models/biomes/DeciduousForestBiome";
 import { DeepOceanBiome } from "../../models/biomes/DeepOceanBiome";
 import { DesertBiome } from "../../models/biomes/DesertBiome";
 import { GrasslandBiome } from "../../models/biomes/GrasslandBiome";
+import { HexGrid } from "../../models/biomes/HexGrid";
 import { OceanBiome } from "../../models/biomes/OceanBiome";
 import { ScorchedBiome } from "../../models/biomes/ScorchedBiome";
 import { ShrublandBiome } from "../../models/biomes/ShrublandBiome";
@@ -24,11 +27,8 @@ import { TropicalRainforestBiome } from "../../models/biomes/TropicalRainforestB
 import { TropicalSeasonalForestBiome } from "../../models/biomes/TropicalSeasonalForestBiome";
 import { TundraBiome } from "../../models/biomes/TundraBiome.js";
 import { createHexagonGeometry } from "./HexagonGeometry";
-import { useLocation } from "wouter";
-import { HexGrid } from "../../models/biomes/HexGrid";
-import { getPositionsAtIndex } from "./utils";
-import { DEPTH, FELT_CENTER, HEX_RADIUS } from "@/ui/config";
 import { useEventHandlers } from "./useEventHandlers";
+import { getPositionsAtIndex } from "./utils";
 
 type HexagonGridProps = {
   startRow: number;

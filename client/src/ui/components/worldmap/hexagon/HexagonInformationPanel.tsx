@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Position } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { StructureCard } from "../../hyperstructures/StructureCard";
-import { EnnemyArmies } from "../../military/Battle";
+import { EnemyArmies } from "../../military/Battle";
 
 type ToShow = {
   showBattle: boolean;
@@ -17,13 +17,9 @@ type ToShow = {
 };
 
 export const HexagonInformationPanel = () => {
-  const { clickedHex, selectedEntity, setSelectedEntity } = useUIStore(
-    ({ clickedHex, selectedEntity, setSelectedEntity }) => ({
-      clickedHex,
-      selectedEntity,
-      setSelectedEntity,
-    }),
-  );
+  const clickedHex = useUIStore((state) => state.clickedHex);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
 
   const hexPosition = useMemo(() => {
     if (selectedEntity) return { x: selectedEntity.position.x, y: selectedEntity.position.y };
@@ -77,7 +73,7 @@ export const HexagonInformationPanel = () => {
         )}
         {toShow.showBattle && <div>Hello World</div>}
         {toShow.showStructure && <StructureCard position={hexPosition} ownArmySelected={ownArmySelected} />}
-        {toShow.showEnnemies && <EnnemyArmies armies={enemyArmies} ownArmySelected={ownArmySelected} />}
+        {toShow.showEnnemies && <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmySelected!} />}
         {!toShow.showBattle && !toShow.showEnnemies && !toShow.showStructure && "Nothing to show here"}
       </div>
     )

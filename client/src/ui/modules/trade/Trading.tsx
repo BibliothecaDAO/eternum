@@ -1,16 +1,14 @@
-import useUIStore from "@/hooks/store/useUIStore";
-import { OSWindow } from "@/ui/components/navigation/OSWindow";
-import { trade } from "@/ui/components/navigation/Config";
-import { Tabs } from "@/ui/elements/tab";
-import { useCallback, useMemo, useState } from "react";
-import { FastCreateOfferPopup } from "@/ui/components/cityview/realm/trade/FastCreateOffer";
-import { Marketplace } from "@/ui/components/trading/Marketplace";
-import { AcceptOfferPopup } from "@/ui/components/cityview/realm/trade/AcceptOffer";
-import { MarketInterface } from "@bibliothecadao/eternum";
-import { TransferBetweenEntities } from "@/ui/components/trading/TransferBetweenEntities";
-import { ResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
-import { EntityList } from "@/ui/components/list/EntityList";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import useUIStore from "@/hooks/store/useUIStore";
+import { AcceptOfferPopup } from "@/ui/components/cityview/realm/trade/AcceptOffer";
+import { FastCreateOfferPopup } from "@/ui/components/cityview/realm/trade/FastCreateOffer";
+import { trade } from "@/ui/components/navigation/Config";
+import { OSWindow } from "@/ui/components/navigation/OSWindow";
+import { Marketplace } from "@/ui/components/trading/Marketplace";
+import { TransferBetweenEntities } from "@/ui/components/trading/TransferBetweenEntities";
+import { Tabs } from "@/ui/elements/tab";
+import { MarketInterface } from "@bibliothecadao/eternum";
+import { useCallback, useMemo, useState } from "react";
 
 export const Trading = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);

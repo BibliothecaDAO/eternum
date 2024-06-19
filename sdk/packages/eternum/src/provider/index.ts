@@ -45,7 +45,6 @@ export class EternumProvider extends EnhancedDojoProvider {
   private async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
     const tx = await this.execute(signer, transactionDetails);
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
-    // const transactionResultCpy = { ...transactionResult };
     this.emit("transactionComplete", transactionResult);
     return transactionResult;
   }
@@ -504,6 +503,23 @@ export class EternumProvider extends EnhancedDojoProvider {
       entrypoint: "battle_claim",
       calldata: [army_id, structure_id],
     });
+  }
+
+  public async battle_claim_and_leave(props: SystemProps.BattleClaimAndLeaveProps) {
+    const { army_id, structure_id, battle_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, "combat_systems"),
+        entrypoint: "battle_leave",
+        calldata: [battle_id, army_id],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, "combat_systems"),
+        entrypoint: "battle_claim",
+        calldata: [army_id, structure_id],
+      },
+    ]);
   }
 
   public async mint_starting_resources(props: SystemProps.CreateStartingResources) {

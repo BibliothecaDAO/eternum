@@ -8,21 +8,23 @@ import { BattleProgressBar } from "./BattleProgressBar";
 import { EntityAvatar } from "./EntityAvatar";
 import { TroopRow } from "./Troops";
 
-export const NoOngoingBattle = ({
+export const BattleFinisher = ({
   attackerArmy,
+  attackerArmyHealth,
   defenderArmy,
+  defenderArmyHealth,
   structure,
 }: {
   attackerArmy: ArmyInfo;
+  attackerArmyHealth: bigint;
   defenderArmy: ArmyInfo | undefined;
+  defenderArmyHealth: bigint;
   structure: Structure | Realm | undefined;
 }) => {
-  const { setBattleView } = useUIStore((state) => ({
-    setBattleView: state.setBattleView,
-  }));
-  const attackingHealth = { current: Number(attackerArmy.current), lifetime: Number(attackerArmy.lifetime) };
+  const setBattleView = useUIStore((state) => state.setBattleView);
+  const attackingHealth = { current: Number(attackerArmyHealth), lifetime: Number(attackerArmy.lifetime) };
   const defendingHealth = defenderArmy
-    ? { current: Number(defenderArmy.current), lifetime: Number(defenderArmy.lifetime) }
+    ? { current: Number(defenderArmyHealth), lifetime: Number(defenderArmy.lifetime) }
     : undefined;
 
   return (
@@ -59,13 +61,12 @@ export const NoOngoingBattle = ({
           defendingHealth={defendingHealth}
           defender={defenderArmy ? `${defenderArmy.name} ${defenderArmy.isMine ? "(Yours)" : ""}` : structure!.name}
         />
-        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between ">
+        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between">
           <div className="flex flex-row w-[70vw]">
             <EntityAvatar army={attackerArmy} structure={structure} />
             <TroopRow army={attackerArmy} />
           </div>
           <BattleActions
-            battle={undefined}
             attacker={attackerArmy}
             defender={defenderArmy}
             structure={structure}

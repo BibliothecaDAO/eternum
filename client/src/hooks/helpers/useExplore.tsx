@@ -1,16 +1,15 @@
-import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../context/DojoContext";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useEffect, useRef, useState } from "react";
-import { Position, Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import useRealmStore from "../store/useRealmStore";
-import { findDirection } from "../../ui/utils/utils";
-import useUIStore from "../store/useUIStore";
-import { Subscription } from "rxjs";
 import { useExploredHexesStore } from "@/ui/components/worldmap/hexagon/WorldHexagon";
 import { FELT_CENTER } from "@/ui/config";
-import { soundSelector, useUiSounds } from "../useUISound";
+import { Position, Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
+import { useEffect, useRef, useState } from "react";
+import { Subscription } from "rxjs";
+import { findDirection } from "../../ui/utils/utils";
+import { useDojo } from "../context/DojoContext";
+import useRealmStore from "../store/useRealmStore";
+import useUIStore from "../store/useUIStore";
 
 interface ExploreHexProps {
   explorerId: bigint | undefined;
@@ -29,9 +28,6 @@ export function useExplore() {
     },
     account: { account },
   } = useDojo();
-  const { play: playExplore } = useUiSounds(soundSelector.addAdamantine);
-  const animationPaths = useUIStore((state) => state.animationPaths);
-  const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const setExploredHexes = useExploredHexesStore((state) => state.setExploredHexes);
 
@@ -135,9 +131,6 @@ export function useExplore() {
 
   const exploreHex = async ({ explorerId, direction, path }: ExploreHexProps) => {
     if (!explorerId || direction === undefined) return;
-    const newPath = { id: explorerId, path, enemy: false };
-    const prevPaths = animationPaths.filter((p) => p.id !== explorerId);
-    setAnimationPaths([...prevPaths, newPath]);
     setExploredHexes(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
 
     const overrideId = optimisticExplore(explorerId, path[1].x, path[1].y);
@@ -148,7 +141,6 @@ export function useExplore() {
       signer: account,
     }).catch((e) => {
       removeHex(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
-      setAnimationPaths([...prevPaths]);
       Position.removeOverride(overrideId);
     });
   };

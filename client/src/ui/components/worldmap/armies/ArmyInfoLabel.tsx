@@ -16,11 +16,16 @@ import { InventoryResources } from "../../resources/InventoryResources";
 
 interface ArmyInfoLabelProps {
   army: ArmyInfo;
+  visible?: boolean;
 }
 
-export const ArmyInfoLabel = ({ army }: ArmyInfoLabelProps) => {
+export const ArmyInfoLabel = ({ army, visible }: ArmyInfoLabelProps) => {
   return (
-    <BaseThreeTooltip position={Position.TOP_CENTER} className={`bg-transparent pointer-events-none -mt-[320px]`}>
+    <BaseThreeTooltip
+      visible={visible}
+      position={Position.TOP_CENTER}
+      className={`bg-transparent pointer-events-none -mt-[320px]`}
+    >
       <RaiderInfo key={army.entity_id} army={army} />
     </BaseThreeTooltip>
   );

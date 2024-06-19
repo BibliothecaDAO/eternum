@@ -1,27 +1,25 @@
 import { useMemo, useState } from "react";
 import { BaseContainer } from "../../containers/BaseContainer";
-import { HexagonInformationPanel } from "../../components/worldmap/hexagon/HexagonInformationPanel";
 
-import CircleButton from "@/ui/elements/CircleButton";
-import Button from "@/ui/elements/Button";
-import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useResources } from "@/hooks/helpers/useResources";
+import { useModal } from "@/hooks/store/useModal";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import { BuildingThumbs } from "./LeftNavigationModule";
 import useUIStore from "@/hooks/store/useUIStore";
 import { banks, trade } from "@/ui/components/navigation/Config";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { AllResourceArrivals, ResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
-import { useResources } from "@/hooks/helpers/useResources";
-import { ArrowRight } from "lucide-react";
-import { useModal } from "@/hooks/store/useModal";
+import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
-import { useComponentValue } from "@dojoengine/react";
-import { useDojo } from "@/hooks/context/DojoContext";
-import { getComponentValue } from "@dojoengine/recs";
-import { getColRowFromUIPosition, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { AllResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
+import Button from "@/ui/elements/Button";
+import CircleButton from "@/ui/elements/CircleButton";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { BASE_POPULATION_CAPACITY, BuildingType, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
-import { debounce } from "lodash";
+import { useComponentValue } from "@dojoengine/react";
+import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
+import { debounce } from "lodash";
+import { ArrowRight } from "lucide-react";
+import { BuildingThumbs } from "./LeftNavigationModule";
 
 enum View {
   ResourceTable,
@@ -35,9 +33,6 @@ export const RightNavigationModule = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const toggleOffscreen = () => {
-    setIsOffscreen(!isOffscreen);
-  };
 
   const { realmEntityId } = useRealmStore();
 

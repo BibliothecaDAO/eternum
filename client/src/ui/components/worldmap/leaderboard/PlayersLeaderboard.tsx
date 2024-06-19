@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { SortButton, SortInterface } from "../../../elements/SortButton";
-import { SortPanel } from "../../../elements/SortPanel";
-import { OrderIcon } from "../../../elements/OrderIcon";
-import useUIStore from "../../../../hooks/store/useUIStore";
 import useLeaderBoardStore, { PlayerPointsLeaderboardInterface } from "../../../../hooks/store/useLeaderBoardStore";
 import Button from "../../../elements/Button";
+import { OrderIcon } from "../../../elements/OrderIcon";
+import { SortButton, SortInterface } from "../../../elements/SortButton";
+import { SortPanel } from "../../../elements/SortPanel";
 import { currencyIntlFormat, displayAddress, sortItems } from "../../../utils/utils";
 
 type PlayerPointsLeaderboardKeys = keyof PlayerPointsLeaderboardInterface;
@@ -22,8 +21,6 @@ export const PlayersLeaderboard = () => {
   });
 
   const playerPointsLeaderboard = useLeaderBoardStore((state) => state.playerPointsLeaderboard);
-
-  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const sortingParams: SortingParamPlayerPointsLeaderboard[] = useMemo(() => {
     return [
