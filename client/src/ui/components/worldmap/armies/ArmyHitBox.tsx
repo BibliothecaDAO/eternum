@@ -1,9 +1,10 @@
 import useUIStore from "@/hooks/store/useUIStore";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArmyInfoLabel } from "./ArmyInfoLabel";
 import { Box } from "@react-three/drei";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useSelectedArmySound } from "@/hooks/useUISound";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 
 export const ArmyHitBox = ({ army }: { army: ArmyInfo }) => {
   const selectedEntity = useUIStore((state) => state.selectedEntity);
@@ -11,6 +12,16 @@ export const ArmyHitBox = ({ army }: { army: ArmyInfo }) => {
   const showAllArmies = useUIStore((state) => state.showAllArmies);
   const [hovered, setHovered] = useState(false);
   const { play: playSelectedArmy } = useSelectedArmySound();
+  const { play: playClick } = useUiSounds(soundSelector.click);
+  const { play: playHover } = useUiSounds(soundSelector.hoverClick);
+
+  useEffect(() => {
+    playClick();
+  }, [selectedEntity]);
+
+  useEffect(() => {
+    if (hovered) playHover();
+  }, [hovered]);
 
   const showArmyInfo = useMemo(() => {
     return showAllArmies || hovered;
