@@ -30,12 +30,23 @@ export function useTravel() {
     return Math.floor(((distanceFromPosition / speed) * 3600) / 60 / 60);
   };
 
-  const optimisticTravelHex = (entityId: bigint, col: number, row: number, currentArmiesTick: number) => {
+  const optimisticTravelHex = (
+    entityId: bigint,
+    col: number,
+    row: number,
+    pathLength: number,
+    currentArmiesTick: number,
+  ) => {
     let overrideId = uuid();
 
     const entity = getEntityIdFromKeys([entityId]);
 
-    optimisticStaminaUpdate(overrideId, entityId, EternumGlobalConfig.stamina.travelCost, currentArmiesTick);
+    optimisticStaminaUpdate(
+      overrideId,
+      entityId,
+      EternumGlobalConfig.stamina.travelCost * pathLength,
+      currentArmiesTick,
+    );
 
     components.Position.addOverride(overrideId, {
       entity,
@@ -55,6 +66,7 @@ export function useTravel() {
       travelingEntityId,
       path[path.length - 1].x,
       path[path.length - 1].y,
+      path.length - 1,
       currentArmiesTick,
     );
 
