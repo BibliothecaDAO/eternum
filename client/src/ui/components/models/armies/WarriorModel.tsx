@@ -1,10 +1,18 @@
 import { useGLTF } from "@react-three/drei";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { ArmyHitBox } from "../../worldmap/armies/ArmyHitBox";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
 
-export function WarriorModel() {
+type WarriorModelProps = {
+  army: ArmyInfo;
+};
+
+export function WarriorModel({ army }: WarriorModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   const gltf = useGLTF("/models/chess_piece_king.glb");
+
+  const [hovered, setHovered] = useState(false);
 
   const model = useMemo(() => {
     gltf.scene.traverse((child: any) => {
@@ -15,6 +23,14 @@ export function WarriorModel() {
     });
     return gltf.scene.clone();
   }, []);
+
+  useEffect(() => {
+    if (hovered) {
+      handlePointerEnter();
+    } else {
+      handlePointerOut();
+    }
+  }, [hovered]);
 
   const handlePointerEnter = () => {
     model.traverse((child: any) => {
@@ -33,8 +49,9 @@ export function WarriorModel() {
   };
 
   return (
-    <group ref={groupRef} scale={12} onPointerEnter={handlePointerEnter} onPointerOut={handlePointerOut}>
-      <primitive castShadow receiveShadow object={model} renderOrder={1} />
+    <group ref={groupRef}>
+      <primitive castShadow receiveShadow object={model} renderOrder={1} scale={12} />
+      <ArmyHitBox hovered={hovered} setHovered={setHovered} army={army} />
     </group>
   );
 }

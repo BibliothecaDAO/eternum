@@ -6,11 +6,16 @@ import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useSelectedArmySound } from "@/hooks/useUISound";
 import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 
-export const ArmyHitBox = ({ army }: { army: ArmyInfo }) => {
+type ArmyHitBoxProps = {
+  army: ArmyInfo;
+  hovered: boolean;
+  setHovered: (hovered: boolean) => void;
+};
+
+export const ArmyHitBox = ({ army, hovered, setHovered }: ArmyHitBoxProps) => {
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const showAllArmies = useUIStore((state) => state.showAllArmies);
-  const [hovered, setHovered] = useState(false);
   const { play: playSelectedArmy } = useSelectedArmySound();
   const { play: playClick } = useUiSounds(soundSelector.click);
   const { play: playHover } = useUiSounds(soundSelector.hoverClick);
@@ -43,18 +48,18 @@ export const ArmyHitBox = ({ army }: { army: ArmyInfo }) => {
     e.stopPropagation();
     setHovered(false);
   }, []);
+
   return (
     <group>
       <ArmyInfoLabel visible={showArmyInfo} army={army} />
-      <mesh
-        position={[0, 1.6, 0]}
-        onContextMenu={onRightClick}
-        onPointerEnter={onPointerEnter}
-        onPointerOut={onPointerOut}
+      <Box
         visible={false}
-      >
-        <Box args={[1, 3, 1]} />
-      </mesh>
+        position={[0, 3, 0]}
+        onPointerEnter={onPointerEnter}
+        onContextMenu={onRightClick}
+        onPointerOut={onPointerOut}
+        args={[1.5, 7, 1.5]}
+      />
     </group>
   );
 };

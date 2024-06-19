@@ -7,7 +7,6 @@ import { WarriorModel } from "../../models/armies/WarriorModel";
 import { SelectedUnit } from "../hexagon/SelectedUnit";
 import { CombatLabel } from "./CombatLabel";
 import { arePropsEqual } from "./utils";
-import { ArmyHitBox } from "./ArmyHitBox";
 import { ArmyFlag } from "./ArmyFlag";
 import { useArmyAnimation } from "./useArmyAnimation";
 
@@ -39,9 +38,8 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
     <>
       <group position={initialPos} ref={groupRef} rotation={new Euler(0, deterministicRotation, 0)}>
         <ArmyFlag visible={army.isMine} rotationY={deterministicRotation} position={initialPos} />
-        <CombatLabel visible={isSelected} />
-        <WarriorModel />
-        <ArmyHitBox army={army} />
+        {isSelected && <CombatLabel />}
+        <WarriorModel army={army} />
       </group>
       {isSelected && <SelectedUnit position={{ x: army.x, y: army.y }} />}
     </>
