@@ -30,13 +30,15 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const hoveredHexRef = useRef<any>(hoveredHex);
   const clickedHexRef = useRef(clickedHex);
   const travelPathsRef = useRef(travelPaths);
+  const currentArmiesTickRef = useRef(currentArmiesTick);
 
   useEffect(() => {
     selectedEntityRef.current = selectedEntity;
     clickedHexRef.current = clickedHex;
     travelPathsRef.current = travelPaths;
     hoveredHexRef.current = hoveredHex;
-  }, [hoveredHex, travelPaths, selectedEntity, hexData, explored, clickedHex]);
+    currentArmiesTickRef.current = currentArmiesTick;
+  }, [hoveredHex, travelPaths, selectedEntity, explored, clickedHex, currentArmiesTick]);
 
   const hoverHandler = useCallback((e: any) => {
     const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
@@ -97,9 +99,9 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         if (!travelPath) return;
         const { path, isExplored } = travelPath;
         if (isExplored) {
-          handleTravelClick({ id, path, currentArmiesTick });
+          handleTravelClick({ id, path, currentArmiesTick: currentArmiesTickRef.current });
         } else {
-          handleExploreClick({ id, path, currentArmiesTick });
+          handleExploreClick({ id, path, currentArmiesTick: currentArmiesTickRef.current });
         }
       };
 
@@ -109,7 +111,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         handleArmyActionClick(selectedEntityRef.current.id);
       }
     },
-    [hexData, currentArmiesTick],
+    [hexData],
   );
 
   async function handleTravelClick({
