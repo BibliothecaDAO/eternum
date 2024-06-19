@@ -1,12 +1,14 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, getUserArmiesAtPosition } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, getArmiesByBattleId, getUserArmiesAtPosition } from "@/hooks/helpers/useArmies";
 import { Realm, Structure } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { BattleSide } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { BattleActions } from "./BattleActions";
@@ -17,14 +19,12 @@ import { LockedResources } from "./LockedResources";
 import { TroopRow } from "./Troops";
 
 export const OngoingBattle = ({
-  attackerArmy,
-  defenderArmy,
   battleManager,
   structure,
   ownArmyEntityId,
 }: {
-  attackerArmy: ArmyInfo;
-  defenderArmy: ArmyInfo;
+  attackers: bigint[];
+  defenders: bigint[];
   battleManager: BattleManager;
   structure: Structure | Realm | undefined;
   ownArmyEntityId: bigint | undefined;
@@ -37,17 +37,32 @@ export const OngoingBattle = ({
     account: { account },
     setup: {
       systemCalls: { battle_join },
+      components: { Position },
     },
   } = useDojo();
 
-  const userArmies = getUserArmiesAtPosition({ x: attackerArmy.x, y: attackerArmy.y });
-  const userArmyInBattle = userArmies.find((army) => BigInt(army.battle_id) === battleManager.battleId);
+  const battlePosition = getComponentValue(Position, getEntityIdFromKeys([battleManager.battleId]));
+  const userArmiesAtLocation = getUserArmiesAtPosition(battlePosition!);
 
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+  const armiesInBattle = getArmiesByBattleId(battleManager.battleId);
+  const userArmyInBattle = armiesInBattle.find((army) => army.isMine);
+
+  const attackers = armiesInBattle
+    .filter((army) => String(army.battle_side) === "Attack")
+    .map((army) => BigInt(army.entity_id));
+  const defenders = armiesInBattle
+    .filter((army) => String(army.battle_side) === "Defence")
+    .map((army) => BigInt(army.entity_id));
+
+  const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const battleAdjusted = useMemo(() => {
-    return battleManager.getUpdatedBattle(currentDefaultTick);
-  }, [currentDefaultTick]);
+    return battleManager.getUpdatedBattle(currentTimestamp!);
+  }, [currentTimestamp]);
+
+  const durationLeft = useMemo(() => {
+    return battleManager.getTimeLeft(currentTimestamp!);
+  }, [battleAdjusted?.duration_left]);
 
   const setBattleView = useUIStore((state) => state.setBattleView);
 
@@ -107,17 +122,18 @@ export const OngoingBattle = ({
           attacker={`Attackers ${String(userArmyInBattle?.battle_side || "") === "Attack" ? "(⚔️)" : ""}`}
           defendingHealth={defendingHealth}
           defender={`Defenders ${String(userArmyInBattle?.battle_side || "") === "Defence" ? "(⚔️)" : ""}`}
+          durationLeft={durationLeft}
         />
         <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4">
           <div className="flex flex-row justify-between h-[20vh]">
             <div className="flex flex-row w-[70vw]">
               <div>
-                <EntityAvatar army={attackerArmy} structure={structure} />
-                {!userArmyInBattle && (
+                <EntityAvatar />
+                {userArmiesAtLocation && userArmiesAtLocation.length > 0 && (
                   <div className="flex w-full">
                     <SelectActiveArmy
                       setSelectedUnit={setSelectedUnit}
-                      userAttackingArmies={userArmies}
+                      userAttackingArmies={userArmiesAtLocation}
                       selectedUnit={selectedUnit}
                     />
                     <Button
@@ -130,14 +146,21 @@ export const OngoingBattle = ({
                   </div>
                 )}
               </div>
-              {showBattleDetails ? <BattleDetails /> : <TroopRow troops={battleAdjusted!.attack_army.troops} />}
+              {showBattleDetails ? (
+                <BattleDetails armiesEntityIds={attackers} battleId={battleManager.battleId} />
+              ) : (
+                <TroopRow troops={battleAdjusted!.attack_army.troops} />
+              )}
             </div>
             {showBattleDetails ? (
-              <LockedResources />
+              <LockedResources
+                attackersResourcesEscrowEntityId={battleAdjusted!.attackers_resources_escrow_id}
+                defendersResourcesEscrowEntityId={battleAdjusted!.defenders_resources_escrow_id}
+              />
             ) : (
               <BattleActions
                 ownArmyEntityId={selectedUnit}
-                defender={defenderArmy}
+                defender={undefined}
                 structure={structure}
                 battle={battleAdjusted}
                 isActive
@@ -145,17 +168,17 @@ export const OngoingBattle = ({
             )}
             <div className="flex flex-row w-[70vw]">
               {showBattleDetails ? (
-                <div className="w-[25vw]"></div>
+                <BattleDetails armiesEntityIds={defenders} battleId={battleManager.battleId} />
               ) : (
                 <TroopRow troops={battleAdjusted!.defence_army.troops} defending />
               )}
               <div className="">
-                <EntityAvatar army={defenderArmy} structure={structure} />
-                {!userArmyInBattle && (
+                <EntityAvatar structure={structure} />
+                {userArmiesAtLocation && userArmiesAtLocation.length > 0 && (
                   <div className="flex">
                     <SelectActiveArmy
                       setSelectedUnit={setSelectedUnit}
-                      userAttackingArmies={userArmies}
+                      userAttackingArmies={userArmiesAtLocation}
                       selectedUnit={selectedUnit}
                     />
                     <Button
@@ -171,7 +194,9 @@ export const OngoingBattle = ({
             </div>
           </div>
           <div className="flex justify-center mt-4">
-            <Button onClick={() => setShowBattleDetails(!showBattleDetails)}>Details</Button>
+            <Button onClick={() => setShowBattleDetails(!showBattleDetails)}>{`${
+              !showBattleDetails ? "Details" : "Close"
+            }`}</Button>
           </div>
         </div>
       </motion.div>

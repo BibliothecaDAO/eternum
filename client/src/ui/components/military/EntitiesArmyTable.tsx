@@ -1,6 +1,7 @@
 import { ArmyInfo, useEntityArmies } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { Headline } from "@/ui/elements/Headline";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { ArmyChip } from "./ArmyChip";
 
 type EntityArmyTableProps = {
@@ -12,14 +13,17 @@ export const EntityArmyTable = ({ entityId }: EntityArmyTableProps) => {
     return <div>Entity not found</div>;
   }
   const { entityArmies } = useEntityArmies({ entity_id: entityId });
+
   if (entityArmies.length === 0) {
     return <div className="m-auto">No armies</div>;
   }
 
   const armyElements = () => {
-    return entityArmies.map((army: ArmyInfo) => {
-      return <ArmyChip key={army.entity_id} army={army} />;
-    });
+    return entityArmies
+      .filter((army) => BigInt(army?.current || 0) / EternumGlobalConfig.troop.healthPrecision > 0)
+      .map((army: ArmyInfo) => {
+        return <ArmyChip key={army.entity_id} army={army} />;
+      });
   };
 
   return <div className="flex flex-col gap-4">{armyElements()}</div>;

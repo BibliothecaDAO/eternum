@@ -52,18 +52,9 @@ export const BattleLabel = ({ selectedBattle, visible = true }: BattleLabelProps
 
   return (
     <DojoHtml visible={visible} className="relative -left-[15px] -top-[70px]">
-      {attackers.length === 0 || defenders.length === 0 ? (
-        <Button
-          variant="primary"
-          onClick={() => handleOneEmptySide(attackers, defenders, battle_leave, account, selectedBattle)}
-        >
-          Leave battle
-        </Button>
-      ) : (
-        <Button variant="primary" onClick={onClick}>
-          View
-        </Button>
-      )}
+      <Button variant="primary" onClick={onClick}>
+        View
+      </Button>
     </DojoHtml>
   );
 };

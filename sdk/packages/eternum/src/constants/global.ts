@@ -46,7 +46,7 @@ export const EternumGlobalConfig = {
   troop: {
     // The 7,200 health value makes battles last up to 20hours at a maximum.
     // This max will be reached if both armies are very similar in strength and health
-    // To reduce max battle time by 4x for example, change the health to (7,200 / 4) 
+    // To reduce max battle time by 4x for example, change the health to (7,200 / 4)
     // which will make the max battle time = 5 hours.
     health: 7_200,
     knightStrength: 1,
@@ -62,6 +62,7 @@ export const EternumGlobalConfig = {
     // they lose a small precentage (it goes closer to 0% health loss) while the
     // weak army's loss is closer to 12.5%
     pillageHealthDivisor: 8,
+    healthPrecision: 1000000n,
   },
 };
 

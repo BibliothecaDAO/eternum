@@ -40,7 +40,7 @@ export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; o
                     Combat
                   </Button>
                 ) : undefined;
-              return <ArmyChip key={index} army={army} extraButton={extraButton} />;
+              return BigInt(army.battle_id) === 0n && <ArmyChip key={index} army={army} extraButton={extraButton} />;
             })}
           </div>
         </>

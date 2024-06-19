@@ -1,6 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { Position, UIPosition } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, Position, UIPosition } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, Entity, Has, HasValue, Not, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -155,7 +155,7 @@ export const useArmies = () => {
         Owner,
         Realm,
         Stamina,
-      ),
+      ).filter((army) => BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0n),
   };
 };
 
@@ -436,7 +436,11 @@ export const getUserArmiesAtPosition = (position: Position) => {
     account: { account },
   } = useDojo();
 
-  const allArmiesAtPosition = runQuery([Has(Army), HasValue(Position, position)]);
+  const allArmiesAtPosition = runQuery([
+    Has(Army),
+    HasValue(Position, { x: position.x, y: position.y }),
+    HasValue(Army, { battle_id: 0n }),
+  ]);
 
   const userArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
     const entityOwner = getComponentValue(EntityOwner, armyEntityId);
@@ -458,7 +462,6 @@ export const getUserArmiesAtPosition = (position: Position) => {
     EntityOwner,
     Owner,
     Realm,
-
     Stamina,
   );
 };

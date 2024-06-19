@@ -111,7 +111,23 @@ export const useBattlesByPosition = ({ x, y }: Position) => {
   const battleEntityIds = useEntityQuery([Has(Battle), HasValue(Position, { x, y })]);
   const battle = getComponentValue(Battle, battleEntityIds[0]);
   if (!battle) return;
-  const onGoing = BigInt(battle.attack_army_health.current) > 0n && BigInt(battle.defence_army_health.current) > 0n;
+  const onGoing =
+    BigInt(battle.attack_army_health.current) > 0n &&
+    BigInt(battle.defence_army_health.current) > 0n &&
+    battle.duration_left > 0n;
   if (!onGoing) return;
+  return battle.entity_id;
+};
+
+export const getBattlesByPosition = ({ x, y }: Position) => {
+  const {
+    setup: {
+      components: { Battle, Position },
+    },
+  } = useDojo();
+
+  const battleEntityIds = runQuery([Has(Battle), HasValue(Position, { x, y })]);
+  const battle = getComponentValue(Battle, Array.from(battleEntityIds)[0]);
+  if (!battle) return;
   return battle.entity_id;
 };

@@ -5,7 +5,7 @@ original_class_hash = "0xf6f44afb3cacbcc01a371aff62c86ca9a45feba065424c99f7cd863
 abi = "manifests/dev/abis/deployments/dojo_world_world.json"
 address = "0x455860f93fad20b93ab401eaf9bb63bf86a8222ffe4b0a4216d4694603f4723"
 transaction_hash = "0x4fbfb8faf344e3f8a79b6953ee5834d51e078f7106aba74274dd726973ed71"
-block_number = 19
+block_number = 18
 seed = "eternum"
 name = "dojo::world::world"
 

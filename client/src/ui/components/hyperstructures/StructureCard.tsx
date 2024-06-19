@@ -65,7 +65,8 @@ export const StructureCard = ({
   const target = formattedStructureAtPosition || formattedRealmAtPosition;
 
   return (
-    Boolean(formattedStructureAtPosition) && (
+    Boolean(formattedStructureAtPosition) &&
+    BigInt(target.protector?.battle_id || 0n) === 0n && (
       <div>
         <Headline className="my-3">Structure</Headline>
 

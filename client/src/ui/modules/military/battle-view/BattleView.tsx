@@ -1,4 +1,4 @@
-import { useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
+import { getArmyByEntityId, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { useBattleManager } from "@/hooks/helpers/useBattles";
 import { Realm, Structure } from "@/hooks/helpers/useStructures";
 import { BattleViewInfo } from "@/hooks/store/types";
@@ -21,8 +21,8 @@ export const BattleView = () => {
   }, [battleView?.defenders]);
 
   const updatedAttacker = useArmyByArmyEntityId(BigInt(attackers?.[0] || 0n));
-  const updatedDefender = useArmyByArmyEntityId(BigInt(defenders?.[0] || 0n));
-  const { updatedBattle } = useBattleManager(BigInt(updatedDefender?.battle_id || 0n));
+  const defender = getArmyByEntityId(BigInt(defenders?.[0] || 0n));
+  const { updatedBattle } = useBattleManager(BigInt(defender?.battle_id || updatedAttacker?.battle_id || 0));
 
   const battleAdjusted = useMemo(() => {
     return updatedBattle.getUpdatedBattle(currentDefaultTick);
@@ -33,21 +33,20 @@ export const BattleView = () => {
     if (updatedBattle.battleActive(currentDefaultTick)) {
       return (
         <OngoingBattle
-          attackerArmy={updatedAttacker}
-          defenderArmy={updatedDefender!}
+          attackers={attackers}
+          defenders={defenders!}
           structure={structure}
           battleManager={updatedBattle}
           ownArmyEntityId={selectedEntity?.id}
         />
       );
     }
+
     if (battleAdjusted === undefined && selectedEntity) {
       return (
         <BattleStarter
-          attackerArmy={updatedAttacker}
-          attackerArmyHealth={BigInt(updatedAttacker.current)}
-          defenderArmy={!structure ? updatedDefender : undefined}
-          defenderArmyHealth={BigInt(updatedDefender?.current || 0)}
+          ownArmy={updatedAttacker}
+          defenderArmy={!structure ? defender : structure.protector}
           structure={structure}
         />
       );
@@ -55,25 +54,21 @@ export const BattleView = () => {
 
     return (
       <BattleFinisher
+        attackers={attackers}
+        defenders={defenders}
         attackerArmy={updatedAttacker}
         attackerArmyHealth={
           battleAdjusted ? battleAdjusted.attack_army_health.current : BigInt(updatedAttacker.current)
         }
-        defenderArmy={
-          !structure
-            ? updatedDefender
-            : (battleAdjusted?.defence_army_health.current === undefined ? updatedDefender?.current || 0 : 0) > 0
-            ? updatedDefender
-            : undefined
-        }
+        defenderArmy={defender}
         defenderArmyHealth={
-          battleAdjusted ? battleAdjusted.defence_army_health.current : BigInt(updatedDefender?.current || 0)
+          battleAdjusted ? battleAdjusted.defence_army_health.current : BigInt(defender?.current || 0)
         }
         structure={structure}
         updatedBattle={updatedBattle}
       />
     );
-  }, [updatedAttacker, updatedDefender, battleView, battleAdjusted, selectedEntity]);
+  }, [updatedAttacker, defender, battleView, battleAdjusted, selectedEntity]);
 
   return elem;
 };
