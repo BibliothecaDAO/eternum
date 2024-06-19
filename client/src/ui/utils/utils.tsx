@@ -19,7 +19,7 @@ export const formatNumber = (num: any, decimals: number) => {
 };
 
 export const currencyFormat = (num: any, decimals: number) => {
-  return formatNumber(divideByPrecision(num), decimals);
+  return formatNumber(divideByPrecision(Number(num)), decimals);
 };
 
 export function currencyIntlFormat(num: any, decimals: number = 2) {

@@ -957,7 +957,7 @@
     ],
     "address": "0x455860f93fad20b93ab401eaf9bb63bf86a8222ffe4b0a4216d4694603f4723",
     "transaction_hash": "0x4fbfb8faf344e3f8a79b6953ee5834d51e078f7106aba74274dd726973ed71",
-    "block_number": 23,
+    "block_number": 19,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -2043,8 +2043,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6b8160ef19de56744f1a46d5e24c40b2c1b85e0b17eee6b435fd9e7b836313d",
-      "class_hash": "0xeffd824163db1983a754c0da44d6beb413beab0e7fba20c6d4de3e8d3cb87c",
-      "original_class_hash": "0xeffd824163db1983a754c0da44d6beb413beab0e7fba20c6d4de3e8d3cb87c",
+      "class_hash": "0x395be0ecf81c0829342ec2d21e038a224a4ff17ec2098ee151d07f71170437e",
+      "original_class_hash": "0x395be0ecf81c0829342ec2d21e038a224a4ff17ec2098ee151d07f71170437e",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -2126,15 +2126,15 @@
           "members": [
             {
               "name": "knight_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "paladin_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "crossbowman_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             }
           ]
         },
@@ -4313,8 +4313,8 @@
     {
       "kind": "DojoContract",
       "address": "0x91d23f4fadfd2a3377dcc590e08f9a78863bced66de67e8f49ed3412a8144c",
-      "class_hash": "0x22a171a4fb02ee4fdf2eaa0df6827fab190b1f4d73a3f9564718603d1e2cc3",
-      "original_class_hash": "0x22a171a4fb02ee4fdf2eaa0df6827fab190b1f4d73a3f9564718603d1e2cc3",
+      "class_hash": "0x4de42a57ad829e1a40118336c0c45d08a6a202f21a3003ee18faa9991499e0b",
+      "original_class_hash": "0x4de42a57ad829e1a40118336c0c45d08a6a202f21a3003ee18faa9991499e0b",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -5939,8 +5939,8 @@
     {
       "kind": "DojoContract",
       "address": "0x6c51b7ecf0f0cf6d3ab936a3bc732753fd071e30afb5e6bc05c074856b0ac5",
-      "class_hash": "0x5233c8ee6954d8cd6dcb54565c98d258ec298d85d20307d26afcb82a0c91b98",
-      "original_class_hash": "0x5233c8ee6954d8cd6dcb54565c98d258ec298d85d20307d26afcb82a0c91b98",
+      "class_hash": "0x567a6f70f12d44664c0a6f4879dbf1afcb4de881807ee120c1b3234b92a249d",
+      "original_class_hash": "0x567a6f70f12d44664c0a6f4879dbf1afcb4de881807ee120c1b3234b92a249d",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -9260,8 +9260,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x76db07ae740e96e758d4183ac2af0e376109dd899c1535307ab7067f2ba3b5c",
-      "original_class_hash": "0x76db07ae740e96e758d4183ac2af0e376109dd899c1535307ab7067f2ba3b5c",
+      "class_hash": "0x2dce37bdcb9013878609afdaa4d95bad365dfe47cfacbab307210b470b256f",
+      "original_class_hash": "0x2dce37bdcb9013878609afdaa4d95bad365dfe47cfacbab307210b470b256f",
       "abi": [
         {
           "type": "impl",
@@ -9592,15 +9592,15 @@
           "members": [
             {
               "name": "knight_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "paladin_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "crossbowman_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             }
           ]
         },
@@ -9685,7 +9685,17 @@
           "key": false
         },
         {
+          "name": "attack_army_lifetime",
+          "type": "BattleArmy",
+          "key": false
+        },
+        {
           "name": "defence_army",
+          "type": "BattleArmy",
+          "key": false
+        },
+        {
+          "name": "defence_army_lifetime",
           "type": "BattleArmy",
           "key": false
         },
@@ -9730,8 +9740,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x196582b8ed865499a1a3c11f14861752dc8310c9bf44019137379c70ee32ea4",
-      "original_class_hash": "0x196582b8ed865499a1a3c11f14861752dc8310c9bf44019137379c70ee32ea4",
+      "class_hash": "0x2ea36755d03810c5ce8e7f1374e397e76f078358a329b645dfcb76876ecba16",
+      "original_class_hash": "0x2ea36755d03810c5ce8e7f1374e397e76f078358a329b645dfcb76876ecba16",
       "abi": [
         {
           "type": "impl",
@@ -10062,15 +10072,15 @@
           "members": [
             {
               "name": "knight_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "paladin_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             },
             {
               "name": "crossbowman_count",
-              "type": "core::integer::u32"
+              "type": "core::integer::u64"
             }
           ]
         },
@@ -10137,7 +10147,15 @@
               "type": "eternum::models::combat::BattleArmy"
             },
             {
+              "name": "attack_army_lifetime",
+              "type": "eternum::models::combat::BattleArmy"
+            },
+            {
               "name": "defence_army",
+              "type": "eternum::models::combat::BattleArmy"
+            },
+            {
+              "name": "defence_army_lifetime",
               "type": "eternum::models::combat::BattleArmy"
             },
             {
@@ -21492,6 +21510,237 @@
         }
       ],
       "name": "eternum::models::level::level"
+    },
+    {
+      "kind": "DojoModel",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "u128",
+          "key": true
+        },
+        {
+          "name": "last_updated_tick",
+          "type": "u64",
+          "key": false
+        }
+      ],
+      "class_hash": "0x7f7358235c8d086b40038dd305c40caa278fc9d5edebc8645e209b52fca5bea",
+      "original_class_hash": "0x7f7358235c8d086b40038dd305c40caa278fc9d5edebc8645e209b52fca5bea",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoModelImpl",
+          "interface_name": "dojo::model::IDojoModel"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::introspect::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::introspect::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::introspect::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            },
+            {
+              "name": "Array",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::model::IDojoModel",
+          "items": [
+            {
+              "type": "function",
+              "name": "name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "unpacked_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "packed_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "layout",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::integer::u8>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "schema",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::database::introspect::Ty"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "loyaltyImpl",
+          "interface_name": "eternum::models::loyalty::Iloyalty"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::loyalty::Loyalty",
+          "members": [
+            {
+              "name": "entity_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "last_updated_tick",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::models::loyalty::Iloyalty",
+          "items": [
+            {
+              "type": "function",
+              "name": "ensure_abi",
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "eternum::models::loyalty::Loyalty"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::loyalty::loyalty::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "name": "eternum::models::loyalty::loyalty"
     },
     {
       "kind": "DojoModel",

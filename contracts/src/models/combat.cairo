@@ -43,7 +43,12 @@ impl HealthImpl of HealthTrait {
         self.lifetime += value;
     }
 
-    fn decrease_by(ref self: Health, value: u128) {
+    fn clear(ref self: Health) {
+        self.current = 0;
+        self.lifetime = 0;
+    }
+
+    fn decrease_current_by(ref self: Health, value: u128) {
         if self.current > value {
             self.current -= value;
         } else {
@@ -83,9 +88,9 @@ impl HealthImpl of HealthTrait {
 
 #[derive(Copy, Drop, Serde, Introspect, Default)]
 struct Troops {
-    knight_count: u32,
-    paladin_count: u32,
-    crossbowman_count: u32,
+    knight_count: u64,
+    paladin_count: u64,
+    crossbowman_count: u64,
 }
 
 
@@ -183,12 +188,16 @@ impl TroopsImpl of TroopsTrait {
         ///////////////         Calculate the strength of the Attacker      //////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        let mut self_knight_strength: u64 = self.actual_type_count(TroopType::Knight, self_health)
+        let mut self_knight_strength: u64 = self
+            .actual_type_count(TroopType::Knight, self_health)
+            .into()
             * troop_config.knight_strength.into();
         self_knight_strength +=
             PercentageImpl::get(self_knight_strength.into(), troop_config.advantage_percent.into());
 
-        let mut self_paladin_strength: u64 = self.actual_type_count(TroopType::Paladin, self_health)
+        let mut self_paladin_strength: u64 = self
+            .actual_type_count(TroopType::Paladin, self_health)
+            .into()
             * troop_config.paladin_strength.into();
         self_paladin_strength +=
             PercentageImpl::get(
@@ -197,6 +206,7 @@ impl TroopsImpl of TroopsTrait {
 
         let mut self_crossbowman_strength: u64 = self
             .actual_type_count(TroopType::Crossbowman, self_health)
+            .into()
             * troop_config.crossbowman_strength.into();
         self_crossbowman_strength +=
             PercentageImpl::get(
@@ -208,18 +218,21 @@ impl TroopsImpl of TroopsTrait {
 
         let mut enemy_knight_strength: u64 = enemy_troops
             .actual_type_count(TroopType::Knight, enemy_health)
+            .into()
             * troop_config.knight_strength.into();
         enemy_knight_strength -=
             PercentageImpl::get(enemy_knight_strength, troop_config.disadvantage_percent.into());
 
         let mut enemy_paladin_strength: u64 = enemy_troops
             .actual_type_count(TroopType::Paladin, enemy_health)
+            .into()
             * troop_config.paladin_strength.into();
         enemy_paladin_strength -=
             PercentageImpl::get(enemy_paladin_strength, troop_config.disadvantage_percent.into());
 
         let mut enemy_crossbowman_strength: u64 = enemy_troops
             .actual_type_count(TroopType::Crossbowman, enemy_health)
+            .into()
             * troop_config.crossbowman_strength.into();
         enemy_crossbowman_strength -=
             PercentageImpl::get(
@@ -239,8 +252,19 @@ impl TroopsImpl of TroopsTrait {
         self_knight_strength + self_paladin_strength + self_crossbowman_strength
     }
 
-    fn count(self: Troops) -> u32 {
+    fn count(self: Troops) -> u64 {
         self.knight_count + self.paladin_count + self.crossbowman_count
+    }
+
+    fn reset_count_and_health(ref self: Troops, ref health: Health, troop_config: TroopConfig) {
+        // make the troop count a percentage of the old health
+        self.knight_count = self.actual_type_count(TroopType::Knight, @health);
+        self.paladin_count = self.actual_type_count(TroopType::Paladin, @health);
+        self.crossbowman_count = self.actual_type_count(TroopType::Crossbowman, @health);
+
+        // make the new health be the full health of updated troops
+        health.clear();
+        health.increase_by(self.full_health(troop_config));
     }
 
     /// Get the actual count of a troop type using 
@@ -256,8 +280,11 @@ impl TroopsImpl of TroopsTrait {
             TroopType::Crossbowman => { self.crossbowman_count }
         };
 
-        (count.into() * (*health).current.try_into().unwrap())
-            / (*health).lifetime.try_into().unwrap()
+        if *health.current == 0 {
+            return 0;
+        };
+
+        ((count.into() * *health.current) / (*health).lifetime).try_into().unwrap()
     }
 
     /// Get the actual count of a all troops using 
@@ -272,9 +299,11 @@ impl TroopsImpl of TroopsTrait {
     /// so total is 5 + 6 + 7 = 18 
     /// 
     fn actual_total_count(self: Troops, health: @Health) -> u64 {
-        self.actual_type_count(TroopType::Knight, health)
+        (self.actual_type_count(TroopType::Knight, health)
             + self.actual_type_count(TroopType::Paladin, health)
-            + self.actual_type_count(TroopType::Crossbowman, health)
+            + self.actual_type_count(TroopType::Crossbowman, health))
+            .try_into()
+            .unwrap()
     }
 }
 
@@ -332,7 +361,7 @@ impl BattleHealthImpl of BattleHealthTrait {
         self.lifetime += value;
     }
 
-    fn decrease_by(ref self: BattleHealth, value: u128) {
+    fn decrease_current_by(ref self: BattleHealth, value: u128) {
         if self.current > value {
             self.current -= value;
         } else {
@@ -428,7 +457,9 @@ struct Battle {
     #[key]
     entity_id: u128,
     attack_army: BattleArmy,
+    attack_army_lifetime: BattleArmy,
     defence_army: BattleArmy,
+    defence_army_lifetime: BattleArmy,
     attackers_resources_escrow_id: u128,
     defenders_resources_escrow_id: u128,
     attack_army_health: BattleHealth,
@@ -652,10 +683,10 @@ impl BattleImpl of BattleTrait {
         let battle_duration_passed = self.duration_passed();
         self
             .attack_army_health
-            .decrease_by((self.defence_delta.into() * battle_duration_passed.into()));
+            .decrease_current_by((self.defence_delta.into() * battle_duration_passed.into()));
         self
             .defence_army_health
-            .decrease_by((self.attack_delta.into() * battle_duration_passed.into()));
+            .decrease_current_by((self.attack_delta.into() * battle_duration_passed.into()));
     }
     /// This function calculates the delta (rate at which health goes down per second)
     /// and therefore, the duration of tha battle.
@@ -677,6 +708,7 @@ impl BattleImpl of BattleTrait {
                 @self.defence_army_health.into(),
                 troop_config
             );
+
         self.attack_delta = attack_delta;
         self.defence_delta = defence_delta;
 
@@ -838,7 +870,7 @@ mod tests {
         battle.defence_army.troops.paladin_count -= defence_troop_each;
         battle
             .defence_army_health
-            .decrease_by(troop_config.health.into() * defence_troop_each.into());
+            .decrease_current_by(troop_config.health.into() * defence_troop_each.into());
         battle.defence_army_health.lifetime -= troop_config.health.into()
             * defence_troop_each.into();
         battle.reset_delta(troop_config);
