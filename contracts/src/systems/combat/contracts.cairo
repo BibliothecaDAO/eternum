@@ -121,6 +121,8 @@ trait ICombatContract<TContractState> {
     ///     - Verifies the attacking and defending armies are not already in battle.
     ///     - Ensures the caller owns the attacking army.
     ///     - Checks that both armies are at the same position.
+    ///     - Ensure that attacking army is alive
+    ///     - Defending Army does not need to be alive
     /// 2. **Battle ID Assignment**:
     ///     - Generates a new unique battle ID and assigns it to both armies.
     ///     - Sets the battle side for each army (attack or defense).
@@ -694,6 +696,7 @@ mod combat_systems {
                 attacking_army_health.current == attacking_army.troops.full_health(troop_config),
                 "attacking army health sanity check fail"
             );
+            attacking_army_health.assert_alive("Army");
 
             let defending_army_health: Health = get!(world, defending_army_id, Health);
             // health sanity check 
@@ -701,9 +704,6 @@ mod combat_systems {
                 defending_army_health.current == defending_army.troops.full_health(troop_config),
                 "defending army health sanity check fail"
             );
-
-            // ensure defending army is alive
-            defending_army_health.assert_alive("Army");
 
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;
@@ -750,6 +750,17 @@ mod combat_systems {
             let mut caller_army: Army = get!(world, army_id, Army);
             caller_army.assert_not_in_battle();
 
+            // ensure caller army is not dead
+            let troop_config = TroopConfigImpl::get(world);
+            let mut caller_army_health: Health = get!(world, army_id, Health);
+            caller_army_health.assert_alive("Your army");
+
+            // caller army health sanity check 
+            assert!(
+                caller_army_health.current == caller_army.troops.full_health(troop_config),
+                "caller health sanity check fail"
+            );
+
             // ensure caller army is at battle location
             let caller_army_position = get!(world, caller_army.entity_id, Position);
             let battle_position = get!(world, battle.entity_id, Position);
@@ -782,14 +793,6 @@ mod combat_systems {
 
             battle_army.troops.add(caller_army.troops);
             battle_army_lifetime.troops.add(caller_army.troops);
-
-            let troop_config = TroopConfigImpl::get(world);
-            let mut caller_army_health: Health = get!(world, army_id, Health);
-            // health sanity check 
-            assert!(
-                caller_army_health.current == caller_army.troops.full_health(troop_config),
-                "caller health sanity check fail"
-            );
 
             // add caller army heath to battle army health 
             battle_army_health.increase_by(caller_army_health.current);
@@ -1232,41 +1235,68 @@ mod combat_systems {
                 (battle.attack_army, battle.attack_army_health, battle.attack_army_lifetime)
             };
             let troop_config = TroopConfigImpl::get(world);
-            battle_army
-                .troops
-                .knight_count =
-                    ((battle_army_health.current * battle_army.troops.knight_count.into())
-                        / battle_army_health.lifetime)
-                .try_into()
-                .unwrap();
-            battle_army
-                .troops
-                .paladin_count =
-                    ((battle_army_health.current * battle_army.troops.paladin_count.into())
-                        / battle_army_health.lifetime)
-                .try_into()
-                .unwrap();
-            battle_army
-                .troops
-                .crossbowman_count =
-                    ((battle_army_health.current * battle_army.troops.crossbowman_count.into())
-                        / battle_army_health.lifetime)
-                .try_into()
-                .unwrap();
 
-            battle_army_health.current = battle_army.troops.full_health(troop_config);
-            battle_army_health.lifetime = battle_army.troops.full_health(troop_config);
+            if battle_army_health.lifetime.is_non_zero() {
+                battle_army
+                    .troops
+                    .knight_count =
+                        ((battle_army_health.current * battle_army.troops.knight_count.into())
+                            / battle_army_health.lifetime)
+                    .try_into()
+                    .unwrap();
+                battle_army
+                    .troops
+                    .paladin_count =
+                        ((battle_army_health.current * battle_army.troops.paladin_count.into())
+                            / battle_army_health.lifetime)
+                    .try_into()
+                    .unwrap();
+                battle_army
+                    .troops
+                    .crossbowman_count =
+                        ((battle_army_health.current * battle_army.troops.crossbowman_count.into())
+                            / battle_army_health.lifetime)
+                    .try_into()
+                    .unwrap();
+
+                battle_army_health.current = battle_army.troops.full_health(troop_config);
+                battle_army_health.lifetime = battle_army.troops.full_health(troop_config);
+            }
 
             // reset the army leaving battle
-            army.troops.knight_count = army.troops.knight_count
-                * battle_army.troops.knight_count
-                / battle_army_lifetime.troops.knight_count;
-            army.troops.paladin_count = army.troops.paladin_count
-                * battle_army.troops.paladin_count
-                / battle_army_lifetime.troops.paladin_count;
-            army.troops.crossbowman_count = army.troops.crossbowman_count
-                * battle_army.troops.crossbowman_count
-                / battle_army_lifetime.troops.crossbowman_count;
+            army
+                .troops
+                .knight_count =
+                    if army.troops.knight_count == 0 {
+                        0
+                    } else {
+                        army.troops.knight_count
+                            * battle_army.troops.knight_count
+                            / battle_army_lifetime.troops.knight_count
+                    };
+
+            army
+                .troops
+                .paladin_count =
+                    if army.troops.paladin_count == 0 {
+                        0
+                    } else {
+                        army.troops.paladin_count
+                            * battle_army.troops.paladin_count
+                            / battle_army_lifetime.troops.paladin_count
+                    };
+
+            army
+                .troops
+                .crossbowman_count =
+                    if army.troops.crossbowman_count == 0 {
+                        0
+                    } else {
+                        army.troops.crossbowman_count
+                            * battle_army.troops.crossbowman_count
+                            / battle_army_lifetime.troops.crossbowman_count
+                    };
+
             let army_health = Health {
                 entity_id: army_id,
                 current: army.troops.full_health(troop_config),
