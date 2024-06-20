@@ -58,10 +58,6 @@ export const RightNavigationModule = () => {
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
   }, []);
 
-  const debouncedSetIsOffscreen = debounce(() => {
-    setIsOffscreen(true);
-  }, 3000);
-
   const slideRight = {
     hidden: { x: "100%" },
     visible: { x: "0%", transition: { duration: 0.5 } },
@@ -73,11 +69,6 @@ export const RightNavigationModule = () => {
         className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] text-gold right-4 self-center pointer-events-auto ${
           isOffscreen ? "translate-x-[79%]" : ""
         }`}
-        onPointerEnter={() => {
-          debouncedSetIsOffscreen.cancel();
-          setIsOffscreen(false);
-        }}
-        onPointerLeave={debouncedSetIsOffscreen}
       >
         <motion.div
           variants={slideRight}

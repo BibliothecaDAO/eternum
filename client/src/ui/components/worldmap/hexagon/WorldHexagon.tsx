@@ -6,7 +6,6 @@ import { Subscription } from "rxjs";
 import { create } from "zustand";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { Battles } from "../../models/buildings/worldmap/Battles";
-import { ShardsMines } from "../../models/buildings/worldmap/ShardsMines.js";
 import { Structures } from "../../models/buildings/worldmap/Structures.js";
 import { Armies } from "../armies/Armies.js";
 import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
@@ -106,7 +105,6 @@ export const WorldMap = () => {
         })}
       </group>
       <Armies />
-      <ShardsMines />
       <Structures />
       <Battles />
       <Flags />

@@ -56,6 +56,7 @@ export const SettingsWindow = () => {
 
   const isOpen = useUIStore((state) => state.isPopupOpen(settings));
 
+  const isLowGraphics = localStorage.getItem("LOW_GRAPHICS_FLAG");
   return (
     <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
       <div className="flex space-x-1 p-4">
@@ -74,6 +75,33 @@ export const SettingsWindow = () => {
         <div className="flex text-xs text-gray-gold space-x-2 items-center cursor-pointer" onClick={clickFullScreen}>
           <Checkbox enabled={fullScreen} />
           <div>Fullscreen</div>
+        </div>
+        <Headline>Graphics</Headline>
+        <div className="flex space-x-2">
+          <Button
+            disabled={!!isLowGraphics}
+            variant={isLowGraphics ? "success" : "outline"}
+            onClick={() => {
+              if (!isLowGraphics) {
+                localStorage.setItem("LOW_GRAPHICS_FLAG", "true");
+                window.location.reload();
+              }
+            }}
+          >
+            Low
+          </Button>
+          <Button
+            disabled={!isLowGraphics}
+            variant={isLowGraphics ? "outline" : "success"}
+            onClick={() => {
+              if (isLowGraphics) {
+                localStorage.removeItem("LOW_GRAPHICS_FLAG");
+                window.location.reload();
+              }
+            }}
+          >
+            High
+          </Button>
         </div>
         <Headline>Sound</Headline>
 
