@@ -13,6 +13,7 @@ import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { guilds, leaderboard, quests } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
+import clsx from "clsx";
 
 export enum MenuEnum {
   realm = "realm",
@@ -44,9 +45,15 @@ export const BottomNavigation = () => {
   const toggleShowAllArmies = useUIStore((state) => state.toggleShowAllArmies);
   const showAllArmies = useUIStore((state) => state.showAllArmies);
 
+  const isWorldView = useMemo(() => location === "/map", [location]);
+
+  const selectedEntityId = useUIStore((state) => state.selectedEntity);
+
+  const army = getArmyByEntityId(selectedEntityId?.id || BigInt("0"));
+
   const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
 
-  const { claimableQuests } = useQuests({ entityId: realmEntityId || BigInt("0") });
+  const { claimableQuests, currentQuest } = useQuests({ entityId: realmEntityId || BigInt("0") });
 
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
@@ -66,13 +73,20 @@ export const BottomNavigation = () => {
               className="forth-step"
               notification={isRealmSelected(realmEntityId, structures) ? claimableQuests?.length : undefined}
               notificationLocation={"topleft"}
-              disabled={!isRealmSelected(realmEntityId, structures) || !claimableQuests?.length}
+              disabled={!isRealmSelected(realmEntityId, structures)}
             />
 
             {population?.population == null && location !== "/map" && (
               <div className="absolute bg-brown text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
                 <ArrowDown className="text-gold w-4 mr-3" />
                 <div>Start here</div>
+              </div>
+            )}
+
+            {currentQuest?.completed && !currentQuest?.claimed && location !== "/map" && (
+              <div className="absolute bg-brown text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
+                <ArrowDown className="text-gold w-4 mr-3" />
+                <div className="text-xs">Claim your reward</div>
               </div>
             )}
           </div>
@@ -87,6 +101,7 @@ export const BottomNavigation = () => {
             active={isPopupOpen(leaderboard)}
             size="lg"
             onClick={() => togglePopup(leaderboard)}
+            className={clsx({ hidden: claimableQuests?.length > 0 })}
           />
         ),
       },
@@ -99,6 +114,7 @@ export const BottomNavigation = () => {
             active={showAllArmies}
             size="lg"
             onClick={toggleShowAllArmies}
+            className={clsx({ hidden: !isWorldView })}
           />
         ),
       },
@@ -111,6 +127,7 @@ export const BottomNavigation = () => {
             active={isPopupOpen(guilds)}
             size="lg"
             onClick={() => togglePopup(guilds)}
+            className={clsx({ hidden: claimableQuests?.length > 0 })}
           />
         ),
       },

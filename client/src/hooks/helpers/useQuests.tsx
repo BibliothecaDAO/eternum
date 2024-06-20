@@ -1,11 +1,19 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntityArmies } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, useEntityArmies } from "@/hooks/helpers/useArmies";
 import { useGetMyOffers } from "@/hooks/helpers/useTrade";
 import { BuildingType, QuestType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
+
+export enum QuestNames {
+  ClaimFood = "Claim Food",
+  BuildFarm = "Build a Farm",
+  BuildResource = "Build a Resource",
+  CreateTrade = "Create a Trade",
+  CreateArmy = "Create an Army",
+}
 
 export const useQuests = ({ entityId }: { entityId: bigint | undefined }) => {
   const {
@@ -29,17 +37,18 @@ export const useQuests = ({ entityId }: { entityId: bigint | undefined }) => {
   const quests = useMemo(() => {
     const updatedQuests = [
       {
-        name: "Claim Food",
-        description: "A gift from the gods to start your journey.",
+        name: QuestNames.ClaimFood,
+        description:
+          "A gift from the gods to start your journey. Take a look at your resources balance in the resources menu.",
         completed: true,
-        steps: [{ description: "Claim Food" }, { description: "Build a farm" }],
+        steps: [],
         prizes: [{ id: QuestType.Food, title: "Resources Claim" }],
       },
       {
-        name: "Build a Farm",
+        name: QuestNames.BuildFarm,
         description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm.",
         completed: farms > 0,
-        steps: [{ description: "Claim Food" }, { description: "Build a farm" }],
+        steps: [],
         prizes: [
           { id: QuestType.CommonResources, title: "Common Resources" },
           { id: QuestType.UncommonResources, title: "Uncommon Resources" },
@@ -50,24 +59,30 @@ export const useQuests = ({ entityId }: { entityId: bigint | undefined }) => {
         ],
       },
       {
-        name: "Build a Resource",
+        name: QuestNames.BuildResource,
         description: "Eternum thrives on resources. Construct resource facilities to harvest them efficiently.",
         completed: resource > 0,
-        steps: [{ description: "Claim Food" }, { description: "Build a farm" }],
+        steps: [],
         prizes: [{ id: QuestType.Trade, title: "Donkeys and Lords" }],
       },
       {
-        name: "Create a Trade",
+        name: QuestNames.CreateTrade,
         description: "Trading is the lifeblood of Eternum. Create a trade to start your economy.",
         completed: orders.length > 0,
-        steps: [{ description: "Claim Food" }, { description: "Build a farm" }],
+        steps: [],
         prizes: [{ id: QuestType.Military, title: "Claim Starting Army" }],
       },
       {
-        name: "Create an Army",
+        name: QuestNames.CreateArmy,
         description: "Conquest is fulfilling. Create an army to conquer your enemies.",
-        completed: entityArmies.length > 0,
-        steps: [{ description: "Claim Food" }, { description: "Build a farm" }],
+        completed: entityArmies.length > 0 && armyHasTroops(entityArmies),
+        steps: [
+          { description: "Create an army to conquer your enemies.", completed: entityArmies.length > 0 },
+          {
+            description: "Assign troops to your army",
+            completed: armyHasTroops(entityArmies),
+          },
+        ],
         prizes: [{ id: QuestType.Earthenshard, title: "Claim Earthen Shard" }],
       },
     ];
@@ -88,6 +103,10 @@ export const useQuests = ({ entityId }: { entityId: bigint | undefined }) => {
     return quests.filter((quest) => !quest.claimed);
   }, [quests, farms, resource, orders, entityArmies]);
 
+  const currentQuest = useMemo(() => {
+    return quests.find((quest) => !quest.claimed);
+  }, [quests]);
+
   return {
     quests,
     hasFarm: farms > 0,
@@ -95,5 +114,16 @@ export const useQuests = ({ entityId }: { entityId: bigint | undefined }) => {
     hasTrade: orders.length > 0,
     hasArmy: entityArmies.length > 0,
     claimableQuests,
+    currentQuest,
   };
+};
+
+const armyHasTroops = (entityArmies: ArmyInfo[]) => {
+  return (
+    entityArmies &&
+    entityArmies[0] &&
+    (Number(entityArmies[0].troops.knight_count) != 0 ||
+      Number(entityArmies[0].troops.crossbowman_count) != 0 ||
+      Number(entityArmies[0].troops.paladin_count) != 0)
+  );
 };

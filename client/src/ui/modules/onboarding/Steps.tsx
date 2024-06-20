@@ -4,7 +4,6 @@ import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
 import { ReactComponent as Import } from "@/assets/icons/common/import.svg";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useQuests } from "@/hooks/helpers/useQuests";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { useAddressStore } from "@/hooks/store/useAddressStore";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -398,23 +397,21 @@ export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: strin
   const { setIsOpen } = useTour();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { quests } = useQuests({ entityId: playerRealms()[0].entity_id || BigInt("0") });
-
   return (
     <Button
       size="md"
       variant="primary"
       isLoading={isLoading}
       onClick={async () => {
-        if (showWalkthrough) {
-          setIsLoading(true);
-          await mint_starting_resources({
-            signer: account,
-            config_id: QuestType.Food,
-            realm_entity_id: playerRealms()[0].entity_id || "0",
-          });
-          setIsLoading(false);
-        }
+        // if (showWalkthrough) {
+        //   setIsLoading(true);
+        //   await mint_starting_resources({
+        //     signer: account,
+        //     config_id: QuestType.Food,
+        //     realm_entity_id: playerRealms()[0].entity_id || "0",
+        //   });
+        //   setIsLoading(false);
+        // }
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);

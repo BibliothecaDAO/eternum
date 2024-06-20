@@ -25,6 +25,9 @@ import { SettingsWindow } from "../settings/Settings";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { QuestNames, useQuests } from "@/hooks/helpers/useQuests";
+import clsx from "clsx";
+import { quests as questsPopup } from "../../components/navigation/Config";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -58,10 +61,15 @@ export const LeftNavigationModule = () => {
   const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
+  const previewBuilding = useUIStore((state) => state.previewBuilding);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const openedPopups = useUIStore((state) => state.openedPopups);
 
   const { realmEntityId } = useRealmStore();
   const { getStamina } = useStamina();
   const { entityArmies } = useEntityArmies({ entity_id: realmEntityId });
+
+  const { quests, currentQuest } = useQuests({ entityId: realmEntityId || BigInt("0") });
 
   const [location, setLocation] = useLocation();
 
@@ -80,7 +88,7 @@ export const LeftNavigationModule = () => {
         name: "entityDetails",
         button: (
           <CircleButton
-            className="construction-selector"
+            className={clsx({ hidden: !quests.find((quest) => quest.name === QuestNames.CreateArmy)?.claimed })}
             image={BuildingThumbs.hex}
             tooltipLocation="top"
             label={"Details"}
@@ -97,7 +105,14 @@ export const LeftNavigationModule = () => {
         name: "military",
         button: (
           <CircleButton
-            className="military-selector"
+            className={clsx("military-selector", {
+              "animate-pulse":
+                view != View.ConstructionView &&
+                currentQuest?.name === QuestNames.CreateArmy &&
+                !currentQuest.completed &&
+                isPopupOpen(questsPopup),
+              hidden: !quests.find((quest) => quest.name === QuestNames.CreateTrade)?.claimed,
+            })}
             image={BuildingThumbs.military}
             tooltipLocation="top"
             label={military}
@@ -116,7 +131,14 @@ export const LeftNavigationModule = () => {
         name: "construction",
         button: (
           <CircleButton
-            className="construction-selector"
+            className={clsx("construction-selector", {
+              "animate-pulse":
+                view != View.ConstructionView &&
+                (currentQuest?.name === QuestNames.BuildFarm || currentQuest?.name === QuestNames.BuildResource) &&
+                !currentQuest.completed &&
+                isPopupOpen(questsPopup),
+              hidden: !quests.find((quest) => quest.name === QuestNames.ClaimFood)?.claimed,
+            })}
             image={BuildingThumbs.construction}
             tooltipLocation="top"
             label={construction}
@@ -133,7 +155,9 @@ export const LeftNavigationModule = () => {
         name: "worldStructures",
         button: (
           <CircleButton
-            className="worldStructures-selector"
+            className={clsx("worldStructures-selector", {
+              hidden: !quests.find((quest) => quest.name === QuestNames.CreateArmy)?.claimed,
+            })}
             image={BuildingThumbs.worldStructures}
             tooltipLocation="top"
             label={worldStructures}
@@ -163,11 +187,18 @@ export const LeftNavigationModule = () => {
             item.name === MenuEnum.construction ||
             item.name === MenuEnum.worldStructures,
         );
-  }, [location, view, armiesWithStaminaLeft]);
+  }, [location, view, armiesWithStaminaLeft, quests, openedPopups]);
 
   if (realmEntityId === undefined) {
     return null;
   }
+
+  // Open & close panel automatically when building
+  const debouncedSetIsOffscreen = debounce(() => {
+    if (previewBuilding != null) {
+      setView(View.None);
+    }
+  }, 500);
 
   const slideLeft = {
     hidden: { x: "-100%" },
@@ -187,8 +218,19 @@ export const LeftNavigationModule = () => {
 
       <div
         className={`max-h-full transition-all duration-200 space-x-1 gap-1  flex z-0 w-[600px] text-gold left-10 self-center pointer-events-auto ${
-          isOffscreen(view) ? "-translate-x-[86%] " : ""
+          isOffscreen(view) ? "-translate-x-[86%]" : ""
         }`}
+        onPointerEnter={() => {
+          debouncedSetIsOffscreen.cancel();
+          if (view === View.None && lastView === View.None && previewBuilding != null) {
+            const newView = View.ConstructionView;
+            setView(newView);
+            setLastView(newView);
+          } else if (view === View.None && previewBuilding != null) {
+            setView(lastView);
+          }
+        }}
+        onPointerLeave={debouncedSetIsOffscreen}
       >
         <BaseContainer className={`w-full overflow-y-scroll ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}>
           {view === View.EntityView && <EntityDetails />}
