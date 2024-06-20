@@ -80,13 +80,6 @@ export const BottomNavigation = () => {
               disabled={!isRealmSelected(realmEntityId, structures)}
             />
 
-            {population?.population == null && location !== "/map" && (
-              <div className="absolute bg-brown text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
-                <ArrowDown className="text-gold w-4 mr-3" />
-                <div>Start here</div>
-              </div>
-            )}
-
             {currentQuest?.completed && !currentQuest?.claimed && location !== "/map" && (
               <div className="absolute bg-brown text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
                 <ArrowDown className="text-gold w-4 mr-3" />
