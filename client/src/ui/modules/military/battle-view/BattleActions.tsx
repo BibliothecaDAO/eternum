@@ -146,7 +146,7 @@ export const BattleActions = ({
         </Button>
 
         <Button
-          variant="primary"	
+          variant="primary"
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Leave}
           onClick={handleLeaveBattle}

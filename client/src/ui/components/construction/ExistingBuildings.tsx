@@ -134,12 +134,12 @@ export const MiddleBuilding = ({ hexType }: { hexType: HexType }) => {
     hexType === HexType.BANK
       ? ModelsIndexes.Bank
       : hexType === HexType.SHARDSMINE
-      ? ModelsIndexes.ShardsMine
-      : hexType === HexType.HYPERSTRUCTURE
-      ? ModelsIndexes.Hyperstructure
-      : hexType === HexType.UNFINISHEDHYPERSTRUCTURE
-      ? ModelsIndexes.UnfinishedHyperstructure
-      : ModelsIndexes.Castle;
+        ? ModelsIndexes.ShardsMine
+        : hexType === HexType.HYPERSTRUCTURE
+          ? ModelsIndexes.Hyperstructure
+          : hexType === HexType.UNFINISHEDHYPERSTRUCTURE
+            ? ModelsIndexes.UnfinishedHyperstructure
+            : ModelsIndexes.Castle;
 
   const modelZOffsets = {
     [HexType.BANK]: 0.2,
