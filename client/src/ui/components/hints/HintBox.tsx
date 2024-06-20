@@ -133,7 +133,7 @@ const EndGameInfo = () => {
   );
 };
 export const QuestList = ({ entityId }: { entityId: bigint | undefined }) => {
-  const { currentQuest } = useQuests({ entityId: entityId || BigInt("0") });
+  const { currentQuest } = useQuests();
 
   return (
     <div className="p-3 flex flex-col gap-2">

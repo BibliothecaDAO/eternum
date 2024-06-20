@@ -53,7 +53,7 @@ export const BottomNavigation = () => {
 
   const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
 
-  const { claimableQuests, currentQuest } = useQuests({ entityId: realmEntityId || BigInt("0") });
+  const { claimableQuests, currentQuest } = useQuests();
 
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
