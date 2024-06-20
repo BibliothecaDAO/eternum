@@ -9,15 +9,25 @@ body {
   overflow: hidden;
   font-family: "Space Grotesk", sans-serif;
   touch-action: none;
-  text-shadow: 2px 2px 4px rgba(255, 255, 0, 0.1); 
+  text-shadow: 2px 2px 4px rgba(255, 255, 0, 0.1);
   @apply cursor-fancy;
 }
 
-h1,h2,h3,h4,h5,h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: "Sedan", sans-serif;
 }
 
-.h1,.h2,.h3,.h4,.h5,.h6 {
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
   font-family: "Sedan", sans-serif;
 }
 
@@ -75,7 +85,7 @@ h1,h2,h3,h4,h5,h6 {
 
 *::-webkit-scrollbar-track {
   background-color: #1b1b1b;
-  
+
   /* border: 1px solid var(--gray-gold, #776756); */
   margin-bottom: 2px;
 }
@@ -83,11 +93,9 @@ h1,h2,h3,h4,h5,h6 {
 *::-webkit-scrollbar {
   width: 8px;
   background-color: #1b1b1b;
-
 }
 
 *::-webkit-scrollbar-thumb {
-
   /* border: 2px solid var(--gray-gold, #776756); */
   @apply bg-gold;
 }
@@ -99,7 +107,6 @@ h1,h2,h3,h4,h5,h6 {
 .root-container > * {
   pointer-events: auto;
 }
-
 
 .track-name-container {
   width: 100%;
@@ -122,31 +129,29 @@ h1,h2,h3,h4,h5,h6 {
   }
 }
 
-
 h1 {
-  @apply text-4xl sm:text-5xl md:text-6xl font-bold ;
+  @apply text-4xl sm:text-5xl md:text-6xl font-bold;
 }
 
 h2 {
-  @apply text-2xl sm:text-3xl md:text-4xl font-semibold ;
+  @apply text-2xl sm:text-3xl md:text-4xl font-semibold;
 }
 
 h3 {
-  @apply text-xl sm:text-2xl md:text-3xl font-medium ;
+  @apply text-xl sm:text-2xl md:text-3xl font-medium;
 }
 
 h4 {
-  @apply text-lg sm:text-xl md:text-2xl font-normal ;
+  @apply text-lg sm:text-xl md:text-2xl font-normal;
 }
 
 h5 {
-  @apply text-base sm:text-lg md:text-xl ;
+  @apply text-base sm:text-lg md:text-xl;
 }
 
 h6 {
-  @apply text-sm sm:text-base md:text-lg uppercase ;
+  @apply text-sm sm:text-base md:text-lg uppercase;
 }
-
 
 .fade-in {
   animation: fadeIn 1s;
@@ -157,13 +162,21 @@ h6 {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes gradientAnimation {

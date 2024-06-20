@@ -6,9 +6,8 @@ import React, { useMemo } from "react";
 import { Euler, Vector3 } from "three";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { WarriorModel } from "../../models/armies/WarriorModel";
-import { SelectedUnit } from "../hexagon/SelectedUnit";
+import { UnitHighlight } from "../hexagon/UnitHighlight";
 import { ArmyFlag } from "./ArmyFlag";
-import { ArmyHitBox } from "./ArmyHitBox";
 import { CombatLabel } from "./CombatLabel";
 import { useArmyAnimation } from "./useArmyAnimation";
 import { arePropsEqual } from "./utils";
@@ -24,16 +23,15 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
     },
   } = useDojo();
 
-  const position = { x: army.x, y: army.y };
+  const armyPosition = { x: army.x, y: army.y };
   const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const battleAtPosition = getBattlesByPosition(position);
-  const { opponentArmies } = getUserArmiesAtPosition(position);
+  const battleAtPosition = getBattlesByPosition(armyPosition);
+  const { opponentArmies } = getUserArmiesAtPosition(armyPosition);
 
-  const structures = Array.from(runQuery([Has(Structure), HasValue(Position, position)]));
+  const structures = Array.from(runQuery([Has(Structure), HasValue(Position, armyPosition)]));
 
   // animation path for the army
-  const armyPosition = position;
-  const groupRef = useArmyAnimation(armyPosition, army.offset);
+  const groupRef = useArmyAnimation(armyPosition, army.offset, army.isMine);
 
   // Deterministic rotation based on the id
   const deterministicRotation = useMemo(() => {
@@ -57,22 +55,14 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
     );
   }, [selectedEntity]);
 
-  const showBattleLabel = useMemo(() => {
-    if (!battleAtPosition) return false;
-	battleAtPosition
-  }, []);
-  // Army can be self owned or enemy
-  // location can have a structure or no strucutre and this strucutre can be owned by self or enemy
-
   return (
     <>
       <group position={initialPos} ref={groupRef} rotation={new Euler(0, deterministicRotation, 0)}>
         <ArmyFlag visible={army.isMine} rotationY={deterministicRotation} position={initialPos} />
         {showCombatLabel && <CombatLabel visible={isSelected} />}
-        <WarriorModel />
-        <ArmyHitBox army={army} />
+        <WarriorModel army={army} />
       </group>
-      {isSelected && <SelectedUnit position={position} />}
+      {isSelected && <UnitHighlight position={{ x: army.x, y: army.y }} />}
     </>
   );
 }, arePropsEqual);
