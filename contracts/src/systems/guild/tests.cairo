@@ -399,3 +399,17 @@ fn test_remove_from_whitelist_as_random() {
     guild_systems_dispatcher
         .remove_player_from_whitelist(contract_address_const::<'player2'>(), guild_entity_id);
 }
+
+#[test]
+#[available_gas(3000000000000)]
+fn test_change_guild_access() {
+    let (world, guild_systems_dispatcher) = setup();
+
+    starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
+
+    guild_systems_dispatcher.change_guild_access(guild_entity_id, felt_to_bool(PRIVATE));
+    
+    let guild = get!(world, guild_entity_id, Guild);
+    assert(guild.is_public == felt_to_bool(PRIVATE), 'Guild access not updated');
+}

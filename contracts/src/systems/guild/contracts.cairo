@@ -19,6 +19,7 @@ trait IGuildSystems {
         player_address_to_remove: ContractAddress,
         guild_entity_id: u128
     );
+    fn change_guild_access(guild_entity_id: u128, is_public: bool);
 }
 
 #[dojo::contract]
@@ -189,6 +190,15 @@ mod guild_systems {
                     is_whitelisted: false
                 })
             );
+        }
+
+        fn change_guild_access(world: IWorldDispatcher, guild_entity_id: u128, is_public: bool) {
+            get!(world, guild_entity_id, Owner).assert_caller_owner();
+
+            let mut guild = get!(world, guild_entity_id, Guild);
+            guild.is_public = is_public;
+
+            set!(world, (guild));
         }
     }
 }
