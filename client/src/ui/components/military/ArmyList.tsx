@@ -9,9 +9,16 @@ import Button from "@/ui/elements/Button";
 import { ArmyViewCard } from "./ArmyViewCard";
 import { DepositResources } from "../resources/DepositResources";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
+import { QuestNames, useQuests } from "@/hooks/helpers/useQuests";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import clsx from "clsx";
 
 export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
+
+  const { realmEntityId } = useRealmStore();
+  const { currentQuest } = useQuests({ entityId: realmEntityId || BigInt("0") });
+  const isQuesting = currentQuest?.name === QuestNames.CreateArmy && !currentQuest.steps[0].completed;
 
   const {
     account: { account },
@@ -43,12 +50,15 @@ export const EntityArmyList = ({ entity_id }: any) => {
             <p>
               First you must create an Army then you can enlist troops into it. You can only have one defensive army.
             </p>
-            <div className=" w-full flex justify-between my-4">
+            <div className="w-full flex justify-between my-4">
               <Button
                 isLoading={isLoading}
                 variant="primary"
                 onClick={() => handleCreateArmy(false)}
                 disabled={isLoading}
+                className={clsx({
+                  "animate-pulse": isQuesting,
+                })}
               >
                 Create Army
               </Button>
@@ -76,6 +86,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
             <DepositResources entityId={entity.entity_id} />
           </React.Fragment>
         )}
+        questing={isQuesting}
       />
     </>
   );

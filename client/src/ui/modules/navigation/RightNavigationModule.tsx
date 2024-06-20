@@ -17,24 +17,31 @@ import { BASE_POPULATION_CAPACITY, BuildingType, STOREHOUSE_CAPACITY } from "@bi
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
-import { debounce } from "lodash";
+import { QuestNames, useQuests } from "@/hooks/helpers/useQuests";
+import clsx from "clsx";
+import { quests as questsPopup } from "../../components/navigation/Config";
 import { ArrowRight } from "lucide-react";
 import { BuildingThumbs } from "./LeftNavigationModule";
 
-enum View {
+export enum View {
+  None,
   ResourceTable,
   ResourceArrivals,
 }
 
 export const RightNavigationModule = () => {
-  const [isOffscreen, setIsOffscreen] = useState(true);
+  const [lastView, setLastView] = useState<View>(View.None);
 
-  const [currentView, setCurrentView] = useState(View.ResourceTable);
+  const view = useUIStore((state) => state.rightNavigationView);
+  const setView = useUIStore((state) => state.setRightNavigationView);
+
   const setTooltip = useUIStore((state) => state.setTooltip);
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const openedPopups = useUIStore((state) => state.openedPopups);
 
   const { realmEntityId } = useRealmStore();
+  const { quests, currentQuest } = useQuests({ entityId: realmEntityId || BigInt("0") });
 
   const { getAllArrivalsWithResources } = useResources();
 
@@ -58,6 +65,89 @@ export const RightNavigationModule = () => {
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
   }, []);
 
+  const navigation = useMemo(() => {
+    return [
+      {
+        name: "resourceTable",
+        button: (
+          <CircleButton
+            className={clsx("resources-selector", {
+              "animate-pulse":
+                currentQuest?.name === QuestNames.ClaimFood && !currentQuest.claimed && isPopupOpen(questsPopup),
+            })}
+            image={BuildingThumbs.resources}
+            size="xl"
+            tooltipLocation="top"
+            label={"Balance"}
+            active={view === View.ResourceTable}
+            onClick={() => {
+              setLastView(View.ResourceTable);
+              setView(View.ResourceTable);
+            }}
+          />
+        ),
+      },
+      {
+        name: "resourceArrivals",
+        button: (
+          <CircleButton
+            className={clsx({ hidden: !quests.find((quest) => quest.name === QuestNames.CreateTrade)?.claimed })}
+            image={BuildingThumbs.trade}
+            tooltipLocation="top"
+            label={"Resource Arrivals"}
+            // active={isPopupOpen(trade)}
+            active={view === View.ResourceArrivals}
+            size="xl"
+            onClick={() => {
+              setLastView(View.ResourceArrivals);
+              setView(View.ResourceArrivals);
+            }}
+            notification={getAllArrivalsWithResources().length}
+            notificationLocation="topleft"
+          />
+        ),
+      },
+      {
+        name: "trade",
+        button: (
+          <CircleButton
+            className={clsx("trade-selector", {
+              "animate-pulse":
+                currentQuest?.name === QuestNames.CreateTrade && !currentQuest.completed && isPopupOpen(questsPopup),
+              hidden: !quests.find((quest) => quest.name === QuestNames.BuildResource)?.claimed,
+            })}
+            image={BuildingThumbs.scale}
+            tooltipLocation="top"
+            label={trade}
+            active={isPopupOpen(trade)}
+            size="xl"
+            onClick={() => {
+              toggleModal(<MarketModal />);
+            }}
+          />
+        ),
+      },
+      {
+        name: "bank",
+        button: (
+          <CircleButton
+            className={clsx("banking-selector", {
+              hidden: !quests.find((quest) => quest.name === QuestNames.CreateArmy)?.claimed,
+            })}
+            image={BuildingThumbs.banks}
+            tooltipLocation="top"
+            label={banks}
+            active={isPopupOpen(banks)}
+            size="xl"
+            onClick={() => {
+              togglePopup(banks);
+            }}
+          />
+        ),
+      },
+    ];
+  }, [location, view, quests, openedPopups]);
+
   const slideRight = {
     hidden: { x: "100%" },
     visible: { x: "0%", transition: { duration: 0.5 } },
@@ -67,7 +157,7 @@ export const RightNavigationModule = () => {
     <>
       <div
         className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] text-gold right-4 self-center pointer-events-auto ${
-          isOffscreen ? "translate-x-[79%]" : ""
+          isOffscreen(view) ? "translate-x-[79%]" : ""
         }`}
       >
         <motion.div
@@ -77,68 +167,21 @@ export const RightNavigationModule = () => {
           className="gap-2 flex flex-col justify-center self-center"
         >
           <div>
-            <Button onClick={() => setIsOffscreen(!isOffscreen)} variant="primary">
-              <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen ? "rotate-180" : ""}`} />
+            <Button onClick={() => setView(isOffscreen(view) ? lastView : View.None)} variant="primary">
+              <ArrowRight className={`w-4 h-4 duration-200 ${isOffscreen(view) ? "rotate-180" : ""}`} />
             </Button>
           </div>
           <div className="flex flex-col gap-2 mb-auto">
-            <CircleButton
-              image={BuildingThumbs.resources}
-              size="xl"
-              tooltipLocation="top"
-              label={"Balance"}
-              active={currentView === View.ResourceTable}
-              onClick={() => {
-                if (isOffscreen) setIsOffscreen(false);
-                setCurrentView(View.ResourceTable);
-              }}
-            />
-            <CircleButton
-              className="trade-selector"
-              image={BuildingThumbs.trade}
-              tooltipLocation="top"
-              label={"Resource Arrivals"}
-              // active={isPopupOpen(trade)}
-              active={currentView === View.ResourceArrivals}
-              size="xl"
-              onClick={() => {
-                if (isOffscreen) setIsOffscreen(false);
-                setCurrentView(View.ResourceArrivals);
-              }}
-              notification={getAllArrivalsWithResources().length}
-              notificationLocation="topleft"
-            />
-            <CircleButton
-              className="trade-selector"
-              image={BuildingThumbs.scale}
-              tooltipLocation="top"
-              label={trade}
-              active={isPopupOpen(trade)}
-              size="xl"
-              onClick={() => {
-                if (isOffscreen) setIsOffscreen(false);
-                toggleModal(<MarketModal />);
-              }}
-            ></CircleButton>
-            <CircleButton
-              className="banking-selector"
-              image={BuildingThumbs.banks}
-              tooltipLocation="top"
-              label={banks}
-              active={isPopupOpen(banks)}
-              size="xl"
-              onClick={() => {
-                if (isOffscreen) setIsOffscreen(false);
-                togglePopup(banks);
-              }}
-            ></CircleButton>
+            {navigation.map((a, index) => (
+              <div key={index}>{a.button}</div>
+            ))}
           </div>
         </motion.div>
 
-        <BaseContainer className={`w-full  overflow-y-scroll py-4 ${isOffscreen ? "h-[20vh]" : "h-[80vh]"}`}>
-          {currentView === View.ResourceTable ? (
+        <BaseContainer className={`w-full  overflow-y-scroll py-4 ${isOffscreen(view) ? "h-[20vh]" : "h-[80vh]"}`}>
+          {view === View.ResourceTable ? (
             <>
-              <div className="flex justify-between">
+              <div className=" flex justify-between">
                 {population && (
                   <div
                     onMouseEnter={() => {
@@ -195,4 +238,8 @@ export const RightNavigationModule = () => {
       </div>
     </>
   );
+};
+
+const isOffscreen = (view: View) => {
+  return view === View.None;
 };

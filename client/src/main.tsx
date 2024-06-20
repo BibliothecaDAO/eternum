@@ -71,7 +71,7 @@ async function init() {
   ];
   root.render(
     <React.StrictMode>
-      {/* <TourProvider
+      <TourProvider
         steps={steps}
         styles={{
           popover: (base) => ({
@@ -87,11 +87,11 @@ async function init() {
           controls: (base) => ({ ...base, marginTop: 100, color: "#F3C99F" }),
           close: (base) => ({ ...base, right: "auto", left: 8, top: 8 }),
         }}
-      > */}
-      <DojoProvider value={setupResult}>
-        <App />
-      </DojoProvider>
-      {/* </TourProvider> */}
+      >
+        <DojoProvider value={setupResult}>
+          <App />
+        </DojoProvider>
+      </TourProvider>
     </React.StrictMode>,
   );
 }
