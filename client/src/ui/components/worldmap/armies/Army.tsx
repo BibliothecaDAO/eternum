@@ -19,7 +19,7 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
 
   // animation path for the army
   const armyPosition = { x: army.x, y: army.y };
-  const groupRef = useArmyAnimation(armyPosition, army.offset);
+  const groupRef = useArmyAnimation(armyPosition, army.offset, army.isMine);
 
   // Deterministic rotation based on the id
   const deterministicRotation = useMemo(() => {

@@ -10,7 +10,7 @@ import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 
 const vec = new Vector3();
 
-export const useArmyAnimation = (position: Position, offset: Position) => {
+export const useArmyAnimation = (position: Position, offset: Position, isMine: boolean) => {
   const { play: playMarchingSound } = useUiSounds(soundSelector.fly);
   const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
   const prevPositionRef = useRef<Position | null>(null);
@@ -34,7 +34,7 @@ export const useArmyAnimation = (position: Position, offset: Position) => {
       );
       setAnimationPath(uiPath.map((pos) => applyOffset(pos, offset)));
       prevPositionRef.current = { x, y };
-      playMarchingSound(); // Play marching sound when animation starts
+      isMine && playMarchingSound(); // Play marching sound when animation starts
     }
   }, [position]);
 
@@ -50,7 +50,7 @@ export const useArmyAnimation = (position: Position, offset: Position) => {
         setAnimationPath(null);
         currentIndex.current = 1;
       } else {
-        playMarchingSound();
+        isMine && playMarchingSound();
       }
     }
   });
