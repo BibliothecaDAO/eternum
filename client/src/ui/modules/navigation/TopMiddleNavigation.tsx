@@ -40,6 +40,8 @@ export const TopMiddleNavigation = () => {
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+
 
   // realms always first
   const structures = useMemo(() => {
@@ -110,6 +112,7 @@ export const TopMiddleNavigation = () => {
             if (location !== "/map") {
               setIsLoadingScreenEnabled(true);
               setTimeout(() => {
+                setPreviewBuilding(null);
                 setLocation("/map");
                 if (hexPosition.col !== 0 && hexPosition.row !== 0) {
                   const { col, row } = hexPosition;
