@@ -37,7 +37,7 @@ export const ArmyHitBox = ({ army, hovered, setHovered }: ArmyHitBoxProps) => {
       setSelectedEntity({ id: BigInt(army.entity_id), position: { x: army.x, y: army.y } });
       playSelectedArmy();
     }
-  }, [army.entity_id, army.x, army.y, selectedEntity, setSelectedEntity]);
+  }, [army.entity_id, army.x, army.y, selectedEntity, setSelectedEntity, playSelectedArmy]);
 
   const onPointerEnter = useCallback((e: any) => {
     e.stopPropagation();
