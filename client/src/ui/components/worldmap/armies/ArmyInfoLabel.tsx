@@ -24,6 +24,7 @@ export const ArmyInfoLabel = ({ army, visible }: ArmyInfoLabelProps) => {
     <BaseThreeTooltip
       visible={visible}
       position={Position.TOP_CENTER}
+      distanceFactor={50}
       className={`bg-transparent pointer-events-none -mt-[320px]`}
     >
       <RaiderInfo key={army.entity_id} army={army} />

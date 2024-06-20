@@ -169,11 +169,6 @@ export const LeftNavigationModule = () => {
     return null;
   }
 
-  // Making UX smoother by not closing the menu immediatly. The cursor often moves a little further than the menu edge
-  const debouncedSetIsOffscreen = debounce(() => {
-    setView(View.None);
-  }, 1500);
-
   const slideLeft = {
     hidden: { x: "-100%" },
     visible: { x: "0%", transition: { duration: 0.5 } },
@@ -194,19 +189,6 @@ export const LeftNavigationModule = () => {
         className={`max-h-full transition-all duration-200 space-x-1 gap-1  flex z-0 w-[600px] text-gold left-10 self-center pointer-events-auto ${
           isOffscreen(view) ? "-translate-x-[86%] " : ""
         }`}
-        onPointerEnter={() => {
-          debouncedSetIsOffscreen.cancel();
-          if (view === View.None && lastView === View.None) {
-            const newView = View.ConstructionView;
-            setView(newView);
-            setLastView(newView);
-          } else if (view === View.None) {
-            setView(lastView);
-          } else {
-            setLastView(view);
-          }
-        }}
-        onPointerLeave={debouncedSetIsOffscreen}
       >
         <BaseContainer className={`w-full overflow-y-scroll ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}>
           {view === View.EntityView && <EntityDetails />}

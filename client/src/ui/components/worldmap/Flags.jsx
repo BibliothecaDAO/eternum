@@ -54,6 +54,7 @@ export function Flags(props) {
 
   const [woodInstances, setWoodInstances] = useState([]);
   const [flagInstances, setFlagInstances] = useState([]);
+  const [hitBoxInstances, setHitBoxInstances] = useState([]);
 
   const realms = useGetRealms();
 
@@ -135,6 +136,9 @@ export function Flags(props) {
     flagGeometry = _flagMesh.clone();
     woodMaterial = materials.Wood;
 
+    const hitBoxGeometry = new THREE.BoxGeometry(4.5, 4.5, 2);
+    const hitBoxMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0 });
+
     const _position = new THREE.Vector3();
     const dummy = new THREE.Object3D();
 
@@ -152,11 +156,18 @@ export function Flags(props) {
       (order, i) => new THREE.InstancedMesh(flagGeometry, materials[order], ordersRealms[i].length),
     );
 
+    const hitBoxMeshes = orders.map(
+      (order, i) => new THREE.InstancedMesh(hitBoxGeometry, hitBoxMaterial, ordersRealms[i].length),
+    );
+
     woodMeshes.forEach((woodMesh) => {
       woodMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     });
     flagMeshes.forEach((flagMesh) => {
       flagMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    });
+    hitBoxMeshes.forEach((hitBoxMesh) => {
+      hitBoxMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     });
 
     ordersRealms.forEach((orderRealms, index) => {
@@ -174,10 +185,16 @@ export function Flags(props) {
 
         woodMeshes[index].setMatrixAt(i, dummy.matrix);
         flagMeshes[index].setMatrixAt(i, dummy.matrix);
+        _position.set(-x - 0.38, y, -1.5);
+        dummy.position.copy(_position);
+        dummy.rotation.set(0, 0, 0);
+        dummy.updateMatrix();
+        hitBoxMeshes[index].setMatrixAt(i, dummy.matrix);
       });
     });
     setWoodInstances(woodMeshes);
     setFlagInstances(flagMeshes);
+    setHitBoxInstances(hitBoxMeshes);
   }, [ordersRealms]);
 
   const clickHandler = (e, index) => {
@@ -207,14 +224,13 @@ export function Flags(props) {
   const posVector = new THREE.Vector3();
   const hoverHandler = (e, index) => {
     if (e.intersections.length > 0) {
-      const instanceId = e.intersections[0].instanceId;
+      const instanceId = e.instanceId;
       const point = getUIPositionFromColRow(
         ordersRealms[index][instanceId]?.position?.x,
         ordersRealms[index][instanceId]?.position?.y,
-        true,
+        false,
       );
-
-      const tooltipPos = posVector.set(point.x, 11, -point.y);
+      const tooltipPos = posVector.set(point.x, 3, -point.y);
       setTooltipPosition(tooltipPos);
       setHoveredRealm(ordersRealms[index][instanceId]);
     }
@@ -223,25 +239,28 @@ export function Flags(props) {
   return (
     <>
       <Html position={tooltipPosition} distanceFactor={50}>
-        <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
+        <div className="p-2 bg-brown -translate-x-1/2 -mt-[50px] clip-angled-sm text-md text-gold shadow-2xl border-2 border-gradient whitespace-nowrap pointer-events-none">
           {hoveredRealm && hoveredRealm.name}
         </div>
       </Html>
       <group {...props} dispose={null} position={[-0.38, 0, -0.04]} rotation={[-Math.PI / 2, Math.PI, 0]}>
         {woodInstances.map((woodInstance, index) => {
           return (
-            <group
-              key={index}
-              onClick={(e) => clickHandler(e, index)}
-              onPointerEnter={(e) => hoverHandler(e, index)}
-              onPointerLeave={() => {
-                posVector.set(0, 0, 0);
-                setTooltipPosition(posVector);
-              }}
-            >
-              <primitive object={woodInstance} renderOrder={3} />
-              <primitive object={flagInstances[index]} renderOrder={3} />
-            </group>
+            <>
+              <group
+                onPointerEnter={(e) => hoverHandler(e, index)}
+                onPointerLeave={() => {
+                  posVector.set(0, 0, 0);
+                  setTooltipPosition(posVector);
+                }}
+              >
+                <primitive object={hitBoxInstances[index]} renderOrder={3} />
+              </group>
+              <group key={index} onClick={(e) => clickHandler(e, index)}>
+                <primitive object={woodInstance} renderOrder={3} />
+                <primitive object={flagInstances[index]} renderOrder={3} />
+              </group>
+            </>
           );
         })}
       </group>

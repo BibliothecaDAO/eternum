@@ -6,6 +6,9 @@ import { StructureType } from "@bibliothecadao/eternum";
 import { useGLTF } from "@react-three/drei";
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
+import { InstancedCastles } from "./InstancedCastles";
+import { InstancedBanks } from "./InstancedBanks";
+import { ShardsMines } from "./ShardsMines";
 
 export type Structure = { col: number; row: number; type: StructureType; entityId: bigint };
 
@@ -24,9 +27,23 @@ export const Structures = () => {
     [],
   );
 
-  return existingStructures.map((structure, index) => {
-    return <BuiltStructure key={index} structure={structure} models={models} structureCategory={structure.type} />;
-  });
+  const HyperStructures = useMemo(() => {
+    const filteredHyperStructures = existingStructures.filter(
+      (structure) => structure.type === StructureType.Hyperstructure,
+    );
+    return filteredHyperStructures.map((structure, index) => {
+      return <BuiltStructure key={index} structure={structure} models={models} structureCategory={structure.type} />;
+    });
+  }, [existingStructures]);
+
+  return (
+    <>
+      <InstancedCastles />
+      <InstancedBanks />
+      <ShardsMines />
+      {HyperStructures}
+    </>
+  );
 };
 
 const BuiltStructure = ({

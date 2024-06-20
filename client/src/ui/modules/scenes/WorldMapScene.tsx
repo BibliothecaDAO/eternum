@@ -151,7 +151,7 @@ const WorldMapLight = () => {
     targetRef.current.position.z = target.z - 50 - offsetY;
     dLightRef.current.target = targetRef.current;
     dLightRef.current.shadow.camera.left = -75 - 300 * distanceMultiplier;
-    dLightRef.current.shadow.camera.right = 75 + 30 * distanceMultiplier;
+    dLightRef.current.shadow.camera.right = 75 + 300 * distanceMultiplier;
     dLightRef.current.shadow.camera.top = 75 + 300 * distanceMultiplier;
     dLightRef.current.shadow.camera.far = 150 + 300 * distanceMultiplier;
     dLightRef.current.shadow.camera.updateProjectionMatrix();

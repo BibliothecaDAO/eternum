@@ -3,7 +3,7 @@ import { Image, Points } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef, useState } from "react";
 
-interface SelectedUnitProps {
+interface UnitHighlightProps {
   position: {
     x: number;
     y: number;
@@ -16,7 +16,7 @@ const PARTICLE_RESET_Y = 5;
 const PARTICLE_START_Y = -5;
 const PARICLE_COLOR = 0xf9e076;
 
-export const SelectedUnit = ({ position }: SelectedUnitProps) => {
+export const UnitHighlight = ({ position }: UnitHighlightProps) => {
   const imageRef = useRef<any>();
   const [pointsPositions, setPointsPositions] = useState(() => {
     const arr = new Float32Array(PARTICLES_COUNT * 3);
