@@ -36,7 +36,7 @@ export type FullStructure = ClientComponents["Structure"]["schema"] & {
 export const useStructuresPosition = ({ position }: { position: Position }) => {
   const {
     setup: {
-      components: { Position, Realm, EntityOwner, Owner, Structure, Protector },
+      components: { Position, Realm, EntityOwner, Owner, Structure, Protector, EntityName },
     },
     account: { account },
   } = useDojo();
@@ -85,12 +85,17 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
         Owner,
         getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id) || 0n]),
       ) as unknown as ClientComponents["Owner"]["schema"];
-      const name = getRealmNameById(entityId);
       let protector: ClientComponents["Protector"]["schema"] | undefined | ArmyInfo = getComponentValue(
         Protector,
         entityId,
       ) as unknown as ClientComponents["Protector"]["schema"];
       protector = protector ? getArmyByEntityId(BigInt(protector.army_id)) : undefined;
+
+      const onChainName = getComponentValue(EntityName, entityId);
+
+      const name = onChainName
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${structure.category} ${structure?.entity_id}`;
 
       return {
         ...structure,

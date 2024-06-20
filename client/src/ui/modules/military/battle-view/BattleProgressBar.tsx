@@ -32,7 +32,7 @@ export const BattleProgressBar = ({
 
   useEffect(() => {
     if (!time) return;
-    if (time.getSeconds() === 0) return;
+    if (time.getTime() === 0) return;
     const timer = setInterval(() => {
       const date = new Date(0);
       date.setSeconds(time.getTime() / 1000 - 1);
