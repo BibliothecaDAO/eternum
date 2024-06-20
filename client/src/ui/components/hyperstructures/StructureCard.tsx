@@ -122,11 +122,11 @@ type TroopsProps = {
   structureEntityId: bigint;
 };
 
-const troopsToFormat = (troops: { knight_count: number; paladin_count: number; crossbowman_count: number }) => {
+const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint }) => {
   return {
-    [ResourcesIds.Crossbowmen]: troops.crossbowman_count,
-    [ResourcesIds.Knight]: troops.knight_count,
-    [ResourcesIds.Paladin]: troops.paladin_count,
+    [ResourcesIds.Crossbowmen]: Number(troops.crossbowman_count),
+    [ResourcesIds.Knight]: Number(troops.knight_count),
+    [ResourcesIds.Paladin]: Number(troops.paladin_count),
   };
 };
 
