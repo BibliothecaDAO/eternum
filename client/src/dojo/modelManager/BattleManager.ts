@@ -40,6 +40,17 @@ export class BattleManager {
     }
   }
 
+  public getTimeLeft(currentTick: number): Date {
+    var date = new Date(0);
+    const battle = this.getBattle();
+    if (!battle) return date;
+    const duractionSinceLastUpdate = currentTick - Number(battle.last_updated);
+    if (Number(battle.duration_left) >= duractionSinceLastUpdate) {
+      date.setSeconds(Number(battle.duration_left) - duractionSinceLastUpdate);
+    }
+    return date;
+  }
+
   public battleActive(currentTick: number): boolean {
     const battle = this.getBattle();
     const timeSinceLastUpdate = this.getElapsedTime(currentTick);

@@ -1,8 +1,8 @@
-import { Fragment, ReactNode, useMemo } from "react";
-import { Listbox, Transition } from "@headlessui/react";
 import { ReactComponent as CaretDown } from "@/assets/icons/common/caret-down-fill.svg";
 import { ReactComponent as Checkmark } from "@/assets/icons/common/checkmark.svg";
+import { Listbox, Transition } from "@headlessui/react";
 import clsx from "clsx";
+import { Fragment, ReactNode, useMemo } from "react";
 
 export interface ListSelectOption {
   id: any;
@@ -26,13 +26,13 @@ function ListSelect(props: ListSelectProps) {
     [props.value],
   );
   return (
-    <div className={clsx("w-full", props.className)}>
+    <div className={clsx("w-full", props.className, "z-50")}>
       <Listbox value={props.value} onChange={props.onChange}>
         {({ open }) => (
           <div className="relative  ">
             <Listbox.Button
               className={clsx(
-                "flex items-center relative w-full cursor-pointer text-xs py-1 min-h-[32px]",
+                "flex items-center relative w-full cursor-pointer text-xs py-1 min-h-[32px] z-50",
                 props.style === "black"
                   ? open
                     ? "bg-brown/50 text-gold !justify-start"
@@ -81,7 +81,7 @@ function ListSelect(props: ListSelectProps) {
 
                 <Listbox.Options
                   className={clsx(
-                    " mt-3 max-h-60 w-full overflow-auto rounded-md py-1",
+                    "overflow-visible z-50 mt-3 w-full rounded-md py-1",
                     props.style === "black" ? "bg-black" : " bg-dark-brown",
                   )}
                 >
@@ -89,7 +89,7 @@ function ListSelect(props: ListSelectProps) {
                     <Listbox.Option
                       key={option.id}
                       className={({ active }) =>
-                        `relative cursor-pointer z-50 select-none py-2 flex items-center pl-8 text-gold ${
+                        `overflow-visible relative cursor-pointer z-50 select-none py-2 flex items-center pl-8 text-gold ${
                           active ? "bg-gold/50 text-white/90" : ""
                         }`
                       }
@@ -98,14 +98,14 @@ function ListSelect(props: ListSelectProps) {
                       {({ selected }) => (
                         <>
                           <span
-                            className={`flex items-center block truncate ${
+                            className={`z-50 flex items-center block truncate ${
                               selected ? "font-bold text-white" : "font-normal"
                             }`}
                           >
                             {option.label}
                           </span>
                           {selected ? (
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                            <span className="z-50 absolute inset-y-0 left-0 flex items-center pl-3">
                               <Checkmark className="h-3 w-3 fill-gold " aria-hidden="true" />
                             </span>
                           ) : null}

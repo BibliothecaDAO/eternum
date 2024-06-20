@@ -1,24 +1,36 @@
-import React from "react";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { useMemo } from "react";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { ArmyInfo, getUserArmiesAtPosition } from "@/hooks/helpers/useArmies";
+import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
+import { Has, HasValue, runQuery } from "@dojoengine/recs";
+import React, { useMemo } from "react";
 import { Euler, Vector3 } from "three";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { WarriorModel } from "../../models/armies/WarriorModel";
 import { UnitHighlight } from "../hexagon/UnitHighlight";
-import { CombatLabel } from "./CombatLabel";
-import { arePropsEqual } from "./utils";
 import { ArmyFlag } from "./ArmyFlag";
+import { CombatLabel } from "./CombatLabel";
 import { useArmyAnimation } from "./useArmyAnimation";
+import { arePropsEqual } from "./utils";
 
 type ArmyProps = {
   army: ArmyInfo;
 };
 
 export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["group"]) => {
+  const {
+    setup: {
+      components: { Structure, Position },
+    },
+  } = useDojo();
+
+  const armyPosition = { x: army.x, y: army.y };
   const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const battleAtPosition = getBattlesByPosition(armyPosition);
+  const { opponentArmies } = getUserArmiesAtPosition(armyPosition);
+
+  const structures = Array.from(runQuery([Has(Structure), HasValue(Position, armyPosition)]));
 
   // animation path for the army
-  const armyPosition = { x: army.x, y: army.y };
   const groupRef = useArmyAnimation(armyPosition, army.offset, army.isMine);
 
   // Deterministic rotation based on the id
@@ -34,11 +46,20 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
     return (selectedEntity?.id || 0n) === BigInt(army.entity_id);
   }, [selectedEntity, army.entity_id]);
 
+  const showCombatLabel = useMemo(() => {
+    if (battleAtPosition) return false;
+    return (
+      selectedEntity !== undefined &&
+      selectedEntity.id === BigInt(army.entity_id) &&
+      ((opponentArmies?.length || 0) > 0 || structures.length > 0)
+    );
+  }, [selectedEntity]);
+
   return (
     <>
       <group position={initialPos} ref={groupRef} rotation={new Euler(0, deterministicRotation, 0)}>
         <ArmyFlag visible={army.isMine} rotationY={deterministicRotation} position={initialPos} />
-        {isSelected && <CombatLabel />}
+        {showCombatLabel && <CombatLabel visible={isSelected} />}
         <WarriorModel army={army} />
       </group>
       {isSelected && <UnitHighlight position={{ x: army.x, y: army.y }} />}

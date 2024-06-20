@@ -1,7 +1,8 @@
 import { CombatTarget } from "@/types";
 import { Realm, Structure } from "../helpers/useStructures";
+import { Position } from "@bibliothecadao/eternum";
 
 export type BattleViewInfo = {
-  attackers: bigint[];
-  defenders: { type: CombatTarget; entities: bigint[] | Realm | Structure };
+  battle: Position | undefined;
+  target: { type: CombatTarget; entity: bigint | Realm | Structure } | undefined;
 };

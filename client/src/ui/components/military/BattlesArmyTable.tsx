@@ -52,24 +52,11 @@ const BattleChip = ({ battleEntityId, ownArmy }: BattleChipProps) => {
     if (!extraInfo) return;
     return formatBattle(currentBattle, extraInfo, ownArmy);
   }, [currentDefaultTick]);
-  console.log(extendedBattle);
+
   return (
     extendedBattle && (
       <div className=" items-center text-xs p-2 hover:bg-gold/20 clip-angled-sm bg-gold/20 border-gray-300 rounded-md">
-        <div className=" text-xl w-full flex justify-between">
-          {/* <div
-            onClick={() =>
-              setBattleView({
-                attackerId: BigInt(extendedBattle.ownArmy.entity_id),
-                defenderId: BigInt(extendedBattle.opponentArmy.entity_id),
-                structure: 0n,
-              })
-            }
-            className="flex items-center space-x-1 justify-end"
-          >
-            <ViewOnMapButton position={{ x: extendedBattle.x, y: extendedBattle.y }} className="text-xxs" />
-          </div> */}
-        </div>
+        <div className=" text-xl w-full flex justify-between"></div>
         <div className="flex flex-row justify-between items-center">
           <ArmyCard armyName={extendedBattle.ownArmyEntityName} army={extendedBattle.ownArmy} position={"start"} />
           VS.
@@ -130,7 +117,7 @@ const formatBattle = (currentBattle: any, extraInfo: ExtraBattleInfo, ownArmy: C
     currentBattle.opponentArmy = { ...currentBattle.defence_army_health, ...extraInfo.opponentArmy };
     currentBattle.ownArmy = { ...currentBattle.attack_army_health, ...ownArmy };
   }
-  console.log(extraInfo);
+
   return {
     ...currentBattle,
     x: extraInfo.x,

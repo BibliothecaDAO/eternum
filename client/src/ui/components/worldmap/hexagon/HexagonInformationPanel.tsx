@@ -5,12 +5,11 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { ClickedHex } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Position } from "@bibliothecadao/eternum";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { StructureCard } from "../../hyperstructures/StructureCard";
 import { EnemyArmies } from "../../military/Battle";
 
 type ToShow = {
-  showBattle: boolean;
   showSelectableUnits: boolean;
   showEnnemies: boolean;
   showStructure: boolean;
@@ -19,7 +18,7 @@ type ToShow = {
 export const HexagonInformationPanel = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
+  const [ownArmySelected, setOwnArmySelected] = useState(selectedEntity);
 
   const hexPosition = useMemo(() => {
     if (selectedEntity) return { x: selectedEntity.position.x, y: selectedEntity.position.y };
@@ -41,19 +40,19 @@ export const HexagonInformationPanel = () => {
         id: BigInt(userAttackingArmies[0].entity_id),
         position: { x: clickedHex.contractPos.col, y: clickedHex.contractPos.row },
       };
-      setSelectedEntity(entity);
+      setOwnArmySelected(entity);
       return entity;
     }
   }, [clickedHex]);
 
-  const ownArmySelected = useMemo(() => {
-    if (!selectedEntity) return;
-    return userAttackingArmies.find((army) => BigInt(army.entity_id) === selectedEntity.id);
+  const ownArmy = useMemo(() => {
+    if (!ownArmySelected) return;
+    return userAttackingArmies.find((army) => BigInt(army.entity_id) === ownArmySelected.id);
   }, [userAttackingArmies, selectedEntity]);
 
   const toShow = checkWhatToShow(
     battle,
-    selectedEntity,
+    ownArmySelected,
     clickedHex,
     userAttackingArmies,
     enemyArmies,
@@ -67,14 +66,13 @@ export const HexagonInformationPanel = () => {
         {toShow.showSelectableUnits && (
           <SelectActiveArmy
             selectedEntity={panelSelectedEntity}
-            setSelectedEntity={setSelectedEntity}
+            setOwnArmySelected={setOwnArmySelected}
             userAttackingArmies={userAttackingArmies}
           />
         )}
-        {toShow.showBattle && <div>Hello World</div>}
-        {toShow.showStructure && <StructureCard position={hexPosition} ownArmySelected={ownArmySelected} />}
-        {toShow.showEnnemies && <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmySelected!} />}
-        {!toShow.showBattle && !toShow.showEnnemies && !toShow.showStructure && "Nothing to show here"}
+        {toShow.showStructure && <StructureCard position={hexPosition} ownArmySelected={ownArmy} />}
+        {toShow.showEnnemies && <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmy!} />}
+        {!toShow.showEnnemies && !toShow.showStructure && "Nothing to show here"}
       </div>
     )
   );
@@ -96,7 +94,7 @@ const Coordinates = ({ position }: { position: Position }) => {
 
 const SelectActiveArmy = ({
   selectedEntity,
-  setSelectedEntity,
+  setOwnArmySelected,
   userAttackingArmies,
 }: {
   selectedEntity:
@@ -105,7 +103,7 @@ const SelectActiveArmy = ({
         position: Position;
       }
     | undefined;
-  setSelectedEntity: (val: any) => void;
+  setOwnArmySelected: (val: any) => void;
   userAttackingArmies: ArmyInfo[];
 }) => {
   return (
@@ -113,7 +111,7 @@ const SelectActiveArmy = ({
       <Select
         value={selectedEntity?.id.toString() || ""}
         onValueChange={(a: string) => {
-          setSelectedEntity({ id: BigInt(a), position: selectedEntity?.position || 0n });
+          setOwnArmySelected({ id: BigInt(a), position: selectedEntity?.position || 0n });
         }}
       >
         <SelectTrigger className="">
@@ -145,27 +143,21 @@ const checkWhatToShow = (
   structure: Structure | undefined,
 ): ToShow => {
   if (battle) {
-    if (selectedEntity || (clickedHex && userAttackingArmies.length > 0)) {
-      return { showBattle: true, showSelectableUnits: true, showEnnemies: false, showStructure: false };
-    }
     return {
-      showBattle: true,
       showSelectableUnits: false,
-      showEnnemies: true,
-      showStructure: true && Boolean(structure),
+      showEnnemies: false,
+      showStructure: false,
     };
   } else {
     if (selectedEntity) {
       if (structure) {
         return {
-          showBattle: false,
           showSelectableUnits: true,
           showEnnemies: false,
           showStructure: true && Boolean(structure),
         };
       } else {
         return {
-          showBattle: false,
           showSelectableUnits: true,
           showEnnemies: true && enemyArmies.length > 0,
           showStructure: false,
@@ -175,14 +167,12 @@ const checkWhatToShow = (
       if (clickedHex && userAttackingArmies.length > 0) {
         if (structure) {
           return {
-            showBattle: false,
             showSelectableUnits: true,
             showEnnemies: false,
             showStructure: true && Boolean(structure),
           };
         } else {
           return {
-            showBattle: false,
             showSelectableUnits: true,
             showEnnemies: true && enemyArmies.length > 0,
             showStructure: false,
@@ -190,7 +180,6 @@ const checkWhatToShow = (
         }
       } else {
         return {
-          showBattle: false,
           showSelectableUnits: false,
           showEnnemies: true && enemyArmies.length > 0,
           showStructure: true && Boolean(structure),

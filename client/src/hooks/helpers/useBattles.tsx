@@ -1,8 +1,8 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { Position } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Component, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
@@ -35,6 +35,32 @@ export const useBattleManager = (battleId: bigint) => {
   return { updatedBattle };
 };
 
+export const useBattleManagerByPosition = (position: Position) => {
+  const {
+    setup: {
+      components: { Battle, Position, Army },
+    },
+  } = useDojo();
+
+  const battleEntityIds = useEntityQuery([Has(Battle), HasValue(Position, position)]);
+  const battleEntityId = Array.from(battleEntityIds)
+    .map((battleEntityId) => {
+      const battle = getComponentValue(Battle, battleEntityId);
+      if (!battle) return;
+      const isFinished = battleIsFinished(Army, battle as unknown as ClientComponents["Battle"]["schema"]);
+      if (isFinished) return;
+      return battle.entity_id;
+    })
+    .filter((battle) => battle != undefined)[0];
+
+  const updatedBattle = useMemo(() => {
+    if (!battleEntityId) return;
+    return new BattleManager(Battle, BigInt(battleEntityId));
+  }, [position, battleEntityId]);
+
+  return updatedBattle;
+};
+
 export const useBattles = () => {
   const {
     setup: {
@@ -44,12 +70,16 @@ export const useBattles = () => {
 
   const allBattles = () => {
     const entityIds = useEntityQuery([Has(Battle)]);
-    return Array.from(entityIds).map((entityId) => {
-      const army = getComponentValue(Battle, entityId);
-      const position = getComponentValue(Position, entityId);
-      if (!army) return;
-      return { ...army, ...position };
-    });
+    return Array.from(entityIds)
+      .map((entityId) => {
+        const battle = getComponentValue(Battle, entityId);
+        if (!battle) return;
+        const position = getComponentValue(Position, entityId);
+        const isFinished = battleIsFinished(Army, battle as unknown as ClientComponents["Battle"]["schema"]);
+        if (isFinished) return;
+        return { ...battle, ...position };
+      })
+      .filter(Boolean);
   };
 
   const getExtraBattleInformation = (ownArmyEntityId: bigint): ExtraBattleInfo | undefined => {
@@ -104,14 +134,58 @@ export const useBattles = () => {
 export const useBattlesByPosition = ({ x, y }: Position) => {
   const {
     setup: {
-      components: { Battle, Position },
+      components: { Battle, Position, Army },
     },
   } = useDojo();
 
   const battleEntityIds = useEntityQuery([Has(Battle), HasValue(Position, { x, y })]);
-  const battle = getComponentValue(Battle, battleEntityIds[0]);
-  if (!battle) return;
-  const onGoing = BigInt(battle.attack_army_health.current) > 0n && BigInt(battle.defence_army_health.current) > 0n;
-  if (!onGoing) return;
-  return battle.entity_id;
+  return Array.from(battleEntityIds)
+    .map((battleEntityId) => {
+      const battle = getComponentValue(Battle, battleEntityId);
+      if (!battle) return;
+      const isFinished = battleIsFinished(Army, battle as unknown as ClientComponents["Battle"]["schema"]);
+      if (isFinished) return;
+      return battle.entity_id;
+    })
+    .filter((battle) => battle != undefined)[0];
+};
+
+export const getBattlesByPosition = ({ x, y }: Position) => {
+  const {
+    setup: {
+      components: { Battle, Position, Army },
+    },
+  } = useDojo();
+
+  const battleEntityIds = runQuery([Has(Battle), HasValue(Position, { x, y })]);
+  return Array.from(battleEntityIds)
+    .map((battleEntityId) => {
+      const battle = getComponentValue(Battle, battleEntityId);
+      if (!battle) return;
+      const isFinished = battleIsFinished(Army, battle as unknown as ClientComponents["Battle"]["schema"]);
+      if (isFinished) return;
+      return battle.entity_id;
+    })
+    .filter((battle) => battle != undefined)[0];
+};
+
+export const battleIsFinished = (Army: Component, battle: ClientComponents["Battle"]["schema"]) => {
+  const attackersEntityIds = runQuery([HasValue(Army, { battle_id: battle.entity_id, battle_side: "Attack" })]);
+  const defendersEntityIds = runQuery([HasValue(Army, { battle_id: battle.entity_id, battle_side: "Defence" })]);
+  return (
+    (Array.from(attackersEntityIds).length === 0 &&
+      BigInt(battle.defence_army_health.current) / EternumGlobalConfig.troop.healthPrecision <= 0) ||
+    (Array.from(defendersEntityIds).length === 0 &&
+      BigInt(battle.attack_army_health.current) / EternumGlobalConfig.troop.healthPrecision <= 0)
+  );
+};
+
+export const armyIsLosingSide = (
+  army: ClientComponents["Army"]["schema"],
+  battle: ClientComponents["Battle"]["schema"],
+) => {
+  return (
+    (String(army.battle_side) === "Attack" && BigInt(battle.attack_army_health.current) === 0n) ||
+    (String(army.battle_side) === "Defence" && BigInt(battle.defence_army_health.current) === 0n)
+  );
 };

@@ -1,11 +1,11 @@
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
+import { Structure } from "@/hooks/helpers/useStructures";
 import { Headline } from "@/ui/elements/Headline";
-import { RESOURCE_OUTPUTS_SCALED, ResourcesIds, StructureType, resources } from "@bibliothecadao/eternum";
+import { RESOURCE_OUTPUTS_SCALED, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { InventoryResources } from "../../resources/InventoryResources";
-import { Structure } from "@/hooks/helpers/useStructures";
 
 type StructureListItemProps = {
   structure: Structure;
@@ -23,9 +23,7 @@ export const StructureListItem = ({ structure, onClick, extraButton }: Structure
   return (
     <div className="flex flex-col clip-angled-sm bg-gold/20 p-3">
       <div className="flex items-center p-1 border-gold font-bold w-full">
-        <Headline className="text-gold">
-          {StructureType[structure.category]} {structure.name}
-        </Headline>
+        <Headline className="text-gold">{structure.name}</Headline>
       </div>
       <div>Owned by {addressName}</div>
       <div className="flex items-end mt-2">

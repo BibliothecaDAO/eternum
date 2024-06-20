@@ -24,13 +24,13 @@ import { useLocation } from "wouter";
 export const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
     <motion.div
-      className="flex justify-center"
+      className="flex justify-center z-50"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1, y: 20 }}
       exit={{ opacity: 0 }}
       transition={{ type: "ease-in-out", stiffness: 3, duration: 0.2 }}
     >
-      <div className="self-center ornate-borders bg-brown/80 p-8 text-gold sharp-corners min-w-[800px] max-w-[800px] rounded border-2 border-gold backdrop-blur-lg border-gradient overflow-hidden  clip-angled relative ">
+      <div className="self-center ornate-borders bg-brown/80 p-8 text-gold sharp-corners min-w-[800px] max-w-[800px] rounded border-2 border-gold backdrop-blur-lg border-gradient overflow-hidden  clip-angled relative z-50">
         {children}
       </div>
     </motion.div>
@@ -167,7 +167,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   return (
     <StepContainer>
-      <div className="flex flex-col items-center p-3 relative z-10">
+      <div className="flex flex-col items-center p-3 relative z-50">
         <h3>Select Account</h3>
         <div className="flex space-x-6 pt-4 w-full justify-center">
           <div>

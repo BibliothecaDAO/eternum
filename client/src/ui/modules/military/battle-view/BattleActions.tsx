@@ -1,15 +1,15 @@
+import { BattleType } from "@/dojo/modelManager/types";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, getArmiesByBattleId, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { Realm, Structure } from "@/hooks/helpers/useStructures";
 import { useModal } from "@/hooks/store/useModal";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ModalContainer } from "@/ui/components/ModalContainer";
 import { PillageHistory } from "@/ui/components/military/Battle";
 import Button from "@/ui/elements/Button";
-import { getComponentValue } from "@dojoengine/recs";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
-import { getOwnArmy } from "./utils";
 
 enum Loading {
   None,
@@ -21,15 +21,15 @@ enum Loading {
 
 export const BattleActions = ({
   isActive,
-  attacker,
+  ownArmyEntityId,
   defender,
   structure,
-  battleId,
+  battle,
 }: {
-  attacker: ArmyInfo;
+  ownArmyEntityId: bigint | undefined;
   defender: ArmyInfo | undefined;
   structure: Realm | Structure | undefined;
-  battleId: bigint | undefined;
+  battle: ComponentValue<BattleType, unknown> | undefined;
   isActive: boolean;
 }) => {
   const [loading, setLoading] = useState<Loading>(Loading.None);
@@ -38,27 +38,44 @@ export const BattleActions = ({
 
   const {
     account: { account },
-    network: { provider },
     setup: {
-      systemCalls: { battle_leave, battle_start, battle_claim, battle_pillage, battle_leave_and_claim },
+      systemCalls: {
+        battle_leave,
+        battle_start,
+        battle_claim,
+        battle_pillage,
+        battle_leave_and_claim,
+        battle_leave_and_raid,
+      },
       components: { Realm },
     },
   } = useDojo();
 
-  const ownArmy = defender ? getOwnArmy(attacker, defender) : attacker.isMine ? attacker : undefined;
+  const ownArmy =
+    getArmyByEntityId(ownArmyEntityId || 0n) ||
+    getArmiesByBattleId(battle?.entity_id || 0n).find((army) => army.isMine);
 
-  const isRealm = useMemo(() => {
+	const isRealm = useMemo(() => {
     if (!structure) return false;
     return Boolean(getComponentValue(Realm, getEntityIdFromKeys([BigInt(structure.entity_id)])));
   }, [structure]);
 
   const handleRaid = async () => {
     setLoading(Loading.Raid);
-    await battle_pillage({
-      signer: account,
-      army_id: attacker.entity_id,
-      structure_id: structure!.entity_id,
-    });
+    if (battle?.entity_id! !== 0n && battle?.entity_id === BigInt(ownArmy!.battle_id)) {
+      await battle_leave_and_raid({
+        signer: account,
+        army_id: ownArmy!.entity_id,
+        battle_id: battle?.entity_id!,
+        structure_id: structure!.entity_id,
+      });
+    } else {
+      await battle_pillage({
+        signer: account,
+        army_id: ownArmy!.entity_id,
+        structure_id: structure!.entity_id,
+      });
+    }
 
     setLoading(Loading.None);
     setBattleView(null);
@@ -66,7 +83,7 @@ export const BattleActions = ({
       <ModalContainer size="half">
         <PillageHistory
           structureId={BigInt(structure!.entity_id)}
-          attackerRealmEntityId={BigInt(attacker.entity_owner_id)}
+          attackerRealmEntityId={BigInt(ownArmy!.entity_owner_id)}
         />
       </ModalContainer>,
     );
@@ -84,11 +101,11 @@ export const BattleActions = ({
 
   const handleBattleClaim = async () => {
     setLoading(Loading.Claim);
-    if (battleId! !== 0n && battleId === BigInt(attacker.battle_id)) {
+    if (battle?.entity_id! !== 0n && battle?.entity_id === BigInt(ownArmy!.battle_id)) {
       await battle_leave_and_claim({
         signer: account,
         army_id: ownArmy!.entity_id,
-        battle_id: battleId!,
+        battle_id: battle?.entity_id!,
         structure_id: structure!.entity_id,
       });
     } else {
@@ -108,7 +125,7 @@ export const BattleActions = ({
     await battle_leave({
       signer: account,
       army_id: ownArmy!.entity_id,
-      battle_id: battleId!,
+      battle_id: battle?.entity_id!,
     });
 
     setLoading(Loading.None);
@@ -119,7 +136,7 @@ export const BattleActions = ({
     Boolean(ownArmy) && !isActive && (!defender || defender.current <= 0) && !isRealm && Boolean(structure);
 
   return (
-    <div className="col-span-2 flex justify-center flex-wrap mx-12 w-[100vw]">
+    <div className="col-span-2 flex justify-center flex-wrap mx-4 w-[100vw]">
       <div className="grid grid-cols-2 gap-3 row-span-2">
         <Button
           variant="primary"
@@ -131,8 +148,6 @@ export const BattleActions = ({
           <img className="w-10" src="/images/icons/raid.png" alt="coin" />
           Raid!
         </Button>
-
-        {/* IF BATTLE HAS BEEN WON or NO ARMY ON STRUCTURE */}
 
         <Button
           variant="primary"
@@ -165,7 +180,8 @@ export const BattleActions = ({
             loading !== Loading.None ||
             !ownArmy ||
             Boolean(ownArmy.battle_id) ||
-            (!defender && (isRealm || Boolean(structure)))
+            (!defender && (isRealm || Boolean(structure))) ||
+            isActive
           }
         >
           <img className="w-10" src="/images/icons/attack.png" alt="coin" />

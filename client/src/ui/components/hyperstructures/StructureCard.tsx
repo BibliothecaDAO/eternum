@@ -50,8 +50,8 @@ export const StructureCard = ({
             variant="primary"
             onClick={() =>
               setBattleView({
-                attackers: [BigInt(ownArmySelected.entity_id)],
-                defenders: { type: CombatTarget.Structure, entities: target as Realm | Structure },
+                battle: undefined,
+                target: { type: CombatTarget.Structure, entity: target as Realm | Structure },
               })
             }
           >
@@ -65,7 +65,8 @@ export const StructureCard = ({
   const target = formattedStructureAtPosition || formattedRealmAtPosition;
 
   return (
-    Boolean(formattedStructureAtPosition) && (
+    Boolean(formattedStructureAtPosition) &&
+    BigInt(target.protector?.battle_id || 0n) === 0n && (
       <div>
         <Headline className="my-3">Structure</Headline>
 
@@ -124,17 +125,17 @@ type TroopsProps = {
 
 const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint }) => {
   return {
-    [ResourcesIds.Crossbowmen]: Number(troops.crossbowman_count),
-    [ResourcesIds.Knight]: Number(troops.knight_count),
-    [ResourcesIds.Paladin]: Number(troops.paladin_count),
+    [ResourcesIds.Crossbowmen]: troops.crossbowman_count,
+    [ResourcesIds.Knight]: troops.knight_count,
+    [ResourcesIds.Paladin]: troops.paladin_count,
   };
 };
 
 const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) => {
-  const [troopsGiven, setTroopsGiven] = useState<Record<number, number>>({
-    [ResourcesIds.Crossbowmen]: 0,
-    [ResourcesIds.Knight]: 0,
-    [ResourcesIds.Paladin]: 0,
+  const [troopsGiven, setTroopsGiven] = useState<Record<number, bigint>>({
+    [ResourcesIds.Crossbowmen]: 0n,
+    [ResourcesIds.Knight]: 0n,
+    [ResourcesIds.Paladin]: 0n,
   });
 
   const {
@@ -166,20 +167,21 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
       from_army_id: transferDirection === "to" ? giverArmyEntityId : protector!.army_id,
       to_army_id: transferDirection === "to" ? protector!.army_id : giverArmyEntityId,
       troops: {
-        knight_count: troopsGiven[ResourcesIds.Knight] * EternumGlobalConfig.resources.resourceMultiplier,
-        paladin_count: troopsGiven[ResourcesIds.Paladin] * EternumGlobalConfig.resources.resourceMultiplier,
-        crossbowman_count: troopsGiven[ResourcesIds.Crossbowmen] * EternumGlobalConfig.resources.resourceMultiplier,
+        knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+        paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+        crossbowman_count:
+          troopsGiven[ResourcesIds.Crossbowmen] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
       },
     });
     setLoading(false);
     setTroopsGiven({
-      [ResourcesIds.Crossbowmen]: 0,
-      [ResourcesIds.Knight]: 0,
-      [ResourcesIds.Paladin]: 0,
+      [ResourcesIds.Crossbowmen]: 0n,
+      [ResourcesIds.Knight]: 0n,
+      [ResourcesIds.Paladin]: 0n,
     });
   };
 
-  const handleTroopsGivenChange = (resourceId: string, amount: number) => {
+  const handleTroopsGivenChange = (resourceId: string, amount: bigint) => {
     setTroopsGiven((prev) => ({ ...prev, [resourceId]: amount }));
   };
 
@@ -191,7 +193,7 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
       <div className="flex flex-row justify-around items-center">
         <div className="w-[40%]">
           <p className="pt-2 pb-5">Current Army</p>
-          {Object.entries(troopsToFormat(giverArmyTroops)).map(([resourceId, amount]: [string, number]) => {
+          {Object.entries(troopsToFormat(giverArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
             return (
               <div
                 className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4"
@@ -207,7 +209,9 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
                     <p>
                       {transferDirection === "to"
                         ? `[${currencyFormat(
-                            amount - troopsGiven[Number(resourceId)] * EternumGlobalConfig.resources.resourceMultiplier,
+                            amount -
+                              troopsGiven[Number(resourceId)] *
+                                BigInt(EternumGlobalConfig.resources.resourceMultiplier),
                             0,
                           )}]`
                         : `[${currencyFormat(amount, 0)}]` + ` +${troopsGiven[Number(resourceId)]}`}
@@ -218,11 +222,11 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
                 {transferDirection === "to" && (
                   <NumberInput
                     className="w-1/2"
-                    max={amount / EternumGlobalConfig.resources.resourceMultiplier}
+                    max={Number(amount) / EternumGlobalConfig.resources.resourceMultiplier}
                     min={0}
                     step={100}
-                    value={troopsGiven[Number(resourceId)]}
-                    onChange={(amount) => handleTroopsGivenChange(resourceId, amount)}
+                    value={Number(troopsGiven[Number(resourceId)])}
+                    onChange={(amount) => handleTroopsGivenChange(resourceId, BigInt(amount))}
                   />
                 )}
               </div>
@@ -245,7 +249,7 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
             </Button>
           ) : (
             receiverArmyTroops &&
-            Object.entries(troopsToFormat(receiverArmyTroops!)).map(([resourceId, amount]: [string, number]) => {
+            Object.entries(troopsToFormat(receiverArmyTroops!)).map(([resourceId, amount]: [string, bigint]) => {
               return (
                 <div
                   className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4"
@@ -262,7 +266,8 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
                         {transferDirection === "from"
                           ? `[${currencyFormat(
                               amount -
-                                troopsGiven[Number(resourceId)] * EternumGlobalConfig.resources.resourceMultiplier,
+                                troopsGiven[Number(resourceId)] *
+                                  BigInt(EternumGlobalConfig.resources.resourceMultiplier),
                               0,
                             )}]`
                           : `[${currencyFormat(amount, 0)}]` + ` +${troopsGiven[Number(resourceId)]}`}
@@ -272,11 +277,11 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
                   {transferDirection === "from" && (
                     <NumberInput
                       className="w-1/2"
-                      max={amount / EternumGlobalConfig.resources.resourceMultiplier}
+                      max={Number(amount) / EternumGlobalConfig.resources.resourceMultiplier}
                       min={0}
                       step={100}
-                      value={troopsGiven[Number(resourceId)]}
-                      onChange={(amount) => handleTroopsGivenChange(resourceId, amount)}
+                      value={Number(troopsGiven[Number(resourceId)])}
+                      onChange={(amount) => handleTroopsGivenChange(resourceId, BigInt(amount))}
                     />
                   )}
                 </div>
@@ -289,7 +294,7 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
         onClick={mergeTroops}
         isLoading={loading}
         className="mt-5"
-        disabled={Object.values(troopsGiven).every((amount) => amount === 0) || !protector}
+        disabled={Object.values(troopsGiven).every((amount) => amount === 0n) || !protector}
       >
         Reinforce
       </Button>

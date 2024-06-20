@@ -1,30 +1,27 @@
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { Realm, Structure } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import { CombatTarget } from "@/types";
 import Button from "@/ui/elements/Button";
 import { motion } from "framer-motion";
+import { useMemo } from "react";
 import { BattleActions } from "./BattleActions";
 import { BattleProgressBar } from "./BattleProgressBar";
 import { EntityAvatar } from "./EntityAvatar";
 import { TroopRow } from "./Troops";
 
-export const BattleStarter = ({
-  attackerArmy,
-  attackerArmyHealth,
-  defenderArmy,
-  defenderArmyHealth,
-  structure,
-}: {
-  attackerArmy: ArmyInfo;
-  attackerArmyHealth: bigint;
-  defenderArmy: ArmyInfo | undefined;
-  defenderArmyHealth: bigint;
-  structure: Structure | Realm | undefined;
-}) => {
+export const BattleStarter = ({ target }: { target: { type: CombatTarget; entity: bigint | Realm | Structure } }) => {
   const setBattleView = useUIStore((state) => state.setBattleView);
-  const attackingHealth = { current: Number(attackerArmyHealth), lifetime: Number(attackerArmy.lifetime) };
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+
+  const { defender, structure } = useMemo(() => getArmiesAndStructure(target!), [target]);
+
+  const defenderArmy = getArmyByEntityId(BigInt(defender || 0n));
+  const ownArmy = getArmyByEntityId(BigInt(selectedEntity!.id || 0n));
+
+  const attackingHealth = { current: Number(ownArmy.current), lifetime: Number(ownArmy.lifetime) };
   const defendingHealth = defenderArmy
-    ? { current: Number(defenderArmyHealth), lifetime: Number(defenderArmy.lifetime) }
+    ? { current: Number(defenderArmy.current || 0), lifetime: Number(defenderArmy.lifetime || 0) }
     : undefined;
 
   return (
@@ -57,28 +54,49 @@ export const BattleStarter = ({
       >
         <BattleProgressBar
           attackingHealth={attackingHealth}
-          attacker={`${attackerArmy.name} ${attackerArmy.isMine ? "(Yours)" : ""}`}
+          attacker={`${ownArmy.name} ${ownArmy.isMine ? "(Yours)" : ""}`}
           defendingHealth={defendingHealth}
-          defender={defenderArmy ? `${defenderArmy.name} ${defenderArmy.isMine ? "(Yours)" : ""}` : structure!.name}
+          defender={structure ? structure.name : `${defenderArmy!.name}`}
         />
-        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between ">
+        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between">
           <div className="flex flex-row w-[70vw]">
-            <EntityAvatar army={attackerArmy} structure={structure} />
-            <TroopRow army={attackerArmy} />
+            <EntityAvatar />
+            <TroopRow troops={ownArmy!.troops} />
           </div>
           <BattleActions
-            attacker={attackerArmy}
+            ownArmyEntityId={BigInt(ownArmy.entity_id)}
             defender={defenderArmy}
             structure={structure}
-            battleId={BigInt(attackerArmy.battle_id)}
+            battle={undefined}
             isActive={false}
           />
           <div className="flex flex-row w-[70vw]">
-            <TroopRow army={defenderArmy as ArmyInfo} defending />
-            <EntityAvatar army={defenderArmy} structure={structure} />
+            <TroopRow troops={defenderArmy?.troops} defending />
+            <EntityAvatar structure={structure} />
           </div>
         </div>
       </motion.div>
     </div>
   );
+};
+
+const getArmiesAndStructure = (target: {
+  type: CombatTarget;
+  entity: bigint | Realm | Structure;
+}): {
+  defender: bigint | undefined;
+  structure: Realm | Structure | undefined;
+} => {
+  if (target.type === CombatTarget.Army) {
+    return {
+      defender: target.entity as bigint,
+      structure: undefined,
+    };
+  } else if (target.type === CombatTarget.Structure) {
+    return {
+      defender: BigInt((target.entity as Realm | Structure).protector?.entity_id || 0n),
+      structure: target.entity as Realm | Structure,
+    };
+  }
+  return { defender: undefined, structure: undefined };
 };

@@ -79,6 +79,8 @@ export type BattleType = {
     battle_id: RecsType.BigInt;
     battle_side: RecsType.String;
   };
+  attackers_resources_escrow_id: RecsType.BigInt;
+  defenders_resources_escrow_id: RecsType.BigInt;
   attack_army_health: { current: RecsType.BigInt; lifetime: RecsType.BigInt };
   defence_army_health: { current: RecsType.BigInt; lifetime: RecsType.BigInt };
   attack_delta: RecsType.BigInt;
