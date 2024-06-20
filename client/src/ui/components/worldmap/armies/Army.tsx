@@ -7,7 +7,6 @@ import { WarriorModel } from "../../models/armies/WarriorModel";
 import { UnitHighlight } from "../hexagon/UnitHighlight";
 import { CombatLabel } from "./CombatLabel";
 import { arePropsEqual } from "./utils";
-import { ArmyHitBox } from "./ArmyHitBox";
 import { ArmyFlag } from "./ArmyFlag";
 import { useArmyAnimation } from "./useArmyAnimation";
 
@@ -20,7 +19,7 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
 
   // animation path for the army
   const armyPosition = { x: army.x, y: army.y };
-  const groupRef = useArmyAnimation(armyPosition, army.offset);
+  const groupRef = useArmyAnimation(armyPosition, army.offset, army.isMine);
 
   // Deterministic rotation based on the id
   const deterministicRotation = useMemo(() => {
@@ -39,9 +38,8 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
     <>
       <group position={initialPos} ref={groupRef} rotation={new Euler(0, deterministicRotation, 0)}>
         <ArmyFlag visible={army.isMine} rotationY={deterministicRotation} position={initialPos} />
-        <CombatLabel visible={isSelected} />
-        <WarriorModel />
-        <ArmyHitBox army={army} />
+        {isSelected && <CombatLabel />}
+        <WarriorModel army={army} />
       </group>
       {isSelected && <UnitHighlight position={{ x: army.x, y: army.y }} />}
     </>

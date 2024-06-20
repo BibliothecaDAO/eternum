@@ -95,6 +95,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       };
 
       const handleArmyActionClick = (id: bigint) => {
+        if (!hoveredHexRef.current) return;
         const travelPath = travelPathsRef.current.get(`${hoveredHexRef.current.col},${hoveredHexRef.current.row}`);
         if (!travelPath) return;
         const { path, isExplored } = travelPath;

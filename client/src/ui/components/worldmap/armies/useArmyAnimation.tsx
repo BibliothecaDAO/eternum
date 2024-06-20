@@ -6,8 +6,12 @@ import { getUIPositionFromColRow } from "../../../utils/utils";
 import { Group, Vector3 } from "three";
 import { useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 
-export const useArmyAnimation = (position: Position, offset: Position) => {
+const vec = new Vector3();
+
+export const useArmyAnimation = (position: Position, offset: Position, isMine: boolean) => {
+  const { play: playMarchingSound } = useUiSounds(soundSelector.fly);
   const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
   const prevPositionRef = useRef<Position | null>(null);
   const [animationPath, setAnimationPath] = useState<UIPosition[] | null>(null);
@@ -30,23 +34,24 @@ export const useArmyAnimation = (position: Position, offset: Position) => {
       );
       setAnimationPath(uiPath.map((pos) => applyOffset(pos, offset)));
       prevPositionRef.current = { x, y };
+      isMine && playMarchingSound(); // Play marching sound when animation starts
     }
-  }, [x, y]);
+  }, [position]);
 
-  const vec = new Vector3();
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!animationPath || !groupRef.current) return;
     const pos = animationPath[currentIndex.current];
     vec.set(pos.x, 0.32, -pos.y);
-    groupRef.current.position.lerp(vec, 0.2);
+    groupRef.current.position.lerp(vec, delta * 3);
 
     if (vec.distanceTo(groupRef.current.position) < 0.1) {
       currentIndex.current++;
-    }
-
-    if (currentIndex.current >= animationPath.length) {
-      setAnimationPath(null);
-      currentIndex.current = 1;
+      if (currentIndex.current >= animationPath.length) {
+        setAnimationPath(null);
+        currentIndex.current = 1;
+      } else {
+        isMine && playMarchingSound();
+      }
     }
   });
 
