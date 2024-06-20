@@ -63,18 +63,18 @@ export type BattleType = {
   entity_id: RecsType.BigInt;
   attack_army: {
     troops: {
-      knight_count: RecsType.Number;
-      paladin_count: RecsType.Number;
-      crossbowman_count: RecsType.Number;
+      knight_count: RecsType.BigInt;
+      paladin_count: RecsType.BigInt;
+      crossbowman_count: RecsType.BigInt;
     };
     battle_id: RecsType.BigInt;
     battle_side: RecsType.String;
   };
   defence_army: {
     troops: {
-      knight_count: RecsType.Number;
-      paladin_count: RecsType.Number;
-      crossbowman_count: RecsType.Number;
+      knight_count: RecsType.BigInt;
+      paladin_count: RecsType.BigInt;
+      crossbowman_count: RecsType.BigInt;
     };
     battle_id: RecsType.BigInt;
     battle_side: RecsType.String;
