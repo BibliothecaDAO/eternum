@@ -43,7 +43,6 @@ const formatArmies = (
   Owner: Component,
   Realm: Component,
   Stamina: Component,
-  Battle: Component,
 ): ArmyInfo[] => {
   return armies
     .map((id) => {
@@ -84,14 +83,6 @@ const formatArmies = (
       const offsetToAvoidOverlapping = Math.random() * 1 - 0.5;
       offset.y += offsetToAvoidOverlapping;
 
-      const battle = getComponentValue(
-        Battle,
-        getEntityIdFromKeys([BigInt(army.battle_id)]),
-      ) as ClientComponents["Battle"]["schema"];
-      if (battle && armyIsLosingSide(army, battle!) && battleIsFinished(Army, battle)) {
-        return;
-      }
-
       return {
         ...army,
         ...protectee,
@@ -115,7 +106,6 @@ const formatArmies = (
           : `${protectee ? "🛡️" : "🗡️"}` + `Army ${army?.entity_id}`,
       };
     })
-    .filter((army) => army !== undefined);
 };
 
 export const useArmies = () => {
@@ -168,8 +158,7 @@ export const useArmies = () => {
         Owner,
         Realm,
         Stamina,
-        Battle,
-      ).filter((army) => BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0n),
+      ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
   };
 };
 
@@ -215,8 +204,7 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
       Owner,
       Realm,
       Stamina,
-      Battle,
-    );
+    ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
   }, [armies]);
 
   return {
@@ -264,8 +252,7 @@ export const useArmiesByBattleId = (battle_id: bigint) => {
     Owner,
     Realm,
     Stamina,
-    Battle,
-  );
+  ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
 };
 
 export const getArmiesByBattleId = (battle_id: bigint) => {
@@ -308,8 +295,7 @@ export const getArmiesByBattleId = (battle_id: bigint) => {
     Owner,
     Realm,
     Stamina,
-    Battle,
-  );
+  ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
 };
 
 export const useArmyByArmyEntityId = (entityId: bigint) => {
@@ -352,8 +338,7 @@ export const useArmyByArmyEntityId = (entityId: bigint) => {
     Owner,
     Realm,
     Stamina,
-    Battle,
-  )[0];
+  ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
 };
 
 export const usePositionArmies = ({ position }: { position: Position }) => {
@@ -399,8 +384,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
         Owner,
         Realm,
         Stamina,
-        Battle,
-      );
+      ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
     }, [allArmiesAtPosition]);
 
     const userArmies = useMemo(() => {
@@ -476,8 +460,7 @@ export const getArmyByEntityId = (entity_id: bigint) => {
     Owner,
     Realm,
     Stamina,
-    Battle,
-  )[0];
+  ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
 };
 
 export const getUserArmiesAtPosition = (position: Position) => {
@@ -538,8 +521,7 @@ export const getUserArmiesAtPosition = (position: Position) => {
       Owner,
       Realm,
       Stamina,
-      Battle,
-    ),
+    ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
     opponentArmies: formatArmies(
       opponentArmies,
       account.address,
@@ -556,8 +538,7 @@ export const getUserArmiesAtPosition = (position: Position) => {
       Owner,
       Realm,
       Stamina,
-      Battle,
-    ),
+    ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
   };
 };
 
@@ -579,4 +560,15 @@ const calculateOffset = (index: number, total: number) => {
     x: offsetRadius * Math.cos(angle),
     y: offsetRadius * Math.sin(angle),
   };
+};
+
+const checkIfArmyLostAFinishedBattle = (Battle: any, Army: any, army: any) => {
+  const battle = getComponentValue(
+    Battle,
+    getEntityIdFromKeys([BigInt(army.battle_id)]),
+  ) as ClientComponents["Battle"]["schema"];
+  if (battle && armyIsLosingSide(army, battle!) && battleIsFinished(Army, battle)) {
+    return true;
+  }
+  return false;
 };
