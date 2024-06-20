@@ -37,11 +37,11 @@ export const useArmyAnimation = (position: Position, offset: Position) => {
   }, [x, y]);
 
   const vec = new Vector3();
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!animationPath || !groupRef.current) return;
     const pos = animationPath[currentIndex.current];
     vec.set(pos.x, 0.32, -pos.y);
-    groupRef.current.position.lerp(vec, 0.2);
+    groupRef.current.position.lerp(vec, delta * 3);
 
     if (vec.distanceTo(groupRef.current.position) < 0.1) {
       currentIndex.current++;
