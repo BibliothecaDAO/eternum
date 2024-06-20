@@ -38,8 +38,8 @@ function ListSelect(props: ListSelectProps) {
                     ? "bg-brown/50 text-gold !justify-start"
                     : "bg-brown text-gold/90 hover:bg-brown/70  !justify-start"
                   : open
-                  ? "bg-dark-brown text-gold"
-                  : "bg-dark-brown  hover:bg-dark-brown/50",
+                    ? "bg-dark-brown text-gold"
+                    : "bg-dark-brown  hover:bg-dark-brown/50",
                 props.title ? " px-6" : "pr-6 pl-1",
               )}
             >

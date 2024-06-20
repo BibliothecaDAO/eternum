@@ -51,8 +51,8 @@ export const BattleView = () => {
             !structure
               ? updatedDefender
               : (battleAdjusted?.defence_army_health.current === undefined ? updatedDefender?.current || 0 : 0) > 0
-              ? updatedDefender
-              : undefined
+                ? updatedDefender
+                : undefined
           }
           defenderArmyHealth={
             battleAdjusted ? battleAdjusted.defence_army_health.current : BigInt(updatedDefender.current)
@@ -72,8 +72,8 @@ export const BattleView = () => {
           !structure
             ? updatedDefender
             : (battleAdjusted?.defence_army_health.current === undefined ? updatedDefender?.current || 0 : 0) > 0
-            ? updatedDefender
-            : undefined
+              ? updatedDefender
+              : undefined
         }
         defenderArmyHealth={
           battleAdjusted ? battleAdjusted.defence_army_health.current : BigInt(updatedDefender?.current || 0)

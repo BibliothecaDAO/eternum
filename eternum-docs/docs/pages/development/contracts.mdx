@@ -10,7 +10,6 @@ Use the ID
 
 entity_id: u32
 
-
 #### Implementations
 
 Where possible make traits for the models so they are stateless for unit testing.
@@ -21,18 +20,18 @@ Always use generate trait where possible to minimise code.
 #[generate_trait]
 ```
 
-
 ### Systems
 
 Design systems like this in the directory
 
 - SystemName
-- - system_name.cairo 
+- - system_name.cairo
 - - tests.cairo
 
 `system.cairo` should include the implementation of the system like this.
 
 Things to note:
+
 - Interface at top of File
 - use of `super::IBuildingContract` to minimise imports and make it clear where the interface is defined.
 
@@ -70,4 +69,3 @@ mod building_systems {
     }
 }
 ```
-
