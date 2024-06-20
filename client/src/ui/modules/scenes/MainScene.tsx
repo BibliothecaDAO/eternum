@@ -18,7 +18,6 @@ import FPSLimiter from "../../utils/FPSLimiter";
 
 export const Camera = () => {
   const cameraPosition = useUIStore((state) => state.cameraPosition);
-
   const cameraTarget = useUIStore((state) => state.cameraTarget);
 
   return <CameraControls position={cameraPosition} target={cameraTarget} />;
@@ -128,7 +127,7 @@ export const MainScene = () => {
         max: 1,
       }}
       shadows={{
-        enabled: true,
+        enabled: !localStorage.getItem("LOW_GRAPHICS_FLAG"),
         type: 2,
       }}
       gl={{
@@ -155,57 +154,63 @@ export const MainScene = () => {
             <Switch location={locationType}>
               <Route path="map">
                 <WorldMapScene />
-                <Clouds position={mapCloudsPosition as any} material={THREE.MeshBasicMaterial}>
-                  <Cloud
-                    concentrate="random"
-                    seed={7331}
-                    speed={0.06}
-                    segments={100}
-                    castShadow={true}
-                    opacity={mapCloudsOpacity}
-                    bounds={mapCloudsBounds}
-                    volume={mapCloudsVolume}
-                    color="white"
-                  />
-                  <Cloud
-                    concentrate="random"
-                    seed={1337}
-                    castShadow={true}
-                    speed={0.03}
-                    segments={100}
-                    opacity={mapCloudsOpacity}
-                    bounds={mapCloudsBounds}
-                    volume={mapCloudsVolume}
-                    color="white"
-                  />
-                </Clouds>
+                {!localStorage.getItem("LOW_GRAPHICS_FLAG") && (
+                  <Clouds position={mapCloudsPosition as any} material={THREE.MeshBasicMaterial}>
+                    <Cloud
+                      concentrate="random"
+                      seed={7331}
+                      speed={0.06}
+                      segments={100}
+                      castShadow={true}
+                      opacity={mapCloudsOpacity}
+                      bounds={mapCloudsBounds}
+                      volume={mapCloudsVolume}
+                      color="white"
+                    />
+                    <Cloud
+                      concentrate="random"
+                      seed={1337}
+                      castShadow={true}
+                      speed={0.03}
+                      segments={100}
+                      opacity={mapCloudsOpacity}
+                      bounds={mapCloudsBounds}
+                      volume={mapCloudsVolume}
+                      color="white"
+                    />
+                  </Clouds>
+                )}
               </Route>
               <Route path="hexception">
-                <CameraShake {...shakeConfig} />
-                <Clouds position={hexceptionCloudsPosition as any} material={THREE.MeshBasicMaterial}>
-                  <Cloud
-                    concentrate="random"
-                    seed={7331}
-                    speed={0.06}
-                    segments={100}
-                    castShadow={true}
-                    opacity={hexceptionCloudsOpacity}
-                    bounds={hexceptionCloudsBounds}
-                    volume={hexceptionCloudsVolume}
-                    color="white"
-                  />
-                  <Cloud
-                    concentrate="random"
-                    seed={1337}
-                    castShadow={true}
-                    speed={0.03}
-                    segments={100}
-                    opacity={hexceptionCloudsOpacity}
-                    bounds={hexceptionCloudsBounds}
-                    volume={hexceptionCloudsVolume}
-                    color="white"
-                  />
-                </Clouds>
+                {!localStorage.getItem("LOW_GRAPHICS_FLAG") && (
+                  <>
+                    <CameraShake {...shakeConfig} />
+                    <Clouds position={hexceptionCloudsPosition as any} material={THREE.MeshBasicMaterial}>
+                      <Cloud
+                        concentrate="random"
+                        seed={7331}
+                        speed={0.06}
+                        segments={100}
+                        castShadow={true}
+                        opacity={hexceptionCloudsOpacity}
+                        bounds={hexceptionCloudsBounds}
+                        volume={hexceptionCloudsVolume}
+                        color="white"
+                      />
+                      <Cloud
+                        concentrate="random"
+                        seed={1337}
+                        castShadow={true}
+                        speed={0.03}
+                        segments={100}
+                        opacity={hexceptionCloudsOpacity}
+                        bounds={hexceptionCloudsBounds}
+                        volume={hexceptionCloudsVolume}
+                        color="white"
+                      />
+                    </Clouds>
+                  </>
+                )}
                 <HexceptionViewScene />
               </Route>
             </Switch>
@@ -218,16 +223,22 @@ export const MainScene = () => {
             eskil={false} // Eskil's vignette technique
             blendFunction={BlendFunction.NORMAL} // blend mode
           />
-          <DepthOfField
-            focusDistance={0.5} // where to focus
-            focalLength={1.5} // focal length
-            bokehScale={3} // bokeh size
-          />
+          {!localStorage.getItem("LOW_GRAPHICS_FLAG") ? (
+            <>
+              <DepthOfField
+                focusDistance={0.5} // where to focus
+                focalLength={1.5} // focal length
+                bokehScale={3} // bokeh size
+              />
+              <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.1} />
+              <SMAA />
+              <Bloom luminanceThreshold={0.9} intensity={0.1} mipmapBlur />
+            </>
+          ) : (
+            <></>
+          )}
           {/* <Pixelation granularity={3} /> */}
           <BrightnessContrast brightness={brightness} contrast={contrast} />
-          <Bloom luminanceThreshold={0.9} intensity={0.1} mipmapBlur />
-          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.1} />
-          <SMAA />
         </EffectComposer>
         <fog attach="fog" color={fogColor} near={fogDistance.near} far={fogDistance.far} />
         <AdaptiveDpr pixelated />
