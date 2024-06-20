@@ -6,6 +6,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
+import { useEntities } from "./useEntities";
 
 export enum QuestNames {
   ClaimFood = "Claim Food",
@@ -15,13 +16,16 @@ export enum QuestNames {
   CreateArmy = "Create an Army",
 }
 
-export const useQuests = ({ entityId }: { entityId: bigint | undefined }) => {
+export const useQuests = () => {
   const {
     setup: {
       components: { BuildingQuantityv2, HasClaimedStartingResources },
     },
   } = useDojo();
 
+  const {playerRealms} = useEntities();
+  const entityId = playerRealms()[0]?.entity_id;
+  
   const farms =
     useComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(BuildingType.Farm)]))
       ?.value || 0;

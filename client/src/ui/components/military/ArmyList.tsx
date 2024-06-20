@@ -17,7 +17,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
 
   const { realmEntityId } = useRealmStore();
-  const { currentQuest } = useQuests({ entityId: realmEntityId || BigInt("0") });
+  const { currentQuest } = useQuests();
   
   const {
     account: { account },

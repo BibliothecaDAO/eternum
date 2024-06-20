@@ -41,7 +41,7 @@ export const RightNavigationModule = () => {
   const openedPopups = useUIStore((state) => state.openedPopups);
 
   const { realmEntityId } = useRealmStore();
-  const { quests, currentQuest } = useQuests({ entityId: realmEntityId || BigInt("0") });
+  const { quests, currentQuest } = useQuests();
 
   const { getAllArrivalsWithResources } = useResources();
 

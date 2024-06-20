@@ -73,7 +73,7 @@ export const SelectPreviewBuildingMenu = () => {
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { currentQuest } = useQuests({ entityId: realmEntityId || BigInt("0") });
+  const { currentQuest } = useQuests();
 
   const { realm } = useGetRealm(realmEntityId);
 

@@ -69,7 +69,7 @@ export const LeftNavigationModule = () => {
   const { getStamina } = useStamina();
   const { entityArmies } = useEntityArmies({ entity_id: realmEntityId });
 
-  const { quests, currentQuest } = useQuests({ entityId: realmEntityId || BigInt("0") });
+  const { quests, currentQuest } = useQuests();
 
   const [location, setLocation] = useLocation();
 
@@ -137,7 +137,7 @@ export const LeftNavigationModule = () => {
                 (currentQuest?.name === QuestNames.BuildFarm || currentQuest?.name === QuestNames.BuildResource) &&
                 !currentQuest.completed &&
                 isPopupOpen(questsPopup),
-              hidden: !quests.find((quest) => quest.name === QuestNames.ClaimFood)?.claimed,
+              hidden: quests && !quests.find((quest) => quest.name === QuestNames.ClaimFood)?.claimed,
             })}
             image={BuildingThumbs.construction}
             tooltipLocation="top"

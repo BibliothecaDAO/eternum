@@ -72,7 +72,7 @@ async function init() {
   root.render(
     <React.StrictMode>
       <TourProvider
-        steps={steps}
+        steps={[]}
         styles={{
           popover: (base) => ({
             ...base,
