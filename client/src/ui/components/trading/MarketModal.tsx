@@ -9,9 +9,16 @@ import useMarketStore from "@/hooks/store/useMarketStore";
 import { useGetMyOffers } from "@/hooks/helpers/useTrade";
 import Button from "@/ui/elements/Button";
 import { TransferBetweenEntities } from "./TransferBetweenEntities";
+import CircleButton from "@/ui/elements/CircleButton";
+import { HintModal } from "../hints/HintModal";
+import { JSX } from "react/jsx-runtime";
+import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
+import { useModal } from "@/hooks/store/useModal";
 
 export const MarketModal = () => {
   const { playerRealms } = useEntities();
+
+  const { toggleModal } = useModal();
 
   //   TODO: This changes the realm, but if they are on hexception it doesn't change the location, so it's a bit confusing
   const { realmEntityId, setRealmEntityId } = useRealmStore();
@@ -68,6 +75,14 @@ export const MarketModal = () => {
             <Button onClick={() => setPanel("transfer")} variant={panel == "transfer" ? "primary" : "default"}>
               Transfers
             </Button>
+            <CircleButton
+              onClick={() => {
+                toggleModal(null);
+                toggleModal(<HintModal initialActiveSection={"Trading"} />);
+              }}
+              size={"sm"}
+              image={BuildingThumbs.question}
+            />
           </div>
         </div>
 

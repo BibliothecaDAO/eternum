@@ -30,12 +30,12 @@ import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import { useTour } from "@reactour/tour";
 import { QuestNames, useQuests } from "@/hooks/helpers/useQuests";
 import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
 import CircleButton from "@/ui/elements/CircleButton";
-import { BuildTourSteps } from "@/ui/utils/tourSteps";
 import { quests as questsPopup } from "@/ui/components/navigation/Config";
+import { useModal } from "@/hooks/store/useModal";
+import { HintModal } from "../hints/HintModal";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -67,9 +67,10 @@ export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
-  const { setIsOpen, setCurrentStep, setSteps } = useTour();
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+
+  const { toggleModal } = useModal();
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
@@ -113,17 +114,10 @@ export const SelectPreviewBuildingMenu = () => {
 
   const [selectedTab, setSelectedTab] = useState(1);
 
-  const openTabTour = () => {
-    setSteps(BuildTourSteps[selectedTab]);
-    setCurrentStep(0);
-    setIsOpen(true);
-  };
-
   const closePopups = () => {
     if (isPopupOpen(questsPopup)) {
       togglePopup(questsPopup);
     }
-    setIsOpen(false);
   };
 
   const tabs = useMemo(
@@ -310,7 +304,7 @@ export const SelectPreviewBuildingMenu = () => {
     <div className="relative flex flex-col  bg-brown border-gradient border clip-angled">
       <CircleButton
         className="absolute top-1 right-1"
-        onClick={openTabTour}
+        onClick={() => toggleModal(<HintModal initialActiveSection={"Buildings & Bases"} />)}
         size={"sm"}
         image={BuildingThumbs.question}
       />

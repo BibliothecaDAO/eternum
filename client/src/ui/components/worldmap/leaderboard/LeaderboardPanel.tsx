@@ -2,10 +2,14 @@ import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
 import { PlayersLeaderboard } from "./PlayersLeaderboard";
 import { GuildsLeaderboard } from "./GuildsLeaderboard";
+import CircleButton from "@/ui/elements/CircleButton";
+import { HintModal } from "../../hints/HintModal";
+import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
+import { useModal } from "@/hooks/store/useModal";
 
 export const LeaderboardPanel = () => {
   const [selectedTab, setSelectedTab] = useState(0);
-
+  const { toggleModal } = useModal();
   const tabs = useMemo(
     () => [
       {
@@ -51,6 +55,11 @@ export const LeaderboardPanel = () => {
           {tabs.map((tab, index) => (
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
           ))}
+          <CircleButton
+            onClick={() => toggleModal(<HintModal initialActiveSection={"Points"} />)}
+            size={"sm"}
+            image={BuildingThumbs.question}
+          />
         </Tabs.List>
         <Tabs.Panels className="overflow-hidden">
           {tabs.map((tab, index) => (

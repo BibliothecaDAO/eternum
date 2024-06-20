@@ -189,13 +189,13 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   showModal: false,
   battleView: null,
   setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
-  ...createPopupsSlice(set, get),
-  ...createMapStoreSlice(set),
-  ...createBuildModeStoreSlice(set),
   leftNavigationView: LeftView.None,
   setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view }),
   rightNavigationView: RightView.None,
   setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
+  ...createPopupsSlice(set, get),
+  ...createMapStoreSlice(set),
+  ...createBuildModeStoreSlice(set),
 }));
 
 export default useUIStore;

@@ -22,6 +22,7 @@ import clsx from "clsx";
 import { quests as questsPopup } from "../../components/navigation/Config";
 import { ArrowRight } from "lucide-react";
 import { BuildingThumbs } from "./LeftNavigationModule";
+import { HintModal } from "@/ui/components/hints/HintModal";
 
 export enum View {
   None,
@@ -181,7 +182,7 @@ export const RightNavigationModule = () => {
         <BaseContainer className={`w-full  overflow-y-scroll py-4 ${isOffscreen(view) ? "h-[20vh]" : "h-[80vh]"}`}>
           {view === View.ResourceTable ? (
             <>
-              <div className=" flex justify-between">
+              <div className="flex justify-between">
                 {population && (
                   <div
                     onMouseEnter={() => {
@@ -228,6 +229,12 @@ export const RightNavigationModule = () => {
                     {storehouses.toLocaleString()}
                   </div>
                 )}
+                <CircleButton
+                  className="mr-1"
+                  onClick={() => toggleModal(<HintModal initialActiveSection={"Resources"} />)}
+                  size={"sm"}
+                  image={BuildingThumbs.question}
+                />
               </div>
               <EntityResourceTable entityId={realmEntityId} />
             </>
