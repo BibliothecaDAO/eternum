@@ -235,8 +235,8 @@ export const useRunningSound = () => {
 };
 
 export const useMarchingSound = () => {
-  const { repeat: playFirst, fade: fadeFirst, stop: stopFirst } = useUiSounds(soundSelector.unitMarching1);
-  const { repeat: playSecond, fade: fadeSecond, stop: stopSecond } = useUiSounds(soundSelector.unitMarching2);
+  const { repeat: playFirst, stop: stopFirst } = useUiSounds(soundSelector.unitMarching1);
+  const { repeat: playSecond, stop: stopSecond } = useUiSounds(soundSelector.unitMarching2);
   const [isFirst, setIsFirst] = useState(true);
 
   const play = useCallback(() => {
@@ -249,12 +249,8 @@ export const useMarchingSound = () => {
   }, [isFirst, playFirst, playSecond]);
 
   const stop = useCallback(() => {
-    console.log("stop");
-    // fadeFirst();
-    // fadeSecond();
     stopFirst();
     stopSecond();
-    // }, [fadeFirst, fadeSecond, isFirst]);
   }, [stopFirst, stopSecond, isFirst]);
 
   return {
