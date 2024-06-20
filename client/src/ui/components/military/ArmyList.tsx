@@ -18,8 +18,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
 
   const { realmEntityId } = useRealmStore();
   const { currentQuest } = useQuests({ entityId: realmEntityId || BigInt("0") });
-  const isQuesting = currentQuest?.name === QuestNames.CreateArmy && !currentQuest.steps[0].completed;
-
+  
   const {
     account: { account },
     setup: {
@@ -57,7 +56,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
                 onClick={() => handleCreateArmy(false)}
                 disabled={isLoading}
                 className={clsx({
-                  "animate-pulse": isQuesting,
+                  "animate-pulse": currentQuest?.name === QuestNames.CreateArmy && !currentQuest.steps[0].completed,
                 })}
               >
                 Create Army
@@ -86,7 +85,9 @@ export const EntityArmyList = ({ entity_id }: any) => {
             <DepositResources entityId={entity.entity_id} />
           </React.Fragment>
         )}
-        questing={isQuesting}
+        questing={
+          currentQuest?.name === QuestNames.CreateArmy && currentQuest.steps[0].completed && !currentQuest.steps[1].completed
+        }
       />
     </>
   );

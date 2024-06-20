@@ -127,7 +127,7 @@ const EndGameInfo = () => {
       <div>Next steps:</div>
       <div>- Trade resources with neighbouring realms</div>
       <div>- Explore the world with your armies</div>
-      <div>- Discover earthenshard mines</div>
+      <div>- Discover earthenshard mines or claim them from your enemies</div>
       <div>- Build or contribute to Hyperstructures to get ranked on the leaderboard</div>
     </div>
   );
