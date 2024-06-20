@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { Euler, Vector3 } from "three";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { WarriorModel } from "../../models/armies/WarriorModel";
-import { SelectedUnit } from "../hexagon/SelectedUnit";
+import { UnitHighlight } from "../hexagon/UnitHighlight";
 import { CombatLabel } from "./CombatLabel";
 import { arePropsEqual } from "./utils";
 import { ArmyHitBox } from "./ArmyHitBox";
@@ -43,7 +43,7 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
         <WarriorModel />
         <ArmyHitBox army={army} />
       </group>
-      {isSelected && <SelectedUnit position={{ x: army.x, y: army.y }} />}
+      {isSelected && <UnitHighlight position={{ x: army.x, y: army.y }} />}
     </>
   );
 }, arePropsEqual);
