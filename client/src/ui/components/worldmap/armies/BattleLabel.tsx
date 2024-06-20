@@ -1,4 +1,3 @@
-import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmiesByBattleId } from "@/hooks/helpers/useArmies";
 import { Realm, Structure, useStructuresPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -13,12 +12,6 @@ interface BattleLabelProps {
 }
 
 export const BattleLabel = ({ selectedBattle, visible = true }: BattleLabelProps) => {
-  const {
-    account: { account },
-    setup: {
-      systemCalls: { battle_leave },
-    },
-  } = useDojo();
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setSelectedBattle = useUIStore((state) => state.setSelectedBattle);
 
@@ -57,22 +50,4 @@ export const BattleLabel = ({ selectedBattle, visible = true }: BattleLabelProps
       </Button>
     </DojoHtml>
   );
-};
-
-const handleOneEmptySide = (
-  attackers: ArmyInfo[],
-  defenders: ArmyInfo[],
-  battle_leave: any,
-  account: any,
-  battleId: bigint,
-) => {
-  let ownArmy: ArmyInfo | undefined;
-  if (attackers.length === 0) {
-    ownArmy = defenders.find((army) => army.isMine);
-  }
-  if (defenders.length === 0) {
-    ownArmy = attackers.find((army) => army.isMine);
-  }
-  if (!ownArmy) return;
-  battle_leave({ signer: account, battle_id: battleId, army_id: ownArmy.entity_id });
 };

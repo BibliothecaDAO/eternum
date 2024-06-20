@@ -10,7 +10,6 @@ import { StructureCard } from "../../hyperstructures/StructureCard";
 import { EnemyArmies } from "../../military/Battle";
 
 type ToShow = {
-  showBattle: boolean;
   showSelectableUnits: boolean;
   showEnnemies: boolean;
   showStructure: boolean;
@@ -71,10 +70,9 @@ export const HexagonInformationPanel = () => {
             userAttackingArmies={userAttackingArmies}
           />
         )}
-        {toShow.showBattle && <div>Hello World</div>}
         {toShow.showStructure && <StructureCard position={hexPosition} ownArmySelected={ownArmy} />}
         {toShow.showEnnemies && <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmy!} />}
-        {!toShow.showBattle && !toShow.showEnnemies && !toShow.showStructure && "Nothing to show here"}
+        {!toShow.showEnnemies && !toShow.showStructure && "Nothing to show here"}
       </div>
     )
   );
@@ -146,10 +144,9 @@ const checkWhatToShow = (
 ): ToShow => {
   if (battle) {
     if (selectedEntity || (clickedHex && userAttackingArmies.length > 0)) {
-      return { showBattle: true, showSelectableUnits: true, showEnnemies: false, showStructure: false };
+      return { showSelectableUnits: true, showEnnemies: false, showStructure: false };
     }
     return {
-      showBattle: true,
       showSelectableUnits: false,
       showEnnemies: true,
       showStructure: true && Boolean(structure),
@@ -158,14 +155,12 @@ const checkWhatToShow = (
     if (selectedEntity) {
       if (structure) {
         return {
-          showBattle: false,
           showSelectableUnits: true,
           showEnnemies: false,
           showStructure: true && Boolean(structure),
         };
       } else {
         return {
-          showBattle: false,
           showSelectableUnits: true,
           showEnnemies: true && enemyArmies.length > 0,
           showStructure: false,
@@ -175,14 +170,12 @@ const checkWhatToShow = (
       if (clickedHex && userAttackingArmies.length > 0) {
         if (structure) {
           return {
-            showBattle: false,
             showSelectableUnits: true,
             showEnnemies: false,
             showStructure: true && Boolean(structure),
           };
         } else {
           return {
-            showBattle: false,
             showSelectableUnits: true,
             showEnnemies: true && enemyArmies.length > 0,
             showStructure: false,
@@ -190,7 +183,6 @@ const checkWhatToShow = (
         }
       } else {
         return {
-          showBattle: false,
           showSelectableUnits: false,
           showEnnemies: true && enemyArmies.length > 0,
           showStructure: true && Boolean(structure),

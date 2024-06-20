@@ -1,20 +1,26 @@
-import { useGLTF } from "@react-three/drei";
-import * as THREE from "three";
-import { useEffect, useMemo, useCallback, useState } from "react";
-import useUIStore from "@/hooks/store/useUIStore";
-import { getUIPositionFromColRow, ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
-import { useExploredHexesStore } from "../../worldmap/hexagon/WorldHexagon";
-import { useStructures } from "@/hooks/helpers/useStructures";
+import { useDojo } from "@/hooks/context/DojoContext";
 import useRealmStore from "@/hooks/store/useRealmStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import { Hexagon } from "@/types";
-import { StructureType } from "@bibliothecadao/eternum";
 import { FELT_CENTER } from "@/ui/config";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
+import { StructureType } from "@bibliothecadao/eternum";
+import { useGLTF } from "@react-three/drei";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import * as THREE from "three";
+import { useExploredHexesStore } from "../../worldmap/hexagon/WorldHexagon";
 
 export interface OriginalModels {
   [key: number | string]: THREE.Group;
 }
 
 export const StructurePreview = () => {
+  const {
+    setup: {
+      account: { account },
+      systemCalls: { create_hyperstructure },
+    },
+  } = useDojo();
   const hexData = useUIStore((state) => state.hexData);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
@@ -22,7 +28,6 @@ export const StructurePreview = () => {
   const hoveredBuildHex = useUIStore((state) => state.hoveredBuildHex);
   const existingStructures = useUIStore((state) => state.existingStructures);
   const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
-  const { createHyperstructure } = useStructures();
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [isLoading, setIsLoading] = useState(false);
   const [canPlace, setCanPlace] = useState(false);
@@ -74,9 +79,13 @@ export const StructurePreview = () => {
       setIsLoading(true);
       setPreviewBuilding(null);
       setHoveredBuildHex(null);
-      createHyperstructure(realmEntityId, hoveredBuildHex.col, hoveredBuildHex.row).finally(() => setIsLoading(false));
+      await create_hyperstructure({
+        signer: account,
+        coords: { x: hoveredBuildHex.col, y: hoveredBuildHex.row },
+        creator_entity_id: realmEntityId,
+      }).finally(() => setIsLoading(false));
     }
-  }, [hoveredBuildHex, existingStructures, exploredHexes, createHyperstructure, previewBuilding]);
+  }, [hoveredBuildHex, existingStructures, exploredHexes, previewBuilding]);
 
   const scale = previewBuilding?.type === StructureType.Hyperstructure ? 1.5 : 3;
 

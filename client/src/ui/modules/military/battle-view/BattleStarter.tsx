@@ -1,6 +1,6 @@
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Realm, Structure } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
+import { CombatTarget } from "@/types";
 import Button from "@/ui/elements/Button";
 import { motion } from "framer-motion";
 import { BattleActions } from "./BattleActions";
@@ -8,19 +8,11 @@ import { BattleProgressBar } from "./BattleProgressBar";
 import { EntityAvatar } from "./EntityAvatar";
 import { TroopRow } from "./Troops";
 
-export const BattleStarter = ({
-  ownArmy,
-  defenderArmy,
-  structure,
-}: {
-  ownArmy: ArmyInfo;
-  defenderArmy: ArmyInfo | undefined;
-  structure: Structure | Realm | undefined;
-}) => {
+export const BattleStarter = ({ target }: { target: { type: CombatTarget; entities: bigint | Realm | Structure } }) => {
   const setBattleView = useUIStore((state) => state.setBattleView);
   const attackingHealth = { current: Number(ownArmy.current), lifetime: Number(ownArmy.lifetime) };
   const defendingHealth = defenderArmy
-    ? { current: Number(defenderArmy.current), lifetime: Number(defenderArmy.lifetime) }
+    ? { current: Number(defenderArmy.current || 0), lifetime: Number(defenderArmy.lifetime || 0) }
     : undefined;
 
   return (
@@ -55,7 +47,7 @@ export const BattleStarter = ({
           attackingHealth={attackingHealth}
           attacker={`${ownArmy.name} ${ownArmy.isMine ? "(Yours)" : ""}`}
           defendingHealth={defendingHealth}
-          defender={defenderArmy ? `${defenderArmy.name} ${defenderArmy.isMine ? "(Yours)" : ""}` : structure!.name}
+          defender={structure ? structure.name : `${defenderArmy!.name}`}
         />
         <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4 flex flex-row justify-between">
           <div className="flex flex-row w-[70vw]">

@@ -522,6 +522,23 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
+  public async battle_raid_and_leave(props: SystemProps.BattleRaidAndLeaveProps) {
+    const { army_id, structure_id, battle_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, "combat_systems"),
+        entrypoint: "battle_leave",
+        calldata: [battle_id, army_id],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, "combat_systems"),
+        entrypoint: "battle_pillage",
+        calldata: [army_id, structure_id],
+      },
+    ]);
+  }
+
   public async mint_starting_resources(props: SystemProps.CreateStartingResources) {
     const { realm_entity_id, config_id, signer } = props;
 

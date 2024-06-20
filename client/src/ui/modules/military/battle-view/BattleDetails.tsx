@@ -37,8 +37,12 @@ export const BattleDetails = ({
   const { getAddressName } = useRealm();
   return (
     <div className="flex grid grid-cols-3 w-[22vw] text-gold border-gold bg-brown border-gradient border-2 clip-angled ornate-borders p-4">
-      <div key={0} className="tile h-[2vh] text-center border">Army</div>
-      <div key={1} className="tile h-[2vh] text-center border">Owner</div>
+      <div key={0} className="tile h-[2vh] text-center border">
+        Army
+      </div>
+      <div key={1} className="tile h-[2vh] text-center border">
+        Owner
+      </div>
       <div key={2} className="tile h-[2vh] text-center border"></div>
       {armiesEntityIds &&
         armiesEntityIds
@@ -52,7 +56,7 @@ export const BattleDetails = ({
               <div key={`${index}_player_address`} className="tile h-[2vh] text-center">
                 {getAddressName(String(army.address))}
               </div>
-              {army.isMine ? (
+              {army.isMine && BigInt(army.protectee_id || 0) === 0n ? (
                 <Button
                   key={`${index}_button`}
                   isLoading={loading}

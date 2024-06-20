@@ -23,8 +23,6 @@ export const OngoingBattle = ({
   structure,
   ownArmyEntityId,
 }: {
-  attackers: bigint[];
-  defenders: bigint[];
   battleManager: BattleManager;
   structure: Structure | Realm | undefined;
   ownArmyEntityId: bigint | undefined;
@@ -42,7 +40,7 @@ export const OngoingBattle = ({
   } = useDojo();
 
   const battlePosition = getComponentValue(Position, getEntityIdFromKeys([battleManager.battleId]));
-  const userArmiesAtLocation = getUserArmiesAtPosition(battlePosition!);
+  const { userArmies } = getUserArmiesAtPosition(battlePosition!);
 
   const armiesInBattle = getArmiesByBattleId(battleManager.battleId);
   const userArmyInBattle = armiesInBattle.find((army) => army.isMine);
@@ -129,11 +127,11 @@ export const OngoingBattle = ({
             <div className="flex flex-row w-[70vw]">
               <div>
                 <EntityAvatar />
-                {userArmiesAtLocation && userArmiesAtLocation.length > 0 && (
+                {userArmies && userArmies.length > 0 && (
                   <div className="flex w-full">
                     <SelectActiveArmy
                       setSelectedUnit={setSelectedUnit}
-                      userAttackingArmies={userArmiesAtLocation}
+                      userAttackingArmies={userArmies}
                       selectedUnit={selectedUnit}
                     />
                     <Button
@@ -174,11 +172,11 @@ export const OngoingBattle = ({
               )}
               <div className="">
                 <EntityAvatar structure={structure} />
-                {userArmiesAtLocation && userArmiesAtLocation.length > 0 && (
+                {userArmies && userArmies.length > 0 && (
                   <div className="flex">
                     <SelectActiveArmy
                       setSelectedUnit={setSelectedUnit}
-                      userAttackingArmies={userArmiesAtLocation}
+                      userAttackingArmies={userArmies}
                       selectedUnit={selectedUnit}
                     />
                     <Button
@@ -204,7 +202,7 @@ export const OngoingBattle = ({
   );
 };
 
-const SelectActiveArmy = ({
+export const SelectActiveArmy = ({
   selectedUnit,
   setSelectedUnit,
   userAttackingArmies,

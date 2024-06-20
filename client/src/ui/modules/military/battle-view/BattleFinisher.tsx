@@ -1,9 +1,13 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { ArmyInfo, getArmiesByBattleId, getUserArmiesAtPosition } from "@/hooks/helpers/useArmies";
 import { Realm, Structure } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
+import { BattleSide } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { BattleActions } from "./BattleActions";
@@ -11,28 +15,55 @@ import { BattleDetails } from "./BattleDetails";
 import { BattleProgressBar } from "./BattleProgressBar";
 import { EntityAvatar } from "./EntityAvatar";
 import { LockedResources } from "./LockedResources";
+import { SelectActiveArmy } from "./OngoingBattle";
 import { TroopRow } from "./Troops";
 
 export const BattleFinisher = ({
-  attackers,
-  defenders,
-  updatedBattle,
+  battleManager,
   attackerArmy,
   attackerArmyHealth,
   defenderArmy,
   defenderArmyHealth,
   structure,
 }: {
-  attackers: bigint[] | undefined;
-  defenders: bigint[] | undefined;
-  updatedBattle: BattleManager;
+  battleManager: BattleManager;
   attackerArmy: ArmyInfo | undefined;
   attackerArmyHealth: bigint;
   defenderArmy: ArmyInfo | undefined;
   defenderArmyHealth: bigint;
   structure: Structure | Realm | undefined;
 }) => {
+  const {
+    setup: {
+      account: { account },
+      systemCalls: { battle_join },
+      components: { Position },
+    },
+  } = useDojo();
+
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+
+  const battlePosition = getComponentValue(Position, getEntityIdFromKeys([battleManager.battleId]));
+  const { userArmies } = getUserArmiesAtPosition(battlePosition!);
+  console.log(userArmies);
+  const ownArmyEntityId = useMemo(() => {
+    if (attackerArmy?.isMine) return BigInt(attackerArmy.entity_id);
+    if (selectedEntity) return selectedEntity.id;
+  }, [selectedEntity]);
+
+  const [loading, setLoading] = useState<boolean>(false);
   const [showBattleDetails, setShowBattleDetails] = useState<boolean>(false);
+  const [selectedUnit, setSelectedUnit] = useState<bigint | undefined>(ownArmyEntityId);
+
+  const armiesInBattle = getArmiesByBattleId(battleManager.battleId);
+  const userArmyInBattle = armiesInBattle.find((army) => army.isMine);
+
+  const attackers = armiesInBattle
+    .filter((army) => String(army.battle_side) === "Attack")
+    .map((army) => BigInt(army.entity_id));
+  const defenders = armiesInBattle
+    .filter((army) => String(army.battle_side) === "Defence")
+    .map((army) => BigInt(army.entity_id));
 
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
   const setBattleView = useUIStore((state) => state.setBattleView);
@@ -44,8 +75,23 @@ export const BattleFinisher = ({
     : undefined;
 
   const battleAdjusted = useMemo(() => {
-    return updatedBattle.getUpdatedBattle(currentDefaultTick);
+    return battleManager.getUpdatedBattle(currentDefaultTick);
   }, [currentDefaultTick]);
+
+  const joinBattle = async (side: BattleSide, armyId: bigint) => {
+    if (selectedUnit) {
+      setLoading(true);
+      await battle_join({
+        signer: account,
+        army_id: armyId,
+        battle_id: battleManager.battleId,
+        battle_side: BigInt(side),
+      });
+      setLoading(false);
+    } else {
+      setSelectedUnit(0n);
+    }
+  };
 
   return (
     <div>
@@ -77,13 +123,13 @@ export const BattleFinisher = ({
       >
         <BattleProgressBar
           attackingHealth={attackingHealth}
-          attacker={`${attackerArmy?.name || "Empty"} ${attackerArmy?.isMine ? "(Yours)" : ""}`}
+          attacker={`${attackerArmy ? "Attackers" : "Empty"} ${attackerArmy?.isMine ? "(⚔️)" : ""}`}
           defendingHealth={defendingHealth}
           defender={
-            defenderArmy
-              ? `${defenderArmy.name} ${defenderArmy.isMine ? "(Yours)" : ""}`
-              : structure
-              ? structure!.name
+            structure
+              ? `${structure!.name} ${String(userArmyInBattle?.battle_side || "") === "Defence" ? "(⚔️)" : ""}`
+              : defenderArmy
+              ? `Defenders ${String(userArmyInBattle?.battle_side || "") === "Defence" ? "(⚔️)" : ""}`
               : "Empty"
           }
         />
@@ -92,9 +138,25 @@ export const BattleFinisher = ({
             <div className="flex flex-row w-[70vw]">
               <div>
                 <EntityAvatar empty={!Boolean(attackerArmy)} />
+                {userArmies && userArmies.length > 0 && (
+                  <div className="flex w-full">
+                    <SelectActiveArmy
+                      setSelectedUnit={setSelectedUnit}
+                      userAttackingArmies={userArmies}
+                      selectedUnit={selectedUnit}
+                    />
+                    <Button
+                      onClick={() => joinBattle(BattleSide.Attack, selectedUnit!)}
+                      isLoading={loading}
+                      className="size-xs"
+                    >
+                      Join
+                    </Button>
+                  </div>
+                )}
               </div>
               {showBattleDetails ? (
-                <BattleDetails armiesEntityIds={attackers} battleId={updatedBattle.battleId} />
+                <BattleDetails armiesEntityIds={attackers} battleId={battleManager.battleId} />
               ) : (
                 <TroopRow troops={battleAdjusted!.attack_army.troops} />
               )}
@@ -106,21 +168,37 @@ export const BattleFinisher = ({
               />
             ) : (
               <BattleActions
-                ownArmyEntityId={attackerArmy?.isMine ? BigInt(attackerArmy.entity_id) : undefined}
+                ownArmyEntityId={ownArmyEntityId}
                 defender={undefined}
                 structure={structure}
                 battle={battleAdjusted}
-                isActive
+                isActive={false}
               />
             )}
             <div className="flex flex-row w-[70vw]">
               {showBattleDetails ? (
-                <BattleDetails armiesEntityIds={defenders} battleId={updatedBattle.battleId} />
+                <BattleDetails armiesEntityIds={defenders} battleId={battleManager.battleId} />
               ) : (
                 <TroopRow troops={battleAdjusted!.defence_army.troops} />
               )}
               <div>
                 <EntityAvatar structure={structure} empty={!Boolean(defenderArmy)} />
+                {userArmies && userArmies.length > 0 && (
+                  <div className="flex">
+                    <SelectActiveArmy
+                      setSelectedUnit={setSelectedUnit}
+                      userAttackingArmies={userArmies}
+                      selectedUnit={selectedUnit}
+                    />
+                    <Button
+                      onClick={() => joinBattle(BattleSide.Defence, selectedUnit!)}
+                      isLoading={loading}
+                      className="size-xs"
+                    >
+                      Join
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

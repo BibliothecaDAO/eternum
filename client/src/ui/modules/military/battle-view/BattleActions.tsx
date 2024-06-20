@@ -39,7 +39,14 @@ export const BattleActions = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { battle_leave, battle_start, battle_claim, battle_pillage, battle_leave_and_claim },
+      systemCalls: {
+        battle_leave,
+        battle_start,
+        battle_claim,
+        battle_pillage,
+        battle_leave_and_claim,
+        battle_leave_and_raid,
+      },
       components: { Realm },
     },
   } = useDojo();
@@ -48,18 +55,27 @@ export const BattleActions = ({
     getArmyByEntityId(ownArmyEntityId || 0n) ||
     getArmiesByBattleId(battle?.entity_id || 0n).find((army) => army.isMine);
 
-  const isRealm = useMemo(() => {
+	const isRealm = useMemo(() => {
     if (!structure) return false;
     return Boolean(getComponentValue(Realm, getEntityIdFromKeys([BigInt(structure.entity_id)])));
   }, [structure]);
 
   const handleRaid = async () => {
     setLoading(Loading.Raid);
-    await battle_pillage({
-      signer: account,
-      army_id: ownArmy!.entity_id,
-      structure_id: structure!.entity_id,
-    });
+    if (battle?.entity_id! !== 0n && battle?.entity_id === BigInt(ownArmy!.battle_id)) {
+      await battle_leave_and_raid({
+        signer: account,
+        army_id: ownArmy!.entity_id,
+        battle_id: battle?.entity_id!,
+        structure_id: structure!.entity_id,
+      });
+    } else {
+      await battle_pillage({
+        signer: account,
+        army_id: ownArmy!.entity_id,
+        structure_id: structure!.entity_id,
+      });
+    }
 
     setLoading(Loading.None);
     setBattleView(null);

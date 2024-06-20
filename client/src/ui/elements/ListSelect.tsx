@@ -81,7 +81,7 @@ function ListSelect(props: ListSelectProps) {
 
                 <Listbox.Options
                   className={clsx(
-                    "overflow-y-auto  z-50 mt-3 max-h-60 w-full overflow-auto rounded-md py-1",
+                    "overflow-visible z-50 mt-3 w-full rounded-md py-1",
                     props.style === "black" ? "bg-black" : " bg-dark-brown",
                   )}
                 >
@@ -89,7 +89,7 @@ function ListSelect(props: ListSelectProps) {
                     <Listbox.Option
                       key={option.id}
                       className={({ active }) =>
-                        `overflow-y-auto relative cursor-pointer z-50 select-none py-2 flex items-center pl-8 text-gold ${
+                        `overflow-visible relative cursor-pointer z-50 select-none py-2 flex items-center pl-8 text-gold ${
                           active ? "bg-gold/50 text-white/90" : ""
                         }`
                       }
