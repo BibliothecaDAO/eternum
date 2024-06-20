@@ -21,10 +21,6 @@ export const ArmyHitBox = ({ army, hovered, setHovered }: ArmyHitBoxProps) => {
   const { play: playHover } = useUiSounds(soundSelector.hoverClick);
 
   useEffect(() => {
-    playClick();
-  }, [selectedEntity]);
-
-  useEffect(() => {
     if (hovered) playHover();
   }, [hovered]);
 
@@ -33,6 +29,7 @@ export const ArmyHitBox = ({ army, hovered, setHovered }: ArmyHitBoxProps) => {
   }, [showAllArmies, hovered]);
 
   const onRightClick = useCallback(() => {
+    playClick();
     if ((selectedEntity?.id || 0n) !== BigInt(army.entity_id) && army.isMine) {
       setSelectedEntity({ id: BigInt(army.entity_id), position: { x: army.x, y: army.y } });
       playSelectedArmy();
