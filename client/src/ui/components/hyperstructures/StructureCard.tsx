@@ -50,8 +50,8 @@ export const StructureCard = ({
             variant="primary"
             onClick={() =>
               setBattleView({
-                attackers: [BigInt(ownArmySelected.entity_id)],
-                defenders: { type: CombatTarget.Structure, entities: target as Realm | Structure },
+                battle: undefined,
+                target: { type: CombatTarget.Structure, entity: target as Realm | Structure },
               })
             }
           >

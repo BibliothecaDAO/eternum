@@ -1,10 +1,9 @@
-import { ArmyInfo, getArmiesByBattleId } from "@/hooks/helpers/useArmies";
-import { Realm, Structure, useStructuresPosition } from "@/hooks/helpers/useStructures";
+import { useDojo } from "@/hooks/context/DojoContext";
 import useUIStore from "@/hooks/store/useUIStore";
-import { CombatTarget } from "@/types";
 import Button from "@/ui/elements/Button";
 import { DojoHtml } from "@/ui/elements/DojoHtml";
-import { useMemo } from "react";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 interface BattleLabelProps {
   selectedBattle: bigint;
@@ -12,35 +11,22 @@ interface BattleLabelProps {
 }
 
 export const BattleLabel = ({ selectedBattle, visible = true }: BattleLabelProps) => {
+  const {
+    setup: {
+      components: { Position },
+    },
+  } = useDojo();
+
   const setBattleView = useUIStore((state) => state.setBattleView);
   const setSelectedBattle = useUIStore((state) => state.setSelectedBattle);
 
-  const armies = getArmiesByBattleId(selectedBattle);
-  const { formattedRealmAtPosition, formattedStructureAtPosition } = useStructuresPosition({
-    position: { x: Number(armies[0]?.x) || 0, y: Number(armies[0]?.y) || 0 },
-  });
-
-  const [attackers, defenders] = useMemo(() => {
-    const attackers = armies.filter((army) => army?.battle_side.toString() === "Attack") as ArmyInfo[];
-    const defenders = armies.filter((army) => army?.battle_side.toString() === "Defence") as ArmyInfo[];
-    return [attackers, defenders];
-  }, [armies]);
-
   const onClick = () => {
-    const target = Boolean(formattedRealmAtPosition) ? formattedRealmAtPosition : formattedStructureAtPosition;
-    if (target) {
-      setSelectedBattle(undefined);
-      setBattleView({
-        attackers: attackers.map((army) => BigInt(army.entity_id)),
-        defenders: { type: CombatTarget.Structure, entities: target as Realm | Structure },
-      });
-    } else {
-      setSelectedBattle(undefined);
-      setBattleView({
-        attackers: attackers.map((army) => BigInt(army.entity_id)),
-        defenders: { type: CombatTarget.Army, entities: defenders.map((army) => BigInt(army.entity_id)) },
-      });
-    }
+    const position = getComponentValue(Position, getEntityIdFromKeys([selectedBattle]));
+    setSelectedBattle(undefined);
+    setBattleView({
+      battle: { x: position!.x, y: position!.y },
+      target: undefined,
+    });
   };
 
   return (

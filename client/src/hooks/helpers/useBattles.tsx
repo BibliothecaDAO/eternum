@@ -35,6 +35,32 @@ export const useBattleManager = (battleId: bigint) => {
   return { updatedBattle };
 };
 
+export const useBattleManagerByPosition = (position: Position) => {
+  const {
+    setup: {
+      components: { Battle, Position, Army },
+    },
+  } = useDojo();
+
+  const battleEntityIds = useEntityQuery([Has(Battle), HasValue(Position, position)]);
+  const battleEntityId = Array.from(battleEntityIds)
+    .map((battleEntityId) => {
+      const battle = getComponentValue(Battle, battleEntityId);
+      if (!battle) return;
+      const isFinished = battleIsFinished(Army, battle as unknown as ClientComponents["Battle"]["schema"]);
+      if (isFinished) return;
+      return battle.entity_id;
+    })
+    .filter((battle) => battle != undefined)[0];
+
+  const updatedBattle = useMemo(() => {
+    if (!battleEntityId) return;
+    return new BattleManager(Battle, BigInt(battleEntityId));
+  }, [position, battleEntityId]);
+
+  return updatedBattle;
+};
+
 export const useBattles = () => {
   const {
     setup: {

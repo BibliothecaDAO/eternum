@@ -32,8 +32,8 @@ export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; o
                   <Button
                     onClick={() =>
                       setBattleView({
-                        attackers: [BigInt(attacker.entity_id)],
-                        defenders: { type: CombatTarget.Army, entities: [BigInt(defender.entity_id)] },
+                        battle: undefined,
+                        target: { type: CombatTarget.Army, entity: BigInt(defender.entity_id) },
                       })
                     }
                   >

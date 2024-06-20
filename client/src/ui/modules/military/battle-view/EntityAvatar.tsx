@@ -1,9 +1,10 @@
 import { Realm, Structure } from "@/hooks/helpers/useStructures";
 import { motion } from "framer-motion";
 
-export const EntityAvatar = ({ structure, empty = false }: { structure?: Realm | Structure; empty?: boolean }) => {
+export const EntityAvatar = ({ structure, show = true }: { structure?: Realm | Structure; show?: boolean }) => {
   const imgSource = Boolean(structure) ? "./images/buildings/thumb/castle.png" : "./images/avatars/2.png";
 
+  const displayImg = structure || show;
   const slideUp = {
     hidden: { y: "100%" },
     visible: { y: "0%", transition: { duration: 0.6 } },
@@ -12,7 +13,7 @@ export const EntityAvatar = ({ structure, empty = false }: { structure?: Realm |
     <div className="col-span-2 flex">
       {" "}
       <div className="mx-auto flex flex-col gap-4 p-3 w-[15vw]">
-        {!empty && (
+        {displayImg && (
           <motion.img
             initial="hidden"
             animate="visible"

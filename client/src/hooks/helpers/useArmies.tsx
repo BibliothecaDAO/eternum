@@ -89,7 +89,6 @@ const formatArmies = (
         getEntityIdFromKeys([BigInt(army.battle_id)]),
       ) as ClientComponents["Battle"]["schema"];
       if (battle && armyIsLosingSide(army, battle!) && battleIsFinished(Army, battle)) {
-        console.log("here");
         return;
       }
 
@@ -223,6 +222,50 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
   return {
     entityArmies,
   };
+};
+
+export const useArmiesByBattleId = (battle_id: bigint) => {
+  const {
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+        Stamina,
+        Battle,
+      },
+    },
+    account: { account },
+  } = useDojo();
+
+  const armiesEntityIds = useEntityQuery([HasValue(Army, { battle_id })]);
+  return formatArmies(
+    Array.from(armiesEntityIds),
+    account.address,
+    Army,
+    Protectee,
+    EntityName,
+    Health,
+    Quantity,
+    Movable,
+    Capacity,
+    ArrivalTime,
+    Position,
+    EntityOwner,
+    Owner,
+    Realm,
+    Stamina,
+    Battle,
+  );
 };
 
 export const getArmiesByBattleId = (battle_id: bigint) => {
@@ -471,7 +514,7 @@ export const getUserArmiesAtPosition = (position: Position) => {
     const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
     return owner?.address === BigInt(account.address);
   });
-  
+
   const opponentArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
     const entityOwner = getComponentValue(EntityOwner, armyEntityId);
     const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));

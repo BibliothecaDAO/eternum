@@ -143,13 +143,10 @@ const checkWhatToShow = (
   structure: Structure | undefined,
 ): ToShow => {
   if (battle) {
-    if (selectedEntity || (clickedHex && userAttackingArmies.length > 0)) {
-      return { showSelectableUnits: true, showEnnemies: false, showStructure: false };
-    }
     return {
       showSelectableUnits: false,
-      showEnnemies: true,
-      showStructure: true && Boolean(structure),
+      showEnnemies: false,
+      showStructure: false,
     };
   } else {
     if (selectedEntity) {
