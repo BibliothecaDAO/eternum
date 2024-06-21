@@ -34,7 +34,7 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
   const armyPosition = { x: army.x, y: army.y };
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const battleAtPosition = getBattlesByPosition(armyPosition);
-  const { opponentArmies } = getUserArmiesAtPosition(armyPosition);
+  const { opponentArmiesAtPosition } = getUserArmiesAtPosition(armyPosition);
 
   const structures = Array.from(runQuery([Has(Structure), HasValue(Position, armyPosition)]));
 
@@ -59,7 +59,7 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
     return (
       selectedEntity !== undefined &&
       selectedEntity.id === BigInt(army.entity_id) &&
-      ((opponentArmies?.length || 0) > 0 || structures.length > 0)
+      ((opponentArmiesAtPosition?.length || 0) > 0 || structures.length > 0)
     );
   }, [selectedEntity]);
 

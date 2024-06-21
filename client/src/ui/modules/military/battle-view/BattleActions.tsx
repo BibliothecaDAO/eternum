@@ -55,7 +55,7 @@ export const BattleActions = ({
     getArmyByEntityId(ownArmyEntityId || 0n) ||
     getArmiesByBattleId(battle?.entity_id || 0n).find((army) => army.isMine);
 
-	const isRealm = useMemo(() => {
+  const isRealm = useMemo(() => {
     if (!structure) return false;
     return Boolean(getComponentValue(Realm, getEntityIdFromKeys([BigInt(structure.entity_id)])));
   }, [structure]);

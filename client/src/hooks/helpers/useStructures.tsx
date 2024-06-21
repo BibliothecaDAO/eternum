@@ -163,8 +163,8 @@ export const getStructureAtPosition = (position: Position) => {
     String(structure.category) === "Realm"
       ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
       : onChainName
-      ? shortString.decodeShortString(onChainName.name.toString())
-      : `${structure.category} ${structure?.entity_id}`;
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${structure.category} ${structure?.entity_id}`;
 
   return {
     ...structure,

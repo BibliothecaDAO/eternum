@@ -43,6 +43,7 @@ export const useBattleManagerByPosition = (position: Position) => {
   } = useDojo();
 
   const battleEntityIds = useEntityQuery([Has(Battle), HasValue(Position, position)]);
+
   const battleEntityId = Array.from(battleEntityIds)
     .map((battleEntityId) => {
       const battle = getComponentValue(Battle, battleEntityId);
@@ -53,12 +54,12 @@ export const useBattleManagerByPosition = (position: Position) => {
     })
     .filter((battle) => battle != undefined)[0];
 
-  const updatedBattle = useMemo(() => {
+  const battleManager = useMemo(() => {
     if (!battleEntityId) return;
     return new BattleManager(Battle, BigInt(battleEntityId));
   }, [position, battleEntityId]);
 
-  return updatedBattle;
+  return battleManager;
 };
 
 export const useBattles = () => {

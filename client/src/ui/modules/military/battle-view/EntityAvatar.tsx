@@ -2,7 +2,14 @@ import { Realm, Structure } from "@/hooks/helpers/useStructures";
 import { motion } from "framer-motion";
 
 export const EntityAvatar = ({ structure, show = true }: { structure?: Realm | Structure; show?: boolean }) => {
-  const imgSource = Boolean(structure) ? "./images/buildings/thumb/castle.png" : "./images/avatars/2.png";
+  const isRealm = Boolean(structure) && (structure as Realm).resources !== undefined;
+  let imgSource = "./images/avatars/2.png";
+
+  if (isRealm) {
+    imgSource = "./images/buildings/thumb/castle.png";
+  } else if (structure && String((structure as Structure).category) === "Hyperstructure") {
+    imgSource = "./images/buildings/thumb/hyperstructure.png";
+  }
 
   const displayImg = structure || show;
   const slideUp = {

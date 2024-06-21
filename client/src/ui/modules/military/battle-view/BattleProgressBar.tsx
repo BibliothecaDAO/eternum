@@ -1,21 +1,34 @@
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { Realm, Structure } from "@/hooks/helpers/useStructures";
 import { currencyFormat } from "@/ui/utils/utils";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
 export const BattleProgressBar = ({
+  ownArmySide,
   attackingHealth,
-  attacker,
+  attackerArmies,
   defendingHealth,
-  defender,
+  defenderArmies,
+  structure,
   durationLeft,
 }: {
+  ownArmySide: string;
   attackingHealth: { current: number; lifetime: number } | undefined;
-  attacker: string;
+  attackerArmies: ArmyInfo[];
   defendingHealth: { current: number; lifetime: number } | undefined;
-  defender: string;
+  defenderArmies: ArmyInfo[];
+  structure: Structure | Realm | undefined;
   durationLeft?: Date;
 }) => {
   const [time, setTime] = useState<Date | undefined>(durationLeft);
+
+  const attackerName = `${attackerArmies.length > 0 ? "Attackers" : "Empty"} ${ownArmySide === "Attack" ? "(⚔️)" : ""}`;
+  const defenderName = structure
+    ? `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+    : defenderArmies?.length > 0
+      ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+      : "Empty";
 
   const totalHealth = useMemo(
     () => (attackingHealth?.current || 0) + (defendingHealth?.current || 0),
@@ -63,11 +76,11 @@ export const BattleProgressBar = ({
     >
       <div className="mx-auto w-2/3 flex justify-between text-2xl text-white backdrop-blur-lg bg-brown/20 p-3">
         <div>
-          <p>{attacker}</p>
+          <p>{attackerName}</p>
         </div>
         {time && <div>{time.toISOString().substring(11, 19)}</div>}
         <div className="text-right">
-          <p>{defender}</p>
+          <p>{defenderName}</p>
         </div>
       </div>
       <div className="relative h-8 mb-2 mx-auto w-2/3" style={{ background: gradient }}>

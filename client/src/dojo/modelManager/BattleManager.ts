@@ -40,18 +40,23 @@ export class BattleManager {
     }
   }
 
-  public getTimeLeft(currentTick: number): Date {
-    var date = new Date(0);
+  public getTimeLeft(currentTimestamp: number): Date | undefined {
+    const date = new Date(0);
     const battle = this.getBattle();
-    if (!battle) return date;
-    const duractionSinceLastUpdate = currentTick - Number(battle.last_updated);
-    if (Number(battle.duration_left) >= duractionSinceLastUpdate) {
-      date.setSeconds(Number(battle.duration_left) - duractionSinceLastUpdate);
+
+    if (!battle) {
+      return undefined;
     }
-    return date;
+    const duractionSinceLastUpdate = currentTimestamp - Number(battle.last_updated);
+    if (Number(battle.duration_left) > duractionSinceLastUpdate) {
+      date.setSeconds(Number(battle.duration_left) - duractionSinceLastUpdate);
+      return date;
+    } else {
+      return undefined;
+    }
   }
 
-  public battleActive(currentTick: number): boolean {
+  public isBattleActive(currentTick: number): boolean {
     const battle = this.getBattle();
     const timeSinceLastUpdate = this.getElapsedTime(currentTick);
     return battle ? timeSinceLastUpdate < battle.duration_left : false;
