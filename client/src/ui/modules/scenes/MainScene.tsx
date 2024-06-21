@@ -111,13 +111,13 @@ export const MainScene = () => {
       className={clsx("rounded-xl")}
       raycaster={{
         params: {
-          Points: { threshold: 0.1 },
-          Mesh: { threshold: 0.1 },
+          Points: { threshold: 0.05 },
+          Mesh: { threshold: 0.05 },
           Line: {
-            threshold: 0.1,
+            threshold: 0.05,
           },
-          LOD: { threshold: 0.1 },
-          Sprite: { threshold: 0.1 },
+          LOD: { threshold: 0.05 },
+          Sprite: { threshold: 0.05 },
         },
       }}
       camera={{ fov: 15, position: [0, 700, 0], far: 1300, near: 20 }}

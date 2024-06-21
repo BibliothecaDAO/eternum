@@ -51,11 +51,11 @@ export const ArmyHitBox = ({ army, hovered, setHovered }: ArmyHitBoxProps) => {
       <ArmyInfoLabel visible={showArmyInfo} army={army} />
       <Box
         visible={false}
-        position={[0, 3, 0]}
+        position={[0, 1.5, 0]}
         onPointerEnter={onPointerEnter}
         onContextMenu={onRightClick}
         onPointerOut={onPointerOut}
-        args={[1.5, 7, 1.5]}
+        args={[1.5, 4, 1.5]}
       />
     </group>
   );
