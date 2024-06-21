@@ -43,7 +43,7 @@ export const HoveredHexagon = () => {
       ref={imageRef}
       position={[hoveredHexPosition.x, 0.5, -hoveredHexPosition.y]}
       zoom={1}
-      opacity={0.2}
+      opacity={0.8}
       transparent
       scale={5}
       url="/textures/aura.png"

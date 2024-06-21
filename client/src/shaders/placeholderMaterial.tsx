@@ -32,11 +32,14 @@ void main() {
 }
 `;
 
+const greenColor = new Color("darkgreen");
+greenColor.multiplyScalar(12);
+
 export const placeholderMaterial = new ShaderMaterial({
   vertexShader,
   fragmentShader,
   uniforms: {
-    color: { value: new Color("green") },
+    color: { value: greenColor },
     opacity: { value: 0 },
   },
   transparent: true,

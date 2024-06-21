@@ -233,7 +233,7 @@ export const MainScene = () => {
               />
               <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.1} />
               <SMAA />
-              <Bloom luminanceThreshold={0.9} intensity={0.1} mipmapBlur />
+              <Bloom luminanceThreshold={2} intensity={0.5} mipmapBlur />
             </>
           ) : (
             <></>

@@ -62,7 +62,10 @@ export const StructurePreview = () => {
     models[structureType].traverse((node) => {
       if (node instanceof THREE.Mesh) {
         node.material = node.material.clone();
-        node.material.color.set(canPlace ? "green" : "red");
+        const col = canPlace ? "green" : "red";
+        const color = new THREE.Color(col);
+        color.multiplyScalar(5);
+        node.material.color.set(color);
         node.material.transparent = true;
         node.material.opacity = 0.8;
       }
