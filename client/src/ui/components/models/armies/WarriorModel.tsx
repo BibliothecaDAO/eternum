@@ -6,9 +6,10 @@ import { ArmyInfo } from "@/hooks/helpers/useArmies";
 
 type WarriorModelProps = {
   army: ArmyInfo;
+  isAnimating: boolean;
 };
 
-export function WarriorModel({ army }: WarriorModelProps) {
+export function WarriorModel({ army, isAnimating }: WarriorModelProps) {
   const groupRef = useRef<THREE.Group>(null);
   const gltf = useGLTF("/models/chess_piece_king.glb");
 
@@ -51,7 +52,7 @@ export function WarriorModel({ army }: WarriorModelProps) {
   return (
     <group ref={groupRef}>
       <primitive castShadow receiveShadow object={model} renderOrder={1} scale={12} />
-      <ArmyHitBox hovered={hovered} setHovered={setHovered} army={army} />
+      <ArmyHitBox hovered={hovered} setHovered={setHovered} army={army} isAnimating={isAnimating} />
     </group>
   );
 }
