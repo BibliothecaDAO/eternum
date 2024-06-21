@@ -246,7 +246,7 @@ export function Flags(props) {
       <group {...props} dispose={null} position={[-0.38, 0, -0.04]} rotation={[-Math.PI / 2, Math.PI, 0]}>
         {woodInstances.map((woodInstance, index) => {
           return (
-            <>
+            <group key={index}>
               <group
                 onPointerEnter={(e) => hoverHandler(e, index)}
                 onPointerLeave={() => {
@@ -256,11 +256,11 @@ export function Flags(props) {
               >
                 <primitive object={hitBoxInstances[index]} renderOrder={3} />
               </group>
-              <group key={index} onClick={(e) => clickHandler(e, index)}>
+              <group onClick={(e) => clickHandler(e, index)}>
                 <primitive object={woodInstance} renderOrder={3} />
                 <primitive object={flagInstances[index]} renderOrder={3} />
               </group>
-            </>
+            </group>
           );
         })}
       </group>
