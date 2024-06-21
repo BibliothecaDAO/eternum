@@ -28,9 +28,7 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
   const armyPosition = { x: army.x, y: army.y };
 
   // animation path for the army
-  const groupRef = useArmyAnimation(armyPosition, army.offset, army.isMine);
-
-  console.log({ army: army.entity_id });
+  const { groupRef, isAnimating } = useArmyAnimation(armyPosition, army.offset, army.isMine);
 
   // Deterministic rotation based on the id
   const deterministicRotation = useMemo(() => {
@@ -45,7 +43,7 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
     <>
       <group position={initialPos} ref={groupRef} rotation={new Euler(0, deterministicRotation, 0)}>
         <ArmyFlag visible={army.isMine} rotationY={deterministicRotation} position={initialPos} />
-        <WarriorModel army={army} />
+        <WarriorModel army={army} isAnimating={isAnimating.current} />
         <Billboard>
           <Image
             texture={armyLabel}
