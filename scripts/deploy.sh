@@ -7,7 +7,7 @@ echo "Build contracts..."
 sozo --profile prod build
 
 echo "Deploying world to Realms L3..."
-sozo --profile prod migrate apply --name eternum1
+sozo --profile prod migrate apply --name eternum2
 
 echo "Deleting previous indexer..."
 slot deployments delete eternum torii
