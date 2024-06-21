@@ -10,7 +10,7 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { order_statments } from "../../../../data/orders";
-import realmsHexPositions from "../../../../data/geodata/hex/realmHexPositions.json";
+import { getPosition } from "@/ui/utils/utils";
 
 export const MAX_REALMS = 1;
 
@@ -41,19 +41,18 @@ export const SettleRealmComponent = () => {
     setIsLoading(true);
     let calldata = [];
 
-    let new_realm_id = BigInt(getNextRealmIdForOrder(chosenOrder || selectedOrder));
+    let new_realm_id = getNextRealmIdForOrder(chosenOrder || selectedOrder);
 
     for (let i = 0; i < MAX_REALMS; i++) {
       // if no realm id latest realm id is 0
       if (i > 0) {
-        new_realm_id = BigInt(getRealmIdForOrderAfter(chosenOrder || selectedOrder, new_realm_id));
+        new_realm_id = getRealmIdForOrderAfter(chosenOrder || selectedOrder, new_realm_id);
       }
       // take next realm id
       let realm = getRealm(new_realm_id);
       if (!realm) return;
 
-      let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
-      let position = realmPositions[Number(new_realm_id)][0];
+      const position = getPosition(new_realm_id);
 
       calldata.push({
         realm_id: Number(realm.realmId),
@@ -65,25 +64,14 @@ export const SettleRealmComponent = () => {
         rivers: realm.rivers,
         harbors: realm.harbors,
         cities: realm.cities,
-        position: { x: position.col, y: position.row },
+        position,
       });
     }
-
-    // @dev: do it in 1 times because too many steps for 1 tx
-    // before could do it in 3 times, but now, takes too many steps so cannot multicall
 
     await create_multiple_realms({
       signer: account,
       realms: [calldata[0]],
     });
-    // await create_multiple_realms({
-    //   signer: account,
-    //   realms: [calldata[1]],
-    // });
-    // await create_multiple_realms({
-    //   signer: account,
-    //   realms: [calldata[2]],
-    // });
     setIsLoading(false);
     playSign();
   };
