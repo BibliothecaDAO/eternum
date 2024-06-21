@@ -14,6 +14,12 @@ import { currencyFormat } from "@/ui/utils/utils";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Buildings } from "./Buildings";
+import { Trading } from "./Trading";
+import { Combat } from "./Combat";
+import { Points } from "./Points";
+import { Hyperstructures } from "./Hyperstructures";
+import { TheMap } from "./TheMap";
+import { Guilds } from "./Guilds";
 
 export const HintModal = () => {
   const sections = [
@@ -32,7 +38,7 @@ export const HintModal = () => {
     },
     {
       name: "The Map",
-      content: <></>,
+      content: <TheMap />,
     },
     {
       name: "Buildings & Bases",
@@ -40,19 +46,23 @@ export const HintModal = () => {
     },
     {
       name: "Trading",
-      content: <></>,
+      content: <Trading />,
     },
     {
       name: "Combat",
-      content: <></>,
+      content: <Combat />,
     },
     {
       name: "Hyperstructures",
-      content: <></>,
+      content: <Hyperstructures />,
     },
     {
       name: "Points",
-      content: <></>,
+      content: <Points />,
+    },
+    {
+      name: "Guilds",
+      content: <Guilds />,
     },
   ];
   const [activeSection, setActiveSection] = useState(sections[0]);
@@ -167,23 +177,6 @@ export const Banking = () => {
       <p className="my-5">
         Banks exist around the map. You can trade with them or deposit resources. You can even provide liquidity. If you
         have enough money you can create your own bank and set fees.
-      </p>
-    </div>
-  );
-};
-
-export const Combat = () => {
-  return (
-    <div>
-      <Headline>Armies</Headline>
-      <p className="my-5">
-        Armies can be created using your balance of Troops. Remember, everything is fungible so you must generate troops
-        in order to build an Army.
-      </p>
-
-      <h4>Protecting your Base</h4>
-      <p className="my-5">
-        To protect your Base you must build a defensive Army. This Army will help protect from raiders.
       </p>
     </div>
   );

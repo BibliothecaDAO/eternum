@@ -7,7 +7,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 
 export const ShardsMines = () => {
   const { setup } = useDojo();
-  const mines = useEntityQuery([HasValue(setup.components.Structure, { category: "ShardsMine" })]);
+  const mines = useEntityQuery([HasValue(setup.components.Structure, { category: "FragmentMine" })]);
 
   const minesPositions = useMemo(() => {
     return Array.from(mines).map((mine) => {

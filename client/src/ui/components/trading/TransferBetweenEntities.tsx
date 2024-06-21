@@ -205,14 +205,14 @@ const SelectEntityFromList = ({
           key={index}
           className={clsx(
             "flex w-full justify-between hover:bg-white/10 items-center  p-1  text-xs my-3 pl-2",
-            selectedEntityId === entity.entity_id && "border-order-brilliance/40 border",
+            selectedEntityId === entity.entity_id && " border-gold/10 border",
           )}
         >
           <h6 className="text-sm">{entity.name}</h6>
           <Button
             disabled={selectedEntityId === entity.entity_id || selectedCounterpartyId === entity.entity_id}
             size="md"
-            variant={"outline"}
+            variant={"default"}
             onClick={() => onSelect(entity.entity_id!)}
           >
             {selectedEntityId === entity.entity_id ? "Selected" : "Select"}
@@ -279,7 +279,7 @@ const SelectResources = ({
           ];
         }
         return (
-          <div key={id} className="flex items-center gap-3 w-64">
+          <div key={id} className="flex items-center gap-3 w-64 z-100">
             <ListSelect
               className="ml-2 rounded-md overflow-hidden"
               options={options}

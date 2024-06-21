@@ -44,7 +44,7 @@ export const StepOne = ({ onNext }: { onNext: () => void }) => {
         <div className="mx-auto flex mb-8">
           <img src="/images/eternum-logo.svg" className="w-48 mx-auto" alt="Eternum Logo" />
         </div>
-        <h2 className="">A world awaits you...</h2>
+        <h2 className="">It's time to build...</h2>
       </div>
       <div className="flex space-x-2 mt-8 justify-center">
         <Button size="md" className="mx-auto" variant="primary" onClick={onNext}>

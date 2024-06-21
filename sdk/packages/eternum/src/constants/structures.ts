@@ -5,7 +5,7 @@ export enum StructureType {
   Realm = 1,
   Hyperstructure = 2,
   Bank = 3,
-  ShardsMine = 4,
+  FragmentMine = 4,
   Settlement = 5,
 }
 
@@ -25,7 +25,7 @@ export enum BuildingType {
   Walls = 13,
   Storehouse = 14,
   Bank = 15,
-  ShardsMine = 16,
+  FragmentMine = 16,
 }
 export const MAX_BUILDING_TYPE = 14;
 
@@ -96,7 +96,7 @@ export const BuildingStringToEnum = {
   Walls: 13,
   Storehouse: 14,
   Bank: 15,
-  ShardsMine: 16,
+  FragmentMine: 16,
 };
 
 export function getBuildingType(name: BuildingType): CairoCustomEnum {
@@ -131,8 +131,8 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ Storehouse: {} });
     case BuildingType.Bank:
       return new CairoCustomEnum({ Bank: {} });
-    case BuildingType.ShardsMine:
-      return new CairoCustomEnum({ ShardsMine: {} });
+    case BuildingType.FragmentMine:
+      return new CairoCustomEnum({ FragmentMine: {} });
   }
 }
 
@@ -168,7 +168,7 @@ export function getProducedResource(name: BuildingType): number {
       return 0;
     case BuildingType.Bank:
       return 0;
-    case BuildingType.ShardsMine:
+    case BuildingType.FragmentMine:
       return 0;
   }
 }

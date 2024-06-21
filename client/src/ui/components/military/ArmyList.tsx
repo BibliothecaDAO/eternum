@@ -40,8 +40,8 @@ export const EntityArmyList = ({ entity_id }: any) => {
         headerPanel={
           <>
             {" "}
-            <p>
-              First you must create an Army then you can enlist troops into it. You can only have one defensive army.
+            <p className="px-3 py-2 bg-blueish/20 clip-angled-sm font-bold">
+              First you must create an Army then you can enlist troops to it. You can only have one defensive army.
             </p>
             <div className=" w-full flex justify-between my-4">
               <Button

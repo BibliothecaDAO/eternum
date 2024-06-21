@@ -26,7 +26,7 @@ const structureIcons: Record<string, JSX.Element> = {
   Realm: <Crown />,
   Bank: <Landmark />,
   Hyperstructure: <Sparkles />,
-  ShardsMine: <Pickaxe />,
+  FragmentMine: <Pickaxe />,
 };
 
 export const TopMiddleNavigation = () => {
@@ -41,7 +41,6 @@ export const TopMiddleNavigation = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
-
 
   // realms always first
   const structures = useMemo(() => {

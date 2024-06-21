@@ -21,22 +21,20 @@ export const ArmyChip = ({ army, extraButton }: { army: ArmyInfo; extraButton?: 
       ) : (
         <>
           <div className=" text-xl w-full  justify-between">
-            <div className="my-1 border-b border-gold/5 w-full py-2 flex text-xs justify-between uppercase font-bold">
-              {army.current && (
-                <div className="text-green">
-                  hp: {(BigInt(army.current.toString()) / BigInt(1000000n)).toLocaleString()} /
-                  {(BigInt(army.lifetime.toString()) / BigInt(1000000n)).toLocaleString()}
+            <div className="flex justify-between my-4">
+              <div className="flex flex-col justify-between ">
+                <div className="h4 text-2xl mb-2">{army.name}</div>
+                <div className="font-bold text-xs">
+                  {army.current && (
+                    <div className="text-green">
+                      HP: {(BigInt(army.current.toString()) / BigInt(1000000n)).toLocaleString()} /{" "}
+                      {(BigInt(army.lifetime.toString()) / BigInt(1000000n)).toLocaleString()}
+                    </div>
+                  )}
+                  <StaminaResource entityId={BigInt(army.entity_id)} />
                 </div>
-              )}
-
-              <StaminaResource entityId={BigInt(army.entity_id)} />
-            </div>
-
-            <div className="flex justify-between mb-4">
-              <div className="flex justify-between ">
-                <div className="h4 text-2xl">{army.name}</div>
               </div>
-              <div className="flex flex-col  justify-end gap-1">
+              <div className="flex flex-col   gap-1">
                 <ViewOnMapButton position={{ x: army.x, y: army.y }} />
                 <Button size="xs" onClick={() => setEditMode(!editMode)}>
                   Manage

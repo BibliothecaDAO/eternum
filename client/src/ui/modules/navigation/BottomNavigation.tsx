@@ -1,11 +1,8 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuests } from "@/hooks/helpers/useQuests";
-import { useStamina } from "@/hooks/helpers/useStamina";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { TroopMenuRow } from "@/ui/components/military/TroopChip";
 import CircleButton from "@/ui/elements/CircleButton";
 import { getEntityIdFromKeys, isRealmSelected } from "@/ui/utils/utils";
 import { useComponentValue } from "@dojoengine/react";
@@ -14,7 +11,7 @@ import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import { guilds, leaderboard, quests, settings } from "../../components/navigation/Config";
+import { guilds, leaderboard, quests } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
 
 export enum MenuEnum {
@@ -39,7 +36,6 @@ export const BottomNavigation = () => {
   } = useDojo();
 
   const [location, setLocation] = useLocation();
-  const { getMaxStaminaByEntityId } = useStamina();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const { realmEntityId } = useRealmStore();
@@ -47,10 +43,6 @@ export const BottomNavigation = () => {
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const toggleShowAllArmies = useUIStore((state) => state.toggleShowAllArmies);
   const showAllArmies = useUIStore((state) => state.showAllArmies);
-
-  const selectedEntityId = useUIStore((state) => state.selectedEntity);
-
-  const army = getArmyByEntityId(selectedEntityId?.id || BigInt("0"));
 
   const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
 
@@ -142,29 +134,6 @@ export const BottomNavigation = () => {
       className="flex justify-center flex-wrap first-step relative w-full duration-300 transition-all "
     >
       <div className="">
-        {selectedEntityId && army && (
-          <motion.div
-            variants={slideUp}
-            initial="hidden"
-            animate="visible"
-            className="bg-brown h-32 flex gap-4 text-gold p-3 ornate-borders-sm w-auto clip-angled-sm"
-          >
-            <div className="flex">
-              <img src="./images/avatars/1.png" className="w-24 h-24" alt="" />
-              <ProgressBar
-                fillColor="yellow"
-                totalValue={getMaxStaminaByEntityId(selectedEntityId.id)}
-                entityId={selectedEntityId.id}
-              />
-              <ProgressBar fillColor="green" totalValue={Number(army?.lifetime)} filledValue={Number(army?.current)} />
-            </div>
-            <div>
-              <div className="text-xl">{army.name}</div>
-              <TroopMenuRow army={army} />
-            </div>
-          </motion.div>
-        )}
-
         <div className="flex py-2 sixth-step  px-10 gap-1">
           {secondaryNavigation.map((a, index) => (
             <div key={index}>{a.button}</div>
@@ -172,28 +141,5 @@ export const BottomNavigation = () => {
         </div>
       </div>
     </motion.div>
-  );
-};
-
-interface ProgressBarProps {
-  fillColor: string;
-  totalValue: number;
-  entityId?: bigint;
-  filledValue?: number;
-}
-
-const ProgressBar: React.FC<ProgressBarProps> = ({ fillColor, totalValue, entityId, filledValue }) => {
-  const { useStaminaByEntityId } = useStamina();
-  const stamina = useStaminaByEntityId({ travelingEntityId: entityId || 0n });
-
-  const filledPercentage = ((stamina?.amount || filledValue || 0) / totalValue) * 100;
-
-  return (
-    <div className="relative h-24 w-2 bg-gray-300">
-      <div
-        className="absolute bottom-0 w-full"
-        style={{ height: `${filledPercentage}%`, backgroundColor: fillColor }}
-      ></div>
-    </div>
   );
 };

@@ -5,6 +5,8 @@ import { Check, ShieldQuestion } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
 import { quests as QuestOSWindow } from "../../components/navigation/Config";
+import { QUEST_RESOURCES_SCALED } from "@bibliothecadao/eternum";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
 
 interface Quest {
   name: string;
@@ -76,7 +78,7 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
   };
 
   return !quest.claimed ? (
-    <div className={`p-4  text-gold clip-angled-sm  ${quest.completed ? "bg-green/5" : " bg-green/40 "}`}>
+    <div className={`p-4  text-gold clip-angled-sm  ${quest.completed ? "bg-green/5" : " bg-green/30 "}`}>
       <div className="flex justify-between">
         <h5 className="mb-3 font-bold">{quest.name}</h5>
         {quest.completed ? <Check /> : <ShieldQuestion />}
@@ -84,7 +86,20 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
 
       <p className="text-xl mb-4">{quest.description}</p>
 
-      <div className="mt-1 grid grid-cols-3 gap-2">
+      <div className="w-full">
+        <div className="mb-1 font-bold">Quest Rewards</div>
+        {quest.prizes.map((a) => (
+          <div className="grid grid-cols-3 gap-3">
+            {QUEST_RESOURCES_SCALED[a.id].map((b) => (
+              <div className="grid gap-3">
+                {" "}
+                <ResourceCost resourceId={b.resource} amount={b.amount} />{" "}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="my-2 grid grid-cols-3 gap-2">
         {quest.completed && (
           <Button isLoading={isLoading} variant="primary" onClick={() => handleAllClaims()}>
             {"Claim Rewards"}

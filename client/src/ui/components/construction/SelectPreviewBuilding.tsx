@@ -37,7 +37,7 @@ const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 export const BUILDING_IMAGES_PATH = {
   [BuildingType.Castle]: "",
   [BuildingType.Bank]: "",
-  [BuildingType.ShardsMine]: "",
+  [BuildingType.FragmentMine]: "",
   [BuildingType.Resource]: BUILD_IMAGES_PREFIX + "mine.png",
   [BuildingType.Farm]: BUILD_IMAGES_PREFIX + "farm.png",
   [BuildingType.FishingVillage]: BUILD_IMAGES_PREFIX + "fishing_village.png",
@@ -74,7 +74,7 @@ export const SelectPreviewBuildingMenu = () => {
       key !== "Resource" &&
       key !== "Castle" &&
       key !== "Bank" &&
-      key !== "ShardsMine" &&
+      key !== "FragmentMine" &&
       key !== "None" &&
       key !== "DonkeyFarm" &&
       key !== "TradingPost" &&
@@ -301,9 +301,9 @@ export const BuildingCard = ({
       }}
       onClick={onClick}
       className={clsx(
-        " border-transparent hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm hover:border-gradient hover:border-2",
+        "hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm hover:border-gradient border border-transparent",
         {
-          "!border-lightest border-gradient border-2": active,
+          "!border-lightest border-gradient border": active,
         },
       )}
     >

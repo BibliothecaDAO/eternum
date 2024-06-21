@@ -1,23 +1,29 @@
 import { Headline } from "@/ui/elements/Headline";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 export const TheWorld = () => {
   const concepts = [
     {
-      name: "It's time to build the hyperstructures",
+      name: "Awakening the Ancients",
+      icon: <ResourceIcon size="xl" resource="Ancient Fragment" />,
       content:
-        "The world is a vast place, and you are a small part of it. You must build your empire and expand your influence.",
+        "Long before recorded history, the Ancients constructed vast hyperstructures to harness the energies of the cosmos. These colossal edifices, buried and forgotten, hold the key to untold power. As the world awakens, it becomes clear that the fragments of these hyperstructures are scattered across the land, each containing a piece of their ancient might. ",
+    },
+    {
+      name: "Time to Build",
+      content:
+        "You, a visionary leader, must embark on a quest to gather these fragments. Through exploration, cunning, and strength, you will uncover these relics of the past. Each fragment you collect brings you closer to rebuilding the magnificent hyperstructures in their entirety.",
     },
   ];
 
   return (
     <div>
-      <Headline>Key Concepts</Headline>
-
       {concepts.map((concept) => (
         <div key={concept.name}>
+          {concept?.icon}
           <h2>{concept.name}</h2>
-          <p className="text-xl">{concept.content}</p>
+          <p>{concept.content}</p>
         </div>
       ))}
     </div>

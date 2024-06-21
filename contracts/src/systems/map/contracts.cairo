@@ -181,7 +181,7 @@ mod map_systems {
                             entity_id: entity_id.into(), entity_owner_id: entity_id.into()
                         },
                         Structure {
-                            entity_id: entity_id.into(), category: StructureCategory::ShardsMine
+                            entity_id: entity_id.into(), category: StructureCategory::FragmentMine
                         },
                         StructureCount { coord, count: 1 },
                         Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, },
