@@ -256,7 +256,7 @@ export function Flags(props) {
               >
                 <primitive object={hitBoxInstances[index]} renderOrder={3} />
               </group>
-              <group onClick={(e) => clickHandler(e, index)}>
+              <group>
                 <primitive object={woodInstance} renderOrder={3} />
                 <primitive object={flagInstances[index]} renderOrder={3} />
               </group>
