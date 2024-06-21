@@ -5,10 +5,12 @@ import { BuildingType, QuestType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useMemo } from "react";
-import { useEntities } from "./useEntities";
+import { useEffect, useMemo } from "react";
 
-export enum QuestNames {
+import { create } from "zustand";
+import { useEntities } from "../helpers/useEntities";
+
+export enum QuestName {
   ClaimFood = "Claim Food",
   BuildFarm = "Build a Farm",
   BuildResource = "Build a Resource",
@@ -16,16 +18,60 @@ export enum QuestNames {
   CreateArmy = "Create an Army",
 }
 
+export interface Quest {
+  name: string;
+  description: string;
+  steps: Step[];
+  completed?: boolean;
+  claimed?: boolean;
+  prizes: Prize[];
+}
+
+interface Step {
+  description: string;
+  completed: boolean;
+}
+
+interface Prize {
+  id: number;
+  title: string;
+}
+
+export interface QuestStore {
+  quests: Quest[] | undefined;
+  setQuests: (quests: Quest[] | undefined) => void;
+  currentQuest: Quest | undefined;
+  setCurrentQuest: (currentQuest: Quest | undefined) => void;
+  claimableQuestsLength: number;
+  setClaimableQuestsLength: (claimableQuestsLength: number) => void;
+}
+
+export const useQuestStore = create<QuestStore>((set) => {
+  return {
+    quests: undefined,
+    setQuests: (quests: Quest[] | undefined) => set({ quests }),
+    currentQuest: undefined,
+    setCurrentQuest: (currentQuest: Quest | undefined) => set({ currentQuest }),
+    claimableQuestsLength: 0,
+    setClaimableQuestsLength: (claimableQuestsLength: number) => set({ claimableQuestsLength }),
+  };
+});
+
 export const useQuests = () => {
   const {
     setup: {
       components: { BuildingQuantityv2, HasClaimedStartingResources },
     },
+    account: { account },
   } = useDojo();
 
-  const {playerRealms} = useEntities();
+  const setQuests = useQuestStore((state) => state.setQuests);
+  const setCurrentQuest = useQuestStore((state) => state.setCurrentQuest);
+  const setClaimableQuestsLength = useQuestStore((state) => state.setClaimableQuestsLength);
+
+  const { playerRealms } = useEntities();
   const entityId = playerRealms()[0]?.entity_id;
-  
+
   const farms =
     useComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(BuildingType.Farm)]))
       ?.value || 0;
@@ -38,10 +84,10 @@ export const useQuests = () => {
 
   const { entityArmies } = useEntityArmies({ entity_id: entityId || BigInt("0") });
 
-  const quests = useMemo(() => {
+  const quests: Quest[] = useMemo(() => {
     const updatedQuests = [
       {
-        name: QuestNames.ClaimFood,
+        name: QuestName.ClaimFood,
         description:
           "A gift from the gods to start your journey. Take a look at your resources balance in the resources menu.",
         completed: true,
@@ -49,7 +95,7 @@ export const useQuests = () => {
         prizes: [{ id: QuestType.Food, title: "Resources Claim" }],
       },
       {
-        name: QuestNames.BuildFarm,
+        name: QuestName.BuildFarm,
         description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm.",
         completed: farms > 0,
         steps: [],
@@ -63,21 +109,21 @@ export const useQuests = () => {
         ],
       },
       {
-        name: QuestNames.BuildResource,
+        name: QuestName.BuildResource,
         description: "Eternum thrives on resources. Construct resource facilities to harvest them efficiently.",
         completed: resource > 0,
         steps: [],
         prizes: [{ id: QuestType.Trade, title: "Donkeys and Lords" }],
       },
       {
-        name: QuestNames.CreateTrade,
+        name: QuestName.CreateTrade,
         description: "Trading is the lifeblood of Eternum. Create a trade to start your economy.",
         completed: orders.length > 0,
         steps: [],
         prizes: [{ id: QuestType.Military, title: "Claim Starting Army" }],
       },
       {
-        name: QuestNames.CreateArmy,
+        name: QuestName.CreateArmy,
         description: "Conquest is fulfilling. Create an army to conquer your enemies.",
         completed: entityArmies.length > 0 && armyHasTroops(entityArmies),
         steps: [
@@ -101,25 +147,21 @@ export const useQuests = () => {
       });
       return { ...quest, claimed };
     });
-  }, [farms, resource, orders, entityArmies, HasClaimedStartingResources, entityId]);
+  }, [farms, resource, orders, entityArmies, HasClaimedStartingResources, entityId, account.address]);
 
-  const claimableQuests = useMemo(() => {
-    return quests.filter((quest) => !quest.claimed);
-  }, [quests, farms, resource, orders, entityArmies]);
+  useEffect(() => {
+    setQuests(quests);
+  }, []);
 
-  const currentQuest = useMemo(() => {
-    return quests.find((quest) => !quest.claimed);
+  useEffect(() => {
+    setQuests(quests);
+
+    const claimableQuestsLenght = quests.filter((quest) => !quest.claimed).length;
+    setClaimableQuestsLength(claimableQuestsLenght);
+
+    const currentQuest = quests.find((quest) => !quest.claimed);
+    setCurrentQuest(currentQuest);
   }, [quests]);
-
-  return {
-    quests,
-    hasFarm: farms > 0,
-    hasResource: resource > 0,
-    hasTrade: orders.length > 0,
-    hasArmy: entityArmies.length > 0,
-    claimableQuests,
-    currentQuest,
-  };
 };
 
 const armyHasTroops = (entityArmies: ArmyInfo[]) => {

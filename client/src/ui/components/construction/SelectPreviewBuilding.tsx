@@ -30,7 +30,7 @@ import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import { QuestNames, useQuests } from "@/hooks/helpers/useQuests";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
 import CircleButton from "@/ui/elements/CircleButton";
 import { quests as questsPopup } from "@/ui/components/navigation/Config";
@@ -70,12 +70,11 @@ export const SelectPreviewBuildingMenu = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
 
-  const { toggleModal } = useModal();
-
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { currentQuest } = useQuests();
+  const currentQuest = useQuestStore((state) => state.currentQuest);
 
+  const { toggleModal } = useModal();
   const { realm } = useGetRealm(realmEntityId);
 
   const { getBalance } = useResourceBalance();
@@ -129,7 +128,7 @@ export const SelectPreviewBuildingMenu = () => {
             <div
               className={clsx({
                 "animate-pulse  border-b border-gold":
-                  selectedTab !== 0 && currentQuest?.name === QuestNames.BuildResource,
+                  selectedTab !== 0 && currentQuest?.name === QuestName.BuildResource,
               })}
             >
               Resources
@@ -153,7 +152,7 @@ export const SelectPreviewBuildingMenu = () => {
               return (
                 <BuildingCard
                   className={clsx({
-                    hidden: currentQuest?.name === QuestNames.BuildFarm,
+                    hidden: currentQuest?.name === QuestName.BuildFarm,
                   })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
@@ -210,9 +209,9 @@ export const SelectPreviewBuildingMenu = () => {
                     className={clsx(
                       {
                         hidden:
-                          (!isFarm && currentQuest?.name === QuestNames.BuildFarm) ||
-                          currentQuest?.name === QuestNames.BuildResource,
-                        "animate-pulse": isFarm && currentQuest?.name === QuestNames.BuildFarm,
+                          (!isFarm && currentQuest?.name === QuestName.BuildFarm) ||
+                          currentQuest?.name === QuestName.BuildResource,
+                        "animate-pulse": isFarm && currentQuest?.name === QuestName.BuildFarm,
                       },
                       `${buildingSelectorClass}`,
                     )}
@@ -272,7 +271,7 @@ export const SelectPreviewBuildingMenu = () => {
                   <BuildingCard
                     className={clsx(`${buildingSelectorClass}`, {
                       hidden:
-                        currentQuest?.name === QuestNames.BuildFarm || currentQuest?.name === QuestNames.BuildResource,
+                        currentQuest?.name === QuestName.BuildFarm || currentQuest?.name === QuestName.BuildResource,
                     })}
                     key={index}
                     buildingId={building}

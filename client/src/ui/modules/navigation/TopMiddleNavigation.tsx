@@ -14,7 +14,7 @@ import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
 import { motion } from "framer-motion";
-import { useQuests } from "@/hooks/helpers/useQuests";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -43,7 +43,7 @@ export const TopMiddleNavigation = () => {
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
 
-  const { claimableQuests } = useQuests();
+  const claimableQuestsLength = useQuestStore((state) => state.claimableQuestsLength);
 
   // realms always first
   const structures = useMemo(() => {
@@ -109,7 +109,7 @@ export const TopMiddleNavigation = () => {
           </Select>
         </div>
         <Button
-          disabled={claimableQuests.length > 0 }
+          disabled={claimableQuestsLength > 0}
           variant="primary"
           onClick={() => {
             if (location !== "/map") {

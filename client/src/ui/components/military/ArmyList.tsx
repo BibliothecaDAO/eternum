@@ -9,15 +9,13 @@ import Button from "@/ui/elements/Button";
 import { ArmyViewCard } from "./ArmyViewCard";
 import { DepositResources } from "../resources/DepositResources";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
-import { QuestNames, useQuests } from "@/hooks/helpers/useQuests";
-import useRealmStore from "@/hooks/store/useRealmStore";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import clsx from "clsx";
 
 export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
 
-  const { realmEntityId } = useRealmStore();
-  const { currentQuest } = useQuests();
+  const currentQuest = useQuestStore((state) => state.currentQuest);
   
   const {
     account: { account },
@@ -56,7 +54,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
                 onClick={() => handleCreateArmy(false)}
                 disabled={isLoading}
                 className={clsx({
-                  "animate-pulse": currentQuest?.name === QuestNames.CreateArmy && !currentQuest.steps[0].completed,
+                  "animate-pulse": currentQuest?.name === QuestName.CreateArmy && !currentQuest.steps[0].completed,
                 })}
               >
                 Create Army
@@ -86,7 +84,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
           </React.Fragment>
         )}
         questing={
-          currentQuest?.name === QuestNames.CreateArmy && currentQuest.steps[0].completed && !currentQuest.steps[1].completed
+          currentQuest?.name === QuestName.CreateArmy && currentQuest.steps[0].completed && !currentQuest.steps[1].completed
         }
       />
     </>

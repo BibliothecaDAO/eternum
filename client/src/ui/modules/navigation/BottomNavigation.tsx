@@ -1,11 +1,11 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useQuests } from "@/hooks/helpers/useQuests";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { useStamina } from "@/hooks/helpers/useStamina";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import CircleButton from "@/ui/elements/CircleButton";
-import { getEntityIdFromKeys, isRealmSelected } from "@/ui/utils/utils";
-import { useComponentValue } from "@dojoengine/react";
+import { isRealmSelected } from "@/ui/utils/utils";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
@@ -30,12 +30,6 @@ export enum MenuEnum {
 }
 
 export const BottomNavigation = () => {
-  const {
-    setup: {
-      components: { Population },
-    },
-  } = useDojo();
-
   const [location, setLocation] = useLocation();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -51,9 +45,8 @@ export const BottomNavigation = () => {
 
   const army = getArmyByEntityId(selectedEntityId?.id || BigInt("0"));
 
-  const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
-
-  const { claimableQuests, currentQuest } = useQuests();
+  const currentQuest = useQuestStore((state) => state.currentQuest);
+  const claimableQuestsLength = useQuestStore((state) => state.claimableQuestsLength);
 
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
@@ -71,7 +64,7 @@ export const BottomNavigation = () => {
               size="lg"
               onClick={() => togglePopup(quests)}
               className="forth-step"
-              notification={isRealmSelected(realmEntityId, structures) ? claimableQuests?.length : undefined}
+              notification={isRealmSelected(realmEntityId, structures) ? claimableQuestsLength : undefined}
               notificationLocation={"topleft"}
               disabled={!isRealmSelected(realmEntityId, structures)}
             />
@@ -94,7 +87,7 @@ export const BottomNavigation = () => {
             active={isPopupOpen(leaderboard)}
             size="lg"
             onClick={() => togglePopup(leaderboard)}
-            className={clsx({ hidden: claimableQuests?.length > 0 })}
+            className={clsx({ hidden: claimableQuestsLength > 0 })}
           />
         ),
       },
@@ -120,12 +113,12 @@ export const BottomNavigation = () => {
             active={isPopupOpen(guilds)}
             size="lg"
             onClick={() => togglePopup(guilds)}
-            className={clsx({ hidden: claimableQuests?.length > 0 })}
+            className={clsx({ hidden: claimableQuestsLength > 0 })}
           />
         ),
       },
     ];
-  }, [claimableQuests]);
+  }, [claimableQuestsLength, currentQuest]);
 
   const slideUp = {
     hidden: { y: "100%", transition: { duration: 0.3 } },

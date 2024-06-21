@@ -17,7 +17,7 @@ import { BASE_POPULATION_CAPACITY, BuildingType, STOREHOUSE_CAPACITY } from "@bi
 import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
-import { QuestNames, useQuests } from "@/hooks/helpers/useQuests";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import clsx from "clsx";
 import { quests as questsPopup } from "../../components/navigation/Config";
 import { ArrowRight } from "lucide-react";
@@ -42,7 +42,9 @@ export const RightNavigationModule = () => {
   const openedPopups = useUIStore((state) => state.openedPopups);
 
   const { realmEntityId } = useRealmStore();
-  const { quests, currentQuest } = useQuests();
+
+  const quests = useQuestStore((state) => state.quests);
+  const currentQuest = useQuestStore((state) => state.currentQuest);
 
   const { getAllArrivalsWithResources } = useResources();
 
@@ -74,7 +76,7 @@ export const RightNavigationModule = () => {
           <CircleButton
             className={clsx("resources-selector", {
               "animate-pulse":
-                currentQuest?.name === QuestNames.ClaimFood && !currentQuest.claimed && isPopupOpen(questsPopup),
+                currentQuest?.name === QuestName.ClaimFood && !currentQuest.claimed && isPopupOpen(questsPopup),
             })}
             image={BuildingThumbs.resources}
             size="xl"
@@ -92,7 +94,7 @@ export const RightNavigationModule = () => {
         name: "resourceArrivals",
         button: (
           <CircleButton
-            className={clsx({ hidden: !quests.find((quest) => quest.name === QuestNames.CreateTrade)?.claimed })}
+            className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.CreateTrade)?.claimed })}
             image={BuildingThumbs.trade}
             tooltipLocation="top"
             label={"Resource Arrivals"}
@@ -114,8 +116,8 @@ export const RightNavigationModule = () => {
           <CircleButton
             className={clsx("trade-selector", {
               "animate-pulse":
-                currentQuest?.name === QuestNames.CreateTrade && !currentQuest.completed && isPopupOpen(questsPopup),
-              hidden: !quests.find((quest) => quest.name === QuestNames.BuildResource)?.claimed,
+                currentQuest?.name === QuestName.CreateTrade && !currentQuest.completed && isPopupOpen(questsPopup),
+              hidden: !quests?.find((quest) => quest.name === QuestName.BuildResource)?.claimed,
             })}
             image={BuildingThumbs.scale}
             tooltipLocation="top"
@@ -133,7 +135,7 @@ export const RightNavigationModule = () => {
         button: (
           <CircleButton
             className={clsx("banking-selector", {
-              hidden: !quests.find((quest) => quest.name === QuestNames.CreateArmy)?.claimed,
+              hidden: !quests?.find((quest) => quest.name === QuestName.CreateArmy)?.claimed,
             })}
             image={BuildingThumbs.banks}
             tooltipLocation="top"

@@ -25,9 +25,9 @@ import { SettingsWindow } from "../settings/Settings";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import { QuestNames, useQuests } from "@/hooks/helpers/useQuests";
 import clsx from "clsx";
 import { quests as questsPopup } from "../../components/navigation/Config";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -65,11 +65,12 @@ export const LeftNavigationModule = () => {
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const openedPopups = useUIStore((state) => state.openedPopups);
 
+  const quests = useQuestStore((state) => state.quests);
+  const currentQuest = useQuestStore((state) => state.currentQuest);
+
   const { realmEntityId } = useRealmStore();
   const { getStamina } = useStamina();
   const { entityArmies } = useEntityArmies({ entity_id: realmEntityId });
-
-  const { quests, currentQuest } = useQuests();
 
   const [location, setLocation] = useLocation();
 
@@ -88,7 +89,7 @@ export const LeftNavigationModule = () => {
         name: "entityDetails",
         button: (
           <CircleButton
-            className={clsx({ hidden: !quests.find((quest) => quest.name === QuestNames.CreateArmy)?.claimed })}
+            className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.CreateArmy)?.claimed })}
             image={BuildingThumbs.hex}
             tooltipLocation="top"
             label={"Details"}
@@ -108,10 +109,10 @@ export const LeftNavigationModule = () => {
             className={clsx("military-selector", {
               "animate-pulse":
                 view != View.ConstructionView &&
-                currentQuest?.name === QuestNames.CreateArmy &&
+                currentQuest?.name === QuestName.CreateArmy &&
                 !currentQuest.completed &&
                 isPopupOpen(questsPopup),
-              hidden: !quests.find((quest) => quest.name === QuestNames.CreateTrade)?.claimed,
+              hidden: !quests?.find((quest) => quest.name === QuestName.CreateTrade)?.claimed,
             })}
             image={BuildingThumbs.military}
             tooltipLocation="top"
@@ -134,10 +135,10 @@ export const LeftNavigationModule = () => {
             className={clsx("construction-selector", {
               "animate-pulse":
                 view != View.ConstructionView &&
-                (currentQuest?.name === QuestNames.BuildFarm || currentQuest?.name === QuestNames.BuildResource) &&
+                (currentQuest?.name === QuestName.BuildFarm || currentQuest?.name === QuestName.BuildResource) &&
                 !currentQuest.completed &&
                 isPopupOpen(questsPopup),
-              hidden: quests && !quests.find((quest) => quest.name === QuestNames.ClaimFood)?.claimed,
+              hidden: quests && !quests.find((quest) => quest.name === QuestName.ClaimFood)?.claimed,
             })}
             image={BuildingThumbs.construction}
             tooltipLocation="top"
@@ -156,7 +157,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             className={clsx("worldStructures-selector", {
-              hidden: !quests.find((quest) => quest.name === QuestNames.CreateArmy)?.claimed,
+              hidden: !quests?.find((quest) => quest.name === QuestName.CreateArmy)?.claimed,
             })}
             image={BuildingThumbs.worldStructures}
             tooltipLocation="top"

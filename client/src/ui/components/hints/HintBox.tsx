@@ -1,29 +1,10 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useQuests } from "@/hooks/helpers/useQuests";
+import { Quest, useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
 import { Check, ShieldQuestion } from "lucide-react";
 import { useState, useEffect } from "react";
 import { QUEST_RESOURCES_SCALED } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-
-interface Quest {
-  name: string;
-  description: string;
-  steps: Step[];
-  completed?: boolean;
-  claimed?: boolean;
-  prizes: Prize[];
-}
-
-interface Step {
-  description: string;
-  completed: boolean;
-}
-
-interface Prize {
-  id: number;
-  title: string;
-}
 
 export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint }) => {
   const {
@@ -132,8 +113,9 @@ const EndGameInfo = () => {
     </div>
   );
 };
+
 export const QuestList = ({ entityId }: { entityId: bigint | undefined }) => {
-  const { currentQuest } = useQuests();
+  const currentQuest = useQuestStore((state) => state.currentQuest);
 
   return (
     <div className="p-3 flex flex-col gap-2">
