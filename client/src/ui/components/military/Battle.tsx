@@ -7,7 +7,7 @@ import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { BuildingType, Resource } from "@bibliothecadao/eternum";
+import { BattleSide, BuildingType, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
 import { Subscription } from "rxjs";
 import { BUILDING_IMAGES_PATH } from "../construction/SelectPreviewBuilding";
@@ -74,7 +74,6 @@ export const PillageHistory = ({
         if (event) {
           const newPillage = formatPillageEvent(event);
           // todo: add battle sound
-          // Check if component is still mounted
           setPillageHistory((prev) => [newPillage, ...prev]);
         }
       });
@@ -90,7 +89,7 @@ export const PillageHistory = ({
   }, [structureId, attackerRealmEntityId, eventUpdates]);
 
   const isPillageSucess = (history: any) => {
-    return history.pillagedResources.length > 0 || history.destroyedBuildingType !== "None";
+    return history.winner === BattleSide[BattleSide.Attack];
   };
 
   return (
@@ -160,6 +159,7 @@ const formatPillageEvent = (event: Event) => {
   const owner = BigInt(event.keys[4]);
 
   const winner = Number(event.data[0]);
+
   const pillagedResources: Resource[] = [];
   for (let i = 0; i < Number(event.data[1]); i++) {
     pillagedResources.push({ resourceId: Number(event.data[2 + i * 2]), amount: Number(event.data[3 + i * 2]) });
@@ -171,7 +171,7 @@ const formatPillageEvent = (event: Event) => {
     attackerRealmEntityId,
     armyId,
     owner,
-    winner,
+    winner: BattleSide[winner],
     pillagedResources,
     destroyedBuildingType,
   };
