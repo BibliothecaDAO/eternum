@@ -11,6 +11,8 @@ import { ArmyFlag } from "./ArmyFlag";
 import { CombatLabel } from "./CombatLabel";
 import { useArmyAnimation } from "./useArmyAnimation";
 import { arePropsEqual } from "./utils";
+import { Billboard, Image, useTexture } from "@react-three/drei";
+import * as THREE from "three";
 
 type ArmyProps = {
   army: ArmyInfo;
@@ -22,6 +24,12 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
       components: { Structure, Position },
     },
   } = useDojo();
+
+  const armyLabel = useTexture("/textures/army_label.png", (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearFilter;
+  });
 
   const armyPosition = { x: army.x, y: army.y };
   const selectedEntity = useUIStore((state) => state.selectedEntity);
@@ -61,6 +69,9 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
         <ArmyFlag visible={army.isMine} rotationY={deterministicRotation} position={initialPos} />
         {showCombatLabel && <CombatLabel visible={isSelected} />}
         <WarriorModel army={army} />
+        <Billboard>
+          <Image texture={armyLabel} scale={3.5} position={[0, 5, 0]} side={THREE.DoubleSide} transparent />
+        </Billboard>
       </group>
       {isSelected && <UnitHighlight position={{ x: army.x, y: army.y }} />}
     </>

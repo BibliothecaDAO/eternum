@@ -96,7 +96,7 @@ const HexceptionLight = () => {
       step: 0.01,
     },
     intensity: {
-      value: 1.65,
+      value: 8,
       min: 0,
       max: 10,
       step: 0.01,
