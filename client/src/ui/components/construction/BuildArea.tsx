@@ -66,7 +66,10 @@ const BuildingPreview = () => {
     originalModels[modelIndex].traverse((node) => {
       if (node instanceof THREE.Mesh) {
         node.material = node.material.clone();
-        node.material.color.set(newColor);
+        const color = new THREE.Color(newColor);
+        color.multiplyScalar(5);
+        node.material.color.set(color);
+        //node.material.emissive = color;
         node.material.transparent = true;
         node.material.opacity = 0.8;
       }

@@ -78,19 +78,20 @@ export function InstancedCastles() {
     instancedMesh1.frustumCulled = true;
     instancedMesh2.computeBoundingSphere();
     instancedMesh2.frustumCulled = true;
-    return [instancedMesh1, instancedMesh2, positionsBuffer, colorsBuffer];
+    const pointsGeometry = new THREE.BufferGeometry();
+    pointsGeometry.setAttribute("position", new THREE.BufferAttribute(positionsBuffer, 3));
+    pointsGeometry.setAttribute("color", new THREE.BufferAttribute(colorsBuffer, 3));
+    const pointsObjects = new THREE.Points(pointsGeometry, particlesMaterial);
+    pointsObjects.frustumCulled = true;
+    pointsObjects.renderOrder = 3;
+    return [instancedMesh1, instancedMesh2, pointsObjects];
   }, [existingStructures]);
 
   return (
     <>
       <primitive object={meshes[0]} renderOrder={1} />
       <primitive object={meshes[1]} />
-      <Points
-        positions={meshes[2] as Float32Array}
-        colors={meshes[3] as Float32Array}
-        material={particlesMaterial}
-        renderOrder={3}
-      />
+      <primitive object={meshes[2]} />
     </>
   );
 }
