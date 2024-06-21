@@ -35,7 +35,7 @@ export function WarriorModel({ army }: WarriorModelProps) {
   const handlePointerEnter = () => {
     model.traverse((child: any) => {
       if (child.isMesh) {
-        child.material.color.set("yellow"); // Change color to yellow on hover
+        child.material.color.set(2, 2, 1); // Change color to yellow on hover
       }
     });
   };

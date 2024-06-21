@@ -15,9 +15,9 @@ const PARTICLES_COUNT = 30;
 const PARTICLE_SPEED = 15;
 const PARTICLE_RESET_Y = 5;
 const PARTICLE_START_Y = -5;
-const LIGHT_COLOR = new THREE.Color(0.5, 1.5, 0.5);
-const AURA_COLOR = new THREE.Color(1.5, 3, 1.5);
-const PARICLE_COLOR = new THREE.Color(1.5, 30, 1.5);
+const LIGHT_COLOR = new THREE.Color(2, 2, 1);
+const AURA_COLOR = new THREE.Color(2, 2, 1);
+const PARICLE_COLOR = new THREE.Color(15, 12, 2);
 
 export const UnitHighlight = ({ position }: UnitHighlightProps) => {
   const imageRef = useRef<any>();
@@ -63,12 +63,12 @@ export const UnitHighlight = ({ position }: UnitHighlightProps) => {
         url="/textures/aura.png"
         rotation={[-Math.PI / 2, 0, 0]}
         renderOrder={1}
-        color={LIGHT_COLOR}
+        color={AURA_COLOR}
       />
       <Points limit={PARTICLES_COUNT} range={PARTICLES_COUNT} positions={pointsPositions}>
         <pointsMaterial color={PARICLE_COLOR} size={1} />
       </Points>
-      <pointLight position={[0, 1.5, 0]} power={10} color={AURA_COLOR} />
+      <pointLight position={[0, 1.5, 0]} power={50} color={LIGHT_COLOR} />
     </group>
   );
 };
