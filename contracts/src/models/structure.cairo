@@ -31,7 +31,7 @@ enum StructureCategory {
     Realm,
     Hyperstructure,
     Bank,
-    ShardsMine
+    FragmentMine
 }
 
 impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
@@ -41,7 +41,7 @@ impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
             StructureCategory::Realm => 1,
             StructureCategory::Hyperstructure => 2,
             StructureCategory::Bank => 3,
-            StructureCategory::ShardsMine => 4,
+            StructureCategory::FragmentMine => 4,
         }
     }
 }

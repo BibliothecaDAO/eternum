@@ -10,7 +10,7 @@ export const useShardMines = () => {
     },
   } = useDojo();
 
-  const shardMines = useEntityQuery([Has(Structure), HasValue(Structure, { category: "ShardsMine" })]).map(
+  const shardMines = useEntityQuery([Has(Structure), HasValue(Structure, { category: "FragmentMine" })]).map(
     (shardMineEntityId) => {
       const shardMine = getComponentValue(Structure, shardMineEntityId);
       const position = getComponentValue(Position, shardMineEntityId);

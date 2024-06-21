@@ -47,15 +47,18 @@ export const MarketResource = ({
   return (
     <div
       onClick={() => onClick(resource.id)}
-      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer flex gap-4 hover:bg-gold/10  hover:clip-angled-sm ${
+      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer flex gap-4 hover:bg-gold/10  hover:clip-angled-sm group ${
         active ? "bg-white/10  clip-angled-sm" : ""
       }`}
     >
       <ResourceIcon size="sm" resource={resource.trait} withTooltip={false} />
       <div className="truncate">{resource.trait}</div>
 
-      <div className="ml-auto flex gap-3">
-        {currencyFormat(balance ? Number(balance) : 0, 0)}
+      <div className="text-xs text-gold/70 group-hover:text-green self-center">
+        [{currencyFormat(balance ? Number(balance) : 0, 0)}]
+      </div>
+
+      <div className="ml-auto flex gap-6 w-2/6 justify-between font-bold">
         <div className="text-green">{bidPrice}</div>
         <div className="text-red">{askPrice}</div>
       </div>
@@ -114,7 +117,7 @@ export const MarketOrders = ({
     <div className=" h-full flex flex-col gap-8">
       {/* Market Price */}
       <div
-        className={`text-xl flex clip-angled-sm font-bold  justify-between p-3 px-8 ${
+        className={`text-xl flex clip-angled-sm font-bold  justify-between p-3 px-8 border-gold/10 border ${
           !isBuy ? "bg-green/20" : "bg-red/20"
         }`}
       >
@@ -131,7 +134,7 @@ export const MarketOrders = ({
         </div>
       </div>
 
-      <div className="p-4 bg-white/10  flex-col flex gap-1 clip-angled-sm flex-grow">
+      <div className="p-4 bg-white/10  flex-col flex gap-1 clip-angled-sm flex-grow border-gold/10 border">
         <OrderRowHeader isBuy={isBuy} resourceId={resourceId} />
 
         <div className="flex-col flex gap-1 flex-grow overflow-y-auto">
@@ -148,7 +151,7 @@ export const MarketOrders = ({
 
 export const OrderRowHeader = ({ isBuy, resourceId }: { isBuy: boolean; resourceId: number }) => {
   return (
-    <div className="grid grid-cols-4 gap-4 p-2 uppercase text-xs font-bold">
+    <div className="grid grid-cols-4 gap-4 p-2 uppercase text-xs font-bold border-gold/10 border">
       <div>quantity</div>
       <div>distance</div>
       <div className="flex">
@@ -213,7 +216,7 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
   return (
     <div
       key={offer.tradeId}
-      className={`flex flex-col p-1  px-2 clip-angled-sm hover:bg-white/15 duration-150 ${
+      className={`flex flex-col p-1  px-2 clip-angled-sm hover:bg-white/15 duration-150 border-gold/10 border ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
       }`}
     >
@@ -347,7 +350,7 @@ export const OrderCreation = ({
   }, [donkeyBalance, donkeysNeeded]);
 
   return (
-    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto clip-angled-sm bg-white/10">
+    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto clip-angled-sm bg-white/10 border-gold/10 border">
       <div className="flex w-full gap-8">
         <div className="w-1/3">
           <div className="uppercase text-xs flex gap-1 font-bold">

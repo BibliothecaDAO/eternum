@@ -13,6 +13,7 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
 import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
 import { InventoryResources } from "../../resources/InventoryResources";
+import { Headline } from "@/ui/elements/Headline";
 
 interface ArmyInfoLabelProps {
   army: ArmyInfo;
@@ -68,14 +69,15 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
       <div className="flex items-center w-full mt-1 justify-between text-xs">
         <div className="flex flex-col gap-1 w-full">
           <div className="flex items-center text-gold gap-2">
-            <OrderIcon order={getRealmOrderNameById(realmId)} className="mr-1" size="md" />
+            {/* <OrderIcon order={getRealmOrderNameById(realmId)} className="mr-1" size="md" /> */}
 
-            <div>
-              {" "}
-              <div className=" text-lg"> {originRealmName}</div>
-              {attackerAddressName}
-            </div>
+            <Headline className="text-center">
+              <div>{originRealmName}</div>
+
+              <div className="text-lg">{attackerAddressName}</div>
+            </Headline>
           </div>
+
           <div className="self-center flex justify-between w-full">
             {!isTraveling && <div className="flex   italic text-gold self-center">Idle</div>}
             {army.arrives_at && isTraveling && nextBlockTimestamp && (

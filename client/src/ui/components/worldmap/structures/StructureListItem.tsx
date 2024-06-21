@@ -29,7 +29,7 @@ export const StructureListItem = ({ structure, onClick, extraButton }: Structure
       <div className="flex items-end mt-2">
         <div className={clsx("flex items-center justify-around flex-1")}>
           <div className="flex-1 text-gold flex items-center flex-wrap">
-            {String(structure.category) === "ShardsMine" && (
+            {String(structure.category) === "FragmentMine" && (
               <div className="flex text-gold items-center">
                 Produces {RESOURCE_OUTPUTS_SCALED[ResourcesIds.Earthenshard]}
                 <ResourceIcon

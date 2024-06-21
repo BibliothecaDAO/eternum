@@ -10,11 +10,11 @@ export const StaminaResource = ({ entityId, className }: { entityId: bigint | un
     (stamina?.amount || 0n) < EternumGlobalConfig.stamina.travelCost ? "text-red/90" : "text-yellow/90";
 
   return (
-    <div className={`flex flex-row text-xs font-bold text-right ${className}`}>
+    <div className={`flex flex-row text-xs font-bold text-right uppercase ${className}`}>
       {/* <div className="text-lg p-1 pr-3">⚡️</div> */}
       <div className={clsx(staminaColor, "flex", "flex-col")}>
         <div>
-          Stamina : {stamina?.amount || 0} / {getMaxStaminaByEntityId(entityId || 0n)}
+          STM : {stamina?.amount || 0} / {getMaxStaminaByEntityId(entityId || 0n)}
         </div>
       </div>
     </div>

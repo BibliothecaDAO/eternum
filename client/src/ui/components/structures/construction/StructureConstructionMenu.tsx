@@ -27,7 +27,7 @@ export const STRUCTURE_IMAGE_PATHS = {
   [StructureType.Settlement]: STRUCTURE_IMAGE_PREFIX + "mine.png",
   [StructureType.Hyperstructure]: STRUCTURE_IMAGE_PREFIX + "hyperstructure.png",
   [StructureType.Realm]: STRUCTURE_IMAGE_PREFIX + "mine.png",
-  [StructureType.ShardsMine]: STRUCTURE_IMAGE_PREFIX + "mine.png",
+  [StructureType.FragmentMine]: STRUCTURE_IMAGE_PREFIX + "mine.png",
 };
 
 export const StructureConstructionMenu = () => {
@@ -41,7 +41,7 @@ export const StructureConstructionMenu = () => {
   const buildingTypes = Object.keys(StructureType)
     .filter((key) => isNaN(Number(key)))
     .filter(
-      (key) => key !== "None" && key !== "Realm" && key !== "ShardsMine" && key !== "Bank" && key !== "Settlement",
+      (key) => key !== "None" && key !== "Realm" && key !== "FragmentMine" && key !== "Bank" && key !== "Settlement",
     ) as string[];
 
   const checkBalance = (cost: any) =>

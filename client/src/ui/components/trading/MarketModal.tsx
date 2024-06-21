@@ -120,28 +120,36 @@ export const MarketResourceSidebar = ({
   }, []);
 
   return (
-    <div className="flex flex-col h-full">
-      {filteredResources.map((resource) => {
-        const askPrice = resourceBidOffers
-          .filter((offer) => (resource.id ? offer.makerGets[0]?.resourceId === resource.id : true))
-          .reduce((acc, offer) => (offer.ratio < acc ? offer.ratio : acc), Infinity);
+    <div>
+      <div className="w-full flex justify-end gap-8 mb-1">
+        <div className="w-2/6 flex justify-between">
+          <div>Sell</div>
+          <div>Buy</div>
+        </div>
+      </div>
+      <div className="flex flex-col h-full gap-[0.1]">
+        {filteredResources.map((resource) => {
+          const askPrice = resourceBidOffers
+            .filter((offer) => (resource.id ? offer.makerGets[0]?.resourceId === resource.id : true))
+            .reduce((acc, offer) => (offer.ratio < acc ? offer.ratio : acc), Infinity);
 
-        const bidPrice = resourceAskOffers
-          .filter((offer) => offer.takerGets[0].resourceId === resource.id)
-          .reduce((acc, offer) => (offer.ratio < acc ? offer.ratio : acc), Infinity);
+          const bidPrice = resourceAskOffers
+            .filter((offer) => offer.takerGets[0].resourceId === resource.id)
+            .reduce((acc, offer) => (offer.ratio < acc ? offer.ratio : acc), Infinity);
 
-        return (
-          <MarketResource
-            key={resource.id}
-            entityId={entityId || BigInt("0")}
-            resource={resource}
-            active={selectedResource == resource.id}
-            onClick={onClick}
-            askPrice={askPrice === Infinity ? "0" : askPrice.toFixed(2)}
-            bidPrice={bidPrice === Infinity ? "0" : bidPrice.toFixed(2)}
-          />
-        );
-      })}
+          return (
+            <MarketResource
+              key={resource.id}
+              entityId={entityId || BigInt("0")}
+              resource={resource}
+              active={selectedResource == resource.id}
+              onClick={onClick}
+              askPrice={askPrice === Infinity ? "0" : askPrice.toFixed(2)}
+              bidPrice={bidPrice === Infinity ? "0" : bidPrice.toFixed(2)}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -158,8 +166,8 @@ export const TransferView = () => {
           name: "Player Hyperstructures",
         },
         {
-          entities: playerStructures().filter((structure) => structure.category === "ShardsMine"),
-          name: "Player Shards Mines",
+          entities: playerStructures().filter((structure) => structure.category === "FragmentMine"),
+          name: "Player Fragment Mines",
         },
         { entities: otherRealms(), name: "Other Realms" },
       ]}

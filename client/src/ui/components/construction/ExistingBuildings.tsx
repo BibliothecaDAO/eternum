@@ -29,7 +29,7 @@ export enum ModelsIndexes {
   WorkersHut = BuildingType.WorkersHut,
   Storehouse = BuildingType.Storehouse,
   Bank = BuildingType.Bank,
-  ShardsMine = BuildingType.ShardsMine,
+  FragmentMine = BuildingType.FragmentMine,
   Settlement = 20,
   Hyperstructure = 21,
   UnfinishedHyperstructure = 22,
@@ -115,7 +115,7 @@ export const MiddleBuilding = ({ hexType }: { hexType: HexType }) => {
     () => ({
       [ModelsIndexes.Castle]: useGLTF("/models/buildings/castle.glb"),
       [ModelsIndexes.Bank]: useGLTF("/models/buildings/bank.glb"),
-      [ModelsIndexes.ShardsMine]: useGLTF("/models/buildings/mine.glb"),
+      [ModelsIndexes.FragmentMine]: useGLTF("/models/buildings/mine.glb"),
       [ModelsIndexes.Hyperstructure]: useGLTF("/models/buildings/hyperstructure.glb"),
       [ModelsIndexes.UnfinishedHyperstructure]: useGLTF("/models/buildings/hyperstructure-half-transformed.glb"),
     }),
@@ -134,12 +134,12 @@ export const MiddleBuilding = ({ hexType }: { hexType: HexType }) => {
     hexType === HexType.BANK
       ? ModelsIndexes.Bank
       : hexType === HexType.SHARDSMINE
-        ? ModelsIndexes.ShardsMine
-        : hexType === HexType.HYPERSTRUCTURE
-          ? ModelsIndexes.Hyperstructure
-          : hexType === HexType.UNFINISHEDHYPERSTRUCTURE
-            ? ModelsIndexes.UnfinishedHyperstructure
-            : ModelsIndexes.Castle;
+      ? ModelsIndexes.FragmentMine
+      : hexType === HexType.HYPERSTRUCTURE
+      ? ModelsIndexes.Hyperstructure
+      : hexType === HexType.UNFINISHEDHYPERSTRUCTURE
+      ? ModelsIndexes.UnfinishedHyperstructure
+      : ModelsIndexes.Castle;
 
   const modelZOffsets = {
     [HexType.BANK]: 0.2,

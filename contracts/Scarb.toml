@@ -23,7 +23,7 @@ private_key = "0x2bbf4f9fd0bbb2e60b0316c1fe0b76cf7a4d0198bd493ced9b8df2a3a24d68a
 rpc_url = "https://api.cartridge.gg/x/eternum-17/katana"
 account_address = "0x6bd82a20984e638c8e1d45770e2924e274e315b9609eb15c26384eac0094cf1"
 private_key = "0x15ffe6ee85bcd75f93b395ec4471819d5dbebb77ea2f2a50b30ce7f67372ce4"
-world_address = "0x3731cc419863d4112dde39187122286dcbd9950d89053892087481d3ad6bb82"
+# world_address = "0x3731cc419863d4112dde39187122286dcbd9950d89053892087481d3ad6bb82"
 
 [[target.dojo]]
 
