@@ -13,7 +13,7 @@ import { useEntities } from "../helpers/useEntities";
 export enum QuestName {
   ClaimFood = "Claim Food",
   BuildFarm = "Build a Farm",
-  BuildResource = "Build a Resource",
+  BuildResource = "Build a Resource Facility",
   CreateTrade = "Create a Trade",
   CreateArmy = "Create an Army",
 }

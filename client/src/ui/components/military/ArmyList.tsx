@@ -16,7 +16,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
 
   const currentQuest = useQuestStore((state) => state.currentQuest);
-  
+
   const {
     account: { account },
     setup: {
@@ -84,7 +84,9 @@ export const EntityArmyList = ({ entity_id }: any) => {
           </React.Fragment>
         )}
         questing={
-          currentQuest?.name === QuestName.CreateArmy && currentQuest.steps[0].completed && !currentQuest.steps[1].completed
+          currentQuest?.name === QuestName.CreateArmy &&
+          currentQuest.steps[0].completed &&
+          !currentQuest.steps[1].completed
         }
       />
     </>
