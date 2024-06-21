@@ -10,7 +10,7 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { order_statments } from "../../../../data/orders";
-import realmsHexPositions from "../../../../data/geodata/hex/realmHexPositions.json";
+import { getPosition } from "@/ui/utils/utils";
 
 export const MAX_REALMS = 1;
 
@@ -52,8 +52,7 @@ export const SettleRealmComponent = () => {
       let realm = getRealm(new_realm_id);
       if (!realm) return;
 
-      let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
-      let position = realmPositions[Number(new_realm_id)][0];
+      const position = getPosition(new_realm_id);
 
       calldata.push({
         realm_id: Number(realm.realmId),
@@ -65,7 +64,7 @@ export const SettleRealmComponent = () => {
         rivers: realm.rivers,
         harbors: realm.harbors,
         cities: realm.cities,
-        position: { x: position.col, y: position.row },
+        position,
       });
     }
 
