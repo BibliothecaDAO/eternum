@@ -107,7 +107,14 @@ const BuiltStructure = ({
       <primitive dropShadow scale={scale} object={model!} renderOrder={2} />
       {structureCategory === StructureType.Hyperstructure && (
         <Billboard>
-          <Image texture={hyperLabel} scale={6} position={[0, 8, 5]} side={THREE.DoubleSide} transparent />
+          <Image
+            texture={hyperLabel}
+            scale={6}
+            position={[0, 8, 5]}
+            side={THREE.DoubleSide}
+            transparent
+            renderOrder={2}
+          />
         </Billboard>
       )}
     </group>

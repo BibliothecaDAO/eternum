@@ -70,7 +70,14 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
         {showCombatLabel && <CombatLabel visible={isSelected} />}
         <WarriorModel army={army} />
         <Billboard>
-          <Image texture={armyLabel} scale={3.5} position={[0, 5, 0]} side={THREE.DoubleSide} transparent />
+          <Image
+            texture={armyLabel}
+            scale={3.5}
+            position={[0, 5, 0]}
+            side={THREE.DoubleSide}
+            transparent
+            renderOrder={2}
+          />
         </Billboard>
       </group>
       {isSelected && <UnitHighlight position={{ x: army.x, y: army.y }} />}
