@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
-import { bigintToString, getEntityIdFromKeys, hexToAscii, numberToHex } from "../../ui/utils/utils";
+import { bigintToString, getEntityIdFromKeys, getPosition, hexToAscii, numberToHex } from "../../ui/utils/utils";
 import { BASE_POPULATION_CAPACITY, getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import { unpackResources } from "../../ui/utils/packedData";
@@ -18,7 +18,7 @@ export type RealmExtended = RealmInterface & {
 export function useRealm() {
   const {
     setup: {
-      components: { Realm, AddressName, Owner, Position },
+      components: { Realm, AddressName, Owner, Position, Structure },
     },
   } = useDojo();
 
@@ -35,24 +35,40 @@ export function useRealm() {
       return getComponentValue(Realm, id)!.entity_id;
     });
 
-    let latestRealmIdFromOrder = 0n;
-
-    // sort from biggest to lowest
+    let latestRealmIdFromOrder = 0;
     if (realmEntityIds.length > 0) {
       const realmEntityId = realmEntityIds.sort((a, b) => Number(b) - Number(a))[0];
       const latestRealmFromOrder = getComponentValue(Realm, getEntityIdFromKeys([realmEntityId]));
       if (latestRealmFromOrder) {
-        latestRealmIdFromOrder = latestRealmFromOrder.realm_id;
+        latestRealmIdFromOrder = Number(latestRealmFromOrder.realm_id);
       }
     }
-    const orderRealmIds = (realmIdsByOrder as { [key: string]: number[] })[orderName];
-    const latestIndex = orderRealmIds.indexOf(Number(latestRealmIdFromOrder));
 
-    if (latestIndex === -1 || latestIndex === orderRealmIds.length - 1) {
-      return orderRealmIds[0];
-    } else {
-      return orderRealmIds[latestIndex + 1];
+    const orderRealmIds = (realmIdsByOrder as { [key: string]: number[] })[orderName];
+    let nextRealmIdFromOrder = 0;
+
+    const maxIterations = orderRealmIds.length;
+    for (let i = 0; i < maxIterations; i++) {
+      // sort from biggest to lowest
+      const latestIndex = orderRealmIds.indexOf(latestRealmIdFromOrder);
+
+      if (latestIndex === -1 || latestIndex === orderRealmIds.length - 1) {
+        nextRealmIdFromOrder = orderRealmIds[0];
+      } else {
+        nextRealmIdFromOrder = orderRealmIds[latestIndex + 1];
+      }
+
+      const position = getPosition(BigInt(nextRealmIdFromOrder));
+
+      // check if there is a structure on position, if no structure we can keep this realm Id
+      if (Array.from(runQuery([HasValue(Position, position), Has(Structure)])).length === 0) {
+        return BigInt(nextRealmIdFromOrder);
+      } else {
+        latestRealmIdFromOrder = nextRealmIdFromOrder;
+      }
     }
+
+    throw new Error(`Could not find an unoccupied realm ID for order ${orderName} after ${maxIterations} attempts`);
   };
 
   const getRealmEntityIdFromRealmId = (realmId: bigint): bigint | undefined => {
@@ -75,9 +91,9 @@ export function useRealm() {
     const latestIndex = orderRealmIds.indexOf(Number(realmId));
 
     if (latestIndex === -1 || latestIndex === orderRealmIds.length - 1) {
-      return orderRealmIds[0];
+      return BigInt(orderRealmIds[0]);
     } else {
-      return orderRealmIds[latestIndex + 1];
+      return BigInt(orderRealmIds[latestIndex + 1]);
     }
   };
 

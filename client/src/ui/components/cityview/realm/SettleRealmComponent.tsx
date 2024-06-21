@@ -41,12 +41,12 @@ export const SettleRealmComponent = () => {
     setIsLoading(true);
     let calldata = [];
 
-    let new_realm_id = BigInt(getNextRealmIdForOrder(chosenOrder || selectedOrder));
+    let new_realm_id = getNextRealmIdForOrder(chosenOrder || selectedOrder);
 
     for (let i = 0; i < MAX_REALMS; i++) {
       // if no realm id latest realm id is 0
       if (i > 0) {
-        new_realm_id = BigInt(getRealmIdForOrderAfter(chosenOrder || selectedOrder, new_realm_id));
+        new_realm_id = getRealmIdForOrderAfter(chosenOrder || selectedOrder, new_realm_id);
       }
       // take next realm id
       let realm = getRealm(new_realm_id);
@@ -69,21 +69,10 @@ export const SettleRealmComponent = () => {
       });
     }
 
-    // @dev: do it in 1 times because too many steps for 1 tx
-    // before could do it in 3 times, but now, takes too many steps so cannot multicall
-
     await create_multiple_realms({
       signer: account,
       realms: [calldata[0]],
     });
-    // await create_multiple_realms({
-    //   signer: account,
-    //   realms: [calldata[1]],
-    // });
-    // await create_multiple_realms({
-    //   signer: account,
-    //   realms: [calldata[2]],
-    // });
     setIsLoading(false);
     playSign();
   };
