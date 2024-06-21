@@ -11,7 +11,7 @@ import { currencyFormat } from "@/ui/utils/utils";
 import { EternumGlobalConfig, Position, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ArrowRight } from "lucide-react";
+import { ArrowDown, ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { RealmListItem } from "../worldmap/realms/RealmListItem";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
@@ -190,13 +190,13 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
 
   return (
     <div className="flex flex-col">
-      <div className="flex flex-row justify-around items-center">
-        <div className="w-[40%]">
+      <div className="flex flex-col justify-around items-center">
+        <div className="w-[60%]">
           <p className="pt-2 pb-5">Current Army</p>
           {Object.entries(troopsToFormat(giverArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
             return (
               <div
-                className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4"
+                className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4 px-4"
                 key={resourceId}
               >
                 <div className=" flex gap-3">
@@ -233,26 +233,29 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
             );
           })}
         </div>
-        <Button
-          onClick={() => {
-            setTransferDirection(transferDirection === "to" ? "from" : "to");
-          }}
-        >
-          <ArrowRight className={`${transferDirection === "to" ? "" : "rotate-180"} duration-300`} />
-        </Button>
+        <div className="my-3">
+          <Button
+            size="xs"
+            onClick={() => {
+              setTransferDirection(transferDirection === "to" ? "from" : "to");
+            }}
+          >
+            <ArrowDown className={`${transferDirection === "to" ? "" : "rotate-180"} duration-300`} />
+          </Button>
+        </div>
 
-        <div className="w-[40%]">
+        <div className="w-[60%]">
           <p className=" pt-2 pb-5">Transfer {transferDirection} Structure</p>
           {!protector ? (
             <Button variant={"primary"} onClick={createProtector}>
-              Create protector army
+              Create defending army
             </Button>
           ) : (
             receiverArmyTroops &&
             Object.entries(troopsToFormat(receiverArmyTroops!)).map(([resourceId, amount]: [string, bigint]) => {
               return (
                 <div
-                  className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4"
+                  className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4  px-4"
                   key={resourceId}
                 >
                   <div className=" flex gap-3">
@@ -294,6 +297,7 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
         onClick={mergeTroops}
         isLoading={loading}
         className="mt-5"
+        variant="primary"
         disabled={Object.values(troopsGiven).every((amount) => amount === 0n) || !protector}
       >
         Reinforce
