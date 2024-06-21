@@ -18,7 +18,6 @@ export const TopLeftNavigation = () => {
           image={BuildingThumbs.question}
           label={"Hints"}
           // active={isPopupOpen(quests)}
-          className="fifth-step"
           size="md"
           onClick={() => toggleModal(<HintModal />)}
         />

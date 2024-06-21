@@ -6,10 +6,8 @@ import { EntitiesArmyTable } from "@/ui/components/military/EntitiesArmyTable";
 import { useLocation } from "wouter";
 import { BattlesArmyTable } from "@/ui/components/military/BattlesArmyTable";
 import { Tabs } from "@/ui/elements/tab";
-import CircleButton from "@/ui/elements/CircleButton";
-import { HintModal } from "@/ui/components/hints/HintModal";
-import { BuildingThumbs } from "../navigation/LeftNavigationModule";
 import { useModal } from "@/hooks/store/useModal";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 
 export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -49,12 +47,7 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
 
   return (
     <div className="relative">
-      <CircleButton
-        className="absolute top-1 right-1"
-        onClick={() => toggleModal(<HintModal initialActiveSection={"Combat"} />)}
-        size={"sm"}
-        image={BuildingThumbs.question}
-      />
+      <HintModalButton className="absolute top-1 right-1" sectionName="Combat" />
       {isMap ? (
         <Tabs
           selectedIndex={selectedTab}

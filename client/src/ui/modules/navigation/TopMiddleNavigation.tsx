@@ -161,7 +161,7 @@ const TickProgress = () => {
         });
       }}
       onMouseLeave={() => setTooltip(null)}
-      className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5 clip-angled"
+      className="self-center text-center  px-4 py-1 bg-brown text-gold border-gradient h5 clip-angled"
     >
       {progress.toFixed()}%
     </div>

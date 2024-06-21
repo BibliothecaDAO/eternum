@@ -13,8 +13,7 @@ import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import { displayAddress } from "@/ui/utils/utils";
-import { QuestType, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
-import { useTour } from "@reactour/tour";
+import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -376,25 +375,17 @@ export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => 
         They who rule the Ancient Fragments <br /> rule the world...
       </p>
       <div className="flex w-full justify-center">
-        <NavigateToRealm text={"begin"} showWalkthrough={true} />
+        <NavigateToRealm text={"begin"} />
       </div>
     </StepContainer>
   );
 };
 
-export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: string; showWalkthrough?: boolean }) => {
-  const {
-    setup: {
-      systemCalls: { mint_starting_resources },
-    },
-    account: { account },
-  } = useDojo();
-
+export const NavigateToRealm = ({ text }: { text: string }) => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const [_location, setLocation] = useLocation();
   const { playerRealms } = useEntities();
-  const { setIsOpen } = useTour();
   const [isLoading, setIsLoading] = useState(false);
 
   return (
@@ -403,20 +394,10 @@ export const NavigateToRealm = ({ text, showWalkthrough = false }: { text: strin
       variant="primary"
       isLoading={isLoading}
       onClick={async () => {
-        // if (showWalkthrough) {
-        //   setIsLoading(true);
-        //   await mint_starting_resources({
-        //     signer: account,
-        //     config_id: QuestType.Food,
-        //     realm_entity_id: playerRealms()[0].entity_id || "0",
-        //   });
-        //   setIsLoading(false);
-        // }
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);
           setLocation(`/hex?col=${playerRealms()[0]?.position.x}&row=${playerRealms()[0]?.position.y}`);
-          setIsOpen(showWalkthrough);
         }, 300);
       }}
     >

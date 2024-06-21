@@ -106,7 +106,7 @@ export const LeftNavigationModule = () => {
         name: "military",
         button: (
           <CircleButton
-            className={clsx("military-selector", {
+            className={clsx({
               "animate-pulse":
                 view != View.ConstructionView &&
                 currentQuest?.name === QuestName.CreateArmy &&
@@ -132,7 +132,7 @@ export const LeftNavigationModule = () => {
         name: "construction",
         button: (
           <CircleButton
-            className={clsx("construction-selector", {
+            className={clsx({
               "animate-pulse":
                 view != View.ConstructionView &&
                 (currentQuest?.name === QuestName.BuildFarm || currentQuest?.name === QuestName.BuildResource) &&
@@ -156,7 +156,7 @@ export const LeftNavigationModule = () => {
         name: "worldStructures",
         button: (
           <CircleButton
-            className={clsx("worldStructures-selector", {
+            className={clsx({
               hidden: !quests?.find((quest) => quest.name === QuestName.CreateArmy)?.claimed,
             })}
             image={BuildingThumbs.worldStructures}
@@ -252,7 +252,7 @@ export const LeftNavigationModule = () => {
             </Button>
           </div>
           <div className="flex flex-col gap-2 mb-auto">
-            <div className="flex flex-col space-y-2 py-2 sixth-step">
+            <div className="flex flex-col space-y-2 py-2">
               {navigation.map((a, index) => (
                 <div key={index}>{a.button}</div>
               ))}

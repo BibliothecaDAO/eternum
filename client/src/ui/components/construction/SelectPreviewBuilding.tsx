@@ -31,11 +31,9 @@ import { Headline } from "@/ui/elements/Headline";
 import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
-import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
-import CircleButton from "@/ui/elements/CircleButton";
 import { quests as questsPopup } from "@/ui/components/navigation/Config";
 import { useModal } from "@/hooks/store/useModal";
-import { HintModal } from "../hints/HintModal";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -136,7 +134,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="resources-cards-selector grid grid-cols-4 gap-2 p-2">
+          <div className="grid grid-cols-4 gap-2 p-2">
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
@@ -202,19 +200,15 @@ export const SelectPreviewBuildingMenu = () => {
                     : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
                 const isFarm = building === BuildingType["Farm"];
-                const buildingSelectorClass = `${buildingType}-selector`;
 
                 return (
                   <BuildingCard
-                    className={clsx(
-                      {
-                        hidden:
-                          (!isFarm && currentQuest?.name === QuestName.BuildFarm) ||
-                          currentQuest?.name === QuestName.BuildResource,
-                        "animate-pulse": isFarm && currentQuest?.name === QuestName.BuildFarm,
-                      },
-                      `${buildingSelectorClass}`,
-                    )}
+                    className={clsx({
+                      hidden:
+                        (!isFarm && currentQuest?.name === QuestName.BuildFarm) ||
+                        currentQuest?.name === QuestName.BuildResource,
+                      "animate-pulse": isFarm && currentQuest?.name === QuestName.BuildFarm,
+                    })}
                     key={index}
                     buildingId={building}
                     onClick={() => {
@@ -265,11 +259,9 @@ export const SelectPreviewBuildingMenu = () => {
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
                 const canBuild = hasBalance && realm.hasCapacity && hasEnoughPopulation;
 
-                const buildingSelectorClass = `${buildingType}-selector`;
-
                 return (
                   <BuildingCard
-                    className={clsx(`${buildingSelectorClass}`, {
+                    className={clsx({
                       hidden:
                         currentQuest?.name === QuestName.BuildFarm || currentQuest?.name === QuestName.BuildResource,
                     })}
@@ -301,12 +293,7 @@ export const SelectPreviewBuildingMenu = () => {
 
   return (
     <div className="relative flex flex-col  bg-brown border-gradient border clip-angled">
-      <CircleButton
-        className="absolute top-1 right-1"
-        onClick={() => toggleModal(<HintModal initialActiveSection={"Buildings & Bases"} />)}
-        size={"sm"}
-        image={BuildingThumbs.question}
-      />
+      <HintModalButton className="absolute top-1 right-1" sectionName="Buildings & Bases" />
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => {

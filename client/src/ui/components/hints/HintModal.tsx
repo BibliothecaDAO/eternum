@@ -3,19 +3,18 @@ import { ModalContainer } from "../ModalContainer";
 import { TheWorld } from "./TheWorld";
 import { GettingStarted } from "./GettingStarted";
 import { Resources } from "./Resources";
-
 import { Buildings } from "./Buildings";
 import { useState } from "react";
-
-type HintModalProps = {
-  initialActiveSection?: string;
-};
 import { Trading } from "./Trading";
 import { Combat } from "./Combat";
 import { Points } from "./Points";
 import { Hyperstructures } from "./Hyperstructures";
 import { TheMap } from "./TheMap";
 import { Guilds } from "./Guilds";
+
+type HintModalProps = {
+  initialActiveSection?: string;
+};
 
 export const HintModal = ({ initialActiveSection }: HintModalProps) => {
   const sections = [

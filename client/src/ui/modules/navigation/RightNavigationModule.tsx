@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { BaseContainer } from "../../containers/BaseContainer";
-
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useResources } from "@/hooks/helpers/useResources";
 import { useModal } from "@/hooks/store/useModal";
@@ -22,7 +21,7 @@ import clsx from "clsx";
 import { quests as questsPopup } from "../../components/navigation/Config";
 import { ArrowRight } from "lucide-react";
 import { BuildingThumbs } from "./LeftNavigationModule";
-import { HintModal } from "@/ui/components/hints/HintModal";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 
 export enum View {
   None,
@@ -74,7 +73,7 @@ export const RightNavigationModule = () => {
         name: "resourceTable",
         button: (
           <CircleButton
-            className={clsx("resources-selector", {
+            className={clsx({
               "animate-pulse":
                 currentQuest?.name === QuestName.ClaimFood && !currentQuest.claimed && isPopupOpen(questsPopup),
             })}
@@ -114,7 +113,7 @@ export const RightNavigationModule = () => {
         name: "trade",
         button: (
           <CircleButton
-            className={clsx("trade-selector", {
+            className={clsx({
               "animate-pulse":
                 currentQuest?.name === QuestName.CreateTrade && !currentQuest.completed && isPopupOpen(questsPopup),
               hidden: !quests?.find((quest) => quest.name === QuestName.BuildResource)?.claimed,
@@ -134,7 +133,7 @@ export const RightNavigationModule = () => {
         name: "bank",
         button: (
           <CircleButton
-            className={clsx("banking-selector", {
+            className={clsx({
               hidden: !quests?.find((quest) => quest.name === QuestName.CreateArmy)?.claimed,
             })}
             image={BuildingThumbs.banks}
@@ -203,7 +202,7 @@ export const RightNavigationModule = () => {
                       });
                     }}
                     onMouseLeave={() => setTooltip(null)}
-                    className="   second-step bg-brown text-gold border-gradient px-3"
+                    className="bg-brown text-gold border-gradient px-3"
                   >
                     <div className="uppercase font-bold">population</div>
                     {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
@@ -225,18 +224,13 @@ export const RightNavigationModule = () => {
                       });
                     }}
                     onMouseLeave={() => setTooltip(null)}
-                    className="second-step bg-brown text-gold border-gradient px-3"
+                    className="bg-brown text-gold border-gradient px-3"
                   >
                     <div className="uppercase font-bold">capacity</div>
                     {storehouses.toLocaleString()}
                   </div>
                 )}
-                <CircleButton
-                  className="mr-1"
-                  onClick={() => toggleModal(<HintModal initialActiveSection={"Resources"} />)}
-                  size={"sm"}
-                  image={BuildingThumbs.question}
-                />
+                <HintModalButton className="mr-1" sectionName="Resources" />
               </div>
               <EntityResourceTable entityId={realmEntityId} />
             </>

@@ -63,7 +63,6 @@ export const BottomNavigation = () => {
               active={isPopupOpen(quests)}
               size="lg"
               onClick={() => togglePopup(quests)}
-              className="forth-step"
               notification={isRealmSelected(realmEntityId, structures) ? claimableQuestsLength : undefined}
               notificationLocation={"topleft"}
               disabled={!isRealmSelected(realmEntityId, structures)}
@@ -134,10 +133,10 @@ export const BottomNavigation = () => {
       variants={slideUp}
       initial="hidden"
       animate="visible"
-      className="flex justify-center flex-wrap first-step relative w-full duration-300 transition-all "
+      className="flex justify-center flex-wrap relative w-full duration-300 transition-all "
     >
       <div className="">
-        <div className="flex py-2 sixth-step  px-10 gap-1">
+        <div className="flex py-2 px-10 gap-1">
           {secondaryNavigation.map((a, index) => (
             <div key={index}>{a.button}</div>
           ))}
