@@ -13,7 +13,7 @@ echo "Deleting previous indexer..."
 slot deployments delete eternum torii
 
 echo "Setting up remote indexer on slot..."
-slot deployments create eternum-19 torii --version v0.7.0-alpha.5 --world 0x3731cc419863d4112dde39187122286dcbd9950d89053892087481d3ad6bb82 --rpc https://api.cartridge.gg/x/eternum-17/katana --start-block 0  --index-pending true
+slot deployments create eternum-20 torii --version v0.7.0-alpha.5 --world 0x4e777915e237da6026bc14e30708a4b69908efc1e028f886b84e3ba4d74a61d --rpc https://api.cartridge.gg/x/eternum-17/katana --start-block 0  --index-pending true
 
 bun --env-file=../client/.env.production ../config/index.ts
 
