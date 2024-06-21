@@ -41,12 +41,9 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
     account: { account },
   } = useDojo();
 
-  // structures at position
-  const realmsAtPosition = useEntityQuery([HasValue(Position, position), HasValue(Structure, { category: "Realm" })]);
-  const structuresAtPosition = useEntityQuery([HasValue(Position, position), Has(Structure)]);
-
-  const formattedRealmAtPosition: Realm = useMemo(() => {
-    return realmsAtPosition.map((realm_entity_id: any) => {
+  const useFormattedRealmAtPosition = () => {
+    const realmsAtPosition = useEntityQuery([HasValue(Position, position), HasValue(Structure, { category: "Realm" })]);
+    const formattedRealmAtPosition: Realm = realmsAtPosition.map((realm_entity_id: any) => {
       const realm = getComponentValue(Realm as Component, realm_entity_id) as ClientComponents["Realm"]["schema"];
       const entityOwner = getComponentValue(EntityOwner, realm_entity_id);
       const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
@@ -67,11 +64,16 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
         name: name,
       };
       return fullRealm;
-    });
-  }, [realmsAtPosition])[0];
+    })[0];
 
-  const formattedStructureAtPosition: Structure | undefined = useMemo(() => {
-    return structuresAtPosition.map((entityId: any) => {
+    return formattedRealmAtPosition;
+  };
+
+  const useFormattedStructureAtPosition = () => {
+    // structures at position
+    const structuresAtPosition = useEntityQuery([HasValue(Position, position), Has(Structure)]);
+
+    const formattedStructureAtPosition: Structure | undefined = structuresAtPosition.map((entityId: any) => {
       const structure = getComponentValue(Structure, entityId) as unknown as ClientComponents["Structure"]["schema"];
       if (!structure) {
         return;
@@ -105,17 +107,19 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
         protector: protector as ArmyInfo | undefined,
         isMine: BigInt(owner!.address) === BigInt(account.address),
       };
-    });
-  }, [structuresAtPosition])[0];
+    })[0];
 
-  const structureAtPosition = useMemo(() => {
-    return formattedStructureAtPosition?.entity_id != null;
-  }, [formattedStructureAtPosition]);
+    return formattedStructureAtPosition;
+  };
+
+  const hasStructuresAtPosition = () => {
+    return useEntityQuery([HasValue(Position, position), Has(Structure)]).length > 0;
+  };
 
   return {
-    formattedRealmAtPosition,
-    formattedStructureAtPosition,
-    structuresAtPosition: structureAtPosition,
+    useFormattedRealmAtPosition,
+    useFormattedStructureAtPosition,
+    hasStructuresAtPosition,
   };
 };
 

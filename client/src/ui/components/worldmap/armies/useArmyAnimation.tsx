@@ -29,9 +29,13 @@ export const useArmyAnimation = (position: Position, offset: Position, isMine: b
     if (prevPositionRef.current.x !== x || prevPositionRef.current.y !== y) {
       const startPos = { x: prevPositionRef.current.x, y: prevPositionRef.current.y };
       const endPos = { x, y };
-      const uiPath = findShortestPathBFS(startPos, endPos, exploredHexes).map((pos) =>
+      let uiPath = findShortestPathBFS(startPos, endPos, exploredHexes).map((pos) =>
         getUIPositionFromColRow(pos.x, pos.y),
       );
+      // in case that there is no path, we will just move to the end position, can apply for pillage for example
+      if (uiPath.length === 0) {
+        uiPath = [getUIPositionFromColRow(startPos.x, startPos.y), getUIPositionFromColRow(endPos.x, endPos.y)];
+      }
       setAnimationPath(uiPath.map((pos) => applyOffset(pos, offset)));
       prevPositionRef.current = { x, y };
       isMine && playMarchingSound(); // Play marching sound when animation starts

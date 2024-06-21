@@ -1,6 +1,12 @@
 import { Color } from "three";
-import { Position, getNeighborHexes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { Hexagon } from "../../../../types";
+import {
+  EternumGlobalConfig,
+  Position,
+  TROOPS_STAMINAS,
+  getNeighborHexes,
+  neighborOffsetsEven,
+  neighborOffsetsOdd,
+} from "@bibliothecadao/eternum";
 
 const matrix = new Matrix4();
 const positions = new Vector3();
@@ -35,7 +41,19 @@ export const getPositionsAtIndex = (mesh: InstancedMesh<any, any>, index: number
   return positions;
 };
 
+const getMaxSteps = () => {
+  const staminaCosts = Object.values(EternumGlobalConfig.stamina);
+  const minCost = Math.min(...staminaCosts);
+
+  const staminaValues = Object.values(TROOPS_STAMINAS);
+  const maxStamina = Math.max(...staminaValues);
+
+  return Math.floor(maxStamina / minCost);
+};
+
 export const findShortestPathBFS = (startPos: Position, endPos: Position, exploredHexes: Map<number, Set<number>>) => {
+  const maxHex = getMaxSteps();
+
   const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
   const visited = new Set<string>();
   const path = new Map<string, Position>();
@@ -54,6 +72,10 @@ export const findShortestPathBFS = (startPos: Position, endPos: Position, explor
         temp = path.get(posKey(temp)); // Move backwards through the path
       }
       return result;
+    }
+
+    if (distance > maxHex) {
+      break; // Stop processing if the current distance exceeds maxHex
     }
 
     const currentKey = posKey(current);
