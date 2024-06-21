@@ -29,18 +29,18 @@ export const EternumGlobalConfig = {
     wheatBurn: 50,
     fishBurn: 50,
     reward: 20,
-    shardsMinesFailProbability: 10000,
+    shardsMinesFailProbability: 1000,
   },
   tick: {
     defaultTickIntervalInSeconds: 1,
-    armiesTickIntervalInSeconds: 60,
+    armiesTickIntervalInSeconds: 7200, // 2hrs
   },
   carryCapacity: {
     donkey: 100,
     army: 100,
   },
   speed: {
-    donkey: 1,
+    donkey: 360,
     army: 1,
   },
   troop: {
