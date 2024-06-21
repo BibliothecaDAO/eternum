@@ -29,7 +29,7 @@ export const EternumGlobalConfig = {
     wheatBurn: 50,
     fishBurn: 50,
     reward: 20,
-    shardsMinesFailProbability: 1000,
+    shardsMinesFailProbability: 99000,
   },
   tick: {
     defaultTickIntervalInSeconds: 1,
