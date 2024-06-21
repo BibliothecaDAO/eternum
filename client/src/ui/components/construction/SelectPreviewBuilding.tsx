@@ -30,6 +30,10 @@ import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import { quests as questsPopup } from "@/ui/components/navigation/Config";
+import { useModal } from "@/hooks/store/useModal";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -61,8 +65,14 @@ export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
+  const togglePopup = useUIStore((state) => state.togglePopup);
+  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
+  const currentQuest = useQuestStore((state) => state.currentQuest);
+
+  const { toggleModal } = useModal();
   const { realm } = useGetRealm(realmEntityId);
 
   const { getBalance } = useResourceBalance();
@@ -101,13 +111,26 @@ export const SelectPreviewBuildingMenu = () => {
 
   const [selectedTab, setSelectedTab] = useState(1);
 
+  const closePopups = () => {
+    if (isPopupOpen(questsPopup)) {
+      togglePopup(questsPopup);
+    }
+  };
+
   const tabs = useMemo(
     () => [
       {
         key: "resources",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Resources</div>
+            <div
+              className={clsx({
+                "animate-pulse  border-b border-gold":
+                  selectedTab !== 0 && currentQuest?.name === QuestName.BuildResource,
+              })}
+            >
+              Resources
+            </div>
           </div>
         ),
         component: (
@@ -124,9 +147,11 @@ export const SelectPreviewBuildingMenu = () => {
               );
 
               const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
-
               return (
                 <BuildingCard
+                  className={clsx({
+                    hidden: currentQuest?.name === QuestName.BuildFarm,
+                  })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
                   resourceId={resourceId}
@@ -139,6 +164,7 @@ export const SelectPreviewBuildingMenu = () => {
                     } else {
                       setPreviewBuilding({ type: BuildingType.Resource, resource: resourceId });
                       playResourceSound(resourceId);
+                      closePopups();
                     }
                   }}
                   active={previewBuilding?.resource === resourceId}
@@ -173,8 +199,16 @@ export const SelectPreviewBuildingMenu = () => {
                     ? hasBalance
                     : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
+                const isFarm = building === BuildingType["Farm"];
+
                 return (
                   <BuildingCard
+                    className={clsx({
+                      hidden:
+                        (!isFarm && currentQuest?.name === QuestName.BuildFarm) ||
+                        currentQuest?.name === QuestName.BuildResource,
+                      "animate-pulse": isFarm && currentQuest?.name === QuestName.BuildFarm,
+                    })}
                     key={index}
                     buildingId={building}
                     onClick={() => {
@@ -187,6 +221,7 @@ export const SelectPreviewBuildingMenu = () => {
                         setPreviewBuilding({ type: building });
                         if (building === BuildingType.Farm) {
                           playResourceSound(ResourcesIds.Wheat);
+                          closePopups();
                         }
                         if (building === BuildingType.FishingVillage) {
                           playResourceSound(ResourcesIds.Fish);
@@ -226,6 +261,10 @@ export const SelectPreviewBuildingMenu = () => {
 
                 return (
                   <BuildingCard
+                    className={clsx({
+                      hidden:
+                        currentQuest?.name === QuestName.BuildFarm || currentQuest?.name === QuestName.BuildResource,
+                    })}
                     key={index}
                     buildingId={building}
                     onClick={() => {
@@ -253,8 +292,15 @@ export const SelectPreviewBuildingMenu = () => {
   );
 
   return (
-    <div className="flex flex-col  bg-brown border-gradient border clip-angled">
-      <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
+    <div className="relative flex flex-col  bg-brown border-gradient border clip-angled">
+      <HintModalButton className="absolute top-1 right-1" sectionName="Buildings & Bases" />
+      <Tabs
+        selectedIndex={selectedTab}
+        onChange={(index: any) => {
+          setSelectedTab(index);
+        }}
+        className="h-full"
+      >
         <Tabs.List>
           {tabs.map((tab, index) => (
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
@@ -278,6 +324,7 @@ export const BuildingCard = ({
   toolTip,
   canBuild,
   resourceId,
+  className,
 }: {
   buildingId: BuildingType;
   onClick: () => void;
@@ -286,6 +333,7 @@ export const BuildingCard = ({
   toolTip: React.ReactElement;
   canBuild?: boolean;
   resourceId?: ResourcesIds;
+  className?: string;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   return (
@@ -305,6 +353,7 @@ export const BuildingCard = ({
         {
           "!border-lightest border-gradient border": active,
         },
+        className,
       )}
     >
       {!canBuild && (

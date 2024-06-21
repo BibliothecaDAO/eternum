@@ -6,11 +6,14 @@ import { EntitiesArmyTable } from "@/ui/components/military/EntitiesArmyTable";
 import { useLocation } from "wouter";
 import { BattlesArmyTable } from "@/ui/components/military/BattlesArmyTable";
 import { Tabs } from "@/ui/elements/tab";
+import { useModal } from "@/hooks/store/useModal";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 
 export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const { playerStructures } = useEntities();
+  const { toggleModal } = useModal();
 
   const [location, _] = useLocation();
 
@@ -43,7 +46,8 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
   );
 
   return (
-    <div>
+    <div className="relative">
+      <HintModalButton className="absolute top-1 right-1" sectionName="Combat" />
       {isMap ? (
         <Tabs
           selectedIndex={selectedTab}

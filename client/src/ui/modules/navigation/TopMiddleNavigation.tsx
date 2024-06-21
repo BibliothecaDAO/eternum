@@ -14,6 +14,7 @@ import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
 import { motion } from "framer-motion";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -41,6 +42,8 @@ export const TopMiddleNavigation = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+
+  const claimableQuestsLength = useQuestStore((state) => state.claimableQuestsLength);
 
   // realms always first
   const structures = useMemo(() => {
@@ -106,6 +109,7 @@ export const TopMiddleNavigation = () => {
           </Select>
         </div>
         <Button
+          disabled={claimableQuestsLength > 0}
           variant="primary"
           onClick={() => {
             if (location !== "/map") {
@@ -157,7 +161,7 @@ const TickProgress = () => {
         });
       }}
       onMouseLeave={() => setTooltip(null)}
-      className="self-center text-center  px-4 py-1 second-step bg-brown text-gold border-gradient h5 clip-angled"
+      className="self-center text-center  px-4 py-1 bg-brown text-gold border-gradient h5 clip-angled"
     >
       {progress.toFixed()}%
     </div>
