@@ -24,7 +24,11 @@ export const StructureCard = ({
   ownArmySelected: ArmyInfo | undefined;
 }) => {
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
-  const { formattedRealmAtPosition, formattedStructureAtPosition } = useStructuresPosition({ position });
+  const { useFormattedRealmAtPosition, useFormattedStructureAtPosition } = useStructuresPosition({ position });
+
+  const formattedRealmAtPosition = useFormattedRealmAtPosition();
+  const formattedStructureAtPosition = useFormattedStructureAtPosition();
+
   const setBattleView = useUIStore((state) => state.setBattleView);
 
   const button = useMemo(() => {
