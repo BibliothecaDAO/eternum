@@ -104,9 +104,9 @@ const WorldMapLight = () => {
       step: 0.01,
     },
     intensity: {
-      value: 1.65,
+      value: 7.42,
       min: 0,
-      max: 2,
+      max: 10,
       step: 0.01,
     },
     bias: {

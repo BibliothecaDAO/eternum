@@ -1,9 +1,10 @@
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { useGLTF } from "@react-three/drei";
+import { Billboard, useGLTF, Image, useTexture } from "@react-three/drei";
 import { useMemo } from "react";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "@/hooks/context/DojoContext";
+import * as THREE from "three";
 
 export const ShardsMines = () => {
   const { setup } = useDojo();
@@ -39,9 +40,22 @@ export const ShardsMines = () => {
 
 const ShardsMineModel = ({ position, onClick }: { position: any; onClick: () => void }) => {
   const shardsMineModel = useGLTF("/models/buildings/mine.glb");
+  const shardLabel = useTexture("/textures/shard_label.png", (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearFilter;
+  });
+
   const clone = useMemo(() => {
     return shardsMineModel.scene.clone();
   }, [shardsMineModel]);
 
-  return <primitive scale={3} object={clone} position={position} onClick={onClick} />;
+  return (
+    <group position={position}>
+      <primitive scale={3} object={clone} onClick={onClick} />
+      <Billboard>
+        <Image texture={shardLabel} scale={4} position={[0, 5, 0]} side={THREE.DoubleSide} transparent />
+      </Billboard>
+    </group>
+  );
 };

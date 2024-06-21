@@ -3,7 +3,7 @@ import useLeaderBoardStore from "@/hooks/store/useLeaderBoardStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { StructureType } from "@bibliothecadao/eternum";
-import { useGLTF } from "@react-three/drei";
+import { Billboard, useGLTF, useTexture, Image } from "@react-three/drei";
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { InstancedCastles } from "./InstancedCastles";
@@ -61,6 +61,12 @@ const BuiltStructure = ({
   const { x, y } = getUIPositionFromColRow(structure.col, structure.row, false);
   const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
 
+  const hyperLabel = useTexture("/textures/hyper_label.png", (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearFilter;
+  });
+
   useEffect(() => {
     let category = structureCategory;
     let model = models[category];
@@ -99,6 +105,11 @@ const BuiltStructure = ({
   return (
     <group position={[x, 0.31, -y]} rotation={rotation}>
       <primitive dropShadow scale={scale} object={model!} renderOrder={2} />
+      {structureCategory === StructureType.Hyperstructure && (
+        <Billboard>
+          <Image texture={hyperLabel} scale={6} position={[0, 8, 5]} side={THREE.DoubleSide} transparent />
+        </Billboard>
+      )}
     </group>
   );
 };

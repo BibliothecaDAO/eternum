@@ -78,8 +78,8 @@ export const MainScene = () => {
 
   const { ambientColor, ambientIntensityHexception, ambientIntensityMap } = useControls("Ambient Light", {
     ambientColor: { value: "#7b7c59", label: "Color" },
-    ambientIntensityHexception: { value: 0.5, min: 0, max: 1, step: 0.01 },
-    ambientIntensityMap: { value: 0.75, min: 0, max: 1, step: 0.01 },
+    ambientIntensityHexception: { value: 1.52, min: 0, max: 10, step: 0.01 },
+    ambientIntensityMap: { value: 0.57, min: 0, max: 10, step: 0.01 },
   });
 
   const ambientIntensity = useMemo(() => {
@@ -111,13 +111,13 @@ export const MainScene = () => {
       className={clsx("rounded-xl")}
       raycaster={{
         params: {
-          Points: { threshold: 0.1 },
-          Mesh: { threshold: 0.1 },
+          Points: { threshold: 0.05 },
+          Mesh: { threshold: 0.05 },
           Line: {
-            threshold: 0.1,
+            threshold: 0.05,
           },
-          LOD: { threshold: 0.1 },
-          Sprite: { threshold: 0.1 },
+          LOD: { threshold: 0.05 },
+          Sprite: { threshold: 0.05 },
         },
       }}
       camera={{ fov: 15, position: [0, 700, 0], far: 1300, near: 20 }}
@@ -131,6 +131,7 @@ export const MainScene = () => {
         type: 2,
       }}
       gl={{
+        outputColorSpace: THREE.SRGBColorSpace,
         powerPreference: "high-performance",
         antialias: false,
         stencil: false,
@@ -216,7 +217,7 @@ export const MainScene = () => {
             </Switch>
           </Suspense>
         </Bvh>
-        <EffectComposer multisampling={0}>
+        <EffectComposer multisampling={0} renderPriority={1}>
           <Vignette
             offset={0.5} // vignette offset
             darkness={0.6} // vignette darkness
@@ -238,7 +239,7 @@ export const MainScene = () => {
             <></>
           )}
           {/* <Pixelation granularity={3} /> */}
-          <BrightnessContrast brightness={brightness} contrast={contrast} />
+          {/* <BrightnessContrast brightness={brightness} contrast={contrast} /> */}
         </EffectComposer>
         <fog attach="fog" color={fogColor} near={fogDistance.near} far={fogDistance.far} />
         <AdaptiveDpr pixelated />
