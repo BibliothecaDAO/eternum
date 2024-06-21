@@ -2,10 +2,12 @@ import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
 import { PlayersLeaderboard } from "./PlayersLeaderboard";
 import { GuildsLeaderboard } from "./GuildsLeaderboard";
+import { useModal } from "@/hooks/store/useModal";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 
 export const LeaderboardPanel = () => {
   const [selectedTab, setSelectedTab] = useState(0);
-
+  const { toggleModal } = useModal();
   const tabs = useMemo(
     () => [
       {
@@ -51,6 +53,7 @@ export const LeaderboardPanel = () => {
           {tabs.map((tab, index) => (
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
           ))}
+          <HintModalButton sectionName="Points" />
         </Tabs.List>
         <Tabs.Panels className="overflow-hidden">
           {tabs.map((tab, index) => (

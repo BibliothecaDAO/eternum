@@ -27,7 +27,8 @@ export const HexagonInformationPanel = () => {
 
   const battle = useBattlesByPosition(hexPosition || { x: 0, y: 0 });
 
-  const { formattedStructureAtPosition } = useStructuresPosition({ position: hexPosition || { x: 0, y: 0 } });
+  const { useFormattedStructureAtPosition } = useStructuresPosition({ position: hexPosition || { x: 0, y: 0 } });
+  const formattedStructureAtPosition = useFormattedStructureAtPosition();
 
   const { userAttackingArmies, enemyArmies } = usePositionArmies({
     position: { x: hexPosition?.x || 0, y: hexPosition?.y || 0 },

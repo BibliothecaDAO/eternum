@@ -1,11 +1,11 @@
-import { useDojo } from "@/hooks/context/DojoContext";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useQuests } from "@/hooks/helpers/useQuests";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { useStamina } from "@/hooks/helpers/useStamina";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import CircleButton from "@/ui/elements/CircleButton";
-import { getEntityIdFromKeys, isRealmSelected } from "@/ui/utils/utils";
-import { useComponentValue } from "@dojoengine/react";
+import { isRealmSelected } from "@/ui/utils/utils";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
@@ -13,6 +13,7 @@ import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { guilds, leaderboard, quests } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
+import clsx from "clsx";
 
 export enum MenuEnum {
   realm = "realm",
@@ -29,12 +30,6 @@ export enum MenuEnum {
 }
 
 export const BottomNavigation = () => {
-  const {
-    setup: {
-      components: { Population },
-    },
-  } = useDojo();
-
   const [location, setLocation] = useLocation();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -44,9 +39,14 @@ export const BottomNavigation = () => {
   const toggleShowAllArmies = useUIStore((state) => state.toggleShowAllArmies);
   const showAllArmies = useUIStore((state) => state.showAllArmies);
 
-  const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
+  const isWorldView = useMemo(() => location === "/map", [location]);
 
-  const { claimableQuests } = useQuests({ entityId: realmEntityId || BigInt("0") });
+  const selectedEntityId = useUIStore((state) => state.selectedEntity);
+
+  const army = getArmyByEntityId(selectedEntityId?.id || BigInt("0"));
+
+  const currentQuest = useQuestStore((state) => state.currentQuest);
+  const claimableQuestsLength = useQuestStore((state) => state.claimableQuestsLength);
 
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
@@ -63,16 +63,15 @@ export const BottomNavigation = () => {
               active={isPopupOpen(quests)}
               size="lg"
               onClick={() => togglePopup(quests)}
-              className="forth-step"
-              notification={isRealmSelected(realmEntityId, structures) ? claimableQuests?.length : undefined}
+              notification={isRealmSelected(realmEntityId, structures) ? claimableQuestsLength : undefined}
               notificationLocation={"topleft"}
-              disabled={!isRealmSelected(realmEntityId, structures) || !claimableQuests?.length}
+              disabled={!isRealmSelected(realmEntityId, structures)}
             />
 
-            {population?.population == null && location !== "/map" && (
+            {currentQuest?.completed && !currentQuest?.claimed && location !== "/map" && (
               <div className="absolute bg-brown text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
                 <ArrowDown className="text-gold w-4 mr-3" />
-                <div>Start here</div>
+                <div className="text-xs">Claim your reward</div>
               </div>
             )}
           </div>
@@ -87,6 +86,7 @@ export const BottomNavigation = () => {
             active={isPopupOpen(leaderboard)}
             size="lg"
             onClick={() => togglePopup(leaderboard)}
+            className={clsx({ hidden: claimableQuestsLength > 0 })}
           />
         ),
       },
@@ -99,6 +99,7 @@ export const BottomNavigation = () => {
             active={showAllArmies}
             size="lg"
             onClick={toggleShowAllArmies}
+            className={clsx({ hidden: !isWorldView })}
           />
         ),
       },
@@ -111,11 +112,12 @@ export const BottomNavigation = () => {
             active={isPopupOpen(guilds)}
             size="lg"
             onClick={() => togglePopup(guilds)}
+            className={clsx({ hidden: claimableQuestsLength > 0 })}
           />
         ),
       },
     ];
-  }, [claimableQuests]);
+  }, [claimableQuestsLength, currentQuest]);
 
   const slideUp = {
     hidden: { y: "100%", transition: { duration: 0.3 } },
@@ -131,10 +133,10 @@ export const BottomNavigation = () => {
       variants={slideUp}
       initial="hidden"
       animate="visible"
-      className="flex justify-center flex-wrap first-step relative w-full duration-300 transition-all "
+      className="flex justify-center flex-wrap relative w-full duration-300 transition-all "
     >
       <div className="">
-        <div className="flex py-2 sixth-step  px-10 gap-1">
+        <div className="flex py-2 px-10 gap-1">
           {secondaryNavigation.map((a, index) => (
             <div key={index}>{a.button}</div>
           ))}

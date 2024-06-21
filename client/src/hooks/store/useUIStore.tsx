@@ -1,4 +1,5 @@
-import { View } from "@/ui/modules/navigation/LeftNavigationModule";
+import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
+import { View as RightView } from "@/ui/modules/navigation/RightNavigationModule";
 import React from "react";
 import { Vector3 } from "three";
 import { create } from "zustand";
@@ -57,8 +58,10 @@ interface UIStore {
   showModal: boolean;
   battleView: BattleViewInfo | null;
   setBattleView: (participants: BattleViewInfo | null) => void;
-  leftNavigationView: View;
-  setLeftNavigationView: (view: View) => void;
+  leftNavigationView: LeftView;
+  setLeftNavigationView: (view: LeftView) => void;
+  rightNavigationView: RightView;
+  setRightNavigationView: (view: RightView) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((set, get) => ({
@@ -186,11 +189,13 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   showModal: false,
   battleView: null,
   setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
+  leftNavigationView: LeftView.None,
+  setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view }),
+  rightNavigationView: RightView.None,
+  setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
   ...createPopupsSlice(set, get),
   ...createMapStoreSlice(set),
   ...createBuildModeStoreSlice(set),
-  leftNavigationView: View.None,
-  setLeftNavigationView: (view: View) => set({ leftNavigationView: view }),
 }));
 
 export default useUIStore;

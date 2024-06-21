@@ -9,9 +9,13 @@ import Button from "@/ui/elements/Button";
 import { ArmyViewCard } from "./ArmyViewCard";
 import { DepositResources } from "../resources/DepositResources";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import clsx from "clsx";
 
 export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
+
+  const currentQuest = useQuestStore((state) => state.currentQuest);
 
   const {
     account: { account },
@@ -43,12 +47,15 @@ export const EntityArmyList = ({ entity_id }: any) => {
             <p className="px-3 py-2 bg-blueish/20 clip-angled-sm font-bold">
               First you must create an Army then you can enlist troops to it. You can only have one defensive army.
             </p>
-            <div className=" w-full flex justify-between my-4">
+            <div className="w-full flex justify-between my-4">
               <Button
                 isLoading={isLoading}
                 variant="primary"
                 onClick={() => handleCreateArmy(false)}
                 disabled={isLoading}
+                className={clsx({
+                  "animate-pulse": currentQuest?.name === QuestName.CreateArmy && !currentQuest.steps[0].completed,
+                })}
               >
                 Create Army
               </Button>
@@ -76,6 +83,11 @@ export const EntityArmyList = ({ entity_id }: any) => {
             <DepositResources entityId={entity.entity_id} />
           </React.Fragment>
         )}
+        questing={
+          currentQuest?.name === QuestName.CreateArmy &&
+          currentQuest.steps[0].completed &&
+          !currentQuest.steps[1].completed
+        }
       />
     </>
   );
