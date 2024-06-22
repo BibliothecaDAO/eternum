@@ -109,7 +109,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
                 </ToggleComponent>
               ))}
             </div>
-            <div className="justify-around">
+            <div className="justify-around overflow-auto">
               <Headline>To</Headline>
               {entitiesList.map(({ entities, name: title }, index) => (
                 <ToggleComponent title={title} key={index}>
@@ -199,19 +199,19 @@ const SelectEntityFromList = ({
   entities: any[];
 }) => {
   return (
-    <div>
+    <div className="overflow-y-scroll max-h-72 border border-gold/10">
       {entities.map((entity, index) => (
         <div
           key={index}
           className={clsx(
-            "flex w-full justify-between hover:bg-white/10 items-center  p-1  text-xs my-3 pl-2",
+            "flex w-full justify-between hover:bg-white/10 items-center  p-1  text-xs pl-2",
             selectedEntityId === entity.entity_id && " border-gold/10 border",
           )}
         >
           <h6 className="text-sm">{entity.name}</h6>
           <Button
             disabled={selectedEntityId === entity.entity_id || selectedCounterpartyId === entity.entity_id}
-            size="md"
+            size="xs"
             variant={"default"}
             onClick={() => onSelect(entity.entity_id!)}
           >
