@@ -171,6 +171,8 @@ export const MarketResourceSidebar = ({
 
 export const TransferView = () => {
   const { playerRealms, playerAccounts, playerStructures, otherRealms } = useEntities();
+
+  console.log(otherRealms());
   return (
     <TransferBetweenEntities
       entitiesList={[
