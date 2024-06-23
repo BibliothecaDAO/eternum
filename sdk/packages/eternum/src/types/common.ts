@@ -76,6 +76,7 @@ export interface MarketInterface {
   takerGets: Resource[];
   makerGets: Resource[];
   ratio: number;
+  perLords: number;
 }
 
 export interface Trade {
