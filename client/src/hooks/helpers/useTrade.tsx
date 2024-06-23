@@ -1,6 +1,6 @@
 import { HasValue, getComponentValue, runQuery, Entity, NotValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
-import { MarketInterface, Resource } from "@bibliothecadao/eternum";
+import { MarketInterface, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
@@ -87,6 +87,10 @@ export function useTrade() {
               takerGets,
               makerGets,
               ratio: calculateRatio(makerGets, takerGets),
+              perLords:
+                takerGets[0].resourceId == ResourcesIds.Lords
+                  ? calculateRatio(takerGets, makerGets)
+                  : calculateRatio(makerGets, takerGets),
             } as MarketInterface;
           }
         }

@@ -155,8 +155,8 @@ export const OrderRowHeader = ({ isBuy, resourceId }: { isBuy: boolean; resource
       <div>quantity</div>
       <div>distance</div>
       <div className="flex">
-        <ResourceIcon size="xs" resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"} /> per/
-        <ResourceIcon size="xs" resource={isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"} />
+        <ResourceIcon size="xs" resource={findResourceById(resourceId)?.trait || ""} /> per/
+        <ResourceIcon size="xs" resource={"Lords"} />
       </div>
     </div>
   );
@@ -213,6 +213,14 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
     return entityId === offer.makerId;
   }, [entityId, offer.makerId, offer.tradeId]);
 
+  const getsDisplay = useMemo(() => {
+    return isBuy ? currencyFormat(offer.makerGets[0].amount, 0) : currencyFormat(offer.takerGets[0].amount, 0);
+  }, [entityId, offer.makerId, offer.tradeId]);
+
+  const getDisplayResource = useMemo(() => {
+    return isBuy ? offer.makerGets[0].resourceId : offer.takerGets[0].resourceId;
+  }, [entityId, offer.makerId, offer.tradeId]);
+
   return (
     <div
       key={offer.tradeId}
@@ -221,9 +229,14 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
       }`}
     >
       <div className="grid grid-cols-4 gap-4">
-        <div>{currencyFormat(offer.takerGets[0].amount, 2)}</div>
+        <div className="flex gap-1">
+          <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
+          {getsDisplay}
+        </div>
         <div>{travelTime}hrs</div>
-        <div>{offer.ratio.toFixed(2)}</div>
+        <div className="flex gap-1">
+          {offer.perLords.toFixed(2)} <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
+        </div>
         {isSelf ? (
           <Button
             onClick={async () => {
@@ -243,7 +256,7 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
           </Button>
         ) : (
           <Button isLoading={loading} onClick={onAccept} size="xs" className="self-center flex flex-grow">
-            accept
+            {!isBuy ? "Buy" : "Sell"}
           </Button>
         )}
       </div>
@@ -298,7 +311,7 @@ export const OrderCreation = ({
   };
 
   const bid = useMemo(() => {
-    return !isBuy ? (resource / lords).toFixed(2) : (lords / resource).toFixed(2);
+    return (resource / lords).toFixed(2);
   }, [resource, lords]);
 
   const orderWeight = useMemo(() => {
@@ -354,39 +367,22 @@ export const OrderCreation = ({
       <div className="flex w-full gap-8">
         <div className="w-1/3">
           <div className="uppercase text-xs flex gap-1 font-bold">
-            <ResourceIcon
-              withTooltip={false}
-              size="xs"
-              resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
-            />{" "}
-            Trade
+            <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />{" "}
+            {isBuy ? "Buy" : "Sell"}
           </div>
-          {!isBuy ? (
-            <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
-          ) : (
-            <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
-          )}
+          {/* {!isBuy ? ( */}
+          <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
+          {/* // ) : (
+          //   <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
+          // )} */}
 
-          <div className="text-sm">
-            {!isBuy
-              ? currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)
-              : currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)}
-          </div>
+          <div className="text-sm">{currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)}</div>
         </div>
         <div className="flex w-1/3 justify-start px-3">
           <div className="uppercase">
             <div className="uppercase text-xs flex gap-1 mb-4 ">
-              <ResourceIcon
-                withTooltip={false}
-                size="xs"
-                resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
-              />{" "}
-              per /{" "}
-              <ResourceIcon
-                withTooltip={false}
-                size="xs"
-                resource={isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
-              />
+              <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} /> per /{" "}
+              <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
             </div>
             {bid.toString()}
 
@@ -395,25 +391,15 @@ export const OrderCreation = ({
         </div>
         <div className="w-1/3">
           <div className="uppercase text-xs flex gap-1 font-bold">
-            <ResourceIcon
-              withTooltip={false}
-              size="xs"
-              resource={isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
-            />{" "}
-            Receive
+            <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> Lords
           </div>
-          {!isBuy ? (
-            <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
-          ) : (
-            <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
-          )}
+          {/* {!isBuy ? ( */}
+          <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
+          {/* // ) : (
+          //   <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
+          // )} */}
 
-          <div className="text-sm">
-            {!isBuy
-              ? currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)
-              : currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)}{" "}
-            avail.
-          </div>
+          <div className="text-sm">{currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)} avail.</div>
         </div>
       </div>
       <div className="mt-8 ml-auto text-right w-auto font-bold text-lg">
@@ -444,7 +430,7 @@ export const OrderCreation = ({
           size="md"
           variant="primary"
         >
-          {isBuy ? "Buy" : `Sell `} {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
+          Create {isBuy ? "Buy " : `Sell `} Order of {resource.toLocaleString()} {findResourceById(resourceId)?.trait}
         </Button>
       </div>
     </div>
