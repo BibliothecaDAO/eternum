@@ -25,6 +25,7 @@ export const MarketResource = ({
   onClick,
   askPrice,
   bidPrice,
+  depth,
 }: {
   entityId: bigint;
   resource: Resources;
@@ -32,6 +33,7 @@ export const MarketResource = ({
   onClick: (value: number) => void;
   askPrice: string;
   bidPrice: string;
+  depth: number;
 }) => {
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resource.id);
@@ -47,12 +49,12 @@ export const MarketResource = ({
   return (
     <div
       onClick={() => onClick(resource.id)}
-      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer flex gap-4 hover:bg-gold/10  hover:clip-angled-sm group ${
+      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer flex gap-1 hover:bg-gold/10  hover:clip-angled-sm group ${
         active ? "bg-white/10  clip-angled-sm" : ""
       }`}
     >
-      <ResourceIcon size="sm" resource={resource.trait} withTooltip={false} />
-      <div className="truncate">{resource.trait}</div>
+      <ResourceIcon size="sm" resource={resource.trait} withTooltip={true} />
+      <div className="truncate text-xs self-center">{resource.trait}</div>
 
       <div className="text-xs text-gold/70 group-hover:text-green self-center">
         [{currencyFormat(balance ? Number(balance) : 0, 0)}]
@@ -61,6 +63,7 @@ export const MarketResource = ({
       <div className="ml-auto flex gap-6 w-2/6 justify-between font-bold">
         <div className="text-green">{bidPrice}</div>
         <div className="text-red">{askPrice}</div>
+        <div className="text-blueish">{depth}</div>
       </div>
     </div>
   );
@@ -151,13 +154,15 @@ export const MarketOrders = ({
 
 export const OrderRowHeader = ({ isBuy, resourceId }: { isBuy: boolean; resourceId: number }) => {
   return (
-    <div className="grid grid-cols-4 gap-4 p-2 uppercase text-xs font-bold border-gold/10 border">
-      <div>quantity</div>
-      <div>distance</div>
+    <div className="grid grid-cols-5 gap-2 p-2 uppercase text-xs font-bold ">
+      <div>qty.</div>
+      <div>dist.</div>
       <div className="flex">
         <ResourceIcon size="xs" resource={findResourceById(resourceId)?.trait || ""} /> per/
         <ResourceIcon size="xs" resource={"Lords"} />
       </div>
+      <div>lords.</div>
+      <div className="ml-auto">Action</div>
     </div>
   );
 };
@@ -221,6 +226,10 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
     return isBuy ? offer.makerGets[0].resourceId : offer.takerGets[0].resourceId;
   }, [entityId, offer.makerId, offer.tradeId]);
 
+  const getTotalLords = useMemo(() => {
+    return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
+  }, [entityId, offer.makerId, offer.tradeId]);
+
   return (
     <div
       key={offer.tradeId}
@@ -228,7 +237,7 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
         isSelf ? "bg-blueish/10" : "bg-white/10"
       }`}
     >
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-2">
         <div className="flex gap-1">
           <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
           {getsDisplay}
@@ -237,6 +246,7 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
         <div className="flex gap-1">
           {offer.perLords.toFixed(2)} <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
         </div>
+        <div>{currencyFormat(getTotalLords, 0)} </div>
         {isSelf ? (
           <Button
             onClick={async () => {
