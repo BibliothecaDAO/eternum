@@ -261,31 +261,31 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
           {currencyFormat(getTotalLords, 0)}
         </div>
 
-        {canAccept ? (
-          isSelf ? (
-            <Button
-              onClick={async () => {
-                setLoading(true);
-                await cancel_order({
-                  signer: account,
-                  trade_id: offer.tradeId,
-                  return_resources: returnResources,
-                });
-                setLoading(false);
-              }}
-              variant="danger"
-              size="xs"
-              className="self-center"
-            >
-              {loading ? "cancelling" : "cancel"}
-            </Button>
-          ) : (
+        {!isSelf ? (
+          canAccept ? (
             <Button isLoading={loading} onClick={onAccept} size="xs" className="self-center flex flex-grow">
               {!isBuy ? "Buy" : "Sell"}
             </Button>
+          ) : (
+            <div className="text-xs text-center">no funds</div>
           )
         ) : (
-          <div className="text-xs text-center">no funds</div>
+          <Button
+            onClick={async () => {
+              setLoading(true);
+              await cancel_order({
+                signer: account,
+                trade_id: offer.tradeId,
+                return_resources: returnResources,
+              });
+              setLoading(false);
+            }}
+            variant="danger"
+            size="xs"
+            className="self-center"
+          >
+            {loading ? "cancelling" : "cancel"}
+          </Button>
         )}
       </div>
     </div>
