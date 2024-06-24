@@ -137,7 +137,7 @@ export const MarketResourceSidebar = ({
   return (
     <div>
       <div className="w-full flex justify-end gap-8 mb-1">
-        <div className="w-2/6 flex justify-between text-xs">
+        <div className="w-3/6 flex justify-between text-xs">
           <div>Sell</div>
           <div>Buy</div>
           <div>Qty</div>
@@ -149,11 +149,11 @@ export const MarketResourceSidebar = ({
           .map((resource) => {
             const askPrice = resourceBidOffers
               .filter((offer) => (resource.id ? offer.makerGets[0]?.resourceId === resource.id : true))
-              .reduce((acc, offer) => (offer.ratio < acc ? offer.ratio : acc), Infinity);
+              .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
 
             const bidPrice = resourceAskOffers
               .filter((offer) => offer.takerGets[0].resourceId === resource.id)
-              .reduce((acc, offer) => (offer.ratio < acc ? offer.ratio : acc), Infinity);
+              .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
 
             const depth =
               resourceBidOffers.filter((offer) => offer.makerGets[0].resourceId === resource.id).length +

@@ -17,6 +17,7 @@ import {
 import { useMemo, useState } from "react";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { useProductionManager } from "@/hooks/helpers/useResources";
+import { Headline } from "@/ui/elements/Headline";
 
 export const MarketResource = ({
   entityId,
@@ -60,10 +61,10 @@ export const MarketResource = ({
         [{currencyFormat(balance ? Number(balance) : 0, 0)}]
       </div>
 
-      <div className="ml-auto flex gap-6 w-2/6 justify-between font-bold">
-        <div className="text-green">{bidPrice}</div>
-        <div className="text-red">{askPrice}</div>
-        <div className="text-blueish">{depth}</div>
+      <div className="ml-auto flex gap-6 w-3/6 justify-between font-bold">
+        <div className="text-red w-5/12">{bidPrice}</div>
+        <div className="text-green text-left  w-5/12">{askPrice}</div>
+        <div className="text-blueish  w-2/12">{depth}</div>
       </div>
     </div>
   );
@@ -112,12 +113,12 @@ export const MarketOrders = ({
   offers: MarketInterface[];
 }) => {
   const lowestPrice = useMemo(() => {
-    const price = offers.reduce((acc, offer) => (offer.ratio < acc ? offer.ratio : acc), Infinity);
+    const price = offers.reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
     return price === Infinity ? 0 : price;
   }, [offers]);
 
   return (
-    <div className=" h-full flex flex-col gap-8">
+    <div className=" h-full flex flex-col gap-4">
       {/* Market Price */}
       <div
         className={`text-xl flex clip-angled-sm font-bold  justify-between p-3 px-8 border-gold/10 border ${
@@ -125,11 +126,7 @@ export const MarketOrders = ({
         }`}
       >
         <div className="self-center flex gap-4">
-          <ResourceIcon
-            withTooltip={false}
-            size="lg"
-            resource={!isBuy ? findResourceById(resourceId)?.trait || "" : "Lords"}
-          />
+          <ResourceIcon withTooltip={false} size="lg" resource={findResourceById(resourceId)?.trait || ""} />
           <div className="self-center">{lowestPrice.toFixed(2)}</div>
         </div>
         <div>
@@ -161,7 +158,7 @@ export const OrderRowHeader = ({ isBuy, resourceId }: { isBuy: boolean; resource
         <ResourceIcon size="xs" resource={findResourceById(resourceId)?.trait || ""} /> per/
         <ResourceIcon size="xs" resource={"Lords"} />
       </div>
-      <div>lords.</div>
+      <div className="flex">cost</div>
       <div className="ml-auto">Action</div>
     </div>
   );
@@ -230,6 +227,21 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
     return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
   }, [entityId, offer.makerId, offer.tradeId]);
 
+  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
+  const productionManager = useProductionManager(entityId, offer.makerGets[0].resourceId);
+
+  const production = useMemo(() => {
+    return productionManager.getProduction();
+  }, [entityId, offer.makerId, offer.tradeId]);
+
+  const balance = useMemo(() => {
+    return productionManager.balance(currentDefaultTick);
+  }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId]);
+
+  const canAccept = useMemo(() => {
+    return isBuy ? offer.takerGets[0].amount < balance : offer.makerGets[0].amount < balance;
+  }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId]);
+
   return (
     <div
       key={offer.tradeId}
@@ -238,36 +250,42 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
       }`}
     >
       <div className="grid grid-cols-5 gap-2">
-        <div className="flex gap-1">
+        <div className={`flex gap-1 font-bold ${isBuy ? "text-red" : "text-green"} `}>
           <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
           {getsDisplay}
         </div>
         <div>{travelTime}hrs</div>
-        <div className="flex gap-1">
-          {offer.perLords.toFixed(2)} <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
+        <div className="flex gap-1">{offer.perLords.toFixed(2)}</div>
+        <div className={`flex gap-1 font-bold ${isBuy ? "text-green" : "text-red"}`}>
+          <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
+          {currencyFormat(getTotalLords, 0)}
         </div>
-        <div>{currencyFormat(getTotalLords, 0)} </div>
-        {isSelf ? (
-          <Button
-            onClick={async () => {
-              setLoading(true);
-              await cancel_order({
-                signer: account,
-                trade_id: offer.tradeId,
-                return_resources: returnResources,
-              });
-              setLoading(false);
-            }}
-            variant="danger"
-            size="xs"
-            className="self-center"
-          >
-            {loading ? "cancelling" : "cancel"}
-          </Button>
+
+        {canAccept ? (
+          isSelf ? (
+            <Button
+              onClick={async () => {
+                setLoading(true);
+                await cancel_order({
+                  signer: account,
+                  trade_id: offer.tradeId,
+                  return_resources: returnResources,
+                });
+                setLoading(false);
+              }}
+              variant="danger"
+              size="xs"
+              className="self-center"
+            >
+              {loading ? "cancelling" : "cancel"}
+            </Button>
+          ) : (
+            <Button isLoading={loading} onClick={onAccept} size="xs" className="self-center flex flex-grow">
+              {!isBuy ? "Buy" : "Sell"}
+            </Button>
+          )
         ) : (
-          <Button isLoading={loading} onClick={onAccept} size="xs" className="self-center flex flex-grow">
-            {!isBuy ? "Buy" : "Sell"}
-          </Button>
+          <div className="text-xs text-center">no funds</div>
         )}
       </div>
     </div>
