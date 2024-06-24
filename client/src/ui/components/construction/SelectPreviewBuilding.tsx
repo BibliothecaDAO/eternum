@@ -1,39 +1,37 @@
 import clsx from "clsx";
 
 import useUIStore from "@/hooks/store/useUIStore";
-import {
-  BASE_POPULATION_CAPACITY,
-  BUILDING_CAPACITY,
-  BUILDING_POPULATION,
-  BUILDING_RESOURCE_PRODUCED,
-  BuildingEnumToString,
-  BuildingType,
-  EternumGlobalConfig,
-  RESOURCE_INFORMATION,
-  RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS_SCALED,
-  ResourcesIds,
-  findResourceById,
-} from "@bibliothecadao/eternum";
 import { Tabs } from "@/ui/elements/tab";
+import {
+	BUILDING_CAPACITY,
+	BUILDING_POPULATION,
+	BUILDING_RESOURCE_PRODUCED,
+	BuildingEnumToString,
+	BuildingType,
+	EternumGlobalConfig,
+	RESOURCE_INPUTS_SCALED,
+	RESOURCE_OUTPUTS_SCALED,
+	ResourcesIds,
+	findResourceById,
+} from "@bibliothecadao/eternum";
 
-import useRealmStore from "@/hooks/store/useRealmStore";
-import { useGetRealm } from "@/hooks/helpers/useRealm";
-import React, { useMemo, useState } from "react";
-import { unpackResources } from "@/ui/utils/packedData";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
-import { usePlayResourceSound } from "@/hooks/useUISound";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
+import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { Headline } from "@/ui/elements/Headline";
-import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
-import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
-import { quests as questsPopup } from "@/ui/components/navigation/Config";
 import { useModal } from "@/hooks/store/useModal";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import { usePlayResourceSound } from "@/hooks/useUISound";
+import { quests as questsPopup } from "@/ui/components/navigation/Config";
+import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { unpackResources } from "@/ui/utils/packedData";
+import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
+import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
+import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
+import React, { useMemo, useState } from "react";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -384,7 +382,15 @@ export const BuildingCard = ({
   );
 };
 
-export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; entityId: bigint | undefined }) => {
+export const ResourceInfo = ({
+  resourceId,
+  entityId,
+  extraButtons = [],
+}: {
+  resourceId: number;
+  entityId: bigint | undefined;
+  extraButtons?: React.ReactNode[];
+}) => {
   const cost = RESOURCE_INPUTS_SCALED[resourceId];
 
   const buildingCost = BUILDING_COSTS_SCALED[BuildingType.Resource];
@@ -393,13 +399,11 @@ export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; ent
 
   const capacity = BUILDING_CAPACITY[BuildingType.Resource];
 
-  const information = RESOURCE_INFORMATION[resourceId];
-
   const { getBalance } = useResourceBalance();
 
   return (
     <div className="flex flex-col text-gold text-sm p-1 space-y-1">
-      <Headline className="py-3"> Building </Headline>
+      <Headline className="py-3">Resource Building </Headline>
 
       {population !== 0 && <div className="font-bold">Increases Population: +{population}</div>}
 
@@ -444,6 +448,7 @@ export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; ent
           );
         })}
       </div>
+      {extraButtons}
     </div>
   );
 };

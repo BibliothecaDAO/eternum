@@ -127,10 +127,10 @@ export const BottomNavigation = () => {
       variants={slideUp}
       initial="hidden"
       animate="visible"
-      className="flex justify-center flex-wrap relative w-full duration-300 transition-all "
+      className="flex justify-center flex-wrap relative w-full duration-300 transition-all"
     >
       <div className="">
-        <div className="flex py-2 px-10 gap-1">
+        <div className="flex py-2 px-10 gap-1 pointer-events-auto">
           {secondaryNavigation.map((a, index) => (
             <div key={index}>{a.button}</div>
           ))}
