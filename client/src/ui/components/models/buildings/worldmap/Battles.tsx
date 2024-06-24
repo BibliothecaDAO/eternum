@@ -38,7 +38,7 @@ export const Battles = () => {
 const BattleModel = ({ battle_id, position, onClick }: { battle_id: any; position: any; onClick: () => void }) => {
   const selectedBattle = useUIStore((state) => state.selectedBattle);
 
-  const showCombatLabel = useMemo(() => {
+  const showBattleLabel = useMemo(() => {
     return selectedBattle !== undefined && selectedBattle.id === BigInt(battle_id);
   }, [selectedBattle, battle_id]);
 
@@ -49,7 +49,7 @@ const BattleModel = ({ battle_id, position, onClick }: { battle_id: any; positio
 
   return (
     <group position={position}>
-      {showCombatLabel && <BattleLabel selectedBattle={selectedBattle!.id} />}
+      {showBattleLabel && <BattleLabel selectedBattle={selectedBattle!.id} />}
       <primitive scale={3} object={clone} onContextMenu={onClick} />
     </group>
   );

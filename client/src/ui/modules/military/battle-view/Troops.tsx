@@ -7,7 +7,7 @@ export const TroopRow = ({ troops, defending = false }: { troops: Troops | undef
   return (
     <div className=" grid-cols-3 col-span-3 gap-2 flex mx-2">
       {noArmy ? (
-        <div className="w-40 text-s text-gold bg-white/10 m-auto border-4 border-gradient">
+        <div className="w-40 text-s text-gold bg-white/10 m-auto border-4 border-gradient p-4">
           Nothing defending this poor structure. The residents are shaking in terror.
         </div>
       ) : (

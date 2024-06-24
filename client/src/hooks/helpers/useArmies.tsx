@@ -44,68 +44,67 @@ const formatArmies = (
   Realm: Component,
   Stamina: Component,
 ): ArmyInfo[] => {
-  return armies
-    .map((id) => {
-      const army = getComponentValue(Army, id) as ClientComponents["Army"]["schema"];
-      const protectee = getComponentValue(Protectee, id) as ClientComponents["Protectee"]["schema"];
-      const health = getComponentValue(Health, id) as ClientComponents["Health"]["schema"];
-      const quantity = getComponentValue(Quantity, id) as ClientComponents["Quantity"]["schema"];
-      const movable = getComponentValue(Movable, id) as ClientComponents["Movable"]["schema"];
-      const capacity = getComponentValue(Capacity, id) as ClientComponents["Capacity"]["schema"];
-      const arrivalTime = getComponentValue(ArrivalTime, id) as ClientComponents["ArrivalTime"]["schema"];
-      const position = getComponentValue(Position, id) as ClientComponents["Position"]["schema"];
-      const entityOwner = getComponentValue(EntityOwner, id) as ClientComponents["EntityOwner"]["schema"];
-      const stamina = getComponentValue(Stamina, id) as ClientComponents["Stamina"]["schema"];
-      let owner = getComponentValue(Owner, id) as ClientComponents["Owner"]["schema"];
-      if (!owner && entityOwner?.entity_owner_id) {
-        owner = getComponentValue(
-          Owner,
-          getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
-        ) as ClientComponents["Owner"]["schema"];
-      }
-      const name = getComponentValue(Name, id) as ClientComponents["EntityName"]["schema"];
-      const realm =
-        entityOwner &&
-        (getComponentValue(
-          Realm,
-          getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
-        ) as ClientComponents["Realm"]["schema"]);
-      const homePosition =
-        realm &&
-        (getComponentValue(
-          Position,
-          getEntityIdFromKeys([BigInt(realm.realm_id)]),
-        ) as ClientComponents["Position"]["schema"]);
+  return armies.map((id) => {
+    const army = getComponentValue(Army, id) as ClientComponents["Army"]["schema"];
+    const protectee = getComponentValue(Protectee, id) as ClientComponents["Protectee"]["schema"];
+    const health = getComponentValue(Health, id) as ClientComponents["Health"]["schema"];
+    const quantity = getComponentValue(Quantity, id) as ClientComponents["Quantity"]["schema"];
+    const movable = getComponentValue(Movable, id) as ClientComponents["Movable"]["schema"];
+    const capacity = getComponentValue(Capacity, id) as ClientComponents["Capacity"]["schema"];
+    const arrivalTime = getComponentValue(ArrivalTime, id) as ClientComponents["ArrivalTime"]["schema"];
+    const position = getComponentValue(Position, id) as ClientComponents["Position"]["schema"];
+    const entityOwner = getComponentValue(EntityOwner, id) as ClientComponents["EntityOwner"]["schema"];
+    const stamina = getComponentValue(Stamina, id) as ClientComponents["Stamina"]["schema"];
+    let owner = getComponentValue(Owner, id) as ClientComponents["Owner"]["schema"];
+    if (!owner && entityOwner?.entity_owner_id) {
+      owner = getComponentValue(
+        Owner,
+        getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+      ) as ClientComponents["Owner"]["schema"];
+    }
+    const name = getComponentValue(Name, id) as ClientComponents["EntityName"]["schema"];
+    const realm =
+      entityOwner &&
+      (getComponentValue(
+        Realm,
+        getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]),
+      ) as ClientComponents["Realm"]["schema"]);
+    const homePosition =
+      realm &&
+      (getComponentValue(
+        Position,
+        getEntityIdFromKeys([BigInt(realm.realm_id)]),
+      ) as ClientComponents["Position"]["schema"]);
 
-      const isMine = BigInt(owner.address) === BigInt(playerAddress);
-      const ownGroupIndex = Number(army.entity_id) % 12;
-      const offset = calculateOffset(ownGroupIndex, 12);
-      const offsetToAvoidOverlapping = Math.random() * 1 - 0.5;
-      offset.y += offsetToAvoidOverlapping;
+    const isMine = BigInt(owner.address) === BigInt(playerAddress);
+    const ownGroupIndex = Number(army.entity_id) % 12;
+    const offset = calculateOffset(ownGroupIndex, 12);
+    const offsetToAvoidOverlapping = Math.random() * 1 - 0.5;
+    offset.y += offsetToAvoidOverlapping;
 
-      return {
-        ...army,
-        ...protectee,
-        ...health,
-        ...quantity,
-        ...movable,
-        ...capacity,
-        ...arrivalTime,
-        ...position,
-        ...entityOwner,
-        ...stamina,
-        ...owner,
-        realm,
-        homePosition,
-        isMine,
-        offset,
-        uiPos: { ...getUIPositionFromColRow(position?.x || 0, position?.y || 0), z: 0.32 },
+    return {
+      ...army,
+      ...protectee,
+      ...health,
+      ...quantity,
+      ...movable,
+      ...capacity,
+      ...arrivalTime,
+      ...position,
+      ...entityOwner,
+      ...stamina,
+      ...owner,
+      realm,
+      homePosition,
+      isMine,
+      offset,
+      uiPos: { ...getUIPositionFromColRow(position?.x || 0, position?.y || 0), z: 0.32 },
 
-        name: name
-          ? shortString.decodeShortString(name.name.toString())
-          : `${protectee ? "🛡️" : "🗡️"}` + `Army ${army?.entity_id}`,
-      };
-    })
+      name: name
+        ? shortString.decodeShortString(name.name.toString())
+        : `${protectee ? "🛡️" : "🗡️"}` + `Army ${army?.entity_id}`,
+    };
+  });
 };
 
 export const useArmies = () => {
@@ -204,7 +203,7 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
       Owner,
       Realm,
       Stamina,
-    ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
+    ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
   }, [armies]);
 
   return {
@@ -338,7 +337,7 @@ export const useArmyByArmyEntityId = (entityId: bigint) => {
     Owner,
     Realm,
     Stamina,
-  ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
+  ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
 };
 
 export const usePositionArmies = ({ position }: { position: Position }) => {
@@ -420,50 +419,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
   }
 };
 
-export const getArmyByEntityId = (entity_id: bigint) => {
-  const {
-    setup: {
-      components: {
-        Position,
-        EntityOwner,
-        Owner,
-        Health,
-        Quantity,
-        Movable,
-        Capacity,
-        ArrivalTime,
-        Realm,
-        Army,
-        Protectee,
-        EntityName,
-        Stamina,
-        Battle,
-      },
-    },
-    account: { account },
-  } = useDojo();
-  const armies = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
-
-  return formatArmies(
-    Array.from(armies),
-    account.address,
-    Army,
-    Protectee,
-    EntityName,
-    Health,
-    Quantity,
-    Movable,
-    Capacity,
-    ArrivalTime,
-    Position,
-    EntityOwner,
-    Owner,
-    Realm,
-    Stamina,
-  ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
-};
-
-export const getUserArmiesAtPosition = (position: Position) => {
+export const getArmyByEntityId = () => {
   const {
     setup: {
       components: {
@@ -486,27 +442,11 @@ export const getUserArmiesAtPosition = (position: Position) => {
     account: { account },
   } = useDojo();
 
-  const allArmiesAtPosition = runQuery([
-    Has(Army),
-    HasValue(Position, { x: position.x, y: position.y }),
-    HasValue(Army, { battle_id: 0n }),
-  ]);
+  const getArmy = (entity_id: bigint) => {
+    const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
 
-  const userArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
-    const entityOwner = getComponentValue(EntityOwner, armyEntityId);
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
-    return owner?.address === BigInt(account.address);
-  });
-
-  const opponentArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
-    const entityOwner = getComponentValue(EntityOwner, armyEntityId);
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
-    return owner?.address !== BigInt(account.address);
-  });
-
-  return {
-    userArmies: formatArmies(
-      userArmies,
+    return formatArmies(
+      Array.from(armiesEntityIds),
       account.address,
       Army,
       Protectee,
@@ -521,27 +461,94 @@ export const getUserArmiesAtPosition = (position: Position) => {
       Owner,
       Realm,
       Stamina,
-    ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
-    opponentArmies: formatArmies(
-      opponentArmies,
-      account.address,
-      Army,
-      Protectee,
-      EntityName,
-      Health,
-      Quantity,
-      Movable,
-      Capacity,
-      ArrivalTime,
-      Position,
-      EntityOwner,
-      Owner,
-      Realm,
-      Stamina,
-    ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
+    ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
   };
+
+  return { getArmy };
 };
 
+export const getArmiesAtPosition = () => {
+  const {
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+        Stamina,
+        Battle,
+      },
+    },
+    account: { account },
+  } = useDojo();
+
+  const getArmies = (position: Position) => {
+    const allArmiesAtPosition = runQuery([
+      Has(Army),
+      HasValue(Position, { x: position.x, y: position.y }),
+      HasValue(Army, { battle_id: 0n }),
+    ]);
+
+    const userArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
+      const entityOwner = getComponentValue(EntityOwner, armyEntityId);
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+      return owner?.address === BigInt(account.address);
+    });
+
+    const opponentArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
+      const entityOwner = getComponentValue(EntityOwner, armyEntityId);
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+      return owner?.address !== BigInt(account.address);
+    });
+
+    return {
+      userArmiesAtPosition: formatArmies(
+        userArmies,
+        account.address,
+        Army,
+        Protectee,
+        EntityName,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Position,
+        EntityOwner,
+        Owner,
+        Realm,
+        Stamina,
+      ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
+      opponentArmiesAtPosition: formatArmies(
+        opponentArmies,
+        account.address,
+        Army,
+        Protectee,
+        EntityName,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Position,
+        EntityOwner,
+        Owner,
+        Realm,
+        Stamina,
+      ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
+    };
+  };
+
+  return { getArmies };
+};
 const calculateOffset = (index: number, total: number) => {
   if (total === 1) return { x: 0, y: 0 };
 
@@ -571,4 +578,9 @@ const checkIfArmyLostAFinishedBattle = (Battle: any, Army: any, army: any) => {
     return true;
   }
   return false;
+};
+
+const checkIfArmyAlive = (army: ArmyInfo) => {
+  if (army.current === undefined) return true;
+  return BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0;
 };

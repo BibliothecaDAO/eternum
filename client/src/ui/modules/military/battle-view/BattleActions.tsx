@@ -1,7 +1,7 @@
 import { BattleType } from "@/dojo/modelManager/types";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, getArmiesByBattleId, getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { Realm, Structure } from "@/hooks/helpers/useStructures";
+import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { Structure } from "@/hooks/helpers/useStructures";
 import { useModal } from "@/hooks/store/useModal";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ModalContainer } from "@/ui/components/ModalContainer";
@@ -28,7 +28,7 @@ export const BattleActions = ({
 }: {
   ownArmyEntityId: bigint | undefined;
   defender: ArmyInfo | undefined;
-  structure: Realm | Structure | undefined;
+  structure: Structure | undefined;
   battle: ComponentValue<BattleType, unknown> | undefined;
   isActive: boolean;
 }) => {
@@ -51,11 +51,13 @@ export const BattleActions = ({
     },
   } = useDojo();
 
-  const ownArmy =
-    getArmyByEntityId(ownArmyEntityId || 0n) ||
-    getArmiesByBattleId(battle?.entity_id || 0n).find((army) => army.isMine);
+  const { getArmy } = getArmyByEntityId();
 
-	const isRealm = useMemo(() => {
+  const ownArmy = useMemo(() => {
+    return getArmy(ownArmyEntityId || 0n);
+  }, [ownArmyEntityId, battle]);
+
+  const isRealm = useMemo(() => {
     if (!structure) return false;
     return Boolean(getComponentValue(Realm, getEntityIdFromKeys([BigInt(structure.entity_id)])));
   }, [structure]);
@@ -132,8 +134,9 @@ export const BattleActions = ({
     setBattleView(null);
   };
 
-  const isClaimable =
-    Boolean(ownArmy) && !isActive && (!defender || defender.current <= 0) && !isRealm && Boolean(structure);
+  const defenceIsEmptyOrDead = !defender || (battle && battle.defence_army_health.current <= 0);
+
+  const isClaimable = Boolean(ownArmy) && !isActive && defenceIsEmptyOrDead && !isRealm && Boolean(structure);
 
   return (
     <div className="col-span-2 flex justify-center flex-wrap mx-4 w-[100vw]">
@@ -180,8 +183,8 @@ export const BattleActions = ({
             loading !== Loading.None ||
             !ownArmy ||
             Boolean(ownArmy.battle_id) ||
-            (!defender && (isRealm || Boolean(structure))) ||
-            isActive
+            (!defender && Boolean(structure)) ||
+            Boolean(battle)
           }
         >
           <img className="w-10" src="/images/icons/attack.png" alt="coin" />

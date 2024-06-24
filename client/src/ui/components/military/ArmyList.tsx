@@ -1,16 +1,15 @@
-import { EntityList } from "../list/EntityList";
-import { useEntityArmies, usePositionArmies } from "@/hooks/helpers/useArmies";
-import { InventoryResources } from "../resources/InventoryResources";
-import { Position } from "@bibliothecadao/eternum";
-import { ArmyManagementCard } from "./ArmyManagementCard";
 import { useDojo } from "@/hooks/context/DojoContext";
-import React, { useMemo, useState } from "react";
-import Button from "@/ui/elements/Button";
-import { ArmyViewCard } from "./ArmyViewCard";
-import { DepositResources } from "../resources/DepositResources";
-import { StaminaResource } from "@/ui/elements/StaminaResource";
+import { useEntityArmies, usePositionArmies } from "@/hooks/helpers/useArmies";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import Button from "@/ui/elements/Button";
+import { Position } from "@bibliothecadao/eternum";
 import clsx from "clsx";
+import React, { useMemo, useState } from "react";
+import { EntityList } from "../list/EntityList";
+import { DepositResources } from "../resources/DepositResources";
+import { InventoryResources } from "../resources/InventoryResources";
+import { ArmyManagementCard } from "./ArmyManagementCard";
+import { ArmyViewCard } from "./ArmyViewCard";
 
 export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });

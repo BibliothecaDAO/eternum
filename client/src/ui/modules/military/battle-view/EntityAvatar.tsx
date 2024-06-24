@@ -1,8 +1,19 @@
-import { Realm, Structure } from "@/hooks/helpers/useStructures";
+import { Structure } from "@/hooks/helpers/useStructures";
 import { motion } from "framer-motion";
 
-export const EntityAvatar = ({ structure, show = true }: { structure?: Realm | Structure; show?: boolean }) => {
-  const imgSource = Boolean(structure) ? "./images/buildings/thumb/castle.png" : "./images/avatars/2.png";
+export const EntityAvatar = ({ structure, show = true }: { structure?: Structure; show?: boolean }) => {
+  const isRealm = Boolean(structure) && String(structure?.category) === "Realm";
+  const isHyperstructure = Boolean(structure) && String((structure as Structure).category) === "Hyperstructure";
+  const isEarthenshardsMine = Boolean(structure) && String((structure as Structure).category) === "FragmentMine";
+  let imgSource = "./images/avatars/2.png";
+
+  if (isRealm) {
+    imgSource = "./images/buildings/thumb/castle.png";
+  } else if (isHyperstructure) {
+    imgSource = "./images/buildings/thumb/hyperstructure.png";
+  } else if (isEarthenshardsMine) {
+    imgSource = "./images/buildings/thumb/earthenshard-mine.png";
+  }
 
   const displayImg = structure || show;
   const slideUp = {
@@ -12,7 +23,11 @@ export const EntityAvatar = ({ structure, show = true }: { structure?: Realm | S
   return (
     <div className="col-span-2 flex">
       {" "}
-      <div className="mx-auto flex flex-col gap-4 p-3 w-[15vw]">
+      <div
+        className={`mx-auto flex flex-col gap-4 p-3 w-[${
+          isRealm || isHyperstructure || isEarthenshardsMine ? 20 : 15
+        }vw]`}
+      >
         {displayImg && (
           <motion.img
             initial="hidden"
