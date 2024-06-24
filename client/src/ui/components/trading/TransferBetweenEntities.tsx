@@ -13,7 +13,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { Headline } from "@/ui/elements/Headline";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import { ToggleComponent } from "../toggle/ToggleComponent";
-import { LucideArrowRight } from "lucide-react";
+import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { useComponentValue } from "@dojoengine/react";
 import { useEntities } from "@/hooks/helpers/useEntities";
@@ -33,9 +33,14 @@ const STEPS = [
   },
 ];
 
+interface SelectedEntity {
+  name: string;
+  entityId: bigint;
+}
+
 export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { entities: any[]; name: string }[] }) => {
-  const [selectedEntityIdFrom, setSelectedEntityIdFrom] = useState<bigint | null>(null);
-  const [selectedEntityIdTo, setSelectedEntityIdTo] = useState<bigint | null>(null);
+  const [selectedEntityIdFrom, setSelectedEntityIdFrom] = useState<SelectedEntity | null>(null);
+  const [selectedEntityIdTo, setSelectedEntityIdTo] = useState<SelectedEntity | null>(null);
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
   const [selectedResourceAmounts, setSelectedResourceAmounts] = useState<{ [key: string]: number }>({});
   const [selectedStepId, setSelectedStepId] = useState(STEP_ID.SELECT_ENTITIES);
@@ -58,7 +63,13 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
   useEffect(() => {
     selectedEntityIdFrom &&
       selectedEntityIdTo &&
-      setTravelTime(computeTravelTime(selectedEntityIdFrom, selectedEntityIdTo, EternumGlobalConfig.speed.donkey));
+      setTravelTime(
+        computeTravelTime(
+          selectedEntityIdFrom?.entityId,
+          selectedEntityIdTo?.entityId,
+          EternumGlobalConfig.speed.donkey,
+        ),
+      );
   }, [selectedEntityIdFrom, selectedEntityIdTo]);
 
   const onSendResources = () => {
@@ -70,15 +81,15 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
     const systemCall = !isOriginDonkeys
       ? pickup_resources({
           signer: account,
-          owner_entity_id: selectedEntityIdFrom!,
-          recipient_entity_id: selectedEntityIdTo!,
+          owner_entity_id: selectedEntityIdFrom?.entityId!,
+          recipient_entity_id: selectedEntityIdTo?.entityId!,
           resources: resourcesList || [],
         })
       : send_resources({
           // pickup_resources is not defined in the snippet
           signer: account,
-          sender_entity_id: selectedEntityIdFrom!,
-          recipient_entity_id: selectedEntityIdTo!,
+          sender_entity_id: selectedEntityIdFrom?.entityId!,
+          recipient_entity_id: selectedEntityIdTo?.entityId!,
           resources: resourcesList || [],
         });
 
@@ -97,18 +108,18 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
     <div className="p-2 h-full">
       <h4 className="text-center capitalize my-5">{currentStep?.title}</h4>
 
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-4 mb-8 text-xl">
         {selectedEntityIdFrom?.toString() && selectedEntityIdTo?.toString() && (
           <>
-            <div className="p-2 self-center">{getEntityName(selectedEntityIdFrom)}</div>
-            <div className="justify-center">
+            <div className="p-2 self-center">Transfer From: {selectedEntityIdFrom?.name}</div>
+            {/* <div className="justify-center">
               {" "}
               <Button className="m-2" variant="default" onClick={toggleDonkeyOrigin}>
-                Toggle Origin:{" "}
-                {isOriginDonkeys ? getEntityName(selectedEntityIdFrom) : getEntityName(selectedEntityIdTo)}
+                Toggle Origin: {isOriginDonkeys ? selectedEntityIdFrom?.name : selectedEntityIdTo?.name}
               </Button>
-            </div>
-            <div className="p-2 self-center">{getEntityName(selectedEntityIdTo)}</div>
+            </div> */}
+            <ArrowRight className="self-center" />
+            <div className="p-2 self-center">Transfer To: {selectedEntityIdTo?.name}</div>
           </>
         )}
       </div>
@@ -122,9 +133,9 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
               {entitiesList.map(({ entities, name: title }, index) => (
                 <ToggleComponent title={title} key={index}>
                   <SelectEntityFromList
-                    onSelect={setSelectedEntityIdFrom}
-                    selectedCounterpartyId={selectedEntityIdTo}
-                    selectedEntityId={selectedEntityIdFrom}
+                    onSelect={(name, entityId) => setSelectedEntityIdFrom({ name, entityId })}
+                    selectedCounterpartyId={selectedEntityIdTo?.entityId!}
+                    selectedEntityId={selectedEntityIdFrom?.entityId!}
                     entities={entities}
                   />
                 </ToggleComponent>
@@ -135,9 +146,9 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
               {entitiesList.map(({ entities, name: title }, index) => (
                 <ToggleComponent title={title} key={index}>
                   <SelectEntityFromList
-                    onSelect={setSelectedEntityIdTo}
-                    selectedCounterpartyId={selectedEntityIdFrom}
-                    selectedEntityId={selectedEntityIdTo}
+                    onSelect={(name, entityId) => setSelectedEntityIdTo({ name, entityId })}
+                    selectedCounterpartyId={selectedEntityIdFrom?.entityId!}
+                    selectedEntityId={selectedEntityIdTo?.entityId!}
                     entities={entities}
                   />
                 </ToggleComponent>
@@ -169,7 +180,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
               setSelectedResourceIds={setSelectedResourceIds}
               selectedResourceAmounts={selectedResourceAmounts}
               setSelectedResourceAmounts={setSelectedResourceAmounts}
-              entity_id={selectedEntityIdFrom!}
+              entity_id={selectedEntityIdFrom?.entityId!}
             />
           </div>
 
@@ -177,7 +188,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
             <div className="p-10 bg-gold/10 clip-angled-sm h-auto">
               <div className="flex flex-col w-full items-center">
                 <TravelInfo
-                  entityId={isOriginDonkeys ? selectedEntityIdFrom! : selectedEntityIdTo!}
+                  entityId={isOriginDonkeys ? selectedEntityIdFrom?.entityId! : selectedEntityIdTo?.entityId!}
                   resources={selectedResourceIds.map((resourceId: number) => ({
                     resourceId,
                     amount: selectedResourceAmounts[resourceId],
@@ -213,7 +224,7 @@ const SelectEntityFromList = ({
   selectedCounterpartyId,
   entities,
 }: {
-  onSelect: (entityId: bigint) => void;
+  onSelect: (name: string, entityId: bigint) => void;
   selectedEntityId: bigint | null;
   selectedCounterpartyId: bigint | null;
   entities: any[];
@@ -233,7 +244,7 @@ const SelectEntityFromList = ({
             disabled={selectedEntityId === entity.entity_id || selectedCounterpartyId === entity.entity_id}
             size="xs"
             variant={"default"}
-            onClick={() => onSelect(entity.entity_id!)}
+            onClick={() => onSelect(entity.name, entity.entity_id!)}
           >
             {selectedEntityId === entity.entity_id ? "Selected" : "Select"}
           </Button>
