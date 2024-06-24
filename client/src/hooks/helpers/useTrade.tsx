@@ -88,9 +88,9 @@ export function useTrade() {
               makerGets,
               ratio: calculateRatio(makerGets, takerGets),
               perLords:
-                takerGets[0].resourceId == ResourcesIds.Lords
-                  ? calculateRatio(takerGets, makerGets)
-                  : calculateRatio(makerGets, takerGets),
+                takerGets[0]?.resourceId == ResourcesIds.Lords
+                  ? calculateRatio(makerGets, takerGets)
+                  : calculateRatio(takerGets, makerGets),
             } as MarketInterface;
           }
         }

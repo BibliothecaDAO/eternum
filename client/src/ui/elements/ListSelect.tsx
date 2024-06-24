@@ -32,15 +32,7 @@ function ListSelect(props: ListSelectProps) {
           <div className="relative  ">
             <Listbox.Button
               className={clsx(
-                "flex items-center relative w-full cursor-pointer text-xs py-1 min-h-[32px] z-50",
-                props.style === "black"
-                  ? open
-                    ? "bg-brown/50 text-gold !justify-start"
-                    : "bg-brown text-gold/90 hover:bg-brown/70  !justify-start"
-                  : open
-                    ? "bg-dark-brown text-gold"
-                    : "bg-dark-brown  hover:bg-dark-brown/50",
-                props.title ? " px-6" : "pr-6 pl-1",
+                "flex items-center relative  cursor-pointer text-xs py-1 min-h-[32px] z-0 w-full bg-gold/10 clip-angled-sm hover:bg-gold/20",
               )}
             >
               {props.title && <span className="truncate flex items-center !text-gold mr-2">{props.title}</span>}
@@ -65,7 +57,7 @@ function ListSelect(props: ListSelectProps) {
               leaveTo="opacity-0"
             >
               <div className="fixed z-50 mt-1 w-min text-xs">
-                <svg
+                {/* <svg
                   width="25"
                   height="18"
                   className="absolute right-1/2 translate-x-1/2 top-0 z-40"
@@ -77,12 +69,12 @@ function ListSelect(props: ListSelectProps) {
                     d="M10.1931 1.56404C11.3927 0.12124 13.6073 0.121242 14.8069 1.56404L23.9998 12.6214C25.6248 14.576 24.2348 17.5393 21.6929 17.5393H3.30708C0.76518 17.5393 -0.624826 14.576 1.00021 12.6214L10.1931 1.56404Z"
                     fill={props.style === "black" ? "#000" : "#54433A"}
                   />
-                </svg>
+                </svg> */}
 
                 <Listbox.Options
                   className={clsx(
-                    "overflow-visible z-50 mt-3 w-full rounded-md py-1",
-                    props.style === "black" ? "bg-black" : " bg-dark-brown",
+                    "z-50 mt-3 w-full rounded-md py-1 h-72 overflow-scroll z-100 border border-gold/10",
+                    props.style === "black" ? "bg-black" : " bg-brown",
                   )}
                 >
                   {props.options.map((option) => (
@@ -90,7 +82,7 @@ function ListSelect(props: ListSelectProps) {
                       key={option.id}
                       className={({ active }) =>
                         `overflow-visible relative cursor-pointer z-50 select-none py-2 flex items-center pl-8 text-gold ${
-                          active ? "bg-gold/50 text-white/90" : ""
+                          active ? "bg-gold/10 text-white/90" : ""
                         }`
                       }
                       value={option.id}
@@ -98,7 +90,7 @@ function ListSelect(props: ListSelectProps) {
                       {({ selected }) => (
                         <>
                           <span
-                            className={`z-50 flex items-center block truncate ${
+                            className={`z-50 flex items-center  truncate ${
                               selected ? "font-bold text-white" : "font-normal"
                             }`}
                           >

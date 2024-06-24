@@ -4,7 +4,7 @@ import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "@/ui/utils/utils";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
@@ -14,6 +14,9 @@ import { Headline } from "@/ui/elements/Headline";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import { ToggleComponent } from "../toggle/ToggleComponent";
 import { LucideArrowRight } from "lucide-react";
+import { getRealmNameById } from "@/ui/utils/realms";
+import { useComponentValue } from "@dojoengine/react";
+import { useEntities } from "@/hooks/helpers/useEntities";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -88,9 +91,27 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
     setIsOriginDonkeys(!isOriginDonkeys);
   };
 
+  const { getEntityName } = useEntities();
+
   return (
     <div className="p-2 h-full">
-      <h4 className="text-center capitalize mb-5">{currentStep?.title}</h4>
+      <h4 className="text-center capitalize my-5">{currentStep?.title}</h4>
+
+      <div className="flex justify-center gap-4">
+        {selectedEntityIdFrom?.toString() && selectedEntityIdTo?.toString() && (
+          <>
+            <div className="p-2 self-center">{getEntityName(selectedEntityIdFrom)}</div>
+            <div className="justify-center">
+              {" "}
+              <Button className="m-2" variant="default" onClick={toggleDonkeyOrigin}>
+                Toggle Origin:{" "}
+                {isOriginDonkeys ? getEntityName(selectedEntityIdFrom) : getEntityName(selectedEntityIdTo)}
+              </Button>
+            </div>
+            <div className="p-2 self-center">{getEntityName(selectedEntityIdTo)}</div>
+          </>
+        )}
+      </div>
 
       {currentStep?.id === STEP_ID.SELECT_ENTITIES && (
         <>
@@ -141,7 +162,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
       )}
 
       {currentStep?.id === STEP_ID.SELECT_RESOURCES && (
-        <div className="grid grid-cols-2 gap-32 px-16 h-full">
+        <div className="grid grid-cols-2 gap-16 px-16 h-full">
           <div className="p-4  clip-angled-sm h-full">
             <SelectResources
               selectedResourceIds={selectedResourceIds}
@@ -152,33 +173,32 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
             />
           </div>
 
-          <div className=" p-4 bg-white/10 clip-angled-sm h-96">
-            <div className="w-full flex justify-center">
-              {" "}
-              <Button className="m-2" variant="default" onClick={toggleDonkeyOrigin}>
-                Toggle Origin: {isOriginDonkeys ? "Origin" : "Destination"}
-              </Button>
+          <div className=" ">
+            <div className="p-10 bg-gold/10 clip-angled-sm h-auto">
+              <div className="flex flex-col w-full items-center">
+                <TravelInfo
+                  entityId={isOriginDonkeys ? selectedEntityIdFrom! : selectedEntityIdTo!}
+                  resources={selectedResourceIds.map((resourceId: number) => ({
+                    resourceId,
+                    amount: selectedResourceAmounts[resourceId],
+                  }))}
+                  travelTime={travelTime}
+                  setCanCarry={setCanCarry}
+                />
+              </div>
             </div>
-            <div className="flex flex-col w-full items-center mt-4">
-              <TravelInfo
-                entityId={isOriginDonkeys ? selectedEntityIdFrom! : selectedEntityIdTo!}
-                resources={selectedResourceIds.map((resourceId: number) => ({
-                  resourceId,
-                  amount: selectedResourceAmounts[resourceId],
-                }))}
-                travelTime={travelTime}
-                setCanCarry={setCanCarry}
-              />
-            </div>
+          </div>
+
+          <div className="w-full col-span-2">
             <Button
-              className="w-full mt-2"
+              className="w-full justify-center"
               isLoading={isLoading}
               disabled={!canCarry || selectedResourceIds.length === 0}
               variant="primary"
               size="md"
               onClick={onSendResources}
             >
-              Confirm
+              Confirm Transfer
             </Button>
           </div>
         </div>
@@ -279,9 +299,9 @@ const SelectResources = ({
           ];
         }
         return (
-          <div key={id} className="flex items-center gap-3 w-64 z-100">
+          <div key={id} className="flex items-center gap-8 w-64 ">
             <ListSelect
-              className="ml-2 rounded-md overflow-hidden"
+              className=" overflow-hidden max-h-48 w-full"
               options={options}
               value={selectedResourceIds[index]}
               onChange={(value) => {
@@ -305,6 +325,7 @@ const SelectResources = ({
               }}
             />
             <NumberInput
+              className="h-14"
               max={divideByPrecision(resource?.balance || 0)}
               min={1}
               value={selectedResourceAmounts[id]}
@@ -320,7 +341,7 @@ const SelectResources = ({
       })}
       <Button
         variant="primary"
-        className="mt-8"
+        className="mt-16"
         size="md"
         onClick={() => {
           addResourceGive();
