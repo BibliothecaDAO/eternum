@@ -32,88 +32,84 @@ type EntityProps = {
 
 export const Entity = ({ entityId, ...props }: EntityProps) => {
   const [showTravel, setShowTravel] = useState(false);
-
   const { getEntityInfo } = useEntities();
   const { getResourcesFromBalance } = useResources();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
-
-  const entity = getEntityInfo(entityId);
-
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
+  const entity = getEntityInfo(entityId);
   const entityResources = getResourcesFromBalance(entityId);
-
   const hasResources = entityResources.length > 0;
-
   const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
-
   const depositEntityId = getOwnedEntityOnPosition(entityId);
 
-  if (entityState === EntityState.NotApplicable) {
-    return null;
-  }
+  if (entityState === EntityState.NotApplicable) return null;
 
-  const onCloseTravel = () => {
-    setShowTravel(false);
+  const renderEntityStatus = () => {
+    switch (entityState) {
+      case EntityState.WaitingForDeparture:
+        return (
+          <div className="flex ml-auto italic">
+            Trade Bound <Pen className="ml-1 fill-gold" />
+          </div>
+        );
+      case EntityState.Idle:
+      case EntityState.WaitingToOffload:
+        return depositEntityId !== undefined && hasResources ? (
+          <div className="flex ml-auto italic">Waiting to offload</div>
+        ) : (
+          <div className="flex ml-auto italic">
+            Idle <Pen className="ml-1 fill-gold" />
+          </div>
+        );
+      case EntityState.Traveling:
+        return entity.arrivalTime && nextBlockTimestamp ? (
+          <div className="flex ml-auto -mt-2 italic">
+            {formatSecondsLeftInDaysHours(entity.arrivalTime - nextBlockTimestamp)}
+          </div>
+        ) : null;
+      default:
+        return null;
+    }
+  };
+
+  const renderResources = () => {
+    if (entityState === EntityState.Idle || entityState === EntityState.WaitingForDeparture) return null;
+    return entity.resources?.map(
+      (resource: any) =>
+        resource && (
+          <ResourceCost
+            key={resource.resourceId}
+            className="!text-gold"
+            type="vertical"
+            size="xs"
+            resourceId={resource.resourceId}
+            amount={divideByPrecision(resource.amount)}
+          />
+        ),
+    );
   };
 
   return (
     <div
-      className={clsx("flex flex-col p-2 clip-angled-sm bg-green/20 text-gold", props.className)}
+      className={clsx("flex flex-col p-2 clip-angled-sm bg-green/10 text-gold border border-gold/10", props.className)}
       onClick={props.onClick}
     >
-      {showTravel && <TravelEntityPopup entityId={entityId} onClose={onCloseTravel} />}
-      {/* <div className="text-xs">{entity.isMine ? "Incoming" : "Outgoing"}</div> */}
-
+      {showTravel && <TravelEntityPopup entityId={entityId} onClose={() => setShowTravel(false)} />}
       <div className="flex items-center text-xs flex-wrap">
-        <div className="text-xl w-full flex justify-between">
-          {entityName[entity.entityType]}
-          <span>{entityIcon[entity.entityType]}</span>
-        </div>
-
-        <div className="flex items-center">
-          <span>{entityState === EntityState.Traveling ? "Traveling" : "Resting"}</span>
-        </div>
-
-        {entityState === EntityState.WaitingForDeparture && (
-          <div className="flex ml-auto  italic ">
-            Trade Bound <Pen className="ml-1 fill-gold" />
+        <div className="w-full flex justify-between">
+          <div className="flex gap-3 font-bold">
+            <span> {entityIcon[entity.entityType]}</span>
+            <span>{entityName[entity.entityType]}</span>
           </div>
-        )}
 
-        {(entityState === EntityState.Idle || entityState === EntityState.WaitingToOffload) &&
-          (depositEntityId !== undefined && entityResources.length > 0 ? (
-            <div className="flex ml-auto italic ">Waiting to offload</div>
-          ) : (
-            <div className="flex ml-auto  italic ">
-              Idle
-              <Pen className="ml-1 fill-gold" />
-            </div>
-          ))}
-
-        {entity.arrivalTime && entityState === EntityState.Traveling && nextBlockTimestamp && (
-          <div className="flex ml-auto -mt-2 italic ">
-            {formatSecondsLeftInDaysHours(entity.arrivalTime - nextBlockTimestamp)}
+          <div className="flex items-center gap-1 self-center">
+            {renderEntityStatus()}
+            {/* <span>{entityState === EntityState.Traveling ? "Traveling" : "Resting"}</span> */}
           </div>
-        )}
+        </div>
       </div>
-      <div className="flex  items-center gap-2 flex-wrap my-2">
-        {entityState !== EntityState.Idle &&
-          entityState !== EntityState.WaitingForDeparture &&
-          entity.resources &&
-          entity.resources.map(
-            (resource: any) =>
-              resource && (
-                <ResourceCost
-                  key={resource.resourceId}
-                  className="!text-gold "
-                  type="vertical"
-                  resourceId={resource.resourceId}
-                  amount={divideByPrecision(resource.amount)}
-                />
-              ),
-          )}
-      </div>
+      <div className="flex items-center gap-2 flex-wrap my-2">{renderResources()}</div>
       {entityState !== EntityState.Traveling && <DepositResources entityId={entityId} />}
     </div>
   );

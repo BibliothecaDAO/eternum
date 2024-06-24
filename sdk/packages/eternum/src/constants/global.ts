@@ -40,7 +40,7 @@ export const EternumGlobalConfig = {
     army: 100,
   },
   speed: {
-    donkey: 360,
+    donkey: 60,
     army: 1,
   },
   troop: {
