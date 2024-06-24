@@ -77,11 +77,11 @@ export const BattleView = () => {
         lifetime: Number(battleAdjusted!.defence_army_health.lifetime),
       }
     : defenderArmyBattleStarter
-    ? {
-        current: Number(defenderArmyBattleStarter.current || 0),
-        lifetime: Number(defenderArmyBattleStarter.lifetime || 0),
-      }
-    : undefined;
+      ? {
+          current: Number(defenderArmyBattleStarter.current || 0),
+          lifetime: Number(defenderArmyBattleStarter.lifetime || 0),
+        }
+      : undefined;
 
   const attackerTroops = battleAdjusted ? battleAdjusted!.attack_army.troops : ownArmyBattleStarter?.troops;
   const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : defenderArmyBattleStarter?.troops;
