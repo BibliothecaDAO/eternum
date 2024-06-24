@@ -45,7 +45,7 @@ export const Battle = ({
   defenderHealth: Health | undefined;
   defenderTroops: Troops | undefined;
   userArmiesAtPosition: ArmyInfo[] | undefined;
-  structure: Structure | Realm | undefined;
+  structure: Structure | undefined;
   isActive: boolean;
   durationLeft: Date | undefined;
 }) => {

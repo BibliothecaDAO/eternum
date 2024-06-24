@@ -2,17 +2,18 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getUserArmiesAtPosition } from "@/hooks/helpers/useArmies";
 import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
 import { Has, HasValue, runQuery } from "@dojoengine/recs";
+import { Billboard, Image, useTexture } from "@react-three/drei";
 import React, { useMemo } from "react";
+import * as THREE from "three";
 import { Euler, Vector3 } from "three";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { WarriorModel } from "../../models/armies/WarriorModel";
 import { UnitHighlight } from "../hexagon/UnitHighlight";
 import { ArmyFlag } from "./ArmyFlag";
+import { BattleLabel } from "./BattleLabel";
 import { CombatLabel } from "./CombatLabel";
 import { useArmyAnimation } from "./useArmyAnimation";
 import { arePropsEqual } from "./utils";
-import { Billboard, Image, useTexture } from "@react-three/drei";
-import * as THREE from "three";
 
 type ArmyProps = {
   army: ArmyInfo;
@@ -63,11 +64,16 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
     );
   }, [selectedEntity]);
 
+  const showBattleLabel = useMemo(() => {
+    return selectedEntity !== undefined && selectedEntity.id === BigInt(army.entity_id) && Boolean(battleAtPosition);
+  }, [selectedEntity, battleAtPosition]);
+
   return (
     <>
       <group position={initialPos} ref={groupRef} rotation={new Euler(0, deterministicRotation, 0)}>
         <ArmyFlag visible={army.isMine} rotationY={deterministicRotation} position={initialPos} />
         {showCombatLabel && <CombatLabel visible={isSelected} />}
+        {showBattleLabel && <BattleLabel selectedBattle={battleAtPosition} />}
         <WarriorModel army={army} />
         <Billboard>
           <Image

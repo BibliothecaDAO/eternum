@@ -203,7 +203,7 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
       Owner,
       Realm,
       Stamina,
-    ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
+    ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
   }, [armies]);
 
   return {
@@ -337,7 +337,7 @@ export const useArmyByArmyEntityId = (entityId: bigint) => {
     Owner,
     Realm,
     Stamina,
-  ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
+  ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
 };
 
 export const usePositionArmies = ({ position }: { position: Position }) => {
@@ -573,5 +573,6 @@ const checkIfArmyLostAFinishedBattle = (Battle: any, Army: any, army: any) => {
 };
 
 const checkIfArmyAlive = (army: ArmyInfo) => {
+  if (army.current === undefined) return true;
   return BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0;
 };

@@ -18,7 +18,7 @@ export const BattleProgressBar = ({
   attackerArmies: ArmyInfo[];
   defendingHealth: { current: number; lifetime: number } | undefined;
   defenderArmies: ArmyInfo[];
-  structure: Structure | Realm | undefined;
+  structure: Structure | undefined;
   durationLeft?: Date;
 }) => {
   const [time, setTime] = useState<Date | undefined>(durationLeft);

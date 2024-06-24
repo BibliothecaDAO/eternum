@@ -28,7 +28,7 @@ export const BattleActions = ({
 }: {
   ownArmyEntityId: bigint | undefined;
   defender: ArmyInfo | undefined;
-  structure: Realm | Structure | undefined;
+  structure: Structure | undefined;
   battle: ComponentValue<BattleType, unknown> | undefined;
   isActive: boolean;
 }) => {
@@ -132,8 +132,9 @@ export const BattleActions = ({
     setBattleView(null);
   };
 
-  const isClaimable =
-    Boolean(ownArmy) && !isActive && (!defender || defender.current <= 0) && !isRealm && Boolean(structure);
+  const defenceIsEmptyOrDead = !defender || (battle && battle.defence_army_health.current <= 0);
+
+  const isClaimable = Boolean(ownArmy) && !isActive && defenceIsEmptyOrDead && !isRealm && Boolean(structure);
 
   return (
     <div className="col-span-2 flex justify-center flex-wrap mx-4 w-[100vw]">

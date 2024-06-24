@@ -3,7 +3,7 @@ import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
-import { useState } from "react";
+import React, { useState } from "react";
 
 export const BattleDetails = ({ battleId, armies }: { battleId: bigint; armies: ArmyInfo[] | undefined }) => {
   const {
@@ -40,7 +40,7 @@ export const BattleDetails = ({ battleId, armies }: { battleId: bigint; armies: 
       <div key={2} className="tile h-[2vh] text-center border"></div>
       {armies &&
         armies.map((army, index) => (
-          <>
+          <React.Fragment key={index}>
             <div key={`${index}_name`} className="tile h-[2vh] text-center">
               {army.name}
             </div>
@@ -59,7 +59,7 @@ export const BattleDetails = ({ battleId, armies }: { battleId: bigint; armies: 
             ) : (
               <div key={`${index}_leave`}></div>
             )}
-          </>
+          </React.Fragment>
         ))}
     </div>
   );

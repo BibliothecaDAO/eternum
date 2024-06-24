@@ -27,7 +27,7 @@ export const BattleSideView = ({
   ownSideTroopsUpdated: Troops | undefined;
   userArmiesAtPosition: ArmyInfo[] | undefined;
   opposingSideArmies: ArmyInfo[];
-  structure: Realm | Structure | undefined;
+  structure: Structure | undefined;
 }) => {
   const {
     account: { account },
