@@ -1,7 +1,7 @@
 import { BattleType } from "@/dojo/modelManager/types";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, getArmiesByBattleId, getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { Realm, Structure } from "@/hooks/helpers/useStructures";
+import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { Structure } from "@/hooks/helpers/useStructures";
 import { useModal } from "@/hooks/store/useModal";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ModalContainer } from "@/ui/components/ModalContainer";
@@ -51,9 +51,11 @@ export const BattleActions = ({
     },
   } = useDojo();
 
-  const ownArmy =
-    getArmyByEntityId(ownArmyEntityId || 0n) ||
-    getArmiesByBattleId(battle?.entity_id || 0n).find((army) => army.isMine);
+  const { getArmy } = getArmyByEntityId();
+
+  const ownArmy = useMemo(() => {
+    return getArmy(ownArmyEntityId || 0n);
+  }, [ownArmyEntityId, battle]);
 
   const isRealm = useMemo(() => {
     if (!structure) return false;
@@ -181,8 +183,8 @@ export const BattleActions = ({
             loading !== Loading.None ||
             !ownArmy ||
             Boolean(ownArmy.battle_id) ||
-            (!defender && (isRealm || Boolean(structure))) ||
-            isActive
+            (!defender && Boolean(structure)) ||
+            Boolean(battle)
           }
         >
           <img className="w-10" src="/images/icons/attack.png" alt="coin" />

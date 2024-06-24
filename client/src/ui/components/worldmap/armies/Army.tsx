@@ -1,7 +1,6 @@
-import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, getUserArmiesAtPosition } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, getArmiesAtPosition } from "@/hooks/helpers/useArmies";
 import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
-import { Has, HasValue, runQuery } from "@dojoengine/recs";
+import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
 import { Billboard, Image, useTexture } from "@react-three/drei";
 import React, { useMemo } from "react";
 import * as THREE from "three";
@@ -62,22 +61,13 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
 }, arePropsEqual);
 
 export const ArmySelectionOverlay = ({ army }: ArmyProps) => {
-  const {
-    setup: {
-      components: { Structure, Position },
-    },
-  } = useDojo();
-
   const armyPosition = { x: army.x, y: army.y };
 
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const battleAtPosition = getBattlesByPosition(armyPosition);
-  const { opponentArmiesAtPosition } = getUserArmiesAtPosition(armyPosition);
+  const { getArmies } = getArmiesAtPosition();
 
-  const structures = useMemo(
-    () => Array.from(runQuery([Has(Structure), HasValue(Position, armyPosition)])),
-    [armyPosition.x, armyPosition.y],
-  );
+  const structure = getStructureAtPosition(armyPosition);
 
   const isSelected = useMemo(() => {
     return (selectedEntity?.id || 0n) === BigInt(army.entity_id);
@@ -85,10 +75,11 @@ export const ArmySelectionOverlay = ({ army }: ArmyProps) => {
 
   const showCombatLabel = useMemo(() => {
     if (battleAtPosition) return false;
+    const { opponentArmiesAtPosition } = getArmies(armyPosition);
     return (
       selectedEntity !== undefined &&
       selectedEntity.id === BigInt(army.entity_id) &&
-      ((opponentArmiesAtPosition?.length || 0) > 0 || structures.length > 0)
+      ((opponentArmiesAtPosition?.length || 0) > 0 || Boolean(structure))
     );
   }, [selectedEntity]);
 
@@ -99,7 +90,7 @@ export const ArmySelectionOverlay = ({ army }: ArmyProps) => {
   return (
     <>
       {showCombatLabel && <CombatLabel visible={isSelected} />}
-	  {showBattleLabel && <BattleLabel selectedBattle={battleAtPosition} />}
+      {showBattleLabel && <BattleLabel selectedBattle={battleAtPosition} />}
       {isSelected && <UnitHighlight position={{ x: army.x, y: army.y }} />}
     </>
   );

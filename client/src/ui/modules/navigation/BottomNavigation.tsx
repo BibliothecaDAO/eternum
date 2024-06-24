@@ -1,11 +1,10 @@
-import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
-import { useStamina } from "@/hooks/helpers/useStamina";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import CircleButton from "@/ui/elements/CircleButton";
 import { isRealmSelected } from "@/ui/utils/utils";
+import clsx from "clsx";
 import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
@@ -13,7 +12,6 @@ import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { guilds, leaderboard, quests } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
-import clsx from "clsx";
 
 export enum MenuEnum {
   realm = "realm",
@@ -40,10 +38,6 @@ export const BottomNavigation = () => {
   const showAllArmies = useUIStore((state) => state.showAllArmies);
 
   const isWorldView = useMemo(() => location === "/map", [location]);
-
-  const selectedEntityId = useUIStore((state) => state.selectedEntity);
-
-  const army = getArmyByEntityId(selectedEntityId?.id || BigInt("0"));
 
   const currentQuest = useQuestStore((state) => state.currentQuest);
   const claimableQuestsLength = useQuestStore((state) => state.claimableQuestsLength);

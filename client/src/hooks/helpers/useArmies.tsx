@@ -419,50 +419,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
   }
 };
 
-export const getArmyByEntityId = (entity_id: bigint) => {
-  const {
-    setup: {
-      components: {
-        Position,
-        EntityOwner,
-        Owner,
-        Health,
-        Quantity,
-        Movable,
-        Capacity,
-        ArrivalTime,
-        Realm,
-        Army,
-        Protectee,
-        EntityName,
-        Stamina,
-        Battle,
-      },
-    },
-    account: { account },
-  } = useDojo();
-  const armies = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
-
-  return formatArmies(
-    Array.from(armies),
-    account.address,
-    Army,
-    Protectee,
-    EntityName,
-    Health,
-    Quantity,
-    Movable,
-    Capacity,
-    ArrivalTime,
-    Position,
-    EntityOwner,
-    Owner,
-    Realm,
-    Stamina,
-  ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
-};
-
-export const getUserArmiesAtPosition = (position: Position) => {
+export const getArmyByEntityId = () => {
   const {
     setup: {
       components: {
@@ -485,27 +442,11 @@ export const getUserArmiesAtPosition = (position: Position) => {
     account: { account },
   } = useDojo();
 
-  const allArmiesAtPosition = runQuery([
-    Has(Army),
-    HasValue(Position, { x: position.x, y: position.y }),
-    HasValue(Army, { battle_id: 0n }),
-  ]);
+  const getArmy = (entity_id: bigint) => {
+    const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
 
-  const userArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
-    const entityOwner = getComponentValue(EntityOwner, armyEntityId);
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
-    return owner?.address === BigInt(account.address);
-  });
-
-  const opponentArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
-    const entityOwner = getComponentValue(EntityOwner, armyEntityId);
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
-    return owner?.address !== BigInt(account.address);
-  });
-
-  return {
-    userArmiesAtPosition: formatArmies(
-      userArmies,
+    return formatArmies(
+      Array.from(armiesEntityIds),
       account.address,
       Army,
       Protectee,
@@ -520,27 +461,94 @@ export const getUserArmiesAtPosition = (position: Position) => {
       Owner,
       Realm,
       Stamina,
-    ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
-    opponentArmiesAtPosition: formatArmies(
-      opponentArmies,
-      account.address,
-      Army,
-      Protectee,
-      EntityName,
-      Health,
-      Quantity,
-      Movable,
-      Capacity,
-      ArrivalTime,
-      Position,
-      EntityOwner,
-      Owner,
-      Realm,
-      Stamina,
-    ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
+    ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
   };
+
+  return { getArmy };
 };
 
+export const getArmiesAtPosition = () => {
+  const {
+    setup: {
+      components: {
+        Position,
+        EntityOwner,
+        Owner,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Realm,
+        Army,
+        Protectee,
+        EntityName,
+        Stamina,
+        Battle,
+      },
+    },
+    account: { account },
+  } = useDojo();
+
+  const getArmies = (position: Position) => {
+    const allArmiesAtPosition = runQuery([
+      Has(Army),
+      HasValue(Position, { x: position.x, y: position.y }),
+      HasValue(Army, { battle_id: 0n }),
+    ]);
+
+    const userArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
+      const entityOwner = getComponentValue(EntityOwner, armyEntityId);
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+      return owner?.address === BigInt(account.address);
+    });
+
+    const opponentArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
+      const entityOwner = getComponentValue(EntityOwner, armyEntityId);
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+      return owner?.address !== BigInt(account.address);
+    });
+
+    return {
+      userArmiesAtPosition: formatArmies(
+        userArmies,
+        account.address,
+        Army,
+        Protectee,
+        EntityName,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Position,
+        EntityOwner,
+        Owner,
+        Realm,
+        Stamina,
+      ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
+      opponentArmiesAtPosition: formatArmies(
+        opponentArmies,
+        account.address,
+        Army,
+        Protectee,
+        EntityName,
+        Health,
+        Quantity,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        Position,
+        EntityOwner,
+        Owner,
+        Realm,
+        Stamina,
+      ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
+    };
+  };
+
+  return { getArmies };
+};
 const calculateOffset = (index: number, total: number) => {
   if (total === 1) return { x: 0, y: 0 };
 

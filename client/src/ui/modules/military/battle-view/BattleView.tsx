@@ -1,4 +1,4 @@
-import { getArmyByEntityId, getUserArmiesAtPosition, useArmiesByBattleId } from "@/hooks/helpers/useArmies";
+import { getArmiesAtPosition, getArmyByEntityId, useArmiesByBattleId } from "@/hooks/helpers/useArmies";
 import { useBattleManagerByPosition } from "@/hooks/helpers/useBattles";
 import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
@@ -25,7 +25,7 @@ export const BattleView = () => {
 
   const battleManager = useBattleManagerByPosition(battlePosition);
 
-  const { userArmiesAtPosition } = getUserArmiesAtPosition(battlePosition);
+  const structure = getStructureAtPosition(battlePosition);
 
   let armiesInBattle = useArmiesByBattleId(battleManager?.battleId || 0n);
   if (!battleManager) {
@@ -35,11 +35,10 @@ export const BattleView = () => {
 
   const ownArmySide = battleManager ? String(userArmiesInBattle[0]?.battle_side || "") : "Attack";
 
-  const ownArmyEntityId = selectedEntity?.id || 0n;
-  const ownArmyBattleStarter = getArmyByEntityId(BigInt(ownArmyEntityId || 0n));
-  const defenderArmyBattleStarter = getArmyByEntityId(BigInt(defenderAndStructureBattleStarter?.defender || 0n));
-
-  const structure = getStructureAtPosition(battlePosition);
+  const { getArmy } = getArmyByEntityId();
+  const ownArmyEntityId = selectedEntity?.id || BigInt(userArmiesInBattle.find((army) => army.isMine)?.entity_id || 0);
+  const ownArmyBattleStarter = getArmy(BigInt(ownArmyEntityId || 0n));
+  const defenderArmyBattleStarter = getArmy(BigInt(defenderAndStructureBattleStarter?.defender || 0n));
 
   const attackerArmies =
     armiesInBattle.length > 0
@@ -54,12 +53,17 @@ export const BattleView = () => {
   const battleAdjusted = useMemo(() => {
     if (!battleManager) return undefined;
     return battleManager!.getUpdatedBattle(currentTimestamp!);
-  }, [currentTimestamp]);
+  }, [currentTimestamp, battleManager, battleManager?.battleId, armiesInBattle, battleView]);
 
   const durationLeft = useMemo(() => {
     if (!battleManager) return undefined;
     return battleManager!.getTimeLeft(currentTimestamp!);
-  }, [battleAdjusted?.duration_left]);
+  }, [battleAdjusted?.duration_left, battleManager, currentTimestamp, battleView]);
+
+  const { getArmies } = getArmiesAtPosition();
+  const userArmiesAtPosition = useMemo(() => {
+    return getArmies(battlePosition).userArmiesAtPosition;
+  }, [battlePosition, battleAdjusted]);
 
   const attackerHealth = battleAdjusted
     ? {
@@ -73,11 +77,11 @@ export const BattleView = () => {
         lifetime: Number(battleAdjusted!.defence_army_health.lifetime),
       }
     : defenderArmyBattleStarter
-      ? {
-          current: Number(defenderArmyBattleStarter.current || 0),
-          lifetime: Number(defenderArmyBattleStarter.lifetime || 0),
-        }
-      : undefined;
+    ? {
+        current: Number(defenderArmyBattleStarter.current || 0),
+        lifetime: Number(defenderArmyBattleStarter.lifetime || 0),
+      }
+    : undefined;
 
   const attackerTroops = battleAdjusted ? battleAdjusted!.attack_army.troops : ownArmyBattleStarter?.troops;
   const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : defenderArmyBattleStarter?.troops;
