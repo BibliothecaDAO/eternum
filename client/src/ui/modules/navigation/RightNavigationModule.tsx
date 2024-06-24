@@ -104,7 +104,7 @@ export const RightNavigationModule = () => {
               setLastView(View.ResourceArrivals);
               setView(View.ResourceArrivals);
             }}
-            notification={getAllArrivalsWithResources().length}
+            notification={getAllArrivalsWithResources.length}
             notificationLocation="topleft"
           />
         ),
@@ -235,7 +235,7 @@ export const RightNavigationModule = () => {
               <EntityResourceTable entityId={realmEntityId} />
             </>
           ) : (
-            <AllResourceArrivals entityIds={getAllArrivalsWithResources()} />
+            <AllResourceArrivals entityIds={getAllArrivalsWithResources} />
           )}
         </BaseContainer>
       </div>

@@ -48,23 +48,17 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const renderEntityStatus = () => {
     switch (entityState) {
       case EntityState.WaitingForDeparture:
-        return (
-          <div className="flex ml-auto italic">
-            Trade Bound <Pen className="ml-1 fill-gold" />
-          </div>
-        );
+        return <div className="flex ml-auto italic">Waiting...</div>;
       case EntityState.Idle:
       case EntityState.WaitingToOffload:
         return depositEntityId !== undefined && hasResources ? (
           <div className="flex ml-auto italic">Waiting to offload</div>
         ) : (
-          <div className="flex ml-auto italic">
-            Idle <Pen className="ml-1 fill-gold" />
-          </div>
+          <div className="flex ml-auto italic">Idle</div>
         );
       case EntityState.Traveling:
         return entity.arrivalTime && nextBlockTimestamp ? (
-          <div className="flex ml-auto -mt-2 italic">
+          <div className="flex ml-auto -mt-2 italic self-center">
             {formatSecondsLeftInDaysHours(entity.arrivalTime - nextBlockTimestamp)}
           </div>
         ) : null;
@@ -90,9 +84,11 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     );
   };
 
+  const bgColour = entityState === EntityState.Traveling ? "bg-gold/10" : "bg-green/10 animate-pulse";
+
   return (
     <div
-      className={clsx("flex flex-col p-2 clip-angled-sm bg-green/10 text-gold border border-gold/10", props.className)}
+      className={clsx("flex flex-col p-2 clip-angled-sm  text-gold border border-gold/10", props.className, bgColour)}
       onClick={props.onClick}
     >
       {showTravel && <TravelEntityPopup entityId={entityId} onClose={() => setShowTravel(false)} />}
