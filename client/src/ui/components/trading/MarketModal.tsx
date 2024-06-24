@@ -137,33 +137,41 @@ export const MarketResourceSidebar = ({
   return (
     <div>
       <div className="w-full flex justify-end gap-8 mb-1">
-        <div className="w-2/6 flex justify-between">
+        <div className="w-3/6 flex justify-between text-xs">
           <div>Sell</div>
           <div>Buy</div>
+          <div>Qty</div>
         </div>
       </div>
       <div className="flex flex-col h-full gap-[0.1]">
-        {filteredResources.map((resource) => {
-          const askPrice = resourceBidOffers
-            .filter((offer) => (resource.id ? offer.makerGets[0]?.resourceId === resource.id : true))
-            .reduce((acc, offer) => (offer.ratio < acc ? offer.ratio : acc), Infinity);
+        {filteredResources
+          .filter((resource) => resource.id !== ResourcesIds.Lords)
+          .map((resource) => {
+            const askPrice = resourceBidOffers
+              .filter((offer) => (resource.id ? offer.makerGets[0]?.resourceId === resource.id : true))
+              .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
 
-          const bidPrice = resourceAskOffers
-            .filter((offer) => offer.takerGets[0].resourceId === resource.id)
-            .reduce((acc, offer) => (offer.ratio < acc ? offer.ratio : acc), Infinity);
+            const bidPrice = resourceAskOffers
+              .filter((offer) => offer.takerGets[0].resourceId === resource.id)
+              .reduce((acc, offer) => (offer.perLords < acc ? offer.perLords : acc), Infinity);
 
-          return (
-            <MarketResource
-              key={resource.id}
-              entityId={entityId || BigInt("0")}
-              resource={resource}
-              active={selectedResource == resource.id}
-              onClick={onClick}
-              askPrice={askPrice === Infinity ? "0" : askPrice.toFixed(2)}
-              bidPrice={bidPrice === Infinity ? "0" : bidPrice.toFixed(2)}
-            />
-          );
-        })}
+            const depth =
+              resourceBidOffers.filter((offer) => offer.makerGets[0].resourceId === resource.id).length +
+              resourceAskOffers.filter((offer) => offer.takerGets[0].resourceId === resource.id).length;
+
+            return (
+              <MarketResource
+                key={resource.id}
+                entityId={entityId || BigInt("0")}
+                resource={resource}
+                active={selectedResource == resource.id}
+                onClick={onClick}
+                askPrice={askPrice === Infinity ? "0" : askPrice.toFixed(2)}
+                bidPrice={bidPrice === Infinity ? "0" : bidPrice.toFixed(2)}
+                depth={depth}
+              />
+            );
+          })}
       </div>
     </div>
   );
