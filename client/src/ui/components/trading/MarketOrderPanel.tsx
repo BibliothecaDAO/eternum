@@ -155,8 +155,9 @@ export const OrderRowHeader = ({ isBuy, resourceId }: { isBuy: boolean; resource
       <div>qty.</div>
       <div>dist.</div>
       <div className="flex">
-        <ResourceIcon size="xs" resource={findResourceById(resourceId)?.trait || ""} /> per/
         <ResourceIcon size="xs" resource={"Lords"} />
+        per/
+        <ResourceIcon size="xs" resource={findResourceById(resourceId)?.trait || ""} />
       </div>
       <div className="flex">cost</div>
       <div className="ml-auto">Action</div>
@@ -339,7 +340,7 @@ export const OrderCreation = ({
   };
 
   const bid = useMemo(() => {
-    return (resource / lords).toFixed(2);
+    return (lords / resource).toFixed(2);
   }, [resource, lords]);
 
   const orderWeight = useMemo(() => {
@@ -409,8 +410,8 @@ export const OrderCreation = ({
         <div className="flex w-1/3 justify-start px-3">
           <div className="uppercase">
             <div className="uppercase text-xs flex gap-1 mb-4 ">
-              <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} /> per /{" "}
               <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
+              per / <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />
             </div>
             {bid.toString()}
 
