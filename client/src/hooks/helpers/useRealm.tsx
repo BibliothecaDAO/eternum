@@ -18,9 +18,14 @@ export type RealmExtended = RealmInterface & {
 export function useRealm() {
   const {
     setup: {
-      components: { Realm, AddressName, Owner, Position, Structure },
+      components: { Realm, AddressName, Owner, EntityOwner, Position, Structure },
     },
   } = useDojo();
+
+  const getEntityOwner = (entityId: bigint) => {
+    const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityId]));
+    return entityOwner?.entity_owner_id;
+  };
 
   const isRealmIdSettled = (realmId: bigint) => {
     const entityIds = runQuery([HasValue(Realm, { realm_id: realmId })]);
@@ -137,6 +142,7 @@ export function useRealm() {
   };
 
   return {
+    getEntityOwner,
     isRealmIdSettled,
     getNextRealmIdForOrder,
     getAddressName,

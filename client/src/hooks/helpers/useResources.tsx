@@ -119,9 +119,8 @@ export function useResourceBalance() {
     },
   } = useDojo();
 
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
-
   const getFoodResources = (entityId: bigint): Resource[] => {
+    const currentDefaultTick = useBlockchainStore.getState().currentDefaultTick;
     const wheatBalance = new ProductionManager(
       Production,
       Resource,
@@ -144,6 +143,7 @@ export function useResourceBalance() {
   };
 
   const getBalance = (entityId: bigint, resourceId: number) => {
+    const currentDefaultTick = useBlockchainStore.getState().currentDefaultTick;
     const productionManager = new ProductionManager(
       Production,
       Resource,
@@ -156,10 +156,8 @@ export function useResourceBalance() {
 
   // We should deprecate this hook and use getBalance instead - too many useEffects
   const useBalance = (entityId: bigint, resourceId: number) => {
+    const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
     const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
-
-    const resource = getComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
-    const production = getComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
 
     useEffect(() => {
       const productionManager = new ProductionManager(
