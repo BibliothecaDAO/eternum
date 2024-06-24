@@ -269,10 +269,8 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   const goToHex = useCallback(
     (e: any) => {
-      const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
-      if (!intersect) return;
-      const instanceId = intersect.instanceId;
-      const mesh = intersect.object;
+      const instanceId = e.instanceId;
+      const mesh = e.object;
       const pos = getPositionsAtIndex(mesh, instanceId);
       if (!pos) return;
       const colRow = getColRowFromUIPosition(pos.x, pos.y);

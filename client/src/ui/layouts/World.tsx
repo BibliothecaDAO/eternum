@@ -57,8 +57,7 @@ export const World = () => {
           <MainScene />
         </div>
       </BackgroundContainer>
-      {/* TODO: Fix something is up here with the loading */}
-      {/* LOADING */}
+
       <LoadingContainer />
 
       {battleView ? (
@@ -103,11 +102,15 @@ export const World = () => {
         titleBar={{ position: { x: 0, y: 50 } }}
       />
       <Tooltip />
-      <div className="absolute bottom-4 right-6 text-white text-xs text-white/60 hover:text-white">
-        <a target="_blank" href="https://github.com/BibliothecaDAO/eternum">
-          v0.5.0
-        </a>
-      </div>
+      <VersionDisplay />
     </div>
   );
 };
+
+const VersionDisplay = () => (
+  <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white">
+    <a target="_blank" href={"https://github.com/BibliothecaDAO/eternum"} rel="noopener noreferrer">
+      {import.meta.env.VITE_PUBLIC_GAME_VERSION}
+    </a>
+  </div>
+);

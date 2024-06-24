@@ -18,7 +18,7 @@ export const NumberInput = ({ value, onChange, className, step = 1, max = 0, min
   return (
     <div className={clsx("flex items-center h-10 text-lg bg-gold/20 clip-angled-sm w-full", className)}>
       <div
-        className="flex items-center justify-center h-full px-1 border-r cursor-pointer border-gold hover:bg-gold/30 "
+        className="flex items-center justify-center h-full px-1 border-r cursor-pointer border-gold/10 hover:bg-gold/30 "
         onClick={() => {
           onChange(Math.max(value - step, min));
           playClick();
@@ -40,7 +40,7 @@ export const NumberInput = ({ value, onChange, className, step = 1, max = 0, min
       />
 
       <div
-        className="flex items-center justify-center h-full px-1 border-l cursor-pointer border-gold hover:bg-gold/30"
+        className="flex items-center justify-center h-full px-1 border-l cursor-pointer border-gold/10 hover:bg-gold/30"
         onClick={() => {
           onChange(Math.min(value + step, max));
           playClick();

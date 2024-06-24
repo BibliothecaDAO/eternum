@@ -12,23 +12,23 @@ const vec = new Vector3();
 
 export const useArmyAnimation = (position: Position, offset: Position, isMine: boolean) => {
   const { play: playMarchingSound } = useUiSounds(soundSelector.fly);
-  const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
   const prevPositionRef = useRef<Position | null>(null);
   const [animationPath, setAnimationPath] = useState<UIPosition[] | null>(null);
   const currentIndex = useRef(1);
+  const isAnimatingRef = useRef(false);
 
   const groupRef = useRef<Group>(null);
 
-  const { x, y } = position;
-
   useEffect(() => {
     if (!prevPositionRef.current) {
-      prevPositionRef.current = { x, y };
+      prevPositionRef.current = position;
       return;
     }
-    if (prevPositionRef.current.x !== x || prevPositionRef.current.y !== y) {
+
+    const exploredHexes = useExploredHexesStore.getState().exploredHexes;
+    if (prevPositionRef.current.x !== position.x || prevPositionRef.current.y !== position.y) {
       const startPos = { x: prevPositionRef.current.x, y: prevPositionRef.current.y };
-      const endPos = { x, y };
+      const endPos = position;
       let uiPath = findShortestPathBFS(startPos, endPos, exploredHexes).map((pos) =>
         getUIPositionFromColRow(pos.x, pos.y),
       );
@@ -37,10 +37,11 @@ export const useArmyAnimation = (position: Position, offset: Position, isMine: b
         uiPath = [getUIPositionFromColRow(startPos.x, startPos.y), getUIPositionFromColRow(endPos.x, endPos.y)];
       }
       setAnimationPath(uiPath.map((pos) => applyOffset(pos, offset)));
-      prevPositionRef.current = { x, y };
+      prevPositionRef.current = position;
       isMine && playMarchingSound(); // Play marching sound when animation starts
+      isAnimatingRef.current = true;
     }
-  }, [position]);
+  }, [position.x, position.y]);
 
   useFrame((_, delta) => {
     if (!animationPath || !groupRef.current) return;
@@ -53,11 +54,12 @@ export const useArmyAnimation = (position: Position, offset: Position, isMine: b
       if (currentIndex.current >= animationPath.length) {
         setAnimationPath(null);
         currentIndex.current = 1;
+        isAnimatingRef.current = false;
       } else {
         isMine && playMarchingSound();
       }
     }
   });
 
-  return groupRef;
+  return { groupRef, isAnimating: isAnimatingRef };
 };

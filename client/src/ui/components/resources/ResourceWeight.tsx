@@ -45,26 +45,24 @@ export const TravelInfo = ({
 
   return (
     <>
-      <Headline>Transfer Details</Headline>
-      <table className="min-w-full divide-y divide-gray-200 text-sm mt-2 text-center">
+      <table className="min-w-full divide-y divide-gray-200 text-sm mt-2 text-center font-bold ">
         <tbody className=" divide-y divide-gray-200 ">
-          {travelTime && (
-            <tr>
-              <td className="px-6 py-1 whitespace-nowrap  font-bold text-right">Travel Time</td>
-              <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${travelTime} hrs`}</td>
-            </tr>
-          )}
           <tr>
-            <td className="px-6 py-1 whitespace-nowrap  font-bold text-right">Total Weight</td>
+            <td className="px-6 py-1 whitespace-nowrap  font-bold text-right">Travel Time</td>
+            <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${travelTime!} hrs`}</td>
+          </tr>
+
+          <tr>
+            <td className="px-6 py-1 whitespace-nowrap  font-bold text-right">Total Transfer Weight</td>
             <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${divideByPrecision(
               resourceWeight,
             )} kg`}</td>
           </tr>
           <tr>
-            <td className="px-6 py-1 whitespace-nowrap font-bold  text-right">Donkeys Required</td>
+            <td className="px-6 py-1 whitespace-nowrap  text-right">Donkeys Required for Transfer</td>
             <td
-              className={`px-6 py-1 whitespace-nowrap text-gold text-left text-order-${
-                neededDonkeys > donkeyBalance ? "giants" : "brilliance"
+              className={`px-6 py-1 whitespace-nowrap text-gold text-left ${
+                neededDonkeys > donkeyBalance ? "text-red" : "text-green"
               }`}
             >
               {neededDonkeys} + {sendingDonkeys} [{donkeyBalance}]{" "}
@@ -72,7 +70,7 @@ export const TravelInfo = ({
           </tr>
         </tbody>
       </table>
-      <div className="flex text-xs my-2 justify-center w-full gap-4 uppercase font-bold">
+      <div className="flex text-xs mt-4 justify-center w-full gap-4 font-bold ">
         <div className="ml-2">Lords: {`${WEIGHTS[253]} kg/unit`}</div>
         <div>Food: {`${WEIGHTS[254]} kg/unit`}</div>
         <div className="ml-2">Resource: {`${WEIGHTS[1]} kg/unit`}</div>
