@@ -135,9 +135,9 @@ export const MarketResourceSidebar = ({
   }, []);
 
   return (
-    <div>
+    <div className=" px-1 ">
       <div className="w-full flex justify-end gap-8 mb-1">
-        <div className="w-3/6 flex justify-between text-xs">
+        <div className="w-3/6 flex justify-between text-xs font-bold uppercase">
           <div>Sell</div>
           <div>Buy</div>
           <div>Qty</div>
@@ -180,7 +180,6 @@ export const MarketResourceSidebar = ({
 export const TransferView = () => {
   const { playerRealms, playerAccounts, playerStructures, otherRealms } = useEntities();
 
-  console.log(otherRealms());
   return (
     <TransferBetweenEntities
       entitiesList={[

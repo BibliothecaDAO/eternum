@@ -50,11 +50,11 @@ export const MarketResource = ({
   return (
     <div
       onClick={() => onClick(resource.id)}
-      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer flex gap-1 hover:bg-gold/10  hover:clip-angled-sm group ${
-        active ? "bg-white/10  clip-angled-sm" : ""
+      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer flex gap-1 hover:bg-gold/10  hover:clip-angled-sm clip-angled-sm group ${
+        active ? "bg-gold/10  " : ""
       }`}
     >
-      <ResourceIcon size="sm" resource={resource.trait} withTooltip={true} />
+      <ResourceIcon size="sm" resource={resource.trait} withTooltip={false} />
       <div className="truncate text-xs self-center">{resource.trait}</div>
 
       <div className="text-xs text-gold/70 group-hover:text-green self-center">
@@ -94,7 +94,7 @@ export const MarketOrderPanel = ({
   }, [resourceAskOffers, resourceId]);
 
   return (
-    <div className="grid grid-cols-2 gap-8 p-8 h-full">
+    <div className="grid grid-cols-2 gap-4 p-4 h-full">
       <MarketOrders offers={selectedResourceAskOffers} resourceId={resourceId} entityId={entityId} />
       <MarketOrders offers={selectedResourceBidOffers} resourceId={resourceId} entityId={entityId} isBuy />
     </div>
@@ -121,7 +121,7 @@ export const MarketOrders = ({
     <div className=" h-full flex flex-col gap-4">
       {/* Market Price */}
       <div
-        className={`text-xl flex clip-angled-sm font-bold  justify-between p-3 px-8 border-gold/10 border ${
+        className={`text-xl flex clip-angled-sm font-bold  justify-between p-1 px-8 border-gold/10 border ${
           !isBuy ? "bg-green/20" : "bg-red/20"
         }`}
       >
@@ -134,7 +134,7 @@ export const MarketOrders = ({
         </div>
       </div>
 
-      <div className="p-4 bg-white/10  flex-col flex gap-1 clip-angled-sm flex-grow border-gold/10 border">
+      <div className="p-1 bg-white/5  flex-col flex gap-1 clip-angled-sm flex-grow border-gold/10 border">
         <OrderRowHeader isBuy={isBuy} resourceId={resourceId} />
 
         <div className="flex-col flex gap-1 flex-grow overflow-y-auto">
@@ -243,10 +243,38 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
     return isBuy ? offer.takerGets[0].amount < balance : offer.makerGets[0].amount < balance;
   }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId]);
 
+  const orderWeight = useMemo(() => {
+    const totalWeight = getTotalResourceWeight([
+      {
+        resourceId: isBuy ? offer.takerGets[0].resourceId : offer.makerGets[0].resourceId,
+        amount: isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount,
+      },
+    ]);
+    return multiplyByPrecision(totalWeight);
+  }, [entityId, offer.makerId, offer.tradeId]);
+
+  const donkeysNeeded = useMemo(() => {
+    return Math.ceil(divideByPrecision(orderWeight) / EternumGlobalConfig.carryCapacity.donkey);
+  }, [orderWeight]);
+
+  const donkeyProductionManager = useProductionManager(entityId, ResourcesIds.Donkey);
+
+  const donkeyProduction = useMemo(() => {
+    return donkeyProductionManager.getProduction();
+  }, []);
+
+  const donkeyBalance = useMemo(() => {
+    return donkeyProductionManager.balance(currentDefaultTick);
+  }, [donkeyProductionManager, donkeyProduction, currentDefaultTick]);
+
+  const enoughDonkeys = useMemo(() => {
+    return donkeyBalance > donkeysNeeded;
+  }, [donkeyBalance, donkeysNeeded]);
+
   return (
     <div
       key={offer.tradeId}
-      className={`flex flex-col p-1  px-2 clip-angled-sm hover:bg-white/15 duration-150 border-gold/10 border ${
+      className={`flex flex-col p-1  px-2 clip-angled-sm hover:bg-white/15 duration-150 border-gold/10 border  text-xs ${
         isSelf ? "bg-blueish/10" : "bg-white/10"
       }`}
     >
@@ -261,7 +289,6 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
           <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
           {currencyFormat(getTotalLords, 0)}
         </div>
-
         {!isSelf ? (
           canAccept ? (
             <Button isLoading={loading} onClick={onAccept} size="xs" className="self-center flex flex-grow">
@@ -287,6 +314,11 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
           >
             {loading ? "cancelling" : "cancel"}
           </Button>
+        )}
+        {!enoughDonkeys && (
+          <div className="bg-red">
+            <ResourceIcon withTooltip={false} size="xs" resource={"Donkey"} />
+          </div>
         )}
       </div>
     </div>
@@ -344,7 +376,9 @@ export const OrderCreation = ({
   }, [resource, lords]);
 
   const orderWeight = useMemo(() => {
-    const totalWeight = getTotalResourceWeight([{ resourceId, amount: resource }]);
+    const totalWeight = getTotalResourceWeight([
+      { resourceId: isBuy ? resourceId : ResourcesIds.Lords, amount: resource },
+    ]);
     return multiplyByPrecision(totalWeight);
   }, [resource, lords]);
 
@@ -392,10 +426,10 @@ export const OrderCreation = ({
   }, [donkeyBalance, donkeysNeeded]);
 
   return (
-    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto clip-angled-sm bg-white/10 border-gold/10 border">
+    <div className="flex justify-between p-4 text-xl flex-wrap mt-auto clip-angled-sm bg-gold/5 border-gold/10 border">
       <div className="flex w-full gap-8">
-        <div className="w-1/3">
-          <div className="uppercase text-xs flex gap-1 font-bold">
+        <div className="w-1/3 gap-1 flex flex-col">
+          <div className="uppercase text-sm flex gap-2 font-bold">
             <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />{" "}
             {isBuy ? "Buy" : "Sell"}
           </div>
@@ -405,22 +439,22 @@ export const OrderCreation = ({
           //   <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
           // )} */}
 
-          <div className="text-sm">{currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)}</div>
+          <div className="text-sm font-bold text-gold/70">
+            {currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)} avail.
+          </div>
         </div>
-        <div className="flex w-1/3 justify-start px-3">
-          <div className="uppercase">
-            <div className="uppercase text-xs flex gap-1 mb-4 ">
+        <div className="flex w-1/3 justify-center px-3 text-center font-bold self-center">
+          <div className="uppercase text-2xl">
+            {bid.toString()}
+            <div className="uppercase text-xs flex gap-1 mt-1 ">
               <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
               per / <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />
             </div>
-            {bid.toString()}
-
-            {/* <Button onClick={setMarketBit}>{initialBid.toFixed(2)}</Button> */}
           </div>
         </div>
-        <div className="w-1/3">
-          <div className="uppercase text-xs flex gap-1 font-bold">
-            <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> Lords
+        <div className="w-1/3 gap-1 flex flex-col">
+          <div className="uppercase text-sm flex gap-2 font-bold">
+            <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> Cost
           </div>
           {/* {!isBuy ? ( */}
           <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
@@ -428,7 +462,9 @@ export const OrderCreation = ({
           //   <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
           // )} */}
 
-          <div className="text-sm">{currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)} avail.</div>
+          <div className="text-sm font-bold text-gold/70">
+            {currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)} avail.
+          </div>
         </div>
       </div>
       <div className="mt-8 ml-auto text-right w-auto font-bold text-lg">
