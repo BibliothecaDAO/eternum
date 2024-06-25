@@ -27,13 +27,14 @@ export const BattleProgressBar = ({
   const defenderName = structure
     ? `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
     : defenderArmies?.length > 0
-      ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
-      : "Empty";
+    ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+    : "Empty";
 
   const totalHealth = useMemo(
     () => (attackingHealth?.current || 0) + (defendingHealth?.current || 0),
     [attackingHealth, defendingHealth],
   );
+
   const attackingHealthPercentage = useMemo(
     () => (((attackingHealth?.current || 0) / totalHealth) * 100).toFixed(2),
     [attackingHealth, totalHealth],
@@ -58,11 +59,13 @@ export const BattleProgressBar = ({
     setTime(durationLeft);
   }, [durationLeft]);
 
-  const gradient = useMemo(
-    () =>
-      `linear-gradient(to right, #582C4D ${attackingHealthPercentage}%, rgba(0,0,0,0) ${attackingHealthPercentage}%, rgba(0,0,0,0) ${defendingHealthPercentage}%, #6B7FD7 ${defendingHealthPercentage}%)`,
-    [attackingHealthPercentage, defendingHealthPercentage],
-  );
+  const gradient = useMemo(() => {
+    const attackPercentage = parseFloat(attackingHealthPercentage);
+    const defendPercentage = parseFloat(defendingHealthPercentage);
+    return `linear-gradient(to right, #582C4D ${attackPercentage}%, #582C4D ${attackPercentage}%, #6B7FD7 ${attackPercentage}%, #6B7FD7 ${
+      attackPercentage + defendPercentage
+    }%)`;
+  }, [attackingHealthPercentage, defendingHealthPercentage]);
 
   return (
     <motion.div
@@ -74,18 +77,18 @@ export const BattleProgressBar = ({
         visible: { y: "0%", transition: { duration: 0.5 } },
       }}
     >
-      <div className="mx-auto w-2/3 flex justify-between text-2xl text-white backdrop-blur-lg bg-brown/20 p-3">
+      <div className="mx-auto w-2/3 flex justify-between text-2xl text-gold backdrop-blur-lg bg-[#1b1a1a] px-8 py-2  ornate-borders-top-y">
         <div>
           <p>{attackerName}</p>
         </div>
-        {time && <div>{time.toISOString().substring(11, 19)}</div>}
+        {time && <div className="font-bold">{time.toISOString().substring(11, 19)} left</div>}
         <div className="text-right">
           <p>{defenderName}</p>
         </div>
       </div>
-      <div className="relative h-8 mb-2 mx-auto w-2/3" style={{ background: gradient }}>
+      <div className="relative h-8  mx-auto w-2/3 ornate-borders-y animate-slowPulse" style={{ background: gradient }}>
         <div className="absolute left-0 top-0 h-full flex items-center justify-center w-full font-bold">
-          <div className="flex justify-between w-full px-2 text-white/60">
+          <div className="flex justify-between w-full px-8 py-3 text-gold">
             <span>
               {currencyFormat(attackingHealth?.current || 0, 0)}/{currencyFormat(attackingHealth?.lifetime || 0, 0)} hp
             </span>

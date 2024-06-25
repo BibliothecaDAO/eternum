@@ -227,6 +227,9 @@ export default {
         ".clip-squared": {
           clipPath: "polygon(10% 0, 90% 0, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0 90%, 0 10%)",
         },
+        ".clip-squared-top": {
+          clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%, 10% 10%)",
+        },
         ".clip-angled": {
           clipPath:
             "polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px)",

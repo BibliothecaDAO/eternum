@@ -8,14 +8,14 @@ export const LockedResources = ({
   defendersResourcesEscrowEntityId: bigint;
 }) => {
   return (
-    <div className="flex flex-col w-[30vw] text-gold border-gold  bg-brown border-gradient border-2 clip-angled ornate-borders p-1">
-      <div className="text-center">Battle Chest</div>
-      <div className="flex flex-row overflow-auto">
-        <div className="border-r w-[7vw] mx-1">
-          <InventoryResources entityId={attackersResourcesEscrowEntityId} />
+    <div className="grid col-span-2  bg-[#1b1a1a] clip-angled ornate-borders p-1 row-auto ">
+      <div className="text-center w-full text-gold">Battle Chest</div>
+      <div className="grid overflow-auto grid-cols-12 gap-2">
+        <div className="border-r border-gold/50  col-span-6">
+          <InventoryResources entityId={attackersResourcesEscrowEntityId} max={4} />
         </div>
-        <div className="w-[7vw]  mx-1">
-          <InventoryResources entityId={defendersResourcesEscrowEntityId} />
+        <div className="    col-span-6">
+          <InventoryResources entityId={defendersResourcesEscrowEntityId} max={4} />
         </div>
       </div>
     </div>
