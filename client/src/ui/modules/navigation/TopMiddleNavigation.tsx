@@ -13,8 +13,8 @@ import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
-import { motion } from "framer-motion";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { motion } from "framer-motion";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -52,7 +52,7 @@ export const TopMiddleNavigation = () => {
       if (b.category === "Realm") return 1;
       return a.category!.localeCompare(b.category!);
     });
-  }, [playerStructures().length]);
+  }, [playerStructures().length, realmEntityId]);
 
   const isHexView = useMemo(() => {
     return location.includes(`/hex`);
