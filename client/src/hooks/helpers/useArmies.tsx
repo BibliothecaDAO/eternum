@@ -76,7 +76,7 @@ const formatArmies = (
         getEntityIdFromKeys([BigInt(realm.realm_id)]),
       ) as ClientComponents["Position"]["schema"]);
 
-    const isMine = BigInt(owner.address) === BigInt(playerAddress);
+    const isMine = BigInt(owner?.address) === BigInt(playerAddress);
     const ownGroupIndex = Number(army.entity_id) % 12;
     const offset = calculateOffset(ownGroupIndex, 12);
     const offsetToAvoidOverlapping = Math.random() * 1 - 0.5;

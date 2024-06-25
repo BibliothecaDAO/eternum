@@ -12,6 +12,9 @@ interface TextInputProps {
   onKeyDown?: (e: any) => void;
   onKeyPress?: (e: any) => void;
 }
+const formatNumber = (value: string) => {
+  return value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
 
 const TextInput = (props: TextInputProps) => {
   const { value, disabled, onChange, className, placeholder, maxLength, onBlur, onFocus, onKeyDown, onKeyPress } =
@@ -19,13 +22,13 @@ const TextInput = (props: TextInputProps) => {
   return (
     <input
       className={clsx(
-        "w-full p-2   transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100  placeholder-white/25 flex-grow  bg-crimson/20 border-b border-gold/40",
+        "w-full p-2 transition-all duration-300 focus:outline-none ring-1 border-opacity-50 focus:border-opacity-100  placeholder-white/25 flex-grow  bg-crimson/20 border border-gold/40 rounded-sm font-bold",
         className,
       )}
       disabled={disabled || false}
       type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
+      value={formatNumber(value)}
+      onChange={(e) => onChange(e.target.value.replace(/,/g, ""))}
       placeholder={placeholder}
       maxLength={maxLength}
       onBlur={onBlur}
