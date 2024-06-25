@@ -46,7 +46,7 @@ export const StructureListItem = ({ structure, onClick, extraButton }: Structure
           </div>
         </div>
       </div>
-      <InventoryResources entityId={BigInt(structure.entity_id)} title="Balance" />
+      <InventoryResources entityId={BigInt(structure.entity_id)} />
       {extraButton || ""}
     </div>
   );
