@@ -68,7 +68,7 @@ export const Battle = ({
         <div className="flex justify-center">
           {battleAdjusted && (
             <Button variant="primary" onClick={() => setShowBattleDetails(!showBattleDetails)}>{`${
-              !showBattleDetails ? "Battle Details" : "Close"
+              !showBattleDetails ? "Battle Details" : "Overview"
             }`}</Button>
           )}
         </div>
@@ -81,8 +81,8 @@ export const Battle = ({
           structure={structure}
           durationLeft={durationLeft}
         />
-        <div className="w-screen bg-brown/80 backdrop-blur-lg  ornate-borders-top bg-map">
-          <div className="grid grid-cols-12 justify-between min-h-[22vh] gap-4">
+        <div className="w-screen bg-brown/80 backdrop-blur-lg ornate-borders-top bg-map h-[27vh]">
+          <div className="grid grid-cols-12 justify-between gap-4 h-[25vh]">
             <BattleSideView
               battleSide={BattleSide.Attack}
               battleId={battleManager?.battleId}

@@ -5,14 +5,13 @@ import { useMemo } from "react";
 export const TroopRow = ({ troops, defending = false }: { troops: Troops | undefined; defending?: boolean }) => {
   const noArmy = useMemo(() => !troops, [troops]);
   return (
-    <div className=" grid-cols-3 col-span-3 gap-2 flex mx-2">
+    <div className="self-center m-auto grid-cols-3 col-span-3 gap-2 flex">
       {/* {noArmy ? (
         <div className="text-s text-gold bg-gold/10 m-auto border border-gradient p-4">
           No defending Army!. The residents are shaking in terror.
         </div>
       ) : ( */}
       <>
-        {" "}
         <TroopCard
           defending={defending}
           className={`${defending ? "order-last" : ""} w-1/3`}
@@ -50,7 +49,7 @@ export const TroopCard = ({
 }) => {
   return (
     <div
-      className={` bg-gold/10 text-gold font-bold border-2 border-gradient p-2 clip-angled-sm hover:bg-gold/40 duration-300 ${className}`}
+      className={`bg-gold/10 text-gold font-bold border-2 border-gradient p-2 clip-angled-sm hover:bg-gold/40 duration-300 ${className}`}
     >
       <img
         style={defending ? { transform: "scaleX(-1)" } : {}}
