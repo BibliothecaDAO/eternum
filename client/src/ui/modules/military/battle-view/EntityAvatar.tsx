@@ -1,11 +1,21 @@
 import { Structure } from "@/hooks/helpers/useStructures";
 import { motion } from "framer-motion";
 
-export const EntityAvatar = ({ structure, show = true }: { structure?: Structure; show?: boolean }) => {
+export const EntityAvatar = ({
+  structure,
+  address = "0x01",
+  show = true,
+}: {
+  structure?: Structure;
+  show?: boolean;
+  address?: string;
+}) => {
   const isRealm = Boolean(structure) && String(structure?.category) === "Realm";
   const isHyperstructure = Boolean(structure) && String((structure as Structure).category) === "Hyperstructure";
   const isEarthenshardsMine = Boolean(structure) && String((structure as Structure).category) === "FragmentMine";
-  let imgSource = "./images/avatars/2.png";
+
+  const randomAvatarIndex = (parseInt(address.slice(0, 8), 16) % 7) + 1;
+  let imgSource = `./images/avatars/${randomAvatarIndex}.png`;
 
   if (isRealm) {
     imgSource = "./images/buildings/thumb/castle.png";
@@ -21,24 +31,17 @@ export const EntityAvatar = ({ structure, show = true }: { structure?: Structure
     visible: { y: "0%", transition: { duration: 0.6 } },
   };
   return (
-    <div className="col-span-2 flex">
-      {" "}
-      <div
-        className={`mx-auto flex flex-col gap-4 p-3 w-[${
-          isRealm || isHyperstructure || isEarthenshardsMine ? 20 : 15
-        }vw]`}
-      >
-        {displayImg && (
-          <motion.img
-            initial="hidden"
-            animate="visible"
-            variants={slideUp}
-            className="w-42 h-42 clip-angled  -mt-24"
-            src={imgSource}
-            alt=""
-          />
-        )}
-      </div>
+    <div className="">
+      {displayImg && (
+        <motion.img
+          initial="hidden"
+          animate="visible"
+          variants={slideUp}
+          className="w-44 h-44 clip-angled rounded-full object-cover  border-gold/50 border-4 -mt-12 bg-black"
+          src={imgSource}
+          alt=""
+        />
+      )}
     </div>
   );
 };

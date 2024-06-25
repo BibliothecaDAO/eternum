@@ -71,10 +71,6 @@ export const World = () => {
             <TopMiddleNavigation />
           </TopMiddleContainer>
 
-          <TopLeftContainer>
-            <TopLeftNavigation />
-          </TopLeftContainer>
-
           {/* LEFT */}
           <LeftMiddleContainer>
             <LeftNavigationModule />
@@ -95,6 +91,11 @@ export const World = () => {
           </RightMiddleContainer>
         </>
       )}
+
+      <TopLeftContainer>
+        <TopLeftNavigation />
+      </TopLeftContainer>
+
       <Redirect to="/" />
       <Leva
         hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU}

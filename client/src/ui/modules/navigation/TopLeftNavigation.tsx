@@ -4,6 +4,7 @@ import { useModal } from "@/hooks/store/useModal";
 import { HintModal } from "@/ui/components/hints/HintModal";
 import useUIStore from "@/hooks/store/useUIStore";
 import { settings } from "@/ui/components/navigation/Config";
+import { SettingsWindow } from "../settings/Settings";
 
 export const TopLeftNavigation = () => {
   const { toggleModal } = useModal();
@@ -30,6 +31,7 @@ export const TopLeftNavigation = () => {
           onClick={() => togglePopup(settings)}
         />
       </div>
+      <SettingsWindow />
     </div>
   );
 };

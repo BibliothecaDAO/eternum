@@ -139,43 +139,43 @@ export const BattleActions = ({
   const isClaimable = Boolean(ownArmy) && !isActive && defenceIsEmptyOrDead && !isRealm && Boolean(structure);
 
   return (
-    <div className="col-span-2 flex justify-center flex-wrap mx-4 w-[100vw]">
-      <div className="grid grid-cols-2 gap-3 row-span-2">
+    <div className="col-span-2 flex justify-center flex-wrap ornate-borders-bottom-y p-2 bg-[#1b1a1a] bg-map">
+      <div className="grid grid-cols-2 gap-1 w-full">
         <Button
-          variant="primary"
+          variant="outline"
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Raid}
           onClick={handleRaid}
           disabled={loading !== Loading.None || !structure || !ownArmy || isActive}
         >
-          <img className="w-10" src="/images/icons/raid.png" alt="coin" />
+          <img className="w-16" src="/images/icons/raid.png" alt="coin" />
           Raid!
         </Button>
 
         <Button
-          variant="primary"
+          variant="outline"
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Claim}
           onClick={handleBattleClaim}
           disabled={loading !== Loading.None || !isClaimable}
         >
-          <img className="w-10" src="/images/icons/claim.png" alt="coin" />
+          <img className="w-16" src="/images/icons/claim.png" alt="coin" />
           Claim
         </Button>
 
         <Button
-          variant="primary"
+          variant="outline"
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Leave}
           onClick={handleLeaveBattle}
           disabled={loading !== Loading.None || !ownArmy || !Boolean(ownArmy.battle_id)}
         >
-          <img className="w-10" src="/images/icons/leave-battle.png" alt="coin" />
-          Leave Battle
+          <img className="w-16" src="/images/icons/leave-battle.png" alt="coin" />
+          Leave
         </Button>
 
         <Button
-          variant="primary"
+          variant="outline"
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Start}
           onClick={handleBattleStart}
@@ -187,7 +187,7 @@ export const BattleActions = ({
             Boolean(battle)
           }
         >
-          <img className="w-10" src="/images/icons/attack.png" alt="coin" />
+          <img className="w-16" src="/images/icons/attack.png" alt="coin" />
           Battle
         </Button>
       </div>

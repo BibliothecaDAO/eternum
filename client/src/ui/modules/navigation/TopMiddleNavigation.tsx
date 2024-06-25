@@ -76,7 +76,7 @@ export const TopMiddleNavigation = () => {
   };
 
   return (
-    <motion.div className="flex ornate-borders-top bg-brown" variants={slideDown} initial="hidden" animate="visible">
+    <motion.div className="flex ornate-borders bg-brown" variants={slideDown} initial="hidden" animate="visible">
       <div className="self-center px-3 flex space-x-2">
         <TickProgress />
       </div>

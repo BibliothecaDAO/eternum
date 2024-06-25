@@ -30,14 +30,14 @@ export const BattleDetails = ({ battleId, armies }: { battleId: bigint; armies: 
 
   const { getAddressName } = useRealm();
   return (
-    <div className="flex grid grid-cols-3 w-[22vw] text-gold border-gold bg-brown border-gradient border-2 clip-angled ornate-borders p-4">
-      <div key={0} className="tile h-[2vh] text-center border">
+    <div className=" grid grid-cols-3 text-gold border-gold/20  border-gradient  clip-angled p-2">
+      <div key={0} className="tile h-[2vh] text-center border border-gold/20">
         Army
       </div>
-      <div key={1} className="tile h-[2vh] text-center border">
+      <div key={1} className="tile h-[2vh] text-center border border-gold/20">
         Owner
       </div>
-      <div key={2} className="tile h-[2vh] text-center border"></div>
+      <div key={2} className="tile h-[2vh] text-center border border-gold/20"></div>
       {armies &&
         armies.map((army, index) => (
           <React.Fragment key={index}>

@@ -57,34 +57,41 @@ export const BattleSideView = ({
   };
 
   return (
-    <div className={`flex w-[70vw] ${battleSide === BattleSide.Attack ? "flex-row" : "flex-row-reverse"}`}>
-      <div>
-        <EntityAvatar structure={structure} show={ownSideArmies.length > 0} />
-        {Boolean(battleId) &&
-          opposingSideArmies.length > 0 &&
-          userArmiesAtPosition &&
-          userArmiesAtPosition.length > 0 && (
-            <div className="flex w-full">
-              <SelectActiveArmy
-                setLocalSelectedUnit={setLocalSelectedUnit}
-                userAttackingArmies={userArmiesAtPosition}
-                localSelectedUnit={localSelectedUnit}
-              />
-              <Button
-                onClick={() => joinBattle(battleSide, localSelectedUnit!)}
-                isLoading={loading}
-                className="size-xs"
-              >
-                Join
-              </Button>
-            </div>
-          )}
+    <div
+      className={`flex col-span-5 ornate-borders-bottom-y px-4 bg-[#1b1a1a] bg-map ${
+        battleSide === BattleSide.Attack ? "flex-row" : "flex-row-reverse"
+      }`}
+    >
+      {/* TODO: Could use enemies address */}
+      <EntityAvatar
+        address={battleSide === BattleSide.Attack ? account.address : battleId?.toString()}
+        structure={structure}
+        show={ownSideArmies.length > 0}
+      />
+
+      {Boolean(battleId) &&
+        opposingSideArmies.length > 0 &&
+        userArmiesAtPosition &&
+        userArmiesAtPosition.length > 0 && (
+          <div className="flex w-full">
+            <SelectActiveArmy
+              setLocalSelectedUnit={setLocalSelectedUnit}
+              userAttackingArmies={userArmiesAtPosition}
+              localSelectedUnit={localSelectedUnit}
+            />
+            <Button onClick={() => joinBattle(battleSide, localSelectedUnit!)} isLoading={loading} className="size-xs">
+              Join
+            </Button>
+          </div>
+        )}
+
+      <div className="self-center h-full p-2 w-full">
+        {showBattleDetails && battleId ? (
+          <BattleDetails armies={ownSideArmies} battleId={battleId} />
+        ) : (
+          <TroopRow troops={ownSideTroopsUpdated} />
+        )}
       </div>
-      {showBattleDetails && battleId ? (
-        <BattleDetails armies={ownSideArmies} battleId={battleId} />
-      ) : (
-        <TroopRow troops={ownSideTroopsUpdated} />
-      )}
     </div>
   );
 };

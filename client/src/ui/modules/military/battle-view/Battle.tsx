@@ -56,7 +56,7 @@ export const Battle = ({
       <TopScreenView />
 
       <motion.div
-        className="absolute bottom-0"
+        className="absolute bottom-0 "
         variants={{
           hidden: { y: "100%" },
           visible: { y: "0%", opacity: 1, transition: { duration: 0.5 } },
@@ -65,6 +65,13 @@ export const Battle = ({
         animate="visible"
         exit="hidden"
       >
+        <div className="flex justify-center">
+          {battleAdjusted && (
+            <Button variant="primary" onClick={() => setShowBattleDetails(!showBattleDetails)}>{`${
+              !showBattleDetails ? "Battle Details" : "Close"
+            }`}</Button>
+          )}
+        </div>
         <BattleProgressBar
           ownArmySide={ownArmySide}
           attackingHealth={attackerHealth}
@@ -74,8 +81,8 @@ export const Battle = ({
           structure={structure}
           durationLeft={durationLeft}
         />
-        <div className="w-screen bg-brown/80 backdrop-blur-lg h-72 p-6 mb-4">
-          <div className="flex flex-row justify-between h-[20vh]">
+        <div className="w-screen bg-brown/80 backdrop-blur-lg  ornate-borders-top bg-map">
+          <div className="grid grid-cols-12 justify-between min-h-[22vh] gap-4">
             <BattleSideView
               battleSide={BattleSide.Attack}
               battleId={battleManager?.battleId}
@@ -110,13 +117,6 @@ export const Battle = ({
               opposingSideArmies={attackerArmies}
               structure={structure}
             />
-          </div>
-          <div className="flex justify-center mt-4">
-            {battleAdjusted && (
-              <Button onClick={() => setShowBattleDetails(!showBattleDetails)}>{`${
-                !showBattleDetails ? "Details" : "Close"
-              }`}</Button>
-            )}
           </div>
         </div>
       </motion.div>
