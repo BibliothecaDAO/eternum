@@ -2,6 +2,36 @@ import * as SystemProps from "@bibliothecadao/eternum";
 import { toast } from "react-toastify";
 import { SetupNetworkResult } from "./setupNetwork";
 
+class PromiseQueue {
+  private queue: (() => Promise<any>)[] = [];
+  private processing = false;
+
+  enqueue(task: () => Promise<any>) {
+    return new Promise((resolve, reject) => {
+      this.queue.push(() => task().then(resolve).catch(reject));
+      this.processQueue();
+    });
+  }
+
+  private async processQueue() {
+    if (this.processing) return;
+    this.processing = true;
+
+    while (this.queue.length > 0) {
+      const task = this.queue.shift();
+      if (task) {
+        try {
+          await task();
+        } catch (error) {
+          console.error("Error processing task:", error);
+        }
+      }
+    }
+
+    this.processing = false;
+  }
+}
+
 export type SystemCallFunctions = ReturnType<typeof createSystemCalls>;
 type SystemCallFunction = (...args: any[]) => any;
 type WrappedSystemCalls = Record<string, SystemCallFunction>;
@@ -17,6 +47,23 @@ const withErrorHandling =
   };
 
 export function createSystemCalls({ provider }: SetupNetworkResult) {
+  const promiseQueue = new PromiseQueue();
+
+  const withQueueing = (fn: (...args: any[]) => Promise<any>) => {
+    return (...args: any[]) => promiseQueue.enqueue(() => fn(...args));
+  };
+
+  const withErrorHandling = (fn: (...args: any[]) => Promise<any>) => {
+    return async (...args: any[]) => {
+      try {
+        return await fn(...args);
+      } catch (error: any) {
+        toast(error.message);
+        throw error;
+      }
+    };
+  };
+
   const uuid = async () => {
     return provider.uuid();
   };
@@ -207,7 +254,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const systemCalls = {
-    send_resources,
+    send_resources: withQueueing(withErrorHandling(send_resources)),
     pickup_resources,
     remove_liquidity,
     add_liquidity,
@@ -221,15 +268,15 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     set_entity_name,
     level_up_realm,
     isLive,
-    create_order,
-    accept_order,
-    cancel_order,
+    create_order: withQueueing(withErrorHandling(create_order)),
+    accept_order: withQueueing(withErrorHandling(accept_order)),
+    cancel_order: withQueueing(withErrorHandling(cancel_order)),
     create_realm,
     create_multiple_realms,
     create_road,
     transfer_resources,
     travel,
-    travel_hex,
+    travel_hex: withQueueing(withErrorHandling(travel_hex)),
     destroy_building,
     create_building,
     create_army,
