@@ -1,22 +1,22 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useBuildings } from "@/hooks/helpers/useBuildings";
+import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 import { useQuery } from "@/hooks/helpers/useQuery";
+import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
+import Button from "@/ui/elements/Button";
 import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow } from "@/ui/utils/utils";
 import { BuildingStringToEnum, BuildingType, ResourcesIds, biomes } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useAnimations, useGLTF, useHelper } from "@react-three/drei";
+import { useControls } from "leva";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { BannerFlag } from "../worldmap/BannerFlag";
-import { BuildingInfo } from "./SelectPreviewBuilding";
-import { useBuildings } from "@/hooks/helpers/useBuildings";
-import useRealmStore from "@/hooks/store/useRealmStore";
-import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
-import { useControls } from "leva";
-import Button from "@/ui/elements/Button";
-import { soundSelector, useUiSounds } from "@/hooks/useUISound";
+import { BuildingInfo, ResourceInfo } from "./SelectPreviewBuilding";
 
 export enum ModelsIndexes {
   Castle = BuildingType.Castle,
@@ -134,12 +134,12 @@ export const MiddleBuilding = ({ hexType }: { hexType: HexType }) => {
     hexType === HexType.BANK
       ? ModelsIndexes.Bank
       : hexType === HexType.SHARDSMINE
-        ? ModelsIndexes.FragmentMine
-        : hexType === HexType.HYPERSTRUCTURE
-          ? ModelsIndexes.Hyperstructure
-          : hexType === HexType.UNFINISHEDHYPERSTRUCTURE
-            ? ModelsIndexes.UnfinishedHyperstructure
-            : ModelsIndexes.Castle;
+      ? ModelsIndexes.FragmentMine
+      : hexType === HexType.HYPERSTRUCTURE
+      ? ModelsIndexes.Hyperstructure
+      : hexType === HexType.UNFINISHEDHYPERSTRUCTURE
+      ? ModelsIndexes.UnfinishedHyperstructure
+      : ModelsIndexes.Castle;
 
   const modelZOffsets = {
     [HexType.BANK]: 0.2,
@@ -280,27 +280,41 @@ export const BuiltBuilding = ({
     >
       <primitive dropShadow scale={3} object={model} />
       {popupOpened && (
-        <HoverBuilding name={name} destroyButton={destroyButton} building={buildingCategory} entityId={realmEntityId} />
+        <HoverBuilding
+          name={name}
+          destroyButton={destroyButton}
+          buildingType={buildingCategory}
+          entityId={realmEntityId}
+        />
       )}
     </group>
   );
 };
 
 const HoverBuilding = ({
-  building,
+  buildingType,
   entityId,
   destroyButton,
   name,
 }: {
   destroyButton: React.ReactNode;
-  building: BuildingType;
+  buildingType: BuildingType;
   entityId: bigint;
   name?: string;
 }) => {
   return (
-    <BaseThreeTooltip distanceFactor={30} position={Position.BOTTOM_RIGHT}>
+    <BaseThreeTooltip
+      className={`min-w-[${buildingType === BuildingType.Resource ? 400 : 215}px]`}
+      distanceFactor={30}
+      position={Position.BOTTOM_RIGHT}
+    >
       <div className="flex flex-col p-1 space-y-1 text-sm">
-        <BuildingInfo name={name} buildingId={building} entityId={entityId} extraButtons={[destroyButton]} />
+        {buildingType === BuildingType.Resource && (
+          <ResourceInfo resourceId={buildingType} entityId={entityId} extraButtons={[destroyButton]} />
+        )}
+        {buildingType !== BuildingType.Resource && (
+          <BuildingInfo name={name} buildingId={buildingType} entityId={entityId} extraButtons={[destroyButton]} />
+        )}
       </div>
     </BaseThreeTooltip>
   );
