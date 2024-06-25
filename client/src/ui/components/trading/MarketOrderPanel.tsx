@@ -422,8 +422,9 @@ export const OrderCreation = ({
   }, [resource, lords, donkeyBalance, lordsBalance, resourceBalance]);
 
   const enoughDonkeys = useMemo(() => {
+    if (resourceId === ResourcesIds.Donkey) return true;
     return donkeyBalance > donkeysNeeded;
-  }, [donkeyBalance, donkeysNeeded]);
+  }, [donkeyBalance, donkeysNeeded, resourceId]);
 
   return (
     <div className="flex justify-between p-4 text-xl flex-wrap mt-auto clip-angled-sm bg-gold/5 border-gold/10 border">
