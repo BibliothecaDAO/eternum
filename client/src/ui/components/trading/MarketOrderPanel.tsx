@@ -239,10 +239,6 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
     return productionManager.balance(currentDefaultTick);
   }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId]);
 
-  const canAccept = useMemo(() => {
-    return isBuy ? offer.takerGets[0].amount < balance : offer.makerGets[0].amount < balance;
-  }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId]);
-
   const orderWeight = useMemo(() => {
     const totalWeight = getTotalResourceWeight([
       {
@@ -271,6 +267,10 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
     return donkeyBalance > donkeysNeeded;
   }, [donkeyBalance, donkeysNeeded]);
 
+  const canAccept = useMemo(() => {
+    return (isBuy ? offer.takerGets[0].amount < balance : offer.makerGets[0].amount < balance) && enoughDonkeys;
+  }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId, enoughDonkeys]);
+
   return (
     <div
       key={offer.tradeId}
@@ -280,6 +280,11 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
     >
       <div className="grid grid-cols-5 gap-2">
         <div className={`flex gap-1 font-bold ${isBuy ? "text-red" : "text-green"} `}>
+          {!enoughDonkeys && (
+            <div className="bg-red rounded-full animate-pulse">
+              <ResourceIcon withTooltip={false} size="xs" resource={"Donkeys"} />
+            </div>
+          )}
           <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
           {getsDisplay}
         </div>
@@ -314,11 +319,6 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
           >
             {loading ? "cancelling" : "cancel"}
           </Button>
-        )}
-        {!enoughDonkeys && (
-          <div className="bg-red">
-            <ResourceIcon withTooltip={false} size="xs" resource={"Donkey"} />
-          </div>
         )}
       </div>
     </div>
