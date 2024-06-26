@@ -20,7 +20,7 @@ export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; o
     <div>
       {armies.length !== 0 && (
         <>
-          <Headline className="my-3">Enemy armies</Headline>
+          <Headline className="my-3 mt-4">Enemy armies</Headline>
           <div className="grid grid-cols-1 gap-2">
             {armies.map((army: ArmyInfo, index) => {
               const { attacker, defender } =

@@ -176,7 +176,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.army_merge_troops(props);
   };
 
-  const mint_starting_resources = async (props: SystemProps.CreateStartingResources) => {
+  const mint_starting_resources = async (props: SystemProps.MintStartingResources) => {
     await provider.mint_starting_resources(props);
   };
 

@@ -4,14 +4,13 @@ import { Realm, Structure, useStructuresPosition } from "@/hooks/helpers/useStru
 import useUIStore from "@/hooks/store/useUIStore";
 import { CombatTarget } from "@/types";
 import Button from "@/ui/elements/Button";
-import { Headline } from "@/ui/elements/Headline";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { EternumGlobalConfig, Position, ResourcesIds } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { ArrowDown, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { RealmListItem } from "../worldmap/realms/RealmListItem";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
@@ -71,10 +70,8 @@ export const StructureCard = ({
   return (
     Boolean(formattedStructureAtPosition) &&
     BigInt(target.protector?.battle_id || 0n) === 0n && (
-      <div>
-        <Headline className="my-3">Structure</Headline>
-
-        <div className="flex">
+      <div className="h-full flex flex-col justify-center">
+        <div className="">
           {!showMergeTroopsPopup && formattedRealmAtPosition && (
             <RealmListItem realm={formattedRealmAtPosition} extraButton={button} />
           )}
@@ -83,18 +80,10 @@ export const StructureCard = ({
           )}
           {showMergeTroopsPopup && (
             <div className="flex flex-col w-[100%]">
-              <Button
-                className="mb-3 w-[30%]"
-                variant="default"
-                size="xs"
-                onClick={() => setShowMergeTroopsPopup(false)}
-              >
-                &lt; Back
-              </Button>
-
               {ownArmySelected && (
                 <MergeTroopsPanel
                   giverArmy={ownArmySelected}
+                  setShowMergeTroopsPopup={setShowMergeTroopsPopup}
                   structureEntityId={BigInt(target.entity_id)}
                   structureName={target.name}
                 />
@@ -109,20 +98,33 @@ export const StructureCard = ({
 
 type MergeTroopsPanelProps = {
   giverArmy: ArmyInfo;
+  setShowMergeTroopsPopup: (val: boolean) => void;
   structureEntityId: bigint;
   structureName: string;
 };
 
-const MergeTroopsPanel = ({ giverArmy, structureEntityId, structureName }: MergeTroopsPanelProps) => {
+const MergeTroopsPanel = ({
+  giverArmy,
+  setShowMergeTroopsPopup,
+  structureEntityId,
+  structureName,
+}: MergeTroopsPanelProps) => {
   return (
-    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3">
-      <Headline>Reinforce {structureName}'s troops</Headline>
-      <TroopExchange giverArmyEntityId={BigInt(giverArmy.entity_id)} structureEntityId={structureEntityId} />
+    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3 h-[40vh]">
+      <Button className="mb-3 w-[30%]" variant="default" size="xs" onClick={() => setShowMergeTroopsPopup(false)}>
+        &lt; Back
+      </Button>
+      <TroopExchange
+        giverArmy={giverArmy}
+        giverArmyEntityId={BigInt(giverArmy.entity_id)}
+        structureEntityId={structureEntityId}
+      />
     </div>
   );
 };
 
 type TroopsProps = {
+  giverArmy: ArmyInfo;
   giverArmyEntityId: bigint;
   structureEntityId: bigint;
 };
@@ -135,7 +137,7 @@ const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; c
   };
 };
 
-const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) => {
+const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: TroopsProps) => {
   const [troopsGiven, setTroopsGiven] = useState<Record<number, bigint>>({
     [ResourcesIds.Crossbowmen]: 0n,
     [ResourcesIds.Knight]: 0n,
@@ -194,13 +196,13 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
 
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col justify-around items-center">
-        <div className="w-[60%]">
-          <p className="pt-2 pb-5">Current Army</p>
+      <div className="flex flex-row justify-around items-center">
+        <div className="w-[60%] mr-1">
+          <p className="pt-2 pb-1 text-center">{giverArmy.name}</p>
           {Object.entries(troopsToFormat(giverArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
             return (
               <div
-                className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4 px-4"
+                className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4 px-4 mb-1"
                 key={resourceId}
               >
                 <div className=" flex gap-3">
@@ -237,19 +239,9 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
             );
           })}
         </div>
-        <div className="my-3">
-          <Button
-            size="xs"
-            onClick={() => {
-              setTransferDirection(transferDirection === "to" ? "from" : "to");
-            }}
-          >
-            <ArrowDown className={`${transferDirection === "to" ? "" : "rotate-180"} duration-300`} />
-          </Button>
-        </div>
 
-        <div className="w-[60%]">
-          <p className=" pt-2 pb-5">Transfer {transferDirection} Structure</p>
+        <div className="w-[60%] ml-1">
+          <p className="pt-2 pb-1 text-center">Transfer {transferDirection} Structure</p>
           {!protector ? (
             <Button variant={"primary"} onClick={createProtector}>
               Create defending army
@@ -259,7 +251,7 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
             Object.entries(troopsToFormat(receiverArmyTroops!)).map(([resourceId, amount]: [string, bigint]) => {
               return (
                 <div
-                  className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4  px-4"
+                  className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4 px-4 mb-1"
                   key={resourceId}
                 >
                   <div className=" flex gap-3">
@@ -297,10 +289,26 @@ const TroopExchange = ({ giverArmyEntityId, structureEntityId }: TroopsProps) =>
           )}
         </div>
       </div>
+      <div className="my-3 w-full flex justify-center">
+        <Button
+          className="self-center m-auto h-[4vh] p-4"
+          size="md"
+          onClick={() => {
+            setTransferDirection(transferDirection === "to" ? "from" : "to");
+            setTroopsGiven({
+              [ResourcesIds.Crossbowmen]: 0n,
+              [ResourcesIds.Knight]: 0n,
+              [ResourcesIds.Paladin]: 0n,
+            });
+          }}
+        >
+          <ArrowRight size={40} className={`${transferDirection === "to" ? "" : "rotate-180"} duration-300`} />
+        </Button>
+      </div>
+
       <Button
         onClick={mergeTroops}
         isLoading={loading}
-        className="mt-5"
         variant="primary"
         disabled={Object.values(troopsGiven).every((amount) => amount === 0n) || !protector}
       >

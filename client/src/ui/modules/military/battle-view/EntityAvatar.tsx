@@ -31,13 +31,13 @@ export const EntityAvatar = ({
     visible: { y: "0%", transition: { duration: 0.6 } },
   };
   return (
-    <div className="mb-4">
+    <div className="mb-4 w-44 min-w-44 ">
       {displayImg && (
         <motion.img
           initial="hidden"
           animate="visible"
           variants={slideUp}
-          className="w-44 min-w-44 h-44 clip-angled rounded-full object-cover  border-gold/50 border-4 -mt-12 bg-black"
+          className="h-44 clip-angled rounded-full object-cover  border-gold/50 border-4 -mt-12 bg-black"
           src={imgSource}
           alt=""
         />

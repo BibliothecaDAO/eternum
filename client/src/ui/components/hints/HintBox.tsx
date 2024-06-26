@@ -1,10 +1,10 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { Quest, useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
-import { Check, ShieldQuestion } from "lucide-react";
-import { useState, useEffect } from "react";
-import { QUEST_RESOURCES_SCALED } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { QUEST_RESOURCES_SCALED } from "@bibliothecadao/eternum";
+import { Check, ShieldQuestion } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint }) => {
   const {
@@ -22,34 +22,17 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
     }
   }, [quest]);
 
-  const handleClaimResources = async (config_id: string) => {
-    setIsLoading(true);
-    try {
-      await mint_starting_resources({
-        signer: account,
-        config_id: config_id,
-        realm_entity_id: entityId || "0",
-      });
-    } catch (error) {
-      console.error("Failed to claim resources:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleAllClaims = async () => {
     setIsLoading(true);
     try {
-      for (const prize of quest.prizes) {
-        try {
-          await mint_starting_resources({
-            signer: account,
-            config_id: prize.id.toString(),
-            realm_entity_id: entityId || "0",
-          });
-        } catch (error) {
-          console.error(`Failed to claim resources for prize ${prize.id}:`, error);
-        }
+      try {
+        await mint_starting_resources({
+          signer: account,
+          config_ids: quest.prizes.map((prize) => BigInt(prize.id)),
+          realm_entity_id: entityId || "0",
+        });
+      } catch (error) {
+        console.error(`Failed to claim resources for quest ${quest.name}:`, error);
       }
     } catch (error) {
       console.error("Failed to claim resources:", error);

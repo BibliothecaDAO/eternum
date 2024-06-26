@@ -1,4 +1,4 @@
-import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
+import { Component, ComponentValue, OverridableComponent, Type, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BattleType } from "./types";
 
@@ -11,22 +11,32 @@ export class BattleManager {
     this.battleId = battleId;
   }
 
-  public getBattle() {
-    return getComponentValue(this.battleModel, getEntityIdFromKeys([this.battleId]));
-  }
-
-  public attackingDelta() {
+  public getUpdatedBattle(currentTick: number) {
     const battle = this.getBattle();
-    return battle ? battle.attack_delta : 0n;
-  }
+    if (!battle) return;
 
-  public defendingDelta() {
-    const battle = this.getBattle();
-    return battle ? battle.defence_delta : 0n;
-  }
+    const durationPassed: number = this.getElapsedTime(currentTick);
 
-  private damagesDone(delta: bigint, durationPassed: number): bigint {
-    return delta * BigInt(durationPassed);
+    const attackDelta = this.attackingDelta();
+    const defenceDelta = this.defendingDelta();
+
+    const damagesDoneToAttack = this.damagesDone(defenceDelta, durationPassed);
+    const damagesDoneToDefence = this.damagesDone(attackDelta, durationPassed);
+
+    battle.attack_army_health.current =
+      damagesDoneToAttack > battle.attack_army_health.current
+        ? 0n
+        : battle.attack_army_health.current - damagesDoneToAttack;
+
+    battle.defence_army_health.current =
+      damagesDoneToDefence > battle.defence_army_health.current
+        ? 0n
+        : battle.defence_army_health.current - damagesDoneToDefence;
+
+    battle.defence_army.troops = this.getUpdatedTroops(battle.defence_army_health, battle.defence_army.troops);
+    battle.attack_army.troops = this.getUpdatedTroops(battle.attack_army_health, battle.attack_army.troops);
+
+    return battle;
   }
 
   public getElapsedTime(currentTick: number): number {
@@ -55,34 +65,51 @@ export class BattleManager {
       return undefined;
     }
   }
-
   public isBattleActive(currentTick: number): boolean {
     const battle = this.getBattle();
     const timeSinceLastUpdate = this.getElapsedTime(currentTick);
     return battle ? timeSinceLastUpdate < battle.duration_left : false;
   }
 
-  public getUpdatedBattle(currentTick: number) {
+  private getBattle() {
+    return getComponentValue(this.battleModel, getEntityIdFromKeys([this.battleId]));
+  }
+
+  private getUpdatedTroops = (
+    health: { current: bigint; lifetime: bigint },
+    currentTroops: ComponentValue<
+      { knight_count: Type.BigInt; paladin_count: Type.BigInt; crossbowman_count: Type.BigInt },
+      unknown
+    >,
+  ): ComponentValue<
+    { knight_count: Type.BigInt; paladin_count: Type.BigInt; crossbowman_count: Type.BigInt },
+    unknown
+  > => {
+    if (health.lifetime === 0n) {
+      return {
+        knight_count: 0n,
+        paladin_count: 0n,
+        crossbowman_count: 0n,
+      };
+    }
+    return {
+      knight_count: (BigInt(health.current) * BigInt(currentTroops.knight_count)) / BigInt(health.lifetime),
+      paladin_count: (BigInt(health.current) * BigInt(currentTroops.paladin_count)) / BigInt(health.lifetime),
+      crossbowman_count: (BigInt(health.current) * BigInt(currentTroops.crossbowman_count)) / BigInt(health.lifetime),
+    };
+  };
+
+  private attackingDelta() {
     const battle = this.getBattle();
-    if (!battle) return;
+    return battle ? battle.attack_delta : 0n;
+  }
 
-    const durationPassed: number = this.getElapsedTime(currentTick);
+  private defendingDelta() {
+    const battle = this.getBattle();
+    return battle ? battle.defence_delta : 0n;
+  }
 
-    const attackDelta = this.attackingDelta();
-    const defenceDelta = this.defendingDelta();
-
-    const damagesDoneToAttack = this.damagesDone(defenceDelta, durationPassed);
-    const damagesDoneToDefence = this.damagesDone(attackDelta, durationPassed);
-
-    battle.attack_army_health.current =
-      damagesDoneToAttack > battle.attack_army_health.current
-        ? 0n
-        : battle.attack_army_health.current - damagesDoneToAttack;
-
-    battle.defence_army_health.current =
-      damagesDoneToDefence > battle.defence_army_health.current
-        ? 0n
-        : battle.defence_army_health.current - damagesDoneToDefence;
-    return battle;
+  private damagesDone(delta: bigint, durationPassed: number): bigint {
+    return delta * BigInt(durationPassed);
   }
 }
