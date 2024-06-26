@@ -1,10 +1,12 @@
 #[dojo::interface]
 trait ITravelSystems {
     fn travel(
+        ref world: IWorldDispatcher,
         travelling_entity_id: eternum::alias::ID,
         destination_coord: eternum::models::position::Coord
     );
     fn travel_hex(
+        ref world: IWorldDispatcher,
         travelling_entity_id: eternum::alias::ID,
         directions: Span<eternum::models::position::Direction>
     );
@@ -34,7 +36,8 @@ mod travel_systems {
     };
     use starknet::ContractAddress;
 
-    #[derive(Drop, starknet::Event)]
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
     struct Travel {
         #[key]
         destination_coord_x: u128,
@@ -47,11 +50,6 @@ mod travel_systems {
         travel_path: Span<Coord>,
     }
 
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        Travel: Travel,
-    }
 
     #[abi(embed_v0)]
     impl TravelSystemsImpl of super::ITravelSystems<ContractState> {
@@ -67,7 +65,7 @@ mod travel_systems {
         /// * `travelling_entity_id` - The ID of the entity that is travelling
         /// * `destination_coord` - The coordinate to travel to
         ///
-        fn travel(world: IWorldDispatcher, travelling_entity_id: ID, destination_coord: Coord) {
+        fn travel(ref world: IWorldDispatcher, travelling_entity_id: ID, destination_coord: Coord) {
             // todo@security prevent free transport units from travelling
             get!(world, travelling_entity_id, EntityOwner).assert_caller_owner(world);
 
@@ -94,7 +92,7 @@ mod travel_systems {
 
 
         fn travel_hex(
-            world: IWorldDispatcher, travelling_entity_id: ID, directions: Span<Direction>
+            ref world: IWorldDispatcher, travelling_entity_id: ID, directions: Span<Direction>
         ) {
             get!(world, travelling_entity_id, EntityOwner).assert_caller_owner(world);
 
@@ -199,18 +197,14 @@ mod travel_systems {
             let entityOwner = get!(world, transport_id, EntityOwner);
             emit!(
                 world,
-                (
-                    Event::Travel(
-                        Travel {
-                            destination_coord_x: to_coord.x,
-                            destination_coord_y: to_coord.y,
-                            travel_time: 0,
-                            travel_path: travel_path.span(),
-                            owner: entityOwner.owner_address(world),
-                            entity_id: transport_id
-                        }
-                    ),
-                )
+                (Travel {
+                    destination_coord_x: to_coord.x,
+                    destination_coord_y: to_coord.y,
+                    travel_time: 0,
+                    travel_path: travel_path.span(),
+                    owner: entityOwner.owner_address(world),
+                    entity_id: transport_id
+                })
             );
         }
 
@@ -266,18 +260,14 @@ mod travel_systems {
             let owner = get!(world, transport_id, Owner);
             emit!(
                 world,
-                (
-                    Event::Travel(
-                        Travel {
-                            destination_coord_x: to_coord.x,
-                            destination_coord_y: to_coord.y,
-                            travel_time,
-                            travel_path: array![from_coord, to_coord].span(),
-                            owner: owner.address,
-                            entity_id: transport_id
-                        }
-                    ),
-                )
+                (Travel {
+                    destination_coord_x: to_coord.x,
+                    destination_coord_y: to_coord.y,
+                    travel_time,
+                    travel_path: array![from_coord, to_coord].span(),
+                    owner: owner.address,
+                    entity_id: transport_id
+                })
             );
         }
 

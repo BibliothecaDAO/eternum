@@ -2,11 +2,13 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
+use eternum::models::bank::liquidity::{Liquidity};
+use eternum::models::bank::market::{Market, MarketImpl};
+
+use eternum::models::config::{CapacityConfig};
 
 
 use eternum::models::owner::{Owner};
-use eternum::models::bank::liquidity::{Liquidity};
-use eternum::models::bank::market::{Market, MarketImpl};
 use eternum::models::position::{Coord};
 use eternum::models::resources::{ResourceImpl, Resource};
 use eternum::systems::bank::contracts::bank::bank_systems;
@@ -18,8 +20,6 @@ use eternum::systems::bank::contracts::liquidity::{
 };
 use eternum::systems::bank::contracts::swap::swap_systems;
 use eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait};
-
-use eternum::models::config::{CapacityConfig};
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
 use eternum::utils::testing::{spawn_eternum, deploy_system};

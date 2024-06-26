@@ -3,8 +3,20 @@ use eternum::alias::ID;
 
 #[dojo::interface]
 trait ISwapSystems {
-    fn buy(bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128) -> ID;
-    fn sell(bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128) -> ID;
+    fn buy(
+        ref world: IWorldDispatcher,
+        bank_entity_id: u128,
+        entity_id: u128,
+        resource_type: u8,
+        amount: u128
+    ) -> ID;
+    fn sell(
+        ref world: IWorldDispatcher,
+        bank_entity_id: u128,
+        entity_id: u128,
+        resource_type: u8,
+        amount: u128
+    ) -> ID;
 }
 
 #[dojo::contract]
@@ -24,7 +36,8 @@ mod swap_systems {
     use option::OptionTrait;
     use traits::{Into, TryInto};
 
-    #[derive(Drop, starknet::Event)]
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
     struct SwapEvent {
         #[key]
         bank_entity_id: u128,
@@ -41,16 +54,10 @@ mod swap_systems {
         timestamp: u64,
     }
 
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        SwapEvent: SwapEvent,
-    }
-
     #[abi(embed_v0)]
     impl SwapSystemsImpl of super::ISwapSystems<ContractState> {
         fn buy(
-            world: IWorldDispatcher,
+            ref world: IWorldDispatcher,
             bank_entity_id: u128,
             entity_id: u128,
             resource_type: u8,
@@ -112,7 +119,7 @@ mod swap_systems {
 
 
         fn sell(
-            world: IWorldDispatcher,
+            ref world: IWorldDispatcher,
             bank_entity_id: u128,
             entity_id: u128,
             resource_type: u8,
@@ -225,8 +232,9 @@ mod swap_systems {
             resource_price: u128,
             buy: bool,
         ) {
-            let event = Event::SwapEvent(
-                SwapEvent {
+            emit!(
+                world,
+                (SwapEvent {
                     bank_entity_id: market.bank_entity_id,
                     entity_id,
                     resource_type: market.resource_type,
@@ -237,10 +245,8 @@ mod swap_systems {
                     resource_price: market.quote_amount(1000),
                     buy,
                     timestamp: starknet::get_block_timestamp()
-                }
+                })
             );
-
-            emit!(world, (event,))
         }
     }
 }

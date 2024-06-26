@@ -1,6 +1,7 @@
 #[dojo::interface]
 trait IRealmSystems {
     fn create(
+        ref world: IWorldDispatcher,
         realm_id: u128,
         resource_types_packed: u128,
         resource_types_count: u8,
@@ -12,7 +13,9 @@ trait IRealmSystems {
         order: u8,
         position: eternum::models::position::Position
     ) -> eternum::alias::ID;
-    fn mint_starting_resources(config_id: u32, entity_id: u128) -> eternum::alias::ID;
+    fn mint_starting_resources(
+        ref world: IWorldDispatcher, config_id: u32, entity_id: u128
+    ) -> eternum::alias::ID;
 }
 
 
@@ -46,7 +49,9 @@ mod realm_systems {
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
-        fn mint_starting_resources(world: IWorldDispatcher, config_id: u32, entity_id: u128) -> ID {
+        fn mint_starting_resources(
+            ref world: IWorldDispatcher, config_id: u32, entity_id: u128
+        ) -> ID {
             get!(world, (entity_id), Realm).assert_is_set();
 
             let mut claimed_resources = get!(
@@ -85,7 +90,7 @@ mod realm_systems {
         }
 
         fn create(
-            world: IWorldDispatcher,
+            ref world: IWorldDispatcher,
             realm_id: u128,
             resource_types_packed: u128,
             resource_types_count: u8,
@@ -143,29 +148,6 @@ mod realm_systems {
                     EntityMetadata { entity_id: entity_id.into(), entity_type: REALM_ENTITY_TYPE, }
                 )
             );
-
-            // // mint intial resources to realm
-            // let realm_free_mint_config = get!(
-            //     world, REALM_FREE_MINT_CONFIG_ID, RealmFreeMintConfig
-            // );
-            // let mut index = 0;
-            // loop {
-            //     if index == realm_free_mint_config.detached_resource_count {
-            //         break;
-            //     }
-
-            //     let mut detached_resource = get!(
-            //         world, (realm_free_mint_config.detached_resource_id, index), DetachedResource
-            //     );
-            //     let mut realm_resource = ResourceImpl::get(
-            //         world, (entity_id.into(), detached_resource.resource_type)
-            //     );
-
-            //     realm_resource.add(detached_resource.resource_amount);
-            //     realm_resource.save(world);
-
-            //     index += 1;
-            // };
 
             let mut tile: Tile = get!(world, (position.x, position.y), Tile);
             if tile.explored_at == 0 {

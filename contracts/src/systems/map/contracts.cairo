@@ -1,6 +1,8 @@
 #[dojo::interface]
 trait IMapSystems {
-    fn explore(unit_id: u128, direction: eternum::models::position::Direction);
+    fn explore(
+        ref world: IWorldDispatcher, unit_id: u128, direction: eternum::models::position::Direction
+    );
 }
 
 #[dojo::contract]
@@ -36,7 +38,8 @@ mod map_systems {
     use starknet::ContractAddress;
 
 
-    #[derive(Drop, starknet::Event)]
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
     struct MapExplored {
         #[key]
         entity_id: u128,
@@ -49,17 +52,11 @@ mod map_systems {
         reward: Span<(u8, u128)>
     }
 
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        MapExplored: MapExplored,
-    }
-
 
     // @DEV TODO: We can generalise this more...
     #[abi(embed_v0)]
     impl MapSystemsImpl of super::IMapSystems<ContractState> {
-        fn explore(world: IWorldDispatcher, unit_id: u128, direction: Direction) {
+        fn explore(ref world: IWorldDispatcher, unit_id: u128, direction: Direction) {
             // check that caller owns unit
             get!(world, unit_id, EntityOwner).assert_caller_owner(world);
 
@@ -124,18 +121,14 @@ mod map_systems {
 
             emit!(
                 world,
-                (
-                    Event::MapExplored(
-                        MapExplored {
-                            entity_id: entity_id,
-                            entity_owner_id: entity_owned_by.entity_owner_id,
-                            col: tile.col,
-                            row: tile.row,
-                            biome: tile.biome,
-                            reward
-                        }
-                    ),
-                )
+                (MapExplored {
+                    entity_id: entity_id,
+                    entity_owner_id: entity_owned_by.entity_owner_id,
+                    col: tile.col,
+                    row: tile.row,
+                    biome: tile.biome,
+                    reward
+                })
             );
 
             tile
