@@ -70,18 +70,18 @@ export const BattleView = () => {
         current: Number(battleAdjusted!.attack_army_health.current),
         lifetime: Number(battleAdjusted!.attack_army_health.lifetime),
       }
-    : { current: Number(ownArmyBattleStarter.current), lifetime: Number(ownArmyBattleStarter.lifetime) };
+    : { current: Number(ownArmyBattleStarter?.current || 0), lifetime: Number(ownArmyBattleStarter?.lifetime || 0) };
   const defenderHealth = battleAdjusted
     ? {
         current: Number(battleAdjusted!.defence_army_health.current),
         lifetime: Number(battleAdjusted!.defence_army_health.lifetime),
       }
     : defenderArmyBattleStarter
-    ? {
-        current: Number(defenderArmyBattleStarter.current || 0),
-        lifetime: Number(defenderArmyBattleStarter.lifetime || 0),
-      }
-    : undefined;
+      ? {
+          current: Number(defenderArmyBattleStarter.current || 0),
+          lifetime: Number(defenderArmyBattleStarter.lifetime || 0),
+        }
+      : undefined;
 
   const attackerTroops = battleAdjusted ? battleAdjusted!.attack_army.troops : ownArmyBattleStarter?.troops;
   const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : defenderArmyBattleStarter?.troops;
@@ -100,6 +100,7 @@ export const BattleView = () => {
       defenderArmies={defenderArmies}
       defenderHealth={defenderHealth}
       defenderTroops={defenderTroops}
+      userArmiesInBattle={userArmiesInBattle}
       userArmiesAtPosition={userArmiesAtPosition}
       structure={structure}
       isActive={isActive}
