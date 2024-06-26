@@ -1,5 +1,6 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
 
 #[dojo::interface]
 trait ILiquiditySystems {
@@ -10,7 +11,7 @@ trait ILiquiditySystems {
         resource_amount: u128,
         lords_amount: u128,
     );
-    fn remove(bank_entity_id: u128, entity_id: u128, resource_type: u8, shares: Fixed);
+    fn remove(bank_entity_id: u128, entity_id: u128, resource_type: u8, shares: Fixed) -> ID;
 }
 
 #[dojo::contract]
@@ -18,12 +19,13 @@ mod liquidity_systems {
     // Extenal imports
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
     // Eternum imports
+    use eternum::alias::ID;
+    use eternum::constants::ResourceTypes;
     use eternum::models::bank::market::{Market, MarketTrait};
     use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
-    use eternum::constants::ResourceTypes;
     use eternum::models::bank::liquidity::{Liquidity};
     use eternum::models::owner::{Owner, OwnerTrait};
-    use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
+    use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
     #[derive(Drop, starknet::Event)]
     struct LiquidityEvent {
@@ -101,7 +103,7 @@ mod liquidity_systems {
             entity_id: u128,
             resource_type: u8,
             shares: Fixed
-        ) {
+        ) -> ID {
             let player = starknet::get_caller_address();
             get!(world, entity_id, Owner).assert_caller_owner();
 
@@ -119,34 +121,19 @@ mod liquidity_systems {
             // update market
             set!(world, (market,));
 
-            // update player lords
-            // let mut player_lords = ResourceImpl::get(world, (entity_id, ResourceTypes::LORDS));
-            // player_lords.add(payout_lords);
-            // player_lords.save(world);
+            let mut resources_to_pickup = array![
+                (ResourceTypes::LORDS, payout_lords), (resource_type, payout_resource_amount)
+            ]
+                .span();
 
-            // update player resource
-            // let mut resource = ResourceImpl::get(world, (entity_id, resource_type));
-            // resource.add(payout_resource_amount);
-            // resource.save(world);
-
-            // add lords to bank first
-            let mut bank_lords = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
-            bank_lords.add(payout_lords);
-            bank_lords.save(world);
-
-            // add resources to bank first
-            let mut bank_resource = ResourceImpl::get(world, (bank_entity_id, resource_type));
-            bank_resource.add(payout_resource_amount);
-            bank_resource.save(world);
-
-            let mut resources = array![
+            let resources = array![
                 (ResourceTypes::LORDS, payout_lords), (resource_type, payout_resource_amount)
             ]
                 .span();
 
             // then entity picks up the resources at the bank
-            InternalResourceSystemsImpl::transfer(
-                world, bank_entity_id, entity_id, resources, entity_id, true, true
+            let donkey_id = InternalBankSystemsImpl::pickup_resources_from_bank(
+                world, bank_entity_id, entity_id, resources
             );
 
             // update player liquidity
@@ -159,6 +146,8 @@ mod liquidity_systems {
             InternalLiquiditySystemsImpl::emit_event(
                 world, market, entity_id, payout_lords, payout_resource_amount, false,
             );
+            // return donkey id
+            donkey_id
         }
     }
 
