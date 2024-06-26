@@ -14,7 +14,7 @@ cubit = { git = "https://github.com/ponderingdemocritus/cubit" }
 
 [tool.dojo.env]
 ## dev
-world_address = "0x455860f93fad20b93ab401eaf9bb63bf86a8222ffe4b0a4216d4694603f4723"
+world_address = "0x0161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824"
 account_address = "0xb3ff441a68610b30fd5e2abbf3a1548eb6ba6f3559f2862bf2dc757e5828ca"
 private_key = "0x2bbf4f9fd0bbb2e60b0316c1fe0b76cf7a4d0198bd493ced9b8df2a3a24d68a"
 
