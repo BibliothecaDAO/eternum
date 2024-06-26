@@ -683,7 +683,7 @@ export const BUILDING_COSTS: ResourceInputs = {
   [BuildingType.Walls]: [],
   [BuildingType.Storehouse]: [
     { resource: ResourcesIds.Wheat, amount: 2000 },
-    { resource: ResourcesIds.Wood, amount: 10 },
+    { resource: ResourcesIds.Wood, amount: 100 },
     { resource: ResourcesIds.Ironwood, amount: 10 },
     { resource: ResourcesIds.Silver, amount: 10 },
   ],

@@ -1,6 +1,5 @@
 import { MarketInterface, ResourcesIds } from "@bibliothecadao/eternum";
 import { create } from "zustand";
-import { useSetDirectOffers, useSetMarket } from "../helpers/useTrade";
 
 interface MarketStore {
   loading: boolean;
@@ -46,12 +45,6 @@ const useMarketStore = create<MarketStore>((set, get) => {
     },
   };
 });
-
-export const useComputeMarket = () => {
-  // todo: work on the filtering and sorting
-  useSetMarket();
-  useSetDirectOffers();
-};
 
 export const isLordsMarket = (order: MarketInterface) => {
   return (

@@ -957,7 +957,7 @@
     ],
     "address": "0x455860f93fad20b93ab401eaf9bb63bf86a8222ffe4b0a4216d4694603f4723",
     "transaction_hash": "0x4fbfb8faf344e3f8a79b6953ee5834d51e078f7106aba74274dd726973ed71",
-    "block_number": 18,
+    "block_number": 16,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -973,6 +973,216 @@
     "name": "dojo::base::base"
   },
   "contracts": [
+    {
+      "kind": "DojoContract",
+      "address": "0x25bd362328fc5c8bf9deda4b81bcacb93adcead3413298234b0a1d815f4f0dd",
+      "class_hash": "0x7c4e432b69bdd1c3670250a582108da0979b8edae799043e01ea46499bef8aa",
+      "original_class_hash": "0x7c4e432b69bdd1c3670250a582108da0979b8edae799043e01ea46499bef8aa",
+      "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoResourceProviderImpl",
+          "interface_name": "dojo::world::IDojoResourceProvider"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::world::IDojoResourceProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_resource",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::world::IWorldProvider"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::world::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "BankSystemsImpl",
+          "interface_name": "eternum::systems::bank::contracts::bank::IBankSystems"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::position::Coord",
+          "members": [
+            {
+              "name": "x",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "y",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::bank::contracts::bank::IBankSystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "create_bank",
+              "inputs": [
+                {
+                  "name": "realm_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "coord",
+                  "type": "eternum::models::position::Coord"
+                },
+                {
+                  "name": "owner_fee_scaled",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "change_owner_fee",
+              "inputs": [
+                {
+                  "name": "bank_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "new_swap_fee_unscaled",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "IDojoInitImpl",
+          "interface_name": "eternum::systems::bank::contracts::bank::bank_systems::IDojoInit"
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::bank::contracts::bank::bank_systems::IDojoInit",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "UpgradableImpl",
+          "interface_name": "dojo::components::upgradeable::IUpgradeable"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::components::upgradeable::IUpgradeable",
+          "items": [
+            {
+              "type": "function",
+              "name": "upgrade",
+              "inputs": [
+                {
+                  "name": "new_class_hash",
+                  "type": "core::starknet::class_hash::ClassHash"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::components::upgradeable::upgradeable::Upgraded",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::components::upgradeable::upgradeable::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "Upgraded",
+              "type": "dojo::components::upgradeable::upgradeable::Upgraded",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::bank::contracts::bank::bank_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::components::upgradeable::upgradeable::Event",
+              "kind": "nested"
+            }
+          ]
+        }
+      ],
+      "reads": [],
+      "writes": [],
+      "computed": [],
+      "init_calldata": [],
+      "name": "eternum::systems::bank::contracts::bank::bank_systems"
+    },
     {
       "kind": "DojoContract",
       "address": "0x40a6e0d2d6b0c029a36296513f523b114df3efedf0cd4efed3f92115d818a48",
@@ -1202,6 +1412,293 @@
       "computed": [],
       "init_calldata": [],
       "name": "eternum::systems::bank::contracts::bank_systems::bank_systems"
+    },
+    {
+      "kind": "DojoContract",
+      "address": "0xccb738459473da937aeb1c218adbd10943597da8edac00c012349c2ffd2061",
+      "class_hash": "0x2b3d1ff800d2da4f5bfa3c203fbcc10d642f4d8efb0b8089ec20fdf2d5c814c",
+      "original_class_hash": "0x2b3d1ff800d2da4f5bfa3c203fbcc10d642f4d8efb0b8089ec20fdf2d5c814c",
+      "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoResourceProviderImpl",
+          "interface_name": "dojo::world::IDojoResourceProvider"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::world::IDojoResourceProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_resource",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::world::IWorldProvider"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::world::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "LiquiditySystemsImpl",
+          "interface_name": "eternum::systems::bank::contracts::liquidity::ILiquiditySystems"
+        },
+        {
+          "type": "enum",
+          "name": "core::bool",
+          "variants": [
+            {
+              "name": "False",
+              "type": "()"
+            },
+            {
+              "name": "True",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "cubit::f128::types::fixed::Fixed",
+          "members": [
+            {
+              "name": "mag",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "sign",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::bank::contracts::liquidity::ILiquiditySystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "add",
+              "inputs": [
+                {
+                  "name": "bank_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "resource_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "resource_amount",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "lords_amount",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "remove",
+              "inputs": [
+                {
+                  "name": "bank_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "resource_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "shares",
+                  "type": "cubit::f128::types::fixed::Fixed"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "IDojoInitImpl",
+          "interface_name": "eternum::systems::bank::contracts::liquidity::liquidity_systems::IDojoInit"
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::bank::contracts::liquidity::liquidity_systems::IDojoInit",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "UpgradableImpl",
+          "interface_name": "dojo::components::upgradeable::IUpgradeable"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::components::upgradeable::IUpgradeable",
+          "items": [
+            {
+              "type": "function",
+              "name": "upgrade",
+              "inputs": [
+                {
+                  "name": "new_class_hash",
+                  "type": "core::starknet::class_hash::ClassHash"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::components::upgradeable::upgradeable::Upgraded",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::components::upgradeable::upgradeable::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "Upgraded",
+              "type": "dojo::components::upgradeable::upgradeable::Upgraded",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::bank::contracts::liquidity::liquidity_systems::LiquidityEvent",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "bank_entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "resource_type",
+              "type": "core::integer::u8",
+              "kind": "data"
+            },
+            {
+              "name": "lords_amount",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "resource_amount",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "resource_price",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "add",
+              "type": "core::bool",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::bank::contracts::liquidity::liquidity_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::components::upgradeable::upgradeable::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "LiquidityEvent",
+              "type": "eternum::systems::bank::contracts::liquidity::liquidity_systems::LiquidityEvent",
+              "kind": "nested"
+            }
+          ]
+        }
+      ],
+      "reads": [],
+      "writes": [],
+      "computed": [],
+      "init_calldata": [],
+      "name": "eternum::systems::bank::contracts::liquidity::liquidity_systems"
     },
     {
       "kind": "DojoContract",
@@ -1477,6 +1974,294 @@
       "computed": [],
       "init_calldata": [],
       "name": "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems"
+    },
+    {
+      "kind": "DojoContract",
+      "address": "0x5b7fe74d1eedfa4fcc60a4ec96dff009bb39048f9f6be715c600e7c5627a121",
+      "class_hash": "0x39c3975b6ec040dee1c859c7ab0ac4fa3aed7d847a15c158c0c3ea6280de691",
+      "original_class_hash": "0x39c3975b6ec040dee1c859c7ab0ac4fa3aed7d847a15c158c0c3ea6280de691",
+      "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoResourceProviderImpl",
+          "interface_name": "dojo::world::IDojoResourceProvider"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::world::IDojoResourceProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_resource",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "WorldProviderImpl",
+          "interface_name": "dojo::world::IWorldProvider"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::world::IWorldProvider",
+          "items": [
+            {
+              "type": "function",
+              "name": "world",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::world::IWorldDispatcher"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "SwapSystemsImpl",
+          "interface_name": "eternum::systems::bank::contracts::swap::ISwapSystems"
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::bank::contracts::swap::ISwapSystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "buy",
+              "inputs": [
+                {
+                  "name": "bank_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "resource_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "amount",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "sell",
+              "inputs": [
+                {
+                  "name": "bank_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "resource_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "amount",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "IDojoInitImpl",
+          "interface_name": "eternum::systems::bank::contracts::swap::swap_systems::IDojoInit"
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::bank::contracts::swap::swap_systems::IDojoInit",
+          "items": [
+            {
+              "type": "function",
+              "name": "dojo_init",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "UpgradableImpl",
+          "interface_name": "dojo::components::upgradeable::IUpgradeable"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::components::upgradeable::IUpgradeable",
+          "items": [
+            {
+              "type": "function",
+              "name": "upgrade",
+              "inputs": [
+                {
+                  "name": "new_class_hash",
+                  "type": "core::starknet::class_hash::ClassHash"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::components::upgradeable::upgradeable::Upgraded",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "class_hash",
+              "type": "core::starknet::class_hash::ClassHash",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "dojo::components::upgradeable::upgradeable::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "Upgraded",
+              "type": "dojo::components::upgradeable::upgradeable::Upgraded",
+              "kind": "nested"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "core::bool",
+          "variants": [
+            {
+              "name": "False",
+              "type": "()"
+            },
+            {
+              "name": "True",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::bank::contracts::swap::swap_systems::SwapEvent",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "bank_entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "resource_type",
+              "type": "core::integer::u8",
+              "kind": "data"
+            },
+            {
+              "name": "lords_amount",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "resource_amount",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "bank_owner_fees",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "lp_fees",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "resource_price",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "buy",
+              "type": "core::bool",
+              "kind": "data"
+            },
+            {
+              "name": "timestamp",
+              "type": "core::integer::u64",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::bank::contracts::swap::swap_systems::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "UpgradeableEvent",
+              "type": "dojo::components::upgradeable::upgradeable::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "SwapEvent",
+              "type": "eternum::systems::bank::contracts::swap::swap_systems::SwapEvent",
+              "kind": "nested"
+            }
+          ]
+        }
+      ],
+      "reads": [],
+      "writes": [],
+      "computed": [],
+      "init_calldata": [],
+      "name": "eternum::systems::bank::contracts::swap::swap_systems"
     },
     {
       "kind": "DojoContract",
@@ -3262,8 +4047,8 @@
     {
       "kind": "DojoContract",
       "address": "0x2c3151f1824232745e57f72fa213d9c816e2befb946dfb513e90ee950312ffd",
-      "class_hash": "0x5f4cddfc757ef56b349421697f9e6adae81dfef60210d9094f0ec893a46e3f9",
-      "original_class_hash": "0x5f4cddfc757ef56b349421697f9e6adae81dfef60210d9094f0ec893a46e3f9",
+      "class_hash": "0x653bfb10d9c019bd05a56a92fbc105f6823a1b3e9905b39d302b20443cd3cb5",
+      "original_class_hash": "0x653bfb10d9c019bd05a56a92fbc105f6823a1b3e9905b39d302b20443cd3cb5",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -3358,7 +4143,7 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::integer::u128, core::integer::u128)"
+                  "type": "core::integer::u128"
                 }
               ],
               "state_mutability": "view"
