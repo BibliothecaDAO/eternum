@@ -386,42 +386,42 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async buy_resources(props: SystemProps.BuyResourcesProps) {
-    const { bank_entity_id, resource_type, amount, signer } = props;
+    const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "swap_systems"),
       entrypoint: "buy",
-      calldata: [bank_entity_id, resource_type, amount],
+      calldata: [bank_entity_id, entity_id, resource_type, amount],
     });
   }
 
   public async sell_resources(props: SystemProps.SellResourcesProps) {
-    const { bank_entity_id, resource_type, amount, signer } = props;
+    const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "swap_systems"),
       entrypoint: "sell",
-      calldata: [bank_entity_id, resource_type, amount],
+      calldata: [bank_entity_id, entity_id, resource_type, amount],
     });
   }
 
   public async add_liquidity(props: SystemProps.AddLiquidityProps) {
-    const { bank_entity_id, resource_type, resource_amount, lords_amount, signer } = props;
+    const { bank_entity_id, entity_id, resource_type, resource_amount, lords_amount, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "liquidity_systems"),
       entrypoint: "add",
-      calldata: [bank_entity_id, resource_type, resource_amount, lords_amount],
+      calldata: [bank_entity_id, entity_id, resource_type, resource_amount, lords_amount],
     });
   }
 
   public async remove_liquidity(props: SystemProps.RemoveLiquidityProps) {
-    const { bank_entity_id, resource_type, shares, signer } = props;
+    const { bank_entity_id, entity_id, resource_type, shares, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "liquidity_systems"),
       entrypoint: "remove",
-      calldata: [bank_entity_id, resource_type, shares, false],
+      calldata: [bank_entity_id, entity_id, resource_type, shares, false],
     });
   }
 

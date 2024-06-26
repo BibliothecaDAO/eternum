@@ -67,6 +67,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
     operation({
       signer: account,
       bank_entity_id: bankEntityId,
+      entity_id: entityId,
       resource_type: resourceId,
       amount: multiplyByPrecision(resourceAmount),
     }).finally(() => setIsLoading(false));

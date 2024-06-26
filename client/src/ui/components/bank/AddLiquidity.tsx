@@ -34,6 +34,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
     setIsLoading(true);
     add_liquidity({
       bank_entity_id,
+      entity_id: entityId,
       lords_amount: multiplyByPrecision(lordsAmount),
       resource_type: resourceId,
       resource_amount: multiplyByPrecision(resourceAmount),

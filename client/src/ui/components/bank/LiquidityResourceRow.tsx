@@ -9,11 +9,11 @@ import { useComponentValue } from "@dojoengine/react";
 
 type LiquidityResourceRowProps = {
   bankEntityId: bigint;
-  bankAccountEntityId: bigint;
+  entityId: bigint;
   resourceId: number;
 };
 
-export const LiquidityResourceRow = ({ bankEntityId, resourceId }: LiquidityResourceRowProps) => {
+export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: LiquidityResourceRowProps) => {
   const dojoContext = useDojo();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -70,6 +70,7 @@ export const LiquidityResourceRow = ({ bankEntityId, resourceId }: LiquidityReso
     dojoContext.setup.systemCalls
       .remove_liquidity({
         bank_entity_id: bankEntityId,
+        entity_id: entityId,
         resource_type: BigInt(resourceId),
         shares: withdrawShares,
         signer: dojoContext.account.account,

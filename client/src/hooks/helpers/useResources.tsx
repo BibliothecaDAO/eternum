@@ -198,30 +198,6 @@ export const useProductionManager = (entityId: bigint, resourceId: number) => {
   return productionManager;
 };
 
-export const useGetBankAccountOnPosition = (address: bigint, position: Position) => {
-  const {
-    setup: {
-      components: { Owner, Position, Movable, Bank, Realm },
-    },
-  } = useDojo();
-
-  const entities = runQuery([
-    HasValue(Owner, { address }),
-    Not(Movable),
-    Not(Bank),
-    Not(Realm),
-    HasValue(Position, { ...position }),
-  ]);
-
-  return Array.from(entities)
-    .map((entityId) => {
-      const position = getComponentValue(Position, entityId);
-      if (!position) return;
-      return position?.entity_id;
-    })
-    .filter(Boolean) as bigint[];
-};
-
 export function useOwnedEntitiesOnPosition() {
   const {
     account: { account },

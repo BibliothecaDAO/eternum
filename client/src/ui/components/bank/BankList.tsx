@@ -1,9 +1,7 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "@/ui/elements/tab";
 import { ResourceSwap } from "./Swap";
-import { OpenBankAccount } from "./OpenBankAccount";
 import { BankEntityList } from "./BankEntityList";
-import { useBanks } from "@/hooks/helpers/useBanks";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "@/hooks/context/DojoContext";
@@ -26,13 +24,10 @@ export const BankPanel = ({ entity }: BankListProps) => {
   } = useDojo();
 
   const [selectedTab, setSelectedTab] = useState(0);
-  const { useMyAccountsInBank } = useBanks();
 
-  const { playerRealms, playerAccounts } = useEntities();
+  const { playerRealms } = useEntities();
 
-  const myBankAccountsEntityIds = useMyAccountsInBank(entity.id);
-  const myBankAccountEntityId = myBankAccountsEntityIds.length === 1 ? myBankAccountsEntityIds[0] : undefined;
-
+  const realmEntityId = playerRealms()[0].entity_id!;
   const bank = getComponentValue(Bank, getEntityIdFromKeys([entity.id]));
   const owner = getComponentValue(Owner, getEntityIdFromKeys([entity.id]));
   const ownerName = owner ? getComponentValue(AddressName, getEntityIdFromKeys([owner.address]))?.name : undefined;
@@ -47,11 +42,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>Swap</div>
           </div>
         ),
-        component: !myBankAccountEntityId ? (
-          <OpenBankAccount bank_entity_id={entity.id} />
-        ) : (
-          <ResourceSwap bankEntityId={entity.id} entityId={myBankAccountEntityId!} />
-        ),
+        component: <ResourceSwap bankEntityId={entity.id} entityId={realmEntityId} />,
       },
       {
         key: "all",
@@ -60,7 +51,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>My Account</div>
           </div>
         ),
-        component: <BankEntityList entity={{ id: myBankAccountEntityId }} />,
+        component: <BankEntityList entity={{ id: realmEntityId }} />,
       },
       {
         key: "all",
@@ -71,8 +62,8 @@ export const BankPanel = ({ entity }: BankListProps) => {
         ),
         component: (
           <>
-            <AddLiquidity bank_entity_id={entity.id} entityId={myBankAccountEntityId!} />
-            <LiquidityTable bank_entity_id={entity.id} bank_account_entity_id={myBankAccountEntityId} />
+            <AddLiquidity bank_entity_id={entity.id} entityId={realmEntityId!} />
+            <LiquidityTable bank_entity_id={entity.id} entity_id={realmEntityId} />
           </>
         ),
       },
@@ -83,14 +74,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>Transfer</div>
           </div>
         ),
-        component: (
-          <TransferBetweenEntities
-            entitiesList={[
-              { entities: playerRealms(), name: "Player Realms" },
-              { entities: playerAccounts(), name: "Player Bank Accounts" },
-            ]}
-          />
-        ),
+        component: <TransferBetweenEntities entitiesList={[{ entities: playerRealms(), name: "Player Realms" }]} />,
       },
       {
         key: "all",
@@ -99,10 +83,10 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <div>Arrivals</div>
           </div>
         ),
-        component: <ResourceArrivals entityId={myBankAccountEntityId!} />,
+        component: <ResourceArrivals entityId={realmEntityId!} />,
       },
     ],
-    [myBankAccountsEntityIds, position],
+    [realmEntityId, position],
   );
 
   return (
@@ -122,11 +106,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
         </div>
       </div>
 
-      <Tabs
-        selectedIndex={selectedTab}
-        onChange={(index: any) => (!myBankAccountEntityId ? setSelectedTab(0) : setSelectedTab(index))}
-        className="h-full"
-      >
+      <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
         <Tabs.List>
           {tabs.map((tab, index) => (
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>

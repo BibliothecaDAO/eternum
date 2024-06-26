@@ -25,7 +25,7 @@ export const Trading = () => {
     setShowCreateOffer(true);
   }, []);
 
-  const { playerRealms, playerAccounts, otherRealms } = useEntities();
+  const { playerRealms, otherRealms } = useEntities();
 
   const tabs = useMemo(
     () => [
@@ -49,27 +49,11 @@ export const Trading = () => {
           <TransferBetweenEntities
             entitiesList={[
               { entities: playerRealms(), name: "Player Realms" },
-              { entities: playerAccounts(), name: "Player Bank Accounts" },
               { entities: otherRealms(), name: "Other Realms" },
             ]}
           />
         ),
       },
-      // {
-      //   key: "arrivals",
-      //   label: (
-      //     <div className="flex relative group flex-col items-center">
-      //       <div>Arrivals</div>
-      //     </div>
-      //   ),
-      //   component: (
-      //     <EntityList
-      //       list={[...playerRealms(), ...playerAccounts()]}
-      //       title="Entities"
-      //       panel={({ entity }) => <ResourceArrivals entityId={entity.entity_id} />}
-      //     />
-      //   ),
-      // },
     ],
     [selectedTab],
   );

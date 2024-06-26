@@ -1,14 +1,13 @@
 import { RESOURCE_TIERS } from "@bibliothecadao/eternum";
 import { LiquidityResourceRow } from "./LiquidityResourceRow";
 
-export const LiquidityTable = ({
-  bank_entity_id,
-  bank_account_entity_id,
-}: {
+type LiquidityTableProps = {
   bank_entity_id: bigint | undefined;
-  bank_account_entity_id: bigint | undefined;
-}) => {
-  if (!bank_entity_id || !bank_account_entity_id) {
+  entity_id: bigint;
+};
+
+export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProps) => {
+  if (!bank_entity_id) {
     return <div>Entity not found</div>;
   }
 
@@ -31,8 +30,8 @@ export const LiquidityTable = ({
           return resourceIds.map((resourceId) => (
             <LiquidityResourceRow
               key={resourceId}
-              bankAccountEntityId={bank_account_entity_id}
               bankEntityId={bank_entity_id!}
+              entityId={entity_id}
               resourceId={resourceId}
             />
           ));
