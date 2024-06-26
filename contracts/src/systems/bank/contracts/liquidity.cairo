@@ -1,30 +1,38 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
 
 #[dojo::interface]
 trait ILiquiditySystems {
-    fn add(bank_entity_id: u128, resource_type: u8, resource_amount: u128, lords_amount: u128,);
-    fn remove(bank_entity_id: u128, resource_type: u8, shares: Fixed);
+    fn add(
+        bank_entity_id: u128,
+        entity_id: u128,
+        resource_type: u8,
+        resource_amount: u128,
+        lords_amount: u128,
+    );
+    fn remove(bank_entity_id: u128, entity_id: u128, resource_type: u8, shares: Fixed) -> ID;
 }
-
 
 #[dojo::contract]
 mod liquidity_systems {
     // Extenal imports
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
+    // Eternum imports
+    use eternum::alias::ID;
     use eternum::constants::ResourceTypes;
-    use eternum::models::bank::bank::{BankAccounts};
-    use eternum::models::bank::liquidity::{Liquidity};
-    // Dojo imports
     use eternum::models::bank::market::{Market, MarketTrait};
     use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
+    use eternum::models::bank::liquidity::{Liquidity};
+    use eternum::models::owner::{Owner, OwnerTrait};
+    use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
     #[derive(Drop, starknet::Event)]
     struct LiquidityEvent {
         #[key]
         bank_entity_id: u128,
         #[key]
-        bank_account_entity_id: u128,
+        entity_id: u128,
         resource_type: u8,
         lords_amount: u128,
         resource_amount: u128,
@@ -44,22 +52,16 @@ mod liquidity_systems {
         fn add(
             world: IWorldDispatcher,
             bank_entity_id: u128,
+            entity_id: u128,
             resource_type: u8,
             resource_amount: u128,
             lords_amount: u128,
         ) {
-            let player = starknet::get_caller_address();
-
-            let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
-            let bank_account_entity_id = bank_account.entity_id;
-            assert(bank_account_entity_id != 0, 'bank account not found');
-
-            let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
+            get!(world, entity_id, Owner).assert_caller_owner();
+            let mut resource = ResourceImpl::get(world, (entity_id, resource_type));
             assert(resource.balance >= resource_amount, 'not enough resources');
 
-            let mut player_lords = ResourceImpl::get(
-                world, (bank_account_entity_id, ResourceTypes::LORDS)
-            );
+            let mut player_lords = ResourceImpl::get(world, (entity_id, ResourceTypes::LORDS));
             assert(lords_amount <= player_lords.balance, 'not enough lords');
 
             let mut market = get!(world, (bank_entity_id, resource_type), Market);
@@ -81,6 +83,7 @@ mod liquidity_systems {
             resource.save(world);
 
             // update player liquidity
+            let player = starknet::get_caller_address();
             let mut player_liquidity = get!(
                 world, (bank_entity_id, player, resource_type), Liquidity
             );
@@ -89,17 +92,20 @@ mod liquidity_systems {
             set!(world, (player_liquidity,));
 
             InternalLiquiditySystemsImpl::emit_event(
-                world, market, bank_account_entity_id, cost_lords, cost_resource_amount, true,
+                world, market, entity_id, cost_lords, cost_resource_amount, true,
             );
         }
 
 
-        fn remove(world: IWorldDispatcher, bank_entity_id: u128, resource_type: u8, shares: Fixed) {
+        fn remove(
+            world: IWorldDispatcher,
+            bank_entity_id: u128,
+            entity_id: u128,
+            resource_type: u8,
+            shares: Fixed
+        ) -> ID {
             let player = starknet::get_caller_address();
-
-            let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
-            let bank_account_entity_id = bank_account.entity_id;
-            assert(bank_account_entity_id != 0, 'bank account not found');
+            get!(world, entity_id, Owner).assert_caller_owner();
 
             let player_liquidity = get!(world, (bank_entity_id, player, resource_type), Liquidity);
             assert(player_liquidity.shares >= shares, 'not enough shares');
@@ -115,17 +121,20 @@ mod liquidity_systems {
             // update market
             set!(world, (market,));
 
-            // update player lords
-            let mut player_lords = ResourceImpl::get(
-                world, (bank_account_entity_id, ResourceTypes::LORDS)
-            );
-            player_lords.add(payout_lords);
-            player_lords.save(world);
+            let mut resources_to_pickup = array![
+                (ResourceTypes::LORDS, payout_lords), (resource_type, payout_resource_amount)
+            ]
+                .span();
 
-            // update player resource
-            let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
-            resource.add(payout_resource_amount);
-            resource.save(world);
+            let resources = array![
+                (ResourceTypes::LORDS, payout_lords), (resource_type, payout_resource_amount)
+            ]
+                .span();
+
+            // then entity picks up the resources at the bank
+            let donkey_id = InternalBankSystemsImpl::pickup_resources_from_bank(
+                world, bank_entity_id, entity_id, resources
+            );
 
             // update player liquidity
             let mut player_liquidity = get!(
@@ -135,8 +144,10 @@ mod liquidity_systems {
             set!(world, (player_liquidity,));
 
             InternalLiquiditySystemsImpl::emit_event(
-                world, market, bank_account_entity_id, payout_lords, payout_resource_amount, false,
+                world, market, entity_id, payout_lords, payout_resource_amount, false,
             );
+            // return donkey id
+            donkey_id
         }
     }
 
@@ -145,7 +156,7 @@ mod liquidity_systems {
         fn emit_event(
             world: IWorldDispatcher,
             market: Market,
-            bank_account_entity_id: u128,
+            entity_id: u128,
             lords_amount: u128,
             resource_amount: u128,
             add: bool
@@ -161,7 +172,7 @@ mod liquidity_systems {
                     Event::LiquidityEvent(
                         LiquidityEvent {
                             bank_entity_id: market.bank_entity_id,
-                            bank_account_entity_id,
+                            entity_id,
                             resource_type: market.resource_type,
                             lords_amount,
                             resource_amount,

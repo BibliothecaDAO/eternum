@@ -1,25 +1,27 @@
 use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
 
 #[dojo::interface]
 trait ISwapSystems {
-    fn buy(bank_entity_id: u128, resource_type: u8, amount: u128);
-    fn sell(bank_entity_id: u128, resource_type: u8, amount: u128);
+    fn buy(bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128) -> ID;
+    fn sell(bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128) -> ID;
 }
 
 #[dojo::contract]
 mod swap_systems {
     use cubit::f128::math::ops::{mul};
-
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
+
+    use eternum::alias::ID;
     use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
-    use eternum::models::bank::bank::{BankAccounts, Bank};
+    use eternum::models::bank::bank::{Bank};
     use eternum::models::bank::market::{Market, MarketTrait};
     use eternum::models::config::{BankConfig};
     use eternum::models::config::{TickImpl, TickTrait};
-    use eternum::models::owner::{Owner};
     use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
-    use option::OptionTrait;
+    use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
+    use option::OptionTrait;
     use traits::{Into, TryInto};
 
     #[derive(Drop, starknet::Event)]
@@ -27,7 +29,7 @@ mod swap_systems {
         #[key]
         bank_entity_id: u128,
         #[key]
-        bank_account_entity_id: u128,
+        entity_id: u128,
         resource_type: u8,
         lords_amount: u128,
         resource_amount: u128,
@@ -47,15 +49,17 @@ mod swap_systems {
 
     #[abi(embed_v0)]
     impl SwapSystemsImpl of super::ISwapSystems<ContractState> {
-        fn buy(world: IWorldDispatcher, bank_entity_id: u128, resource_type: u8, amount: u128) {
+        fn buy(
+            world: IWorldDispatcher,
+            bank_entity_id: u128,
+            entity_id: u128,
+            resource_type: u8,
+            amount: u128
+        ) -> ID {
             let player = starknet::get_caller_address();
 
             let bank = get!(world, bank_entity_id, Bank);
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
-
-            let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
-            let bank_account_entity_id = bank_account.entity_id;
-            assert(bank_account_entity_id != 0, 'no bank account');
 
             // update market
             let mut market = get!(world, (bank_entity_id, resource_type), Market);
@@ -74,33 +78,26 @@ mod swap_systems {
             set!(world, (market));
 
             // update owner bank account with fees
-            let bank_owner = get!(world, bank_entity_id, Owner);
-            let owner_bank_account = get!(
-                world, (bank_entity_id, bank_owner.address), BankAccounts
-            );
-            let mut owner_lords = ResourceImpl::get(
-                world, (owner_bank_account.entity_id, ResourceTypes::LORDS)
-            );
-            owner_lords.add(owner_fees_amount);
-            owner_lords.save(world);
+            let mut bank_lords = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
+            bank_lords.add(owner_fees_amount);
+            bank_lords.save(world);
 
             // udpate player lords
-            let mut player_lords = ResourceImpl::get(
-                world, (bank_account_entity_id, ResourceTypes::LORDS)
-            );
+            let mut player_lords = ResourceImpl::get(world, (entity_id, ResourceTypes::LORDS));
             player_lords.burn(total_cost);
             player_lords.save(world);
 
-            // update player resources
-            let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
-            resource.add(amount);
-            resource.save(world);
+            // pickup player resources
+            let resources = array![(resource_type, amount)].span();
+            let donkey_id = InternalBankSystemsImpl::pickup_resources_from_bank(
+                world, bank_entity_id, entity_id, resources
+            );
 
             // emit event
             InternalSwapSystemsImpl::emit_event(
                 world,
                 market,
-                bank_account_entity_id,
+                entity_id,
                 amount,
                 cost,
                 owner_fees_amount,
@@ -108,18 +105,23 @@ mod swap_systems {
                 market.quote_amount(1000),
                 true
             );
+
+            // return donkey entity id
+            donkey_id
         }
 
 
-        fn sell(world: IWorldDispatcher, bank_entity_id: u128, resource_type: u8, amount: u128) {
+        fn sell(
+            world: IWorldDispatcher,
+            bank_entity_id: u128,
+            entity_id: u128,
+            resource_type: u8,
+            amount: u128
+        ) -> ID {
             let player = starknet::get_caller_address();
 
             let bank = get!(world, bank_entity_id, Bank);
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
-
-            let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
-            let bank_account_entity_id = bank_account.entity_id;
-            assert(bank_account_entity_id != 0, 'no bank account');
 
             // split resource amount into fees and rest
             let (owner_fees_amount, lp_fees_amount, rest) = InternalSwapSystemsImpl::split_fees(
@@ -127,13 +129,7 @@ mod swap_systems {
             );
 
             // increase owner bank account with fees
-            let bank_owner = get!(world, bank_entity_id, Owner);
-            let owner_bank_account = get!(
-                world, (bank_entity_id, bank_owner.address), BankAccounts
-            );
-            let mut owner_resource = ResourceImpl::get(
-                world, (owner_bank_account.entity_id, resource_type)
-            );
+            let mut owner_resource = ResourceImpl::get(world, (bank_entity_id, resource_type));
             owner_resource.add(owner_fees_amount);
             owner_resource.save(world);
 
@@ -141,7 +137,7 @@ mod swap_systems {
             let mut market = get!(world, (bank_entity_id, resource_type), Market);
             // calculate payout on the rest
             let payout = market.sell(rest);
-            // increase the lp with fees 
+            // increase the lp with fees
             market.resource_amount += lp_fees_amount;
             // remove payout from the market
             market.lords_amount -= payout;
@@ -149,23 +145,22 @@ mod swap_systems {
             market.resource_amount += rest;
             set!(world, (market));
 
-            // update player lords
-            let mut player_lords = ResourceImpl::get(
-                world, (bank_account_entity_id, ResourceTypes::LORDS)
-            );
-            player_lords.add(payout);
-            player_lords.save(world);
-
             // update player resource
-            let mut resource = ResourceImpl::get(world, (bank_account_entity_id, resource_type));
+            let mut resource = ResourceImpl::get(world, (entity_id, resource_type));
             resource.burn(amount);
             resource.save(world);
+
+            // pickup player lords
+            let mut resources = array![(ResourceTypes::LORDS, payout)].span();
+            let donkey_id = InternalBankSystemsImpl::pickup_resources_from_bank(
+                world, bank_entity_id, entity_id, resources
+            );
 
             // emit event
             InternalSwapSystemsImpl::emit_event(
                 world,
                 market,
-                bank_account_entity_id,
+                entity_id,
                 payout,
                 rest,
                 owner_fees_amount,
@@ -173,6 +168,9 @@ mod swap_systems {
                 market.quote_amount(1000),
                 false
             );
+
+            // return donkey_id
+            donkey_id
         }
     }
 
@@ -219,7 +217,7 @@ mod swap_systems {
         fn emit_event(
             world: IWorldDispatcher,
             market: Market,
-            bank_account_entity_id: u128,
+            entity_id: u128,
             lords_amount: u128,
             resource_amount: u128,
             bank_owner_fees: u128,
@@ -230,7 +228,7 @@ mod swap_systems {
             let event = Event::SwapEvent(
                 SwapEvent {
                     bank_entity_id: market.bank_entity_id,
-                    bank_account_entity_id,
+                    entity_id,
                     resource_type: market.resource_type,
                     lords_amount,
                     resource_amount,
