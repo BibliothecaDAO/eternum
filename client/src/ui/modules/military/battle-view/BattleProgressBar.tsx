@@ -1,6 +1,5 @@
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { Realm, Structure } from "@/hooks/helpers/useStructures";
-import { currencyFormat } from "@/ui/utils/utils";
+import { Structure } from "@/hooks/helpers/useStructures";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
@@ -27,8 +26,8 @@ export const BattleProgressBar = ({
   const defenderName = structure
     ? `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
     : defenderArmies?.length > 0
-      ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
-      : "Empty";
+    ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+    : "Empty";
 
   const totalHealth = useMemo(
     () => (attackingHealth?.current || 0) + (defendingHealth?.current || 0),
@@ -67,6 +66,21 @@ export const BattleProgressBar = ({
     }%)`;
   }, [attackingHealthPercentage, defendingHealthPercentage]);
 
+  const battleStatus = useMemo(() => {
+    if (ownArmySide === "" || time || defenderArmies.length === 0 || attackerArmies.length === 0) return;
+    return ownArmySide === "Attack"
+      ? Number(attackingHealthPercentage) === 100
+        ? "You Won"
+        : Number(attackingHealthPercentage) === 0
+        ? "You Lost"
+        : undefined
+      : Number(defendingHealthPercentage) === 100
+      ? "You Won"
+      : Number(defendingHealthPercentage) === 0
+      ? "You Lost"
+      : undefined;
+  }, [time]);
+
   return (
     <motion.div
       initial="hidden"
@@ -77,29 +91,21 @@ export const BattleProgressBar = ({
         visible: { y: "0%", transition: { duration: 0.5 } },
       }}
     >
-      <div className="mx-auto w-2/3 flex justify-between text-2xl text-gold backdrop-blur-lg bg-[#1b1a1a] px-8 py-2  ornate-borders-top-y">
-        <div>
+      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl text-gold backdrop-blur-lg bg-[#1b1a1a] px-8 py-2  ornate-borders-top-y">
+        <div className="text-left">
           <p>{attackerName}</p>
         </div>
-        {time && <div className="font-bold">{time.toISOString().substring(11, 19)} left</div>}
+        <div className="font-bold text-center">
+          {time ? `${time.toISOString().substring(11, 19)} left` : battleStatus}
+        </div>
         <div className="text-right">
           <p>{defenderName}</p>
         </div>
       </div>
-      <div className="relative h-8  mx-auto w-2/3 ornate-borders-y animate-slowPulse" style={{ background: gradient }}>
-        <div className="absolute left-0 top-0 h-full flex items-center justify-center w-full font-bold">
-          <div className="flex justify-between w-full px-8 py-3 text-gold">
-            <span>
-              {currencyFormat(attackingHealth?.current || 0, 0)}/{currencyFormat(attackingHealth?.lifetime || 0, 0)} hp
-            </span>
-            {defendingHealth && (
-              <span>
-                {currencyFormat(defendingHealth.current, 0)}/{currencyFormat(defendingHealth.lifetime, 0)} hp
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+      <div
+        className="relative h-8  mx-auto w-2/3 ornate-borders-y animate-slowPulse"
+        style={{ background: gradient }}
+      ></div>
     </motion.div>
   );
 };

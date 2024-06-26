@@ -36,6 +36,8 @@ export const BattleSideView = ({
     },
   } = useDojo();
 
+  const clearSelection = useUIStore((state) => state.clearSelection);
+
   const selectedEntity = useUIStore((state) => state.selectedEntity);
 
   const [localSelectedUnit, setLocalSelectedUnit] = useState<bigint | undefined>(selectedEntity?.id);
@@ -51,6 +53,7 @@ export const BattleSideView = ({
         battle_side: BigInt(side),
       });
       setLoading(false);
+      clearSelection();
     } else {
       setLocalSelectedUnit(0n);
     }

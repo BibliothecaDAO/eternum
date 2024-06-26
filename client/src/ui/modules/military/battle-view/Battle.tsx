@@ -30,6 +30,7 @@ export const Battle = ({
   defenderArmies,
   defenderHealth,
   defenderTroops,
+  userArmiesInBattle,
   userArmiesAtPosition,
   structure,
   isActive,
@@ -45,6 +46,7 @@ export const Battle = ({
   defenderArmies: ArmyInfo[];
   defenderHealth: Health | undefined;
   defenderTroops: Troops | undefined;
+  userArmiesInBattle: ArmyInfo[] | undefined;
   userArmiesAtPosition: ArmyInfo[] | undefined;
   structure: Structure | undefined;
   isActive: boolean;
@@ -72,7 +74,7 @@ export const Battle = ({
               !showBattleDetails ? "Battle Details" : "Overview"
             }`}</Button>
           )}
-          <HintModalButton className="absolute left-3" sectionName="Combat" />
+          <HintModalButton className={`relative ${battleAdjusted ? "left-3" : ""}`} sectionName="Combat" />
         </div>
         <BattleProgressBar
           ownArmySide={ownArmySide}
@@ -102,6 +104,7 @@ export const Battle = ({
               />
             ) : (
               <BattleActions
+                userArmiesInBattle={userArmiesInBattle}
                 ownArmyEntityId={ownArmyEntityId}
                 defender={defenderArmies?.[0]}
                 structure={structure}
