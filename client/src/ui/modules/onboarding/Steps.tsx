@@ -13,7 +13,7 @@ import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import { displayAddress } from "@/ui/utils/utils";
-import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -352,10 +352,10 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
   return (
     <StepContainer>
       <ContainerWithSquire>
-        <h2 className="mb-4">Days are 8hrs long</h2>
+        <h2 className="mb-4">Days are {EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60 / 60}hrs long</h2>
         <p className="mb-4 text-xl">
-          Each 8hr period your Realms and Troops will regain energy and be able to travel again. Don't get caught out in
-          the open.
+          Each {EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60 / 60} hour period your Realms and Troops will
+          regain energy and be able to travel again. Don't get caught out in the open.
         </p>
         <div className="mt-auto">
           <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
@@ -371,9 +371,7 @@ export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => 
   return (
     <StepContainer>
       <ResourceIcon resource="Ancient Fragment" size="xl" withTooltip={false} />
-      <p className="text-2xl text-center mb-8">
-        They who rule the Ancient Fragments <br /> rule the world...
-      </p>
+      <p className="text-2xl text-center mb-8">Follow the quests and you will survive the day.</p>
       <div className="flex w-full justify-center">
         <NavigateToRealm text={"begin"} />
       </div>

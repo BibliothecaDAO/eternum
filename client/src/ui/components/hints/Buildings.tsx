@@ -1,3 +1,4 @@
+import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import {
@@ -9,7 +10,6 @@ import {
   BuildingType,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
-import { BUILDING_IMAGES_PATH } from "../construction/SelectPreviewBuilding";
 
 export const Buildings = () => {
   const buildingTable = useMemo(() => {

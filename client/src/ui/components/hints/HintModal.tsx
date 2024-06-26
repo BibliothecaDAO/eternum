@@ -11,6 +11,7 @@ import { Points } from "./Points";
 import { Hyperstructures } from "./Hyperstructures";
 import { TheMap } from "./TheMap";
 import { Guilds } from "./Guilds";
+import { Transport } from "./Transport";
 
 type HintModalProps = {
   initialActiveSection?: string;
@@ -30,6 +31,10 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
     {
       name: "Resources",
       content: <Resources />,
+    },
+    {
+      name: "Transfers",
+      content: <Transport />,
     },
     {
       name: "The Map",
