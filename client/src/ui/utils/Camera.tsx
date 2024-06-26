@@ -66,6 +66,10 @@ const CameraControls = ({ position, target }: Props) => {
 
       const duration = position.transitionDuration || 2;
 
+      if (duration > 0.1) {
+        ref.current.minDistance = 5;
+      }
+
       gsap.timeline().to(camera.position, {
         duration,
         repeat: 0,
@@ -98,7 +102,6 @@ const CameraControls = ({ position, target }: Props) => {
   }
 
   useEffect(() => {
-    ref.current.minDistance = 5;
     setTimeout(() => {
       cameraAnimate();
       // dont play if transition is instant
