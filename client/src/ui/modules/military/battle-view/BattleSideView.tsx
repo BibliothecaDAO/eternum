@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { Realm, Structure } from "@/hooks/helpers/useStructures";
+import { Structure } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { BattleSide, Troops } from "@bibliothecadao/eternum";
@@ -63,35 +63,38 @@ export const BattleSideView = ({
       }`}
     >
       {/* TODO: Could use enemies address */}
-      <EntityAvatar
-        address={battleSide === BattleSide.Attack ? account.address : battleId?.toString()}
-        structure={structure}
-        show={ownSideArmies.length > 0}
-      />
+      <div className="flex flex-col">
+        <EntityAvatar
+          address={battleSide === BattleSide.Attack ? account.address : battleId?.toString()}
+          structure={structure}
+          show={ownSideArmies.length > 0}
+        />
 
-      {Boolean(battleId) &&
-        opposingSideArmies.length > 0 &&
-        userArmiesAtPosition &&
-        userArmiesAtPosition.length > 0 && (
-          <div className="flex w-full">
-            <SelectActiveArmy
-              setLocalSelectedUnit={setLocalSelectedUnit}
-              userAttackingArmies={userArmiesAtPosition}
-              localSelectedUnit={localSelectedUnit}
-            />
-            <Button onClick={() => joinBattle(battleSide, localSelectedUnit!)} isLoading={loading} className="size-xs">
-              Join
-            </Button>
-          </div>
-        )}
-
-      <div className="self-center h-full p-2 w-full">
-        {showBattleDetails && battleId ? (
-          <BattleDetails armies={ownSideArmies} battleId={battleId} />
-        ) : (
-          <TroopRow troops={ownSideTroopsUpdated} />
-        )}
+        {Boolean(battleId) &&
+          opposingSideArmies.length > 0 &&
+          userArmiesAtPosition &&
+          userArmiesAtPosition.length > 0 && (
+            <div className="flex flex-col w-full">
+              <SelectActiveArmy
+                setLocalSelectedUnit={setLocalSelectedUnit}
+                userAttackingArmies={userArmiesAtPosition}
+                localSelectedUnit={localSelectedUnit}
+              />
+              <Button
+                onClick={() => joinBattle(battleSide, localSelectedUnit!)}
+                isLoading={loading}
+                className="size-xs h-10 w-20 self-center"
+              >
+                Join
+              </Button>
+            </div>
+          )}
       </div>
+      {showBattleDetails && battleId ? (
+        <BattleDetails armies={ownSideArmies} battleId={battleId} />
+      ) : (
+        <TroopRow troops={ownSideTroopsUpdated} />
+      )}
     </div>
   );
 };

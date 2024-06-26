@@ -3,9 +3,9 @@ import { divideByPrecision, getEntityIdFromKeys, getPosition } from "@/ui/utils/
 import { EntityType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, NotValue, getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
+import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { useResources } from "./useResources";
-import { shortString } from "starknet";
 
 export const useEntities = () => {
   const {
@@ -124,8 +124,8 @@ export const useEntities = () => {
           const name = realm
             ? getRealmNameById(realm.realm_id)
             : structureName
-              ? `${structure?.category} ${structureName}`
-              : structure?.category;
+            ? `${structure?.category} ${structureName}`
+            : structure?.category;
           return { ...structure, position: position!, name };
         })
         .sort((a, b) => (a.category || "").localeCompare(b.category || ""));

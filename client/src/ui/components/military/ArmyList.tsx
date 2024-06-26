@@ -76,7 +76,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
             {/* <StaminaResource entityId={entity.entity_id} className="mb-3" /> */}
             <ArmyManagementCard owner_entity={entity_id?.entity_id} entity={entity} />
             <div className="p-2 bg-gold/10 clip-angled my-4">
-              <InventoryResources entityId={entity.entity_id} title="balance" />
+              <InventoryResources entityId={entity.entity_id} />
             </div>
 
             <DepositResources entityId={entity.entity_id} />

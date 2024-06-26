@@ -136,7 +136,8 @@ export const BattleActions = ({
 
   const defenceIsEmptyOrDead = !defender || (battle && battle.defence_army_health.current <= 0);
 
-  const isClaimable = Boolean(ownArmy) && !isActive && defenceIsEmptyOrDead && !isRealm && Boolean(structure);
+  const isClaimable =
+    Boolean(ownArmy) && !isActive && defenceIsEmptyOrDead && !isRealm && Boolean(structure) && !structure!.isMine;
 
   return (
     <div className="col-span-2 flex justify-center flex-wrap ornate-borders-bottom-y p-2 bg-[#1b1a1a] bg-map">
@@ -146,7 +147,7 @@ export const BattleActions = ({
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Raid}
           onClick={handleRaid}
-          disabled={loading !== Loading.None || !structure || !ownArmy || isActive}
+          disabled={loading !== Loading.None || !structure || !ownArmy || isActive || structure?.isMine}
         >
           <img className="w-16" src="/images/icons/raid.png" alt="coin" />
           Raid!

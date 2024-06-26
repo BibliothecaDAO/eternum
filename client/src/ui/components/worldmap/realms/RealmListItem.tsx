@@ -42,7 +42,7 @@ export const RealmListItem = ({ realm, onClick, extraButton }: RealmListItemProp
           </div>
         </div>
       </div>
-      <InventoryResources entityId={BigInt(realm.entity_id)} title="Balance" />
+      <InventoryResources entityId={BigInt(realm.entity_id)} />
       {extraButton || ""}
     </div>
   );

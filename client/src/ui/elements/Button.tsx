@@ -30,7 +30,7 @@ const STYLES = {
 };
 
 const SIZES = {
-  xs: "text-xxs h-4 clip-angled-sm ",
+  xs: "text-xxs h-4 clip-angled-sm",
   md: "",
 };
 
@@ -64,9 +64,8 @@ const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {isLoading ? (
-        <div className=" inset-0 flex items-center justify-center h-full">
-          <div className="w-4 h-4 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin mr-5"></div>{" "}
-          Casting...
+        <div className={`w-full inset-0 flex flex-col items-center justify-center h-full`}>
+          <div className="w-4 h-4 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin"></div>{" "}
         </div>
       ) : (
         children

@@ -1,8 +1,9 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { BattleType } from "@/dojo/modelManager/types";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { Realm, Structure } from "@/hooks/helpers/useStructures";
+import { Structure } from "@/hooks/helpers/useStructures";
 import Button from "@/ui/elements/Button";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { BattleSide, Troops } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
@@ -65,12 +66,13 @@ export const Battle = ({
         animate="visible"
         exit="hidden"
       >
-        <div className="flex justify-center">
+        <div className="flex justify-center mb-2">
           {battleAdjusted && (
             <Button variant="primary" onClick={() => setShowBattleDetails(!showBattleDetails)}>{`${
-              !showBattleDetails ? "Battle Details" : "Close"
+              !showBattleDetails ? "Battle Details" : "Overview"
             }`}</Button>
           )}
+          <HintModalButton className="absolute left-3" sectionName="Combat" />
         </div>
         <BattleProgressBar
           ownArmySide={ownArmySide}
@@ -81,8 +83,8 @@ export const Battle = ({
           structure={structure}
           durationLeft={durationLeft}
         />
-        <div className="w-screen bg-brown/80 backdrop-blur-lg  ornate-borders-top bg-map">
-          <div className="grid grid-cols-12 justify-between min-h-[22vh] gap-4">
+        <div className="w-screen bg-brown/80 backdrop-blur-lg ornate-borders-top bg-map h-[27vh]">
+          <div className="grid grid-cols-12 justify-between gap-4 h-[25vh]">
             <BattleSideView
               battleSide={BattleSide.Attack}
               battleId={battleManager?.battleId}

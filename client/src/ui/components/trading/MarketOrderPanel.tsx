@@ -491,7 +491,7 @@ export const OrderCreation = ({
         <Button
           disabled={!enoughDonkeys || !canBuy}
           isLoading={loading}
-          className="mt-4"
+          className="mt-4 h-8 w-60"
           onClick={createOrder}
           size="md"
           variant="primary"

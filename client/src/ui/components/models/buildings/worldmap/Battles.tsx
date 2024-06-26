@@ -37,9 +37,10 @@ export const Battles = () => {
 
 const BattleModel = ({ battle_id, position, onClick }: { battle_id: any; position: any; onClick: () => void }) => {
   const selectedBattle = useUIStore((state) => state.selectedBattle);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
 
   const showBattleLabel = useMemo(() => {
-    return selectedBattle !== undefined && selectedBattle.id === BigInt(battle_id);
+    return selectedEntity === undefined && selectedBattle !== undefined && selectedBattle.id === BigInt(battle_id);
   }, [selectedBattle, battle_id]);
 
   const model = useGLTF("/models/buildings/barracks.glb");
