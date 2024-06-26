@@ -52,7 +52,7 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
             side={THREE.DoubleSide}
             transparent
             renderOrder={5}
-            color={army.isMine ? [0, 2, 0] : undefined}
+            color={army.isMine ? [0, 1.5, 0] : undefined}
           />
         </Billboard>
         <ArmySelectionOverlay army={army} />
