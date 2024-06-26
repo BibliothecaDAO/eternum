@@ -3,16 +3,16 @@ import clsx from "clsx";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Tabs } from "@/ui/elements/tab";
 import {
-	BUILDING_CAPACITY,
-	BUILDING_POPULATION,
-	BUILDING_RESOURCE_PRODUCED,
-	BuildingEnumToString,
-	BuildingType,
-	EternumGlobalConfig,
-	RESOURCE_INPUTS_SCALED,
-	RESOURCE_OUTPUTS_SCALED,
-	ResourcesIds,
-	findResourceById,
+  BUILDING_CAPACITY,
+  BUILDING_POPULATION,
+  BUILDING_RESOURCE_PRODUCED,
+  BuildingEnumToString,
+  BuildingType,
+  EternumGlobalConfig,
+  RESOURCE_INPUTS_SCALED,
+  RESOURCE_OUTPUTS_SCALED,
+  ResourcesIds,
+  findResourceById,
 } from "@bibliothecadao/eternum";
 
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
@@ -32,32 +32,9 @@ import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
+import { BUILDING_IMAGES_PATH } from "@/ui/config";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
-
-const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
-export const BUILDING_IMAGES_PATH = {
-  [BuildingType.Castle]: "",
-  [BuildingType.Bank]: "",
-  [BuildingType.FragmentMine]: "",
-  [BuildingType.Resource]: BUILD_IMAGES_PREFIX + "mine.png",
-  [BuildingType.Farm]: BUILD_IMAGES_PREFIX + "farm.png",
-  [BuildingType.FishingVillage]: BUILD_IMAGES_PREFIX + "fishing_village.png",
-  [BuildingType.Barracks]: BUILD_IMAGES_PREFIX + "barracks.png",
-  [BuildingType.Stable]: BUILD_IMAGES_PREFIX + "stable.png",
-  [BuildingType.Market]: BUILD_IMAGES_PREFIX + "market.png",
-  [BuildingType.ArcheryRange]: BUILD_IMAGES_PREFIX + "archery.png",
-  [BuildingType.DonkeyFarm]: BUILD_IMAGES_PREFIX + "donkey_farm.png",
-  [BuildingType.TradingPost]: BUILD_IMAGES_PREFIX + "trading_post.png",
-  [BuildingType.WorkersHut]: BUILD_IMAGES_PREFIX + "workers_hut.png",
-  [BuildingType.WatchTower]: BUILD_IMAGES_PREFIX + "watch_tower.png",
-  [BuildingType.Walls]: BUILD_IMAGES_PREFIX + "walls.png",
-  [BuildingType.Storehouse]: BUILD_IMAGES_PREFIX + "storehouse.png",
-  [ResourceMiningTypes.Forge]: BUILD_IMAGES_PREFIX + "forge.png",
-  [ResourceMiningTypes.Mine]: BUILD_IMAGES_PREFIX + "mine.png",
-  [ResourceMiningTypes.LumberMill]: BUILD_IMAGES_PREFIX + "lumber_mill.png",
-  [ResourceMiningTypes.Dragonhide]: BUILD_IMAGES_PREFIX + "dragonhide.png",
-};
 
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
@@ -132,7 +109,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-4 gap-2 p-2">
+          <div className="grid grid-cols-3 gap-2 p-2">
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
@@ -183,7 +160,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-4 gap-2 p-2">
+          <div className="grid grid-cols-3 gap-2 p-2">
             {buildingTypes
               .filter((a) => a !== "Barracks" && a !== "ArcheryRange" && a !== "Stable")
               .map((buildingType, index) => {
@@ -244,7 +221,7 @@ export const SelectPreviewBuildingMenu = () => {
           </div>
         ),
         component: (
-          <div className="grid grid-cols-4 gap-2 p-2">
+          <div className="grid grid-cols-3 gap-2 p-2">
             {" "}
             {buildingTypes
               .filter((a) => a === "Barracks" || a === "ArcheryRange" || a === "Stable")
@@ -347,9 +324,9 @@ export const BuildingCard = ({
       }}
       onClick={onClick}
       className={clsx(
-        "hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm hover:border-gradient border border-transparent",
+        "hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm ",
         {
-          "!border-lightest border-gradient border": active,
+          "!border-lightest": active,
         },
         className,
       )}

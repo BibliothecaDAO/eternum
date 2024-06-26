@@ -26,7 +26,7 @@ sozo migrate apply --name eternum
 
 
 if [[ "$setConfig" == "true" ]]; then
-    bun --env-file=../client/.env.development ../config/index.ts
+    bun --env-file=../client/.env.local ../config/index.ts
 
     echo "----- Auth and World Contracts: Set 0.1s ----- "
     source scripts/env_variables.sh dev

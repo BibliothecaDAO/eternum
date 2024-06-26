@@ -22,6 +22,7 @@ import { quests as questsPopup } from "../../components/navigation/Config";
 import { ArrowRight } from "lucide-react";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { Headline } from "@/ui/elements/Headline";
 
 export enum View {
   None,
@@ -182,58 +183,16 @@ export const RightNavigationModule = () => {
 
         <BaseContainer className={`w-full  overflow-y-scroll py-4 ${isOffscreen(view) ? "h-[20vh]" : "h-[80vh]"}`}>
           {view === View.ResourceTable ? (
-            <>
-              <div className="flex justify-between">
-                {population && (
-                  <div
-                    onMouseEnter={() => {
-                      setTooltip({
-                        position: "bottom",
-                        content: (
-                          <span className="whitespace-nowrap pointer-events-none text-sm">
-                            <span>
-                              {population.population} population / {population.capacity + BASE_POPULATION_CAPACITY}{" "}
-                              capacity
-                            </span>
-                            <br />
-                            <span>Build Workers huts to expand population</span>
-                          </span>
-                        ),
-                      });
-                    }}
-                    onMouseLeave={() => setTooltip(null)}
-                    className="bg-brown text-gold border-gradient px-3"
-                  >
-                    <div className="uppercase font-bold">population</div>
-                    {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
-                  </div>
-                )}
-                {storehouses && (
-                  <div
-                    onMouseEnter={() => {
-                      setTooltip({
-                        position: "bottom",
-                        content: (
-                          <div className="whitespace-nowrap pointer-events-none text-sm">
-                            <span>This is the max per resource you can store</span>
+            <div className="px-2 flex flex-col space-y-1 overflow-y-auto">
+              <Headline>
+                <div className="flex gap-2">
+                  <div className="self-center">Resources</div>
+                  <HintModalButton sectionName="Resources" />
+                </div>
+              </Headline>
 
-                            <br />
-                            <span>Build Storehouses to increase this.</span>
-                          </div>
-                        ),
-                      });
-                    }}
-                    onMouseLeave={() => setTooltip(null)}
-                    className="bg-brown text-gold border-gradient px-3"
-                  >
-                    <div className="uppercase font-bold">capacity</div>
-                    {storehouses.toLocaleString()}
-                  </div>
-                )}
-                <HintModalButton className="mr-1" sectionName="Resources" />
-              </div>
               <EntityResourceTable entityId={realmEntityId} />
-            </>
+            </div>
           ) : (
             <AllResourceArrivals entityIds={getAllArrivalsWithResources} />
           )}
