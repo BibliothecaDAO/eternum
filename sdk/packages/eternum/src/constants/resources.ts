@@ -391,15 +391,15 @@ export const getLevelingCost = (newLevel: number): { resourceId: number; amount:
       ? // level 4 (resource tier 3)
         [16, 24421, 17, 20954, 18, 16733, 19, 14020, 20, 8291, 21, 5578, 22, 3467]
       : rem === 1
-        ? // level 1 (food)
-          [254, 11340000, 255, 3780000]
-        : rem === 2
-          ? // level 2 (resource tier 1)
-            [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
-          : rem === 3
-            ? // level 3 (resource tier 2)
-              [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
-            : [];
+      ? // level 1 (food)
+        [254, 11340000, 255, 3780000]
+      : rem === 2
+      ? // level 2 (resource tier 1)
+        [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
+      : rem === 3
+      ? // level 3 (resource tier 2)
+        [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
+      : [];
 
   const costResources = [];
   for (let i = 0; i < baseAmounts.length; i = i + 2) {
@@ -730,28 +730,28 @@ export const HYPERSTRUCTURE_CREATION_COSTS: { resource: number; amount: number }
 ];
 
 export const HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: number }[] = [
-  { resource: ResourcesIds.Wood, amount: 1000 },
-  { resource: ResourcesIds.Stone, amount: 1000 },
-  { resource: ResourcesIds.Coal, amount: 1000 },
-  { resource: ResourcesIds.Copper, amount: 600 },
-  { resource: ResourcesIds.Obsidian, amount: 600 },
-  { resource: ResourcesIds.Silver, amount: 600 },
-  { resource: ResourcesIds.Ironwood, amount: 600 },
-  { resource: ResourcesIds.ColdIron, amount: 300 },
-  { resource: ResourcesIds.Gold, amount: 300 },
-  { resource: ResourcesIds.Hartwood, amount: 300 },
-  { resource: ResourcesIds.Diamonds, amount: 300 },
-  { resource: ResourcesIds.Sapphire, amount: 300 },
-  { resource: ResourcesIds.Ruby, amount: 300 },
-  { resource: ResourcesIds.DeepCrystal, amount: 300 },
-  { resource: ResourcesIds.Ignium, amount: 300 },
-  { resource: ResourcesIds.EtherealSilica, amount: 300 },
-  { resource: ResourcesIds.TrueIce, amount: 300 },
-  { resource: ResourcesIds.TwilightQuartz, amount: 300 },
-  { resource: ResourcesIds.AlchemicalSilver, amount: 300 },
-  { resource: ResourcesIds.Adamantine, amount: 200 },
-  { resource: ResourcesIds.Mithral, amount: 200 },
-  { resource: ResourcesIds.Dragonhide, amount: 100 },
+  { resource: ResourcesIds.Wood, amount: 10000 },
+  { resource: ResourcesIds.Stone, amount: 10000 },
+  { resource: ResourcesIds.Coal, amount: 10000 },
+  { resource: ResourcesIds.Copper, amount: 6000 },
+  { resource: ResourcesIds.Obsidian, amount: 6000 },
+  { resource: ResourcesIds.Silver, amount: 6000 },
+  { resource: ResourcesIds.Ironwood, amount: 6000 },
+  { resource: ResourcesIds.ColdIron, amount: 3000 },
+  { resource: ResourcesIds.Gold, amount: 3000 },
+  { resource: ResourcesIds.Hartwood, amount: 3000 },
+  { resource: ResourcesIds.Diamonds, amount: 3000 },
+  { resource: ResourcesIds.Sapphire, amount: 3000 },
+  { resource: ResourcesIds.Ruby, amount: 3000 },
+  { resource: ResourcesIds.DeepCrystal, amount: 3000 },
+  { resource: ResourcesIds.Ignium, amount: 3000 },
+  { resource: ResourcesIds.EtherealSilica, amount: 3000 },
+  { resource: ResourcesIds.TrueIce, amount: 3000 },
+  { resource: ResourcesIds.TwilightQuartz, amount: 3000 },
+  { resource: ResourcesIds.AlchemicalSilver, amount: 3000 },
+  { resource: ResourcesIds.Adamantine, amount: 2000 },
+  { resource: ResourcesIds.Mithral, amount: 2000 },
+  { resource: ResourcesIds.Dragonhide, amount: 1000 },
 ];
 
 export const HYPERSTRUCTURE_TOTAL_COSTS: { resource: number; amount: number }[] = [
