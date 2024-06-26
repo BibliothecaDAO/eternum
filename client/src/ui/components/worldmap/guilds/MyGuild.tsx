@@ -126,7 +126,7 @@ export const MyGuild = () => {
                 </Button>
               </div>
             ) : (
-              <p className="py-2">{guildName}</p>
+              <p className="py-2 text-xl">{guildName}</p>
             )}
 
             {isOwner && (
@@ -206,20 +206,22 @@ export const MyGuild = () => {
           </div>
 
           {isCreatingGuild && (
-            <div className="flex justify-between mx-3 mb-3 items-baseline">
-              <SelectBox selected={isPublic} onClick={() => setIsPublic(!isPublic)}>
-                <p className={`p-1 text-sm ${isPublic ? "text-dark" : "text-gold"}`}>Public</p>
-              </SelectBox>
-              Guild Name
+            <div className="flex flex-wrap justify-between mx-3 mb-3 items-baseline gap-2">
+              <div className="w-full">Guild Name</div>
+
               <TextInput
-                className="border border-gold  !w-1/2 !flex-grow-0 !text-light-pink text-xs"
                 value={newGuildName}
                 onChange={(newGuildName) => setNewGuildName(newGuildName)}
                 maxLength={MAX_NAME_LENGTH}
               />
-              <Button onClick={createGuild} disabled={newGuildName == ""}>
-                Confirm
-              </Button>
+              <div className="flex justify-center gap-2">
+                <Button onClick={createGuild} disabled={newGuildName == ""}>
+                  Confirm
+                </Button>
+                <SelectBox selected={isPublic} onClick={() => setIsPublic(!isPublic)}>
+                  Public
+                </SelectBox>
+              </div>
             </div>
           )}
         </>

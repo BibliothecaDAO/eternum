@@ -102,12 +102,12 @@ export const Guilds = () => {
               />
             ))}
           </SortPanel>
-          <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
+          <div className="flex flex-col p-3 space-y-2 overflow-y-auto ">
             {sortItems(guilds, activeSort)?.map((guild: GuildAndName) => {
               return (
                 <div
                   key={guild.entity_id}
-                  className={`grid grid-cols-4 gap-4 text-xs clip-angled-sm p-1 ${
+                  className={`grid grid-cols-4 gap-4 text-md clip-angled-sm p-1 ${
                     userGuildEntityId === BigInt(guild.entity_id) ? "bg-green/20" : ""
                   } `}
                 >
