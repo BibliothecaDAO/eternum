@@ -11,8 +11,8 @@ type SelectBoxProps = {
 export const SelectBox = ({ selected, onClick, children }: SelectBoxProps) => (
   <div
     className={clsx(
-      "p-2 cursor-pointer text-white text-xxs flex justify-between items-center rounded transition-colors duration-200 hover:bg-dark",
-      selected && "bg-gold",
+      "p-2 cursor-pointer text-gold clip-angled-sm flex gap-3 justify-between items-center rounded transition-colors duration-200 hover:bg-dark",
+      selected && "bg-gold/20",
     )}
     onClick={onClick}
   >

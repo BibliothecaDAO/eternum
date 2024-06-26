@@ -74,6 +74,16 @@ export const useGuilds = () => {
     [],
   );
 
+  const getGuildOwner = useMemo(
+    () => (guildEntityId: bigint) => {
+      const owner = Array.from(runQuery([HasValue(Owner, { entity_id: guildEntityId })])).map((id) =>
+        getComponentValue(Owner, id),
+      )[0];
+      return owner;
+    },
+    [],
+  );
+
   const getAddressGuild = useMemo(
     () => (accountAddress: string) => {
       const userGuildEntityId = Array.from(runQuery([HasValue(GuildMember, { address: BigInt(accountAddress) })])).map(
@@ -102,7 +112,7 @@ export const useGuilds = () => {
     [],
   );
 
-  return { getGuilds, getGuildMembers, getGuildWhitelist, getAddressWhitelist, getAddressGuild };
+  return { getGuilds, getGuildMembers, getGuildWhitelist, getAddressWhitelist, getAddressGuild, getGuildOwner };
 };
 
 const formatGuilds = (
