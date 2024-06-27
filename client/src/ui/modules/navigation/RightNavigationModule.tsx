@@ -40,7 +40,7 @@ export const RightNavigationModule = () => {
   const { realmEntityId } = useRealmStore();
 
   const quests = useQuestStore((state) => state.quests);
-  const currentQuest = useQuestStore((state) => state.currentQuest);
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { getAllArrivalsWithResources } = useResources();
 
@@ -54,7 +54,7 @@ export const RightNavigationModule = () => {
           <CircleButton
             className={clsx({
               "animate-pulse":
-                currentQuest?.name === QuestName.ClaimFood && !currentQuest.claimed && isPopupOpen(questsPopup),
+                selectedQuest?.name === QuestName.ClaimFood && isPopupOpen(questsPopup),
             })}
             image={BuildingThumbs.resources}
             size="xl"
@@ -94,7 +94,7 @@ export const RightNavigationModule = () => {
           <CircleButton
             className={clsx({
               "animate-pulse":
-                currentQuest?.name === QuestName.CreateTrade && !currentQuest.completed && isPopupOpen(questsPopup),
+                selectedQuest?.name === QuestName.CreateTrade && !selectedQuest.completed && isPopupOpen(questsPopup),
               hidden: !quests?.find((quest) => quest.name === QuestName.BuildResource)?.claimed,
             })}
             image={BuildingThumbs.scale}
@@ -127,7 +127,7 @@ export const RightNavigationModule = () => {
         ),
       },
     ];
-  }, [location, view, quests, openedPopups]);
+  }, [location, view, quests, openedPopups, selectedQuest]);
 
   const slideRight = {
     hidden: { x: "100%" },

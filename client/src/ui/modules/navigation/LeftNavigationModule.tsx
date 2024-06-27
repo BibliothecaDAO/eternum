@@ -66,7 +66,7 @@ export const LeftNavigationModule = () => {
   const openedPopups = useUIStore((state) => state.openedPopups);
 
   const quests = useQuestStore((state) => state.quests);
-  const currentQuest = useQuestStore((state) => state.currentQuest);
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { realmEntityId } = useRealmStore();
   const { getStamina } = useStamina();
@@ -109,10 +109,9 @@ export const LeftNavigationModule = () => {
             className={clsx({
               "animate-pulse":
                 view != View.ConstructionView &&
-                currentQuest?.name === QuestName.CreateArmy &&
-                !currentQuest.completed &&
+                selectedQuest?.name === QuestName.CreateArmy &&
                 isPopupOpen(questsPopup),
-              hidden: !quests?.find((quest) => quest.name === QuestName.CreateTrade)?.claimed,
+              hidden: !quests?.find((quest) => quest.name === QuestName.BuildResource)?.claimed,
             })}
             image={BuildingThumbs.military}
             tooltipLocation="top"
@@ -135,8 +134,11 @@ export const LeftNavigationModule = () => {
             className={clsx({
               "animate-pulse":
                 view != View.ConstructionView &&
-                (currentQuest?.name === QuestName.BuildFarm || currentQuest?.name === QuestName.BuildResource) &&
-                !currentQuest.completed &&
+                (selectedQuest?.name === QuestName.BuildFarm ||
+                  selectedQuest?.name === QuestName.BuildResource ||
+                  selectedQuest?.name === QuestName.BuildWorkersHut ||
+                  selectedQuest?.name === QuestName.Market ||
+                  (selectedQuest?.name === QuestName.Hyperstructure && isWorldView)) &&
                 isPopupOpen(questsPopup),
               hidden: quests && !quests.find((quest) => quest.name === QuestName.ClaimFood)?.claimed,
             })}
@@ -158,6 +160,10 @@ export const LeftNavigationModule = () => {
           <CircleButton
             className={clsx({
               hidden: !quests?.find((quest) => quest.name === QuestName.CreateArmy)?.claimed,
+              "animate-pulse":
+                view != View.ConstructionView &&
+                selectedQuest?.name === QuestName.Contribution &&
+                isPopupOpen(questsPopup),
             })}
             image={BuildingThumbs.worldStructures}
             tooltipLocation="top"

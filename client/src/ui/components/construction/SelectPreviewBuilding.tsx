@@ -18,7 +18,6 @@ import {
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useModal } from "@/hooks/store/useModal";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
@@ -44,10 +43,8 @@ export const SelectPreviewBuildingMenu = () => {
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const currentQuest = useQuestStore((state) => state.currentQuest);
-
-  const { toggleModal } = useModal();
   const { realm } = useGetRealm(realmEntityId);
 
   const { getBalance } = useResourceBalance();
@@ -101,7 +98,7 @@ export const SelectPreviewBuildingMenu = () => {
             <div
               className={clsx({
                 "animate-pulse  border-b border-gold":
-                  selectedTab !== 0 && currentQuest?.name === QuestName.BuildResource,
+                  selectedTab !== 0 && selectedQuest?.name === QuestName.BuildResource,
               })}
             >
               Resources
@@ -125,7 +122,7 @@ export const SelectPreviewBuildingMenu = () => {
               return (
                 <BuildingCard
                   className={clsx({
-                    hidden: currentQuest?.name === QuestName.BuildFarm,
+                    hidden: selectedQuest?.name === QuestName.BuildFarm,
                   })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
@@ -175,14 +172,19 @@ export const SelectPreviewBuildingMenu = () => {
                     : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
 
                 const isFarm = building === BuildingType["Farm"];
+                const isWorkersHut = building === BuildingType["WorkersHut"];
+                const isMarket = building === BuildingType["Market"];
 
                 return (
                   <BuildingCard
                     className={clsx({
                       hidden:
-                        (!isFarm && currentQuest?.name === QuestName.BuildFarm) ||
-                        currentQuest?.name === QuestName.BuildResource,
-                      "animate-pulse": isFarm && currentQuest?.name === QuestName.BuildFarm,
+                        (!isFarm && selectedQuest?.name === QuestName.BuildFarm) ||
+                        selectedQuest?.name === QuestName.BuildResource,
+                      "animate-pulse":
+                        (isFarm && selectedQuest?.name === QuestName.BuildFarm) ||
+                        (isWorkersHut && selectedQuest?.name === QuestName.BuildWorkersHut) ||
+                        (isMarket && selectedQuest?.name === QuestName.Market),
                     })}
                     key={index}
                     buildingId={building}
@@ -238,7 +240,7 @@ export const SelectPreviewBuildingMenu = () => {
                   <BuildingCard
                     className={clsx({
                       hidden:
-                        currentQuest?.name === QuestName.BuildFarm || currentQuest?.name === QuestName.BuildResource,
+                        selectedQuest?.name === QuestName.BuildFarm || selectedQuest?.name === QuestName.BuildResource,
                     })}
                     key={index}
                     buildingId={building}

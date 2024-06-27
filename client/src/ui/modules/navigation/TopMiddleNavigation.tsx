@@ -19,10 +19,11 @@ import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
-import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import { motion } from "framer-motion";
 import { useComponentValue } from "@dojoengine/react";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
+import clsx from "clsx";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -50,8 +51,7 @@ export const TopMiddleNavigation = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
-
-  const claimableQuestsLength = useQuestStore((state) => state.claimableQuestsLength);
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   // realms always first
   const structures = useMemo(() => {
@@ -133,8 +133,13 @@ export const TopMiddleNavigation = () => {
             </Select>
           </div>
           <Button
-            disabled={claimableQuestsLength > 0}
             variant="primary"
+            className={clsx({
+              "animate-pulse":
+                (selectedQuest?.name === QuestName.Travel || selectedQuest?.name === QuestName.Hyperstructure) &&
+                !selectedQuest.completed &&
+                isHexView,
+            })}
             onClick={() => {
               if (location !== "/map") {
                 setIsLoadingScreenEnabled(true);
