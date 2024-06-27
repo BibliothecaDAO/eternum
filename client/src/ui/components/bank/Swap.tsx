@@ -118,7 +118,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
             <tbody>
               <tr className="text-xl">
                 <td>{chosenResourceName} Price:</td>
-                <td>{marketPrice.toFixed(2)} $LORDS</td>
+                <td>{marketPrice.toFixed(2)} Lords</td>
               </tr>
               {marketPrice > 0 && (
                 <>
@@ -130,7 +130,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
                     <td>Bank Owner Fees:</td>
                     <td>
                       {((isBuyResource ? lordsAmount : resourceAmount) * OWNER_FEE).toFixed(2)}{" "}
-                      {isBuyResource ? "$LORDS" : chosenResourceName}
+                      {isBuyResource ? "Lords" : chosenResourceName}
                     </td>
                   </tr>
                   <tr>
