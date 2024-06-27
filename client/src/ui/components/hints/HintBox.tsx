@@ -71,15 +71,16 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
 const QuestRewards = ({ prizes }: { prizes: Prize[] }) => (
   <div className="w-full">
     <div className="mb-1 font-bold">Quest Rewards</div>
-    {prizes && prizes.map((prize, index) => (
-      <div key={index} className="grid grid-cols-3 gap-3">
-        {QUEST_RESOURCES_SCALED[prize.id].map((resource, i) => (
-          <div key={i} className="grid gap-3">
-            <ResourceCost resourceId={resource.resource} amount={resource.amount} />
-          </div>
-        ))}
-      </div>
-    ))}
+    {prizes &&
+      prizes.map((prize, index) => (
+        <div key={index} className="grid grid-cols-3 gap-3">
+          {QUEST_RESOURCES_SCALED[prize.id].map((resource, i) => (
+            <div key={i} className="grid gap-3">
+              <ResourceCost resourceId={resource.resource} amount={resource.amount} />
+            </div>
+          ))}
+        </div>
+      ))}
   </div>
 );
 
@@ -142,9 +143,7 @@ const QuestsDisplay = ({ quests }: { quests: Quest[] }) => {
           return (
             <div key={depth} className="flex flex-col items-start">
               <div className="grid grid-cols-2 gap-4">
-                {depthQuests?.map((quest: Quest) => (
-                  <QuestCard quest={quest} key={quest.name} />
-                ))}
+                {depthQuests?.map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}
               </div>
             </div>
           );
