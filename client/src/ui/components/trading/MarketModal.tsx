@@ -15,6 +15,7 @@ import { useModal } from "@/hooks/store/useModal";
 import { Tabs } from "@/ui/elements/tab";
 import { BankPanel } from "../bank/BankList";
 import { MarketTradingHistory } from "./MarketTradingHistory";
+import { useGetBanks } from "@/hooks/helpers/useBanks";
 
 export const MarketModal = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -22,6 +23,9 @@ export const MarketModal = () => {
   const { playerRealms } = useEntities();
 
   const { toggleModal } = useModal();
+
+  const banks = useGetBanks();
+  const bank = banks.length === 1 ? banks[0] : null;
 
   const { userTrades, bidOffers, askOffers } = useSetMarket();
 
@@ -56,7 +60,7 @@ export const MarketModal = () => {
             <div>Swap</div>
           </div>
         ),
-        component: <BankPanel entity={0n} />,
+        component: bank && <BankPanel entity={{ id: bank.entityId }} />,
       },
       {
         key: "all",

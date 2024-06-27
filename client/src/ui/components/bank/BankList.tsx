@@ -9,8 +9,6 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { LiquidityTable } from "./LiquidityTable";
 import AddLiquidity from "./AddLiquidity";
 import { hexToAscii, numberToHex } from "@/ui/utils/utils";
-import { ResourceArrivals } from "../trading/ResourceArrivals";
-import { TransferBetweenEntities } from "../trading/TransferBetweenEntities";
 
 type BankListProps = {
   entity: any;
@@ -66,24 +64,6 @@ export const BankPanel = ({ entity }: BankListProps) => {
             <LiquidityTable bank_entity_id={entity.id} entity_id={realmEntityId} />
           </>
         ),
-      },
-      {
-        key: "transfer",
-        label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Transfer</div>
-          </div>
-        ),
-        component: <TransferBetweenEntities entitiesList={[{ entities: playerRealms(), name: "Player Realms" }]} />,
-      },
-      {
-        key: "all",
-        label: (
-          <div className="flex relative group flex-col items-center">
-            <div>Arrivals</div>
-          </div>
-        ),
-        component: <ResourceArrivals entityId={realmEntityId!} />,
       },
     ],
     [realmEntityId, position],

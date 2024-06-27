@@ -108,24 +108,6 @@ export const RightNavigationModule = () => {
           />
         ),
       },
-      {
-        name: "bank",
-        button: (
-          <CircleButton
-            className={clsx({
-              hidden: !quests?.find((quest) => quest.name === QuestName.CreateArmy)?.claimed,
-            })}
-            image={BuildingThumbs.banks}
-            tooltipLocation="top"
-            label={banks}
-            active={isPopupOpen(banks)}
-            size="xl"
-            onClick={() => {
-              togglePopup(banks);
-            }}
-          />
-        ),
-      },
     ];
   }, [location, view, quests, openedPopups]);
 
