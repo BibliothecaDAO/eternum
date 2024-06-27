@@ -7,11 +7,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { useComponentValue } from "@dojoengine/react";
 import { ResourceBar } from "@/ui/components/bank/ResourceBar";
-import { resources } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 
 const LORDS_RESOURCE_ID = 253n;
-const OWNER_FEE = 0.05;
-const LP_FEE = 0.05;
+const OWNER_FEE = EternumGlobalConfig.banks.ownerFees / 2 ** 64;
+const LP_FEE = EternumGlobalConfig.banks.lpFees / 2 ** 64;
 
 export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint; entityId: bigint }) => {
   const {

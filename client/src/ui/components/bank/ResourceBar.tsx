@@ -44,7 +44,9 @@ export const ResourceBar = ({
     <div className="w-full bg-gold/10 rounded p-2 flex justify-between">
       <div className="self-center">
         {/* <span className="text-xs text-gold/70">You Pay</span> */}
-        <TextInput value={amount.toString()} onChange={(amount) => handleAmountChange(amount)} />
+        <div className="mb-2">
+          <TextInput value={amount.toString()} onChange={(amount) => handleAmountChange(amount)} />
+        </div>
         {!disableInput && (
           <div className="text-xs text-gold/70" onClick={() => handleAmountChange(selectedResourceBalance.toString())}>
             Max: {selectedResourceBalance}

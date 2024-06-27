@@ -1,7 +1,7 @@
 import devManifest from "../../contracts/manifests/dev/manifest.json";
 import productionManifest from "../../contracts/manifests/prod/manifest.json";
 
-import { EternumProvider, ResourcesIds } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, EternumProvider, ResourcesIds } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
 if (
@@ -33,7 +33,6 @@ const RESOURCE_PRECISION = 1000;
 // Banks
 const COORD_X = 2147483900;
 const COORD_Y = 2147483801;
-const BANK_OWNER_FEES = 922337203685477580n;
 
 const resourceIds = Object.values(ResourcesIds).filter((value) => typeof value === "number");
 
@@ -41,7 +40,7 @@ export const createAdminBank = async () => {
   const tx = await provider.create_admin_bank({
     signer: account,
     coord: { x: COORD_X, y: COORD_Y },
-    owner_fee_scaled: BANK_OWNER_FEES,
+    owner_fee_scaled: EternumGlobalConfig.banks.ownerFees,
   });
   console.log(`Creating admin bank ${tx.statusReceipt}...`);
 };

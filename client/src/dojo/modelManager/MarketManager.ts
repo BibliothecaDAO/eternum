@@ -119,7 +119,6 @@ export class MarketManager {
       slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
     }
 
-    console.log({ marketPrice, executionPrice, inputAmount, outputAmount, isSellingResource });
     return slippagePercentage;
   };
 
