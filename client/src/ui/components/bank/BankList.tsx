@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "@/ui/elements/tab";
 import { ResourceSwap } from "./Swap";
-import { BankEntityList } from "./BankEntityList";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "@/hooks/context/DojoContext";
@@ -9,6 +8,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { LiquidityTable } from "./LiquidityTable";
 import AddLiquidity from "./AddLiquidity";
 import { hexToAscii, numberToHex } from "@/ui/utils/utils";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 type BankListProps = {
   entity: any;
@@ -61,7 +61,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
   );
 
   return (
-    <div>
+    <div className="m-4">
       <div className="flex justify-between mb-4">
         <div>
           <h3>{entity.name}</h3>
@@ -72,7 +72,8 @@ export const BankPanel = ({ entity }: BankListProps) => {
         </div>
         <div className="border px-6 flex uppercase">
           <div className="font-bold self-center">
-            {bank && <div>{`Trading Fees: ${(Number(bank.owner_fee_scaled) / 2 ** 64) * 100}%`}</div>}{" "}
+            {bank && <div>{`Bank Fees: ${(Number(bank.owner_fee_scaled) / 2 ** 64) * 100}%`}</div>}{" "}
+            <div>{`LP Fees: ${(EternumGlobalConfig.banks.lpFees / 2 ** 64) * 100}%`}</div>
           </div>
         </div>
       </div>

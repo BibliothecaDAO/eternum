@@ -106,9 +106,21 @@ export class MarketManager {
     return Math.floor(payout);
   };
 
-  public slippage = (lordsAmount: number, resourceAmount: number) => {
+  // price difference between swapping 1 resource and swapping N resources
+  public slippage = (inputAmount: number, outputAmount: number, isSellingResource: boolean) => {
     const marketPrice = this.getMarketPrice();
-    return (marketPrice - lordsAmount / resourceAmount) * 100;
+    let executionPrice, slippagePercentage;
+
+    if (isSellingResource) {
+      executionPrice = outputAmount / inputAmount;
+      slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
+    } else {
+      executionPrice = inputAmount / outputAmount;
+      slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
+    }
+
+    console.log({ marketPrice, executionPrice, inputAmount, outputAmount, isSellingResource });
+    return slippagePercentage;
   };
 
   public getMyLP() {

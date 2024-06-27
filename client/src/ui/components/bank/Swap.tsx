@@ -124,7 +124,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
                 <>
                   <tr>
                     <td>Slippage:</td>
-                    <td>{marketManager.slippage(lordsAmount, resourceAmount).toFixed(2)} %</td>
+                    <td>{marketManager.slippage(lordsAmount, resourceAmount, isBuyResource).toFixed(2)} %</td>
                   </tr>
                   <tr>
                     <td>Bank Owner Fees:</td>
