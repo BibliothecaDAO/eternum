@@ -6,19 +6,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEntities } from "@/hooks/helpers/useEntities";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useMarketStore from "@/hooks/store/useMarketStore";
-import { useGetMyOffers } from "@/hooks/helpers/useTrade";
-import Button from "@/ui/elements/Button";
+import { useGetMyOffers, useSetMarket } from "@/hooks/helpers/useTrade";
 import { TransferBetweenEntities } from "./TransferBetweenEntities";
 import CircleButton from "@/ui/elements/CircleButton";
 import { HintModal } from "../hints/HintModal";
-import { JSX } from "react/jsx-runtime";
 import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
 import { useModal } from "@/hooks/store/useModal";
+import { Tabs } from "@/ui/elements/tab";
+import { BankPanel } from "../bank/BankList";
+import { MarketTradingHistory } from "./MarketTradingHistory";
 
 export const MarketModal = () => {
+  const [selectedTab, setSelectedTab] = useState(0);
+
   const { playerRealms } = useEntities();
 
   const { toggleModal } = useModal();
+
+  const { userTrades, bidOffers, askOffers, userHistory } = useSetMarket();
 
   //   TODO: This changes the realm, but if they are on hexception it doesn't change the location, so it's a bit confusing
   const { realmEntityId, setRealmEntityId } = useRealmStore();
@@ -26,31 +31,61 @@ export const MarketModal = () => {
   const selectedResource = useMarketStore((state) => state.selectedResource);
   const setSelectedResource = useMarketStore((state) => state.setSelectedResource);
 
-  const marketOffers = useMarketStore((state) => state.lordsMarket);
-  const myOffers = useGetMyOffers();
-
-  const bidOffers = useMemo(() => {
-    if (!marketOffers) return [];
-
-    return [...marketOffers, ...myOffers].filter(
-      (offer) => offer.takerGets.length === 1 && offer.takerGets[0]?.resourceId === ResourcesIds.Lords,
-    );
-  }, [marketOffers, myOffers]);
-
-  const askOffers = useMemo(() => {
-    if (!marketOffers) return [];
-
-    return [...marketOffers, ...myOffers].filter(
-      (offer) => offer.takerGets.length === 1 && offer.makerGets[0]?.resourceId === ResourcesIds.Lords,
-    );
-  }, [marketOffers, myOffers]);
-
-  const [panel, setPanel] = useState<"market" | "transfer">("market");
+  const tabs = useMemo(
+    () => [
+      {
+        key: "all",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Order Book</div>
+          </div>
+        ),
+        component: (
+          <MarketOrderPanel
+            resourceId={selectedResource}
+            entityId={realmEntityId}
+            resourceAskOffers={askOffers}
+            resourceBidOffers={bidOffers}
+          />
+        ),
+      },
+      {
+        key: "all",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Swap</div>
+          </div>
+        ),
+        component: <BankPanel entity={0n} />,
+      },
+      {
+        key: "all",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>History</div>
+          </div>
+        ),
+        component: (
+          <MarketTradingHistory userTrades={userTrades} entityId={realmEntityId} userTradingHistory={userHistory} />
+        ),
+      },
+      {
+        key: "all",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Transfer</div>
+          </div>
+        ),
+        component: <TransferView />,
+      },
+    ],
+    [selectedResource, realmEntityId, askOffers, bidOffers],
+  );
 
   return (
     <ModalContainer>
       <div className="container border mx-auto  grid grid-cols-12 bg-brown border-gold/30 clip-angled h-full row-span-12 ornate-borders">
-        <div className="col-span-12 border-b p-2 flex justify-between row-span-2">
+        <div className="col-span-12  p-2 flex justify-between row-span-2">
           <div className="self-center text-xl">
             <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(BigInt(trait))}>
               <SelectTrigger className="w-[180px]">
@@ -69,12 +104,6 @@ export const MarketModal = () => {
             <h2 className="text-center">The Lords Market</h2>
           </div>
           <div className="self-center flex gap-4">
-            <Button onClick={() => setPanel("market")} variant={panel == "market" ? "primary" : "default"}>
-              Market
-            </Button>
-            <Button onClick={() => setPanel("transfer")} variant={panel == "transfer" ? "primary" : "default"}>
-              Transfers
-            </Button>
             <CircleButton
               onClick={() => {
                 toggleModal(null);
@@ -96,17 +125,27 @@ export const MarketModal = () => {
             resourceBidOffers={bidOffers}
           />
         </div>
-        <div className="col-span-9 h-full row-span-10 overflow-y-auto">
-          {panel === "market" ? (
-            <MarketOrderPanel
-              resourceId={selectedResource}
-              entityId={realmEntityId}
-              resourceAskOffers={askOffers}
-              resourceBidOffers={bidOffers}
-            />
-          ) : (
-            <TransferView />
-          )}
+        <div className="col-span-9 h-full row-span-10 overflow-y-auto text-xl">
+          <Tabs
+            size="large"
+            selectedIndex={selectedTab}
+            onChange={(index: any) => setSelectedTab(index)}
+            className="h-full"
+          >
+            <div className="">
+              <Tabs.List>
+                {tabs.map((tab, index) => (
+                  <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+                ))}
+              </Tabs.List>
+            </div>
+
+            <Tabs.Panels className="overflow-hidden">
+              {tabs.map((tab, index) => (
+                <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+              ))}
+            </Tabs.Panels>
+          </Tabs>
         </div>
       </div>
     </ModalContainer>

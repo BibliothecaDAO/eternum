@@ -62,8 +62,8 @@ export const HexagonInformationPanel = () => {
 
   return (
     hexPosition && (
-      <div className="p-2">
-        <Coordinates position={hexPosition} />
+      <div className="p-2 h-full">
+        {/* <Coordinates position={hexPosition} /> */}
         {toShow.showSelectableUnits && (
           <SelectActiveArmy
             selectedEntity={panelSelectedEntity}
@@ -108,7 +108,7 @@ const SelectActiveArmy = ({
   userAttackingArmies: ArmyInfo[];
 }) => {
   return (
-    <div className="self-center flex flex-col justify-between w-full">
+    <div className="absolute top-[-1.5vh] left-[25%] w-60 ornate-borders">
       <Select
         value={selectedEntity?.id.toString() || ""}
         onValueChange={(a: string) => {

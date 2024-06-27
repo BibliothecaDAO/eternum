@@ -67,6 +67,8 @@ export interface CombatInfo {
 
 /// TRADING
 export interface MarketInterface {
+  makerName: string;
+  originName: string;
   tradeId: bigint;
   makerId: bigint;
   takerId: bigint;

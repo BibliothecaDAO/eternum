@@ -10,6 +10,8 @@ import useBlockchainStore from "../store/useBlockchainStore";
 import useMarketStore, { isLordsMarket } from "../store/useMarketStore";
 import { useEntityQuery } from "@dojoengine/react";
 import { useEntities } from "./useEntities";
+import { shortString } from "starknet";
+import { getRealmNameById } from "@/ui/utils/realms";
 
 type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -24,7 +26,7 @@ type TradeResources = {
 export function useTrade() {
   const {
     setup: {
-      components: { Resource, Trade, Realm, DetachedResource },
+      components: { Resource, Trade, Realm, DetachedResource, EntityName },
     },
   } = useDojo();
 
@@ -77,8 +79,14 @@ export function useTrade() {
         if (trade) {
           const { takerGets, makerGets } = getTradeResources(trade.trade_id);
           const makerRealm = getComponentValue(Realm, getEntityIdFromKeys([trade.maker_id]));
+
+          const makerName = getComponentValue(EntityName, getEntityIdFromKeys([trade.maker_id]))?.name;
+
+          const realm = getComponentValue(Realm, getEntityIdFromKeys([trade.maker_id]));
           if (trade.expires_at > nextBlockTimestamp) {
             return {
+              makerName: shortString.decodeShortString(makerName?.toString() || ""),
+              originName: getRealmNameById(BigInt(realm?.realm_id || 0n)),
               tradeId: trade.trade_id,
               makerId: trade.maker_id,
               takerId: trade.taker_id,
@@ -163,27 +171,51 @@ export function useSetMarket() {
   const { playerRealms } = useEntities();
   const realmEntityIds = playerRealms().map((realm: any) => realm.entity_id);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const refresh = useMarketStore((state) => state.refresh);
-  const setRefresh = useMarketStore((state) => state.setRefresh);
-  const [isComputed, setIsComputed] = useState(false);
-  const { computeTrades } = useTrade();
-  const setMarkets = useMarketStore((state) => state.setMarkets);
 
-  // note: market should only be computed once at the beginning and can be reloaded
-  useEffect(() => {
-    if ((nextBlockTimestamp && realmEntityIds.length > 0 && !isComputed) || refresh) {
-      const entityIds = Array.from(runQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: 0n })]));
-      // comptue trades and filter out player trades
-      const trades = computeTrades(entityIds, nextBlockTimestamp!).filter(
-        (trade) => !realmEntityIds.includes(trade.makerId),
-      );
-      const generalMarket = trades.filter((order) => !isLordsMarket(order));
-      const lordsMarket = trades.filter((order) => isLordsMarket(order));
-      setMarkets([...generalMarket], [...lordsMarket]);
-      setIsComputed(true);
-      setRefresh(false);
-    }
-  }, [nextBlockTimestamp, realmEntityIds, refresh]);
+  const { computeTrades } = useTrade();
+
+  const allMarket = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: 0n })]);
+
+  const allHistory = useEntityQuery([HasValue(Status, { value: 1n })]);
+
+  const allTrades = useMemo(() => {
+    return computeTrades(allMarket, nextBlockTimestamp!);
+  }, [allMarket]);
+
+  const allUserHistory = useMemo(() => {
+    return computeTrades(allHistory, nextBlockTimestamp!);
+  }, [allHistory]);
+
+  const userTrades = useMemo(() => {
+    return allTrades.filter((trade) => realmEntityIds.includes(trade.makerId));
+  }, [allTrades]);
+
+  const userHistory = useMemo(() => {
+    return allUserHistory.filter((trade) => realmEntityIds.includes(trade.makerId));
+  }, [allUserHistory]);
+
+  const bidOffers = useMemo(() => {
+    if (!allTrades) return [];
+
+    return [...allTrades].filter(
+      (offer) => offer.takerGets.length === 1 && offer.takerGets[0]?.resourceId === ResourcesIds.Lords,
+    );
+  }, [allTrades]);
+
+  const askOffers = useMemo(() => {
+    if (!allTrades) return [];
+
+    return [...allTrades].filter(
+      (offer) => offer.takerGets.length === 1 && offer.makerGets[0]?.resourceId === ResourcesIds.Lords,
+    );
+  }, [allTrades]);
+
+  return {
+    userTrades,
+    userHistory,
+    bidOffers,
+    askOffers,
+  };
 }
 
 export function useSetDirectOffers() {

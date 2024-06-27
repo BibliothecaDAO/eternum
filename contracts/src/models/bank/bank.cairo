@@ -11,13 +11,3 @@ struct Bank {
     exists: bool,
 }
 
-// Used as helper struct throughout the world
-#[derive(Copy, Drop, Serde)]
-#[dojo::model]
-struct BankAccounts {
-    #[key]
-    bank_entity_id: u128,
-    #[key]
-    owner: ContractAddress,
-    entity_id: u128,
-}

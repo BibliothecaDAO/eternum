@@ -26,9 +26,9 @@ export const EternumGlobalConfig = {
     workerHuts: 5,
   },
   exploration: {
-    wheatBurn: 50,
-    fishBurn: 50,
-    reward: 20,
+    wheatBurn: 100,
+    fishBurn: 100,
+    reward: 750,
     shardsMinesFailProbability: 99000,
   },
   tick: {
@@ -37,7 +37,7 @@ export const EternumGlobalConfig = {
   },
   carryCapacity: {
     donkey: 100,
-    army: 100,
+    army: 10,
   },
   speed: {
     donkey: 60,

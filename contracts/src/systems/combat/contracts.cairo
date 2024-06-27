@@ -43,7 +43,9 @@ trait ICombatContract<TContractState> {
     /// - For a roaming army:
     ///     - Configures the army's movement speed and carrying capacity based on game world settings.
     ///     - Initializes the army's stamina for map exploration.
-    fn army_create(army_owner_id: u128, is_defensive_army: bool) -> u128;
+    fn army_create(
+        ref world: IWorldDispatcher, army_owner_id: u128, is_defensive_army: bool
+    ) -> u128;
 
     /// Purchases and adds troops to an existing army entity.
     ///
@@ -71,7 +73,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn army_buy_troops(army_id: u128, payer_id: u128, troops: Troops);
+    fn army_buy_troops(ref world: IWorldDispatcher, army_id: u128, payer_id: u128, troops: Troops);
 
     /// Transfer of troops from one army to another.
     ///
@@ -102,7 +104,9 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn army_merge_troops(from_army_id: u128, to_army_id: u128, troops: Troops);
+    fn army_merge_troops(
+        ref world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops
+    );
 
     /// Initiates a battle between an attacking and defending army within the game world.
     ///
@@ -156,7 +160,7 @@ trait ICombatContract<TContractState> {
     ///             
     /// # Returns:
     /// * None
-    fn battle_start(attacking_army_id: u128, defending_army_id: u128);
+    fn battle_start(ref world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128);
 
     /// Join an existing battle with the specified army, assigning it to a specific side in the battle.
     ///
@@ -205,7 +209,9 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_join(battle_id: u128, battle_side: BattleSide, army_id: u128);
+    fn battle_join(
+        ref world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128
+    );
 
     /// Allows an army to leave an ongoing battle, releasing its resources and restoring its mobility 
     /// (if it was previously mobile).
@@ -262,7 +268,7 @@ trait ICombatContract<TContractState> {
     /// 
     /// # Returns:
     /// * None
-    fn battle_leave(battle_id: u128, army_id: u128);
+    fn battle_leave(ref world: IWorldDispatcher, battle_id: u128, army_id: u128);
 
     /// Pillage a structure.
     ///
@@ -309,7 +315,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_pillage(army_id: u128, structure_id: u128);
+    fn battle_pillage(ref world: IWorldDispatcher, army_id: u128, structure_id: u128);
 
     /// Claims ownership of a non realm structure by an army after meeting all necessary conditions.
     ///
@@ -345,7 +351,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_claim(army_id: u128, structure_id: u128);
+    fn battle_claim(ref world: IWorldDispatcher, army_id: u128, structure_id: u128);
 }
 
 
@@ -401,7 +407,8 @@ mod combat_systems {
     use eternum::utils::random;
     use super::ICombatContract;
 
-    #[derive(Drop, starknet::Event)]
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
     struct PillageEvent {
         #[key]
         structure_id: ID,
@@ -414,16 +421,11 @@ mod combat_systems {
         destroyed_building_category: BuildingCategory
     }
 
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        PillageEvent: PillageEvent,
-    }
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
         fn army_create(
-            world: IWorldDispatcher, army_owner_id: u128, is_defensive_army: bool
+            ref world: IWorldDispatcher, army_owner_id: u128, is_defensive_army: bool
         ) -> u128 {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
@@ -508,7 +510,9 @@ mod combat_systems {
         }
 
 
-        fn army_buy_troops(world: IWorldDispatcher, army_id: u128, payer_id: u128, troops: Troops) {
+        fn army_buy_troops(
+            ref world: IWorldDispatcher, army_id: u128, payer_id: u128, troops: Troops
+        ) {
             // ensure caller owns the entity paying
             get!(world, payer_id, EntityOwner).assert_caller_owner(world);
 
@@ -590,7 +594,7 @@ mod combat_systems {
 
 
         fn army_merge_troops(
-            world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops,
+            ref world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops,
         ) {
             // ensure caller owns from and to armies
             get!(world, from_army_id, EntityOwner).assert_caller_owner(world);
@@ -650,7 +654,9 @@ mod combat_systems {
         }
 
 
-        fn battle_start(world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128) {
+        fn battle_start(
+            ref world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128
+        ) {
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             attacking_army.assert_not_in_battle();
 
@@ -735,7 +741,7 @@ mod combat_systems {
 
 
         fn battle_join(
-            world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128
+            ref world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128
         ) {
             assert!(battle_side != BattleSide::None, "choose correct battle side");
 
@@ -813,7 +819,7 @@ mod combat_systems {
         }
 
 
-        fn battle_leave(world: IWorldDispatcher, battle_id: u128, army_id: u128) {
+        fn battle_leave(ref world: IWorldDispatcher, battle_id: u128, army_id: u128) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -828,7 +834,7 @@ mod combat_systems {
         }
 
 
-        fn battle_claim(world: IWorldDispatcher, army_id: u128, structure_id: u128) {
+        fn battle_claim(ref world: IWorldDispatcher, army_id: u128, structure_id: u128) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -883,7 +889,7 @@ mod combat_systems {
         }
 
 
-        fn battle_pillage(world: IWorldDispatcher, army_id: u128, structure_id: u128,) {
+        fn battle_pillage(ref world: IWorldDispatcher, army_id: u128, structure_id: u128,) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -1171,22 +1177,18 @@ mod combat_systems {
             let army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
             emit!(
                 world,
-                (
-                    Event::PillageEvent(
-                        PillageEvent {
-                            structure_id,
-                            attacker_realm_entity_id: army_owner_entity_id,
-                            army_id,
-                            winner: if *attack_successful {
-                                BattleSide::Attack
-                            } else {
-                                BattleSide::Defence
-                            },
-                            pillaged_resources: pillaged_resources.span(),
-                            destroyed_building_category
-                        }
-                    ),
-                )
+                (PillageEvent {
+                    structure_id,
+                    attacker_realm_entity_id: army_owner_entity_id,
+                    army_id,
+                    winner: if *attack_successful {
+                        BattleSide::Attack
+                    } else {
+                        BattleSide::Defence
+                    },
+                    pillaged_resources: pillaged_resources.span(),
+                    destroyed_building_category
+                }),
             );
         }
     }

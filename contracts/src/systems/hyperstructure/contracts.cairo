@@ -2,9 +2,12 @@ use eternum::models::position::Coord;
 
 #[dojo::interface]
 trait IHyperstructureSystems {
-    fn create(creator_entity_id: u128, coord: Coord) -> u128;
+    fn create(ref world: IWorldDispatcher, creator_entity_id: u128, coord: Coord) -> u128;
     fn contribute_to_construction(
-        hyperstructure_entity_id: u128, contributor_entity_id: u128, contributions: Span<(u8, u128)>
+        ref world: IWorldDispatcher,
+        hyperstructure_entity_id: u128,
+        contributor_entity_id: u128,
+        contributions: Span<(u8, u128)>
     );
 }
 
@@ -30,22 +33,17 @@ mod hyperstructure_systems {
         InternalTravelSystemsImpl
     };
 
-    #[derive(Drop, starknet::Event)]
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
     struct HyperstructureFinished {
         hyperstructure_entity_id: u128,
         timestamp: u64,
     }
 
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        HyperstructureFinished: HyperstructureFinished,
-    }
-
 
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
-        fn create(world: IWorldDispatcher, creator_entity_id: u128, coord: Coord) -> u128 {
+        fn create(ref world: IWorldDispatcher, creator_entity_id: u128, coord: Coord) -> u128 {
             get!(world, creator_entity_id, Owner).assert_caller_owner();
 
             InternalTravelSystemsImpl::assert_tile_explored(world, coord);
@@ -93,7 +91,7 @@ mod hyperstructure_systems {
         }
 
         fn contribute_to_construction(
-            world: IWorldDispatcher,
+            ref world: IWorldDispatcher,
             hyperstructure_entity_id: u128,
             contributor_entity_id: u128,
             contributions: Span<(u8, u128)>
@@ -120,14 +118,7 @@ mod hyperstructure_systems {
                     world, hyperstructure_entity_id
                 )) {
                 let timestamp = starknet::get_block_timestamp();
-                emit!(
-                    world,
-                    (
-                        Event::HyperstructureFinished(
-                            HyperstructureFinished { hyperstructure_entity_id, timestamp }
-                        ),
-                    )
-                );
+                emit!(world, (HyperstructureFinished { hyperstructure_entity_id, timestamp }),);
             }
         }
     }

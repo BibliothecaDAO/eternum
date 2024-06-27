@@ -170,11 +170,16 @@ impl TroopsImpl of TroopsTrait {
         return (enemy_delta_abs, self_delta_abs);
     }
 
-    /// @dev Calculates the net combat strength of one troop against another, factoring in troop-specific strengths and advantages/disadvantages.
-    /// @param self Reference to the instance of the Troops struct representing the attacking troops.
-    /// @param enemy_troops Reference to the instance of the Troops struct representing the defending troops.
-    /// @param troop_config Configuration object containing strength and advantage/disadvantage percentages for each troop type.
-    /// @return The net combat strength as an integer, where a positive number indicates a strength advantage for the attacking troops.
+    /// @dev Calculates the net combat strength of one troop against another, factoring in
+    /// troop-specific strengths and advantages/disadvantages.
+    /// @param self Reference to the instance of the Troops struct representing the attacking
+    /// troops.
+    /// @param enemy_troops Reference to the instance of the Troops struct representing the
+    /// defending troops.
+    /// @param troop_config Configuration object containing strength and advantage/disadvantage
+    /// percentages for each troop type.
+    /// @return The net combat strength as an integer, where a positive number indicates a strength
+    /// advantage for the attacking troops.
     fn strength_against(
         self: @Troops,
         self_health: @Health,
@@ -267,10 +272,10 @@ impl TroopsImpl of TroopsTrait {
         health.increase_by(self.full_health(troop_config));
     }
 
-    /// Get the actual count of a troop type using 
-    ///  the percentage of health remaining 
-    /// 
-    /// e.g if there were originally 50 paladins with 10/100 health left, 
+    /// Get the actual count of a troop type using
+    ///  the percentage of health remaining
+    ///
+    /// e.g if there were originally 50 paladins with 10/100 health left,
     /// the actual remaining paladin count is 50 * 10 /100 = 5;
 
     fn actual_type_count(self: Troops, _type: TroopType, health: @Health) -> u64 {
@@ -287,17 +292,17 @@ impl TroopsImpl of TroopsTrait {
         ((count.into() * *health.current) / (*health).lifetime).try_into().unwrap()
     }
 
-    /// Get the actual count of a all troops using 
-    /// the percentage of health remaining 
-    /// 
+    /// Get the actual count of a all troops using
+    /// the percentage of health remaining
+    ///
     /// e.g if there were originally 50 paladins, 60 knights and 70 crossbowmen
-    /// and with 10/100 health left, the actual remaining 
+    /// and with 10/100 health left, the actual remaining
     /// paladin count is 50 * 10 /100 = 5;
     /// knight count is 60 * 10 /100 = 6;
     /// crossbowman count is 70 * 10 /100 = 7;
-    /// 
-    /// so total is 5 + 6 + 7 = 18 
-    /// 
+    ///
+    /// so total is 5 + 6 + 7 = 18
+    ///
     fn actual_total_count(self: Troops, health: @Health) -> u64 {
         (self.actual_type_count(TroopType::Knight, health)
             + self.actual_type_count(TroopType::Paladin, health)
@@ -590,8 +595,8 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                                     world, resource_type, to_army_resource.balance
                                 );
                         } else {
-                            // army won or drew so it can leave with its resources 
-                            // 
+                            // army won or drew so it can leave with its resources
+                            //
                             // remove items from from battle escrow
                             let mut escrow_resource = ResourceImpl::get(
                                 world, (escrow_id, resource_type)
@@ -673,10 +678,10 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
 #[generate_trait]
 impl BattleImpl of BattleTrait {
-    /// This function updated the armies health and duration 
+    /// This function updated the armies health and duration
     /// of battle according to the set delta and battle duration
-    /// 
-    /// Update state should be called before reading 
+    ///
+    /// Update state should be called before reading
     /// battle model values so that the correct values
     /// are gotten
     fn update_state(ref self: Battle) {
@@ -690,15 +695,15 @@ impl BattleImpl of BattleTrait {
     }
     /// This function calculates the delta (rate at which health goes down per second)
     /// and therefore, the duration of tha battle.
-    /// 
-    /// Reset delta should be called ONLY when the armies in the 
+    ///
+    /// Reset delta should be called ONLY when the armies in the
     /// battle have changed. e.g when a new army is added to defence
-    /// or attack. 
+    /// or attack.
     fn reset_delta(ref self: Battle, troop_config: TroopConfig) {
-        // ensure state has been updated 
+        // ensure state has been updated
         assert!(self.last_updated == starknet::get_block_timestamp(), "state not updated");
 
-        // reset attack and defence delta 
+        // reset attack and defence delta
         let (attack_delta, defence_delta) = self
             .attack_army
             .troops
@@ -803,12 +808,12 @@ mod tests {
         }
     }
 
-    fn mock_troops(a: u32, b: u32, c: u32) -> Troops {
+    fn mock_troops(a: u64, b: u64, c: u64) -> Troops {
         Troops { knight_count: a, paladin_count: b, crossbowman_count: c, }
     }
 
 
-    fn mock_battle(attack_troops_each: u32, defence_troops_each: u32) -> Battle {
+    fn mock_battle(attack_troops_each: u64, defence_troops_each: u64) -> Battle {
         let troop_config = mock_troop_config();
         let attack_troops = mock_troops(attack_troops_each, attack_troops_each, attack_troops_each);
         let defence_troops = mock_troops(
@@ -836,7 +841,13 @@ mod tests {
             attack_delta: 0,
             defence_delta: 0,
             last_updated: starknet::get_block_timestamp(),
-            duration_left: 0
+            duration_left: 0,
+            defence_army_lifetime: BattleArmy {
+                troops: defence_troops, battle_id: 0, battle_side: BattleSide::Defence
+            },
+            attack_army_lifetime: BattleArmy {
+                troops: attack_troops, battle_id: 0, battle_side: BattleSide::Attack
+            },
         };
 
         battle.reset_delta(mock_troop_config());
@@ -901,7 +912,7 @@ mod tests {
         let mut battle = mock_battle(attack_troop_each, defence_troop_each);
         assert!(battle.duration_left > 0, "duration should be more than 0 ");
 
-        // move time up to battle duration 
+        // move time up to battle duration
         starknet::testing::set_block_timestamp(battle.duration_left);
         battle.update_state();
         assert!(battle.has_ended() == true, "battle should have ended");
@@ -1026,7 +1037,7 @@ mod tests {
         world.uuid(); // use id 0;
 
         //////////////////////    Defence Army    /////////////////////////
-        /// 
+        ///
         // recreate defense army for testing
         let defence_army = Army {
             entity_id: world.uuid().into(),
@@ -1046,7 +1057,7 @@ mod tests {
         battle.deposit_balance(world, defence_army, defence_army_protectee);
 
         //////////////////////    Attack Army    /////////////////////////
-        /// 
+        ///
         // recreate army for testing
         let attack_army = Army {
             entity_id: world.uuid().into(),
@@ -1118,7 +1129,7 @@ mod tests {
         let world = spawn_eternum();
         world.uuid(); // use id 0;
         //////////////////////    Defence Army    /////////////////////////
-        /// 
+        ///
         // recreate defense army for testing
         let defence_army = Army {
             entity_id: world.uuid().into(),
@@ -1138,7 +1149,7 @@ mod tests {
         battle.deposit_balance(world, defence_army, defence_army_protectee);
 
         //////////////////////    Attack Army    /////////////////////////
-        /// 
+        ///
         // recreate army for testing
         let attack_army = Army {
             entity_id: world.uuid().into(),
@@ -1216,7 +1227,7 @@ mod tests {
         world.uuid(); // use id 0;
 
         //////////////////////    Defence Army    /////////////////////////
-        /// 
+        ///
         // recreate defense army for testing
         let defence_army = Army {
             entity_id: world.uuid().into(),
@@ -1236,7 +1247,7 @@ mod tests {
         battle.deposit_balance(world, defence_army, defence_army_protectee);
 
         //////////////////////    Attack Army    /////////////////////////
-        /// 
+        ///
         // recreate attack army for testing
         let attack_army = Army {
             entity_id: world.uuid().into(),
@@ -1313,17 +1324,23 @@ mod tests {
 //     print!("\n\n Defence Army health: {} \n\n", battle.defence_army_health.current);
 //     print!("\n\n Attack delta: {} \n\n", battle.attack_delta);
 
-//     print!("\n\n Scale A: {} \n\n",battle.attack_army.troops.count() / battle.defence_army.troops.count());
-//     print!("\n\n Scale B: {} \n\n", battle.defence_army.troops.count() /battle.attack_army.troops.count());
+//     print!("\n\n Scale A: {} \n\n",battle.attack_army.troops.count() /
+//     battle.defence_army.troops.count());
+//     print!("\n\n Scale B: {} \n\n", battle.defence_army.troops.count()
+//     /battle.attack_army.troops.count());
 //     print!("\n\n Duration in Seconds: {} \n\n", battle.duration_left);
 //     print!("\n\n Duration in Minutes: {} \n\n", battle.duration_left / 60);
 //     print!("\n\n Duration in Hours: {} \n\n", battle.duration_left / (60 * 60));
 
 //     let divisior = 8;
-//     let attacker_h_left = battle.attack_army_health.current - (battle.defence_delta.into() * (battle.duration_left.into() / divisior ));
-//     let attacker_ratio = (battle.attack_army_health.current - attacker_h_left) * 100 /  battle.attack_army_health.current;
-//     let defence_h_left = battle.defence_army_health.current - (battle.attack_delta.into() * (battle.duration_left.into() / divisior ));
-//     let defence_ratio = (battle.defence_army_health.current - defence_h_left) * 100 / battle.defence_army_health.current;
+//     let attacker_h_left = battle.attack_army_health.current - (battle.defence_delta.into() *
+//     (battle.duration_left.into() / divisior ));
+//     let attacker_ratio = (battle.attack_army_health.current - attacker_h_left) * 100 /
+//     battle.attack_army_health.current;
+//     let defence_h_left = battle.defence_army_health.current - (battle.attack_delta.into() *
+//     (battle.duration_left.into() / divisior ));
+//     let defence_ratio = (battle.defence_army_health.current - defence_h_left) * 100 /
+//     battle.defence_army_health.current;
 
 //     print!("\n\n Pillage Attacker Loss: {}, Ratio is {}% \n\n", attacker_h_left, attacker_ratio);
 //     print!("\n\n Pillage Defender Loss: {}, Ratio is {}% \n\n", defence_h_left, defence_ratio);

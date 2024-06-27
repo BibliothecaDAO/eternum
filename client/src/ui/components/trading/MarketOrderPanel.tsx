@@ -18,6 +18,7 @@ import { useMemo, useState } from "react";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
+import { getRealmNameById } from "@/ui/utils/realms";
 
 export const MarketResource = ({
   entityId,
@@ -134,10 +135,10 @@ export const MarketOrders = ({
         </div>
       </div>
 
-      <div className="p-1 bg-white/5  flex-col flex gap-1 clip-angled-sm flex-grow border-gold/10 border">
-        <OrderRowHeader isBuy={isBuy} resourceId={resourceId} />
+      <div className="p-1 bg-white/5  flex-col flex gap-1 clip-angled-sm flex-grow border-gold/10 border overflow-y-scroll h-auto">
+        <OrderRowHeader resourceId={resourceId} />
 
-        <div className="flex-col flex gap-1 flex-grow overflow-y-auto">
+        <div className="flex-col flex gap-1 flex-grow overflow-y-auto h-96">
           {offers.map((offer, index) => (
             <OrderRow key={index} offer={offer} entityId={entityId} isBuy={isBuy} />
           ))}
@@ -149,15 +150,20 @@ export const MarketOrders = ({
   );
 };
 
-export const OrderRowHeader = ({ isBuy, resourceId }: { isBuy: boolean; resourceId: number }) => {
+export const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
   return (
     <div className="grid grid-cols-5 gap-2 p-2 uppercase text-xs font-bold ">
       <div>qty.</div>
       <div>dist.</div>
       <div className="flex">
-        <ResourceIcon size="xs" resource={"Lords"} />
-        per/
-        <ResourceIcon size="xs" resource={findResourceById(resourceId)?.trait || ""} />
+        {resourceId && (
+          <>
+            {" "}
+            <ResourceIcon size="xs" resource={"Lords"} />
+            per/
+            <ResourceIcon size="xs" resource={findResourceById(resourceId)?.trait || ""} />
+          </>
+        )}
       </div>
       <div className="flex">cost</div>
       <div className="ml-auto">Action</div>
@@ -278,7 +284,7 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
         isSelf ? "bg-blueish/10" : "bg-white/10"
       }`}
     >
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-5 gap-1">
         <div className={`flex gap-1 font-bold ${isBuy ? "text-red" : "text-green"} `}>
           {!enoughDonkeys && (
             <div className="bg-red rounded-full animate-pulse">
@@ -289,7 +295,7 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
           {getsDisplay}
         </div>
         <div>{travelTime}hrs</div>
-        <div className="flex gap-1">{offer.perLords.toFixed(2)}</div>
+        <div className="flex gap-1 text-green">{offer.perLords.toFixed(2)}</div>
         <div className={`flex gap-1 font-bold ${isBuy ? "text-green" : "text-red"}`}>
           <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />
           {currencyFormat(getTotalLords, 0)}
@@ -320,6 +326,10 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
             {loading ? "cancelling" : "cancel"}
           </Button>
         )}
+        <div className="col-span-2 text-xxs text-gold/50 uppercase">
+          expire: {new Date(offer.expiresAt * 1000).toLocaleString()}
+        </div>
+        <div className="col-span-3 text-xxs uppercase text-right text-gold/50">{offer.originName}</div>
       </div>
     </div>
   );

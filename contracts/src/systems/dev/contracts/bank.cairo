@@ -4,14 +4,14 @@ use eternum::models::position::{Coord};
 
 #[dojo::interface]
 trait IBankSystems {
-    fn create_admin_bank(coord: Coord, owner_fee_scaled: u128) -> (ID, ID);
+    fn create_admin_bank(ref world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128) -> ID;
 }
 
 #[dojo::contract]
 mod dev_bank_systems {
     use eternum::alias::ID;
     use eternum::constants::{WORLD_CONFIG_ID, ResourceTypes};
-    use eternum::models::bank::bank::{BankAccounts, Bank};
+    use eternum::models::bank::bank::{Bank};
     use eternum::models::config::{BankConfig};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
@@ -27,8 +27,8 @@ mod dev_bank_systems {
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_admin_bank(
-            self: @ContractState, world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128,
-        ) -> (ID, ID) {
+            ref world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128,
+        ) -> ID {
             // explore the tile
             InternalMapSystemsImpl::explore(world, 0_u128, coord, array![].span());
 
@@ -45,22 +45,7 @@ mod dev_bank_systems {
                 )
             );
 
-            // bank account
-            set!(
-                world,
-                (
-                    BankAccounts {
-                        bank_entity_id: ADMIN_BANK_ENTITY_ID,
-                        owner: admin,
-                        entity_id: ADMIN_BANK_ACCOUNT_ENTITY_ID
-                    },
-                    Position { entity_id: ADMIN_BANK_ACCOUNT_ENTITY_ID, x: coord.x, y: coord.y },
-                    // todo: let's decide between owner and entity owner
-                    Owner { entity_id: ADMIN_BANK_ACCOUNT_ENTITY_ID, address: admin },
-                )
-            );
-
-            (ADMIN_BANK_ENTITY_ID, ADMIN_BANK_ACCOUNT_ENTITY_ID)
+            ADMIN_BANK_ENTITY_ID
         }
     }
 }

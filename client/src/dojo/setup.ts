@@ -14,12 +14,13 @@ export async function setup({ ...config }: DojoConfig) {
   const updates = await createUpdates();
 
   // fetch all existing entities from torii
-  await getSyncEntities(network.toriiClient, network.contractComponents as any, [], 1000);
+  const sync = await getSyncEntities(network.toriiClient, network.contractComponents as any, [], 1000);
 
   return {
     network,
     components,
     systemCalls,
     updates,
+    sync,
   };
 }

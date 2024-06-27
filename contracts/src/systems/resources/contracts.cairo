@@ -3,9 +3,24 @@ use eternum::alias::ID;
 
 #[dojo::interface]
 trait IResourceSystems {
-    fn approve(entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>);
-    fn send(sender_entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>);
-    fn pickup(recipient_entity_id: ID, owner_entity_id: ID, resources: Span<(u8, u128)>);
+    fn approve(
+        ref world: IWorldDispatcher,
+        entity_id: ID,
+        recipient_entity_id: ID,
+        resources: Span<(u8, u128)>
+    );
+    fn send(
+        ref world: IWorldDispatcher,
+        sender_entity_id: ID,
+        recipient_entity_id: ID,
+        resources: Span<(u8, u128)>
+    );
+    fn pickup(
+        ref world: IWorldDispatcher,
+        recipient_entity_id: ID,
+        owner_entity_id: ID,
+        resources: Span<(u8, u128)>
+    );
 }
 
 #[dojo::contract]
@@ -43,7 +58,8 @@ mod resource_systems {
         InternalTravelSystemsImpl as travel
     };
 
-    #[derive(Drop, starknet::Event)]
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
     struct Transfer {
         #[key]
         recipient_entity_id: u128,
@@ -53,11 +69,6 @@ mod resource_systems {
         resources: Span<(u8, u128)>
     }
 
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        Transfer: Transfer,
-    }
 
     #[abi(embed_v0)]
     impl ResourceSystemsImpl of super::IResourceSystems<ContractState> {
@@ -70,7 +81,7 @@ mod resource_systems {
         /// * `resources` - The resources to approve.  
         ///      
         fn approve(
-            world: IWorldDispatcher,
+            ref world: IWorldDispatcher,
             entity_id: ID,
             recipient_entity_id: ID,
             resources: Span<(u8, u128)>
@@ -117,7 +128,7 @@ mod resource_systems {
         ///     the resource chest id
         ///
         fn send(
-            world: IWorldDispatcher,
+            ref world: IWorldDispatcher,
             sender_entity_id: ID,
             recipient_entity_id: ID,
             resources: Span<(u8, u128)>
@@ -152,7 +163,7 @@ mod resource_systems {
         ///    the resource chest id
         ///
         fn pickup(
-            world: IWorldDispatcher,
+            ref world: IWorldDispatcher,
             recipient_entity_id: ID,
             owner_entity_id: ID,
             resources: Span<(u8, u128)>
@@ -333,13 +344,7 @@ mod resource_systems {
 
             emit!(
                 world,
-                (
-                    Event::Transfer(
-                        Transfer {
-                            recipient_entity_id, sending_realm_id, sender_entity_id, resources
-                        }
-                    ),
-                )
+                (Transfer { recipient_entity_id, sending_realm_id, sender_entity_id, resources })
             );
         }
     }
