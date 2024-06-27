@@ -1,7 +1,7 @@
 #[dojo::interface]
 trait INameSystems {
-    fn set_address_name(name: felt252);
-    fn set_entity_name(entity_id: u128, name: felt252);
+    fn set_address_name(ref world: IWorldDispatcher, name: felt252);
+    fn set_entity_name(ref world: IWorldDispatcher, entity_id: u128, name: felt252);
 }
 
 #[dojo::contract]
@@ -11,7 +11,7 @@ mod name_systems {
 
     #[abi(embed_v0)]
     impl NameSystemsImpl of super::INameSystems<ContractState> {
-        fn set_address_name(world: IWorldDispatcher, name: felt252) {
+        fn set_address_name(ref world: IWorldDispatcher, name: felt252) {
             let caller = starknet::get_caller_address();
 
             // assert that name not set
@@ -22,7 +22,7 @@ mod name_systems {
             set!(world, (address_name));
         }
 
-        fn set_entity_name(world: IWorldDispatcher, entity_id: u128, name: felt252) {
+        fn set_entity_name(ref world: IWorldDispatcher, entity_id: u128, name: felt252) {
             get!(world, entity_id, EntityOwner).assert_caller_owner(world);
 
             set!(world, (EntityName { entity_id, name }));
