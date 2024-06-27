@@ -11,10 +11,7 @@ import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { AllResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
 import Button from "@/ui/elements/Button";
 import CircleButton from "@/ui/elements/CircleButton";
-import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BASE_POPULATION_CAPACITY, BuildingType, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
-import { useComponentValue } from "@dojoengine/react";
-import { getComponentValue } from "@dojoengine/recs";
+
 import { motion } from "framer-motion";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import clsx from "clsx";
@@ -36,7 +33,6 @@ export const RightNavigationModule = () => {
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
 
-  const setTooltip = useUIStore((state) => state.setTooltip);
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const openedPopups = useUIStore((state) => state.openedPopups);
@@ -49,24 +45,6 @@ export const RightNavigationModule = () => {
   const { getAllArrivalsWithResources } = useResources();
 
   const { toggleModal } = useModal();
-
-  const {
-    setup: {
-      components: { Population, BuildingQuantityv2 },
-    },
-  } = useDojo();
-
-  const population = useComponentValue(Population, getEntityIdFromKeys([BigInt(realmEntityId || "0")]));
-
-  const storehouses = useMemo(() => {
-    const quantity =
-      getComponentValue(
-        BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(realmEntityId || "0"), BigInt(BuildingType.Storehouse)]),
-      )?.value || 0;
-
-    return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
-  }, []);
 
   const navigation = useMemo(() => {
     return [
