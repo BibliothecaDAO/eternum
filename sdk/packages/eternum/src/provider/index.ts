@@ -369,7 +369,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { coord, owner_fee_scaled, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "bank_systems"),
+      contractAddress: getContractByName(this.manifest, "dev_bank_systems"),
       entrypoint: "create_admin_bank",
       calldata: [coord, owner_fee_scaled],
     });

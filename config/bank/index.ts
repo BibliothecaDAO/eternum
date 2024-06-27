@@ -35,18 +35,19 @@ const COORD_X = 2147483900;
 const COORD_Y = 2147483801;
 const BANK_OWNER_FEES = 922337203685477580n;
 
+const resourceIds = Object.values(ResourcesIds).filter((value) => typeof value === "number");
+
 export const createAdminBank = async () => {
   const tx = await provider.create_admin_bank({
     signer: account,
     coord: { x: COORD_X, y: COORD_Y },
     owner_fee_scaled: BANK_OWNER_FEES,
   });
-
   console.log(`Creating admin bank ${tx.statusReceipt}...`);
 };
 
 export const mintResources = async () => {
-  const totalResourceCount = Object.values(ResourcesIds).length - 1;
+  const totalResourceCount = resourceIds.length - 1;
   // mint lords
   const lordsTx = await provider.mint_resources({
     signer: account,
@@ -56,12 +57,13 @@ export const mintResources = async () => {
   console.log(`Minting lords ${lordsTx.statusReceipt}...`);
 
   // mint all other resources
-  const resources = Object.values(ResourcesIds).flatMap((resourceId) => {
+  const resources = resourceIds.flatMap((resourceId) => {
     if (resourceId === ResourcesIds.Lords) {
       return [];
     }
     return [resourceId, RESOURCE_LIQUIDITY * RESOURCE_PRECISION];
   });
+
   const resourcesTx = await provider.mint_resources({
     signer: account,
     receiver_id: ADMIN_BANK_ENTITY_ID,
@@ -71,9 +73,9 @@ export const mintResources = async () => {
 };
 
 export const addLiquidity = async () => {
-  Object.values(ResourcesIds).forEach(async (resourceId) => {
+  for (const resourceId of resourceIds) {
     if (resourceId === ResourcesIds.Lords) {
-      return;
+      continue;
     }
     const tx = await provider.add_liquidity({
       signer: account,
@@ -83,9 +85,8 @@ export const addLiquidity = async () => {
       resource_amount: RESOURCE_LIQUIDITY * RESOURCE_PRECISION,
       lords_amount: LORDS_LIQUIDITY_PER_RESOURCE * RESOURCE_PRECISION,
     });
-
     console.log(`Adding liquidity for ${resourceId} ${tx.statusReceipt}...`);
-  });
+  }
 };
 
 await createAdminBank();

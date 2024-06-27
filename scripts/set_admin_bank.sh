@@ -23,5 +23,5 @@ echo "----- Creating Admin Bank -----"
 #     bun --env-file=../client/.env.development ../config/bank/index.ts
 # fi
 
-bun --env-file=../client/.env.development ../config/bank/index.ts
+bun --env-file=../client/.env.local ../config/bank/index.ts
 
