@@ -5,7 +5,7 @@ import { useResources } from "@/hooks/helpers/useResources";
 import { useModal } from "@/hooks/store/useModal";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { banks, trade } from "@/ui/components/navigation/Config";
+import { trade } from "@/ui/components/navigation/Config";
 import { EntityResourceTable } from "@/ui/components/resources/EntityResourceTable";
 import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { AllResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
