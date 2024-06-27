@@ -51,20 +51,18 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
 
       {quest.steps &&
         quest.steps.map(({ description, completed }, index) => (
-          <div className="flex">
-            <div key={index} className="text-md mb-4 mr-4">
-              - {description}
-            </div>
+          <div className="flex" key={index}>
+            <div className="text-md mb-4 mr-4">- {description}</div>
             {completed ? <Check /> : <ShieldQuestion />}
           </div>
         ))}
 
       <div className="w-full">
         <div className="mb-1 font-bold">Quest Rewards</div>
-        {quest.prizes.map((a) => (
-          <div className="grid grid-cols-3 gap-3">
-            {QUEST_RESOURCES_SCALED[a.id].map((b) => (
-              <div className="grid gap-3">
+        {quest.prizes.map((a, index) => (
+          <div key={index} className="grid grid-cols-3 gap-3">
+            {QUEST_RESOURCES_SCALED[a.id].map((b, i) => (
+              <div key={i} className="grid gap-3">
                 {" "}
                 <ResourceCost resourceId={b.resource} amount={b.amount} />{" "}
               </div>

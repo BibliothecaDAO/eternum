@@ -1,4 +1,4 @@
-import { BurnerProvider, useBurner } from "@dojoengine/create-burner";
+import { BurnerManager, BurnerProvider, useBurner, useBurnerManager } from "@dojoengine/create-burner";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Account, AccountInterface, RpcProvider } from "starknet";
 import { SetupResult } from "../../dojo/setup";
@@ -93,7 +93,9 @@ export const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
     [rpcProvider, masterAddress, privateKey],
   );
 
-  const { create, list, get, account, select, isDeploying, clear } = useBurner();
+  const { create, list, get, account, select, isDeploying, clear } = useBurnerManager({
+    burnerManager: value.network.burnerManager,
+  });
 
   return (
     <DojoContext.Provider

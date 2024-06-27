@@ -3,3 +3,4 @@ packages:
   - "client"
   - "eternum-docs"
   - "config"
+  - "bot"

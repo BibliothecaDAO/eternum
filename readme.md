@@ -74,7 +74,7 @@ Install dojo via
 
 `curl -L https://install.dojoengine.org | bash`
 
-Make sure install the same version within the `Scarb.toml` file. Currently this is `0.6.1-alpha.4`
+Make sure install the same version within the `Scarb.toml` file. Currently this is `0.7.2`
 
 Eternum uses a pnpm workspace and bun for scripts to allow easy npm packages to be created. So you will need pnpm
 installed also.
