@@ -5,13 +5,20 @@ use eternum::alias::ID;
 #[dojo::interface]
 trait ILiquiditySystems {
     fn add(
+        ref world: IWorldDispatcher,
         bank_entity_id: u128,
         entity_id: u128,
         resource_type: u8,
         resource_amount: u128,
         lords_amount: u128,
     );
-    fn remove(bank_entity_id: u128, entity_id: u128, resource_type: u8, shares: Fixed) -> ID;
+    fn remove(
+        ref world: IWorldDispatcher,
+        bank_entity_id: u128,
+        entity_id: u128,
+        resource_type: u8,
+        shares: Fixed
+    ) -> ID;
 }
 
 #[dojo::contract]
@@ -21,13 +28,14 @@ mod liquidity_systems {
     // Eternum imports
     use eternum::alias::ID;
     use eternum::constants::ResourceTypes;
-    use eternum::models::bank::market::{Market, MarketTrait};
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
     use eternum::models::bank::liquidity::{Liquidity};
+    use eternum::models::bank::market::{Market, MarketTrait};
     use eternum::models::owner::{Owner, OwnerTrait};
+    use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
     use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
-    #[derive(Drop, starknet::Event)]
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
     struct LiquidityEvent {
         #[key]
         bank_entity_id: u128,
@@ -41,16 +49,10 @@ mod liquidity_systems {
         add: bool,
     }
 
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        LiquidityEvent: LiquidityEvent,
-    }
-
     #[abi(embed_v0)]
     impl LiquiditySystemsImpl of super::ILiquiditySystems<ContractState> {
         fn add(
-            world: IWorldDispatcher,
+            ref world: IWorldDispatcher,
             bank_entity_id: u128,
             entity_id: u128,
             resource_type: u8,
@@ -98,7 +100,7 @@ mod liquidity_systems {
 
 
         fn remove(
-            world: IWorldDispatcher,
+            ref world: IWorldDispatcher,
             bank_entity_id: u128,
             entity_id: u128,
             resource_type: u8,
@@ -168,19 +170,15 @@ mod liquidity_systems {
             };
             emit!(
                 world,
-                (
-                    Event::LiquidityEvent(
-                        LiquidityEvent {
-                            bank_entity_id: market.bank_entity_id,
-                            entity_id,
-                            resource_type: market.resource_type,
-                            lords_amount,
-                            resource_amount,
-                            resource_price: resource_price,
-                            add
-                        }
-                    ),
-                )
+                (LiquidityEvent {
+                    bank_entity_id: market.bank_entity_id,
+                    entity_id,
+                    resource_type: market.resource_type,
+                    lords_amount,
+                    resource_amount,
+                    resource_price: resource_price,
+                    add
+                })
             );
         }
     }

@@ -4,7 +4,7 @@ use eternum::models::position::{Coord};
 
 #[dojo::interface]
 trait IBankSystems {
-    fn create_admin_bank(coord: Coord, owner_fee_scaled: u128) -> ID;
+    fn create_admin_bank(ref world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128) -> ID;
 }
 
 #[dojo::contract]
@@ -27,7 +27,7 @@ mod dev_bank_systems {
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_admin_bank(
-            self: @ContractState, world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128,
+            ref world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128,
         ) -> ID {
             // explore the tile
             InternalMapSystemsImpl::explore(world, 0_u128, coord, array![].span());
