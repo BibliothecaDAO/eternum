@@ -176,23 +176,13 @@ export function useSetMarket() {
 
   const allMarket = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: 0n })]);
 
-  const allHistory = useEntityQuery([HasValue(Status, { value: 1n })]);
-
   const allTrades = useMemo(() => {
     return computeTrades(allMarket, nextBlockTimestamp!);
   }, [allMarket]);
 
-  const allUserHistory = useMemo(() => {
-    return computeTrades(allHistory, nextBlockTimestamp!);
-  }, [allHistory]);
-
   const userTrades = useMemo(() => {
     return allTrades.filter((trade) => realmEntityIds.includes(trade.makerId));
   }, [allTrades]);
-
-  const userHistory = useMemo(() => {
-    return allUserHistory.filter((trade) => realmEntityIds.includes(trade.makerId));
-  }, [allUserHistory]);
 
   const bidOffers = useMemo(() => {
     if (!allTrades) return [];
@@ -212,7 +202,6 @@ export function useSetMarket() {
 
   return {
     userTrades,
-    userHistory,
     bidOffers,
     askOffers,
   };

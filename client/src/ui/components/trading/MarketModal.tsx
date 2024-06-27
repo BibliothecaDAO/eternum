@@ -23,7 +23,7 @@ export const MarketModal = () => {
 
   const { toggleModal } = useModal();
 
-  const { userTrades, bidOffers, askOffers, userHistory } = useSetMarket();
+  const { userTrades, bidOffers, askOffers } = useSetMarket();
 
   //   TODO: This changes the realm, but if they are on hexception it doesn't change the location, so it's a bit confusing
   const { realmEntityId, setRealmEntityId } = useRealmStore();
@@ -65,9 +65,7 @@ export const MarketModal = () => {
             <div>History</div>
           </div>
         ),
-        component: (
-          <MarketTradingHistory userTrades={userTrades} entityId={realmEntityId} userTradingHistory={userHistory} />
-        ),
+        component: <MarketTradingHistory userTrades={userTrades} entityId={realmEntityId} />,
       },
       {
         key: "all",
