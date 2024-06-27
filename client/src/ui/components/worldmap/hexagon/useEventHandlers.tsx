@@ -41,11 +41,8 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   }, [hoveredHex, travelPaths, selectedEntity, explored, clickedHex, currentArmiesTick]);
 
   const hoverHandler = useCallback((e: any) => {
-    const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
-    if (!intersect) return;
-
-    const instanceId = intersect.instanceId;
-    const mesh = intersect.object;
+    const instanceId = e.instanceId;
+    const mesh = e.object;
     const pos = getPositionsAtIndex(mesh, instanceId);
     if (!pos) return;
 

@@ -47,11 +47,12 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
         <Billboard>
           <Image
             texture={armyLabel}
-            scale={3.5}
-            position={[0, 5, 0]}
+            scale={2.2}
+            position={[0, 5, 5]}
             side={THREE.DoubleSide}
             transparent
-            renderOrder={2}
+            renderOrder={5}
+            color={army.isMine ? [0, 1.5, 0] : undefined}
           />
         </Billboard>
         <ArmySelectionOverlay army={army} />

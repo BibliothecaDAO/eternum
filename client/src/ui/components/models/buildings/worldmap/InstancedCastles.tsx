@@ -31,7 +31,7 @@ export function InstancedCastles() {
     texture.minFilter = THREE.LinearFilter;
   });
   const particlesMaterial = new THREE.PointsMaterial();
-  particlesMaterial.size = 30;
+  particlesMaterial.size = 20;
   particlesMaterial.vertexColors = true;
   particlesMaterial.sizeAttenuation = true;
   particlesMaterial.transparent = true;
