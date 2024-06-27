@@ -37,8 +37,6 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
     } catch (error) {
       console.error("Failed to claim resources:", error);
       setIsLoading(false);
-    } finally {
-      setIsLoading(false);
     }
   };
 
