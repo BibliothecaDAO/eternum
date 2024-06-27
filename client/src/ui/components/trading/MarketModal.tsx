@@ -57,7 +57,7 @@ export const MarketModal = () => {
         key: "all",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Swap</div>
+            <div>AMM</div>
           </div>
         ),
         component: bank && <BankPanel entity={{ id: bank.entityId }} />,

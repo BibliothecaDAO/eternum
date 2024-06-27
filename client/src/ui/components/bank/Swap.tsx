@@ -73,7 +73,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
     }).finally(() => setIsLoading(false));
   }, [isBuyResource, buy_resources, sell_resources, account, bankEntityId, resourceId, resourceAmount, lordsAmount]);
 
-  const chosenResourceName = "$" + resources.find((r) => r.id === Number(resourceId))?.trait.toUpperCase();
+  const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 
   const renderResourceBar = useCallback(
     (disableInput: boolean, isLords: boolean) => (
@@ -137,7 +137,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
                     <td>LP Fees:</td>
                     <td>
                       {((isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toFixed(2)}{" "}
-                      {isBuyResource ? "$LORDS" : chosenResourceName}
+                      {isBuyResource ? "Lords" : chosenResourceName}
                     </td>
                   </tr>
                 </>

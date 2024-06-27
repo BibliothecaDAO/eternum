@@ -47,7 +47,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
     () => (
       <div className="flex flex-row">
         {resource?.trait && <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />}
-        <>$LORDS/{resource?.ticker}</>
+        <>Lords/{resource?.trait}</>
       </div>
     ),
     [resource],

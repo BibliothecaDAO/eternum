@@ -46,15 +46,6 @@ export const BankPanel = ({ entity }: BankListProps) => {
         key: "all",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>My Account</div>
-          </div>
-        ),
-        component: <BankEntityList entity={{ id: realmEntityId }} />,
-      },
-      {
-        key: "all",
-        label: (
-          <div className="flex relative group flex-col items-center">
             <div>Pools</div>
           </div>
         ),
