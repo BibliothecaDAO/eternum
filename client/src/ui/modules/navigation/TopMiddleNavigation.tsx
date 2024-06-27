@@ -5,7 +5,13 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
+import {
+  BASE_POPULATION_CAPACITY,
+  BuildingType,
+  EternumGlobalConfig,
+  Position,
+  STOREHOUSE_CAPACITY,
+} from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Crown, Landmark, Pickaxe, Sparkles } from "lucide-react";
@@ -13,8 +19,10 @@ import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
-import { motion } from "framer-motion";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { motion } from "framer-motion";
+import { useComponentValue } from "@dojoengine/react";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -52,7 +60,7 @@ export const TopMiddleNavigation = () => {
       if (b.category === "Realm") return 1;
       return a.category!.localeCompare(b.category!);
     });
-  }, [playerStructures().length]);
+  }, [playerStructures().length, realmEntityId]);
 
   const isHexView = useMemo(() => {
     return location.includes(`/hex`);
@@ -74,66 +82,131 @@ export const TopMiddleNavigation = () => {
 
     setRealmEntityId(BigInt(entityId));
   };
+  const setTooltip = useUIStore((state) => state.setTooltip);
+  const population = useComponentValue(
+    setup.components.Population,
+    getEntityIdFromKeys([BigInt(realmEntityId || "0")]),
+  );
+
+  const storehouses = useMemo(() => {
+    const quantity =
+      getComponentValue(
+        setup.components.BuildingQuantityv2,
+        getEntityIdFromKeys([BigInt(realmEntityId || "0"), BigInt(BuildingType.Storehouse)]),
+      )?.value || 0;
+
+    return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
+  }, []);
 
   return (
-    <motion.div className="flex ornate-borders-top bg-brown" variants={slideDown} initial="hidden" animate="visible">
-      <div className="self-center px-3 flex space-x-2">
-        <TickProgress />
-      </div>
+    <div className="ornate-borders bg-brown">
+      <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
+        <div className="self-center px-3 flex space-x-2 ">
+          <TickProgress />
+        </div>
 
-      <div className="flex min-w-96 gap-1  clip-angled  border-gradient py-2 px-4 text-gold bg-map   justify-center border-gold/50 border-b-2 text-center ">
-        <div className="self-center flex justify-between w-full">
-          <Select
-            value={realmEntityId.toString()}
-            onValueChange={(a: any) => {
-              !isHexView ? goToMapView(a) : goToHexView(a);
+        <div className="flex min-w-96 gap-1  clip-angled   py-2 px-4 text-gold bg-map   justify-center border-gold/50 text-center ">
+          <div className="self-center flex justify-between w-full">
+            <Select
+              value={realmEntityId.toString()}
+              onValueChange={(a: any) => {
+                !isHexView ? goToMapView(a) : goToHexView(a);
+              }}
+            >
+              <SelectTrigger className="">
+                <SelectValue placeholder="Select Realm" />
+              </SelectTrigger>
+              <SelectContent className="bg-brown ">
+                {structures.map((structure, index) => (
+                  <SelectItem
+                    className="flex justify-between text-sm"
+                    key={index}
+                    value={structure.entity_id?.toString() || ""}
+                  >
+                    <h5 className="self-center flex gap-4">
+                      {structureIcons[structure!.category!]}
+                      {structure.name}
+                    </h5>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            disabled={claimableQuestsLength > 0}
+            variant="primary"
+            onClick={() => {
+              if (location !== "/map") {
+                setIsLoadingScreenEnabled(true);
+                setTimeout(() => {
+                  setPreviewBuilding(null);
+                  setLocation("/map");
+                  if (hexPosition.col !== 0 && hexPosition.row !== 0) {
+                    const { col, row } = hexPosition;
+                    moveCameraToColRow(col, row, 0.01, true);
+                    setTimeout(() => {
+                      moveCameraToColRow(col, row, 1.5);
+                    }, 10);
+                  }
+                }, 300);
+              } else {
+                goToHexView(realmEntityId.toString());
+              }
             }}
           >
-            <SelectTrigger className="">
-              <SelectValue placeholder="Select Realm" />
-            </SelectTrigger>
-            <SelectContent className="bg-brown ">
-              {structures.map((structure, index) => (
-                <SelectItem
-                  className="flex justify-between text-sm"
-                  key={index}
-                  value={structure.entity_id?.toString() || ""}
-                >
-                  <h5 className="self-center flex gap-4">
-                    {structureIcons[structure!.category!]}
-                    {structure.name}
-                  </h5>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {location === "/map" ? "Hex" : "World"}
+          </Button>
         </div>
-        <Button
-          disabled={claimableQuestsLength > 0}
-          variant="primary"
-          onClick={() => {
-            if (location !== "/map") {
-              setIsLoadingScreenEnabled(true);
-              setTimeout(() => {
-                setPreviewBuilding(null);
-                setLocation("/map");
-                if (hexPosition.col !== 0 && hexPosition.row !== 0) {
-                  const { col, row } = hexPosition;
-                  moveCameraToColRow(col, row, 0.01, true);
-                  setTimeout(() => {
-                    moveCameraToColRow(col, row, 1.5);
-                  }, 10);
-                }
-              }, 300);
-            } else {
-              goToHexView(realmEntityId.toString());
-            }
-          }}
-        >
-          {location === "/map" ? "Hex" : "World"}
-        </Button>
+      </motion.div>
+
+      <div className="flex justify-between w-full bg-brown text-gold p-1 text-xs">
+        {population && (
+          <div
+            onMouseEnter={() => {
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <span className="whitespace-nowrap pointer-events-none text-sm capitalize">
+                    <span>
+                      {population.population} population / {population.capacity + BASE_POPULATION_CAPACITY} capacity
+                    </span>
+                    <br />
+                    <span>Build Workers huts to expand population</span>
+                  </span>
+                ),
+              });
+            }}
+            onMouseLeave={() => setTooltip(null)}
+            className=" px-3 flex gap-2"
+          >
+            <div className="uppercase font-bold">population</div>
+            {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
+          </div>
+        )}
+        {storehouses && (
+          <div
+            onMouseEnter={() => {
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <div className="whitespace-nowrap pointer-events-none text-sm capitalize">
+                    <span>This is the max per resource you can store</span>
+
+                    <br />
+                    <span>Build Storehouses to increase this.</span>
+                  </div>
+                ),
+              });
+            }}
+            onMouseLeave={() => setTooltip(null)}
+            className="px-3 flex gap-2"
+          >
+            <div className="uppercase font-bold">Store</div>
+            {storehouses.toLocaleString()}
+          </div>
+        )}
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -161,7 +234,7 @@ const TickProgress = () => {
         });
       }}
       onMouseLeave={() => setTooltip(null)}
-      className="self-center text-center  px-4 py-1 bg-brown text-gold border-gradient h5 clip-angled"
+      className="self-center text-center  px-4 py-1 bg-gold text-brown border-gradient  clip-angled"
     >
       {progress.toFixed()}%
     </div>

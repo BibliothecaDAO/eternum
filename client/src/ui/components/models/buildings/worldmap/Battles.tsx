@@ -3,8 +3,10 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { BattleLabel } from "@/ui/components/worldmap/armies/BattleLabel";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { Position } from "@bibliothecadao/eternum";
-import { useGLTF } from "@react-three/drei";
-import { useCallback, useMemo } from "react";
+import { useGLTF, Billboard, Image, useTexture } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useCallback, useMemo, useRef } from "react";
+import * as THREE from "three";
 
 export const Battles = () => {
   const setSelectedBattle = useUIStore((state) => state.setSelectedBattle);
@@ -37,9 +39,16 @@ export const Battles = () => {
 
 const BattleModel = ({ battle_id, position, onClick }: { battle_id: any; position: any; onClick: () => void }) => {
   const selectedBattle = useUIStore((state) => state.selectedBattle);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
 
-  const showCombatLabel = useMemo(() => {
-    return selectedBattle !== undefined && selectedBattle.id === BigInt(battle_id);
+  const armyLabel = useTexture("/textures/army_label.png", (texture) => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearFilter;
+  });
+
+  const showBattleLabel = useMemo(() => {
+    return selectedEntity === undefined && selectedBattle !== undefined && selectedBattle.id === BigInt(battle_id);
   }, [selectedBattle, battle_id]);
 
   const model = useGLTF("/models/buildings/barracks.glb");
@@ -47,10 +56,33 @@ const BattleModel = ({ battle_id, position, onClick }: { battle_id: any; positio
     return model.scene.clone();
   }, [model]);
 
+  const testRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (testRef.current) {
+      // make color pulse red based on time
+      const time = state.clock.getElapsedTime();
+      const material = testRef.current.material as any;
+      material.color.set(Math.sin(time * 4) + 2, 0, 0);
+    }
+  });
+
   return (
     <group position={position}>
-      {showCombatLabel && <BattleLabel selectedBattle={selectedBattle!.id} />}
+      {showBattleLabel && <BattleLabel selectedBattle={selectedBattle!.id} />}
       <primitive scale={3} object={clone} onContextMenu={onClick} />
+      <Billboard>
+        <Image
+          ref={testRef}
+          texture={armyLabel}
+          scale={2.2}
+          position={[0, 5, 5]}
+          side={THREE.DoubleSide}
+          transparent
+          renderOrder={5}
+          color={[2, 0, 0]}
+        />
+      </Billboard>
     </group>
   );
 };

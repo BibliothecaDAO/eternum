@@ -331,8 +331,8 @@ export interface RemovePlayerFromWhitelist extends SystemSigner {
   guild_entity_id: num.BigNumberish;
 }
 
-export interface CreateStartingResources extends SystemSigner {
-  config_id: num.BigNumberish;
+export interface MintStartingResources extends SystemSigner {
+  config_ids: num.BigNumberish[];
   realm_entity_id: num.BigNumberish;
 }
 

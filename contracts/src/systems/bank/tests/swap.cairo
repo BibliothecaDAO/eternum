@@ -5,6 +5,8 @@ use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
 
 use eternum::models::bank::liquidity::{Liquidity};
 use eternum::models::bank::market::{Market};
+
+use eternum::models::config::{CapacityConfig};
 use eternum::models::position::{Coord};
 use eternum::models::resources::{Resource, ResourceImpl};
 use eternum::systems::bank::contracts::bank::bank_systems;
@@ -16,8 +18,6 @@ use eternum::systems::bank::contracts::liquidity::{
 };
 use eternum::systems::bank::contracts::swap::swap_systems;
 use eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait,};
-
-use eternum::models::config::{CapacityConfig};
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
 use eternum::utils::testing::{spawn_eternum, deploy_system};

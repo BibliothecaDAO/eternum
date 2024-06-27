@@ -2,6 +2,8 @@ import { Color } from "three";
 import {
   EternumGlobalConfig,
   Position,
+  Resource,
+  ResourcesIds,
   TROOPS_STAMINAS,
   getNeighborHexes,
   neighborOffsetsEven,
@@ -39,6 +41,22 @@ export const getPositionsAtIndex = (mesh: InstancedMesh<any, any>, index: number
   positions.setFromMatrixPosition(matrix);
 
   return positions;
+};
+
+export const canExplore = (stamina: number | undefined, food: Resource[]) => {
+  if (stamina && stamina < EternumGlobalConfig.stamina.exploreCost) {
+    return false;
+  }
+  const fish = food.find((resource) => resource.resourceId === ResourcesIds.Fish);
+  if ((fish?.amount || 0) < EternumGlobalConfig.exploration.fishBurn) {
+    return false;
+  }
+  const wheat = food.find((resource) => resource.resourceId === ResourcesIds.Wheat);
+  if ((wheat?.amount || 0) < EternumGlobalConfig.exploration.wheatBurn) {
+    return false;
+  }
+
+  return true;
 };
 
 const getMaxSteps = () => {

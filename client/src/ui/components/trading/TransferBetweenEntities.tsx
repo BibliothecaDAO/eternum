@@ -4,7 +4,7 @@ import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "@/ui/utils/utils";
+import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
@@ -14,13 +14,11 @@ import { Headline } from "@/ui/elements/Headline";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import { ToggleComponent } from "../toggle/ToggleComponent";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
-import { getRealmNameById } from "@/ui/utils/realms";
-import { useComponentValue } from "@dojoengine/react";
-import { useEntities } from "@/hooks/helpers/useEntities";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
   SELECT_RESOURCES = 2,
+  SUCCESS = 3,
 }
 const STEPS = [
   {
@@ -30,6 +28,10 @@ const STEPS = [
   {
     id: STEP_ID.SELECT_RESOURCES,
     title: "Select resources to transfer",
+  },
+  {
+    id: STEP_ID.SUCCESS,
+    title: "Transfer successful",
   },
 ];
 
@@ -95,14 +97,9 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
 
     systemCall.finally(() => {
       setIsLoading(false);
+      setSelectedStepId(STEP_ID.SUCCESS);
     });
   };
-
-  const toggleDonkeyOrigin = () => {
-    setIsOriginDonkeys(!isOriginDonkeys);
-  };
-
-  const { getEntityName } = useEntities();
 
   return (
     <div className="p-2 h-full">
@@ -212,6 +209,13 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
               Confirm Transfer
             </Button>
           </div>
+        </div>
+      )}
+
+      {currentStep?.id === STEP_ID.SUCCESS && (
+        <div className=" justify-center items-center text-center">
+          <h4>Transfer successful!</h4>
+          <p>Check transfers in the right sidebar transfer menu.</p>
         </div>
       )}
     </div>

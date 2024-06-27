@@ -1,17 +1,11 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
-import { useState } from "react";
+import React, { useState } from "react";
 
-export const BattleDetails = ({
-  battleId,
-  armiesEntityIds,
-}: {
-  battleId: bigint;
-  armiesEntityIds: bigint[] | undefined;
-}) => {
+export const BattleDetails = ({ battleId, armies }: { battleId: bigint; armies: ArmyInfo[] | undefined }) => {
   const {
     account: { account },
     setup: {
@@ -36,31 +30,29 @@ export const BattleDetails = ({
 
   const { getAddressName } = useRealm();
   return (
-    <div className="flex grid grid-cols-3 w-[22vw] text-gold border-gold bg-brown border-gradient border-2 clip-angled ornate-borders p-4">
-      <div key={0} className="tile h-[2vh] text-center border">
-        Army
-      </div>
-      <div key={1} className="tile h-[2vh] text-center border">
-        Owner
-      </div>
-      <div key={2} className="tile h-[2vh] text-center border"></div>
-      {armiesEntityIds &&
-        armiesEntityIds
-          .map((armyEntityId) => getArmyByEntityId(armyEntityId))
-          .filter(Boolean)
-          .map((army, index) => (
-            <>
-              <div key={`${index}_name`} className="tile h-[2vh] text-center">
+    <div className="w-full">
+      <div className="p-2 w-full grid grid-cols-3 text-gold border-gold/20 border-gradient clip-angled p-2">
+        <div key={0} className="mb-4 tile h-[2vh] text-left border border-gold/20">
+          Army
+        </div>
+        <div key={1} className="mb-4 tile h-[2vh] text-left border border-gold/20">
+          Owner
+        </div>
+        <div key={2} className="mb-4 tile h-[2vh] text-left border border-gold/20"></div>
+        {armies &&
+          armies.map((army, index) => (
+            <React.Fragment key={index}>
+              <div key={`${index}_name`} className="tile h-[2vh] text-left mb-2">
                 {army.name}
               </div>
-              <div key={`${index}_player_address`} className="tile h-[2vh] text-center">
+              <div key={`${index}_player_address`} className="tile h-[2vh] text-left mb-2">
                 {getAddressName(String(army.address))}
               </div>
               {army.isMine && BigInt(army.protectee_id || 0) === 0n ? (
                 <Button
                   key={`${index}_button`}
                   isLoading={loading}
-                  className="tile h-[2vh] text-center"
+                  className="tile h-[2vh] text-left mb-2"
                   onClick={() => handleLeaveBattle(BigInt(army!.entity_id))}
                 >
                   leave
@@ -68,8 +60,9 @@ export const BattleDetails = ({
               ) : (
                 <div key={`${index}_leave`}></div>
               )}
-            </>
+            </React.Fragment>
           ))}
+      </div>
     </div>
   );
 };

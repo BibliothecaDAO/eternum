@@ -1,14 +1,13 @@
-import { useMemo } from "react";
+import { BASE_POPULATION_CAPACITY, RealmInterface, getOrderName } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { useDojo } from "../context/DojoContext";
-import { bigintToString, getEntityIdFromKeys, getPosition, hexToAscii, numberToHex } from "../../ui/utils/utils";
-import { BASE_POPULATION_CAPACITY, getOrderName } from "@bibliothecadao/eternum";
+import { useMemo } from "react";
+import { shortString } from "starknet";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import { unpackResources } from "../../ui/utils/packedData";
-import { useEntityQuery } from "@dojoengine/react";
-import { RealmInterface } from "@bibliothecadao/eternum";
 import { getRealm, getRealmNameById } from "../../ui/utils/realms";
-import { shortString } from "starknet";
+import { getEntityIdFromKeys, getPosition } from "../../ui/utils/utils";
+import { useDojo } from "../context/DojoContext";
 
 export type RealmExtended = RealmInterface & {
   entity_id: bigint;
@@ -18,9 +17,14 @@ export type RealmExtended = RealmInterface & {
 export function useRealm() {
   const {
     setup: {
-      components: { Realm, AddressName, Owner, Position, Structure },
+      components: { Realm, AddressName, Owner, EntityOwner, Position, Structure },
     },
   } = useDojo();
+
+  const getEntityOwner = (entityId: bigint) => {
+    const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityId]));
+    return entityOwner?.entity_owner_id;
+  };
 
   const isRealmIdSettled = (realmId: bigint) => {
     const entityIds = runQuery([HasValue(Realm, { realm_id: realmId })]);
@@ -99,6 +103,8 @@ export function useRealm() {
 
   const getAddressName = (address: string) => {
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
+
+    console.log(addressName);
     return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
   };
 
@@ -117,7 +123,7 @@ export function useRealm() {
       : undefined;
 
     if (addressName) {
-      return hexToAscii(numberToHex(Number(addressName.name)));
+      return shortString.decodeShortString(String(addressName.name));
     } else {
       return "";
     }
@@ -137,6 +143,7 @@ export function useRealm() {
   };
 
   return {
+    getEntityOwner,
     isRealmIdSettled,
     getNextRealmIdForOrder,
     getAddressName,

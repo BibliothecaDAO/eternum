@@ -15,7 +15,7 @@ type RealmListItemProps = {
 
 export const RealmListItem = ({ realm, onClick, extraButton }: RealmListItemProps) => {
   return (
-    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3">
+    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3 h-[44vh]">
       <div className="flex items-center">
         {realm && (
           <div className="flex items-center p-1  border-gold font-bold  w-full">
@@ -31,8 +31,7 @@ export const RealmListItem = ({ realm, onClick, extraButton }: RealmListItemProp
       <div className="flex items-end mt-2">
         <div className={clsx("flex items-center justify-around flex-1")}>
           <div className="flex-1 text-gold flex items-center flex-wrap">
-            <div className="uppercase w-full font-bold mb-1">Produces</div>
-
+            <div className="grid grid-cols-8 uppercase w-full font-bold mb-1">Produces</div>
             {realm.resources &&
               realm.resources.map((resourceId: number) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
@@ -42,7 +41,8 @@ export const RealmListItem = ({ realm, onClick, extraButton }: RealmListItemProp
           </div>
         </div>
       </div>
-      <InventoryResources entityId={BigInt(realm.entity_id)} title="Balance" />
+      <div className="grid grid-cols-8 uppercase w-full font-bold my-3">Inventory</div>
+      <InventoryResources className="grid grid-cols-10 gap-1 mb-5" entityId={BigInt(realm.entity_id)} />
       {extraButton || ""}
     </div>
   );

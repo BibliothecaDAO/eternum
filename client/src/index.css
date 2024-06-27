@@ -208,7 +208,43 @@ h6 {
 }
 
 .ornate-borders-top {
-  border: 15px solid transparent;
+  border-top: 15px solid transparent;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  -moz-border-image: url("/border-2.png") 30 30 round; /* Old firefox */
+  -webkit-border-image: url("/border-2.png") 30 30 round; /* Safari */
+  -o-border-image: url("/border-2.png") 30 30 round; /* Opera */
+  border-image: url("/border-2.png") 30 30 round;
+}
+
+.ornate-borders-y {
+  border-top: none;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-bottom: none;
+  -moz-border-image: url("/border-2.png") 30 30 round; /* Old firefox */
+  -webkit-border-image: url("/border-2.png") 30 30 round; /* Safari */
+  -o-border-image: url("/border-2.png") 30 30 round; /* Opera */
+  border-image: url("/border-2.png") 30 30 round;
+}
+
+.ornate-borders-top-y {
+  border-top: 15px solid transparent;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-bottom: none;
+  -moz-border-image: url("/border-2.png") 30 30 round; /* Old firefox */
+  -webkit-border-image: url("/border-2.png") 30 30 round; /* Safari */
+  -o-border-image: url("/border-2.png") 30 30 round; /* Opera */
+  border-image: url("/border-2.png") 30 30 round;
+}
+
+.ornate-borders-bottom-y {
+  border-top: none;
+  border-left: 15px solid transparent;
+  border-right: 15px solid transparent;
+  border-bottom: 15px solid transparent;
   -moz-border-image: url("/border-2.png") 30 30 round; /* Old firefox */
   -webkit-border-image: url("/border-2.png") 30 30 round; /* Safari */
   -o-border-image: url("/border-2.png") 30 30 round; /* Opera */

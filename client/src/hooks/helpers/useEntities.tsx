@@ -3,9 +3,9 @@ import { divideByPrecision, getEntityIdFromKeys, getPosition } from "@/ui/utils/
 import { EntityType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, NotValue, getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
+import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { useResources } from "./useResources";
-import { shortString } from "starknet";
 
 export const useEntities = () => {
   const {

@@ -11,6 +11,7 @@ import { SelectedGuildInterface } from "./Guilds";
 interface GuildMembersProps {
   selectedGuild: SelectedGuildInterface;
   isOwner: boolean;
+  ownerAddress?: string;
 }
 
 type GuildMemberAndNameKeys = keyof GuildMemberAndName;
@@ -20,7 +21,7 @@ interface SortingParamGuildMemberAndName {
   className?: string;
 }
 
-export const GuildMembers = ({ selectedGuild, isOwner }: GuildMembersProps) => {
+export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMembersProps) => {
   const {
     setup: {
       systemCalls: { remove_guild_member },
@@ -30,8 +31,10 @@ export const GuildMembers = ({ selectedGuild, isOwner }: GuildMembersProps) => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getGuildMembers } = useGuilds();
+  const { getGuildMembers, getGuildOwner } = useGuilds();
   const { guildMembers } = getGuildMembers(selectedGuild.guildEntityId);
+
+  const guildOwner = getGuildOwner(selectedGuild.guildEntityId);
 
   const sortingParams: SortingParamGuildMemberAndName[] = useMemo(() => {
     return [
@@ -79,7 +82,7 @@ export const GuildMembers = ({ selectedGuild, isOwner }: GuildMembersProps) => {
           return (
             <div
               key={member.address}
-              className={`grid grid-cols-3 gap-4 text-xxs clip-angled-sm p-1 ${
+              className={`grid grid-cols-3 gap-4 text-sm clip-angled-sm p-1 ${
                 member.playerAddress == account.address ? "bg-green/20" : ""
               } `}
             >
@@ -90,7 +93,7 @@ export const GuildMembers = ({ selectedGuild, isOwner }: GuildMembersProps) => {
               >
                 {displayAddress(member.playerAddress)}
               </p>
-              {isOwner && member.playerAddress != account.address && (
+              {isOwner && member.playerAddress != account.address && guildOwner?.address == BigInt(account.address) && (
                 <div className="col-span-1">
                   <Button size="xs" isLoading={isLoading} onClick={() => removeGuildMember(BigInt(member.address))}>
                     Kick out

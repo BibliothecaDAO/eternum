@@ -51,22 +51,6 @@ export const numberToHex = (num: number) => {
   return "0x" + num.toString(16);
 };
 
-export const bigintToString = (bigintValue: bigint) => {
-  // Convert the bigint to a hexadecimal string
-  let hexString = bigintValue.toString(16);
-
-  // Ensure the hex string has an even length
-  if (hexString.length % 2 !== 0) {
-    hexString = "0" + hexString;
-  }
-
-  // Convert the hex string to a buffer
-  const buffer = Buffer.from(hexString, "hex");
-
-  // Convert the buffer to a UTF-8 string
-  return buffer.toString("utf-8");
-};
-
 export const hexToAscii = (hex: string) => {
   var str = "";
   for (var n = 0; n < hex.length; n += 2) {
@@ -236,10 +220,11 @@ export const pseudoRandom = (x: number, y: number) => {
 export function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
   const resourceIds: number[] = [];
   const totalBits = 256; // Assuming u256, hence 256 bits
+  const packedNumberBigInt = BigInt(packedNumber);
 
   for (let position = 0; position < totalBits; position++) {
     // Shift 1 to the left by 'position' places and perform bitwise AND
-    if ((packedNumber & (1n << BigInt(position))) !== 0n) {
+    if ((packedNumberBigInt & (1n << BigInt(position))) !== 0n) {
       resourceIds.push(position + 1);
     }
   }

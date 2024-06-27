@@ -56,7 +56,7 @@ const ShardsMineModel = ({ position, onClick }: { position: any; onClick: () => 
       <Billboard>
         <Image
           texture={shardLabel}
-          scale={4}
+          scale={2.3}
           position={[0, 5, 0]}
           side={THREE.DoubleSide}
           transparent

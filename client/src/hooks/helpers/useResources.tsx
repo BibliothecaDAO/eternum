@@ -1,4 +1,13 @@
-import { type Entity, Has, HasValue, NotValue, getComponentValue, runQuery, Not } from "@dojoengine/recs";
+import {
+  type Entity,
+  Has,
+  HasValue,
+  NotValue,
+  getComponentValue,
+  runQuery,
+  Not,
+  getEntitiesWithValue,
+} from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import { getEntityIdFromKeys, getResourceIdsFromPackedNumber } from "../../ui/utils/utils";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
@@ -63,45 +72,53 @@ export function useResources() {
     return realmsWithResource;
   };
 
-  const getArrivalsWithResources = (entityId: bigint) => {
-    const entityPosition = getComponentValue(Position, getEntityIdFromKeys([entityId]));
-
-    const atPositionWithInventory = useEntityQuery([
-      Has(EntityOwner),
-      NotValue(OwnedResourcesTracker, { resource_types: 0n }),
-      HasValue(Position, {
-        x: entityPosition?.x,
-        y: entityPosition?.y,
-      }),
-      Has(ArrivalTime),
-    ]);
-
-    return atPositionWithInventory.map((id) => {
-      const position = getComponentValue(Position, id);
-      return position!.entity_id;
-    });
-  };
-
   const atPositionWithInventory = useEntityQuery([
     Has(EntityOwner),
     NotValue(OwnedResourcesTracker, { resource_types: 0n }),
     Has(ArrivalTime),
   ]);
 
+  const getArrivalsWithResources = useMemo(() => {
+    return (entityId: bigint) => {
+      const entityPosition = getComponentValue(Position, getEntityIdFromKeys([entityId]));
+
+      if (!entityPosition) {
+        return [];
+      }
+
+      return atPositionWithInventory
+        .filter((id) => {
+          const position = getComponentValue(Position, id);
+          return position?.x === entityPosition.x && position?.y === entityPosition.y;
+        })
+        .map((id) => getComponentValue(Position, id)?.entity_id)
+        .filter(Boolean) as bigint[];
+    };
+  }, [atPositionWithInventory]);
+
   // Get all owned entities with resources
-  const getAllArrivalsWithResources = () => {
+  const getAllArrivalsWithResources = useMemo(() => {
+    const currentTime = Date.now();
+
     return atPositionWithInventory
       .map((id) => {
-        const position = getComponentValue(Position, id);
         const entityOwner = getComponentValue(EntityOwner, id);
         const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || BigInt(0)]));
+        const arrivalTime = getComponentValue(ArrivalTime, id);
+        const position = getComponentValue(Position, id);
 
-        if (BigInt(owner?.address || "") === BigInt(account.address)) {
-          return position?.entity_id ? position.entity_id : BigInt("");
-        }
+        return {
+          id,
+          entityId: position?.entity_id || BigInt(""),
+          arrivesAt: Number(arrivalTime?.arrives_at || 0),
+          isOwner: BigInt(owner?.address || "") === BigInt(account.address),
+        };
       })
-      .filter(Boolean) as bigint[];
-  };
+      .filter(({ isOwner, arrivesAt }) => isOwner && arrivesAt <= currentTime)
+      .sort((a, b) => a.arrivesAt - b.arrivesAt)
+      .map(({ entityId }) => entityId)
+      .filter((entityId) => entityId !== BigInt(""));
+  }, [atPositionWithInventory, account.address]);
 
   return {
     getRealmsWithSpecificResource,
@@ -119,9 +136,8 @@ export function useResourceBalance() {
     },
   } = useDojo();
 
-  const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
-
   const getFoodResources = (entityId: bigint): Resource[] => {
+    const currentDefaultTick = useBlockchainStore.getState().currentDefaultTick;
     const wheatBalance = new ProductionManager(
       Production,
       Resource,
@@ -144,6 +160,7 @@ export function useResourceBalance() {
   };
 
   const getBalance = (entityId: bigint, resourceId: number) => {
+    const currentDefaultTick = useBlockchainStore.getState().currentDefaultTick;
     const productionManager = new ProductionManager(
       Production,
       Resource,
@@ -156,10 +173,8 @@ export function useResourceBalance() {
 
   // We should deprecate this hook and use getBalance instead - too many useEffects
   const useBalance = (entityId: bigint, resourceId: number) => {
+    const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
     const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
-
-    const resource = getComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
-    const production = getComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
 
     useEffect(() => {
       const productionManager = new ProductionManager(

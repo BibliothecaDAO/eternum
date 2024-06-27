@@ -1,12 +1,13 @@
 import { BattleType } from "@/dojo/modelManager/types";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, getArmiesByBattleId, getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { Realm, Structure } from "@/hooks/helpers/useStructures";
+import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { Structure } from "@/hooks/helpers/useStructures";
 import { useModal } from "@/hooks/store/useModal";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ModalContainer } from "@/ui/components/ModalContainer";
 import { PillageHistory } from "@/ui/components/military/Battle";
 import Button from "@/ui/elements/Button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
@@ -20,20 +21,25 @@ enum Loading {
 }
 
 export const BattleActions = ({
+  userArmiesInBattle,
   isActive,
   ownArmyEntityId,
   defender,
   structure,
   battle,
 }: {
+  userArmiesInBattle: ArmyInfo[] | undefined;
   ownArmyEntityId: bigint | undefined;
   defender: ArmyInfo | undefined;
-  structure: Realm | Structure | undefined;
+  structure: Structure | undefined;
   battle: ComponentValue<BattleType, unknown> | undefined;
   isActive: boolean;
 }) => {
+  const [localSelectedUnit, setLocalSelectedUnit] = useState<bigint | undefined>(ownArmyEntityId);
+
   const [loading, setLoading] = useState<Loading>(Loading.None);
   const setBattleView = useUIStore((state) => state.setBattleView);
+  const clearSelection = useUIStore((state) => state.clearSelection);
   const { toggleModal } = useModal();
 
   const {
@@ -51,28 +57,30 @@ export const BattleActions = ({
     },
   } = useDojo();
 
-  const ownArmy =
-    getArmyByEntityId(ownArmyEntityId || 0n) ||
-    getArmiesByBattleId(battle?.entity_id || 0n).find((army) => army.isMine);
+  const { getArmy } = getArmyByEntityId();
 
-	const isRealm = useMemo(() => {
+  const selectedArmy = useMemo(() => {
+    return getArmy(localSelectedUnit || 0n);
+  }, [localSelectedUnit, battle]);
+
+  const isRealm = useMemo(() => {
     if (!structure) return false;
     return Boolean(getComponentValue(Realm, getEntityIdFromKeys([BigInt(structure.entity_id)])));
   }, [structure]);
 
   const handleRaid = async () => {
     setLoading(Loading.Raid);
-    if (battle?.entity_id! !== 0n && battle?.entity_id === BigInt(ownArmy!.battle_id)) {
+    if (battle?.entity_id! !== 0n && battle?.entity_id === BigInt(selectedArmy!.battle_id)) {
       await battle_leave_and_raid({
         signer: account,
-        army_id: ownArmy!.entity_id,
+        army_id: selectedArmy!.entity_id,
         battle_id: battle?.entity_id!,
         structure_id: structure!.entity_id,
       });
     } else {
       await battle_pillage({
         signer: account,
-        army_id: ownArmy!.entity_id,
+        army_id: selectedArmy!.entity_id,
         structure_id: structure!.entity_id,
       });
     }
@@ -83,7 +91,7 @@ export const BattleActions = ({
       <ModalContainer size="half">
         <PillageHistory
           structureId={BigInt(structure!.entity_id)}
-          attackerRealmEntityId={BigInt(ownArmy!.entity_owner_id)}
+          attackerRealmEntityId={BigInt(selectedArmy!.entity_owner_id)}
         />
       </ModalContainer>,
     );
@@ -93,25 +101,26 @@ export const BattleActions = ({
     setLoading(Loading.Start);
     await battle_start({
       signer: account,
-      attacking_army_id: ownArmy!.entity_id,
+      attacking_army_id: selectedArmy!.entity_id,
       defending_army_id: defender!.entity_id,
     });
     setLoading(Loading.None);
+    clearSelection();
   };
 
   const handleBattleClaim = async () => {
     setLoading(Loading.Claim);
-    if (battle?.entity_id! !== 0n && battle?.entity_id === BigInt(ownArmy!.battle_id)) {
+    if (battle?.entity_id! !== 0n && battle?.entity_id === BigInt(selectedArmy!.battle_id)) {
       await battle_leave_and_claim({
         signer: account,
-        army_id: ownArmy!.entity_id,
+        army_id: selectedArmy!.entity_id,
         battle_id: battle?.entity_id!,
         structure_id: structure!.entity_id,
       });
     } else {
       await battle_claim({
         signer: account,
-        army_id: ownArmy!.entity_id,
+        army_id: selectedArmy!.entity_id,
         structure_id: structure!.entity_id,
       });
     }
@@ -124,7 +133,7 @@ export const BattleActions = ({
     setLoading(Loading.Leave);
     await battle_leave({
       signer: account,
-      army_id: ownArmy!.entity_id,
+      army_id: selectedArmy!.entity_id,
       battle_id: battle?.entity_id!,
     });
 
@@ -132,25 +141,27 @@ export const BattleActions = ({
     setBattleView(null);
   };
 
+  const defenceIsEmptyOrDead = !defender || (battle && battle.defence_army_health.current <= 0);
+
   const isClaimable =
-    Boolean(ownArmy) && !isActive && (!defender || defender.current <= 0) && !isRealm && Boolean(structure);
+    Boolean(selectedArmy) && !isActive && defenceIsEmptyOrDead && !isRealm && Boolean(structure) && !structure!.isMine;
 
   return (
-    <div className="col-span-2 flex justify-center flex-wrap mx-4 w-[100vw]">
-      <div className="grid grid-cols-2 gap-3 row-span-2">
+    <div className="col-span-2 flex justify-center flex-wrap ornate-borders-bottom-y p-2 bg-[#1b1a1a] bg-map">
+      <div className="grid grid-cols-2 gap-1 w-full">
         <Button
-          variant="primary"
+          variant="outline"
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Raid}
           onClick={handleRaid}
-          disabled={loading !== Loading.None || !structure || !ownArmy || isActive}
+          disabled={loading !== Loading.None || !structure || !selectedArmy || isActive || structure?.isMine}
         >
           <img className="w-10" src="/images/icons/raid.png" alt="coin" />
           Raid!
         </Button>
 
         <Button
-          variant="primary"
+          variant="outline"
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Claim}
           onClick={handleBattleClaim}
@@ -161,33 +172,88 @@ export const BattleActions = ({
         </Button>
 
         <Button
-          variant="primary"
+          variant="outline"
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Leave}
           onClick={handleLeaveBattle}
-          disabled={loading !== Loading.None || !ownArmy || !Boolean(ownArmy.battle_id)}
+          disabled={
+            loading !== Loading.None ||
+            !selectedArmy ||
+            !Boolean(selectedArmy.battle_id) ||
+            (isActive && selectedArmy.protectee_id !== undefined)
+          }
         >
           <img className="w-10" src="/images/icons/leave-battle.png" alt="coin" />
-          Leave Battle
+          Leave
         </Button>
 
         <Button
-          variant="primary"
+          variant="outline"
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Start}
           onClick={handleBattleStart}
           disabled={
             loading !== Loading.None ||
-            !ownArmy ||
-            Boolean(ownArmy.battle_id) ||
-            (!defender && (isRealm || Boolean(structure))) ||
-            isActive
+            !selectedArmy ||
+            Boolean(selectedArmy.battle_id) ||
+            (!defender && Boolean(structure)) ||
+            Boolean(battle)
           }
         >
           <img className="w-10" src="/images/icons/attack.png" alt="coin" />
           Battle
         </Button>
+        {battle && (
+          <ArmySelector
+            localSelectedUnit={localSelectedUnit}
+            setLocalSelectedUnit={setLocalSelectedUnit}
+            userArmiesInBattle={userArmiesInBattle}
+          />
+        )}
       </div>
     </div>
+  );
+};
+
+const ArmySelector = ({
+  localSelectedUnit,
+  setLocalSelectedUnit,
+  userArmiesInBattle,
+}: {
+  localSelectedUnit: bigint | undefined;
+  setLocalSelectedUnit: (val: bigint) => void;
+  userArmiesInBattle: ArmyInfo[] | undefined;
+}) => {
+  return (
+    userArmiesInBattle &&
+    userArmiesInBattle.length > 0 && (
+      <div className="self-center w-full flex flex-col justify-between bg-transparent clip-angled-sm size-xs col-span-2 text-gold text-center border border-gold">
+        <Select
+          value={""}
+          onValueChange={(a: string) => {
+            setLocalSelectedUnit(BigInt(a));
+          }}
+        >
+          <SelectTrigger className="">
+            <SelectValue
+              placeholder={
+                userArmiesInBattle.find((army) => localSelectedUnit === BigInt(army.entity_id))?.name || "Select army"
+              }
+            />
+          </SelectTrigger>
+          <SelectContent className="bg-brown text-gold">
+            {userArmiesInBattle.map((army, index) => (
+              <SelectItem
+                className="flex justify-between text-sm text-center"
+                key={index}
+                value={army.entity_id?.toString() || ""}
+              >
+                <h5 className="text-center flex gap-4">{army.name}</h5>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    )
   );
 };

@@ -1,8 +1,8 @@
 {
   "world": {
     "kind": "WorldContract",
-    "class_hash": "0xf6f44afb3cacbcc01a371aff62c86ca9a45feba065424c99f7cd8637514d8f",
-    "original_class_hash": "0xf6f44afb3cacbcc01a371aff62c86ca9a45feba065424c99f7cd8637514d8f",
+    "class_hash": "0x3f63cecdc4964acafb921ba2934c6507d1b3c344edb64c2762cf08053169ab9",
+    "original_class_hash": "0x3f63cecdc4964acafb921ba2934c6507d1b3c344edb64c2762cf08053169ab9",
     "abi": [
       {
         "type": "impl",
@@ -560,6 +560,10 @@
               {
                 "name": "program_output",
                 "type": "dojo::interfaces::ProgramOutput"
+              },
+              {
+                "name": "program_hash",
+                "type": "core::felt252"
               }
             ],
             "outputs": [],
@@ -578,7 +582,7 @@
         "items": [
           {
             "type": "function",
-            "name": "set_program_hash",
+            "name": "set_differ_program_hash",
             "inputs": [
               {
                 "name": "program_hash",
@@ -590,7 +594,30 @@
           },
           {
             "type": "function",
-            "name": "get_program_hash",
+            "name": "set_merger_program_hash",
+            "inputs": [
+              {
+                "name": "program_hash",
+                "type": "core::felt252"
+              }
+            ],
+            "outputs": [],
+            "state_mutability": "external"
+          },
+          {
+            "type": "function",
+            "name": "get_differ_program_hash",
+            "inputs": [],
+            "outputs": [
+              {
+                "type": "core::felt252"
+              }
+            ],
+            "state_mutability": "view"
+          },
+          {
+            "type": "function",
+            "name": "get_merger_program_hash",
             "inputs": [],
             "outputs": [
               {
@@ -836,7 +863,19 @@
       },
       {
         "type": "event",
-        "name": "dojo::config::component::Config::ProgramHashUpdate",
+        "name": "dojo::config::component::Config::DifferProgramHashUpdate",
+        "kind": "struct",
+        "members": [
+          {
+            "name": "program_hash",
+            "type": "core::felt252",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "type": "event",
+        "name": "dojo::config::component::Config::MergerProgramHashUpdate",
         "kind": "struct",
         "members": [
           {
@@ -864,8 +903,13 @@
         "kind": "enum",
         "variants": [
           {
-            "name": "ProgramHashUpdate",
-            "type": "dojo::config::component::Config::ProgramHashUpdate",
+            "name": "DifferProgramHashUpdate",
+            "type": "dojo::config::component::Config::DifferProgramHashUpdate",
+            "kind": "nested"
+          },
+          {
+            "name": "MergerProgramHashUpdate",
+            "type": "dojo::config::component::Config::MergerProgramHashUpdate",
             "kind": "nested"
           },
           {
@@ -955,9 +999,9 @@
         ]
       }
     ],
-    "address": "0x455860f93fad20b93ab401eaf9bb63bf86a8222ffe4b0a4216d4694603f4723",
-    "transaction_hash": "0x4fbfb8faf344e3f8a79b6953ee5834d51e078f7106aba74274dd726973ed71",
-    "block_number": 12,
+    "address": "0x161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824",
+    "transaction_hash": "0x612de8b84ba9c5454887b576a17af10b7be97dab5f01bf79d1ec2d3cca3e6c5",
+    "block_number": 20,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -975,9 +1019,9 @@
   "contracts": [
     {
       "kind": "DojoContract",
-      "address": "0x40a6e0d2d6b0c029a36296513f523b114df3efedf0cd4efed3f92115d818a48",
-      "class_hash": "0x17bc66e5b9971cc2a5644cdfb5766bb116ad9e6f71b789d76a29f9d98f51948",
-      "original_class_hash": "0x17bc66e5b9971cc2a5644cdfb5766bb116ad9e6f71b789d76a29f9d98f51948",
+      "address": "0x3db3213122bf078c0dc15d5f45b542ab0a03a3fae4fe9e1373fe291357f1000",
+      "class_hash": "0x70bd946b5a24b94692690fec3837fc4f3330e3164c5650ddb2823ed82c92513",
+      "original_class_hash": "0x70bd946b5a24b94692690fec3837fc4f3330e3164c5650ddb2823ed82c92513",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -1037,7 +1081,7 @@
         {
           "type": "impl",
           "name": "BankSystemsImpl",
-          "interface_name": "eternum::systems::bank::contracts::bank_systems::IBankSystems"
+          "interface_name": "eternum::systems::bank::contracts::bank::IBankSystems"
         },
         {
           "type": "struct",
@@ -1055,7 +1099,7 @@
         },
         {
           "type": "interface",
-          "name": "eternum::systems::bank::contracts::bank_systems::IBankSystems",
+          "name": "eternum::systems::bank::contracts::bank::IBankSystems",
           "items": [
             {
               "type": "function",
@@ -1076,30 +1120,10 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::integer::u128, core::integer::u128)"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "open_account",
-              "inputs": [
-                {
-                  "name": "realm_entity_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "bank_entity_id",
                   "type": "core::integer::u128"
                 }
               ],
-              "outputs": [
-                {
-                  "type": "core::integer::u128"
-                }
-              ],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -1115,18 +1139,18 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
         {
           "type": "impl",
           "name": "IDojoInitImpl",
-          "interface_name": "eternum::systems::bank::contracts::bank_systems::bank_systems::IDojoInit"
+          "interface_name": "eternum::systems::bank::contracts::bank::bank_systems::IDojoInit"
         },
         {
           "type": "interface",
-          "name": "eternum::systems::bank::contracts::bank_systems::bank_systems::IDojoInit",
+          "name": "eternum::systems::bank::contracts::bank::bank_systems::IDojoInit",
           "items": [
             {
               "type": "function",
@@ -1186,7 +1210,7 @@
         },
         {
           "type": "event",
-          "name": "eternum::systems::bank::contracts::bank_systems::bank_systems::Event",
+          "name": "eternum::systems::bank::contracts::bank::bank_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -1201,13 +1225,13 @@
       "writes": [],
       "computed": [],
       "init_calldata": [],
-      "name": "eternum::systems::bank::contracts::bank_systems::bank_systems"
+      "name": "eternum::systems::bank::contracts::bank::bank_systems"
     },
     {
       "kind": "DojoContract",
-      "address": "0x7099c51434769ab26ce75f9fedc9930ce7a9532cd0e8cfa9276bf51695cbcfe",
-      "class_hash": "0x229f1f2edf7b5a805c9d5c6b1fd3725ea972f001f7308acbc00c64354c33f0d",
-      "original_class_hash": "0x229f1f2edf7b5a805c9d5c6b1fd3725ea972f001f7308acbc00c64354c33f0d",
+      "address": "0x72c668dbc1e2e8dae1aa02952e3f70a7f89dfeb6648b37315c5c05bb7297754",
+      "class_hash": "0x64c1933752f786bc730c76ee0dea4ce662154f133547630ff7df4940314296f",
+      "original_class_hash": "0x64c1933752f786bc730c76ee0dea4ce662154f133547630ff7df4940314296f",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -1267,7 +1291,7 @@
         {
           "type": "impl",
           "name": "LiquiditySystemsImpl",
-          "interface_name": "eternum::systems::bank::contracts::liquidity_systems::ILiquiditySystems"
+          "interface_name": "eternum::systems::bank::contracts::liquidity::ILiquiditySystems"
         },
         {
           "type": "enum",
@@ -1299,7 +1323,7 @@
         },
         {
           "type": "interface",
-          "name": "eternum::systems::bank::contracts::liquidity_systems::ILiquiditySystems",
+          "name": "eternum::systems::bank::contracts::liquidity::ILiquiditySystems",
           "items": [
             {
               "type": "function",
@@ -1307,6 +1331,10 @@
               "inputs": [
                 {
                   "name": "bank_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "entity_id",
                   "type": "core::integer::u128"
                 },
                 {
@@ -1323,7 +1351,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -1331,6 +1359,10 @@
               "inputs": [
                 {
                   "name": "bank_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "entity_id",
                   "type": "core::integer::u128"
                 },
                 {
@@ -1342,19 +1374,23 @@
                   "type": "cubit::f128::types::fixed::Fixed"
                 }
               ],
-              "outputs": [],
-              "state_mutability": "view"
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "external"
             }
           ]
         },
         {
           "type": "impl",
           "name": "IDojoInitImpl",
-          "interface_name": "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems::IDojoInit"
+          "interface_name": "eternum::systems::bank::contracts::liquidity::liquidity_systems::IDojoInit"
         },
         {
           "type": "interface",
-          "name": "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems::IDojoInit",
+          "name": "eternum::systems::bank::contracts::liquidity::liquidity_systems::IDojoInit",
           "items": [
             {
               "type": "function",
@@ -1414,59 +1450,12 @@
         },
         {
           "type": "event",
-          "name": "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems::LiquidityEvent",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "bank_entity_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "bank_account_entity_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "resource_type",
-              "type": "core::integer::u8",
-              "kind": "data"
-            },
-            {
-              "name": "lords_amount",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "resource_amount",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "resource_price",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "add",
-              "type": "core::bool",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems::Event",
+          "name": "eternum::systems::bank::contracts::liquidity::liquidity_systems::Event",
           "kind": "enum",
           "variants": [
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "LiquidityEvent",
-              "type": "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems::LiquidityEvent",
               "kind": "nested"
             }
           ]
@@ -1476,13 +1465,13 @@
       "writes": [],
       "computed": [],
       "init_calldata": [],
-      "name": "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems"
+      "name": "eternum::systems::bank::contracts::liquidity::liquidity_systems"
     },
     {
       "kind": "DojoContract",
-      "address": "0x2d1e3eb9e170bece143237c5cc1c79a4391509b9895be8628219d7942a0543c",
-      "class_hash": "0x7c9689486df10afae9f496ab8b36c7b8aa78d627a8a04679b1a3b86c8aa188",
-      "original_class_hash": "0x7c9689486df10afae9f496ab8b36c7b8aa78d627a8a04679b1a3b86c8aa188",
+      "address": "0x33868c8253a6bdd63074cb8fbdd11cfcca50af1b0f25062d5311541487edb45",
+      "class_hash": "0x104c7adb2d97c2e35ad0b26a19f69aefd2b35977e42618f0f78d14062d6bc7b",
+      "original_class_hash": "0x104c7adb2d97c2e35ad0b26a19f69aefd2b35977e42618f0f78d14062d6bc7b",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -1542,11 +1531,11 @@
         {
           "type": "impl",
           "name": "SwapSystemsImpl",
-          "interface_name": "eternum::systems::bank::contracts::swap_systems::ISwapSystems"
+          "interface_name": "eternum::systems::bank::contracts::swap::ISwapSystems"
         },
         {
           "type": "interface",
-          "name": "eternum::systems::bank::contracts::swap_systems::ISwapSystems",
+          "name": "eternum::systems::bank::contracts::swap::ISwapSystems",
           "items": [
             {
               "type": "function",
@@ -1557,6 +1546,10 @@
                   "type": "core::integer::u128"
                 },
                 {
+                  "name": "entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
                   "name": "resource_type",
                   "type": "core::integer::u8"
                 },
@@ -1565,8 +1558,12 @@
                   "type": "core::integer::u128"
                 }
               ],
-              "outputs": [],
-              "state_mutability": "view"
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -1577,6 +1574,10 @@
                   "type": "core::integer::u128"
                 },
                 {
+                  "name": "entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
                   "name": "resource_type",
                   "type": "core::integer::u8"
                 },
@@ -1585,19 +1586,23 @@
                   "type": "core::integer::u128"
                 }
               ],
-              "outputs": [],
-              "state_mutability": "view"
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "external"
             }
           ]
         },
         {
           "type": "impl",
           "name": "IDojoInitImpl",
-          "interface_name": "eternum::systems::bank::contracts::swap_systems::swap_systems::IDojoInit"
+          "interface_name": "eternum::systems::bank::contracts::swap::swap_systems::IDojoInit"
         },
         {
           "type": "interface",
-          "name": "eternum::systems::bank::contracts::swap_systems::swap_systems::IDojoInit",
+          "name": "eternum::systems::bank::contracts::swap::swap_systems::IDojoInit",
           "items": [
             {
               "type": "function",
@@ -1656,89 +1661,13 @@
           ]
         },
         {
-          "type": "enum",
-          "name": "core::bool",
-          "variants": [
-            {
-              "name": "False",
-              "type": "()"
-            },
-            {
-              "name": "True",
-              "type": "()"
-            }
-          ]
-        },
-        {
           "type": "event",
-          "name": "eternum::systems::bank::contracts::swap_systems::swap_systems::SwapEvent",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "bank_entity_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "bank_account_entity_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "resource_type",
-              "type": "core::integer::u8",
-              "kind": "data"
-            },
-            {
-              "name": "lords_amount",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "resource_amount",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "bank_owner_fees",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "lp_fees",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "resource_price",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "buy",
-              "type": "core::bool",
-              "kind": "data"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::bank::contracts::swap_systems::swap_systems::Event",
+          "name": "eternum::systems::bank::contracts::swap::swap_systems::Event",
           "kind": "enum",
           "variants": [
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "SwapEvent",
-              "type": "eternum::systems::bank::contracts::swap_systems::swap_systems::SwapEvent",
               "kind": "nested"
             }
           ]
@@ -1748,13 +1677,13 @@
       "writes": [],
       "computed": [],
       "init_calldata": [],
-      "name": "eternum::systems::bank::contracts::swap_systems::swap_systems"
+      "name": "eternum::systems::bank::contracts::swap::swap_systems"
     },
     {
       "kind": "DojoContract",
-      "address": "0xaf5669e1c706c11428da9275b8cb22bcfe3d9c8c6897c44c3125646a17dd96",
-      "class_hash": "0xa45053b69018e68eb43d78e339f00dee91184931e2d1a6dd32dbd897d2505e",
-      "original_class_hash": "0xa45053b69018e68eb43d78e339f00dee91184931e2d1a6dd32dbd897d2505e",
+      "address": "0x5693fe8010c0dbc4665039a50f1cc40f57992a229843306f56830273ebdf469",
+      "class_hash": "0x1ea0d1d69bbe24920c40b2b8107259462af54f3085fa21ccbef0ae2b1a3cb93",
+      "original_class_hash": "0x1ea0d1d69bbe24920c40b2b8107259462af54f3085fa21ccbef0ae2b1a3cb93",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -1936,7 +1865,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -1952,7 +1881,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2042,9 +1971,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x6b8160ef19de56744f1a46d5e24c40b2c1b85e0b17eee6b435fd9e7b836313d",
-      "class_hash": "0x73b365b20a40383e87237c63abae33d0919ddfde0fdbda71bd33f9e589bca7a",
-      "original_class_hash": "0x73b365b20a40383e87237c63abae33d0919ddfde0fdbda71bd33f9e589bca7a",
+      "address": "0xca567be002d22ad080bf3ed80d869374022ee3d215462da7b048543dd79535",
+      "class_hash": "0x4bded07a66b8b262e64fe7b61f0f421ddca2e9f069d56912ca4a89320298cd3",
+      "original_class_hash": "0x4bded07a66b8b262e64fe7b61f0f421ddca2e9f069d56912ca4a89320298cd3",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -2178,7 +2107,7 @@
                   "type": "core::integer::u128"
                 }
               ],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -2198,7 +2127,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -2218,7 +2147,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -2234,7 +2163,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -2254,7 +2183,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -2270,7 +2199,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -2286,7 +2215,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -2302,7 +2231,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2372,119 +2301,6 @@
           ]
         },
         {
-          "type": "struct",
-          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "eternum::models::buildings::BuildingCategory",
-          "variants": [
-            {
-              "name": "None",
-              "type": "()"
-            },
-            {
-              "name": "Castle",
-              "type": "()"
-            },
-            {
-              "name": "Resource",
-              "type": "()"
-            },
-            {
-              "name": "Farm",
-              "type": "()"
-            },
-            {
-              "name": "FishingVillage",
-              "type": "()"
-            },
-            {
-              "name": "Barracks",
-              "type": "()"
-            },
-            {
-              "name": "Market",
-              "type": "()"
-            },
-            {
-              "name": "ArcheryRange",
-              "type": "()"
-            },
-            {
-              "name": "Stable",
-              "type": "()"
-            },
-            {
-              "name": "DonkeyFarm",
-              "type": "()"
-            },
-            {
-              "name": "TradingPost",
-              "type": "()"
-            },
-            {
-              "name": "WorkersHut",
-              "type": "()"
-            },
-            {
-              "name": "WatchTower",
-              "type": "()"
-            },
-            {
-              "name": "Walls",
-              "type": "()"
-            },
-            {
-              "name": "Storehouse",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::combat::contracts::combat_systems::PillageEvent",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "structure_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "attacker_realm_entity_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "army_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "winner",
-              "type": "eternum::models::combat::BattleSide",
-              "kind": "data"
-            },
-            {
-              "name": "pillaged_resources",
-              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-              "kind": "data"
-            },
-            {
-              "name": "destroyed_building_category",
-              "type": "eternum::models::buildings::BuildingCategory",
-              "kind": "data"
-            }
-          ]
-        },
-        {
           "type": "event",
           "name": "eternum::systems::combat::contracts::combat_systems::Event",
           "kind": "enum",
@@ -2492,11 +2308,6 @@
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "PillageEvent",
-              "type": "eternum::systems::combat::contracts::combat_systems::PillageEvent",
               "kind": "nested"
             }
           ]
@@ -2510,9 +2321,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x644123148d1f7cc756736906a66b0852cdcbc576493258ed170853d6485661d",
-      "class_hash": "0x550b2cb9d6ac97410cd957df0f51150759415c257eae397acbcf38dbbadc582",
-      "original_class_hash": "0x550b2cb9d6ac97410cd957df0f51150759415c257eae397acbcf38dbbadc582",
+      "address": "0x73f0efc06b135109b40f185f2a04a3a30e317f189642958f4f6848c1bb95a8e",
+      "class_hash": "0x4ee329e7b2b830c266f9ff35efa9e76deed3cb6d279339737dec953f10d1c56",
+      "original_class_hash": "0x4ee329e7b2b830c266f9ff35efa9e76deed3cb6d279339737dec953f10d1c56",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -2592,7 +2403,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2629,7 +2440,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2664,7 +2475,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2691,7 +2502,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2718,7 +2529,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2745,7 +2556,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2772,7 +2583,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2835,7 +2646,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2866,7 +2677,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2893,7 +2704,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -2909,7 +2720,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2932,7 +2743,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -2959,7 +2770,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -3020,7 +2831,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -3117,7 +2928,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -3140,7 +2951,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -3171,7 +2982,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -3261,9 +3072,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x2c3151f1824232745e57f72fa213d9c816e2befb946dfb513e90ee950312ffd",
-      "class_hash": "0x5f4cddfc757ef56b349421697f9e6adae81dfef60210d9094f0ec893a46e3f9",
-      "original_class_hash": "0x5f4cddfc757ef56b349421697f9e6adae81dfef60210d9094f0ec893a46e3f9",
+      "address": "0x2b516f55f0ce07ab936099bc3c77471857170a39461adf49c67eb0f67921221",
+      "class_hash": "0x11efdc80c04daa4f2f4a2f88d153c4f3c9fbceba55240dae4cf5e32088f6ba5",
+      "original_class_hash": "0x11efdc80c04daa4f2f4a2f88d153c4f3c9fbceba55240dae4cf5e32088f6ba5",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -3358,10 +3169,10 @@
               ],
               "outputs": [
                 {
-                  "type": "(core::integer::u128, core::integer::u128)"
+                  "type": "core::integer::u128"
                 }
               ],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -3451,9 +3262,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x50d9b7871951fcbcda78e70cdd26e9bf89cbb13495fbb91b588a1352f0f7b30",
-      "class_hash": "0x225de2c0fcc520c7883f4f36a754a7af291591cf920cc466bd3a2bedc316b45",
-      "original_class_hash": "0x225de2c0fcc520c7883f4f36a754a7af291591cf920cc466bd3a2bedc316b45",
+      "address": "0x5d06cf4449749a6e2995c192afbfe60c314b8f763de83f0322b5f4f9151a80b",
+      "class_hash": "0x4a3a0469c88aa25ec91a7fb6ad8c6ea333ed13fdf7f12410b8fa1eab5b29d75",
+      "original_class_hash": "0x4a3a0469c88aa25ec91a7fb6ad8c6ea333ed13fdf7f12410b8fa1eab5b29d75",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -3543,7 +3354,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -3633,9 +3444,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x23b9b9ce250c5cfa3f6bbd6b4229c50942f0bdf428b55143588c98169175123",
-      "class_hash": "0xc4084bd07913c5e82cbad29d30025487bc1bb43a96c54374ba8f6f17e5bf6f",
-      "original_class_hash": "0xc4084bd07913c5e82cbad29d30025487bc1bb43a96c54374ba8f6f17e5bf6f",
+      "address": "0x4ae0caa7f060ee45011d5374c43f07fb6c52beebecf9c6893aae1a03bedb2f7",
+      "class_hash": "0x43c44e09d56b1a43fe002aacd60290961e7e0220a13af168a3c74f73cb386e1",
+      "original_class_hash": "0x43c44e09d56b1a43fe002aacd60290961e7e0220a13af168a3c74f73cb386e1",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -3733,7 +3544,7 @@
                   "type": "core::integer::u128"
                 }
               ],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -3745,7 +3556,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -3761,14 +3572,14 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
               "name": "leave_guild",
               "inputs": [],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -3784,7 +3595,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -3796,7 +3607,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -3812,7 +3623,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -3902,9 +3713,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x134e5d8b37d1f2ef5670c81391c355fc6e182bed6002519165cf43edc73ab23",
-      "class_hash": "0x4d871e0d73b48b0ddb94dd9d97959ada5868beb9b63b44340e09975953a3e27",
-      "original_class_hash": "0x4d871e0d73b48b0ddb94dd9d97959ada5868beb9b63b44340e09975953a3e27",
+      "address": "0x61857309943a4edc7c72805af62f91e70f489e2d8526431a222f8262223ea16",
+      "class_hash": "0x658715e2ac6b62af3edd66fa2eb79871596fe3b61459fd44601d1be6b6be4ba",
+      "original_class_hash": "0x658715e2ac6b62af3edd66fa2eb79871596fe3b61459fd44601d1be6b6be4ba",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -4012,7 +3823,7 @@
                   "type": "core::integer::u128"
                 }
               ],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -4032,7 +3843,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -4103,34 +3914,12 @@
         },
         {
           "type": "event",
-          "name": "eternum::systems::hyperstructure::contracts::hyperstructure_systems::HyperstructureFinished",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "hyperstructure_entity_id",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "timestamp",
-              "type": "core::integer::u64",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
           "name": "eternum::systems::hyperstructure::contracts::hyperstructure_systems::Event",
           "kind": "enum",
           "variants": [
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "HyperstructureFinished",
-              "type": "eternum::systems::hyperstructure::contracts::hyperstructure_systems::HyperstructureFinished",
               "kind": "nested"
             }
           ]
@@ -4144,9 +3933,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x135ad425646d071b43ce4e4151ba760d9f7ca89d75eb92d423e2d340e96519c",
-      "class_hash": "0x20c104d7872d5505e704de711e8acd071ed9330fe17814c1a63e40a1077d38d",
-      "original_class_hash": "0x20c104d7872d5505e704de711e8acd071ed9330fe17814c1a63e40a1077d38d",
+      "address": "0x375d243e63d439b2a4ee5fe99ad108eb405fcfef78ca33ed7b0e44a7d38c9f8",
+      "class_hash": "0x277fe5bc530deae19a15a4c5a3217e828514b4d07395a4835f89dd25e911d2c",
+      "original_class_hash": "0x277fe5bc530deae19a15a4c5a3217e828514b4d07395a4835f89dd25e911d2c",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -4222,7 +4011,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -4312,9 +4101,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x91d23f4fadfd2a3377dcc590e08f9a78863bced66de67e8f49ed3412a8144c",
-      "class_hash": "0x4de42a57ad829e1a40118336c0c45d08a6a202f21a3003ee18faa9991499e0b",
-      "original_class_hash": "0x4de42a57ad829e1a40118336c0c45d08a6a202f21a3003ee18faa9991499e0b",
+      "address": "0x1723599f44e8b02ac7893a4bcc993a9aa55729f0a91ee94bc5d57589a5276b5",
+      "class_hash": "0x1d73c368c6c5e8b3c5de88451592ae0e0fc633742680d23cbe77469e0dc024a",
+      "original_class_hash": "0x1d73c368c6c5e8b3c5de88451592ae0e0fc633742680d23cbe77469e0dc024a",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -4424,7 +4213,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -4494,123 +4283,6 @@
           ]
         },
         {
-          "type": "enum",
-          "name": "eternum::utils::map::biomes::Biome",
-          "variants": [
-            {
-              "name": "DeepOcean",
-              "type": "()"
-            },
-            {
-              "name": "Ocean",
-              "type": "()"
-            },
-            {
-              "name": "Beach",
-              "type": "()"
-            },
-            {
-              "name": "Scorched",
-              "type": "()"
-            },
-            {
-              "name": "Bare",
-              "type": "()"
-            },
-            {
-              "name": "Tundra",
-              "type": "()"
-            },
-            {
-              "name": "Snow",
-              "type": "()"
-            },
-            {
-              "name": "TemperateDesert",
-              "type": "()"
-            },
-            {
-              "name": "Shrubland",
-              "type": "()"
-            },
-            {
-              "name": "Taiga",
-              "type": "()"
-            },
-            {
-              "name": "Grassland",
-              "type": "()"
-            },
-            {
-              "name": "TemperateDeciduousForest",
-              "type": "()"
-            },
-            {
-              "name": "TemperateRainForest",
-              "type": "()"
-            },
-            {
-              "name": "SubtropicalDesert",
-              "type": "()"
-            },
-            {
-              "name": "TropicalSeasonalForest",
-              "type": "()"
-            },
-            {
-              "name": "TropicalRainForest",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::map::contracts::map_systems::MapExplored",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "entity_owner_id",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "col",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "row",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "biome",
-              "type": "eternum::utils::map::biomes::Biome",
-              "kind": "data"
-            },
-            {
-              "name": "reward",
-              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
           "type": "event",
           "name": "eternum::systems::map::contracts::map_systems::Event",
           "kind": "enum",
@@ -4618,11 +4290,6 @@
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "MapExplored",
-              "type": "eternum::systems::map::contracts::map_systems::MapExplored",
               "kind": "nested"
             }
           ]
@@ -4636,9 +4303,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x5ceefe6ba0be54bfef5465f2d40d544c1250de5e155f3ccc1eb19622291d62f",
-      "class_hash": "0x57a2bf8f6775012f29cf1a3a754b6d5ba6af3e2cec186a0555695a6d41b8a54",
-      "original_class_hash": "0x57a2bf8f6775012f29cf1a3a754b6d5ba6af3e2cec186a0555695a6d41b8a54",
+      "address": "0x4172a8b3680c241db40c53271809387ea9c0c12f302fe4aeffb5d551daa1f89",
+      "class_hash": "0x3759be44bbfdd03a163e7fe76a4f5ad90f8ec0fdc8b7500fd6eda5c7cf3a5dc",
+      "original_class_hash": "0x3759be44bbfdd03a163e7fe76a4f5ad90f8ec0fdc8b7500fd6eda5c7cf3a5dc",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -4714,7 +4381,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -4730,7 +4397,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -4820,9 +4487,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x4226ad41ad00f25d18146b4ed1af5726bad9a2c89e9454908f9e44817f8d2d2",
-      "class_hash": "0x9735e7426e0d0077dc0f99a8da2152b473543b23ff4a14a3fa9e5686e1c59",
-      "original_class_hash": "0x9735e7426e0d0077dc0f99a8da2152b473543b23ff4a14a3fa9e5686e1c59",
+      "address": "0x5ab60a1ee699447e6adbb6e66175261d529a60cb99b3c8c5144af739917353d",
+      "class_hash": "0x48df207bb2c7dcf882f546f3cae2677588322d55dd05aa48d59e2d2966ad912",
+      "original_class_hash": "0x48df207bb2c7dcf882f546f3cae2677588322d55dd05aa48d59e2d2966ad912",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -4956,7 +4623,7 @@
                   "type": "core::integer::u128"
                 }
               ],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -4976,7 +4643,7 @@
                   "type": "core::integer::u128"
                 }
               ],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -5066,9 +4733,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x3a9fb59d52049b2770ba1a861f0c601e3dd875b938582554786cbfa77a0976c",
-      "class_hash": "0x310889ff2360ac4c4350dd3992597ef05b66f1e47ffa2758c262fc0be328bb",
-      "original_class_hash": "0x310889ff2360ac4c4350dd3992597ef05b66f1e47ffa2758c262fc0be328bb",
+      "address": "0x1268d450a57c3a22bd0262c27c5fe1738ed33a8c20a62307a72d042e26204db",
+      "class_hash": "0x3f2d3af9b210e8d0dc87f84da5e3849eab0f8b5a0410e9ff44a439bdc9dd75f",
+      "original_class_hash": "0x3f2d3af9b210e8d0dc87f84da5e3849eab0f8b5a0410e9ff44a439bdc9dd75f",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -5162,7 +4829,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -5182,7 +4849,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -5202,7 +4869,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -5273,44 +4940,12 @@
         },
         {
           "type": "event",
-          "name": "eternum::systems::resources::contracts::resource_systems::Transfer",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "recipient_entity_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "sending_realm_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "sender_entity_id",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "resources",
-              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
           "name": "eternum::systems::resources::contracts::resource_systems::Event",
           "kind": "enum",
           "variants": [
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "Transfer",
-              "type": "eternum::systems::resources::contracts::resource_systems::Transfer",
               "kind": "nested"
             }
           ]
@@ -5324,9 +4959,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x3c4f1a86bc7420865bb41c7627eb8d351c451a5060edc6c4739755d9224380b",
-      "class_hash": "0x71263d92804efed14a61ddbd89fd0125a73da9f721bba0124693f6e7a44fc19",
-      "original_class_hash": "0x71263d92804efed14a61ddbd89fd0125a73da9f721bba0124693f6e7a44fc19",
+      "address": "0x38a93ca09a4d8aea32cfd6817754b6e1df35c061631459072928d73897fc9d5",
+      "class_hash": "0x6f903b167742c98a72cef7211a0e5a0fa71e7b050ffa05a1fdb2b4baef58b3f",
+      "original_class_hash": "0x6f903b167742c98a72cef7211a0e5a0fa71e7b050ffa05a1fdb2b4baef58b3f",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -5432,7 +5067,7 @@
                   "type": "core::integer::u128"
                 }
               ],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -5456,7 +5091,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -5472,7 +5107,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -5543,49 +5178,12 @@
         },
         {
           "type": "event",
-          "name": "eternum::systems::trade::contracts::trade_systems::trade_systems::CreateOrder",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "taker_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "maker_id",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "trade_id",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "maker_gives_resources",
-              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-              "kind": "data"
-            },
-            {
-              "name": "taker_gives_resources",
-              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
-          "type": "event",
           "name": "eternum::systems::trade::contracts::trade_systems::trade_systems::Event",
           "kind": "enum",
           "variants": [
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "CreateOrder",
-              "type": "eternum::systems::trade::contracts::trade_systems::trade_systems::CreateOrder",
               "kind": "nested"
             }
           ]
@@ -5599,7 +5197,7 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x40f563752dfcc6d7668b2e123a3ed680262110851f6e1d137338f5dd383897e",
+      "address": "0x6ebf2d5b1abf9d798c395523263265885bc639deb7acc7c4bd604222e35e9a6",
       "class_hash": "0x1bf772af6bf241a8ecc734a5e47323051a30d09debb306e26d586ebf9db088f",
       "original_class_hash": "0x1bf772af6bf241a8ecc734a5e47323051a30d09debb306e26d586ebf9db088f",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
@@ -5744,9 +5342,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x2c63dbd18fd407a4654678584e22118123f7e5cd11bff32ce385b4fd7d4c403",
-      "class_hash": "0x704c1c4fb4208fc58550b5ab765ec0d45b69372660063ce332b21bda3872134",
-      "original_class_hash": "0x704c1c4fb4208fc58550b5ab765ec0d45b69372660063ce332b21bda3872134",
+      "address": "0x40533282e8878c8fc895fb212e42493b32c7115fe44acbb64b8925ef3039c72",
+      "class_hash": "0x5d9f3d5b40c3242a6c314a20600ea682d69be9bbf97e9a0f1c13f54849a7f43",
+      "original_class_hash": "0x5d9f3d5b40c3242a6c314a20600ea682d69be9bbf97e9a0f1c13f54849a7f43",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -5848,7 +5446,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -5938,9 +5536,9 @@
     },
     {
       "kind": "DojoContract",
-      "address": "0x6c51b7ecf0f0cf6d3ab936a3bc732753fd071e30afb5e6bc05c074856b0ac5",
-      "class_hash": "0x567a6f70f12d44664c0a6f4879dbf1afcb4de881807ee120c1b3234b92a249d",
-      "original_class_hash": "0x567a6f70f12d44664c0a6f4879dbf1afcb4de881807ee120c1b3234b92a249d",
+      "address": "0x62b01fcba32ddefd5cf422b0fd79e39d394419e58bf80059d906d6bc5dff90c",
+      "class_hash": "0x1770ef3ecc9bb543dd60bbfab30c2841bd05fc5e3176da5f8d724e10db25292",
+      "original_class_hash": "0x1770ef3ecc9bb543dd60bbfab30c2841bd05fc5e3176da5f8d724e10db25292",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -6074,7 +5672,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             },
             {
               "type": "function",
@@ -6090,7 +5688,7 @@
                 }
               ],
               "outputs": [],
-              "state_mutability": "view"
+              "state_mutability": "external"
             }
           ]
         },
@@ -6160,53 +5758,6 @@
           ]
         },
         {
-          "type": "struct",
-          "name": "core::array::Span::<eternum::models::position::Coord>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<eternum::models::position::Coord>"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::transport::contracts::travel_systems::travel_systems::Travel",
-          "kind": "struct",
-          "members": [
-            {
-              "name": "destination_coord_x",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "destination_coord_y",
-              "type": "core::integer::u128",
-              "kind": "key"
-            },
-            {
-              "name": "owner",
-              "type": "core::starknet::contract_address::ContractAddress",
-              "kind": "key"
-            },
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128",
-              "kind": "data"
-            },
-            {
-              "name": "travel_time",
-              "type": "core::integer::u64",
-              "kind": "data"
-            },
-            {
-              "name": "travel_path",
-              "type": "core::array::Span::<eternum::models::position::Coord>",
-              "kind": "data"
-            }
-          ]
-        },
-        {
           "type": "event",
           "name": "eternum::systems::transport::contracts::travel_systems::travel_systems::Event",
           "kind": "enum",
@@ -6214,11 +5765,6 @@
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
-              "kind": "nested"
-            },
-            {
-              "name": "Travel",
-              "type": "eternum::systems::transport::contracts::travel_systems::travel_systems::Travel",
               "kind": "nested"
             }
           ]
@@ -6635,396 +6181,6 @@
         }
       ],
       "name": "eternum::models::bank::bank::bank"
-    },
-    {
-      "kind": "DojoModel",
-      "members": [
-        {
-          "name": "bank_entity_id",
-          "type": "u128",
-          "key": true
-        },
-        {
-          "name": "owner",
-          "type": "ContractAddress",
-          "key": true
-        },
-        {
-          "name": "entity_id",
-          "type": "u128",
-          "key": false
-        }
-      ],
-      "class_hash": "0x150f2b140daa1b1de69fc3737ef2de8d201e5ee03cf60c66b4c6e02dc808f09",
-      "original_class_hash": "0x150f2b140daa1b1de69fc3737ef2de8d201e5ee03cf60c66b4c6e02dc808f09",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "DojoModelImpl",
-          "interface_name": "dojo::model::IModel"
-        },
-        {
-          "type": "struct",
-          "name": "core::byte_array::ByteArray",
-          "members": [
-            {
-              "name": "data",
-              "type": "core::array::Array::<core::bytes_31::bytes31>"
-            },
-            {
-              "name": "pending_word",
-              "type": "core::felt252"
-            },
-            {
-              "name": "pending_word_len",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "core::option::Option::<core::integer::u32>",
-          "variants": [
-            {
-              "name": "Some",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "None",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::FieldLayout",
-          "members": [
-            {
-              "name": "selector",
-              "type": "core::felt252"
-            },
-            {
-              "name": "layout",
-              "type": "dojo::database::introspect::Layout"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<dojo::database::introspect::FieldLayout>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<dojo::database::introspect::FieldLayout>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<dojo::database::introspect::Layout>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<dojo::database::introspect::Layout>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Layout",
-          "variants": [
-            {
-              "name": "Fixed",
-              "type": "core::array::Span::<core::integer::u8>"
-            },
-            {
-              "name": "Struct",
-              "type": "core::array::Span::<dojo::database::introspect::FieldLayout>"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<dojo::database::introspect::Layout>"
-            },
-            {
-              "name": "Array",
-              "type": "core::array::Span::<dojo::database::introspect::Layout>"
-            },
-            {
-              "name": "ByteArray",
-              "type": "()"
-            },
-            {
-              "name": "Enum",
-              "type": "core::array::Span::<dojo::database::introspect::FieldLayout>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::felt252>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::felt252>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Member",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "ty",
-              "type": "dojo::database::introspect::Ty"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<dojo::database::introspect::Member>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<dojo::database::introspect::Member>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Struct",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<dojo::database::introspect::Member>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::felt252, dojo::database::introspect::Ty)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::felt252, dojo::database::introspect::Ty)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "dojo::database::introspect::Enum",
-          "members": [
-            {
-              "name": "name",
-              "type": "core::felt252"
-            },
-            {
-              "name": "attrs",
-              "type": "core::array::Span::<core::felt252>"
-            },
-            {
-              "name": "children",
-              "type": "core::array::Span::<(core::felt252, dojo::database::introspect::Ty)>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<dojo::database::introspect::Ty>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<dojo::database::introspect::Ty>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "dojo::database::introspect::Ty",
-          "variants": [
-            {
-              "name": "Primitive",
-              "type": "core::felt252"
-            },
-            {
-              "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
-            },
-            {
-              "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
-            },
-            {
-              "name": "Tuple",
-              "type": "core::array::Span::<dojo::database::introspect::Ty>"
-            },
-            {
-              "name": "Array",
-              "type": "core::array::Span::<dojo::database::introspect::Ty>"
-            },
-            {
-              "name": "ByteArray",
-              "type": "()"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "dojo::model::IModel",
-          "items": [
-            {
-              "type": "function",
-              "name": "selector",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::felt252"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "name",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::byte_array::ByteArray"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "version",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::integer::u8"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "unpacked_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::option::Option::<core::integer::u32>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "packed_size",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "core::option::Option::<core::integer::u32>"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "layout",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Layout"
-                }
-              ],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "schema",
-              "inputs": [],
-              "outputs": [
-                {
-                  "type": "dojo::database::introspect::Ty"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "bank_accountsImpl",
-          "interface_name": "eternum::models::bank::bank::Ibank_accounts"
-        },
-        {
-          "type": "struct",
-          "name": "eternum::models::bank::bank::BankAccounts",
-          "members": [
-            {
-              "name": "bank_entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "owner",
-              "type": "core::starknet::contract_address::ContractAddress"
-            },
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::models::bank::bank::Ibank_accounts",
-          "items": [
-            {
-              "type": "function",
-              "name": "ensure_abi",
-              "inputs": [
-                {
-                  "name": "model",
-                  "type": "eternum::models::bank::bank::BankAccounts"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "event",
-          "name": "eternum::models::bank::bank::bank_accounts::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "name": "eternum::models::bank::bank::bank_accounts"
     },
     {
       "kind": "DojoModel",

@@ -549,14 +549,17 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
-  public async mint_starting_resources(props: SystemProps.CreateStartingResources) {
-    const { realm_entity_id, config_id, signer } = props;
+  public async mint_starting_resources(props: SystemProps.MintStartingResources) {
+    const { realm_entity_id, config_ids, signer } = props;
 
-    return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "realm_systems"),
-      entrypoint: "mint_starting_resources",
-      calldata: [config_id, realm_entity_id],
-    });
+    return await this.executeAndCheckTransaction(
+      signer,
+      config_ids.map((configId) => ({
+        contractAddress: getContractByName(this.manifest, "realm_systems"),
+        entrypoint: "mint_starting_resources",
+        calldata: [configId, realm_entity_id],
+      })),
+    );
   }
 
   public async create_guild(props: SystemProps.CreateGuildProps) {

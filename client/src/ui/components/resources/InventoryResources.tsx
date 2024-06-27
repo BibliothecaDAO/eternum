@@ -7,12 +7,10 @@ export const InventoryResources = ({
   entityId,
   max = Infinity,
   className = "flex flex-wrap gap-1",
-  title,
 }: {
   entityId: bigint;
   max?: number;
   className?: string;
-  title?: string;
 }) => {
   const { getResourcesFromBalance } = useResources();
 

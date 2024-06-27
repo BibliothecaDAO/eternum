@@ -106,7 +106,20 @@ export const ResourceChip = ({
             <div>{netRate / 1000} / s</div>
           </div>
         ) : (
-          <div className="self-center px-2">{isConsumingInputsWithoutOutput ? "⚠️" : ""}</div>
+          <div
+            onMouseEnter={() => {
+              setTooltip({
+                position: "top",
+                content: <>Production has stopped because inputs have been depleted</>,
+              });
+            }}
+            onMouseLeave={() => {
+              setTooltip(null);
+            }}
+            className="self-center px-2"
+          >
+            {isConsumingInputsWithoutOutput ? "⚠️" : ""}
+          </div>
         )}
       </div>
     </div>

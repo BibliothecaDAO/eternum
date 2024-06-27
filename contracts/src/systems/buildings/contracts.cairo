@@ -1,12 +1,17 @@
 #[dojo::interface]
 trait IBuildingContract<TContractState> {
     fn create(
+        ref world: IWorldDispatcher,
         entity_id: u128,
         building_coord: eternum::models::position::Coord,
         building_category: eternum::models::buildings::BuildingCategory,
         produce_resource_type: Option<u8>
     );
-    fn destroy(entity_id: u128, building_coord: eternum::models::position::Coord);
+    fn destroy(
+        ref world: IWorldDispatcher,
+        entity_id: u128,
+        building_coord: eternum::models::position::Coord
+    );
 }
 
 #[dojo::contract]
@@ -21,7 +26,7 @@ mod building_systems {
     #[abi(embed_v0)]
     impl BuildingContractImpl of super::IBuildingContract<ContractState> {
         fn create(
-            world: IWorldDispatcher,
+            ref world: IWorldDispatcher,
             entity_id: u128,
             building_coord: Coord,
             building_category: BuildingCategory,
@@ -46,7 +51,7 @@ mod building_systems {
             );
         }
 
-        fn destroy(world: IWorldDispatcher, entity_id: u128, building_coord: Coord) {
+        fn destroy(ref world: IWorldDispatcher, entity_id: u128, building_coord: Coord) {
             BuildingImpl::destroy(world, entity_id, building_coord);
         }
     }

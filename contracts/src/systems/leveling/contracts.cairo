@@ -3,7 +3,7 @@ use eternum::alias::ID;
 
 #[dojo::interface]
 trait ILevelingSystems {
-    fn level_up_realm(realm_entity_id: ID);
+    fn level_up_realm(ref world: IWorldDispatcher, realm_entity_id: ID);
 }
 
 #[dojo::contract]
@@ -27,7 +27,7 @@ mod leveling_systems {
 
     #[abi(embed_v0)]
     impl LevelingSystemsImpl of super::ILevelingSystems<ContractState> {
-        fn level_up_realm(world: IWorldDispatcher, realm_entity_id: ID,) {
+        fn level_up_realm(ref world: IWorldDispatcher, realm_entity_id: ID,) {
             // check that entity is a realm
             let realm = get!(world, realm_entity_id, Realm);
             assert(realm.realm_id != 0, 'not a realm');

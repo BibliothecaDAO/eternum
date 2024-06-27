@@ -1,6 +1,5 @@
-import { RESOURCE_OUTPUTS_SCALED, RESOURCE_TIERS } from "@bibliothecadao/eternum";
+import { RESOURCE_TIERS } from "@bibliothecadao/eternum";
 import { ResourceChip } from "./ResourceChip";
-import { useMemo } from "react";
 
 export const EntityResourceTable = ({ entityId }: { entityId: bigint | undefined }) => {
   if (!entityId) {
@@ -14,7 +13,7 @@ export const EntityResourceTable = ({ entityId }: { entityId: bigint | undefined
       });
 
       return (
-        <div className="my-2 px-3" key={tier}>
+        <div key={tier}>
           <div className="grid grid-cols-1 flex-wrap">{resources}</div>
         </div>
       );

@@ -109,7 +109,7 @@ const BuiltStructure = ({
         <Billboard>
           <Image
             texture={hyperLabel}
-            scale={6}
+            scale={4}
             position={[0, 8, 5]}
             side={THREE.DoubleSide}
             transparent

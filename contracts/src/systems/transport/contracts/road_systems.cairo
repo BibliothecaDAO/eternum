@@ -1,6 +1,7 @@
 #[dojo::interface]
 trait IRoadSystems {
     fn create(
+        ref world: IWorldDispatcher,
         entity_id: eternum::alias::ID,
         start_coord: eternum::models::position::Coord,
         end_coord: eternum::models::position::Coord,
@@ -31,7 +32,7 @@ mod road_systems {
         /// * `end_coord` - The ending coordinate of the road.
         /// * `usage_count` - The number of times the road can be used.
         fn create(
-            world: IWorldDispatcher,
+            ref world: IWorldDispatcher,
             entity_id: u128,
             start_coord: Coord,
             end_coord: Coord,

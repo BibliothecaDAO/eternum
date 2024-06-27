@@ -1,26 +1,39 @@
-import { currencyFormat } from "@/ui/utils/utils";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { Structure } from "@/hooks/helpers/useStructures";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
 export const BattleProgressBar = ({
+  ownArmySide,
   attackingHealth,
-  attacker,
+  attackerArmies,
   defendingHealth,
-  defender,
+  defenderArmies,
+  structure,
   durationLeft,
 }: {
+  ownArmySide: string;
   attackingHealth: { current: number; lifetime: number } | undefined;
-  attacker: string;
+  attackerArmies: ArmyInfo[];
   defendingHealth: { current: number; lifetime: number } | undefined;
-  defender: string;
+  defenderArmies: ArmyInfo[];
+  structure: Structure | undefined;
   durationLeft?: Date;
 }) => {
   const [time, setTime] = useState<Date | undefined>(durationLeft);
+
+  const attackerName = `${attackerArmies.length > 0 ? "Attackers" : "Empty"} ${ownArmySide === "Attack" ? "(⚔️)" : ""}`;
+  const defenderName = structure
+    ? `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+    : defenderArmies?.length > 0
+      ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+      : "Empty";
 
   const totalHealth = useMemo(
     () => (attackingHealth?.current || 0) + (defendingHealth?.current || 0),
     [attackingHealth, defendingHealth],
   );
+
   const attackingHealthPercentage = useMemo(
     () => (((attackingHealth?.current || 0) / totalHealth) * 100).toFixed(2),
     [attackingHealth, totalHealth],
@@ -45,11 +58,28 @@ export const BattleProgressBar = ({
     setTime(durationLeft);
   }, [durationLeft]);
 
-  const gradient = useMemo(
-    () =>
-      `linear-gradient(to right, #582C4D ${attackingHealthPercentage}%, rgba(0,0,0,0) ${attackingHealthPercentage}%, rgba(0,0,0,0) ${defendingHealthPercentage}%, #6B7FD7 ${defendingHealthPercentage}%)`,
-    [attackingHealthPercentage, defendingHealthPercentage],
-  );
+  const gradient = useMemo(() => {
+    const attackPercentage = parseFloat(attackingHealthPercentage);
+    const defendPercentage = parseFloat(defendingHealthPercentage);
+    return `linear-gradient(to right, #582C4D ${attackPercentage}%, #582C4D ${attackPercentage}%, #6B7FD7 ${attackPercentage}%, #6B7FD7 ${
+      attackPercentage + defendPercentage
+    }%)`;
+  }, [attackingHealthPercentage, defendingHealthPercentage]);
+
+  const battleStatus = useMemo(() => {
+    if (ownArmySide === "" || time || defenderArmies.length === 0 || attackerArmies.length === 0) return;
+    return ownArmySide === "Attack"
+      ? Number(attackingHealthPercentage) === 100
+        ? "You Won"
+        : Number(attackingHealthPercentage) === 0
+          ? "You Lost"
+          : undefined
+      : Number(defendingHealthPercentage) === 100
+        ? "You Won"
+        : Number(defendingHealthPercentage) === 0
+          ? "You Lost"
+          : undefined;
+  }, [time]);
 
   return (
     <motion.div
@@ -61,29 +91,21 @@ export const BattleProgressBar = ({
         visible: { y: "0%", transition: { duration: 0.5 } },
       }}
     >
-      <div className="mx-auto w-2/3 flex justify-between text-2xl text-white backdrop-blur-lg bg-brown/20 p-3">
-        <div>
-          <p>{attacker}</p>
+      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl text-gold backdrop-blur-lg bg-[#1b1a1a] px-8 py-2  ornate-borders-top-y">
+        <div className="text-left">
+          <p>{attackerName}</p>
         </div>
-        {time && <div>{time.toISOString().substring(11, 19)}</div>}
+        <div className="font-bold text-center">
+          {time ? `${time.toISOString().substring(11, 19)} left` : battleStatus}
+        </div>
         <div className="text-right">
-          <p>{defender}</p>
+          <p>{defenderName}</p>
         </div>
       </div>
-      <div className="relative h-8 mb-2 mx-auto w-2/3" style={{ background: gradient }}>
-        <div className="absolute left-0 top-0 h-full flex items-center justify-center w-full font-bold">
-          <div className="flex justify-between w-full px-2 text-white/60">
-            <span>
-              {currencyFormat(attackingHealth?.current || 0, 0)}/{currencyFormat(attackingHealth?.lifetime || 0, 0)} hp
-            </span>
-            {defendingHealth && (
-              <span>
-                {currencyFormat(defendingHealth.current, 0)}/{currencyFormat(defendingHealth.lifetime, 0)} hp
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+      <div
+        className="relative h-8  mx-auto w-2/3 ornate-borders-y animate-slowPulse"
+        style={{ background: gradient }}
+      ></div>
     </motion.div>
   );
 };

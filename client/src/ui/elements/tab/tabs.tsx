@@ -11,7 +11,7 @@ import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 export const VARIANTS: any = {
   default: {
     tab: {
-      base: "text-xs px-3 py-1 !outline-none border-y-2 border-transparent   transition-color duration-200 hover:bg-gold clip-angled-sm  space-x-1 hover:text-brown font-bold text-gold",
+      base: " px-3 py-1 !outline-none border-y-2 border-transparent   transition-color duration-200 hover:bg-gold clip-angled-sm  space-x-1 hover:text-brown font-bold text-gold",
       active: "    !border-gold border-gradient",
       inactive: "text-gray-gold",
     },
@@ -20,7 +20,7 @@ export const VARIANTS: any = {
   primary: {
     tab: {
       base: "relative mx-1 rounded-t-xl text-gold border-t transition-all duration-200 border-transparent !outline-none -mb-[1px] text-xs py-[12px] px-4",
-      active: "!border-gold text-white bg-gradient-to-b from-black to-[#151515]",
+      active: "",
       inactive: "",
     },
     tabList: "flex w-full justify-center px-2",
@@ -41,9 +41,17 @@ export interface TabsProps {
   className?: string;
   selectedIndex?: number;
   onChange?: (index: number) => void;
+  size?: "small" | "medium" | "large";
 }
 
-export const Tabs = ({ children, className, variant = "default", selectedIndex = 0, onChange }: TabsProps) => {
+export const Tabs = ({
+  children,
+  className,
+  size = "small",
+  variant = "default",
+  selectedIndex = 0,
+  onChange,
+}: TabsProps) => {
   const { play: playClick } = useUiSounds(soundSelector.click);
 
   return (
@@ -51,7 +59,11 @@ export const Tabs = ({ children, className, variant = "default", selectedIndex =
       {onChange ? (
         <HeadlessTab.Group
           as="div"
-          className={clsx("flex  flex-col ", className)}
+          className={clsx("flex flex-col", className, {
+            "text-xs": size === "small",
+            "text-base": size === "medium",
+            "text-xl": size === "large",
+          })}
           selectedIndex={selectedIndex}
           onChange={(e) => {
             onChange(e);

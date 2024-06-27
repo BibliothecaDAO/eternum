@@ -13,10 +13,11 @@ import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import { displayAddress } from "@/ui/utils/utils";
-import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { shortString } from "starknet";
 import { useLocation } from "wouter";
 
 export const StepContainer = ({ children }: { children: React.ReactNode }) => {
@@ -76,6 +77,8 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   const name = getAddressName(account.address);
   const { playerRealms } = useEntities();
 
+  console.log(name);
+
   // @dev: refactor this
   useEffect(() => {
     if (addressIsMaster) return;
@@ -88,7 +91,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     setLoading(true);
     if (inputName && !addressIsMaster) {
       // convert string to bigint
-      const inputNameBigInt = BigInt("0x" + Buffer.from(inputName, "utf-8").toString("hex"));
+      const inputNameBigInt = shortString.encodeShortString(inputName);
       await set_address_name({ name: inputNameBigInt, signer: account as any });
       setAddressName(inputName);
       setLoading(false);
@@ -142,14 +145,6 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     });
   };
 
-  const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_PUBLIC_MASTER_ADDRESS!, [account]);
-
-  useEffect(() => {
-    if (list().length == 0) {
-      create();
-    }
-  }, [isWalletSelected]);
-
   useEffect(() => {
     if (copyMessage || importMessage) {
       setTooltip({
@@ -198,7 +193,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                 title="Active Account: "
                 options={list().map((account) => ({
                   id: account.address,
-                  label: <div className="w-[225px] text-left">{displayAddress(account.address)}</div>,
+                  label: <div className="w-[225px]">{displayAddress(account.address)}</div>,
                 }))}
                 value={account.address}
                 onChange={select}
@@ -352,10 +347,10 @@ export const StepFive = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
   return (
     <StepContainer>
       <ContainerWithSquire>
-        <h2 className="mb-4">Days are 8hrs long</h2>
+        <h2 className="mb-4">Days are {EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60 / 60}hrs long</h2>
         <p className="mb-4 text-xl">
-          Each 8hr period your Realms and Troops will regain energy and be able to travel again. Don't get caught out in
-          the open.
+          Each {EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60 / 60} hour period your Realms and Troops will
+          regain energy and be able to travel again. Don't get caught out in the open.
         </p>
         <div className="mt-auto">
           <Button size="md" className=" mt-auto" variant="primary" onClick={onNext}>
@@ -371,9 +366,7 @@ export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => 
   return (
     <StepContainer>
       <ResourceIcon resource="Ancient Fragment" size="xl" withTooltip={false} />
-      <p className="text-2xl text-center mb-8">
-        They who rule the Ancient Fragments <br /> rule the world...
-      </p>
+      <p className="text-2xl text-center mb-8">Follow the quests and you will survive the day.</p>
       <div className="flex w-full justify-center">
         <NavigateToRealm text={"begin"} />
       </div>

@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import "../../index.css";
 
 export const LoadingScreen = () => {
   const statements = [
-    "Loading Worlds...",
-    "Gathering Resources...",
-    "Assembling Characters...",
+    "Syncing Eternum...",
+    "Gathering Dragonhide...",
+    "Stepping the world...",
     "Painting the Sky...",
     "Crafting Stories...",
-    "Setting Up Adventures...",
     "Finalizing Details...",
     "Almost There...",
     "Preparing Surprises...",
@@ -32,9 +31,9 @@ export const LoadingScreen = () => {
 
   return (
     <div className="relative h-screen w-screen bg-black">
-      <img className="absolute h-screen w-screen object-cover" src="/images/cover.jpeg" alt="" />
+      <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
       <div
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-brown p-10 text-gold border-y-2 border-gradient ${
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-brown p-10 text-gold border-y-2 border-gradient ornate-borders ${
           fade ? "fade-in" : "fade-out"
         }`}
       >

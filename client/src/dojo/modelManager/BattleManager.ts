@@ -1,4 +1,4 @@
-import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
+import { Component, ComponentValue, OverridableComponent, Type, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { BattleType } from "./types";
 
@@ -9,52 +9,6 @@ export class BattleManager {
   constructor(battleModel: Component<BattleType> | OverridableComponent<BattleType>, battleId: bigint) {
     this.battleModel = battleModel;
     this.battleId = battleId;
-  }
-
-  public getBattle() {
-    return getComponentValue(this.battleModel, getEntityIdFromKeys([this.battleId]));
-  }
-
-  public attackingDelta() {
-    const battle = this.getBattle();
-    return battle ? battle.attack_delta : 0n;
-  }
-
-  public defendingDelta() {
-    const battle = this.getBattle();
-    return battle ? battle.defence_delta : 0n;
-  }
-
-  private damagesDone(delta: bigint, durationPassed: number): bigint {
-    return delta * BigInt(durationPassed);
-  }
-
-  public getElapsedTime(currentTick: number): number {
-    const battle = this.getBattle();
-    if (!battle) return 0;
-    const duractionSinceLastUpdate = currentTick - Number(battle.last_updated);
-    if (Number(battle.duration_left) >= duractionSinceLastUpdate) {
-      return duractionSinceLastUpdate;
-    } else {
-      return Number(battle.duration_left);
-    }
-  }
-
-  public getTimeLeft(currentTick: number): Date {
-    var date = new Date(0);
-    const battle = this.getBattle();
-    if (!battle) return date;
-    const duractionSinceLastUpdate = currentTick - Number(battle.last_updated);
-    if (Number(battle.duration_left) >= duractionSinceLastUpdate) {
-      date.setSeconds(Number(battle.duration_left) - duractionSinceLastUpdate);
-    }
-    return date;
-  }
-
-  public battleActive(currentTick: number): boolean {
-    const battle = this.getBattle();
-    const timeSinceLastUpdate = this.getElapsedTime(currentTick);
-    return battle ? timeSinceLastUpdate < battle.duration_left : false;
   }
 
   public getUpdatedBattle(currentTick: number) {
@@ -78,6 +32,84 @@ export class BattleManager {
       damagesDoneToDefence > battle.defence_army_health.current
         ? 0n
         : battle.defence_army_health.current - damagesDoneToDefence;
+
+    battle.defence_army.troops = this.getUpdatedTroops(battle.defence_army_health, battle.defence_army.troops);
+    battle.attack_army.troops = this.getUpdatedTroops(battle.attack_army_health, battle.attack_army.troops);
+
     return battle;
+  }
+
+  public getElapsedTime(currentTick: number): number {
+    const battle = this.getBattle();
+    if (!battle) return 0;
+    const duractionSinceLastUpdate = currentTick - Number(battle.last_updated);
+    if (Number(battle.duration_left) >= duractionSinceLastUpdate) {
+      return duractionSinceLastUpdate;
+    } else {
+      return Number(battle.duration_left);
+    }
+  }
+
+  public getTimeLeft(currentTimestamp: number): Date | undefined {
+    const date = new Date(0);
+    const battle = this.getBattle();
+
+    if (!battle) {
+      return undefined;
+    }
+    const duractionSinceLastUpdate = currentTimestamp - Number(battle.last_updated);
+    if (Number(battle.duration_left) > duractionSinceLastUpdate) {
+      date.setSeconds(Number(battle.duration_left) - duractionSinceLastUpdate);
+      return date;
+    } else {
+      return undefined;
+    }
+  }
+  public isBattleActive(currentTick: number): boolean {
+    const battle = this.getBattle();
+    const timeSinceLastUpdate = this.getElapsedTime(currentTick);
+    return battle ? timeSinceLastUpdate < battle.duration_left : false;
+  }
+
+  private getBattle() {
+    return getComponentValue(this.battleModel, getEntityIdFromKeys([this.battleId]));
+  }
+
+  private getUpdatedTroops = (
+    health: { current: bigint; lifetime: bigint },
+    currentTroops: ComponentValue<
+      { knight_count: Type.BigInt; paladin_count: Type.BigInt; crossbowman_count: Type.BigInt },
+      unknown
+    >,
+  ): ComponentValue<
+    { knight_count: Type.BigInt; paladin_count: Type.BigInt; crossbowman_count: Type.BigInt },
+    unknown
+  > => {
+    if (health.lifetime === 0n) {
+      return {
+        knight_count: 0n,
+        paladin_count: 0n,
+        crossbowman_count: 0n,
+      };
+    }
+    return {
+      knight_count: (BigInt(health.current) * BigInt(currentTroops.knight_count)) / BigInt(health.lifetime),
+      paladin_count: (BigInt(health.current) * BigInt(currentTroops.paladin_count)) / BigInt(health.lifetime),
+      crossbowman_count: (BigInt(health.current) * BigInt(currentTroops.crossbowman_count)) / BigInt(health.lifetime),
+    };
+  };
+
+  private attackingDelta() {
+    const battle = this.getBattle();
+    return battle ? battle.attack_delta : 0n;
+  }
+
+  private defendingDelta() {
+    const battle = this.getBattle();
+    return battle ? battle.defence_delta : 0n;
+  }
+
+  private damagesDone(delta: bigint, durationPassed: number): bigint {
+    return delta * BigInt(durationPassed);
   }
 }

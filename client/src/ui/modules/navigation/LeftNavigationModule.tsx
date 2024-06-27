@@ -21,7 +21,7 @@ import { Banks } from "../banking/Banks";
 import { Guilds } from "../guilds/Guilds";
 import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
-import { SettingsWindow } from "../settings/Settings";
+
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
@@ -209,7 +209,6 @@ export const LeftNavigationModule = () => {
   return (
     <>
       <div className="pointer-events-auto">
-        <SettingsWindow />
         <Questing entityId={realmEntityId} />
         <Assistant />
         <Leaderboard />
