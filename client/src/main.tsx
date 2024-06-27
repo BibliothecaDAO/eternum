@@ -9,6 +9,12 @@ import { dojoConfig } from "../dojoConfig";
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 
+declare global {
+  interface Window {
+    Buffer: typeof Buffer;
+  }
+}
+
 window.Buffer = Buffer;
 
 async function init() {
