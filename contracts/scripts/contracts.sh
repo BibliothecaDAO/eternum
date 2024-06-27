@@ -32,11 +32,11 @@ export LEVELING_SYSTEMS=$(get_contract_address "eternum::systems::leveling::cont
 
 export NAME_SYSTEMS=$(get_contract_address "eternum::systems::name::contracts::name_systems")
 
-export BANK_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::bank_systems::bank_systems")
+export BANK_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::bank::bank_systems")
 
-export SWAP_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::swap_systems::swap_systems")
+export SWAP_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::swap::swap_systems")
 
-export LIQUIDITY_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems")
+export LIQUIDITY_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::liquidity::liquidity_systems")
 
 export HYPERSTRUCTURE_SYSTEMS=$(get_contract_address "eternum::systems::hyperstructure::contracts::hyperstructure_systems")
 
