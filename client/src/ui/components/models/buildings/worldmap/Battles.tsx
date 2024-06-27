@@ -62,7 +62,8 @@ const BattleModel = ({ battle_id, position, onClick }: { battle_id: any; positio
     if (testRef.current) {
       // make color pulse red based on time
       const time = state.clock.getElapsedTime();
-      testRef.current.material.color.set(Math.sin(time * 4) + 2, 0, 0);
+      const material = testRef.current.material as any;
+      material.color.set(Math.sin(time * 4) + 2, 0, 0);
     }
   });
 
