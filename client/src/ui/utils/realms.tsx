@@ -23,16 +23,13 @@ export const loadRealms = async () => {
 loadRealms();
 
 export const getRealmIdByPosition = (position: { x: number; y: number }): bigint | undefined => {
-  let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
-  for (let realmId of Object.keys(realmPositions)) {
-    if (
-      realmPositions[Number(realmId)][0].col === position.x &&
-      realmPositions[Number(realmId)][0].row === position.y
-    ) {
-      return BigInt(realmId);
-    }
-  }
-  return undefined;
+  const realmPositions = realmsHexPositions as Record<number, { col: number; row: number }[]>;
+
+  const realmId = Object.entries(realmPositions).find(
+    ([_, positions]) => positions[0].col === position.x && positions[0].row === position.y,
+  )?.[0];
+
+  return realmId ? BigInt(realmId) : undefined;
 };
 
 export const getRealmNameById = (realmId: bigint): string => {
@@ -51,50 +48,30 @@ export function getRealm(realmId: bigint): RealmInterface | undefined {
   const realmsData = realms;
   const realm = realmsData[realmId.toString()];
   if (!realm) return;
+
   const resourceIds = realm.attributes
     .filter(({ trait_type }: Attribute) => trait_type === "Resource")
     .map(({ value }: Attribute) => findResourceIdByTrait(value));
+
   const resourceTypesPacked = BigInt(packResources(resourceIds));
-  let cities: number = 0;
-  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
-    if (trait_type === "Cities") {
-      cities = value;
-    }
-  });
-  let harbors: number = 0;
-  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
-    if (trait_type === "Harbors") {
-      harbors = value;
-    }
-  });
-  let rivers: number = 0;
-  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
-    if (trait_type === "Rivers") {
-      rivers = value;
-    }
-  });
-  let regions: number = 0;
-  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
-    if (trait_type === "Regions") {
-      regions = value;
-    }
-  });
+
+  const getAttributeValue = (attributeName: string): number => {
+    const attribute = realm.attributes.find(({ trait_type }: Attribute) => trait_type === attributeName);
+    return attribute ? attribute.value : 0;
+  };
+
+  const cities = getAttributeValue("Cities");
+  const harbors = getAttributeValue("Harbors");
+  const rivers = getAttributeValue("Rivers");
+  const regions = getAttributeValue("Regions");
 
   const wonder: number = 1;
 
-  let order: number = 0;
-  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
-    if (trait_type === "Order") {
-      const name: string = value.split(" ").pop() || "";
-      orders.forEach(({ orderId, orderName }) => {
-        if (name === orderName) {
-          order = orderId;
-        }
-      });
-    }
-  });
+  const orderAttribute = realm.attributes.find(({ trait_type }: Attribute) => trait_type === "Order");
+  const orderName = orderAttribute ? orderAttribute.value.split(" ").pop() || "" : "";
+  const order = orders.find(({ orderName: name }) => name === orderName)?.orderId || 0;
 
-  let position = getPosition(realmId);
+  const position = getPosition(realmId);
 
   return {
     realmId,

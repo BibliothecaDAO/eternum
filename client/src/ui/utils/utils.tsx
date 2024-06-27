@@ -217,13 +217,14 @@ export const pseudoRandom = (x: number, y: number) => {
   return n - Math.floor(n);
 };
 
-export function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
+export function getResourceIdsFromPackedNumber(packedNumber: string): number[] {
   const resourceIds: number[] = [];
   const totalBits = 256; // Assuming u256, hence 256 bits
+  const packedNumberBigInt = BigInt(packedNumber);
 
   for (let position = 0; position < totalBits; position++) {
     // Shift 1 to the left by 'position' places and perform bitwise AND
-    if ((packedNumber & (1n << BigInt(position))) !== 0n) {
+    if ((packedNumberBigInt & (1n << BigInt(position))) !== 0n) {
       resourceIds.push(position + 1);
     }
   }
