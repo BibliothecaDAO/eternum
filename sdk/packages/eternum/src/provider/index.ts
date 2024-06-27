@@ -365,6 +365,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async create_admin_bank(props: SystemProps.CreateAdminBankProps) {
+    const { coord, owner_fee_scaled, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "bank_systems"),
+      entrypoint: "create_admin_bank",
+      calldata: [coord, owner_fee_scaled],
+    });
+  }
+
   public async open_account(props: SystemProps.OpenAccountProps) {
     const { realm_entity_id, bank_entity_id, signer } = props;
 

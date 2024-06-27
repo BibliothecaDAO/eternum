@@ -201,6 +201,14 @@ export interface CreateBankProps extends SystemSigner {
   owner_fee_scaled: num.BigNumberish;
 }
 
+export interface CreateAdminBankProps extends SystemSigner {
+  coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+  owner_fee_scaled: num.BigNumberish;
+}
+
 export interface OpenAccountProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
   bank_entity_id: num.BigNumberish;
