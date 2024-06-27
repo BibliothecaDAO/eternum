@@ -217,7 +217,7 @@ export const pseudoRandom = (x: number, y: number) => {
   return n - Math.floor(n);
 };
 
-export function getResourceIdsFromPackedNumber(packedNumber: string): number[] {
+export function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
   const resourceIds: number[] = [];
   const totalBits = 256; // Assuming u256, hence 256 bits
   const packedNumberBigInt = BigInt(packedNumber);
