@@ -16,7 +16,7 @@
     "@dojoengine/core": "^0.7.5",
     "@dojoengine/create-burner": "^0.7.5",
     "@dojoengine/react": "^0.7.5",
-    "@dojoengine/recs": "^0.1.35",
+    "@dojoengine/recs": "^2.0.13",
     "@dojoengine/state": "^0.7.5",
     "@dojoengine/torii-client": "^0.7.5",
     "@dojoengine/utils": "^0.7.5",
