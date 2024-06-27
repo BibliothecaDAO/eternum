@@ -4,6 +4,8 @@ import { DojoConfig } from "@dojoengine/core";
 import { EternumProvider } from "@bibliothecadao/eternum";
 
 import * as torii from "@dojoengine/torii-client";
+import { BurnerManager } from "@dojoengine/create-burner";
+import { Account } from "starknet";
 
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 
@@ -17,10 +19,27 @@ export async function setupNetwork({ ...config }: DojoConfig) {
     worldAddress: config.manifest.world.address || "",
   });
 
+  const burnerManager = new BurnerManager({
+    masterAccount: new Account(provider.provider, config.masterAddress, config.masterPrivateKey),
+    accountClassHash: config.accountClassHash,
+    rpcProvider: provider.provider,
+    feeTokenAddress: config.feeTokenAddress,
+  });
+
+  try {
+    await burnerManager.init();
+    if (burnerManager.list().length === 0) {
+      await burnerManager.create();
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
   return {
     toriiClient,
     contractComponents: defineContractComponents(world),
     provider,
     world,
+    burnerManager,
   };
 }

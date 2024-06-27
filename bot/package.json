@@ -5,7 +5,7 @@
   },
   "dependencies": {
     "hono": "^4.4.8",
-    "@dojoengine/core": "^0.7.0-alpha.2",
+    "@dojoengine/core": "^0.7.9-alpha.0",
     "@pinecone-database/pinecone": "^1.1.2",
     "@sapphire/decorators": "^6.1.0",
     "@sapphire/framework": "^5.2.1",

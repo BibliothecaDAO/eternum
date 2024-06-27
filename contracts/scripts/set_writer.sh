@@ -33,21 +33,30 @@ commands=()
 # Read the System to Components JSON file
 system_models_json=$(cat ./scripts/system_models.json)
 
+# Initialize an empty string for the multicall command
+multicall_command=""
+
 # Loop through each system
 for system in $(echo $system_models_json | jq -r 'keys[]'); do
+    system_var="${system}"
+    contract_address="${!system_var}"
+    
     # Loop through each component that the system writes to
     for model in $(echo $system_models_json | jq -r ".$system[]"); do
-        system_var="${system}"
-        contract_address="${!system_var}"
-        # make the system a writer of the component
-        if [[ "$mode" == "prod" && "$mode" != "dev" ]]; then
-            commands+=("sozo --profile prod auth grant writer $model,$contract_address")
-        else
-            commands+=("sozo auth grant writer $model,$contract_address")
-        fi
+        # Append to the multicall command
+        multicall_command+=" $model,$contract_address"
     done
 done
 
+# Construct the final command
+if [[ "$mode" == "prod" ]]; then
+    final_command="sozo --profile prod auth grant writer$multicall_command"
+else
+    final_command="sozo auth grant writer$multicall_command"
+fi
+
+# Add the final command to the commands array
+commands+=("$final_command")
 
 
 # Ask for delay if not provided

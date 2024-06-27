@@ -17,6 +17,7 @@ import { EternumGlobalConfig, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { shortString } from "starknet";
 import { useLocation } from "wouter";
 
 export const StepContainer = ({ children }: { children: React.ReactNode }) => {
@@ -76,6 +77,8 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   const name = getAddressName(account.address);
   const { playerRealms } = useEntities();
 
+  console.log(name);
+
   // @dev: refactor this
   useEffect(() => {
     if (addressIsMaster) return;
@@ -88,7 +91,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     setLoading(true);
     if (inputName && !addressIsMaster) {
       // convert string to bigint
-      const inputNameBigInt = BigInt("0x" + Buffer.from(inputName, "utf-8").toString("hex"));
+      const inputNameBigInt = shortString.encodeShortString(inputName);
       await set_address_name({ name: inputNameBigInt, signer: account as any });
       setAddressName(inputName);
       setLoading(false);
@@ -142,14 +145,6 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
     });
   };
 
-  const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_PUBLIC_MASTER_ADDRESS!, [account]);
-
-  useEffect(() => {
-    if (list().length == 0) {
-      create();
-    }
-  }, [isWalletSelected]);
-
   useEffect(() => {
     if (copyMessage || importMessage) {
       setTooltip({
@@ -198,7 +193,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
                 title="Active Account: "
                 options={list().map((account) => ({
                   id: account.address,
-                  label: <div className="w-[225px] text-left">{displayAddress(account.address)}</div>,
+                  label: <div className="w-[225px]">{displayAddress(account.address)}</div>,
                 }))}
                 value={account.address}
                 onChange={select}

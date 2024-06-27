@@ -80,6 +80,8 @@ export const useQuests = () => {
     useComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(BuildingType.Resource)]))
       ?.value || 0;
 
+  console.log("resource", farms);
+
   const orders = useGetMyOffers();
 
   const { entityArmies } = useEntityArmies({ entity_id: entityId || BigInt("0") });
