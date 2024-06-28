@@ -95,20 +95,26 @@ const QuestRewards = ({ prizes }: { prizes: Prize[] }) => (
 // );
 
 export const QuestList = ({ entityId }: { entityId: bigint | undefined }) => {
-  const quests = useQuestStore((state) => state.quests);
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
+  const { quests, selectedQuest } = useQuestStore((state) => ({
+    quests: state.quests,
+    selectedQuest: state.selectedQuest,
+  }));
 
   return selectedQuest ? (
-    <div className="p-3 flex flex-col gap-2">
-      <HintBox quest={selectedQuest} entityId={entityId || BigInt(0)} />
-    </div>
+    <SelectedQuestView selectedQuest={selectedQuest} entityId={entityId} />
   ) : (
     <QuestsDisplay quests={quests!} />
   );
 };
 
-const groupQuestsByDepth = (quests: Quest[]): { [key: number]: Quest[] } => {
-  return quests?.reduce((groupedQuests: { [key: number]: Quest[] }, quest) => {
+const SelectedQuestView = ({ selectedQuest, entityId }: { selectedQuest: Quest; entityId: bigint | undefined }) => (
+  <div className="p-3 flex flex-col gap-2">
+    <HintBox quest={selectedQuest} entityId={entityId || BigInt(0)} />
+  </div>
+);
+
+const groupQuestsByDepth = (quests: Quest[]): Record<number, Quest[]> => {
+  return quests?.reduce((groupedQuests: Record<number, Quest[]>, quest) => {
     const depth = quest.depth;
     if (!groupedQuests[depth]) {
       groupedQuests[depth] = [];
@@ -135,22 +141,28 @@ const QuestsDisplay = ({ quests }: { quests: Quest[] }) => {
   }, [quests, groupedQuests]);
 
   return (
-    <div className="flex flex-col gap-8 p-4">
+    <div className="flex flex-col gap-1 p-4">
       {Object.entries(groupedQuests)
         .sort(([a], [b]) => Number(a) - Number(b))
         .map(([depth, depthQuests]) => {
           if (Number(depth) > maxDepthToShow) return null;
-          return (
-            <div key={depth} className="flex flex-col items-start">
-              <div className="grid grid-cols-2 gap-4">
-                {depthQuests?.map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}
-              </div>
-            </div>
-          );
+          const uncompletedQuests = depthQuests.filter((quest) => !quest.claimed);
+          if (uncompletedQuests.length === 0) return null;
+          return <QuestDepthGroup key={depth} depthQuests={uncompletedQuests} />;
         })}
     </div>
   );
 };
+
+const QuestDepthGroup = ({ depthQuests }: { depthQuests: Quest[] }) => (
+  <div className="flex flex-col items-start">
+    <div className="flex flex-wrap gap-1">
+      {depthQuests?.map((quest: Quest) => (
+        <QuestCard quest={quest} key={quest.name} />
+      ))}
+    </div>
+  </div>
+);
 
 const QuestCard = ({ quest }: { quest: Quest }) => {
   const setSelectedQuest = useQuestStore((state) => state.setSelectedQuest);
@@ -160,7 +172,7 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
       className={`p-4 border hover:opacity-70 ${quest.claimed ? "text-green" : "text-gold"}`}
       onClick={() => setSelectedQuest(quest)}
     >
-      <h4 className="font-bold">{quest.name}</h4>
+      <div className="text-xl">{quest.name}</div>
     </div>
   );
 };
