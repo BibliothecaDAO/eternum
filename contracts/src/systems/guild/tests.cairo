@@ -6,6 +6,12 @@ use eternum::models::guild::{
 use eternum::models::name::EntityName;
 use eternum::models::owner::Owner;
 use eternum::models::position::Position;
+use eternum::models::population::Population;
+
+use eternum::systems::config::contracts::{
+    config_systems, config_systems::GuildPopulationConfigImpl, IGuildPopulationConfigDispatcher,
+    IGuildPopulationConfig, IGuildPopulationConfigDispatcherTrait
+};
 
 use eternum::systems::guild::contracts::{
     guild_systems, IGuildSystems, IGuildSystemsDispatcher, IGuildSystemsDispatcherTrait
@@ -20,6 +26,7 @@ use starknet::contract_address_const;
 const PUBLIC: felt252 = 1;
 const PRIVATE: felt252 = 0;
 const GUILD_NAME: felt252 = 'Guildname';
+const BASE_GUILD_POPULATION_CAPACITY: u32 = 3;
 
 fn felt_to_bool(value: felt252) -> bool {
     if (value == 1) {
@@ -30,6 +37,12 @@ fn felt_to_bool(value: felt252) -> bool {
 
 fn setup() -> (IWorldDispatcher, IGuildSystemsDispatcher) {
     let world = spawn_eternum();
+
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+
+    IGuildPopulationConfigDispatcher {
+        contract_address: config_systems_address
+    }.set_guild_population_config(BASE_GUILD_POPULATION_CAPACITY);
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     world.uuid();
@@ -58,9 +71,12 @@ fn test_create_guild() {
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     let guild = get!(world, guild_entity_id, Guild);
+    let guild_population = get!(world, guild_entity_id, Population);
+
     assert(guild.entity_id == guild_entity_id, 'Guild not created');
     assert(guild.is_public == felt_to_bool(PUBLIC), 'Guild not public');
-    assert(guild.member_count == 1, 'Member count incorrect');
+    assert(guild_population.population == 1, 'Member count incorrect');
+    assert(guild_population.capacity == BASE_GUILD_POPULATION_CAPACITY, 'Member count incorrect');
 
     let guild_owner = get!(world, guild_entity_id, Owner);
     assert(guild_owner.address.try_into().unwrap() == 'player1', 'Not correct owner of guild');
@@ -101,8 +117,8 @@ fn test_join_guild() {
     let guild_member = get!(world, 'player2', GuildMember);
     assert(guild_member.guild_entity_id == guild_entity_id, 'Did not join the guild');
 
-    let guild = get!(world, guild_entity_id, Guild);
-    assert(guild.member_count == 2, 'Member count incorrect');
+    let guild_population = get!(world, guild_entity_id, Population);
+    assert(guild_population.population == 2, 'Member count incorrect');
 }
 
 #[test]
@@ -177,8 +193,8 @@ fn test_leave_guild() {
 
     guild_systems_dispatcher.leave_guild();
 
-    let guild = get!(world, guild_entity_id, Guild);
-    assert(guild.member_count == 1, 'Member count incorrect');
+    let guild_population = get!(world, guild_entity_id, Population);
+    assert(guild_population.population == 1, 'Member count incorrect');
 }
 
 #[test]
@@ -409,7 +425,7 @@ fn test_change_guild_access() {
     let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
 
     guild_systems_dispatcher.change_guild_access(guild_entity_id, felt_to_bool(PRIVATE));
-    
+
     let guild = get!(world, guild_entity_id, Guild);
     assert(guild.is_public == felt_to_bool(PRIVATE), 'Guild access not updated');
 }
