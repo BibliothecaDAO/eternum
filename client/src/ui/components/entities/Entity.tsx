@@ -69,6 +69,8 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
 
   const renderResources = () => {
     if (entityState === EntityState.Idle || entityState === EntityState.WaitingForDeparture) return null;
+
+    console.log(entity.resources);
     return entity.resources?.map(
       (resource: any) =>
         resource && (

@@ -50,10 +50,12 @@ export const BankPanel = ({ entity }: BankListProps) => {
           </div>
         ),
         component: (
-          <>
-            <AddLiquidity bank_entity_id={entity.id} entityId={realmEntityId!} />
+          <div>
+            <div className="w-1/2 mx-auto mb-8">
+              <AddLiquidity bank_entity_id={entity.id} entityId={realmEntityId!} />
+            </div>
             <LiquidityTable bank_entity_id={entity.id} entity_id={realmEntityId} />
-          </>
+          </div>
         ),
       },
     ],
@@ -62,7 +64,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
 
   return (
     <div className="m-4">
-      <div className="flex justify-between mb-4">
+      {/* <div className="flex justify-between mb-4">
         <div>
           <h3>{entity.name}</h3>
           <div className="text-xs">
@@ -70,13 +72,13 @@ export const BankPanel = ({ entity }: BankListProps) => {
             {ownerName ? hexToAscii(numberToHex(Number(ownerName))) : numberToHex(Number(owner!.address)).slice(0, 5)}
           </div>
         </div>
-        <div className="border px-6 flex uppercase">
+        <div className=" px-6 flex ">
           <div className="font-bold self-center">
             {bank && <div>{`Bank Fees: ${(Number(bank.owner_fee_scaled) / 2 ** 64) * 100}%`}</div>}{" "}
             <div>{`LP Fees: ${(EternumGlobalConfig.banks.lpFees / 2 ** 64) * 100}%`}</div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
         <Tabs.List>

@@ -46,7 +46,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
   const pair = useMemo(
     () => (
       <div className="flex flex-row">
-        {resource?.trait && <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />}
+        {resource?.trait && <ResourceIcon resource={resource.trait} size="lg" className="mr-2" />}
         <>Lords/{resource?.trait}</>
       </div>
     ),
@@ -79,14 +79,14 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
   }, [dojoContext, bankEntityId, resourceId, marketManager]);
 
   return (
-    <tr className="hover:bg-gray-100">
+    <tr className="text-lg hover:bg-gold/20 my-1 border border-gold/10">
       <td>{pair}</td>
-      <td>{divideByPrecision(totalLords).toFixed(2)}</td>
-      <td>{divideByPrecision(totalResource).toFixed(2)}</td>
-      <td>{divideByPrecision(lordsAmount).toFixed(2)}</td>
-      <td>{divideByPrecision(resourceAmount).toFixed(2)}</td>
+      <td>{divideByPrecision(totalLords).toLocaleString()}</td>
+      <td>{divideByPrecision(totalResource).toLocaleString()}</td>
+      <td>{divideByPrecision(lordsAmount).toLocaleString()}</td>
+      <td>{divideByPrecision(resourceAmount).toLocaleString()}</td>
       <td>
-        <Button onClick={onWithdraw} isLoading={isLoading} disabled={!canWithdraw}>
+        <Button variant="outline" onClick={onWithdraw} isLoading={isLoading} disabled={!canWithdraw}>
           Withdraw
         </Button>
       </td>

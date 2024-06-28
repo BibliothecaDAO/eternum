@@ -45,8 +45,8 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
   };
 
   return (
-    <div>
-      <div className="p-2 relative space-y-2">
+    <div className="bg-gold/10 p-1 clip-angled-sm">
+      <div className="p-2 relative space-y-1">
         <ResourceBar
           entityId={entityId}
           resources={resources.filter((r) => r.id === Number(LORDS_RESOURCE_ID))}
@@ -56,13 +56,13 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
           setResourceId={setResourceId}
         />
 
-        <div className="mt-2 absolute top-1/3 left-1/3">
+        <div className="mt-2 absolute top-[97px] left-1/3">
           <Button
+            variant="primary"
             isLoading={isLoading}
             disabled={!canAdd}
             className="text-brown bg-brown"
             onClick={onAddLiquidity}
-            variant="primary"
           >
             Add Liquidity
           </Button>
@@ -77,7 +77,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
           setResourceId={setResourceId}
         />
       </div>
-      {!canAdd && <div className="ml-1 text-danger">Warning: not enough resources or amount is zero</div>}
+      {!canAdd && <div className="p-2 text-danger font-bold text-md">Not enough resources or amount is zero</div>}
     </div>
   );
 };

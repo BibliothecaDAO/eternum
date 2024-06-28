@@ -12,15 +12,15 @@ export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProp
   }
 
   return (
-    <table className="min-w-full leading-normal">
+    <table className="min-w-full">
       <thead>
-        <tr className="uppercase text-xs">
-          <th>Pair</th>
+        <tr className="uppercase">
+          <th className="text-left">Pair</th>
           {/* <th>Total TVL</th> */}
-          <th>Total Lords</th>
-          <th>Total Resource</th>
-          <th>My Lords</th>
-          <th>My Resource</th>
+          <th className="text-left">Total Lords</th>
+          <th className="text-left">Total Resource</th>
+          <th className="text-left">My Lords</th>
+          <th className="text-left">My Resource</th>
           <th></th>
         </tr>
       </thead>
