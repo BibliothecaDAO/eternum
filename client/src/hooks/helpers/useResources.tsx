@@ -11,7 +11,7 @@ import {
 import { useDojo } from "../context/DojoContext";
 import { getEntityIdFromKeys, getResourceIdsFromPackedNumber } from "../../ui/utils/utils";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { Position, ResourcesIds, type Resource } from "@bibliothecadao/eternum";
+import { Position, ResourcesIds, resources, type Resource } from "@bibliothecadao/eternum";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
 import { useEffect, useMemo, useState } from "react";
 import useBlockchainStore from "../store/useBlockchainStore";
@@ -28,11 +28,14 @@ export function useResources() {
     // todo: switch back to items_count when working
     const ownedResources = getComponentValue(OwnedResourcesTracker, getEntityIdFromKeys([entityId]));
     if (!ownedResources) return [];
-    const resourceIds = getResourceIdsFromPackedNumber(ownedResources.resource_types);
-    return resourceIds.map((id) => {
-      const resource = getComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(id)]));
-      return { resourceId: id, amount: Number(resource?.balance) || 0 };
-    });
+    // const resourceIds = getResourceIdsFromPackedNumber(ownedResources.resource_types);
+    const resourceIds = resources.map((r) => r.id);
+    return resourceIds
+      .map((id) => {
+        const resource = getComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(id)]));
+        return { resourceId: id, amount: Number(resource?.balance) || 0 };
+      })
+      .filter((r) => r.amount > 0);
   };
 
   const getResourceCosts = (costUuid: bigint, count: number) => {

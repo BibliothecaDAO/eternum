@@ -35,7 +35,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const { getEntityInfo } = useEntities();
   const { getResourcesFromBalance } = useResources();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
 
   const entity = getEntityInfo(entityId);
   const entityResources = getResourcesFromBalance(entityId);
@@ -70,7 +70,6 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const renderResources = () => {
     if (entityState === EntityState.Idle || entityState === EntityState.WaitingForDeparture) return null;
 
-    console.log(entity.resources);
     return entity.resources?.map(
       (resource: any) =>
         resource && (
@@ -108,7 +107,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
         </div>
       </div>
       <div className="flex items-center gap-2 flex-wrap my-2">{renderResources()}</div>
-      {entityState !== EntityState.Traveling && <DepositResources entityId={entityId} />}
+      {entityState !== EntityState.Traveling && <DepositResources entityId={entityId} resources={entityResources} />}
     </div>
   );
 };
