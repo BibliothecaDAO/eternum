@@ -84,16 +84,6 @@ const QuestRewards = ({ prizes }: { prizes: Prize[] }) => (
   </div>
 );
 
-// const EndGameInfo = () => (
-//   <div className="flex flex-col p-4 text-gold clip-angled-sm bg-green/40">
-//     <div>Next steps:</div>
-//     <div>- Trade resources with neighbouring realms</div>
-//     <div>- Explore the world with your armies</div>
-//     <div>- Discover earthenshard mines or claim them from your enemies</div>
-//     <div>- Build or contribute to Hyperstructures to get ranked on the leaderboard</div>
-//   </div>
-// );
-
 export const QuestList = ({ entityId }: { entityId: bigint | undefined }) => {
   const { quests, selectedQuest } = useQuestStore((state) => ({
     quests: state.quests,
@@ -157,9 +147,7 @@ const QuestsDisplay = ({ quests }: { quests: Quest[] }) => {
 const QuestDepthGroup = ({ depthQuests }: { depthQuests: Quest[] }) => (
   <div className="flex flex-col items-start">
     <div className="flex flex-wrap gap-1">
-      {depthQuests?.map((quest: Quest) => (
-        <QuestCard quest={quest} key={quest.name} />
-      ))}
+      {depthQuests?.map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}
     </div>
   </div>
 );

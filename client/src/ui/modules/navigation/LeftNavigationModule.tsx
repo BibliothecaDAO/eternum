@@ -21,7 +21,6 @@ import { Banks } from "../banking/Banks";
 import { Guilds } from "../guilds/Guilds";
 import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
-
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
@@ -72,7 +71,7 @@ export const LeftNavigationModule = () => {
   const { getStamina } = useStamina();
   const { entityArmies } = useEntityArmies({ entity_id: realmEntityId });
 
-  const [location, setLocation] = useLocation();
+  const [location, _] = useLocation();
 
   const isWorldView = useMemo(() => location === "/map", [location]);
 
@@ -82,6 +81,16 @@ export const LeftNavigationModule = () => {
       EternumGlobalConfig.stamina.travelCost
     );
   });
+
+  const isBuildQuest = useMemo(() => {
+    return (
+      selectedQuest?.name === QuestName.BuildFarm ||
+      selectedQuest?.name === QuestName.BuildResource ||
+      selectedQuest?.name === QuestName.BuildWorkersHut ||
+      selectedQuest?.name === QuestName.Market ||
+      (selectedQuest?.name === QuestName.Hyperstructure && isWorldView)
+    );
+  }, [selectedQuest, isWorldView]);
 
   const navigation = useMemo(() => {
     const navigation = [
@@ -132,14 +141,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             className={clsx({
-              "animate-pulse":
-                view != View.ConstructionView &&
-                (selectedQuest?.name === QuestName.BuildFarm ||
-                  selectedQuest?.name === QuestName.BuildResource ||
-                  selectedQuest?.name === QuestName.BuildWorkersHut ||
-                  selectedQuest?.name === QuestName.Market ||
-                  (selectedQuest?.name === QuestName.Hyperstructure && isWorldView)) &&
-                isPopupOpen(questsPopup),
+              "animate-pulse": view != View.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
               hidden: quests && !quests.find((quest) => quest.name === QuestName.ClaimFood)?.claimed,
             })}
             image={BuildingThumbs.construction}

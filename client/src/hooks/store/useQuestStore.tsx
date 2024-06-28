@@ -5,7 +5,7 @@ import { BuildingType, QuestType } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { create } from "zustand";
 import { useEntities } from "../helpers/useEntities";
@@ -76,19 +76,20 @@ export const useQuests = () => {
     account: { account },
   } = useDojo();
 
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+
   const setQuests = useQuestStore((state) => state.setQuests);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
   const setSelectedQuest = useQuestStore((state) => state.setSelectedQuest);
   const setClaimableQuestsLength = useQuestStore((state) => state.setClaimableQuestsLength);
 
   const { playerRealms } = useEntities();
-  const entityId = playerRealms()[0]?.entity_id;
-  const realmPosition = playerRealms()[0]?.position;
+  const realm = playerRealms()[0];
+  const entityId = realm?.entity_id;
+  const realmPosition = realm?.position;
 
   const [location, _] = useLocation();
   const isWorldView = useMemo(() => location === "/map", [location]);
-
-  const selectedEntity = useUIStore((state) => state.selectedEntity);
 
   const getBuildingQuantity = (buildingType: BuildingType) =>
     useComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(buildingType)]))
@@ -100,23 +101,30 @@ export const useQuests = () => {
   const markets = getBuildingQuantity(BuildingType.Market);
 
   const { playerStructures } = useEntities();
+  const structures = playerStructures();
 
-  const mines = useMemo(() => {
-    return playerStructures().filter((structure) => structure.category === "FragmentMine").length;
-  }, [playerStructures().length]);
+  const countStructuresByCategory = useCallback(
+    (category: string) => {
+      return structures.filter((structure) => structure.category === category).length;
+    },
+    [structures],
+  );
 
-  const hyperstructures = useMemo(() => {
-    return playerStructures().filter((structure) => structure.category === "Hyperstructure").length;
-  }, [playerStructures().length]);
+  const mines = useMemo(() => countStructuresByCategory("FragmentMine"), [countStructuresByCategory]);
+  const hyperstructures = useMemo(() => countStructuresByCategory("Hyperstructure"), [countStructuresByCategory]);
 
   const hyperstructureContributions = runQuery([
     HasValue(Contribution, { player_address: BigInt(account.address) }),
   ]).size;
+
   const orders = useGetMyOffers();
 
   const { entityArmies } = useEntityArmies({ entity_id: entityId || BigInt("0") });
 
   const [pillageHistoryLength, setPillageHistoryLength] = useState<number>(0);
+
+  const hasTroops = useMemo(() => armyHasTroops(entityArmies), [entityArmies]);
+  const hasTraveled = useMemo(() => armyHasTraveled(entityArmies, realmPosition), [entityArmies, realmPosition]);
 
   useEffect(() => {
     const fetchPillageHistory = async () => {
@@ -171,12 +179,12 @@ export const useQuests = () => {
       {
         name: QuestName.CreateArmy,
         description: "Conquest is fulfilling. Create an army to conquer your enemies.",
-        completed: entityArmies.length > 0 && armyHasTroops(entityArmies),
+        completed: entityArmies.length > 0 && hasTroops,
         steps: [
           { description: "Create an army to conquer your enemies.", completed: entityArmies.length > 0 },
           {
             description: "Assign troops to your army",
-            completed: armyHasTroops(entityArmies),
+            completed: hasTroops,
           },
         ],
         prizes: [{ id: QuestType.Earthenshard, title: "Claim Earthen Shard" }],
@@ -190,9 +198,9 @@ export const useQuests = () => {
           { description: "Go to world view.", completed: isWorldView },
           {
             description: "Right click on your army",
-            completed: selectedEntity != null,
+            completed: selectedEntity != null || hasTraveled,
           },
-          { description: "Travel w/ your army.", completed: armyHasTraveled(entityArmies, realmPosition) },
+          { description: "Travel w/ your army.", completed: hasTraveled },
         ],
         prizes: [{ id: QuestType.Travel, title: "Travel" }],
         depth: 4,
@@ -262,13 +270,15 @@ export const useQuests = () => {
     resource,
     orders,
     entityArmies,
-    armyHasTroops(entityArmies),
-    armyHasTraveled(entityArmies, realmPosition),
+    hasTroops,
+    hasTraveled,
     workersHut,
     markets,
     hyperstructures,
     hyperstructureContributions,
     pillageHistoryLength,
+    selectedEntity,
+    isWorldView,
   ]);
 
   useEffect(() => {
