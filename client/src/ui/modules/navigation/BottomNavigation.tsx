@@ -10,7 +10,7 @@ import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import { guilds, leaderboard, quests } from "../../components/navigation/Config";
+import { guilds, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
 
 export enum MenuEnum {
@@ -39,11 +39,14 @@ export const BottomNavigation = () => {
 
   const isWorldView = useMemo(() => location === "/map", [location]);
 
-  const currentQuest = useQuestStore((state) => state.currentQuest);
+  const quests = useQuestStore((state) => state.quests);
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
   const claimableQuestsLength = useQuestStore((state) => state.claimableQuestsLength);
 
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
+
+  const questToClaim = quests?.find((quest) => quest.completed && !quest.claimed);
 
   const secondaryNavigation = useMemo(() => {
     return [
@@ -53,16 +56,16 @@ export const BottomNavigation = () => {
             <CircleButton
               tooltipLocation="top"
               image={BuildingThumbs.squire}
-              label={quests}
-              active={isPopupOpen(quests)}
+              label={questsWindow}
+              active={isPopupOpen(questsWindow)}
               size="lg"
-              onClick={() => togglePopup(quests)}
+              onClick={() => togglePopup(questsWindow)}
               notification={isRealmSelected(realmEntityId, structures) ? claimableQuestsLength : undefined}
               notificationLocation={"topleft"}
               disabled={!isRealmSelected(realmEntityId, structures)}
             />
 
-            {currentQuest?.completed && !currentQuest?.claimed && location !== "/map" && (
+            {questToClaim && !isWorldView && (
               <div className="absolute bg-brown text-gold border-gradient border -top-12 w-32 animate-bounce px-1 py-1 flex uppercase">
                 <ArrowDown className="text-gold w-4 mr-3" />
                 <div className="text-xs">Claim your reward</div>
@@ -111,7 +114,7 @@ export const BottomNavigation = () => {
         ),
       },
     ];
-  }, [claimableQuestsLength, currentQuest]);
+  }, [claimableQuestsLength, selectedQuest, quests]);
 
   const slideUp = {
     hidden: { y: "100%", transition: { duration: 0.3 } },

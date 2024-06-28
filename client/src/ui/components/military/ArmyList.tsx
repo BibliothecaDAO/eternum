@@ -15,7 +15,7 @@ import { useResources } from "@/hooks/helpers/useResources";
 export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
 
-  const currentQuest = useQuestStore((state) => state.currentQuest);
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const {
     account: { account },
@@ -29,6 +29,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
   const canCreateProtector = useMemo(() => !entityArmies.find((army) => army.protectee_id), [entityArmies]);
 
   const { getResourcesFromBalance } = useResources();
+
   const inventoryResources = getResourcesFromBalance(entity_id?.entity_id);
 
   const handleCreateArmy = (is_defensive_army: boolean) => {
@@ -57,7 +58,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
                 onClick={() => handleCreateArmy(false)}
                 disabled={isLoading}
                 className={clsx({
-                  "animate-pulse": currentQuest?.name === QuestName.CreateArmy && !currentQuest.steps[0].completed,
+                  "animate-pulse": selectedQuest?.name === QuestName.CreateArmy && !selectedQuest.steps[0].completed,
                 })}
               >
                 Create Army
@@ -86,9 +87,9 @@ export const EntityArmyList = ({ entity_id }: any) => {
           </React.Fragment>
         )}
         questing={
-          currentQuest?.name === QuestName.CreateArmy &&
-          currentQuest.steps[0].completed &&
-          !currentQuest.steps[1].completed
+          selectedQuest?.name === QuestName.CreateArmy &&
+          selectedQuest.steps[0].completed &&
+          !selectedQuest.steps[1].completed
         }
       />
     </>

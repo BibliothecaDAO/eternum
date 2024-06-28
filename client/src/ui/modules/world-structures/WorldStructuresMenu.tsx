@@ -13,10 +13,13 @@ import { useShardMines } from "@/hooks/helpers/useShardMines";
 import { useContributions } from "@/hooks/helpers/useContributions";
 
 import { calculateShares } from "@/hooks/store/useLeaderBoardStore";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 
 export const WorldStructuresMenu = ({}: any) => {
   const { hyperstructures } = useHyperstructures();
   const { shardMines } = useShardMines();
+
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const hyperstructureExtraContent = (entityId: any) => {
     const hyperstructure = hyperstructures.find((hyperstructure) => hyperstructure.entity_id === BigInt(entityId));
@@ -59,6 +62,7 @@ export const WorldStructuresMenu = ({}: any) => {
         ),
         component: (
           <EntityList
+            questing={selectedQuest?.name === QuestName.Contribution}
             title="Hyperstructures"
             panel={({ entity }) => <HyperstructurePanel entity={entity} />}
             entityContent={hyperstructureExtraContent}

@@ -20,6 +20,8 @@ import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
 import { StructureCard } from "./StructureCard";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import clsx from "clsx";
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {
@@ -35,6 +37,7 @@ export const StructureConstructionMenu = () => {
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { getBalance } = useResourceBalance();
 
@@ -57,8 +60,12 @@ export const StructureConstructionMenu = () => {
         const building = StructureType[structureType as keyof typeof StructureType];
         const cost = STRUCTURE_COSTS_SCALED[building];
         const hasBalance = checkBalance(cost);
+
+        const isHyperstructure = building === StructureType["Hyperstructure"];
+
         return (
           <StructureCard
+            className={clsx({ "animate-pulse": isHyperstructure && selectedQuest?.name === QuestName.Hyperstructure })}
             key={index}
             structureId={building}
             onClick={() => {

@@ -391,15 +391,15 @@ export const getLevelingCost = (newLevel: number): { resourceId: number; amount:
       ? // level 4 (resource tier 3)
         [16, 24421, 17, 20954, 18, 16733, 19, 14020, 20, 8291, 21, 5578, 22, 3467]
       : rem === 1
-        ? // level 1 (food)
-          [254, 11340000, 255, 3780000]
-        : rem === 2
-          ? // level 2 (resource tier 1)
-            [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
-          : rem === 3
-            ? // level 3 (resource tier 2)
-              [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
-            : [];
+      ? // level 1 (food)
+        [254, 11340000, 255, 3780000]
+      : rem === 2
+      ? // level 2 (resource tier 1)
+        [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
+      : rem === 3
+      ? // level 3 (resource tier 2)
+        [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
+      : [];
 
   const costResources = [];
   for (let i = 0; i < baseAmounts.length; i = i + 2) {
@@ -836,6 +836,13 @@ export enum QuestType {
   Trade = 8,
   Military = 9,
   Earthenshard = 10,
+  Travel = 11,
+  Population = 12,
+  Market = 13,
+  Mine = 14,
+  Pillage = 15,
+  Hyperstructure = 16,
+  Contribution = 17,
 }
 
 export const QUEST_RESOURCES = {
@@ -886,5 +893,12 @@ export const QUEST_RESOURCES = {
     { resource: ResourcesIds.Crossbowmen, amount: 3 },
     { resource: ResourcesIds.Paladin, amount: 3 },
   ],
-  [QuestType.Earthenshard]: [{ resource: ResourcesIds.Earthenshard, amount: 10 }],
+  [QuestType.Earthenshard]: [{ resource: ResourcesIds.Earthenshard, amount: 10000 }],
+  [QuestType.Travel]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
+  [QuestType.Population]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
+  [QuestType.Market]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
+  [QuestType.Mine]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
+  [QuestType.Pillage]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
+  [QuestType.Hyperstructure]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
+  [QuestType.Contribution]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
 };

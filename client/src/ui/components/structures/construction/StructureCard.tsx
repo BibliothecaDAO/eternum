@@ -12,6 +12,7 @@ export const StructureCard = ({
   name,
   toolTip,
   canBuild,
+  className,
 }: {
   structureId: StructureType;
   onClick: () => void;
@@ -20,6 +21,7 @@ export const StructureCard = ({
   toolTip: React.ReactElement;
   canBuild?: boolean;
   resourceId?: ResourcesIds;
+  className?: string;
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   return (
@@ -35,6 +37,7 @@ export const StructureCard = ({
         {
           "!border-lightest border-gradient border-2": active,
         },
+        className,
       )}
     >
       {!canBuild && (
