@@ -2,6 +2,7 @@ import { Account } from "starknet";
 import {
   ARMY_ENTITY_TYPE,
   BASE_POPULATION_CAPACITY,
+  BASE_GUILD_POPULATION_CAPACITY,
   BUILDING_CAPACITY,
   BUILDING_POPULATION,
   BUILDING_RESOURCE_PRODUCED,
@@ -77,6 +78,15 @@ export const setPopulationConfig = async (account: Account, provider: EternumPro
   });
 
   console.log(`Configuring population config ${tx.statusReceipt}...`);
+};
+
+export const setGuildPopulationConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_guild_population_config({
+    signer: account,
+    base_population: BASE_GUILD_POPULATION_CAPACITY,
+  });
+
+  console.log(`Configuring guild population config ${tx.statusReceipt}...`);
 };
 
 export const setBuildingConfig = async (account: Account, provider: EternumProvider) => {

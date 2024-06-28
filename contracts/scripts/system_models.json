@@ -1,5 +1,8 @@
 {
-  "DEV_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
+  "DEV_RESOURCE_SYSTEMS": [
+    "Resource",
+    "OwnedResourcesTracker"
+  ],
   "REALM_SYSTEMS": [
     "Owner",
     "Realm",
@@ -55,8 +58,17 @@
     "QuantityTracker",
     "Road"
   ],
-  "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "Stamina"],
-  "NAME_SYSTEMS": ["AddressName", "EntityName"],
+  "TRAVEL_SYSTEMS": [
+    "ArrivalTime",
+    "Position",
+    "Road",
+    "Movable",
+    "Stamina"
+  ],
+  "NAME_SYSTEMS": [
+    "AddressName",
+    "EntityName"
+  ],
   "BANK_SYSTEMS": [
     "Bank",
     "Position",
@@ -195,5 +207,13 @@
     "BuildingQuantityv2",
     "Stamina"
   ],
-  "GUILD_SYSTEMS": ["Guild", "GuildMember", "GuildWhitelist", "EntityName", "Owner", "EntityOwner"]
+  "GUILD_SYSTEMS": [
+    "Guild",
+    "GuildMember",
+    "GuildWhitelist",
+    "EntityName",
+    "Owner",
+    "EntityOwner",
+    "Population"
+  ]
 }

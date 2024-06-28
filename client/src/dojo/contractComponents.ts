@@ -988,12 +988,12 @@ export function defineContractComponents(world: World) {
         {
           entity_id: RecsType.BigInt,
           is_public: RecsType.Boolean,
-          member_count: RecsType.Number,
+          creation_ts: RecsType.BigInt,
         },
         {
           metadata: {
             name: "Guild",
-            types: ["u128", "bool", "u16"],
+            types: ["u128", "bool", "u64"],
             customTypes: [],
           },
         },
@@ -1005,11 +1005,12 @@ export function defineContractComponents(world: World) {
         {
           address: RecsType.BigInt,
           guild_entity_id: RecsType.BigInt,
+          join_ts: RecsType.BigInt,
         },
         {
           metadata: {
             name: "GuildMember",
-            types: ["contractaddress", "u128"],
+            types: ["contractaddress", "u128", "u64"],
             customTypes: [],
           },
         },

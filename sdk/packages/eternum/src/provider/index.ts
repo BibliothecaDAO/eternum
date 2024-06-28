@@ -668,6 +668,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [player_address_to_remove, guild_entity_id],
     });
   }
+  public async change_guild_access(props: SystemProps.ChangeGuildAccess) {
+    const { guild_entity_id, is_public, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      entrypoint: "change_guild_access",
+      calldata: [guild_entity_id, is_public],
+    });
+  }
 
   public async set_mint_config(props: SystemProps.SetMintConfigProps) {
     const { config_id, resources, signer } = props;
@@ -814,6 +823,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "config_systems"),
       entrypoint: "set_population_config",
+      calldata: [base_population],
+    });
+  }
+
+  public async set_guild_population_config(props: SystemProps.SetGuildPopulationConfigProps) {
+    const { base_population, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_guild_population_config",
       calldata: [base_population],
     });
   }
