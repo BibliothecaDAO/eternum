@@ -67,7 +67,16 @@ export const BattleProgressBar = ({
   }, [attackingHealthPercentage, defendingHealthPercentage]);
 
   const battleStatus = useMemo(() => {
-    if (ownArmySide === "" || time || defenderArmies.length === 0 || attackerArmies.length === 0) return;
+    if (
+      ownArmySide === "" ||
+      time ||
+      defenderArmies.length === 0 ||
+      defenderArmies[0] === undefined ||
+      attackerArmies.length === 0 ||
+      attackerArmies[0] === undefined ||
+      BigInt(defenderArmies[0].battle_id) === 0n
+    )
+      return;
     return ownArmySide === "Attack"
       ? Number(attackingHealthPercentage) === 100
         ? "You Won"

@@ -1,6 +1,7 @@
 import { BattleType } from "@/dojo/modelManager/types";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { armyIsLosingSide } from "@/hooks/helpers/useBattles";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { useModal } from "@/hooks/store/useModal";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -8,6 +9,7 @@ import { ModalContainer } from "@/ui/components/ModalContainer";
 import { PillageHistory } from "@/ui/components/military/Battle";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
@@ -36,8 +38,8 @@ export const BattleActions = ({
   isActive: boolean;
 }) => {
   const [localSelectedUnit, setLocalSelectedUnit] = useState<bigint | undefined>(ownArmyEntityId);
-
   const [loading, setLoading] = useState<Loading>(Loading.None);
+
   const setBattleView = useUIStore((state) => state.setBattleView);
   const clearSelection = useUIStore((state) => state.clearSelection);
   const { toggleModal } = useModal();
@@ -105,6 +107,7 @@ export const BattleActions = ({
       defending_army_id: defender!.entity_id,
     });
     setLoading(Loading.None);
+    setBattleView({ battle: { x: selectedArmy.x, y: selectedArmy.y }, target: undefined });
     clearSelection();
   };
 
@@ -141,10 +144,19 @@ export const BattleActions = ({
     setBattleView(null);
   };
 
-  const defenceIsEmptyOrDead = !defender || (battle && battle.defence_army_health.current <= 0);
+  const defenceIsEmptyOrDead =
+    !defender || checkIfArmyLostAFinishedBattle(battle, defender, isActive) || !checkIfArmyAlive(defender);
 
   const isClaimable =
-    Boolean(selectedArmy) && !isActive && defenceIsEmptyOrDead && !isRealm && Boolean(structure) && !structure!.isMine;
+    Boolean(selectedArmy) && defenceIsEmptyOrDead && Boolean(structure) && !isRealm && !structure!.isMine;
+
+  const isAttackable =
+    loading === Loading.None &&
+    selectedArmy &&
+    BigInt(selectedArmy?.battle_id || 1) &&
+    defender &&
+    checkIfArmyAlive(defender) &&
+    !Boolean(battle);
 
   return (
     <div className="col-span-2 flex justify-center flex-wrap ornate-borders-bottom-y p-2 bg-[#1b1a1a] bg-map">
@@ -192,13 +204,7 @@ export const BattleActions = ({
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Start}
           onClick={handleBattleStart}
-          disabled={
-            loading !== Loading.None ||
-            !selectedArmy ||
-            Boolean(selectedArmy.battle_id) ||
-            (!defender && Boolean(structure)) ||
-            Boolean(battle)
-          }
+          disabled={!isAttackable}
         >
           <img className="w-10" src="/images/icons/attack.png" alt="coin" />
           Battle
@@ -256,4 +262,16 @@ const ArmySelector = ({
       </div>
     )
   );
+};
+
+const checkIfArmyLostAFinishedBattle = (battle: any, army: any, isActive: boolean) => {
+  if (battle && armyIsLosingSide(army, battle!) && !isActive) {
+    return true;
+  }
+  return false;
+};
+
+export const checkIfArmyAlive = (army: ArmyInfo) => {
+  if (army.current === undefined) return false;
+  return BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0;
 };

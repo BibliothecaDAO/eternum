@@ -108,7 +108,7 @@ const SelectActiveArmy = ({
   userAttackingArmies: ArmyInfo[];
 }) => {
   return (
-    <div className="absolute top-[-1.5vh] left-[25%] w-60 ornate-borders">
+    <div className="absolute top-[-2vh] left-[25%] w-60 ornate-borders">
       <Select
         value={selectedEntity?.id.toString() || ""}
         onValueChange={(a: string) => {

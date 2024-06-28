@@ -1,5 +1,4 @@
 import { useResources } from "@/hooks/helpers/useResources";
-import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 
@@ -7,10 +6,12 @@ export const InventoryResources = ({
   entityId,
   max = Infinity,
   className = "flex flex-wrap gap-1",
+  setShowAll,
 }: {
   entityId: bigint;
   max?: number;
   className?: string;
+  setShowAll?: (showAll: boolean) => void;
 }) => {
   const { getResourcesFromBalance } = useResources();
 
@@ -35,7 +36,12 @@ export const InventoryResources = ({
                 />
               ),
           )}
-      <div className="ml-1">{max < inventoryResources.length && `+${inventoryResources.length - max}`}</div>
+      <div className="ml-1 font-bold hover:opacity-70">
+        {max < inventoryResources.length && (
+          <div onClick={() => setShowAll && setShowAll(true)}>+{inventoryResources.length - max}</div>
+        )}
+        {max === Infinity && Boolean(setShowAll) && <div onClick={() => setShowAll!(false)}>hide</div>}
+      </div>
     </div>
   );
 };
