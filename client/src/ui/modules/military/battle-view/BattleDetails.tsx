@@ -32,13 +32,13 @@ export const BattleDetails = ({ battleId, armies }: { battleId: bigint; armies: 
   return (
     <div className="w-full">
       <div className="p-2 w-full grid grid-cols-3 text-gold border-gold/20 border-gradient clip-angled p-2">
-        <div key={0} className="mb-4 tile h-[2vh] text-left border border-gold/20">
+        <div key={0} className="mb-4 tile h-6 text-left border border-gold/20">
           Army
         </div>
-        <div key={1} className="mb-4 tile h-[2vh] text-left border border-gold/20">
+        <div key={1} className="mb-4 tile h-6 text-left border border-gold/20">
           Owner
         </div>
-        <div key={2} className="mb-4 tile h-[2vh] text-left border border-gold/20"></div>
+        <div key={2} className="mb-4 tile h-6 text-left border border-gold/20"></div>
         {armies &&
           armies.map((army, index) => (
             <React.Fragment key={index}>
