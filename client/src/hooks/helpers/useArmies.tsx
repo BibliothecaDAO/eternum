@@ -569,7 +569,7 @@ const calculateOffset = (index: number, total: number) => {
   };
 };
 
-const checkIfArmyLostAFinishedBattle = (Battle: any, Army: any, army: any) => {
+export const checkIfArmyLostAFinishedBattle = (Battle: any, Army: any, army: any) => {
   const battle = getComponentValue(
     Battle,
     getEntityIdFromKeys([BigInt(army.battle_id)]),
@@ -580,7 +580,8 @@ const checkIfArmyLostAFinishedBattle = (Battle: any, Army: any, army: any) => {
   return false;
 };
 
-const checkIfArmyAlive = (army: ArmyInfo) => {
+
+export const checkIfArmyAlive = (army: ArmyInfo) => {
   if (army.current === undefined) return true;
   return BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0;
 };

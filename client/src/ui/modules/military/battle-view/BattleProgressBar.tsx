@@ -26,8 +26,8 @@ export const BattleProgressBar = ({
   const defenderName = structure
     ? `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
     : defenderArmies?.length > 0
-      ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
-      : "Empty";
+    ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+    : "Empty";
 
   const totalHealth = useMemo(
     () => (attackingHealth?.current || 0) + (defendingHealth?.current || 0),
@@ -67,18 +67,27 @@ export const BattleProgressBar = ({
   }, [attackingHealthPercentage, defendingHealthPercentage]);
 
   const battleStatus = useMemo(() => {
-    if (ownArmySide === "" || time || defenderArmies.length === 0 || attackerArmies.length === 0) return;
+    if (
+      ownArmySide === "" ||
+      time ||
+      defenderArmies.length === 0 ||
+      defenderArmies[0] === undefined ||
+      attackerArmies.length === 0 ||
+      attackerArmies[0] === undefined ||
+      BigInt(defenderArmies[0].battle_id) === 0n
+    )
+      return;
     return ownArmySide === "Attack"
       ? Number(attackingHealthPercentage) === 100
         ? "You Won"
         : Number(attackingHealthPercentage) === 0
-          ? "You Lost"
-          : undefined
+        ? "You Lost"
+        : undefined
       : Number(defendingHealthPercentage) === 100
-        ? "You Won"
-        : Number(defendingHealthPercentage) === 0
-          ? "You Lost"
-          : undefined;
+      ? "You Won"
+      : Number(defendingHealthPercentage) === 0
+      ? "You Lost"
+      : undefined;
   }, [time]);
 
   return (
