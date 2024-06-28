@@ -20,6 +20,7 @@ import { ArrowRight } from "lucide-react";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Headline } from "@/ui/elements/Headline";
+import { useEntities } from "@/hooks/helpers/useEntities";
 
 export enum View {
   None,
@@ -38,6 +39,9 @@ export const RightNavigationModule = () => {
   const openedPopups = useUIStore((state) => state.openedPopups);
 
   const { realmEntityId } = useRealmStore();
+
+  const { getEntityInfo } = useEntities();
+  const realmIsMine = getEntityInfo(realmEntityId).isMine;
 
   const quests = useQuestStore((state) => state.quests);
   const currentQuest = useQuestStore((state) => state.currentQuest);
@@ -72,6 +76,7 @@ export const RightNavigationModule = () => {
         name: "resourceArrivals",
         button: (
           <CircleButton
+            disabled={!realmIsMine}
             className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.CreateTrade)?.claimed })}
             image={BuildingThumbs.trade}
             tooltipLocation="top"
@@ -92,6 +97,7 @@ export const RightNavigationModule = () => {
         name: "trade",
         button: (
           <CircleButton
+            disabled={!realmIsMine}
             className={clsx({
               "animate-pulse":
                 currentQuest?.name === QuestName.CreateTrade && !currentQuest.completed && isPopupOpen(questsPopup),
@@ -109,7 +115,7 @@ export const RightNavigationModule = () => {
         ),
       },
     ];
-  }, [location, view, quests, openedPopups]);
+  }, [location, view, quests, openedPopups, getAllArrivalsWithResources]);
 
   const slideRight = {
     hidden: { x: "100%" },
