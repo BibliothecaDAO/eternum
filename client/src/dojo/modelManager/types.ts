@@ -68,7 +68,7 @@ export type BattleType = {
       crossbowman_count: RecsType.BigInt;
     };
     battle_id: RecsType.BigInt;
-    battle_side: RecsType.String;
+    battle_side: RecsType.Number;
   };
   defence_army: {
     troops: {
@@ -77,7 +77,7 @@ export type BattleType = {
       crossbowman_count: RecsType.BigInt;
     };
     battle_id: RecsType.BigInt;
-    battle_side: RecsType.String;
+    battle_side: RecsType.Number;
   };
   attackers_resources_escrow_id: RecsType.BigInt;
   defenders_resources_escrow_id: RecsType.BigInt;

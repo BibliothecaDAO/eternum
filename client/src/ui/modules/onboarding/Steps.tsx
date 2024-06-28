@@ -77,8 +77,6 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   const name = getAddressName(account.address);
   const { playerRealms } = useEntities();
 
-  console.log(name);
-
   // @dev: refactor this
   useEffect(() => {
     if (addressIsMaster) return;

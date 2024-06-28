@@ -14,8 +14,6 @@ export const Onboarding = () => {
 
   const canSettle = playerRealms().length < MAX_REALMS;
 
-  console.log(playerRealms());
-
   const handleNamingNext = useCallback(() => {
     if (canSettle) {
       nextStep();
