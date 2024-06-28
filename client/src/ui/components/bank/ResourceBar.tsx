@@ -41,13 +41,21 @@ export const ResourceBar = ({
   };
 
   return (
-    <div className="w-full bg-gold/10 rounded p-2 flex justify-between">
+    <div className="w-full bg-gold/10 rounded p-3 flex justify-between h-28 flex-wrap clip-angled-sm">
+      {/* <div className="w-full mb-1  ml-2 font-bold uppercase text-gold/70">{disableInput ? "sell" : "buy"}</div> */}
       <div className="self-center">
-        {/* <span className="text-xs text-gold/70">You Pay</span> */}
-        <TextInput value={amount.toString()} onChange={(amount) => handleAmountChange(amount)} />
+        <TextInput
+          className="text-2xl border-transparent"
+          value={amount.toString()}
+          onChange={(amount) => handleAmountChange(amount)}
+        />
+
         {!disableInput && (
-          <div className="text-xs text-gold/70" onClick={() => handleAmountChange(selectedResourceBalance.toString())}>
-            Max: {selectedResourceBalance}
+          <div
+            className="text-xs text-gold/70 mt-1 ml-2"
+            onClick={() => handleAmountChange(selectedResourceBalance.toString())}
+          >
+            Max: {selectedResourceBalance.toLocaleString()}
           </div>
         )}
       </div>
@@ -56,18 +64,16 @@ export const ResourceBar = ({
         value={findResourceById(Number(resourceId))!.trait}
         onValueChange={(trait) => handleResourceChange(trait)}
       >
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="w-[140px]">
           <SelectValue placeholder="Resources" />
         </SelectTrigger>
         <SelectContent className="bg-brown text-gold">
           {resources.map((resource, index) => (
             <SelectItem key={index} value={resource.trait}>
-              <div className="flex">
-                <ResourceCost
-                  resourceId={resource.id}
-                  amount={divideByPrecision(getBalance(entityId, resource.id).balance)}
-                ></ResourceCost>
-              </div>
+              <ResourceCost
+                resourceId={resource.id}
+                amount={divideByPrecision(getBalance(entityId, resource.id).balance)}
+              />
             </SelectItem>
           ))}
         </SelectContent>

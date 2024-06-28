@@ -3,43 +3,36 @@ import { useOwnedEntitiesOnPosition, useResources } from "@/hooks/helpers/useRes
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { EntityState, determineEntityState } from "@bibliothecadao/eternum";
+import { EntityState, Resource, determineEntityState } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { useState } from "react";
 
 type DepositResourcesProps = {
   entityId: bigint;
+  resources: Resource[];
 };
 
-export const DepositResources = ({ entityId }: DepositResourcesProps) => {
+export const DepositResources = ({ entityId, resources }: DepositResourcesProps) => {
+  const { account, setup } = useDojo();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { nextBlockTimestamp } = useBlockchainStore((state) => state);
-  const { account, setup } = useDojo();
-  const { getResourcesFromBalance } = useResources();
+  const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
-
-  const inventoryResources = getResourcesFromBalance(BigInt(entityId));
 
   const arrivalTime = getComponentValue(setup.components.ArrivalTime, getEntityIdFromKeys([entityId]));
 
   const depositEntityId = getOwnedEntityOnPosition(entityId);
 
-  const entityState = determineEntityState(
-    nextBlockTimestamp,
-    false,
-    arrivalTime?.arrives_at,
-    inventoryResources.length > 0,
-  );
+  const entityState = determineEntityState(nextBlockTimestamp, false, arrivalTime?.arrives_at, resources.length > 0);
 
   const onOffload = async (receiverEntityId: bigint) => {
     setIsLoading(true);
-    if (entityId && inventoryResources.length > 0) {
+    if (entityId && resources.length > 0) {
       await setup.systemCalls
         .send_resources({
           sender_entity_id: entityId,
           recipient_entity_id: receiverEntityId,
-          resources: inventoryResources.flatMap((resource) => [resource.resourceId, resource.amount]),
+          resources: resources.flatMap((resource) => [resource.resourceId, resource.amount]),
           signer: account.account,
         })
         .finally(() => setIsLoading(false));
@@ -48,7 +41,7 @@ export const DepositResources = ({ entityId }: DepositResourcesProps) => {
 
   return (
     <div className="w-full">
-      {depositEntityId !== undefined && inventoryResources.length > 0 && (
+      {depositEntityId !== undefined && resources.length > 0 && (
         <Button
           size="md"
           className="w-full"

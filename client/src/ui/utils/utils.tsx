@@ -218,6 +218,9 @@ export const pseudoRandom = (x: number, y: number) => {
 };
 
 export function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
+  console.log("packedNumber", packedNumber);
+
+  if (packedNumber === 1000000000000000000000000000000000000000000000000000000000000001n) return [ResourcesIds.Lords];
   const resourceIds: number[] = [];
   const totalBits = 256; // Assuming u256, hence 256 bits
   const packedNumberBigInt = BigInt(packedNumber);

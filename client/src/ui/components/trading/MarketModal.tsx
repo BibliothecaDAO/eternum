@@ -15,6 +15,7 @@ import { useModal } from "@/hooks/store/useModal";
 import { Tabs } from "@/ui/elements/tab";
 import { BankPanel } from "../bank/BankList";
 import { MarketTradingHistory } from "./MarketTradingHistory";
+import { useGetBanks } from "@/hooks/helpers/useBanks";
 
 export const MarketModal = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -22,6 +23,9 @@ export const MarketModal = () => {
   const { playerRealms } = useEntities();
 
   const { toggleModal } = useModal();
+
+  const banks = useGetBanks();
+  const bank = banks.length === 1 ? banks[0] : null;
 
   const { userTrades, bidOffers, askOffers } = useSetMarket();
 
@@ -53,10 +57,10 @@ export const MarketModal = () => {
         key: "all",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Swap</div>
+            <div>AMM</div>
           </div>
         ),
-        component: <BankPanel entity={0n} />,
+        component: bank && <BankPanel entity={{ id: bank.entityId }} />,
       },
       {
         key: "all",
@@ -215,13 +219,12 @@ export const MarketResourceSidebar = ({
 };
 
 export const TransferView = () => {
-  const { playerRealms, playerAccounts, playerStructures, otherRealms } = useEntities();
+  const { playerRealms, playerStructures, otherRealms } = useEntities();
 
   return (
     <TransferBetweenEntities
       entitiesList={[
         { entities: playerRealms(), name: "Player Realms" },
-        { entities: playerAccounts(), name: "Player Bank Accounts" },
         {
           entities: playerStructures().filter((structure) => structure.category === "Hyperstructure"),
           name: "Player Hyperstructures",
