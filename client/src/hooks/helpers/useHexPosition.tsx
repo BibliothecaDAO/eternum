@@ -5,7 +5,7 @@ import { useSearch } from "wouter/use-location";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
-import useRealmStore, { STARTING_ENTITY_ID } from "../store/useRealmStore";
+import useRealmStore from "../store/useRealmStore";
 import useLeaderBoardStore from "../store/useLeaderBoardStore";
 
 export enum HexType {
@@ -30,7 +30,6 @@ export const useHexPosition = () => {
 
   const searchString = useSearch();
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const hexPosition = useMemo(() => {
     const params = new URLSearchParams(searchString);
@@ -63,11 +62,7 @@ export const useHexPosition = () => {
   useEffect(() => {
     const owner = getComponentValue(Owner, structures[0]);
     if (owner) {
-      if (owner.address === BigInt(account.account.address) && realmEntityId !== owner.entity_id) {
-        setRealmEntityId(owner.entity_id);
-      } else if (owner.address !== BigInt(account.account.address)) {
-        setRealmEntityId(STARTING_ENTITY_ID);
-      }
+      setRealmEntityId(owner.entity_id);
     }
   }, [structure]);
 

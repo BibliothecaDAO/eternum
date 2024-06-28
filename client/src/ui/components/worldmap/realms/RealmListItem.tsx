@@ -6,6 +6,7 @@ import { RealmExtended } from "../../../../hooks/helpers/useRealm";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { InventoryResources } from "../../resources/InventoryResources";
+import { useState } from "react";
 
 type RealmListItemProps = {
   realm: Realm | RealmExtended;
@@ -14,8 +15,10 @@ type RealmListItemProps = {
 };
 
 export const RealmListItem = ({ realm, onClick, extraButton }: RealmListItemProps) => {
+  const [showAll, setShowAll] = useState(false);
+
   return (
-    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3 h-[44vh]">
+    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3 max-h-[40vh] overflow-y-auto">
       <div className="flex items-center">
         {realm && (
           <div className="flex items-center p-1  border-gold font-bold  w-full">
@@ -41,8 +44,13 @@ export const RealmListItem = ({ realm, onClick, extraButton }: RealmListItemProp
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-8 uppercase w-full font-bold my-3">Inventory</div>
-      <InventoryResources className="grid grid-cols-10 gap-1 mb-5" entityId={BigInt(realm.entity_id)} />
+      <div className="grid grid-cols-10 uppercase w-full font-bold my-3">Inventory</div>
+      <InventoryResources
+        max={showAll ? Infinity : 10}
+        className="grid grid-cols-10 gap-1 mb-2"
+        entityId={BigInt(realm.entity_id)}
+        setShowAll={setShowAll}
+      />
       {extraButton || ""}
     </div>
   );

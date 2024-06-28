@@ -26,6 +26,7 @@ import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import clsx from "clsx";
 import { quests as questsPopup } from "../../components/navigation/Config";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import { useEntities } from "@/hooks/helpers/useEntities";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -66,7 +67,7 @@ export const LeftNavigationModule = () => {
   const quests = useQuestStore((state) => state.quests);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { realmEntityId } = useRealmStore();
+  const { realmEntityId, realmId } = useRealmStore();
   const { getStamina } = useStamina();
   const { entityArmies } = useEntityArmies({ entity_id: realmEntityId });
 
@@ -90,6 +91,8 @@ export const LeftNavigationModule = () => {
       (selectedQuest?.name === QuestName.Hyperstructure && isWorldView)
     );
   }, [selectedQuest, isWorldView]);
+  const { getEntityInfo } = useEntities();
+  const realmIsMine = getEntityInfo(realmEntityId).isMine;
 
   const navigation = useMemo(() => {
     const navigation = [
@@ -139,6 +142,7 @@ export const LeftNavigationModule = () => {
         name: "construction",
         button: (
           <CircleButton
+            disabled={!realmIsMine}
             className={clsx({
               "animate-pulse": view != View.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
               hidden: quests && !quests.find((quest) => quest.name === QuestName.ClaimFood)?.claimed,

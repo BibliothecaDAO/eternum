@@ -71,26 +71,24 @@ export const StructureCard = ({
     Boolean(formattedStructureAtPosition) &&
     BigInt(target.protector?.battle_id || 0n) === 0n && (
       <div className="h-full flex flex-col justify-center">
-        <div className="">
-          {!showMergeTroopsPopup && formattedRealmAtPosition && (
-            <RealmListItem realm={formattedRealmAtPosition} extraButton={button} />
-          )}
-          {!showMergeTroopsPopup && !formattedRealmAtPosition && formattedStructureAtPosition && (
-            <StructureListItem structure={formattedStructureAtPosition} extraButton={button} />
-          )}
-          {showMergeTroopsPopup && (
-            <div className="flex flex-col w-[100%]">
-              {ownArmySelected && (
-                <MergeTroopsPanel
-                  giverArmy={ownArmySelected}
-                  setShowMergeTroopsPopup={setShowMergeTroopsPopup}
-                  structureEntityId={BigInt(target.entity_id)}
-                  structureName={target.name}
-                />
-              )}
-            </div>
-          )}
-        </div>
+        {!showMergeTroopsPopup && formattedRealmAtPosition && (
+          <RealmListItem realm={formattedRealmAtPosition} extraButton={button} />
+        )}
+        {!showMergeTroopsPopup && !formattedRealmAtPosition && formattedStructureAtPosition && (
+          <StructureListItem structure={formattedStructureAtPosition} extraButton={button} />
+        )}
+        {showMergeTroopsPopup && (
+          <div className="flex flex-col w-[100%]">
+            {ownArmySelected && (
+              <MergeTroopsPanel
+                giverArmy={ownArmySelected}
+                setShowMergeTroopsPopup={setShowMergeTroopsPopup}
+                structureEntityId={BigInt(target.entity_id)}
+                structureName={target.name}
+              />
+            )}
+          </div>
+        )}
       </div>
     )
   );
@@ -110,7 +108,7 @@ const MergeTroopsPanel = ({
   structureName,
 }: MergeTroopsPanelProps) => {
   return (
-    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3 h-[40vh]">
+    <div className="flex flex-col clip-angled-sm bg-gold/20 p-3 max-h-[42vh] overflow-y-auto">
       <Button className="mb-3 w-[30%]" variant="default" size="xs" onClick={() => setShowMergeTroopsPopup(false)}>
         &lt; Back
       </Button>
@@ -202,7 +200,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: Troo
           {Object.entries(troopsToFormat(giverArmyTroops)).map(([resourceId, amount]: [string, bigint]) => {
             return (
               <div
-                className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4 px-4 mb-1"
+                className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
                 key={resourceId}
               >
                 <div className=" flex gap-3">
@@ -251,7 +249,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: Troo
             Object.entries(troopsToFormat(receiverArmyTroops!)).map(([resourceId, amount]: [string, bigint]) => {
               return (
                 <div
-                  className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-16 gap-4 px-4 mb-1"
+                  className="flex flex-row bg-gold/20 clip-angled-sm hover:bg-gold/30 justify-around items-center h-12 gap-4 px-4 mb-1"
                   key={resourceId}
                 >
                   <div className=" flex gap-3">
@@ -291,7 +289,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: Troo
       </div>
       <div className="my-3 w-full flex justify-center">
         <Button
-          className="self-center m-auto h-[4vh] p-4"
+          className="self-center m-auto h-[3vh] p-4"
           size="md"
           onClick={() => {
             setTransferDirection(transferDirection === "to" ? "from" : "to");
@@ -302,7 +300,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: Troo
             });
           }}
         >
-          <ArrowRight size={40} className={`${transferDirection === "to" ? "" : "rotate-180"} duration-300`} />
+          <ArrowRight size={24} className={`${transferDirection === "to" ? "" : "rotate-180"} duration-300`} />
         </Button>
       </div>
 
