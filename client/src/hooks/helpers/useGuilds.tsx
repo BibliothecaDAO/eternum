@@ -7,7 +7,8 @@ import { useRealm } from "./useRealm";
 import { useEntities } from "./useEntities";
 import useLeaderBoardStore, { GuildPointsLeaderboardInterface } from "../store/useLeaderBoardStore";
 
-export type Guild = ClientComponents["Guild"]["schema"] & ClientComponents["Population"]["schema"] & { name: string } & { rank: number | string };
+export type Guild = ClientComponents["Guild"]["schema"] &
+  ClientComponents["Population"]["schema"] & { name: string } & { rank: number | string };
 export type GuildMember = ClientComponents["GuildMember"]["schema"] & { name: string } & {
   playerAddress: string;
 };

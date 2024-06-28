@@ -119,7 +119,9 @@ export const Guilds = () => {
                     {guild.name}
                   </p>
                   <p className="col-span-1">{guild.is_public ? "Public" : "Private"}</p>
-                  <p className="col-span-1">{guild.population} / {guild.capacity}</p>
+                  <p className="col-span-1">
+                    {guild.population} / {guild.capacity}
+                  </p>
                 </div>
               );
             })}
