@@ -104,7 +104,6 @@ export function useRealm() {
   const getAddressName = (address: string) => {
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
 
-    console.log(addressName);
     return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
   };
 
