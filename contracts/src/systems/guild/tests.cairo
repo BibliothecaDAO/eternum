@@ -26,7 +26,7 @@ use starknet::contract_address_const;
 const PUBLIC: felt252 = 1;
 const PRIVATE: felt252 = 0;
 const GUILD_NAME: felt252 = 'Guildname';
-const BASE_GUILD_POPULATION_CAPACITY: u32 = 3;
+const BASE_GUILD_POPULATION_CAPACITY: u32 = 3_u32;
 
 fn felt_to_bool(value: felt252) -> bool {
     if (value == 1) {
@@ -40,9 +40,10 @@ fn setup() -> (IWorldDispatcher, IGuildSystemsDispatcher) {
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
-    IGuildPopulationConfigDispatcher {
+    let guild_population_systems_address = IGuildPopulationConfigDispatcher {
         contract_address: config_systems_address
-    }.set_guild_population_config(BASE_GUILD_POPULATION_CAPACITY);
+    };
+    guild_population_systems_address.set_guild_population_config(BASE_GUILD_POPULATION_CAPACITY);
 
     starknet::testing::set_contract_address(contract_address_const::<'player1'>());
     world.uuid();
@@ -428,4 +429,23 @@ fn test_change_guild_access() {
 
     let guild = get!(world, guild_entity_id, Guild);
     assert(guild.is_public == felt_to_bool(PRIVATE), 'Guild access not updated');
+}
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ('Population exceeds capacity', 'ENTRYPOINT_FAILED'))]
+fn test_join_guild_at_max_cap() {
+    let (world, guild_systems_dispatcher) = setup();
+
+    starknet::testing::set_contract_address(contract_address_const::<'player1'>());
+    let guild_entity_id = guild_systems_dispatcher.create_guild(felt_to_bool(PUBLIC), GUILD_NAME);
+
+    starknet::testing::set_contract_address(contract_address_const::<'player2'>());
+    guild_systems_dispatcher.join_guild(guild_entity_id);
+
+    starknet::testing::set_contract_address(contract_address_const::<'player3'>());
+    guild_systems_dispatcher.join_guild(guild_entity_id);
+
+    starknet::testing::set_contract_address(contract_address_const::<'player4'>());
+    guild_systems_dispatcher.join_guild(guild_entity_id);
 }

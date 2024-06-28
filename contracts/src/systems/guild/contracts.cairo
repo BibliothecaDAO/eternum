@@ -96,6 +96,7 @@ mod guild_systems {
             );
 
             population.increase_population(1, guild_population_config.base_population);
+            population.assert_within_capacity(0);
 
             let current_ts = starknet::get_block_timestamp();
 
