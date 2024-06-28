@@ -27,6 +27,7 @@ import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import clsx from "clsx";
 import { quests as questsPopup } from "../../components/navigation/Config";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import { useEntities } from "@/hooks/helpers/useEntities";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -67,7 +68,7 @@ export const LeftNavigationModule = () => {
   const quests = useQuestStore((state) => state.quests);
   const currentQuest = useQuestStore((state) => state.currentQuest);
 
-  const { realmEntityId } = useRealmStore();
+  const { realmEntityId, realmId } = useRealmStore();
   const { getStamina } = useStamina();
   const { entityArmies } = useEntityArmies({ entity_id: realmEntityId });
 
@@ -81,6 +82,9 @@ export const LeftNavigationModule = () => {
       EternumGlobalConfig.stamina.travelCost
     );
   });
+
+  const { getEntityInfo } = useEntities();
+  const realmIsMine = getEntityInfo(realmEntityId).isMine;
 
   const navigation = useMemo(() => {
     const navigation = [
@@ -131,6 +135,7 @@ export const LeftNavigationModule = () => {
         name: "construction",
         button: (
           <CircleButton
+            disabled={!realmIsMine}
             className={clsx({
               "animate-pulse":
                 view != View.ConstructionView &&

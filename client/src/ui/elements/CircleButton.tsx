@@ -94,7 +94,7 @@ const CircleButton = ({
           className={`absolute w-[calc(100%+2px)] h-[calc(100%+2px)] clip-angled-sm ${active ? "bg-gold/40" : " "}`}
         ></div>
       </button>
-      {notification ? (
+      {notification && !disabled ? (
         <div
           className={clsx(
             "absolute animate-bounce rounded-full border border-green/30 bg-green/90 text-brown px-2 text-xxs z-[100] font-bold",
