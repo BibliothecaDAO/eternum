@@ -128,10 +128,10 @@ export const StepOne = () => {
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className="border h-32">
-        <Button onClick={() => console.log()}>Create Defending Army</Button>
+        <Button>Create Defending Army</Button>
       </div>
       <div className="border h-32">
-        <Button onClick={() => console.log()}>Create Attacking Army</Button>
+        <Button>Create Attacking Army</Button>
       </div>
     </div>
   );

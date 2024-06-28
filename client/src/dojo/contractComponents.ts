@@ -215,7 +215,7 @@ export function defineContractComponents(world: World) {
               crossbowman_count: RecsType.BigInt,
             },
             battle_id: RecsType.BigInt,
-            battle_side: RecsType.String,
+            battle_side: RecsType.Number,
           },
           attack_army_lifetime: {
             troops: {
@@ -224,7 +224,7 @@ export function defineContractComponents(world: World) {
               crossbowman_count: RecsType.BigInt,
             },
             battle_id: RecsType.BigInt,
-            battle_side: RecsType.String,
+            battle_side: RecsType.Number,
           },
           defence_army: {
             troops: {
@@ -233,7 +233,7 @@ export function defineContractComponents(world: World) {
               crossbowman_count: RecsType.BigInt,
             },
             battle_id: RecsType.BigInt,
-            battle_side: RecsType.String,
+            battle_side: RecsType.Number,
           },
           defence_army_lifetime: {
             troops: {
@@ -242,7 +242,7 @@ export function defineContractComponents(world: World) {
               crossbowman_count: RecsType.BigInt,
             },
             battle_id: RecsType.BigInt,
-            battle_side: RecsType.String,
+            battle_side: RecsType.Number,
           },
           attackers_resources_escrow_id: RecsType.BigInt,
           defenders_resources_escrow_id: RecsType.BigInt,
@@ -282,8 +282,10 @@ export function defineContractComponents(world: World) {
               "u128",
               "u128",
               "u128",
-              "u32",
-              "u32",
+              "u128",
+              "u128",
+              "u64",
+              "u64",
               "u64",
               "u64",
             ],
