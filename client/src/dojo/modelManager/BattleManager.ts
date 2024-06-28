@@ -15,6 +15,8 @@ export class BattleManager {
     const battle = this.getBattle();
     if (!battle) return;
 
+    const battleClone = structuredClone(battle);
+
     const durationPassed: number = this.getElapsedTime(currentTick);
 
     const attackDelta = this.attackingDelta();
@@ -23,20 +25,26 @@ export class BattleManager {
     const damagesDoneToAttack = this.damagesDone(defenceDelta, durationPassed);
     const damagesDoneToDefence = this.damagesDone(attackDelta, durationPassed);
 
-    battle.attack_army_health.current =
-      damagesDoneToAttack > battle.attack_army_health.current
+    battleClone.attack_army_health.current =
+      damagesDoneToAttack > BigInt(battleClone.attack_army_health.current)
         ? 0n
-        : battle.attack_army_health.current - damagesDoneToAttack;
+        : BigInt(battleClone.attack_army_health.current) - damagesDoneToAttack;
 
-    battle.defence_army_health.current =
-      damagesDoneToDefence > battle.defence_army_health.current
+    battleClone.defence_army_health.current =
+      damagesDoneToDefence > BigInt(battleClone.defence_army_health.current)
         ? 0n
-        : battle.defence_army_health.current - damagesDoneToDefence;
+        : BigInt(battleClone.defence_army_health.current) - damagesDoneToDefence;
 
-    battle.defence_army.troops = this.getUpdatedTroops(battle.defence_army_health, battle.defence_army.troops);
-    battle.attack_army.troops = this.getUpdatedTroops(battle.attack_army_health, battle.attack_army.troops);
+    battleClone.defence_army.troops = this.getUpdatedTroops(
+      battleClone.defence_army_health,
+      battleClone.defence_army.troops,
+    );
+    battleClone.attack_army.troops = this.getUpdatedTroops(
+      battleClone.attack_army_health,
+      battleClone.attack_army.troops,
+    );
 
-    return battle;
+    return battleClone;
   }
 
   public getElapsedTime(currentTick: number): number {
@@ -71,7 +79,7 @@ export class BattleManager {
     return battle ? timeSinceLastUpdate < battle.duration_left : false;
   }
 
-  private getBattle() {
+  public getBattle() {
     return getComponentValue(this.battleModel, getEntityIdFromKeys([this.battleId]));
   }
 

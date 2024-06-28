@@ -116,7 +116,7 @@ export const useQuests = () => {
   const hyperstructureContributions = runQuery([
     HasValue(Contribution, { player_address: BigInt(account.address) }),
   ]).size;
-
+    
   const orders = useGetMyOffers();
 
   const { entityArmies } = useEntityArmies({ entity_id: entityId || BigInt("0") });

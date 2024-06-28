@@ -1,13 +1,13 @@
-import { EntityList } from "@/ui/components/list/EntityList";
-import { useMemo, useState } from "react";
-import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { EntitiesArmyTable } from "@/ui/components/military/EntitiesArmyTable";
-import { useLocation } from "wouter";
-import { BattlesArmyTable } from "@/ui/components/military/BattlesArmyTable";
-import { Tabs } from "@/ui/elements/tab";
 import { useModal } from "@/hooks/store/useModal";
+import { EntityList } from "@/ui/components/list/EntityList";
+import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
+import { BattlesArmyTable } from "@/ui/components/military/BattlesArmyTable";
+import { EntitiesArmyTable } from "@/ui/components/military/EntitiesArmyTable";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { Tabs } from "@/ui/elements/tab";
+import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 
 export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
   const [selectedTab, setSelectedTab] = useState(0);

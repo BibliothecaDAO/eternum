@@ -15,12 +15,12 @@ export const LockedResources = ({
   const defendersResources = getResourcesFromBalance(defendersResourcesEscrowEntityId);
 
   return (
-    <div className="col-span-2 flex justify-center flex-wrap ornate-borders-bottom-y p-2 bg-[#1b1a1a] bg-map overflow-y-auto">
-      <div className="text-center w-full text-gold">Battle Chest</div>
+    <div className="col-span-2 flex flex-col justify-start flex-wrap ornate-borders-bottom-y p-2 bg-[#1b1a1a] bg-map overflow-y-auto">
+      <div className="text-center text-gold mb-10">Battle Chest</div>
       {attackersResources.length > 0 || defendersResources.length > 0 ? (
         <div className="grid overflow-auto grid-cols-12 gap-2">
           <React.Fragment>
-            <div className="border-r border-gold/50 col-span-6">
+            <div className="flex justify-end border-r border-gold/50 col-span-6">
               <InventoryResources entityId={attackersResourcesEscrowEntityId} max={4} />
             </div>
             <div className="col-span-6">
