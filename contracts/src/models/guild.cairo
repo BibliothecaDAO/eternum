@@ -6,7 +6,7 @@ struct Guild {
     #[key]
     entity_id: u128,
     is_public: bool,
-    member_count: u16
+    creation_ts: u64
 }
 
 #[derive(Copy, Drop, Serde)]
@@ -14,7 +14,8 @@ struct Guild {
 struct GuildMember {
     #[key]
     address: ContractAddress,
-    guild_entity_id: u128
+    guild_entity_id: u128,
+    join_ts: u64
 }
 
 #[derive(Copy, Drop, Serde)]

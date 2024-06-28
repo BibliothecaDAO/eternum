@@ -126,6 +126,10 @@ trait IPopulationConfig {
     fn set_population_config(ref world: IWorldDispatcher, base_population: u32);
 }
 
+#[dojo::interface]
+trait IGuildPopulationConfig {
+    fn set_guild_population_config(ref world: IWorldDispatcher, base_population: u32);
+}
 
 #[dojo::contract]
 mod config_systems {
@@ -135,7 +139,7 @@ mod config_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, COMBAT_CONFIG_ID,
         REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID,
-        BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, POPULATION_CONFIG_ID
+        BUILDING_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, POPULATION_CONFIG_ID, GUILD_POPULATION_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
     use eternum::models::buildings::{BuildingCategory};
@@ -144,7 +148,7 @@ mod config_systems {
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig,
         RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
         TroopConfig, BuildingConfig, BuildingCategoryPopConfig, PopulationConfig,
-        HyperstructureResourceConfig, StaminaConfig
+        GuildPopulationConfig, HyperstructureResourceConfig, StaminaConfig
     };
 
     use eternum::models::position::{Position, PositionTrait, Coord};
@@ -587,6 +591,18 @@ mod config_systems {
             assert_caller_is_admin(world);
 
             set!(world, PopulationConfig { config_id: POPULATION_CONFIG_ID, base_population })
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl GuildPopulationConfigImpl of super::IGuildPopulationConfig<ContractState> {
+        fn set_guild_population_config(ref world: IWorldDispatcher, base_population: u32) {
+            assert_caller_is_admin(world);
+
+            set!(
+                world,
+                GuildPopulationConfig { config_id: GUILD_POPULATION_CONFIG_ID, base_population }
+            );
         }
     }
 
