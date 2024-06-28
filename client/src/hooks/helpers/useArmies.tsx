@@ -580,7 +580,6 @@ export const checkIfArmyLostAFinishedBattle = (Battle: any, Army: any, army: any
   return false;
 };
 
-
 export const checkIfArmyAlive = (army: ArmyInfo) => {
   if (army.current === undefined) return true;
   return BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0;

@@ -26,8 +26,8 @@ export const BattleProgressBar = ({
   const defenderName = structure
     ? `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
     : defenderArmies?.length > 0
-    ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
-    : "Empty";
+      ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+      : "Empty";
 
   const totalHealth = useMemo(
     () => (attackingHealth?.current || 0) + (defendingHealth?.current || 0),
@@ -81,13 +81,13 @@ export const BattleProgressBar = ({
       ? Number(attackingHealthPercentage) === 100
         ? "You Won"
         : Number(attackingHealthPercentage) === 0
-        ? "You Lost"
-        : undefined
+          ? "You Lost"
+          : undefined
       : Number(defendingHealthPercentage) === 100
-      ? "You Won"
-      : Number(defendingHealthPercentage) === 0
-      ? "You Lost"
-      : undefined;
+        ? "You Won"
+        : Number(defendingHealthPercentage) === 0
+          ? "You Lost"
+          : undefined;
   }, [time]);
 
   return (
