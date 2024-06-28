@@ -1,21 +1,21 @@
-import { MarketInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
-import { ModalContainer } from "../ModalContainer";
-import { useMemo, useState } from "react";
-import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { useEntities } from "@/hooks/helpers/useEntities";
-import useRealmStore from "@/hooks/store/useRealmStore";
+import { useSetMarket } from "@/hooks/helpers/useTrade";
 import useMarketStore from "@/hooks/store/useMarketStore";
-import { useGetMyOffers, useSetMarket } from "@/hooks/helpers/useTrade";
-import { TransferBetweenEntities } from "./TransferBetweenEntities";
-import CircleButton from "@/ui/elements/CircleButton";
-import { HintModal } from "../hints/HintModal";
-import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
 import { useModal } from "@/hooks/store/useModal";
+import useRealmStore from "@/hooks/store/useRealmStore";
+import CircleButton from "@/ui/elements/CircleButton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
+import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
+import { MarketInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { useMemo, useState } from "react";
 import { BankPanel } from "../bank/BankList";
+import { HintModal } from "../hints/HintModal";
+import { ModalContainer } from "../ModalContainer";
+import { MarketOrderPanel, MarketResource } from "./MarketOrderPanel";
 import { MarketTradingHistory } from "./MarketTradingHistory";
 import { useGetBanks } from "@/hooks/helpers/useBanks";
+import { TransferBetweenEntities } from "./TransferBetweenEntities";
 
 export const MarketModal = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -69,7 +69,7 @@ export const MarketModal = () => {
             <div>History</div>
           </div>
         ),
-        component: <MarketTradingHistory userTrades={userTrades} entityId={realmEntityId} />,
+        component: <MarketTradingHistory realmEntityId={realmEntityId} />,
       },
       {
         key: "all",

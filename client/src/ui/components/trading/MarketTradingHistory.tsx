@@ -3,23 +3,21 @@ import { ACCEPT_ORDER_EVENT, CANCEL_ORDER_EVENT, CREATE_ORDER_EVENT } from "@bib
 import { useEffect, useState } from "react";
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "./TradeHistoryEvent";
 
+const TAKER_INDEX = 1;
+const MAKER_INDEX = 2;
+
 interface MarketTradingHistoryProps {
   realmEntityId: bigint;
 }
 
 export type TradeEvent = {
-  eventTime: Date;
-  eventType: EventType;
-  expires_at: bigint;
-  maker_gives_resources_hash: string;
-  maker_gives_resources_id: bigint;
-  maker_gives_resources_weight: bigint;
-  maker_id: bigint;
-  taker_gives_resources_hash: string;
-  taker_gives_resources_id: bigint;
-  taker_gives_resources_weight: bigint;
-  taker_id: bigint;
-  trade_id: bigint;
+  type: EventType;
+  event: {
+    takerId: bigint;
+    makerId: bigint;
+    tradeId: bigint;
+    eventTime: Date;
+  };
 };
 
 export const MarketTradingHistory = ({ realmEntityId }: MarketTradingHistoryProps) => {
@@ -27,53 +25,65 @@ export const MarketTradingHistory = ({ realmEntityId }: MarketTradingHistoryProp
 
   const queryTrades = async () => {
     const trades: any = await client.request(`
-	query {
-		tradeModels1: tradeModels (order: {direction: DESC, field: EXPIRES_AT}, where: {maker_id: "49"}){
-		  edges {
-			node {
-			  entity {
-				createdAt
-				updatedAt
-				executedAt
-			  }
-			}
-		  }
-		},
-		tradeModels (order: {direction: DESC, field: EXPIRES_AT}, where: {taker_id: "49"}){
-		  edges {
-			node {
-			  entity {
-				createdAt
-				updatedAt
-				executedAt
-			  }
-			}
-		  }
-		},
-	  }  `);
-
-    const tradeHistory: TradeEvent[] = [];
-    trades.createdOrders.edges.forEach((edge: any) => {
-      tradeHistory.push(
-        toriiDataToTradeEvent(edge.node, new Date(edge.node.entity.createdAt), EventType.ORDER_CREATED),
-      );
-      if (edge.node.entity.executedAt !== edge.node.entity.createdAt) {
-        if (parseInt(edge.node.taker_id, 16) !== 0) {
-          tradeHistory.push(
-            toriiDataToTradeEvent(edge.node, new Date(edge.node.entity.executedAt), EventType.ORDER_ACCEPTED),
-          );
-        } else {
-          tradeHistory.push(
-            toriiDataToTradeEvent(edge.node, new Date(edge.node.entity.executedAt), EventType.ORDER_CANCELLED),
-          );
+    query {
+      createdOrders: events(keys: ["${CREATE_ORDER_EVENT}", "*"]) {
+        edges {
+          node {
+            id
+            keys
+            data
+          }
         }
       }
-    });
-    trades.myTrades.edges.forEach((edge: any) => {
-      tradeHistory.push(toriiDataToTradeEvent(edge.node, new Date(edge.node.entity.executedAt), EventType.BOUGHT));
-    });
-    tradeHistory.sort((a: TradeEvent, b: TradeEvent) => b.eventTime.getTime() - a.eventTime.getTime());
-    setTradeEvents(tradeHistory);
+      acceptOrders: events(keys: ["${ACCEPT_ORDER_EVENT}", "*"]) {
+        edges {
+          node {
+            id
+            keys
+            data
+          }
+        }
+      }
+      cancelOrders: events(keys: ["${CANCEL_ORDER_EVENT}", "*"]) {
+        edges {
+          node {
+            id
+            keys
+            data
+          }
+        }
+      }
+    }
+  `);
+    const createdOrders = filterAndReturnTradeEvents(
+      trades.createdOrders.edges,
+      realmEntityId,
+      EventType.ORDER_CREATED,
+      MAKER_INDEX,
+    );
+    const myAcceptedOrders = filterAndReturnTradeEvents(
+      trades.acceptOrders.edges,
+      realmEntityId,
+      EventType.ORDER_ACCEPTED,
+      MAKER_INDEX,
+    );
+    const ordersIAccepted = filterAndReturnTradeEvents(
+      trades.acceptOrders.edges,
+      realmEntityId,
+      EventType.BOUGHT,
+      TAKER_INDEX,
+    );
+    const canceledOrders = filterAndReturnTradeEvents(
+      trades.cancelOrders.edges,
+      realmEntityId,
+      EventType.ORDER_CANCELLED,
+      MAKER_INDEX,
+    );
+    setTradeEvents(
+      [...createdOrders, ...myAcceptedOrders, ...ordersIAccepted, ...canceledOrders].sort(
+        (a, b) => b.event.eventTime.getTime() - a.event.eventTime.getTime(),
+      ),
+    );
   };
 
   useEffect(() => {
@@ -90,19 +100,23 @@ export const MarketTradingHistory = ({ realmEntityId }: MarketTradingHistoryProp
   );
 };
 
-const toriiDataToTradeEvent = (trade: any, eventTime: Date, tradeStatus: EventType): TradeEvent => {
-  return {
-    eventTime: eventTime,
-    eventType: tradeStatus,
-    expires_at: BigInt(trade.expires_at),
-    maker_gives_resources_id: BigInt(trade.maker_gives_resources_id),
-    taker_gives_resources_id: BigInt(trade.taker_gives_resources_id),
-    maker_gives_resources_weight: BigInt(trade.maker_gives_resources_weight),
-    taker_gives_resources_weight: BigInt(trade.taker_gives_resources_weight),
-    taker_id: BigInt(trade.taker_id),
-    maker_id: BigInt(trade.maker_id),
-    trade_id: BigInt(trade.trade_id),
-    maker_gives_resources_hash: trade.maker_gives_resources_hash,
-    taker_gives_resources_hash: trade.taker_gives_resources_hash,
-  };
+const filterAndReturnTradeEvents = (
+  edges: any,
+  realmEntityId: bigint,
+  eventType: EventType,
+  indexOfInterest: number,
+): TradeEvent[] => {
+  return edges
+    .filter((edge: any) => parseInt(edge.node.keys[indexOfInterest], 16) === Number(realmEntityId))
+    .map((edge: any) => {
+      return {
+        type: eventType,
+        event: {
+          takerId: BigInt(edge.node.keys[TAKER_INDEX]),
+          makerId: BigInt(edge.node.keys[MAKER_INDEX]),
+          tradeId: BigInt(edge.node.data[0]),
+          eventTime: new Date(parseInt(edge.node.data[1], 16) * 1000),
+        },
+      };
+    });
 };

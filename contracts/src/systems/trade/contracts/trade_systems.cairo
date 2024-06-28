@@ -60,8 +60,29 @@ mod trade_systems {
         #[key]
         maker_id: u128,
         trade_id: u128,
-        maker_gives_resources: Span<(u8, u128)>,
-        taker_gives_resources: Span<(u8, u128)>
+        timestamp: u64
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    struct AcceptOrder {
+        #[key]
+        taker_id: u128,
+        #[key]
+        maker_id: u128,
+        trade_id: u128,
+        timestamp: u64
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    struct CancelOrder {
+        #[key]
+        taker_id: u128,
+        #[key]
+        maker_id: u128,
+        trade_id: u128,
+        timestamp: u64
     }
 
 
@@ -188,7 +209,7 @@ mod trade_systems {
             emit!(
                 world,
                 (CreateOrder {
-                    taker_id, maker_id, trade_id, maker_gives_resources, taker_gives_resources
+                    taker_id, maker_id, trade_id, timestamp: starknet::get_block_timestamp()
                 })
             );
 
@@ -256,6 +277,16 @@ mod trade_systems {
                 maker_receives_resources_hash == trade.taker_gives_resources_hash,
                 "wrong taker_gives_resources provided"
             );
+
+            emit!(
+                world,
+                (AcceptOrder {
+                    taker_id,
+                    maker_id: trade.maker_id,
+                    trade_id,
+                    timestamp: starknet::get_block_timestamp()
+                })
+            );
         }
 
 
@@ -281,6 +312,16 @@ mod trade_systems {
             donkey::return_donkey(world, trade.maker_id, trade.taker_gives_resources_weight);
 
             set!(world, (Status { trade_id, value: TradeStatus::CANCELLED }));
+
+            emit!(
+                world,
+                (CancelOrder {
+                    taker_id: trade.taker_id,
+                    maker_id: trade.maker_id,
+                    trade_id,
+                    timestamp: starknet::get_block_timestamp()
+                })
+            );
         }
     }
 }

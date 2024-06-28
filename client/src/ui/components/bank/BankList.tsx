@@ -1,14 +1,12 @@
-import { useMemo, useState } from "react";
-import { Tabs } from "@/ui/elements/tab";
-import { ResourceSwap } from "./Swap";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useEntities } from "@/hooks/helpers/useEntities";
+import { Tabs } from "@/ui/elements/tab";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { LiquidityTable } from "./LiquidityTable";
+import { useMemo, useState } from "react";
 import AddLiquidity from "./AddLiquidity";
-import { hexToAscii, numberToHex } from "@/ui/utils/utils";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { LiquidityTable } from "./LiquidityTable";
+import { ResourceSwap } from "./Swap";
 
 type BankListProps = {
   entity: any;

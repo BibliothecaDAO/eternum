@@ -34,7 +34,7 @@ export const EternumGlobalConfig = {
   },
   tick: {
     defaultTickIntervalInSeconds: 1,
-    armiesTickIntervalInSeconds: 7200, // 2hrs
+    armiesTickIntervalInSeconds: 30, // 2hrs
   },
   carryCapacity: {
     donkey: 100,
