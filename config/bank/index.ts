@@ -31,7 +31,7 @@ const LORDS_LIQUIDITY_PER_RESOURCE = 200;
 const RESOURCE_PRECISION = 1000;
 
 // Banks
-const COORD_X = 2147483900;
+const COORD_X = 2147483899;
 const COORD_Y = 2147483801;
 
 const resourceIds = Object.values(ResourcesIds).filter((value) => typeof value === "number");

@@ -9,6 +9,7 @@ import { Battles } from "../../models/buildings/worldmap/Battles";
 import { Structures } from "../../models/buildings/worldmap/Structures.js";
 import { Armies } from "../armies/Armies.js";
 import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
+import { Banks } from "../../models/buildings/worldmap/Banks";
 
 interface ExploredHexesState {
   exploredHexes: Map<number, Set<number>>;
@@ -108,6 +109,7 @@ export const WorldMap = () => {
       <Structures />
       <Battles />
       <Flags />
+      <Banks />
     </>
   );
 };
