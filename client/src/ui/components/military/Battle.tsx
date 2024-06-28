@@ -3,6 +3,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
 import { CombatTarget } from "@/types";
+import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -11,17 +12,16 @@ import { BattleSide, BuildingType, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
 import { Subscription } from "rxjs";
 import { ArmyChip } from "./ArmyChip";
-import { BUILDING_IMAGES_PATH } from "@/ui/config";
 
 export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; ownArmySelected: ArmyInfo }) => {
   const setBattleView = useUIStore((state) => state.setBattleView);
 
   return (
-    <div>
+    <div className="h-full flex flex-col justify-center justify-items-center">
       {armies.length !== 0 && (
         <>
           <Headline className="my-3 mt-4">Enemy armies</Headline>
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-1 gap-2 h-[60%]">
             {armies.map((army: ArmyInfo, index) => {
               const { attacker, defender } =
                 String(army.battle_side) === "Attacker"
@@ -29,16 +29,19 @@ export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; o
                   : { attacker: ownArmySelected, defender: army };
               const extraButton =
                 ownArmySelected && !army.isMine ? (
-                  <Button
-                    onClick={() =>
-                      setBattleView({
-                        battle: undefined,
-                        target: { type: CombatTarget.Army, entity: BigInt(defender.entity_id) },
-                      })
-                    }
-                  >
-                    Combat
-                  </Button>
+                  <div className="flex w-full justify-center">
+                    <Button
+                      className="self-center m-auto"
+                      onClick={() =>
+                        setBattleView({
+                          battle: undefined,
+                          target: { type: CombatTarget.Army, entity: BigInt(defender.entity_id) },
+                        })
+                      }
+                    >
+                      Combat
+                    </Button>
+                  </div>
                 ) : undefined;
               return BigInt(army.battle_id) === 0n && <ArmyChip key={index} army={army} extraButton={extraButton} />;
             })}

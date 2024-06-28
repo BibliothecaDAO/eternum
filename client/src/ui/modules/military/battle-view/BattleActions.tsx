@@ -36,8 +36,8 @@ export const BattleActions = ({
   isActive: boolean;
 }) => {
   const [localSelectedUnit, setLocalSelectedUnit] = useState<bigint | undefined>(ownArmyEntityId);
-
   const [loading, setLoading] = useState<Loading>(Loading.None);
+
   const setBattleView = useUIStore((state) => state.setBattleView);
   const clearSelection = useUIStore((state) => state.clearSelection);
   const { toggleModal } = useModal();
@@ -105,6 +105,7 @@ export const BattleActions = ({
       defending_army_id: defender!.entity_id,
     });
     setLoading(Loading.None);
+    setBattleView({ battle: { x: selectedArmy.x, y: selectedArmy.y }, target: undefined });
     clearSelection();
   };
 
