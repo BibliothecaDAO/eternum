@@ -4,16 +4,16 @@ import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import Button from "../../../elements/Button";
 
-import { useGuilds, AddressWhitelistAndName, GuildWhitelistAndName } from "../../../../hooks/helpers/useGuilds";
+import { useGuilds, AddressWhitelist, GuildWhitelist } from "../../../../hooks/helpers/useGuilds";
 import { hasGuild } from "./utils";
 import { GuildMembers } from "./GuildMembers";
 import { sortItems } from "@/ui/utils/utils";
 import { SelectedGuildInterface } from "./Guilds";
 
-type GuildWhitelistAndNameKeys = keyof GuildWhitelistAndName;
-interface SortingParamGuildWhitelistAndName {
+type GuildWhitelistKeys = keyof GuildWhitelist;
+interface SortingParamGuildWhitelist {
   label: string;
-  sortKey: GuildWhitelistAndNameKeys;
+  sortKey: GuildWhitelistKeys;
   className?: string;
 }
 
@@ -33,7 +33,7 @@ export const GuildInvites = () => {
   const { addressWhitelist } = getAddressWhitelist(BigInt(account.address));
   const { userGuildEntityId } = getAddressGuild(account.address);
 
-  const sortingParams: SortingParamGuildWhitelistAndName[] = useMemo(() => {
+  const sortingParams: SortingParamGuildWhitelist[] = useMemo(() => {
     return [{ label: "Guild Name", sortKey: "name", className: "col-span-1" }];
   }, []);
 
@@ -99,7 +99,7 @@ export const GuildInvites = () => {
               ))}
             </SortPanel>
             <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
-              {sortItems(addressWhitelist, activeSort)?.map((addressWhitelist: AddressWhitelistAndName, index) => {
+              {sortItems(addressWhitelist, activeSort)?.map((addressWhitelist: AddressWhitelist, index) => {
                 return (
                   <div key={addressWhitelist.guild_entity_id} className="grid grid-cols-3 gap-4 text-xs">
                     <p

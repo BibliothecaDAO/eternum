@@ -6,17 +6,17 @@ import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import { displayAddress, sortItems, copyPlayerAddressToClipboard } from "@/ui/utils/utils";
 
-import { useGuilds, GuildWhitelistAndName } from "../../../../hooks/helpers/useGuilds";
+import { useGuilds, GuildWhitelist } from "../../../../hooks/helpers/useGuilds";
 
 interface WhitelistProps {
   guildEntityId: bigint | undefined;
   isOwner: boolean;
 }
 
-type GuildWhitelistAndNameKeys = keyof GuildWhitelistAndName;
-interface SortingParamGuildWhitelistAndName {
+type GuildWhitelistKeys = keyof GuildWhitelist;
+interface SortingParamGuildWhitelist {
   label: string;
-  sortKey: GuildWhitelistAndNameKeys;
+  sortKey: GuildWhitelistKeys;
   className?: string;
 }
 
@@ -35,7 +35,7 @@ export const Whitelist = ({ guildEntityId, isOwner }: WhitelistProps) => {
   const { getGuildWhitelist } = useGuilds();
   const { whitelist } = getGuildWhitelist(guildEntityId!);
 
-  const sortingParams: SortingParamGuildWhitelistAndName[] = useMemo(() => {
+  const sortingParams: SortingParamGuildWhitelist[] = useMemo(() => {
     return [
       { label: "Player", sortKey: "name", className: "col-span-1" },
       { label: "Address", sortKey: "playerAddress", className: "col-span-1" },
@@ -109,7 +109,7 @@ export const Whitelist = ({ guildEntityId, isOwner }: WhitelistProps) => {
           ))}
         </SortPanel>
         <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
-          {sortItems(whitelist, activeSort)?.map((guildWhitelist: GuildWhitelistAndName) => {
+          {sortItems(whitelist, activeSort)?.map((guildWhitelist: GuildWhitelist) => {
             return (
               <div key={guildWhitelist.address} className="grid grid-cols-3 gap-4 text-xs">
                 <p className="col-span-1 hover:text-white truncate">{guildWhitelist.name}</p>

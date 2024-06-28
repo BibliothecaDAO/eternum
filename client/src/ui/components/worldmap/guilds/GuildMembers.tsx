@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from "react";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
-import { GuildMemberAndName } from "../../../../hooks/helpers/useGuilds";
+import { GuildMember } from "../../../../hooks/helpers/useGuilds";
 import { displayAddress, sortItems, copyPlayerAddressToClipboard } from "@/ui/utils/utils";
 import Button from "../../../elements/Button";
 import { useDojo } from "../../../../hooks/context/DojoContext";
@@ -14,10 +14,10 @@ interface GuildMembersProps {
   ownerAddress?: string;
 }
 
-type GuildMemberAndNameKeys = keyof GuildMemberAndName;
-interface SortingParamGuildMemberAndName {
+type GuildMemberKeys = keyof GuildMember;
+interface SortingParamGuildMember {
   label: string;
-  sortKey: GuildMemberAndNameKeys;
+  sortKey: GuildMemberKeys;
   className?: string;
 }
 
@@ -36,7 +36,7 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
 
   const guildOwner = getGuildOwner(selectedGuild.guildEntityId);
 
-  const sortingParams: SortingParamGuildMemberAndName[] = useMemo(() => {
+  const sortingParams: SortingParamGuildMember[] = useMemo(() => {
     return [
       { label: "Player", sortKey: "name", className: "col-span-1" },
       { label: "Address", sortKey: "playerAddress", className: "col-span-1" },
@@ -78,7 +78,7 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
         ))}
       </SortPanel>
       <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
-        {sortItems(guildMembers, activeSort)?.map((member: GuildMemberAndName) => {
+        {sortItems(guildMembers, activeSort)?.map((member: GuildMember) => {
           return (
             <div
               key={member.address}
