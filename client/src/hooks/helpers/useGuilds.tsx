@@ -30,51 +30,38 @@ export const useGuilds = () => {
 
   const guildPointsLeaderboard = useLeaderBoardStore((state) => state.guildPointsLeaderboard);
 
-  const getGuildMembers = useMemo(
-    () => (guildEntityId: bigint) => {
-      const guildMembers = useEntityQuery([HasValue(GuildMember, { guild_entity_id: guildEntityId })]);
-      return {
-        guildMembers: formatGuildMembers(guildMembers, GuildMember, getAddressName),
-      };
-    },
-    [],
-  );
+  const getGuildMembers = (guildEntityId: bigint) => {
+    const guildMembers = useEntityQuery([HasValue(GuildMember, { guild_entity_id: guildEntityId })]);
+    return {
+      guildMembers: formatGuildMembers(guildMembers, GuildMember, getAddressName),
+    };
+  };
 
-  const getGuilds = useMemo(
-    () => () => {
-      // TODO: CONSTANT 0n
-      const guilds = useEntityQuery([Has(Guild), NotValue(Population, { population: 0 })]);
-      // const guilds = useEntityQuery([Has(Guild)]);
-      return {
-        guilds: formatGuilds(guilds, Guild, Population, getEntityName, guildPointsLeaderboard),
-      };
-    },
-    [guildPointsLeaderboard],
-  );
+  const getGuilds = () => {
+    // TODO: CONSTANT 0n
+    const guilds = useEntityQuery([Has(Guild), NotValue(Population, { population: 0 })]);
+    return {
+      guilds: formatGuilds(guilds, Guild, Population, getEntityName, guildPointsLeaderboard),
+    };
+  };
 
-  const getGuildWhitelist = useMemo(
-    () => (guildEntityId: bigint) => {
-      const whitelist = useEntityQuery([
-        // TODO : CONSTANT 1n
-        HasValue(GuildWhitelist, { guild_entity_id: guildEntityId, is_whitelisted: 1n }),
-      ]);
-      return {
-        whitelist: formatGuildWhitelist(whitelist, GuildWhitelist, getAddressName),
-      };
-    },
-    [],
-  );
-
-  const getAddressWhitelist = useMemo(
-    () => (address: bigint) => {
+  const getGuildWhitelist = (guildEntityId: bigint) => {
+    const whitelist = useEntityQuery([
       // TODO : CONSTANT 1n
-      const addressWhitelist = useEntityQuery([HasValue(GuildWhitelist, { address: address, is_whitelisted: 1n })]);
-      return {
-        addressWhitelist: formatAddressWhitelist(addressWhitelist, GuildWhitelist, getEntityName),
-      };
-    },
-    [],
-  );
+      HasValue(GuildWhitelist, { guild_entity_id: guildEntityId, is_whitelisted: 1n }),
+    ]);
+    return {
+      whitelist: formatGuildWhitelist(whitelist, GuildWhitelist, getAddressName),
+    };
+  };
+
+  const getAddressWhitelist = (address: bigint) => {
+    // TODO : CONSTANT 1n
+    const addressWhitelist = useEntityQuery([HasValue(GuildWhitelist, { address: address, is_whitelisted: 1n })]);
+    return {
+      addressWhitelist: formatAddressWhitelist(addressWhitelist, GuildWhitelist, getEntityName),
+    };
+  };
 
   const getGuildOwner = useMemo(
     () => (guildEntityId: bigint) => {
@@ -124,10 +111,10 @@ const formatGuilds = (
   getEntityName: (entityId: bigint) => string,
   guildPointsLeaderboard: GuildPointsLeaderboardInterface[],
 ): Guild[] => {
-  return guilds.map((guild_entity_id) => {
-    const guild = getComponentValue(Guild, guild_entity_id) as ClientComponents["Guild"]["schema"];
-    const population = getComponentValue(Population, guild_entity_id) as ClientComponents["Population"]["schema"];
-    const name = getEntityName(BigInt(guild?.entity_id));
+  return guilds.map((entity) => {
+    const guild = getComponentValue(Guild, entity) as ClientComponents["Guild"]["schema"];
+    const population = getComponentValue(Population, entity) as ClientComponents["Population"]["schema"];
+    const name = getEntityName(BigInt(guild.entity_id));
     const index = guildPointsLeaderboard.findIndex((item) => item.guildEntityId === BigInt(guild.entity_id));
     const rank = index != -1 ? guildPointsLeaderboard[index].rank : "";
 
