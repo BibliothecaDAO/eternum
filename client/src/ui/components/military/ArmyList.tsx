@@ -10,6 +10,7 @@ import { DepositResources } from "../resources/DepositResources";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { ArmyViewCard } from "./ArmyViewCard";
+import { useResources } from "@/hooks/helpers/useResources";
 
 export const EntityArmyList = ({ entity_id }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
@@ -26,6 +27,9 @@ export const EntityArmyList = ({ entity_id }: any) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const canCreateProtector = useMemo(() => !entityArmies.find((army) => army.protectee_id), [entityArmies]);
+
+  const { getResourcesFromBalance } = useResources();
+  const inventoryResources = getResourcesFromBalance(entity_id);
 
   const handleCreateArmy = (is_defensive_army: boolean) => {
     setIsLoading(true);
@@ -78,8 +82,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
             <div className="p-2 bg-gold/10 clip-angled my-4">
               <InventoryResources entityId={entity.entity_id} />
             </div>
-
-            <DepositResources entityId={entity.entity_id} />
+            <DepositResources entityId={entity.entity_id} resources={inventoryResources} />
           </React.Fragment>
         )}
         questing={

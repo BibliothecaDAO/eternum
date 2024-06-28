@@ -17,7 +17,6 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { construction, military, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 import { Assistant } from "../assistant/Assistant";
-import { Banks } from "../banking/Banks";
 import { Guilds } from "../guilds/Guilds";
 import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
@@ -220,7 +219,6 @@ export const LeftNavigationModule = () => {
         <Questing entityId={realmEntityId} />
         <Assistant />
         <Leaderboard />
-        <Banks />
         <Guilds />
       </div>
 

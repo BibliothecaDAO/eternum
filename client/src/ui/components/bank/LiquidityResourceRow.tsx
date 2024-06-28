@@ -9,11 +9,11 @@ import { useComponentValue } from "@dojoengine/react";
 
 type LiquidityResourceRowProps = {
   bankEntityId: bigint;
-  bankAccountEntityId: bigint;
+  entityId: bigint;
   resourceId: number;
 };
 
-export const LiquidityResourceRow = ({ bankEntityId, resourceId }: LiquidityResourceRowProps) => {
+export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: LiquidityResourceRowProps) => {
   const dojoContext = useDojo();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,8 +46,11 @@ export const LiquidityResourceRow = ({ bankEntityId, resourceId }: LiquidityReso
   const pair = useMemo(
     () => (
       <div className="flex flex-row">
-        {resource?.trait && <ResourceIcon resource={resource.trait} size="xs" className="mr-2" />}
-        <>$LORDS/{resource?.ticker}</>
+        <>
+          <ResourceIcon resource={"Lords"} size="md" />
+          {" / "}
+          {resource?.trait && <ResourceIcon resource={resource.trait} size="md" />}
+        </>
       </div>
     ),
     [resource],
@@ -70,6 +73,7 @@ export const LiquidityResourceRow = ({ bankEntityId, resourceId }: LiquidityReso
     dojoContext.setup.systemCalls
       .remove_liquidity({
         bank_entity_id: bankEntityId,
+        entity_id: entityId,
         resource_type: BigInt(resourceId),
         shares: withdrawShares,
         signer: dojoContext.account.account,
@@ -78,14 +82,14 @@ export const LiquidityResourceRow = ({ bankEntityId, resourceId }: LiquidityReso
   }, [dojoContext, bankEntityId, resourceId, marketManager]);
 
   return (
-    <tr className="hover:bg-gray-100">
+    <tr className="text-lg hover:bg-gold/20 my-1 border border-gold/10">
       <td>{pair}</td>
-      <td>{divideByPrecision(totalLords).toFixed(2)}</td>
-      <td>{divideByPrecision(totalResource).toFixed(2)}</td>
-      <td>{divideByPrecision(lordsAmount).toFixed(2)}</td>
-      <td>{divideByPrecision(resourceAmount).toFixed(2)}</td>
+      <td>{divideByPrecision(totalLords).toLocaleString()}</td>
+      <td>{divideByPrecision(totalResource).toLocaleString()}</td>
+      <td>{divideByPrecision(lordsAmount).toLocaleString()}</td>
+      <td>{divideByPrecision(resourceAmount).toLocaleString()}</td>
       <td>
-        <Button onClick={onWithdraw} isLoading={isLoading} disabled={!canWithdraw}>
+        <Button variant="outline" onClick={onWithdraw} isLoading={isLoading} disabled={!canWithdraw}>
           Withdraw
         </Button>
       </td>

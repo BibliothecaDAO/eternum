@@ -11,7 +11,7 @@ import {
 import { useDojo } from "../context/DojoContext";
 import { getEntityIdFromKeys, getResourceIdsFromPackedNumber } from "../../ui/utils/utils";
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { Position, ResourcesIds, type Resource } from "@bibliothecadao/eternum";
+import { Position, ResourcesIds, resources, type Resource } from "@bibliothecadao/eternum";
 import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
 import { useEffect, useMemo, useState } from "react";
 import useBlockchainStore from "../store/useBlockchainStore";
@@ -28,11 +28,14 @@ export function useResources() {
     // todo: switch back to items_count when working
     const ownedResources = getComponentValue(OwnedResourcesTracker, getEntityIdFromKeys([entityId]));
     if (!ownedResources) return [];
-    const resourceIds = getResourceIdsFromPackedNumber(ownedResources.resource_types);
-    return resourceIds.map((id) => {
-      const resource = getComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(id)]));
-      return { resourceId: id, amount: Number(resource?.balance) || 0 };
-    });
+    // const resourceIds = getResourceIdsFromPackedNumber(ownedResources.resource_types);
+    const resourceIds = resources.map((r) => r.id);
+    return resourceIds
+      .map((id) => {
+        const resource = getComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(id)]));
+        return { resourceId: id, amount: Number(resource?.balance) || 0 };
+      })
+      .filter((r) => r.amount > 0);
   };
 
   const getResourceCosts = (costUuid: bigint, count: number) => {
@@ -211,30 +214,6 @@ export const useProductionManager = (entityId: bigint, resourceId: number) => {
   }, [Production, Resource, entityId, resourceId, production]);
 
   return productionManager;
-};
-
-export const useGetBankAccountOnPosition = (address: bigint, position: Position) => {
-  const {
-    setup: {
-      components: { Owner, Position, Movable, Bank, Realm },
-    },
-  } = useDojo();
-
-  const entities = runQuery([
-    HasValue(Owner, { address }),
-    Not(Movable),
-    Not(Bank),
-    Not(Realm),
-    HasValue(Position, { ...position }),
-  ]);
-
-  return Array.from(entities)
-    .map((entityId) => {
-      const position = getComponentValue(Position, entityId);
-      if (!position) return;
-      return position?.entity_id;
-    })
-    .filter(Boolean) as bigint[];
 };
 
 export function useOwnedEntitiesOnPosition() {

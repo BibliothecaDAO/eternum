@@ -1,12 +1,10 @@
 import Button from "@/ui/elements/Button";
-import { resources } from "@bibliothecadao/eternum";
+import { ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useState } from "react";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { ResourceBar } from "./ResourceBar";
-
-const LORDS_RESOURCE_ID = 253n;
 
 const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; entityId: bigint }) => {
   const {
@@ -24,7 +22,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
   const [resourceAmount, setResourceAmount] = useState(0);
 
   const hasEnough =
-    getBalance(entityId, Number(LORDS_RESOURCE_ID)).balance >= multiplyByPrecision(lordsAmount) &&
+    getBalance(entityId, Number(ResourcesIds.Lords)).balance >= multiplyByPrecision(lordsAmount) &&
     getBalance(entityId, Number(resourceId)).balance >= multiplyByPrecision(resourceAmount);
 
   const isNotZero = lordsAmount > 0 && resourceAmount > 0;
@@ -34,6 +32,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
     setIsLoading(true);
     add_liquidity({
       bank_entity_id,
+      entity_id: entityId,
       lords_amount: multiplyByPrecision(lordsAmount),
       resource_type: resourceId,
       resource_amount: multiplyByPrecision(resourceAmount),
@@ -44,24 +43,24 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
   };
 
   return (
-    <div>
-      <div className="p-2 relative space-y-2">
+    <div className="bg-gold/10 p-1 clip-angled-sm">
+      <div className="p-2 relative space-y-1">
         <ResourceBar
           entityId={entityId}
-          resources={resources.filter((r) => r.id === Number(LORDS_RESOURCE_ID))}
+          resources={resources.filter((r) => r.id === Number(ResourcesIds.Lords))}
           amount={lordsAmount}
           setAmount={setLordsAmount}
-          resourceId={LORDS_RESOURCE_ID}
+          resourceId={BigInt(ResourcesIds.Lords)}
           setResourceId={setResourceId}
         />
 
-        <div className="mt-2 absolute top-1/3 left-1/3">
+        <div className="mt-2 absolute top-[97px] left-1/3">
           <Button
+            variant="primary"
             isLoading={isLoading}
             disabled={!canAdd}
             className="text-brown bg-brown"
             onClick={onAddLiquidity}
-            variant="primary"
           >
             Add Liquidity
           </Button>
@@ -69,14 +68,14 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
 
         <ResourceBar
           entityId={entityId}
-          resources={resources.filter((r) => r.id !== Number(LORDS_RESOURCE_ID))}
+          resources={resources.filter((r) => r.id !== Number(ResourcesIds.Lords))}
           amount={resourceAmount}
           setAmount={setResourceAmount}
           resourceId={resourceId}
           setResourceId={setResourceId}
         />
       </div>
-      {!canAdd && <div className="ml-1 text-danger">Warning: not enough resources or amount is zero</div>}
+      {!canAdd && <div className="p-2 text-danger font-bold text-md">Not enough resources or amount is zero</div>}
     </div>
   );
 };

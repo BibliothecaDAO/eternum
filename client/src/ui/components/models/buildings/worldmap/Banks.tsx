@@ -8,26 +8,18 @@ Title: Medieval House
 */
 
 import { useGetBanks } from "@/hooks/helpers/useBanks";
-import useUIStore from "@/hooks/store/useUIStore";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { useGLTF } from "@react-three/drei";
 import { useMemo } from "react";
-import { banks as bankModule } from "@/ui/components/navigation/Config";
 
 export const Banks = () => {
   const banks = useGetBanks();
-
-  const { togglePopup } = useUIStore();
-
-  const handleBankClick = (bankEntityId: any) => {
-    togglePopup(bankModule);
-  };
 
   return (
     <group>
       {banks.map((bank, index) => {
         const { x, y } = getUIPositionFromColRow(bank.position.x, bank.position.y, false);
-        return <BankModel key={index} position={[x, 0.31, -y]} onClick={() => handleBankClick(bank.entityId)} />;
+        return <BankModel key={index} position={[x, 0.31, -y]} onClick={() => {}} />;
       })}
     </group>
   );

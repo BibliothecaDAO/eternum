@@ -201,6 +201,14 @@ export interface CreateBankProps extends SystemSigner {
   owner_fee_scaled: num.BigNumberish;
 }
 
+export interface CreateAdminBankProps extends SystemSigner {
+  coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+  owner_fee_scaled: num.BigNumberish;
+}
+
 export interface OpenAccountProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
   bank_entity_id: num.BigNumberish;
@@ -213,18 +221,21 @@ export interface ChangeBankOwnerFeeProps extends SystemSigner {
 
 export interface BuyResourcesProps extends SystemSigner {
   bank_entity_id: num.BigNumberish;
+  entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
   amount: num.BigNumberish;
 }
 
 export interface SellResourcesProps extends SystemSigner {
   bank_entity_id: num.BigNumberish;
+  entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
   amount: num.BigNumberish;
 }
 
 export interface AddLiquidityProps extends SystemSigner {
   bank_entity_id: num.BigNumberish;
+  entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
   resource_amount: num.BigNumberish;
   lords_amount: num.BigNumberish;
@@ -232,6 +243,7 @@ export interface AddLiquidityProps extends SystemSigner {
 
 export interface RemoveLiquidityProps extends SystemSigner {
   bank_entity_id: num.BigNumberish;
+  entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
   shares: num.BigNumberish;
 }

@@ -18,7 +18,7 @@ const STYLES = {
     "inline-flex whitespace-nowrap cursor-pointer white transition-all duration-300 items-center justify-center p-2 text-xs font-medium text-gold uppercase rounded",
   primary:
     "px-6 py-2 bg-crimson from-yellow-600 to-yellow-700  font-semibold text-lg uppercase tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none outline-gradient  outline-gold hover:bg-gold hover:text-brown clip-angled border-gradient border-y hover:border-crimson ",
-  default: "text-white/90 bg-gold/20 border border-transparent shadow-sm clip-angled !text-gold px-6 py-2 ",
+  default: "bg-brown !text-gold px-6 py-2 ",
   enabledStyle: "bg-black/10 hover:bg-black/30 focus:outline-none",
   disabledStyle: "bg-gray-300 cursor-not-allowed !border-gray-gold !text-gray-gold",
   success: "border border-green !text-brilliance bg-transparent hover:bg-green/10",
