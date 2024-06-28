@@ -64,22 +64,6 @@ export const BankPanel = ({ entity }: BankListProps) => {
 
   return (
     <div className="m-4">
-      {/* <div className="flex justify-between mb-4">
-        <div>
-          <h3>{entity.name}</h3>
-          <div className="text-xs">
-            Banker:{" "}
-            {ownerName ? hexToAscii(numberToHex(Number(ownerName))) : numberToHex(Number(owner!.address)).slice(0, 5)}
-          </div>
-        </div>
-        <div className=" px-6 flex ">
-          <div className="font-bold self-center">
-            {bank && <div>{`Bank Fees: ${(Number(bank.owner_fee_scaled) / 2 ** 64) * 100}%`}</div>}{" "}
-            <div>{`LP Fees: ${(EternumGlobalConfig.banks.lpFees / 2 ** 64) * 100}%`}</div>
-          </div>
-        </div>
-      </div> */}
-
       <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
         <Tabs.List>
           {tabs.map((tab, index) => (
