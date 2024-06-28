@@ -29,7 +29,7 @@ export const EntityArmyList = ({ entity_id }: any) => {
   const canCreateProtector = useMemo(() => !entityArmies.find((army) => army.protectee_id), [entityArmies]);
 
   const { getResourcesFromBalance } = useResources();
-  const inventoryResources = getResourcesFromBalance(entity_id);
+  const inventoryResources = getResourcesFromBalance(entity_id?.entity_id);
 
   const handleCreateArmy = (is_defensive_army: boolean) => {
     setIsLoading(true);
