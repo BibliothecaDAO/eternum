@@ -46,8 +46,11 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
   const pair = useMemo(
     () => (
       <div className="flex flex-row">
-        {resource?.trait && <ResourceIcon resource={resource.trait} size="lg" className="mr-2" />}
-        <>Lords/{resource?.trait}</>
+        <>
+          <ResourceIcon resource={"Lords"} size="md" />
+          {" / "}
+          {resource?.trait && <ResourceIcon resource={resource.trait} size="md" />}
+        </>
       </div>
     ),
     [resource],
