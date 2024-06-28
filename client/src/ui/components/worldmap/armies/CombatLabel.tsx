@@ -5,9 +5,10 @@ import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 
 interface ArmyInfoLabelProps {
   visible?: boolean;
+  structureIsMine: boolean | undefined;
 }
 
-export const CombatLabel = ({ visible = true }: ArmyInfoLabelProps) => {
+export const CombatLabel = ({ visible = true, structureIsMine }: ArmyInfoLabelProps) => {
   const setView = useUIStore((state) => state.setLeftNavigationView);
 
   return (
@@ -18,7 +19,7 @@ export const CombatLabel = ({ visible = true }: ArmyInfoLabelProps) => {
           setView(View.EntityView);
         }}
       >
-        Combat
+        {structureIsMine ? "Defend" : "Combat"}
       </Button>
     </DojoHtml>
   );
