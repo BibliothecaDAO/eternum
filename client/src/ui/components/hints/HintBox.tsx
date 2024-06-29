@@ -1,15 +1,16 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { useRealm } from "@/hooks/helpers/useRealm";
 import { Quest, useQuestStore, Prize } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { QUEST_RESOURCES_SCALED } from "@bibliothecadao/eternum";
+import { multiplyByPrecision } from "@/ui/utils/utils";
 import { Check, ShieldQuestion } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint }) => {
   const {
     setup: {
-      systemCalls: { mint_starting_resources },
+      systemCalls: { mint_resources, mint_starting_resources },
     },
     account: { account },
   } = useDojo();
@@ -17,13 +18,26 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
   const [isLoading, setIsLoading] = useState(false);
   const setSelectedQuest = useQuestStore((state) => state.setSelectedQuest);
 
+  const { getQuestResources } = useRealm();
+
   const handleAllClaims = async () => {
+    const questResources = getQuestResources();
+    const resourcesToMint = quest.prizes.flatMap((prize) => {
+      const resources = questResources[prize.id];
+      return resources.flatMap((resource) => [resource.resource as number, multiplyByPrecision(resource.amount)]);
+    });
+
     setIsLoading(true);
     try {
       await mint_starting_resources({
         signer: account,
         config_ids: quest.prizes.map((prize) => BigInt(prize.id)),
         realm_entity_id: entityId || BigInt(0),
+      });
+      await mint_resources({
+        signer: account,
+        receiver_id: entityId || BigInt(0),
+        resources: resourcesToMint,
       });
     } catch (error) {
       console.error(`Failed to claim resources for quest ${quest.name}:`, error);
@@ -68,21 +82,25 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
   );
 };
 
-const QuestRewards = ({ prizes }: { prizes: Prize[] }) => (
-  <div className="w-full">
-    <div className="mb-1 font-bold">Quest Rewards</div>
-    {prizes &&
-      prizes.map((prize, index) => (
-        <div key={index} className="grid grid-cols-3 gap-3">
-          {QUEST_RESOURCES_SCALED[prize.id].map((resource, i) => (
-            <div key={i} className="grid gap-3">
-              <ResourceCost resourceId={resource.resource} amount={resource.amount} />
-            </div>
-          ))}
-        </div>
-      ))}
-  </div>
-);
+const QuestRewards = ({ prizes }: { prizes: Prize[] }) => {
+  const { getQuestResources } = useRealm();
+
+  return (
+    <div className="w-full">
+      <div className="mb-1 font-bold">Quest Rewards</div>
+      {prizes &&
+        prizes.map((prize, index) => (
+          <div key={index} className="grid grid-cols-3 gap-3">
+            {getQuestResources()[prize.id].map((resource, i) => (
+              <div key={i} className="grid gap-3">
+                <ResourceCost resourceId={resource.resource} amount={resource.amount} />
+              </div>
+            ))}
+          </div>
+        ))}
+    </div>
+  );
+};
 
 export const QuestList = ({ entityId }: { entityId: bigint | undefined }) => {
   const { quests, selectedQuest } = useQuestStore((state) => ({

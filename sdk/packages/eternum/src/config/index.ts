@@ -7,7 +7,6 @@ import {
   BUILDING_RESOURCE_PRODUCED,
   DONKEY_ENTITY_TYPE,
   EternumGlobalConfig,
-  QuestType,
   ResourcesIds,
   WeightConfig,
   TROOPS_STAMINAS,
@@ -20,7 +19,6 @@ import {
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS_SCALED,
-  QUEST_RESOURCES_SCALED,
   BUILDING_COSTS_SCALED,
 } from "../utils";
 
@@ -244,23 +242,6 @@ export const setSpeedConfig = async (account: Account, provider: EternumProvider
   });
 
   console.log(`Configuring speed Army config ${txArmy.statusReceipt}...`);
-};
-
-export const setQuestConfig = async (account: Account, provider: EternumProvider) => {
-  for (const type of Object.keys(QUEST_RESOURCES_SCALED) as unknown as QuestType[]) {
-    const tx = await provider.set_mint_config({
-      signer: account,
-      config_id: type,
-      resources: QUEST_RESOURCES_SCALED[type].map((cost) => {
-        return {
-          ...cost,
-          amount: cost.amount * EternumGlobalConfig.resources.resourcePrecision,
-        };
-      }),
-    });
-
-    console.log(`Configuring quest config ${type} ${tx.statusReceipt}...`);
-  }
 };
 
 export const setHyperstructureConfig = async (account: Account, provider: EternumProvider) => {

@@ -8,6 +8,8 @@ import { unpackResources } from "../../ui/utils/packedData";
 import { getRealm, getRealmNameById } from "../../ui/utils/realms";
 import { getEntityIdFromKeys, getPosition } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
+import { getQuestResources as getStartingResources } from "@bibliothecadao/eternum";
+import useRealmStore from "../store/useRealmStore";
 
 export type RealmExtended = RealmInterface & {
   entity_id: bigint;
@@ -20,6 +22,13 @@ export function useRealm() {
       components: { Realm, AddressName, Owner, EntityOwner, Position, Structure },
     },
   } = useDojo();
+
+  const getQuestResources = () => {
+    const realmEntityId = useRealmStore.getState().realmEntityId;
+    const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    const resourcesProduced = realm ? unpackResources(realm.resource_types_packed, realm.resource_types_count) : [];
+    return getStartingResources(resourcesProduced);
+  };
 
   const getEntityOwner = (entityId: bigint) => {
     const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityId]));
@@ -142,6 +151,7 @@ export function useRealm() {
   };
 
   return {
+    getQuestResources,
     getEntityOwner,
     isRealmIdSettled,
     getNextRealmIdForOrder,

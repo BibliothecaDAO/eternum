@@ -12,6 +12,7 @@ import {
   STRUCTURE_COSTS,
   HYPERSTRUCTURE_CREATION_COSTS,
   HYPERSTRUCTURE_TOTAL_COSTS,
+  ResourcesIds,
 } from "../constants";
 import { Resource } from "../types";
 
@@ -22,6 +23,51 @@ export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplie
     multipliedCosts[buildingType] = resourceOutputs[buildingType] * multiplier;
   }
   return multipliedCosts;
+};
+
+export const uniqueResourceInputs = (resourcesProduced: number[]): number[] => {
+  let uniqueResourceInputs: number[] = [];
+
+  for (let resourceProduced of resourcesProduced) {
+    for (let resourceInput of RESOURCE_INPUTS[resourceProduced]) {
+      if (!uniqueResourceInputs.includes(resourceInput.resource)) {
+        uniqueResourceInputs.push(resourceInput.resource);
+      }
+    }
+  }
+
+  return uniqueResourceInputs;
+};
+
+export const applyInputProductionFactor = (
+  questResources: ResourceInputs,
+  resourcesOnRealm: number[],
+): ResourceInputs => {
+  for (let resourceInput of uniqueResourceInputs(resourcesOnRealm).filter(
+    (id) => id != ResourcesIds.Wheat && id != ResourcesIds.Fish,
+  )) {
+    for (let questType in questResources) {
+      questResources[questType] = questResources[questType].map((questResource) => {
+        if (questResource.resource === resourceInput) {
+          return {
+            ...questResource,
+            amount: questResource.amount * EternumGlobalConfig.resources.startingResourcesInputProductionFactor,
+          };
+        }
+        return questResource;
+      });
+    }
+  }
+  return questResources;
+};
+
+export const getQuestResources = (resourcesOnRealm: number[]): ResourceInputs => {
+  let QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(
+    QUEST_RESOURCES,
+    EternumGlobalConfig.resources.resourceMultiplier,
+  );
+  console.log({ QUEST_RESOURCES_SCALED });
+  return applyInputProductionFactor(QUEST_RESOURCES_SCALED, resourcesOnRealm);
 };
 
 export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: number) => {
@@ -59,10 +105,6 @@ export const BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
 );
 export const RESOURCE_INPUTS_SCALED: ResourceInputs = scaleResourceInputs(
   RESOURCE_INPUTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-export const QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(
-  QUEST_RESOURCES,
   EternumGlobalConfig.resources.resourceMultiplier,
 );
 export const EXPLORATION_COSTS_SCALED: Resource[] = scaleResources(

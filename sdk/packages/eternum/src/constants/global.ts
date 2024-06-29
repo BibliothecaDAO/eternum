@@ -12,6 +12,7 @@ export const EternumGlobalConfig = {
     knightsPerTick: 2,
     crossbowmenPerTick: 2,
     paladinPerTick: 2,
+    startingResourcesInputProductionFactor: 4,
   },
   banks: {
     lordsCost: 1000,
