@@ -43,6 +43,7 @@ export const SelectPreviewBuildingMenu = () => {
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const quests = useQuestStore((state) => state.quests);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { realm } = useGetRealm(realmEntityId);
@@ -89,6 +90,11 @@ export const SelectPreviewBuildingMenu = () => {
     }
   };
 
+  const isQuestClaimedByName = (questName: QuestName) => {
+    const quest = quests?.find((q) => q.name === questName);
+    return quest?.claimed ?? false;
+  };
+
   const tabs = useMemo(
     () => [
       {
@@ -122,7 +128,7 @@ export const SelectPreviewBuildingMenu = () => {
               return (
                 <BuildingCard
                   className={clsx({
-                    hidden: selectedQuest?.name === QuestName.BuildFarm,
+                    hidden: !isQuestClaimedByName(QuestName.BuildFarm),
                   })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
@@ -178,9 +184,7 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden:
-                        (!isFarm && selectedQuest?.name === QuestName.BuildFarm) ||
-                        selectedQuest?.name === QuestName.BuildResource,
+                      hidden: !isFarm && !isQuestClaimedByName(QuestName.BuildResource),
                       "animate-pulse":
                         (isFarm && selectedQuest?.name === QuestName.BuildFarm) ||
                         (isWorkersHut && selectedQuest?.name === QuestName.BuildWorkersHut) ||
@@ -239,8 +243,7 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden:
-                        selectedQuest?.name === QuestName.BuildFarm || selectedQuest?.name === QuestName.BuildResource,
+                      hidden: !isQuestClaimedByName(QuestName.BuildResource),
                     })}
                     key={index}
                     buildingId={building}
