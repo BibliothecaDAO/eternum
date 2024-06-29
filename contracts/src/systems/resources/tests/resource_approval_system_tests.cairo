@@ -51,8 +51,7 @@ mod resource_approval_system_tests {
                     entity_id: owner_entity_id.into()
                 },
                 EntityOwner {
-                    entity_id: owner_entity_id.into(),
-                    entity_owner_id: owner_entity_id.into()
+                    entity_id: owner_entity_id.into(), entity_owner_id: owner_entity_id.into()
                 },
                 Resource {
                     entity_id: owner_entity_id.into(),
@@ -102,15 +101,16 @@ mod resource_approval_system_tests {
 
         set!(
             world,
-            (Owner {
-                address: contract_address_const::<'approved_entity'>(),
-                entity_id: approved_entity_id.into()
-            },
-            EntityOwner {   
-                entity_id: approved_entity_id.into(),
-                entity_owner_id: approved_entity_id.into()
-            }
-        ));
+            (
+                Owner {
+                    address: contract_address_const::<'approved_entity'>(),
+                    entity_id: approved_entity_id.into()
+                },
+                EntityOwner {
+                    entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into()
+                }
+            )
+        );
 
         // owner approves approved
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
@@ -146,15 +146,16 @@ mod resource_approval_system_tests {
 
         set!(
             world,
-            (Owner {
-                address: contract_address_const::<'approved_entity'>(),
-                entity_id: approved_entity_id.into()
-            },
-            EntityOwner {   
-                entity_id: approved_entity_id.into(),
-                entity_owner_id: approved_entity_id.into()
-            }
-        ));
+            (
+                Owner {
+                    address: contract_address_const::<'approved_entity'>(),
+                    entity_id: approved_entity_id.into()
+                },
+                EntityOwner {
+                    entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into()
+                }
+            )
+        );
 
         // owner approves approved
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());

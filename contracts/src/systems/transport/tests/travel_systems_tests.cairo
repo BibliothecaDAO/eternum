@@ -54,10 +54,7 @@ fn setup() -> (IWorldDispatcher, u128, u64, Position, Coord, ITravelSystemsDispa
                 address: contract_address_const::<'travelling_entity'>(),
                 entity_id: realm_entity_id.into()
             },
-            EntityOwner {
-                entity_id: travelling_entity_id.into(), 
-                entity_owner_id: realm_entity_id
-            }
+            EntityOwner { entity_id: travelling_entity_id.into(), entity_owner_id: realm_entity_id }
         )
     );
 
@@ -88,7 +85,15 @@ fn setup() -> (IWorldDispatcher, u128, u64, Position, Coord, ITravelSystemsDispa
 #[test]
 #[available_gas(30000000000000)]
 fn test_travel() {
-    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (
+        world,
+        realm_entity_id,
+        travelling_entity_id,
+        _,
+        destination_coord,
+        travel_systems_dispatcher
+    ) =
+        setup();
 
     set!(
         world,
@@ -121,7 +126,15 @@ fn test_travel() {
 #[test]
 #[available_gas(30000000000000)]
 fn test_travel_with_realm_bonus() {
-    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (
+        world,
+        realm_entity_id,
+        travelling_entity_id,
+        _,
+        destination_coord,
+        travel_systems_dispatcher
+    ) =
+        setup();
 
     ///////////////////////////////
     // create realm and set level
@@ -199,7 +212,15 @@ fn test_travel_with_realm_bonus() {
 #[test]
 #[available_gas(30000000000000)]
 fn test_travel_with_realm_and_order_bonus() {
-    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (
+        world,
+        realm_entity_id,
+        travelling_entity_id,
+        _,
+        destination_coord,
+        travel_systems_dispatcher
+    ) =
+        setup();
 
     ///////////////////////////////
     // create realm and set level
@@ -385,7 +406,15 @@ fn test_no_speed() {
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is blocked', 'ENTRYPOINT_FAILED'))]
 fn test_blocked() {
-    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (
+        world,
+        realm_entity_id,
+        travelling_entity_id,
+        _,
+        destination_coord,
+        travel_systems_dispatcher
+    ) =
+        setup();
 
     set!(
         world,
@@ -410,7 +439,15 @@ fn test_blocked() {
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is in transit', 'ENTRYPOINT_FAILED'))]
 fn test_in_transit() {
-    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (
+        world,
+        realm_entity_id,
+        travelling_entity_id,
+        _,
+        destination_coord,
+        travel_systems_dispatcher
+    ) =
+        setup();
 
     set!(
         world,
@@ -593,8 +630,12 @@ fn test_travel_hex__exceed_max_stamina() {
 
     // max hex moves per tick is 30 /5 = 6 so we try to travel 7 hexes
     let travel_directions = array![
-        Direction::East, Direction::East, Direction::East,
-        Direction::East, Direction::East, Direction::East,
+        Direction::East,
+        Direction::East,
+        Direction::East,
+        Direction::East,
+        Direction::East,
+        Direction::East,
         Direction::East,
     ]
         .span();

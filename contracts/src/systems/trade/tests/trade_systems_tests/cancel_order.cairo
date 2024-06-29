@@ -80,7 +80,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
         world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 })
     );
     set!(
-        world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
+        world,
+        (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
     );
     set!(
         world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 })
@@ -90,7 +91,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
         (Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 })
     );
     set!(
-        world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
+        world,
+        (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
     );
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 

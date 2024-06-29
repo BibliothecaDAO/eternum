@@ -4,18 +4,18 @@ mod resource_transfer_system_tests {
     use core::traits::Into;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::constants::DONKEY_ENTITY_TYPE;
 
     use eternum::constants::ResourceTypes;
     use eternum::constants::WORLD_CONFIG_ID;
     use eternum::models::capacity::Capacity;
     use eternum::models::config::WeightConfig;
+    use eternum::models::config::{CapacityConfig};
     use eternum::models::metadata::ForeignKey;
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::Position;
     use eternum::models::quantity::Quantity;
-    use eternum::models::config::{CapacityConfig};
     use eternum::models::resources::{Resource, ResourceAllowance};
-    use eternum::constants::DONKEY_ENTITY_TYPE;
 
     use eternum::systems::config::contracts::{
         config_systems, IWeightConfigDispatcher, IWeightConfigDispatcherTrait
@@ -68,8 +68,7 @@ mod resource_transfer_system_tests {
                     entity_id: sender_entity_id.into()
                 },
                 EntityOwner {
-                    entity_id: sender_entity_id.into(),
-                    entity_owner_id: sender_entity_id.into()
+                    entity_id: sender_entity_id.into(), entity_owner_id: sender_entity_id.into()
                 },
                 Resource {
                     entity_id: sender_entity_id.into(),
@@ -131,7 +130,12 @@ mod resource_transfer_system_tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    #[should_panic(expected: ("not enough resources, Resource (entity id: 11, resource type: DONKEY, balance: 0). deduction: 1000", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(
+        expected: (
+            "not enough resources, Resource (entity id: 11, resource type: DONKEY, balance: 0). deduction: 1000",
+            'ENTRYPOINT_FAILED'
+        )
+    )]
     fn test_transfer__not_enough_donkey() {
         let (world, resource_systems_dispatcher) = setup();
 
@@ -193,10 +197,14 @@ mod resource_transfer_system_tests {
     }
 
 
-
     #[test]
     #[available_gas(30000000000000)]
-    #[should_panic(expected: ("not enough resources, Resource (entity id: 11, resource type: STONE, balance: 1000). deduction: 7700", 'ENTRYPOINT_FAILED'))]
+    #[should_panic(
+        expected: (
+            "not enough resources, Resource (entity id: 11, resource type: STONE, balance: 1000). deduction: 7700",
+            'ENTRYPOINT_FAILED'
+        )
+    )]
     fn test_transfer__insufficient_balance() {
         let (world, resource_systems_dispatcher) = setup();
 
@@ -236,15 +244,16 @@ mod resource_transfer_system_tests {
 
         set!(
             world,
-            (Owner {
-                address: contract_address_const::<'approved_entity'>(),
-                entity_id: approved_entity_id.into()
-            },
-            EntityOwner {   
-                entity_id: approved_entity_id.into(),
-                entity_owner_id: approved_entity_id.into()
-            }
-        ));
+            (
+                Owner {
+                    address: contract_address_const::<'approved_entity'>(),
+                    entity_id: approved_entity_id.into()
+                },
+                EntityOwner {
+                    entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into()
+                }
+            )
+        );
 
         // owner approves approved
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
@@ -300,15 +309,16 @@ mod resource_transfer_system_tests {
 
         set!(
             world,
-            (Owner {
-                address: contract_address_const::<'approved_entity'>(),
-                entity_id: approved_entity_id.into()
-            },
-            EntityOwner {   
-                entity_id: approved_entity_id.into(),
-                entity_owner_id: approved_entity_id.into()
-            }
-        ));
+            (
+                Owner {
+                    address: contract_address_const::<'approved_entity'>(),
+                    entity_id: approved_entity_id.into()
+                },
+                EntityOwner {
+                    entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into()
+                }
+            )
+        );
 
         // owner approves approved
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());

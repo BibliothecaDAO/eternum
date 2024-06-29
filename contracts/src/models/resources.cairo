@@ -356,12 +356,7 @@ mod tests_resource_traits {
 
         // make entity a structure
         let entity_id: u128 = 1;
-        set!(world, (
-            Structure {
-                entity_id,
-                category: StructureCategory::Realm,
-            }
-        ));
+        set!(world, (Structure { entity_id, category: StructureCategory::Realm, }));
 
         // The entity pays 3 gold for wood production per tick
         let wood_cost_gold_rate: u128 = 3;
@@ -381,7 +376,6 @@ mod tests_resource_traits {
         };
         set!(world, (wood_production));
 
-
         // set gold consumption because wood production consumes gold
         let mut gold_production: Production = Production {
             entity_id,
@@ -397,8 +391,7 @@ mod tests_resource_traits {
 
         let initial_gold_balance = 100;
         let mut gold_resource = Resource {
-            entity_id, resource_type: ResourceTypes::GOLD, 
-            balance: initial_gold_balance
+            entity_id, resource_type: ResourceTypes::GOLD, balance: initial_gold_balance
         };
         set!(world, (gold_production, gold_resource));
 
@@ -472,18 +465,18 @@ mod tests_resource_traits {
         // now we have 104 gold, so wood production should end at tick 34
         // the calculation being, 104 / 3 = 34.66 // 34 
         let wood_production: Production = get!(world, (entity_id, ResourceTypes::WOOD), Production);
-        assert_eq!(wood_production.input_finish_tick, 34); 
+        assert_eq!(wood_production.input_finish_tick, 34);
     }
 }
 
 #[cfg(test)]
 mod owned_resources_tracker_tests {
-    use eternum::constants::ResourceTypes;
-    use eternum::models::resources::{Resource,ResourceImpl};
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
-    use eternum::models::structure::{Structure, StructureCategory};
-    use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::constants::ResourceTypes;
+    use eternum::models::resources::{Resource, ResourceImpl};
+    use eternum::models::structure::{Structure, StructureCategory};
+    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
 
 
     #[test]
@@ -506,28 +499,17 @@ mod owned_resources_tracker_tests {
 
     #[test]
     fn test_get_and_set_resource_ownership_after_resource_save() {
-
         let world = spawn_eternum();
         let entity_id = 44;
         // make entity a structure
-        set!(world, (
-            Structure {
-                entity_id,
-                category: StructureCategory::Realm,
-            }
-        ));
-        let mut entity_gold_resource 
-            = ResourceImpl::get(world, (entity_id, ResourceTypes::GOLD));
+        set!(world, (Structure { entity_id, category: StructureCategory::Realm, }));
+        let mut entity_gold_resource = ResourceImpl::get(world, (entity_id, ResourceTypes::GOLD));
         entity_gold_resource.balance += 300;
         entity_gold_resource.save(world);
 
-        let mut ort: OwnedResourcesTracker 
-            = get!(world, (entity_id), OwnedResourcesTracker);
+        let mut ort: OwnedResourcesTracker = get!(world, (entity_id), OwnedResourcesTracker);
         assert!(ort.owns_resource_type(ResourceTypes::GOLD), "should be true");
-        assert!(ort.owns_resource_type(ResourceTypes::FISH)== false, "should be false");
-       
+        assert!(ort.owns_resource_type(ResourceTypes::FISH) == false, "should be false");
     }
-
 }
-
 

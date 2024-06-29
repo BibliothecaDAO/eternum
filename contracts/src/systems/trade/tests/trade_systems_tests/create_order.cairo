@@ -63,7 +63,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, ITradeSystemsDispatcher) {
         world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 })
     );
     set!(
-        world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
+        world,
+        (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
     );
 
     set!(
@@ -73,7 +74,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, ITradeSystemsDispatcher) {
         world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::GOLD, balance: 500 })
     );
     set!(
-        world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
+        world,
+        (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
     );
 
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
@@ -146,21 +148,19 @@ fn test_caller_not_maker() {
 }
 
 
-
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ("not enough resources, Resource (entity id: 1, resource type: DONKEY, balance: 0). deduction: 1000", 'ENTRYPOINT_FAILED'))]
+#[should_panic(
+    expected: (
+        "not enough resources, Resource (entity id: 1, resource type: DONKEY, balance: 0). deduction: 1000",
+        'ENTRYPOINT_FAILED'
+    )
+)]
 fn test_transport_not_enough_capacity() {
     let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
     set!(
-        world, (
-            Resource { 
-                entity_id: maker_id, 
-                resource_type: ResourceTypes::DONKEY, 
-                balance: 0 
-            }
-        )
+        world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 0 })
     );
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
