@@ -104,7 +104,12 @@ fn test_not_entity() {
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ('insufficient resources', 'ENTRYPOINT_FAILED'))]
+#[should_panic(
+    expected: (
+        "not enough resources, Resource (entity id: 44, resource type: STONE, balance: 400). deduction: 500",
+        'ENTRYPOINT_FAILED'
+    )
+)]
 fn test_insufficient_balance() {
     let (world, road_systems_dispatcher) = setup();
 

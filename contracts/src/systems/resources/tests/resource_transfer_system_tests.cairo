@@ -42,6 +42,17 @@ mod resource_transfer_system_tests {
         IWeightConfigDispatcher { contract_address: config_systems_address }
             .set_weight_config(ResourceTypes::WOOD.into(), 200);
 
+        // set donkey config
+        set!(
+            world,
+            (CapacityConfig {
+                config_id: WORLD_CONFIG_ID,
+                carry_capacity_config_id: DONKEY_ENTITY_TYPE,
+                entity_type: DONKEY_ENTITY_TYPE,
+                weight_gram: 1_000_000
+            })
+        );
+
         let resource_systems_address = deploy_system(world, resource_systems::TEST_CLASS_HASH);
 
         let resource_systems_dispatcher = IResourceSystemsDispatcher {
@@ -77,6 +88,11 @@ mod resource_transfer_system_tests {
                 },
                 Resource {
                     entity_id: sender_entity_id.into(),
+                    resource_type: ResourceTypes::DONKEY,
+                    balance: 1_000_000_000
+                },
+                Resource {
+                    entity_id: sender_entity_id.into(),
                     resource_type: ResourceTypes::WOOD,
                     balance: 1000
                 }
@@ -87,6 +103,16 @@ mod resource_transfer_system_tests {
             x: 200_000, y: 100_000, entity_id: receiver_entity_id.into()
         };
         set!(world, (receiver_entity_position));
+        set!(
+            world,
+            (
+                Resource {
+                    entity_id: receiver_entity_id.into(),
+                    resource_type: ResourceTypes::DONKEY,
+                    balance: 1_000_000_000
+                },
+            )
+        );
 
         // call world.uuid() to ensure next id isn't 0
         world.uuid();
@@ -142,6 +168,18 @@ mod resource_transfer_system_tests {
         let sender_entity_id = 11_u64;
         let receiver_entity_id = 12_u64;
         make_owner_and_receiver(world, sender_entity_id, receiver_entity_id);
+
+        // set sender's donkey balance to 0
+        set!(
+            world,
+            (
+                Resource {
+                    entity_id: sender_entity_id.into(),
+                    resource_type: ResourceTypes::DONKEY,
+                    balance: 0
+                },
+            )
+        );
 
         // set receiving entity capacity, and weight config 
         set!(
