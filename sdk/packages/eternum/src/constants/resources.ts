@@ -886,7 +886,7 @@ export const QUEST_RESOURCES = {
   ],
   [QuestType.Trade]: [
     { resource: ResourcesIds.Donkey, amount: 3 },
-    { resource: ResourcesIds.Lords, amount: 1000 },
+    { resource: ResourcesIds.Lords, amount: 100 },
   ],
   [QuestType.Military]: [
     { resource: ResourcesIds.Knight, amount: 3 },
