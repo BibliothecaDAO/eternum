@@ -30,14 +30,14 @@ export const useGuilds = () => {
 
   const guildPointsLeaderboard = useLeaderBoardStore((state) => state.guildPointsLeaderboard);
 
-  const getGuildMembers = (guildEntityId: bigint) => {
+  const useGuildMembers = (guildEntityId: bigint) => {
     const guildMembers = useEntityQuery([HasValue(GuildMember, { guild_entity_id: guildEntityId })]);
     return {
       guildMembers: formatGuildMembers(guildMembers, GuildMember, getAddressName),
     };
   };
 
-  const getGuilds = () => {
+  const useAllGuilds = () => {
     // TODO: CONSTANT 0n
     const guilds = useEntityQuery([Has(Guild), NotValue(Population, { population: 0 })]);
     return {
@@ -45,7 +45,7 @@ export const useGuilds = () => {
     };
   };
 
-  const getGuildWhitelist = (guildEntityId: bigint) => {
+  const useGuildWhitelist = (guildEntityId: bigint) => {
     const whitelist = useEntityQuery([
       // TODO : CONSTANT 1n
       HasValue(GuildWhitelist, { guild_entity_id: guildEntityId, is_whitelisted: 1n }),
@@ -55,7 +55,7 @@ export const useGuilds = () => {
     };
   };
 
-  const getAddressWhitelist = (address: bigint) => {
+  const useAddressWhitelist = (address: bigint) => {
     // TODO : CONSTANT 1n
     const addressWhitelist = useEntityQuery([HasValue(GuildWhitelist, { address: address, is_whitelisted: 1n })]);
     return {
@@ -101,7 +101,7 @@ export const useGuilds = () => {
     [],
   );
 
-  return { getGuilds, getGuildMembers, getGuildWhitelist, getAddressWhitelist, getAddressGuild, getGuildOwner };
+  return { useAllGuilds, useGuildMembers, useGuildWhitelist, useAddressWhitelist, getAddressGuild, getGuildOwner };
 };
 
 const formatGuilds = (

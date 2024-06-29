@@ -31,8 +31,8 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getGuildMembers, getGuildOwner } = useGuilds();
-  const { guildMembers } = getGuildMembers(selectedGuild.guildEntityId);
+  const { useGuildMembers, getGuildOwner } = useGuilds();
+  const { guildMembers } = useGuildMembers(selectedGuild.guildEntityId);
 
   const guildOwner = getGuildOwner(selectedGuild.guildEntityId);
 

@@ -32,9 +32,9 @@ export const Guilds = () => {
   const [_, setIsLoading] = useState(false);
   const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0n, name: "" });
 
-  const { getGuilds, getAddressGuild } = useGuilds();
+  const { useAllGuilds, getAddressGuild } = useGuilds();
 
-  const { guilds } = getGuilds();
+  const { guilds } = useAllGuilds();
   const { userGuildEntityId, isOwner } = getAddressGuild(account.address);
 
   const sortingParams: SortingParamGuild[] = useMemo(() => {

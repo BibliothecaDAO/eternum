@@ -28,7 +28,7 @@ export const GuildInvites = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0n, name: "" });
 
-  const { getAddressWhitelist, getAddressGuild } = useGuilds();
+  const { useAddressWhitelist, getAddressGuild } = useGuilds();
 
   const { addressWhitelist } = getAddressWhitelist(BigInt(account.address));
   const { userGuildEntityId } = getAddressGuild(account.address);
