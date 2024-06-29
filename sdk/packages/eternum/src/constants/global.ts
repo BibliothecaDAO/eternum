@@ -1,3 +1,5 @@
+import { ResourcesIds } from "./resources";
+
 export const EternumGlobalConfig = {
   stamina: {
     travelCost: 5,
@@ -13,6 +15,10 @@ export const EternumGlobalConfig = {
     crossbowmenPerTick: 2,
     paladinPerTick: 2,
     startingResourcesInputProductionFactor: 4,
+    startingResources: [
+      { resourceId: ResourcesIds.Wheat, amount: 1500 },
+      { resourceId: ResourcesIds.Fish, amount: 1500 },
+    ],
   },
   banks: {
     lordsCost: 1000,

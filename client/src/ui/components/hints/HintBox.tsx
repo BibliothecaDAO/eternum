@@ -134,7 +134,7 @@ const groupQuestsByDepth = (quests: Quest[]): Record<number, Quest[]> => {
 
 const QuestsDisplay = ({ quests }: { quests: Quest[] }) => {
   const groupedQuests = useMemo(() => groupQuestsByDepth(quests), [quests]);
-  const [maxDepthToShow, setMaxDepthToShow] = useState(0);
+  const [maxDepthToShow, setMaxDepthToShow] = useState(1);
 
   useEffect(() => {
     const newMaxDepth = Object.keys(groupedQuests)
@@ -144,7 +144,8 @@ const QuestsDisplay = ({ quests }: { quests: Quest[] }) => {
           return depth + 1;
         }
         return max;
-      }, 0);
+        // need to start from depth 1
+      }, 1);
     setMaxDepthToShow(newMaxDepth);
   }, [quests, groupedQuests]);
 

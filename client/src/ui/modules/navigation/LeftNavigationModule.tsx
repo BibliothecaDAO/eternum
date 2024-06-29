@@ -145,7 +145,6 @@ export const LeftNavigationModule = () => {
             disabled={!realmIsMine}
             className={clsx({
               "animate-pulse": view != View.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
-              hidden: quests && !quests.find((quest) => quest.name === QuestName.ClaimFood)?.claimed,
             })}
             image={BuildingThumbs.construction}
             tooltipLocation="top"

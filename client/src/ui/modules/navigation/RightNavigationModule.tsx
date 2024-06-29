@@ -56,9 +56,6 @@ export const RightNavigationModule = () => {
         name: "resourceTable",
         button: (
           <CircleButton
-            className={clsx({
-              "animate-pulse": selectedQuest?.name === QuestName.ClaimFood && isPopupOpen(questsPopup),
-            })}
             image={BuildingThumbs.resources}
             size="xl"
             tooltipLocation="top"
