@@ -391,15 +391,15 @@ export const getLevelingCost = (newLevel: number): { resourceId: number; amount:
       ? // level 4 (resource tier 3)
         [16, 24421, 17, 20954, 18, 16733, 19, 14020, 20, 8291, 21, 5578, 22, 3467]
       : rem === 1
-        ? // level 1 (food)
-          [254, 11340000, 255, 3780000]
-        : rem === 2
-          ? // level 2 (resource tier 1)
-            [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
-          : rem === 3
-            ? // level 3 (resource tier 2)
-              [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
-            : [];
+      ? // level 1 (food)
+        [254, 11340000, 255, 3780000]
+      : rem === 2
+      ? // level 2 (resource tier 1)
+        [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
+      : rem === 3
+      ? // level 3 (resource tier 2)
+        [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
+      : [];
 
   const costResources = [];
   for (let i = 0; i < baseAmounts.length; i = i + 2) {
@@ -851,38 +851,38 @@ export const QUEST_RESOURCES = {
     { resource: ResourcesIds.Fish, amount: 1500 },
   ],
   [QuestType.CommonResources]: [
-    { resource: ResourcesIds.Wood, amount: 20 },
-    { resource: ResourcesIds.Stone, amount: 20 },
-    { resource: ResourcesIds.Coal, amount: 20 },
-    { resource: ResourcesIds.Copper, amount: 20 },
+    { resource: ResourcesIds.Wood, amount: 5 },
+    { resource: ResourcesIds.Stone, amount: 5 },
+    { resource: ResourcesIds.Coal, amount: 5 },
+    { resource: ResourcesIds.Copper, amount: 5 },
   ],
   [QuestType.UncommonResources]: [
-    { resource: ResourcesIds.Obsidian, amount: 20 },
-    { resource: ResourcesIds.Silver, amount: 20 },
-    { resource: ResourcesIds.Ironwood, amount: 20 },
+    { resource: ResourcesIds.Obsidian, amount: 5 },
+    { resource: ResourcesIds.Silver, amount: 5 },
+    { resource: ResourcesIds.Ironwood, amount: 5 },
   ],
   [QuestType.UniqueResources]: [
-    { resource: ResourcesIds.ColdIron, amount: 20 },
-    { resource: ResourcesIds.Gold, amount: 20 },
-    { resource: ResourcesIds.Hartwood, amount: 20 },
-    { resource: ResourcesIds.Diamonds, amount: 20 },
+    { resource: ResourcesIds.ColdIron, amount: 5 },
+    { resource: ResourcesIds.Gold, amount: 5 },
+    { resource: ResourcesIds.Hartwood, amount: 5 },
+    { resource: ResourcesIds.Diamonds, amount: 5 },
   ],
   [QuestType.RareResources]: [
-    { resource: ResourcesIds.Sapphire, amount: 20 },
-    { resource: ResourcesIds.Ruby, amount: 20 },
-    { resource: ResourcesIds.DeepCrystal, amount: 20 },
+    { resource: ResourcesIds.Sapphire, amount: 5 },
+    { resource: ResourcesIds.Ruby, amount: 5 },
+    { resource: ResourcesIds.DeepCrystal, amount: 5 },
   ],
   [QuestType.LegendaryResources]: [
-    { resource: ResourcesIds.Ignium, amount: 20 },
-    { resource: ResourcesIds.EtherealSilica, amount: 20 },
-    { resource: ResourcesIds.TrueIce, amount: 20 },
-    { resource: ResourcesIds.TwilightQuartz, amount: 20 },
+    { resource: ResourcesIds.Ignium, amount: 5 },
+    { resource: ResourcesIds.EtherealSilica, amount: 5 },
+    { resource: ResourcesIds.TrueIce, amount: 5 },
+    { resource: ResourcesIds.TwilightQuartz, amount: 5 },
   ],
   [QuestType.MythicResources]: [
-    { resource: ResourcesIds.AlchemicalSilver, amount: 20 },
-    { resource: ResourcesIds.Adamantine, amount: 20 },
-    { resource: ResourcesIds.Mithral, amount: 20 },
-    { resource: ResourcesIds.Dragonhide, amount: 20 },
+    { resource: ResourcesIds.AlchemicalSilver, amount: 5 },
+    { resource: ResourcesIds.Adamantine, amount: 5 },
+    { resource: ResourcesIds.Mithral, amount: 5 },
+    { resource: ResourcesIds.Dragonhide, amount: 5 },
   ],
   [QuestType.Trade]: [
     { resource: ResourcesIds.Donkey, amount: 3 },
@@ -893,12 +893,12 @@ export const QUEST_RESOURCES = {
     { resource: ResourcesIds.Crossbowmen, amount: 3 },
     { resource: ResourcesIds.Paladin, amount: 3 },
   ],
-  [QuestType.Earthenshard]: [{ resource: ResourcesIds.Earthenshard, amount: 10000 }],
-  [QuestType.Travel]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
-  [QuestType.Population]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
-  [QuestType.Market]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
-  [QuestType.Mine]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
-  [QuestType.Pillage]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
-  [QuestType.Hyperstructure]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
-  [QuestType.Contribution]: [{ resource: ResourcesIds.Wheat, amount: 0.001 }],
+  [QuestType.Earthenshard]: [{ resource: ResourcesIds.Earthenshard, amount: 10 }],
+  [QuestType.Travel]: [{ resource: ResourcesIds.Wheat, amount: 1 }],
+  [QuestType.Population]: [{ resource: ResourcesIds.Wheat, amount: 1 }],
+  [QuestType.Market]: [{ resource: ResourcesIds.Wheat, amount: 1 }],
+  [QuestType.Mine]: [{ resource: ResourcesIds.Wheat, amount: 1 }],
+  [QuestType.Pillage]: [{ resource: ResourcesIds.Wheat, amount: 1 }],
+  [QuestType.Hyperstructure]: [{ resource: ResourcesIds.Wheat, amount: 1 }],
+  [QuestType.Contribution]: [{ resource: ResourcesIds.Wheat, amount: 1 }],
 };
