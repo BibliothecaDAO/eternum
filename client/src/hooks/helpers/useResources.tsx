@@ -1,19 +1,10 @@
-import {
-  type Entity,
-  Has,
-  HasValue,
-  NotValue,
-  getComponentValue,
-  runQuery,
-  Not,
-  getEntitiesWithValue,
-} from "@dojoengine/recs";
-import { useDojo } from "../context/DojoContext";
-import { getEntityIdFromKeys, getResourceIdsFromPackedNumber } from "../../ui/utils/utils";
-import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { Position, ResourcesIds, resources, type Resource } from "@bibliothecadao/eternum";
-import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
+import { Has, HasValue, Not, NotValue, getComponentValue, runQuery, type Entity } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
+import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
+import { getEntityIdFromKeys } from "../../ui/utils/utils";
+import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 
 export function useResources() {
@@ -135,7 +126,7 @@ export function useResources() {
 export function useResourceBalance() {
   const {
     setup: {
-      components: { Resource, Production, BuildingQuantityv2 },
+      components: { Resource, Production, BuildingQuantityv2, DetachedResource },
     },
   } = useDojo();
 
@@ -174,6 +165,11 @@ export function useResourceBalance() {
     return { balance: productionManager.balance(currentDefaultTick), resourceId };
   };
 
+  const getResourceBalance = (entityId: bigint) => {
+    const detachedResourceEntityIds = runQuery([HasValue(DetachedResource, { entity_id: entityId })]);
+    return Array.from(detachedResourceEntityIds).map((entityId) => getComponentValue(DetachedResource, entityId));
+  };
+
   // We should deprecate this hook and use getBalance instead - too many useEffects
   const useBalance = (entityId: bigint, resourceId: number) => {
     const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
@@ -197,6 +193,7 @@ export function useResourceBalance() {
     getFoodResources,
     getBalance,
     useBalance,
+    getResourceBalance,
   };
 }
 

@@ -11,7 +11,19 @@ export const useEntities = () => {
   const {
     account: { account },
     setup: {
-      components: { Realm, Owner, EntityName, ArrivalTime, EntityOwner, Movable, Capacity, Position, Army, Structure },
+      components: {
+        Realm,
+        Owner,
+        EntityName,
+        ArrivalTime,
+        EntityOwner,
+        Movable,
+        Capacity,
+        Position,
+        Army,
+        Structure,
+        AddressName,
+      },
     },
   } = useDojo();
 
@@ -20,6 +32,22 @@ export const useEntities = () => {
   const playerRealms = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
   const otherRealms = useEntityQuery([Has(Realm), NotValue(Owner, { address: BigInt(account.address) })]);
   const playerStructures = useEntityQuery([Has(Structure), HasValue(Owner, { address: BigInt(account.address) })]);
+
+  const getPlayerAddressFromEntity = (entityId: bigint) => {
+    const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityId]));
+    return entityOwner?.entity_owner_id
+      ? getComponentValue(Owner, getEntityIdFromKeys([entityOwner.entity_owner_id]))?.address
+      : undefined;
+  };
+
+  const getAddressNameFromEntity = (entityId: bigint) => {
+    const address = getPlayerAddressFromEntity(entityId);
+    if (!address) return;
+
+    const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
+
+    return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
+  };
 
   const getEntityName = (entityId: bigint) => {
     const entityName = getComponentValue(EntityName, getEntityIdFromKeys([entityId]));
@@ -108,5 +136,6 @@ export const useEntities = () => {
     getEntityName,
     getEntityInfo,
     allOwnedEntities,
+    getAddressNameFromEntity,
   };
 };

@@ -13,20 +13,3 @@ export const useAddressStore = create<AddressStore>((set) => ({
   setAddressName: (addressName: string | undefined) => set({ addressName }),
   setLoading: (loading: boolean) => set({ loading }),
 }));
-
-// export const useFetchAddressName = (address: string) => {
-//   const setAddressName = useAddressStore((state) => state.setAddressName);
-//   const setLoading = useAddressStore((state) => state.setLoading);
-// useEffect(() => {
-//   const syncAddressName = async () => {
-//     const addressName = await fetchAddressName(address);
-//     if (addressName) {
-//       setAddressName(hexToAscii(addressName));
-//     } else {
-//       setAddressName(undefined);
-//     }
-//     setLoading(false);
-//   };
-//   syncAddressName();
-// }, [address]);
-// };

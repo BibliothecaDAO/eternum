@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
 import { Client, WalletType } from "@web3mq/client";
+import { useMemo, useState } from "react";
 
 export const useLogin = () => {
   const [_didValue, setDidValue] = useState<string>("");
@@ -18,15 +18,11 @@ export const useLogin = () => {
     const { address: didValue } = await Client.register.getAccount(didType);
     setDidValue(didValue);
 
-    console.log(didValue);
-
     const { userid, userExist } = await Client.register.getUserInfo({
       did_value: didValue,
       did_type: "starknet",
     });
     localStorage.setItem("USER_ID", userid);
-
-    console.log(userid, userExist);
 
     setUserExist(userExist);
 

@@ -1001,7 +1001,7 @@
     ],
     "address": "0x161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824",
     "transaction_hash": "0x612de8b84ba9c5454887b576a17af10b7be97dab5f01bf79d1ec2d3cca3e6c5",
-    "block_number": 16,
+    "block_number": 19,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -4960,8 +4960,8 @@
     {
       "kind": "DojoContract",
       "address": "0x38a93ca09a4d8aea32cfd6817754b6e1df35c061631459072928d73897fc9d5",
-      "class_hash": "0x6f903b167742c98a72cef7211a0e5a0fa71e7b050ffa05a1fdb2b4baef58b3f",
-      "original_class_hash": "0x6f903b167742c98a72cef7211a0e5a0fa71e7b050ffa05a1fdb2b4baef58b3f",
+      "class_hash": "0x6d3b153c4ca68394dc91fb4f0ab8c7dd4f6c6a6e9f80d64a5d03c039a4afa04",
+      "original_class_hash": "0x6d3b153c4ca68394dc91fb4f0ab8c7dd4f6c6a6e9f80d64a5d03c039a4afa04",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {

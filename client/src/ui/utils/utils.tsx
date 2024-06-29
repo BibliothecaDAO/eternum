@@ -4,8 +4,8 @@ import {
   default as realmHexPositions,
   default as realmsHexPositions,
 } from "../../data/geodata/hex/realmHexPositions.json";
-import { SortInterface } from "../elements/SortButton";
 import { FELT_CENTER } from "../config";
+import { SortInterface } from "../elements/SortButton";
 
 export { getEntityIdFromKeys };
 
@@ -49,18 +49,6 @@ export function extractAndCleanKey(keys: string | null | undefined | string[]): 
 
 export const numberToHex = (num: number) => {
   return "0x" + num.toString(16);
-};
-
-export const hexToAscii = (hex: string) => {
-  var str = "";
-  for (var n = 0; n < hex.length; n += 2) {
-    var asciiCode = parseInt(hex.substr(n, 2), 16);
-    if (!isNaN(asciiCode)) {
-      // Check if the parsed value is a number
-      str += String.fromCharCode(asciiCode);
-    }
-  }
-  return str;
 };
 
 export const formatTimeLeft = (seconds: number) => {
