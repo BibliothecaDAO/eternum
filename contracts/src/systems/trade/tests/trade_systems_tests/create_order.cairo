@@ -31,6 +31,8 @@ use starknet::contract_address_const;
 
 fn setup() -> (IWorldDispatcher, u128, u128, ITradeSystemsDispatcher) {
     let world = spawn_eternum();
+    // increase world uuid
+    world.uuid();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
@@ -41,6 +43,10 @@ fn setup() -> (IWorldDispatcher, u128, u128, ITradeSystemsDispatcher) {
     // set weight configuration for gold
     IWeightConfigDispatcher { contract_address: config_systems_address }
         .set_weight_config(ResourceTypes::GOLD.into(), 200);
+
+    // set donkey capacity weight_gram
+    ICapacityConfigDispatcher { contract_address: config_systems_address }
+        .set_capacity_config(DONKEY_ENTITY_TYPE, 1_000_000);
 
     let realm_systems_dispatcher = deploy_realm_systems(world);
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
@@ -56,12 +62,20 @@ fn setup() -> (IWorldDispatcher, u128, u128, ITradeSystemsDispatcher) {
     set!(
         world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 })
     );
+    set!(
+        world,
+        (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
+    );
 
     set!(
         world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::STONE, balance: 500 })
     );
     set!(
         world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::GOLD, balance: 500 })
+    );
+    set!(
+        world,
+        (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
     );
 
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
@@ -93,10 +107,10 @@ fn test_create_order() {
 
     // check maker balances
     let maker_stone_resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
-    assert(maker_stone_resource.balance == 0, 'Balance should be 0');
+    assert_eq!(maker_stone_resource.balance, 0);
 
     let maker_gold_resource = get!(world, (maker_id, ResourceTypes::GOLD), Resource);
-    assert(maker_gold_resource.balance == 0, 'Balance should be 0');
+    assert_eq!(maker_gold_resource.balance, 0);
 
     // check that taker balance is unmodified
     let taker_stone_resource = get!(world, (taker_id, ResourceTypes::STONE), Resource);
@@ -136,69 +150,18 @@ fn test_caller_not_maker() {
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ('mismatched positions', 'ENTRYPOINT_FAILED'))]
-fn test_different_transport_position() {
-    let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
-
-    // set an arbitrary position
-
-    set!(world, Position { entity_id: maker_id, x: 999, y: 999 });
-
-    starknet::testing::set_contract_address(contract_address_const::<'maker'>());
-    trade_systems_dispatcher
-        .create_order(
-            maker_id,
-            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
-            taker_id,
-            array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200),].span(),
-            100
-        );
-}
-
-
-#[test]
-#[available_gas(3000000000000)]
-#[should_panic(expected: ('transport has not arrived', 'ENTRYPOINT_FAILED'))]
-fn test_transport_in_transit() {
-    let (_world, maker_id, taker_id, trade_systems_dispatcher) = setup();
-
-    // set arrival time to some time in future
-
-    // set!(
-    //     world,
-    //     ArrivalTime {
-    //         entity_id: trade_id, arrives_at: starknet::get_block_timestamp() + 40
-    //     }
-    // );
-
-    starknet::testing::set_contract_address(contract_address_const::<'maker'>());
-    trade_systems_dispatcher
-        .create_order(
-            maker_id,
-            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span(),
-            taker_id,
-            array![(ResourceTypes::STONE, 200), (ResourceTypes::GOLD, 200),].span(),
-            100
-        );
-}
-
-
-#[test]
-#[available_gas(3000000000000)]
-#[should_panic(expected: ('not enough capacity', 'ENTRYPOINT_FAILED'))]
+#[should_panic(
+    expected: (
+        "not enough resources, Resource (entity id: 1, resource type: DONKEY, balance: 0). deduction: 1000",
+        'ENTRYPOINT_FAILED'
+    )
+)]
 fn test_transport_not_enough_capacity() {
     let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
-    //          note
-    // all previous tests passed because they didn't have 
-    // free transport capacity set and when the value is 0, 
-    // capacity is unlimited
-
-    // set capacity for transport to a very low amount
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
-    ICapacityConfigDispatcher { contract_address: config_systems_address }
-        .set_capacity_config(DONKEY_ENTITY_TYPE, 1);
-
+    set!(
+        world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 0 })
+    );
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
     trade_systems_dispatcher
@@ -236,7 +199,7 @@ fn test_create_order_amount_take_0() {
     trade_systems_dispatcher
         .create_order(
             maker_id,
-            array![(ResourceTypes::STONE, 200),].span(),
+            array![(ResourceTypes::STONE, 100),].span(),
             taker_id,
             array![(ResourceTypes::STONE, 0),].span(),
             100

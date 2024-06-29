@@ -30,6 +30,7 @@ use starknet::contract_address_const;
 
 fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     let world = spawn_eternum();
+    world.uuid();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
@@ -53,10 +54,14 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     IWeightConfigDispatcher { contract_address: config_systems_address }
         .set_weight_config(ResourceTypes::SILVER.into(), 200);
 
+    // set donkey capacity weight_gram
+    ICapacityConfigDispatcher { contract_address: config_systems_address }
+        .set_capacity_config(DONKEY_ENTITY_TYPE, 1_000_000);
+
     // maker and taker are at the same location
     // so they can trade without transport
-    let maker_position = Position { x: 100000, y: 1000000, entity_id: 1_u128 };
-    let taker_position = Position { x: 100000, y: 1000000, entity_id: 1_u128 };
+    let maker_position = Position { x: 100000, y: 2000000, entity_id: 1_u128 };
+    let taker_position = Position { x: 200000, y: 1000000, entity_id: 1_u128 };
 
     let realm_systems_dispatcher = deploy_realm_systems(world);
     let maker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, maker_position);
@@ -74,7 +79,10 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     set!(
         world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 })
     );
-
+    set!(
+        world,
+        (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
+    );
     set!(
         world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 })
     );
@@ -82,7 +90,10 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
         world,
         (Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 })
     );
-
+    set!(
+        world,
+        (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
+    );
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
     let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);

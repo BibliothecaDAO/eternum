@@ -9,7 +9,7 @@ mod resource_approval_system_tests {
     use eternum::constants::WORLD_CONFIG_ID;
     use eternum::models::capacity::Capacity;
     use eternum::models::config::WeightConfig;
-    use eternum::models::owner::Owner;
+    use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::Position;
     use eternum::models::quantity::Quantity;
     use eternum::models::resources::{Resource, ResourceAllowance};
@@ -49,6 +49,9 @@ mod resource_approval_system_tests {
                 Owner {
                     address: contract_address_const::<'owner_entity'>(),
                     entity_id: owner_entity_id.into()
+                },
+                EntityOwner {
+                    entity_id: owner_entity_id.into(), entity_owner_id: owner_entity_id.into()
                 },
                 Resource {
                     entity_id: owner_entity_id.into(),
@@ -98,10 +101,15 @@ mod resource_approval_system_tests {
 
         set!(
             world,
-            (Owner {
-                address: contract_address_const::<'approved_entity'>(),
-                entity_id: approved_entity_id.into()
-            })
+            (
+                Owner {
+                    address: contract_address_const::<'approved_entity'>(),
+                    entity_id: approved_entity_id.into()
+                },
+                EntityOwner {
+                    entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into()
+                }
+            )
         );
 
         // owner approves approved
@@ -138,10 +146,15 @@ mod resource_approval_system_tests {
 
         set!(
             world,
-            (Owner {
-                address: contract_address_const::<'approved_entity'>(),
-                entity_id: approved_entity_id.into()
-            })
+            (
+                Owner {
+                    address: contract_address_const::<'approved_entity'>(),
+                    entity_id: approved_entity_id.into()
+                },
+                EntityOwner {
+                    entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into()
+                }
+            )
         );
 
         // owner approves approved
@@ -175,7 +188,7 @@ mod resource_approval_system_tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    #[should_panic(expected: ('not owner of entity id', 'ENTRYPOINT_FAILED'))]
+    #[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
     fn test_approve__not_owner() {
         let (world, resource_systems_dispatcher) = setup();
 
