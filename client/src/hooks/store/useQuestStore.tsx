@@ -14,7 +14,6 @@ import useUIStore from "./useUIStore";
 import { getPillageEvents } from "@/dojo/events/pillageEventQueries";
 
 export enum QuestName {
-  ClaimFood = "Claim Food",
   BuildFarm = "Build a Farm",
   BuildResource = "Build a Resource Facility",
   CreateTrade = "Create a Trade",
@@ -136,15 +135,6 @@ export const useQuests = () => {
 
   const quests: Quest[] = useMemo(() => {
     const updatedQuests = [
-      {
-        name: QuestName.ClaimFood,
-        description:
-          "A gift from the gods to start your journey. Take a look at your resources balance in the resources menu.",
-        completed: true,
-        steps: [],
-        prizes: [{ id: QuestType.Food, title: "Resources Claim" }],
-        depth: 0,
-      },
       {
         name: QuestName.BuildFarm,
         description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm.",

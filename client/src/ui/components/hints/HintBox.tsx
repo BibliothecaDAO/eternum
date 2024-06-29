@@ -144,7 +144,8 @@ const QuestsDisplay = ({ quests }: { quests: Quest[] }) => {
           return depth + 1;
         }
         return max;
-      }, 0);
+        // need to start from depth 1
+      }, 1);
     setMaxDepthToShow(newMaxDepth);
   }, [quests, groupedQuests]);
 
@@ -165,7 +166,9 @@ const QuestsDisplay = ({ quests }: { quests: Quest[] }) => {
 const QuestDepthGroup = ({ depthQuests }: { depthQuests: Quest[] }) => (
   <div className="flex flex-col items-start">
     <div className="flex flex-wrap gap-1">
-      {depthQuests?.map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}
+      {depthQuests?.map((quest: Quest) => (
+        <QuestCard quest={quest} key={quest.name} />
+      ))}
     </div>
   </div>
 );

@@ -2,6 +2,7 @@ import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
 import * as SystemProps from "../types/provider";
+import { EternumGlobalConfig } from "../constants";
 
 export const getContractByName = (manifest: any, name: string) => {
   const contract = manifest.contracts.find((contract: any) => contract.name.includes("::" + name));
@@ -173,6 +174,8 @@ export class EternumProvider extends EnhancedDojoProvider {
   create_multiple_realms = async (props: SystemProps.CreateMultipleRealmsProps) => {
     let { realms, signer } = props;
 
+    let uuid = await this.uuid();
+
     let calldata = realms.flatMap((realm) => {
       const {
         realm_id,
@@ -204,6 +207,21 @@ export class EternumProvider extends EnhancedDojoProvider {
             2, // entity ID in position struct
             position.x,
             position.y,
+          ],
+        },
+        {
+          // mint food
+          contractAddress: getContractByName(this.manifest, "dev_resource_systems"),
+          entrypoint: "mint",
+          calldata: [
+            uuid,
+            EternumGlobalConfig.resources.startingResources.length,
+            ...EternumGlobalConfig.resources.startingResources.flatMap(({ resourceId, amount }) => [
+              resourceId,
+              amount *
+                EternumGlobalConfig.resources.resourcePrecision *
+                EternumGlobalConfig.resources.resourceMultiplier,
+            ]),
           ],
         },
       ];
