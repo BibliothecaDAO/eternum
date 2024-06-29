@@ -31,12 +31,13 @@ use eternum::systems::transport::contracts::travel_systems::{
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 use starknet::contract_address_const;
 
-fn setup() -> (IWorldDispatcher, u64, Position, Coord, ITravelSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, u128, u64, Position, Coord, ITravelSystemsDispatcher) {
     let world = spawn_eternum();
 
     // set as executor
 
     let travelling_entity_id = 11_u64;
+    let realm_entity_id = 99;
     let travelling_entity_position = Position {
         x: 100_000, y: 200_000, entity_id: travelling_entity_id.into()
     };
@@ -44,10 +45,20 @@ fn setup() -> (IWorldDispatcher, u64, Position, Coord, ITravelSystemsDispatcher)
     set!(world, (travelling_entity_position));
     set!(
         world,
-        (Owner {
-            address: contract_address_const::<'travelling_entity'>(),
-            entity_id: travelling_entity_id.into()
-        })
+        (
+            Owner {
+                address: contract_address_const::<'travelling_entity'>(),
+                entity_id: travelling_entity_id.into()
+            },
+            Owner {
+                address: contract_address_const::<'travelling_entity'>(),
+                entity_id: realm_entity_id.into()
+            },
+            EntityOwner {
+                entity_id: travelling_entity_id.into(), 
+                entity_owner_id: realm_entity_id
+            }
+        )
     );
 
     let destination_coord = Coord { x: 900_000, y: 100_000 };
@@ -65,6 +76,7 @@ fn setup() -> (IWorldDispatcher, u64, Position, Coord, ITravelSystemsDispatcher)
 
     (
         world,
+        realm_entity_id,
         travelling_entity_id,
         travelling_entity_position,
         destination_coord,
@@ -76,7 +88,7 @@ fn setup() -> (IWorldDispatcher, u64, Position, Coord, ITravelSystemsDispatcher)
 #[test]
 #[available_gas(30000000000000)]
 fn test_travel() {
-    let (world, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -109,13 +121,11 @@ fn test_travel() {
 #[test]
 #[available_gas(30000000000000)]
 fn test_travel_with_realm_bonus() {
-    let (world, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     ///////////////////////////////
     // create realm and set level
     ///////////////////////////////
-
-    let realm_entity_id = 99;
 
     set!(
         world,
@@ -189,13 +199,12 @@ fn test_travel_with_realm_bonus() {
 #[test]
 #[available_gas(30000000000000)]
 fn test_travel_with_realm_and_order_bonus() {
-    let (world, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     ///////////////////////////////
     // create realm and set level
     ///////////////////////////////
 
-    let realm_entity_id = 99;
     let realm_order_id: u8 = 1;
 
     set!(
@@ -288,6 +297,7 @@ fn test_travel_with_realm_and_order_bonus() {
 fn test_travel_with_road() {
     let (
         world,
+        realm_entity_id,
         travelling_entity_id,
         travelling_entity_position,
         destination_coord,
@@ -351,9 +361,9 @@ fn test_travel_with_road() {
 
 #[test]
 #[available_gas(30000000000000)]
-#[should_panic(expected: ('not owner of entity', 'ENTRYPOINT_FAILED'))]
+#[should_panic(expected: ('Not Owner', 'ENTRYPOINT_FAILED'))]
 fn test_not_owner() {
-    let (_, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (_, _, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'not_owner'>());
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
@@ -364,7 +374,7 @@ fn test_not_owner() {
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity has no speed', 'ENTRYPOINT_FAILED'))]
 fn test_no_speed() {
-    let (_, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (_, _, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
@@ -375,7 +385,7 @@ fn test_no_speed() {
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is blocked', 'ENTRYPOINT_FAILED'))]
 fn test_blocked() {
-    let (world, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -400,7 +410,7 @@ fn test_blocked() {
 #[available_gas(30000000000000)]
 #[should_panic(expected: ('entity is in transit', 'ENTRYPOINT_FAILED'))]
 fn test_in_transit() {
-    let (world, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
+    let (world, realm_entity_id, travelling_entity_id, _, destination_coord, travel_systems_dispatcher) = setup();
 
     set!(
         world,
@@ -581,9 +591,11 @@ fn test_travel_hex__exceed_max_stamina() {
     let (world, travelling_entity_id, travelling_entity_position, travel_systems_dispatcher) =
         setup_hex_travel();
 
-    // max hex moves per tick  is 3 so we try to travel 4 hexes
+    // max hex moves per tick is 30 /5 = 6 so we try to travel 7 hexes
     let travel_directions = array![
-        Direction::East, Direction::East, Direction::East, Direction::East
+        Direction::East, Direction::East, Direction::East,
+        Direction::East, Direction::East, Direction::East,
+        Direction::East,
     ]
         .span();
     let current_coord: Coord = travelling_entity_position.into();

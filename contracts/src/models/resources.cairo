@@ -323,6 +323,7 @@ mod tests_resource_traits {
     use eternum::models::config::{TickConfig, TickImpl, TickTrait};
     use eternum::models::production::ProductionRateTrait;
     use eternum::models::resources::ResourceTrait;
+    use eternum::models::structure::{Structure, StructureCategory};
     use eternum::systems::config::contracts::config_systems;
     use eternum::systems::config::contracts::{
         IProductionConfigDispatcher, IProductionConfigDispatcherTrait
@@ -333,6 +334,17 @@ mod tests_resource_traits {
     use traits::TryInto;
 
     fn setup() -> (IWorldDispatcher, u128, u128, Span<(u8, u128)>) {
+        // SCENERIO
+        // There are two buildings in the structure. One producing 
+        // something which consumes `2` wood per tick. The only important
+        // thing about the first building is that it consumes wood.
+        //
+        // Then the other building is a wood building which produces 
+        // `50` wood per tick. The cost of producing wood is `3` gold per tick.
+        //
+        // The entity has 100 gold initially.
+        //
+
         let world = spawn_eternum();
         let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
@@ -342,27 +354,35 @@ mod tests_resource_traits {
         };
         set!(world, (tick_config));
 
-        // wood production cost 3 gold per tick
+        // make entity a structure
+        let entity_id: u128 = 1;
+        set!(world, (
+            Structure {
+                entity_id,
+                category: StructureCategory::Realm,
+            }
+        ));
+
+        // The entity pays 3 gold for wood production per tick
         let wood_cost_gold_rate: u128 = 3;
         let wood_cost = array![(ResourceTypes::GOLD, wood_cost_gold_rate)];
-        let entity_id: u128 = 1;
-
-        // set wood production
 
         let wood_production_rate: u128 = 50;
+        // let's assume wood is consumed by some other resource
+        let wood_consumption_rate: u128 = 2;
         let mut wood_production: Production = Production {
             entity_id,
             resource_type: ResourceTypes::WOOD,
             building_count: 1,
             production_rate: wood_production_rate,
-            consumption_rate: 2,
+            consumption_rate: wood_consumption_rate,
             last_updated_tick: 0,
             input_finish_tick: 0
         };
         set!(world, (wood_production));
 
-        // set gold consumption rate to be wood cost
 
+        // set gold consumption because wood production consumes gold
         let mut gold_production: Production = Production {
             entity_id,
             resource_type: ResourceTypes::GOLD,
@@ -374,8 +394,11 @@ mod tests_resource_traits {
         };
 
         // set gold resource balance 
-        let mut gold_resource: Resource = Resource {
-            entity_id, resource_type: ResourceTypes::GOLD, balance: 100
+
+        let initial_gold_balance = 100;
+        let mut gold_resource = Resource {
+            entity_id, resource_type: ResourceTypes::GOLD, 
+            balance: initial_gold_balance
         };
         set!(world, (gold_production, gold_resource));
 
@@ -398,11 +421,14 @@ mod tests_resource_traits {
         let tick_config = TickImpl::get_default_tick_config(world);
 
         // advance time by 3 ticks
-        starknet::testing::set_block_timestamp(3 * tick_config.tick_interval_in_seconds);
+        let tick_passed = 3;
+        starknet::testing::set_block_timestamp(tick_passed * tick_config.tick_interval_in_seconds);
 
         // check wood balance after 3 ticks
         let wood_resource = ResourceImpl::get(world, (entity_id, ResourceTypes::WOOD));
-        assert_eq!(wood_resource.balance, (50 - 2) * 3);
+        // wood production = 50 
+        // wood consumption = 3
+        assert_eq!(wood_resource.balance, (50 - 2) * tick_passed.into());
 
         // check that wood production end tick was computed correctly
         let gold_resource: Resource = get!(world, (entity_id, ResourceTypes::GOLD), Resource);
@@ -435,48 +461,73 @@ mod tests_resource_traits {
         // gold's balance gets updated
         //
         let (world, entity_id, _, _) = setup();
-
         let mut gold_resource = ResourceImpl::get(world, (entity_id, ResourceTypes::GOLD));
         gold_resource.balance += 4; // makes balance 104
         gold_resource.save(world);
-        assert_eq!(gold_resource.balance, 104);
+        assert_eq!(gold_resource.balance, 104); // sanity check
 
+        // check that wood production end tick was computed correctly
+        // wood production should end when gold balance finishes.
+        // 
+        // now we have 104 gold, so wood production should end at tick 34
+        // the calculation being, 104 / 3 = 34.66 // 34 
         let wood_production: Production = get!(world, (entity_id, ResourceTypes::WOOD), Production);
-        assert_eq!(wood_production.input_finish_tick, (104 - 2) / 3); // 3 =  wood_cost_gold_rate
+        assert_eq!(wood_production.input_finish_tick, 34); 
     }
 }
-// #[cfg(test)]
-// mod owned_resources_tracker_tests {
-//     use eternum::constants::ResourceTypes;
-//     use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
 
-//     #[test]
-//     fn test_resource_type_to_position() {
-//         let ort = OwnedResourcesTracker { entity_id: 0, resource_types: 0 };
-//         assert!(ort._resource_type_to_position(255) == 31, " wrong ans");
-//         assert!(ort._resource_type_to_position(254) == 30, " wrong ans");
-//         assert!(ort._resource_type_to_position(253) == 29, " wrong ans");
-//         assert!(ort._resource_type_to_position(28) == 27, " wrong ans");
-//         assert!(ort._resource_type_to_position(2) == 1, " wrong ans");
-//         assert!(ort._resource_type_to_position(1) == 0, " wrong ans");
-//     }
+#[cfg(test)]
+mod owned_resources_tracker_tests {
+    use eternum::constants::ResourceTypes;
+    use eternum::models::resources::{Resource,ResourceImpl};
+    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use eternum::models::structure::{Structure, StructureCategory};
+    use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-//     #[test]
-//     fn test_get_and_set_resource_ownership() {
-//         let mut ort = OwnedResourcesTracker { entity_id: 0, resource_types: 0 };
-//         ort.set_resource_ownership(ResourceTypes::WOOD, true);
-//         ort.set_resource_ownership(ResourceTypes::COAL, true);
-//         ort.set_resource_ownership(ResourceTypes::LORDS, true);
-//         ort.set_resource_ownership(ResourceTypes::WHEAT, true);
 
-//         assert!(ort.owns_resource_type(ResourceTypes::WOOD), "should be true");
-//         assert!(ort.owns_resource_type(ResourceTypes::COAL), "should be true");
-//         assert!(ort.owns_resource_type(ResourceTypes::LORDS), "should be true");
-//         assert!(ort.owns_resource_type(ResourceTypes::WHEAT), "should be true");
+    #[test]
+    fn test_get_and_set_resource_ownership() {
+        let mut ort = OwnedResourcesTracker { entity_id: 0, resource_types: 0 };
+        ort.set_resource_ownership(ResourceTypes::WOOD, true);
+        ort.set_resource_ownership(ResourceTypes::COAL, true);
+        ort.set_resource_ownership(ResourceTypes::LORDS, true);
+        ort.set_resource_ownership(ResourceTypes::WHEAT, true);
 
-//         assert!(ort.owns_resource_type(ResourceTypes::DRAGONHIDE) == false, "should be false");
-//         assert!(ort.owns_resource_type(ResourceTypes::DEMONHIDE) == false, "should be false");
-//     }
-// }
+        assert!(ort.owns_resource_type(ResourceTypes::WOOD), "should be true");
+        assert!(ort.owns_resource_type(ResourceTypes::COAL), "should be true");
+        assert!(ort.owns_resource_type(ResourceTypes::LORDS), "should be true");
+        assert!(ort.owns_resource_type(ResourceTypes::WHEAT), "should be true");
+
+        assert!(ort.owns_resource_type(ResourceTypes::DRAGONHIDE) == false, "should be false");
+        assert!(ort.owns_resource_type(ResourceTypes::DEMONHIDE) == false, "should be false");
+    }
+
+
+    #[test]
+    fn test_get_and_set_resource_ownership_after_resource_save() {
+
+        let world = spawn_eternum();
+        let entity_id = 44;
+        // make entity a structure
+        set!(world, (
+            Structure {
+                entity_id,
+                category: StructureCategory::Realm,
+            }
+        ));
+        let mut entity_gold_resource 
+            = ResourceImpl::get(world, (entity_id, ResourceTypes::GOLD));
+        entity_gold_resource.balance += 300;
+        entity_gold_resource.save(world);
+
+        let mut ort: OwnedResourcesTracker 
+            = get!(world, (entity_id), OwnedResourcesTracker);
+        assert!(ort.owns_resource_type(ResourceTypes::GOLD), "should be true");
+        assert!(ort.owns_resource_type(ResourceTypes::FISH)== false, "should be false");
+       
+    }
+
+}
 
 
