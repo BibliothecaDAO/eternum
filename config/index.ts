@@ -11,7 +11,6 @@ import {
   setupGlobals,
   setCapacityConfig,
   setSpeedConfig,
-  setQuestConfig,
   setPopulationConfig,
   setHyperstructureConfig,
   setBuildingConfig,
@@ -46,7 +45,6 @@ await setWeightConfig(account, provider);
 await setCombatConfig(account, provider);
 await setCapacityConfig(account, provider);
 await setSpeedConfig(account, provider);
-await setQuestConfig(account, provider);
 await setupGlobals(account, provider);
 await setHyperstructureConfig(account, provider);
 await setStaminaConfig(account, provider);
