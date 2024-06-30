@@ -25,6 +25,7 @@ trait IGuildSystems {
 #[dojo::contract]
 mod guild_systems {
     use eternum::constants::GUILD_POPULATION_CONFIG_ID;
+    use eternum::models::config::GuildPopulationConfig;
     use eternum::models::guild::{
         Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait
     };
@@ -34,7 +35,6 @@ mod guild_systems {
     use eternum::models::population::{Population, PopulationTrait};
     use starknet::ContractAddress;
     use starknet::contract_address::contract_address_const;
-    use eternum::models::config::GuildPopulationConfig;
 
     #[abi(embed_v0)]
     impl GuildSystemsImpl of super::IGuildSystems<ContractState> {
@@ -56,11 +56,7 @@ mod guild_systems {
             set!(
                 world,
                 (
-                    Guild {
-                        entity_id: guild_uuid,
-                        is_public: is_public,
-                        creation_ts: current_ts
-                    },
+                    Guild { entity_id: guild_uuid, is_public: is_public, creation_ts: current_ts },
                     Owner { entity_id: guild_uuid, address: caller_address },
                     EntityOwner { entity_id: guild_uuid, entity_owner_id: guild_uuid },
                     EntityName { entity_id: guild_uuid, name: guild_name },
@@ -139,7 +135,7 @@ mod guild_systems {
             let caller_address = starknet::get_caller_address();
 
             let mut guild_member = get!(world, caller_address, GuildMember);
-            
+
             guild_member.assert_has_guild();
 
             let mut guild_owner = get!(world, guild_member.guild_entity_id, Owner);
@@ -150,7 +146,7 @@ mod guild_systems {
                 assert(population.population == 1, 'Guild not empty');
 
                 population.decrease_population(1);
-                
+
                 guild_member.guild_entity_id = 0;
                 guild_member.join_ts = 0;
 
@@ -235,7 +231,9 @@ mod guild_systems {
             );
         }
 
-        fn change_guild_access(ref world: IWorldDispatcher, guild_entity_id: u128, is_public: bool) {
+        fn change_guild_access(
+            ref world: IWorldDispatcher, guild_entity_id: u128, is_public: bool
+        ) {
             get!(world, guild_entity_id, Owner).assert_caller_owner();
 
             let mut guild = get!(world, guild_entity_id, Guild);

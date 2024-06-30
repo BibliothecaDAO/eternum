@@ -5,8 +5,8 @@ use eternum::models::guild::{
 };
 use eternum::models::name::EntityName;
 use eternum::models::owner::Owner;
-use eternum::models::position::Position;
 use eternum::models::population::Population;
+use eternum::models::position::Position;
 
 use eternum::systems::config::contracts::{
     config_systems, config_systems::GuildPopulationConfigImpl, IGuildPopulationConfigDispatcher,
