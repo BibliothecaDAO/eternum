@@ -133,6 +133,25 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async mint_resources_and_claim_quest(props: SystemProps.MintResourcesAndClaimProps) {
+    const { receiver_id, resources, config_ids, signer } = props;
+
+    const calldata = [
+      {
+        contractAddress: getContractByName(this.manifest, "dev_resource_systems"),
+        entrypoint: "mint",
+        calldata: [receiver_id, resources.length / 2, ...resources],
+      },
+      ...config_ids.map((configId) => ({
+        contractAddress: getContractByName(this.manifest, "realm_systems"),
+        entrypoint: "mint_starting_resources",
+        calldata: [configId, receiver_id],
+      })),
+    ];
+
+    return await this.executeAndCheckTransaction(signer, calldata);
+  }
+
   public async create_realm(props: SystemProps.CreateRealmProps) {
     const {
       realm_id,

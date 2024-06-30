@@ -184,6 +184,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.mint_resources(props);
   };
 
+  const mint_resources_and_claim_quest = async (props: SystemProps.MintResourcesAndClaimProps) => {
+    await provider.mint_resources_and_claim_quest(props);
+  };
+
   const create_hyperstructure = async (props: SystemProps.CreateHyperstructureProps) => {
     await provider.create_hyperstructure(props);
   };
@@ -285,10 +289,12 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_building,
     create_army,
     uuid,
-    mint_starting_resources,
-    mint_resources,
     create_hyperstructure,
     contribute_to_construction,
+
+    mint_resources,
+    mint_starting_resources,
+    mint_resources_and_claim_quest,
 
     army_buy_troops,
     army_merge_troops,
