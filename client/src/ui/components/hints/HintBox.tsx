@@ -166,9 +166,7 @@ const QuestsDisplay = ({ quests }: { quests: Quest[] }) => {
 const QuestDepthGroup = ({ depthQuests }: { depthQuests: Quest[] }) => (
   <div className="flex flex-col items-start">
     <div className="flex flex-wrap gap-1">
-      {depthQuests?.map((quest: Quest) => (
-        <QuestCard quest={quest} key={quest.name} />
-      ))}
+      {depthQuests?.map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}
     </div>
   </div>
 );
