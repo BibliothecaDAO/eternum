@@ -125,6 +125,12 @@ export interface MintResourcesProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
+export interface MintResourcesAndClaimProps extends SystemSigner {
+  config_ids: num.BigNumberish[];
+  receiver_id: num.BigNumberish;
+  resources: num.BigNumberish[];
+}
+
 export interface CreateRoadProps extends SystemSigner {
   creator_id: num.BigNumberish;
   start_coord: {
