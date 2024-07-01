@@ -10,6 +10,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { SetupResult } from "@/dojo/setup";
 import { Biome, BiomeType, MAP_AMPLITUDE } from "../components/Biome";
+import { FELT_CENTER } from "@/ui/config";
 
 export default class HexagonMap {
   private character: Character;
@@ -137,7 +138,7 @@ export default class HexagonMap {
           dummy.position.z = -(startRow + row) * verticalSpacing;
           dummy.position.y = 0;
 
-          const biome = this.biome.getBiome(startCol + col, startRow + row);
+          const biome = this.biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
 
           dummy.updateMatrix();
           hexInstanced.setMatrixAt(index, dummy.matrix);

@@ -39,10 +39,6 @@ export default class Demo {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
-    // this.initScene();
-    // this.initStats();
-    // this.initListeners();
-
     this.dojo = dojoContext;
   }
 
@@ -68,13 +64,7 @@ export default class Demo {
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
-    const container = document.getElementById("three-container");
-    // if (container) {
-    //   container.appendChild(this.renderer.domElement);
-    // } else {
-    //   console.error("Could not find #three-container element");
     document.body.appendChild(this.renderer.domElement);
-    // }
 
     // Adjust OrbitControls for new camera angle
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -85,11 +75,11 @@ export default class Demo {
     this.controls.screenSpacePanning = true;
     this.controls.target.set(0, 0, 0);
 
-    this.lightAmbient = new THREE.AmbientLight(0x404040);
+    this.lightAmbient = new THREE.AmbientLight(0xffffff, 0.5);
     this.scene.add(this.lightAmbient);
 
     // Adjust point lights for new camera angle
-    const shadowIntensity = 0.25;
+    const shadowIntensity = 1;
 
     this.lightPoint = new THREE.PointLight(0xffffff);
     this.lightPoint.position.set(0, cameraHeight + 5, -cameraDepth + 5);
