@@ -1,10 +1,6 @@
 import * as THREE from "three";
 import { Scene, Raycaster } from "three";
-import { getEntityIdFromKeys, snoise } from "@dojoengine/utils";
 import { Character } from "../components/Character";
-import { Trees } from "../components/Trees";
-import { SandDunes } from "../components/SandDunes";
-import { Grass } from "../components/Grass";
 import { FogManager } from "../components/Fog";
 import { Roads } from "../components/Roads";
 
@@ -13,17 +9,12 @@ import { getComponentValue } from "@dojoengine/recs";
 
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { SetupResult } from "@/dojo/setup";
-
-export const MAP_AMPLITUDE = 16;
-
-type BiomeType = "snow" | "mountain" | "forest" | "hills" | "savanna" | "plains" | "desert" | "beach" | "sea";
+import { Biome, BiomeType, MAP_AMPLITUDE } from "../components/Biome";
 
 export default class HexagonMap {
   private character: Character;
-  private trees: Trees;
-  private sandDunes: SandDunes;
-  private grass: Grass;
-  // private roads: Roads;
+
+  private biome!: Biome;
 
   private fogManager: FogManager;
   contextMenuManager: ContextMenuManager;
@@ -47,11 +38,7 @@ export default class HexagonMap {
     this.character = new Character(scene, { row: 0, col: 0 });
     this.addCharacterMovementListeners();
 
-    this.trees = new Trees(this.hexSize);
-    this.sandDunes = new SandDunes(this.hexSize);
-    this.grass = new Grass(this.hexSize);
-
-    // this.roads = new Roads(this.hexSize);
+    this.biome = new Biome();
 
     this.fogManager = new FogManager(scene, camera);
 
@@ -70,15 +57,22 @@ export default class HexagonMap {
 
   private loadBiomeModels() {
     const biomeModelPaths: Record<BiomeType, string> = {
-      snow: "/models/new-biomes/ocean.glb",
-      mountain: "/models/new-biomes/ocean.glb",
-      forest: "/models/new-biomes/ocean.glb",
-      hills: "/models/new-biomes/ocean.glb",
-      savanna: "/models/new-biomes/beach.glb",
-      plains: "/models/new-biomes/grassland.glb",
-      desert: "/models/new-biomes/beach.glb",
-      beach: "/models/new-biomes/beach.glb",
-      sea: "/models/new-biomes/ocean.glb",
+      DeepOcean: "/models/new-biomes/deepocean.glb",
+      Ocean: "/models/new-biomes/ocean.glb",
+      Beach: "/models/new-biomes/beach.glb",
+      Scorched: "/models/new-biomes/scorched.glb",
+      Bare: "/models/new-biomes/bare.glb",
+      Tundra: "/models/new-biomes/tundra.glb",
+      Snow: "/models/new-biomes/snow.glb",
+      TemperateDesert: "/models/new-biomes/temperatedesert.glb",
+      Shrubland: "/models/new-biomes/shrublands.glb",
+      Taiga: "/models/new-biomes/taiga.glb",
+      Grassland: "/models/new-biomes/grassland.glb",
+      TemperateDeciduousForest: "/models/new-biomes/deciduousforest.glb",
+      TemperateRainForest: "/models/new-biomes/temperaterainforest.glb",
+      SubtropicalDesert: "/models/new-biomes/subtropicaldesert.glb",
+      TropicalSeasonalForest: "/models/new-biomes/tropicalseasonalforest.glb",
+      TropicalRainForest: "/models/new-biomes/tropicalrainforest.glb",
     };
 
     const loader = new GLTFLoader();
@@ -143,78 +137,15 @@ export default class HexagonMap {
           dummy.position.z = -(startRow + row) * verticalSpacing;
           dummy.position.y = 0;
 
-          const noiseInput = [(startCol + col) / MAP_AMPLITUDE, (startRow + row) / MAP_AMPLITUDE, 0];
-
-          const noise = (snoise(noiseInput) + 1) / 2;
+          const biome = this.biome.getBiome(startCol + col, startRow + row);
 
           dummy.updateMatrix();
           hexInstanced.setMatrixAt(index, dummy.matrix);
           hexInstanced.setColorAt(index, this.originalColor);
 
-          // const state = getComponentValue(
-          // 	this.dojoConfig.network.contractComponents.Position,
-          // 	getEntityIdFromKeys([BigInt(startRow + row), BigInt(startCol + col)])
-          // );
-
-          let biome: BiomeType;
-          if (noise > 0.85) biome = "snow";
-          else if (noise > 0.7) biome = "mountain";
-          else if (noise > 0.6) biome = "forest";
-          else if (noise > 0.5) biome = "hills";
-          else if (noise > 0.4) biome = "savanna";
-          else if (noise > 0.3) biome = "plains";
-          else if (noise > 0.25) biome = "desert";
-          else if (noise > 0.2) biome = "beach";
-          else biome = "sea";
-
-          // if (noise > 0.85) {
-          // 	// Snow-capped Mountains
-          // 	hexInstanced.setColorAt(index, new THREE.Color('white'));
-          // 	const trees = this.trees.createTrees(dummy.position.x, dummy.scale.y, dummy.position.z, 'white');
-          // 	group.add(trees);
-          // } else if (noise > 0.7) {
-          // 	// Rocky Mountains
-          // 	hexInstanced.setColorAt(index, new THREE.Color('gray'));
-          // 	const trees = this.trees.createTrees(dummy.position.x, dummy.scale.y, dummy.position.z, 'darkgreen');
-          // 	group.add(trees);
-          // } else if (noise > 0.6) {
-          // 	// Forest
-          // 	hexInstanced.setColorAt(index, new THREE.Color('darkgreen'));
-          // 	const trees = this.trees.createTrees(dummy.position.x, dummy.scale.y, dummy.position.z);
-          // 	group.add(trees);
-          // } else if (noise > 0.5) {
-          // 	// Hills
-          // 	hexInstanced.setColorAt(index, new THREE.Color('olivedrab'));
-          // 	const grass = this.grass.createGrass(dummy.position.x, dummy.scale.y, dummy.position.z);
-          // 	group.add(grass);
-          // } else if (noise > 0.4) {
-          // 	// Savanna
-          // 	hexInstanced.setColorAt(index, new THREE.Color('khaki'));
-          // 	const grass = this.grass.createGrass(dummy.position.x, dummy.scale.y, dummy.position.z);
-          // 	group.add(grass);
-          // } else if (noise > 0.3) {
-          // 	// Plains
-          // 	hexInstanced.setColorAt(index, new THREE.Color('green'));
-          // 	const grass = this.grass.createGrass(dummy.position.x, dummy.scale.y, dummy.position.z);
-          // 	group.add(grass);
-          // } else if (noise > 0.25) {
-          // 	// Desert
-          // 	hexInstanced.setColorAt(index, new THREE.Color('sandybrown'));
-          // 	const sandDunes = this.sandDunes.createSandDunes(dummy.position.x, dummy.scale.y, dummy.position.z);
-          // 	group.add(sandDunes);
-          // } else if (noise > 0.2) {
-          // 	// Beach
-          // 	hexInstanced.setColorAt(index, new THREE.Color('yellow'));
-          // 	// const sandDunes = this.sandDunes.createSandDunes(dummy.position.x, dummy.scale.y, dummy.position.z);
-          // 	// group.add(sandDunes);
-          // } else {
-          // 	// Sea
-          // 	hexInstanced.setColorAt(index, new THREE.Color('blue'));
-          // }
-
           const hexModel = this.biomeModels.get(biome)!.clone();
           hexModel.position.set(dummy.position.x, 0, dummy.position.z);
-          // hexModel.scale.y = 0; // Adjust height based on noise
+
           group.add(hexModel);
 
           // const number = this.processHexagon(startRow + row, startCol + col, dummy.position.x, dummy.position.z);
@@ -227,9 +158,6 @@ export default class HexagonMap {
     // const roadCount = Math.floor(rows * cols * 0.1); // Increase to 20% of hexagons
     // // const roadGroup = this.roads.createRandomRoads(hexPositions, roadCount);
     // group.add(roadGroup); // Add roads last to ensure they're on top
-
-    // hexInstanced.instanceMatrix.needsUpdate = true;
-    // hexInstanced.instanceColor!.needsUpdate = true;
 
     group.userData.loadPromise = gridCreationPromise;
 
