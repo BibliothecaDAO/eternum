@@ -38,6 +38,7 @@ async function init() {
     <React.StrictMode>
       <DojoProvider value={setupResult}>
         <App />
+        <></>
       </DojoProvider>
     </React.StrictMode>,
   );

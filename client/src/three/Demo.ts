@@ -69,12 +69,12 @@ export default class Demo {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
     const container = document.getElementById("three-container");
-    if (container) {
-      container.appendChild(this.renderer.domElement);
-    } else {
-      console.error("Could not find #three-container element");
-      document.body.appendChild(this.renderer.domElement);
-    }
+    // if (container) {
+    //   container.appendChild(this.renderer.domElement);
+    // } else {
+    //   console.error("Could not find #three-container element");
+    document.body.appendChild(this.renderer.domElement);
+    // }
 
     // Adjust OrbitControls for new camera angle
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);

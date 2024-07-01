@@ -45,20 +45,20 @@ export const World = () => {
   }, [realmEntityIds]);
 
   return (
-    <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden ">
+    <div className="fixed antialiased top-0 left-0 z-0 w-screen h-screen  overflow-hidden ornate-borders pointer-events-none">
       <BlankOverlayContainer open={showModal}>{modalContent}</BlankOverlayContainer>
       <BlankOverlayContainer open={showBlankOverlay}>
         <Onboarding />
       </BlankOverlayContainer>
       <HooksComponent />
 
-      <BackgroundContainer className=" clip-angled relative  ">
+      {/* <BackgroundContainer className=" clip-angled relative  ">
         <div className="h-full w-full main-scene z-100 ornate-borders">
           <MainScene />
         </div>
-      </BackgroundContainer>
+      </BackgroundContainer> */}
 
-      <LoadingContainer />
+      {/* <LoadingContainer /> */}
 
       {battleView ? (
         <BattleContainer>
@@ -66,17 +66,14 @@ export const World = () => {
         </BattleContainer>
       ) : (
         <>
-          {/* TOP */}
           <TopMiddleContainer>
             <TopMiddleNavigation />
           </TopMiddleContainer>
 
-          {/* LEFT */}
           <LeftMiddleContainer>
             <LeftNavigationModule />
           </LeftMiddleContainer>
 
-          {/* BOTTOM */}
           <BottomMiddleContainer>
             <BottomNavigation />
           </BottomMiddleContainer>
@@ -85,7 +82,6 @@ export const World = () => {
             <Transactions />
           </BottomRightContainer>
 
-          {/* RIGHT */}
           <RightMiddleContainer>
             <RightNavigationModule />
           </RightMiddleContainer>

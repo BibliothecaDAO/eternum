@@ -29,7 +29,7 @@ export const Onboarding = () => {
   }, [canSettle, currentStep]);
 
   return (
-    <div className="relative h-screen w-screen ">
+    <div className="relative h-screen w-screen pointer-events-auto">
       <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
       <div className="absolute z-10 w-screen h-screen flex justify-center flex-wrap self-center ">
         {currentStep === 1 && <StepOne onNext={nextStep} />}

@@ -70,15 +70,15 @@ export default class HexagonMap {
 
   private loadBiomeModels() {
     const biomeModelPaths: Record<BiomeType, string> = {
-      snow: "/ocean.glb",
-      mountain: "/ocean.glb",
-      forest: "/ocean.glb",
-      hills: "/ocean.glb",
-      savanna: "/beach.glb",
-      plains: "/grassland.glb",
-      desert: "/beach.glb",
-      beach: "/beach.glb",
-      sea: "/ocean.glb",
+      snow: "/models/new-biomes/ocean.glb",
+      mountain: "/models/new-biomes/ocean.glb",
+      forest: "/models/new-biomes/ocean.glb",
+      hills: "/models/new-biomes/ocean.glb",
+      savanna: "/models/new-biomes/beach.glb",
+      plains: "/models/new-biomes/grassland.glb",
+      desert: "/models/new-biomes/beach.glb",
+      beach: "/models/new-biomes/beach.glb",
+      sea: "/models/new-biomes/ocean.glb",
     };
 
     const loader = new GLTFLoader();
