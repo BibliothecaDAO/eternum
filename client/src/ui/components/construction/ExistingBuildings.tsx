@@ -285,6 +285,7 @@ export const BuiltBuilding = ({
           destroyButton={destroyButton}
           buildingType={buildingCategory}
           entityId={realmEntityId}
+          resource={resource}
         />
       )}
     </group>
@@ -296,11 +297,13 @@ const HoverBuilding = ({
   entityId,
   destroyButton,
   name,
+  resource,
 }: {
   destroyButton: React.ReactNode;
   buildingType: BuildingType;
   entityId: bigint;
   name?: string;
+  resource?: ResourcesIds;
 }) => {
   return (
     <BaseThreeTooltip
@@ -310,7 +313,7 @@ const HoverBuilding = ({
     >
       <div className="flex flex-col p-1 space-y-1 text-sm">
         {buildingType === BuildingType.Resource && (
-          <ResourceInfo resourceId={buildingType} entityId={entityId} extraButtons={[destroyButton]} />
+          <ResourceInfo resourceId={resource!} entityId={entityId} extraButtons={[destroyButton]} />
         )}
         {buildingType !== BuildingType.Resource && (
           <BuildingInfo name={name} buildingId={buildingType} entityId={entityId} extraButtons={[destroyButton]} />

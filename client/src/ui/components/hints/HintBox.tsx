@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint }) => {
   const {
     setup: {
-      systemCalls: { mint_resources, mint_starting_resources },
+      systemCalls: { mint_resources_and_claim_quest },
     },
     account: { account },
   } = useDojo();
@@ -29,14 +29,10 @@ export const HintBox = ({ quest, entityId }: { quest: Quest; entityId: bigint })
 
     setIsLoading(true);
     try {
-      await mint_starting_resources({
+      await mint_resources_and_claim_quest({
         signer: account,
         config_ids: quest.prizes.map((prize) => BigInt(prize.id)),
-        realm_entity_id: entityId || BigInt(0),
-      });
-      await mint_resources({
-        signer: account,
-        receiver_id: entityId || BigInt(0),
+        receiver_id: entityId,
         resources: resourcesToMint,
       });
     } catch (error) {
@@ -166,9 +162,7 @@ const QuestsDisplay = ({ quests }: { quests: Quest[] }) => {
 const QuestDepthGroup = ({ depthQuests }: { depthQuests: Quest[] }) => (
   <div className="flex flex-col items-start">
     <div className="flex flex-wrap gap-1">
-      {depthQuests?.map((quest: Quest) => (
-        <QuestCard quest={quest} key={quest.name} />
-      ))}
+      {depthQuests?.map((quest: Quest) => <QuestCard quest={quest} key={quest.name} />)}
     </div>
   </div>
 );
