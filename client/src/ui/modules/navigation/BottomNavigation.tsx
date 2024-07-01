@@ -1,5 +1,5 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import CircleButton from "@/ui/elements/CircleButton";
@@ -83,7 +83,7 @@ export const BottomNavigation = () => {
             active={isPopupOpen(leaderboard)}
             size="lg"
             onClick={() => togglePopup(leaderboard)}
-            className={clsx({ hidden: claimableQuestsLength > 0 })}
+            className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.Travel)?.claimed })}
           />
         ),
       },
@@ -109,7 +109,7 @@ export const BottomNavigation = () => {
             active={isPopupOpen(guilds)}
             size="lg"
             onClick={() => togglePopup(guilds)}
-            className={clsx({ hidden: claimableQuestsLength > 0 })}
+            className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.Travel)?.claimed })}
           />
         ),
       },
