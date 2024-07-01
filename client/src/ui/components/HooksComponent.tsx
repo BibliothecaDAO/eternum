@@ -15,13 +15,13 @@ export const HooksComponent = () => {
   useTravelPath();
   useQuests();
 
-  const setHexData = useUIStore((state) => state.setHexData);
+  // const setHexData = useUIStore((state) => state.setHexData);
 
-  useEffect(() => {
-    fetch("/jsons/hexData.json")
-      .then((response) => response.json())
-      .then((data) => setHexData(data as Hexagon[]));
-  }, []);
+  // useEffect(() => {
+  //   fetch("/jsons/hexData.json")
+  //     .then((response) => response.json())
+  //     .then((data) => setHexData(data as Hexagon[]));
+  // }, []);
 
   return <></>;
 };
