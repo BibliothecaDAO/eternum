@@ -8,7 +8,7 @@ export const Guilds = () => {
   const isOpen = useUIStore((state) => state.isPopupOpen(guilds));
 
   return (
-    <OSWindow width="600px" onClick={() => togglePopup(guilds)} show={isOpen} title={guilds}>
+    <OSWindow width="600px" onClick={() => togglePopup(guilds)} show={isOpen} title={guilds} hintSection={"guilds"}>
       <GuildsPanel />
     </OSWindow>
   );

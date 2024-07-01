@@ -272,7 +272,7 @@ export const SelectPreviewBuildingMenu = () => {
   );
 
   return (
-    <div className="relative flex flex-col  bg-brown border-gradient border clip-angled">
+    <>
       <HintModalButton className="absolute top-1 right-1" sectionName="Buildings & Bases" />
       <Tabs
         selectedIndex={selectedTab}
@@ -292,7 +292,7 @@ export const SelectPreviewBuildingMenu = () => {
           ))}
         </Tabs.Panels>
       </Tabs>
-    </div>
+    </>
   );
 };
 

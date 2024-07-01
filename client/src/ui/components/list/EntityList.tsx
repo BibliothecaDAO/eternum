@@ -12,9 +12,10 @@ interface EntityListProps {
   current?: bigint;
   entityContent?: (props: { id: any }) => React.ReactElement | null;
   questing?: boolean;
+  className?: string;
 }
 
-export const EntityList = ({ title, panel, list, headerPanel, current, entityContent, questing }: EntityListProps) => {
+export const EntityList = ({ title, panel, list, headerPanel, current, entityContent, questing, className }: EntityListProps) => {
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export const EntityList = ({ title, panel, list, headerPanel, current, entityCon
           {panel({ entity: list.find((entity) => entity.entity_id === selectedEntity.entity_id) })}
         </div>
       ) : (
-        <div className="p-2">
+        <div className={clsx("p-2", className)}>
           {headerPanel}
           <ul>
             {list.map((entity, index) => (
