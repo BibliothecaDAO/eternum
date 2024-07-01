@@ -5,12 +5,13 @@ import { FogManager } from "../components/Fog";
 import { Roads } from "../components/Roads";
 
 import { ContextMenuManager } from "../components/ContextMenuManager";
-import { getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
 
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { SetupResult } from "@/dojo/setup";
 import { Biome, BiomeType, MAP_AMPLITUDE } from "../components/Biome";
 import { FELT_CENTER } from "@/ui/config";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export default class HexagonMap {
   private character: Character;
@@ -139,6 +140,20 @@ export default class HexagonMap {
           dummy.position.y = 0;
 
           const biome = this.biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
+
+          // const state = getComponentValue(
+          //   this.dojoConfig.components.Position,
+          //   getEntityIdFromKeys([BigInt(startRow + row + FELT_CENTER), BigInt(startCol + col + FELT_CENTER)]),
+          // );
+
+          // console.log(startRow + row + FELT_CENTER - 2147483895, startCol + col + FELT_CENTER - 2147483771, biome);
+
+          const entities = getEntitiesWithValue(this.dojoConfig.components.Position, {
+            x: startCol + col + FELT_CENTER,
+            y: startRow + row + FELT_CENTER,
+          });
+
+          if (entities.size > 0) console.log(entities);
 
           dummy.updateMatrix();
           hexInstanced.setMatrixAt(index, dummy.matrix);
