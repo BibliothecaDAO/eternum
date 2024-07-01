@@ -69,19 +69,6 @@ impl MarketImpl of MarketTrait {
         (*self.lords_amount, reserve_quantity)
     }
 
-    // Get the liquidity of the market
-    // Use cubit fixed point math library to compute the square root of the product of the reserves
-    fn liquidity(self: @Market) -> Fixed {
-        // Get normalized reserve cash amount and item quantity
-        let (reserve_amount, reserve_quantity) = self.get_reserves();
-
-        // Convert reserve amount to fixed point
-        let reserve_amount = FixedTrait::new_unscaled(reserve_amount, false);
-        let reserve_quantity = FixedTrait::new_unscaled(reserve_quantity, false);
-
-        // L = sqrt(X * Y)
-        (reserve_amount * reserve_quantity).sqrt()
-    }
 
     // Check if the market has liquidity
     fn has_liquidity(self: @Market) -> bool {
@@ -156,7 +143,6 @@ impl MarketImpl of MarketTrait {
             assert(quantity > 0, 'insufficient quantity');
             (amount, quantity)
         } else {
-            assert(1 != 0, 'not implemented');
             // Given the amount, get optimal quantity to add to the market
             let quantity_optimal = self.quote_quantity(amount);
             if quantity_optimal <= quantity {
@@ -194,9 +180,7 @@ impl MarketImpl of MarketTrait {
     fn mint_shares(self: @Market, amount: u128, quantity: u128) -> Fixed {
         // If there is no liquidity, then mint total shares
         if !self.has_liquidity() {
-            let quantity: u128 = quantity.into();
-            (FixedTrait::new_unscaled(amount, false) * FixedTrait::new_unscaled(quantity, false))
-                .sqrt()
+            FixedTrait::new_unscaled(amount, false)
         } else {
             // Convert amount to fixed point
             let amount = FixedTrait::new_unscaled(amount, false);
@@ -207,12 +191,9 @@ impl MarketImpl of MarketTrait {
             // Convert reserve amount to fixed point
             let reserve_amount = FixedTrait::new_unscaled(reserve_amount, false);
 
-            // Get total liquidity
-            let liquidity = self.liquidity();
-
             // Compute the amount of shares to mint
             // S = dx * L/X = dy * L/Y
-            (amount * liquidity) / reserve_amount
+            (amount * *self.total_shares) / reserve_amount
         }
     }
 
@@ -352,7 +333,7 @@ mod tests {
             resource_amount: 10,
             total_shares: FixedTrait::new_unscaled(1, false),
         }; // pool 1:10
-        let initial_liquidity = market.liquidity();
+        let initial_liquidity = market.total_shares;
 
         // Add liquidity with the same ratio
         let (amount, quantity) = (2, 20); // pool 1:10
@@ -383,7 +364,7 @@ mod tests {
             resource_amount: 10,
             total_shares: FixedTrait::new(58333726685869899776, false),
         }; // pool 1:10
-        let initial_liquidity = market.liquidity();
+        let initial_liquidity = market.total_shares;
 
         // Add liquidity without the same ratio
         let (amount, quantity) = (2, 10); // pool 1:5
@@ -410,7 +391,7 @@ mod tests {
             resource_amount: 20,
             total_shares: FixedTrait::new(116667453371739799552, false),
         }; // pool 1:10
-        let initial_liquidity = market.liquidity();
+        let initial_liquidity = market.total_shares;
 
         // Remove half of the liquidity
         let two = FixedTrait::new_unscaled(2, false);
@@ -464,7 +445,7 @@ mod tests {
             resource_amount: 20,
             total_shares: FixedTrait::new_unscaled(2, false),
         }; // pool 1:10
-        let initial_liquidity = market.liquidity();
+        let initial_liquidity = market.total_shares;
 
         // Remove twice of the liquidity
         let two = FixedTrait::new_unscaled(2, false);
