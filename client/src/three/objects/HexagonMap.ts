@@ -52,6 +52,7 @@ export default class HexagonMap {
       this.loadedChunks,
       this.hexSize,
       this.character,
+      this,
     );
 
     this.loadBiomeModels();
@@ -146,8 +147,6 @@ export default class HexagonMap {
           //   getEntityIdFromKeys([BigInt(startRow + row + FELT_CENTER), BigInt(startCol + col + FELT_CENTER)]),
           // );
 
-          // console.log(startRow + row + FELT_CENTER - 2147483895, startCol + col + FELT_CENTER - 2147483771, biome);
-
           const entities = getEntitiesWithValue(this.dojoConfig.components.Position, {
             x: startCol + col + FELT_CENTER,
             y: startRow + row + FELT_CENTER,
@@ -237,6 +236,21 @@ export default class HexagonMap {
     console.log(`Processing hexagon at (${row}, ${col}) with position (${x}, ${z})`);
 
     return Math.random();
+  }
+
+  getHexagonCoordinates(instancedMesh: THREE.InstancedMesh, instanceId: number): { row: number; col: number } {
+    const matrix = new THREE.Matrix4();
+    instancedMesh.getMatrixAt(instanceId, matrix);
+    const position = new THREE.Vector3();
+    matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
+
+    const horizontalSpacing = this.hexSize * Math.sqrt(3);
+    const verticalSpacing = (this.hexSize * 3) / 2;
+
+    const col = Math.round(position.x / horizontalSpacing);
+    const row = Math.round(-position.z / verticalSpacing);
+
+    return { row, col };
   }
 
   updateVisibleChunks() {

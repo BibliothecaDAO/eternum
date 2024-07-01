@@ -12,8 +12,8 @@ export default class Demo {
   private camera!: THREE.PerspectiveCamera;
 
   private lightAmbient!: THREE.AmbientLight;
-  private lightPoint!: THREE.PointLight;
-  private lightPoint2!: THREE.PointLight;
+  private lightPoint!: THREE.DirectionalLight;
+  private lightPoint2!: THREE.DirectionalLight;
 
   private controls!: OrbitControls;
   private stats!: any;
@@ -75,19 +75,19 @@ export default class Demo {
     this.controls.screenSpacePanning = true;
     this.controls.target.set(0, 0, 0);
 
-    this.lightAmbient = new THREE.AmbientLight(0xffffff, 0.5);
+    this.lightAmbient = new THREE.AmbientLight(0xffffff, 0.8);
     this.scene.add(this.lightAmbient);
 
     // Adjust point lights for new camera angle
     const shadowIntensity = 1;
 
-    this.lightPoint = new THREE.PointLight(0xffffff);
+    this.lightPoint = new THREE.DirectionalLight(0xffffff);
     this.lightPoint.position.set(0, cameraHeight + 5, -cameraDepth + 5);
     this.lightPoint.castShadow = true;
     this.lightPoint.intensity = shadowIntensity;
     this.scene.add(this.lightPoint);
 
-    this.lightPoint2 = new THREE.PointLight(0xffffff);
+    this.lightPoint2 = new THREE.DirectionalLight(0xffffff);
     this.lightPoint2.position.set(0, cameraHeight - 5, -cameraDepth - 5);
     this.lightPoint2.intensity = 1 - shadowIntensity;
     this.lightPoint2.castShadow = false;
