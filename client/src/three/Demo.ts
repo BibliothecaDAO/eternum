@@ -68,8 +68,8 @@ export default class Demo {
 
     // Adjust OrbitControls for new camera angle
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableRotate = false;
-    this.controls.enableZoom = false;
+    this.controls.enableRotate = true;
+    this.controls.enableZoom = true;
     this.controls.enablePan = true;
     this.controls.panSpeed = 1.5;
     this.controls.screenSpacePanning = true;
@@ -100,6 +100,12 @@ export default class Demo {
     this.lightPoint.shadow.mapSize.height = mapSize;
     this.lightPoint.shadow.camera.near = cameraNear;
     this.lightPoint.shadow.camera.far = cameraFar;
+
+    const cameraHelper = new THREE.CameraHelper(this.lightPoint.shadow.camera);
+    this.scene.add(cameraHelper);
+
+    const cameraHelper2 = new THREE.CameraHelper(this.lightPoint2.shadow.camera);
+    this.scene.add(cameraHelper2);
 
     this.detailedScene = new DetailedHexScene(this.renderer, this.camera, this.dojo);
 
@@ -268,40 +274,40 @@ export default class Demo {
     if (this.controls) {
       this.controls.update();
 
-      // Calculate the camera offset based on the fixed angle and distance
-      const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
-      const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
-      const offset = new THREE.Vector3(0, cameraHeight, -cameraDepth);
+      // // Calculate the camera offset based on the fixed angle and distance
+      // const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
+      // const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
+      // const offset = new THREE.Vector3(0, cameraHeight, -cameraDepth);
 
-      // Calculate the desired camera position
-      const desiredCameraPosition = new THREE.Vector3().copy(this.controls.target).add(offset);
+      // // Calculate the desired camera position
+      // const desiredCameraPosition = new THREE.Vector3().copy(this.controls.target).add(offset);
 
-      // Lerp the camera position
-      this.camera.position.lerp(desiredCameraPosition, this.lerpFactor);
+      // // Lerp the camera position
+      // this.camera.position.lerp(desiredCameraPosition, this.lerpFactor);
 
-      // Calculate the desired controls target
-      const desiredControlsTarget = new THREE.Vector3(this.camera.position.x, 0, this.camera.position.z + cameraDepth);
+      // // Calculate the desired controls target
+      // const desiredControlsTarget = new THREE.Vector3(this.camera.position.x, 0, this.camera.position.z + cameraDepth);
 
-      // Lerp the controls target
-      this.controls.target.lerp(desiredControlsTarget, this.lerpFactor);
+      // // Lerp the controls target
+      // this.controls.target.lerp(desiredControlsTarget, this.lerpFactor);
 
-      // Look at the target
-      this.camera.lookAt(this.controls.target);
+      // // Look at the target
+      // this.camera.lookAt(this.controls.target);
 
-      // Update light positions to follow the camera
-      const lightOffset1 = new THREE.Vector3(0, 5, 5);
-      const lightOffset2 = new THREE.Vector3(0, -5, -5);
-      this.lightPoint.position.copy(this.camera.position).add(lightOffset1);
-      this.lightPoint2.position.copy(this.camera.position).add(lightOffset2);
+      // // Update light positions to follow the camera
+      // const lightOffset1 = new THREE.Vector3(0, 5, 5);
+      // const lightOffset2 = new THREE.Vector3(0, -5, -5);
+      // this.lightPoint.position.copy(this.camera.position).add(lightOffset1);
+      // this.lightPoint2.position.copy(this.camera.position).add(lightOffset2);
     }
 
     if (this.currentScene === "main") {
-      this.hexGrid.update(deltaTime);
-      this.hexGrid.updateVisibleChunks();
-      this.hexGrid.contextMenuManager.checkHexagonHover();
+      // this.hexGrid.update(deltaTime);
+      // this.hexGrid.updateVisibleChunks();
+      // this.hexGrid.contextMenuManager.checkHexagonHover();
       this.renderer.render(this.scene, this.camera);
     } else {
-      this.detailedScene.update(deltaTime);
+      //this.detailedScene.update(deltaTime);
       this.renderer.render(this.detailedScene.scene, this.camera);
     }
   }

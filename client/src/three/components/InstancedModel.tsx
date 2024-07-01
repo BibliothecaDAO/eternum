@@ -1,0 +1,41 @@
+import * as THREE from "three";
+
+export default class InstancedModel {
+  public group: THREE.Group;
+
+  constructor(model: THREE.Group, count: number) {
+    this.group = new THREE.Group();
+    //console.log(model);
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
+        tmp.count = 5;
+        this.group.add(tmp);
+      }
+    });
+  }
+
+  setMatrixAt(index: number, matrix: THREE.Matrix4) {
+    this.group.children.forEach((child) => {
+      if (child instanceof THREE.InstancedMesh) {
+        child.setMatrixAt(index, matrix);
+      }
+    });
+  }
+
+  setColorAt(index: number, color: THREE.Color) {
+    this.group.children.forEach((child) => {
+      if (child instanceof THREE.InstancedMesh) {
+        child.setColorAt(index, color);
+      }
+    });
+  }
+
+  setCount(count: number) {
+    this.group.children.forEach((child) => {
+      if (child instanceof THREE.InstancedMesh) {
+        child.count = count;
+      }
+    });
+  }
+}
