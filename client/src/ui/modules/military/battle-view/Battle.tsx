@@ -13,6 +13,7 @@ import { BattleProgressBar } from "./BattleProgressBar";
 import { BattleSideView } from "./BattleSideView";
 import { LockedResources } from "./LockedResources";
 import { TopScreenView } from "./TopScreenView";
+import { HintSection } from "@/ui/components/hints/HintModal";
 
 export interface Health {
   current: number;
@@ -74,7 +75,7 @@ export const Battle = ({
               !showBattleDetails ? "Battle Details" : "Overview"
             }`}</Button>
           )}
-          <HintModalButton className={`relative ${battleAdjusted ? "left-3" : ""}`} sectionName="Combat" />
+          <HintModalButton className={`relative ${battleAdjusted ? "left-3" : ""}`} section={HintSection.Combat} />
         </div>
         <BattleProgressBar
           ownArmySide={ownArmySide}

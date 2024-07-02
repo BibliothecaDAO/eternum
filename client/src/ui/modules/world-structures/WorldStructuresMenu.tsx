@@ -15,6 +15,7 @@ import { useContributions } from "@/hooks/helpers/useContributions";
 import { calculateShares } from "@/hooks/store/useLeaderBoardStore";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { HintSection } from "@/ui/components/hints/HintModal";
 
 export const WorldStructuresMenu = ({}: any) => {
   const { hyperstructures } = useHyperstructures();
@@ -99,7 +100,7 @@ export const WorldStructuresMenu = ({}: any) => {
 
   return (
     <>
-      <HintModalButton className="absolute top-1 right-1" sectionName="World Structures" />
+      <HintModalButton className="absolute top-1 right-1" section={HintSection.WorldStructures} />
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: number) => setSelectedTab(index)}

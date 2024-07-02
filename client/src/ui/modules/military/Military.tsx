@@ -1,4 +1,5 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { HintSection } from "@/ui/components/hints/HintModal";
 import { EntityList } from "@/ui/components/list/EntityList";
 import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
 import { BattlesArmyTable } from "@/ui/components/military/BattlesArmyTable";
@@ -45,7 +46,7 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
 
   return (
     <div className="relative">
-      <HintModalButton className="absolute top-1 right-1" sectionName="Combat" />
+      <HintModalButton className="absolute top-1 right-1" section={HintSection.Combat} />
       {isMap ? (
         <Tabs
           selectedIndex={selectedTab}
