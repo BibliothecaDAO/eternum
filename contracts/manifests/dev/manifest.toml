@@ -87,8 +87,8 @@ name = "eternum::systems::combat::contracts::combat_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x73f0efc06b135109b40f185f2a04a3a30e317f189642958f4f6848c1bb95a8e"
-class_hash = "0x4ee329e7b2b830c266f9ff35efa9e76deed3cb6d279339737dec953f10d1c56"
-original_class_hash = "0x4ee329e7b2b830c266f9ff35efa9e76deed3cb6d279339737dec953f10d1c56"
+class_hash = "0x4332c935f0a7e3ab95aa8aca4f5ad878c46ae9fa28e42e4d449723159a8f787"
+original_class_hash = "0x4332c935f0a7e3ab95aa8aca4f5ad878c46ae9fa28e42e4d449723159a8f787"
 base_class_hash = "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46"
 abi = "manifests/dev/abis/deployments/contracts/eternum_systems_config_contracts_config_systems.json"
 reads = []
@@ -126,8 +126,8 @@ name = "eternum::systems::dev::contracts::resource::dev_resource_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x4ae0caa7f060ee45011d5374c43f07fb6c52beebecf9c6893aae1a03bedb2f7"
-class_hash = "0x43c44e09d56b1a43fe002aacd60290961e7e0220a13af168a3c74f73cb386e1"
-original_class_hash = "0x43c44e09d56b1a43fe002aacd60290961e7e0220a13af168a3c74f73cb386e1"
+class_hash = "0x5dd49dfb5802a65ce7d55d9d46446aeac44186a1212c2d501a23d1bf2619119"
+original_class_hash = "0x5dd49dfb5802a65ce7d55d9d46446aeac44186a1212c2d501a23d1bf2619119"
 base_class_hash = "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46"
 abi = "manifests/dev/abis/deployments/contracts/eternum_systems_guild_contracts_guild_systems.json"
 reads = []
@@ -217,8 +217,8 @@ name = "eternum::systems::resources::contracts::resource_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x38a93ca09a4d8aea32cfd6817754b6e1df35c061631459072928d73897fc9d5"
-class_hash = "0x6d3b153c4ca68394dc91fb4f0ab8c7dd4f6c6a6e9f80d64a5d03c039a4afa04"
-original_class_hash = "0x6d3b153c4ca68394dc91fb4f0ab8c7dd4f6c6a6e9f80d64a5d03c039a4afa04"
+class_hash = "0x6f903b167742c98a72cef7211a0e5a0fa71e7b050ffa05a1fdb2b4baef58b3f"
+original_class_hash = "0x6f903b167742c98a72cef7211a0e5a0fa71e7b050ffa05a1fdb2b4baef58b3f"
 base_class_hash = "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46"
 abi = "manifests/dev/abis/deployments/contracts/eternum_systems_trade_contracts_trade_systems_trade_systems.json"
 reads = []
@@ -720,6 +720,23 @@ key = false
 
 [[models]]
 kind = "DojoModel"
+class_hash = "0x459f95399edef23314b4adc4b744784a0b5860e81b730682a75e4d239424834"
+original_class_hash = "0x459f95399edef23314b4adc4b744784a0b5860e81b730682a75e4d239424834"
+abi = "manifests/dev/abis/deployments/models/eternum_models_config_guild_population_config.json"
+name = "eternum::models::config::guild_population_config"
+
+[[models.members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[models.members]]
+name = "base_population"
+type = "u32"
+key = false
+
+[[models]]
+kind = "DojoModel"
 class_hash = "0x14f6297be7300daae79be3db1183acf77dd8e1dd0d8c74c48bfbfe375f1be65"
 original_class_hash = "0x14f6297be7300daae79be3db1183acf77dd8e1dd0d8c74c48bfbfe375f1be65"
 abi = "manifests/dev/abis/deployments/models/eternum_models_config_has_claimed_starting_resources.json"
@@ -1133,8 +1150,8 @@ key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x26c2003589fdc72144e939e8d7bc42dc8078e3c21a2ac907b5cdbe9396a440b"
-original_class_hash = "0x26c2003589fdc72144e939e8d7bc42dc8078e3c21a2ac907b5cdbe9396a440b"
+class_hash = "0x1e5a07a7a782433e38f049bccc56c6855105c46de0f7f30f7c1d5e30f141c2a"
+original_class_hash = "0x1e5a07a7a782433e38f049bccc56c6855105c46de0f7f30f7c1d5e30f141c2a"
 abi = "manifests/dev/abis/deployments/models/eternum_models_guild_guild.json"
 name = "eternum::models::guild::guild"
 
@@ -1149,14 +1166,14 @@ type = "bool"
 key = false
 
 [[models.members]]
-name = "member_count"
-type = "u16"
+name = "creation_ts"
+type = "u64"
 key = false
 
 [[models]]
 kind = "DojoModel"
-class_hash = "0x628833fbff07e9cc35145e1187a579af2c5bbc70531818ceb5eff85a5fef1f7"
-original_class_hash = "0x628833fbff07e9cc35145e1187a579af2c5bbc70531818ceb5eff85a5fef1f7"
+class_hash = "0x87e7f09ef23f27fdf94d4de42eb505be40dba664f5206aed8255569bd45bfe"
+original_class_hash = "0x87e7f09ef23f27fdf94d4de42eb505be40dba664f5206aed8255569bd45bfe"
 abi = "manifests/dev/abis/deployments/models/eternum_models_guild_guild_member.json"
 name = "eternum::models::guild::guild_member"
 
@@ -1168,6 +1185,11 @@ key = true
 [[models.members]]
 name = "guild_entity_id"
 type = "u128"
+key = false
+
+[[models.members]]
+name = "join_ts"
+type = "u64"
 key = false
 
 [[models]]

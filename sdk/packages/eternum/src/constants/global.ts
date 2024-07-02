@@ -90,3 +90,6 @@ export const HYPERSTRUCTURE_POINTS_PER_CYCLE = 10;
 export const DONKEY_ENTITY_TYPE = 256;
 export const REALM_ENTITY_TYPE = 257;
 export const ARMY_ENTITY_TYPE = 258;
+
+// Guild
+export const BASE_GUILD_POPULATION_CAPACITY = 20;

@@ -31,7 +31,7 @@ export const MyGuild = () => {
 
   const { getAddressGuild } = useGuilds();
 
-  const { userGuildEntityId, isOwner, guildName, memberCount } = getAddressGuild(account.address);
+  const { userGuildEntityId, isOwner, guildName, population } = getAddressGuild(account.address);
 
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
@@ -174,7 +174,7 @@ export const MyGuild = () => {
                     </>
                   )}
 
-                  {memberCount && memberCount > 1 ? (
+                  {population && population > 1 ? (
                     <Button
                       className="ml-5"
                       isLoading={isLoading}

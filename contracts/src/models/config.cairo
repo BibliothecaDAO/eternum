@@ -320,6 +320,14 @@ struct PopulationConfig {
     base_population: u32,
 }
 
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+struct GuildPopulationConfig {
+    #[key]
+    config_id: u128,
+    base_population: u32,
+}
+
 #[generate_trait]
 impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
     fn get(world: IWorldDispatcher, building_id: BuildingCategory) -> BuildingCategoryPopConfig {

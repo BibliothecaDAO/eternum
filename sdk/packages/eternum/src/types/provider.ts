@@ -337,6 +337,11 @@ export interface RemovePlayerFromWhitelist extends SystemSigner {
   guild_entity_id: num.BigNumberish;
 }
 
+export interface ChangeGuildAccess extends SystemSigner {
+  guild_entity_id: num.BigNumberish;
+  is_public: boolean;
+}
+
 export interface MintStartingResources extends SystemSigner {
   config_ids: num.BigNumberish[];
   realm_entity_id: num.BigNumberish;
@@ -405,6 +410,10 @@ export interface SetBuildingCategoryPopConfigProps extends SystemSigner {
 }
 
 export interface SetPopulationConfigProps extends SystemSigner {
+  base_population: num.BigNumberish;
+}
+
+export interface SetGuildPopulationConfigProps extends SystemSigner {
   base_population: num.BigNumberish;
 }
 
