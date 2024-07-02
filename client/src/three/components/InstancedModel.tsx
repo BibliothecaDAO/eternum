@@ -8,8 +8,10 @@ export default class InstancedModel {
     //console.log(model);
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
+        // initial count set max number of instances
         const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
-        tmp.count = 5;
+        // we can set lower count later if we have less hexes with that biome and change it at any time
+        // tmp.count = 5;
         this.group.add(tmp);
       }
     });
