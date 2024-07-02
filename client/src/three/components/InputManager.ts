@@ -31,26 +31,26 @@ export class InputManager {
     this.dblclickHandler = onDoubleClick;
     this.onTransitionToMainScene = onTransitionToMainScene;
 
-    window.addEventListener("resize", this.resizeHandler);
-    window.addEventListener("keydown", this.keydownHandler);
-    window.addEventListener("mousemove", this.mousemoveHandler);
-    window.addEventListener("dblclick", this.dblclickHandler);
+    // window.addEventListener("resize", this.resizeHandler);
+    // window.addEventListener("keydown", this.keydownHandler);
+    // window.addEventListener("mousemove", this.mousemoveHandler);
+    // window.addEventListener("dblclick", this.dblclickHandler);
 
-    window.addEventListener("keydown", (event) => {
-      const { key } = event;
+    // window.addEventListener("keydown", (event) => {
+    //   const { key } = event;
 
-      switch (key) {
-        case "e":
-          break;
-        case "Escape":
-          if (this.currentScene === "detailed") {
-            this.onTransitionToMainScene();
-          }
-          break;
-        default:
-          break;
-      }
-    });
+    //   switch (key) {
+    //     case "e":
+    //       break;
+    //     case "Escape":
+    //       if (this.currentScene === "detailed") {
+    //         this.onTransitionToMainScene();
+    //       }
+    //       break;
+    //     default:
+    //       break;
+    //   }
+    // });
 
     // window.addEventListener("keydown", (event) => {
     //   const { key } = event;

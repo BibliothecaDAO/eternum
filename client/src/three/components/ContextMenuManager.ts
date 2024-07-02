@@ -130,20 +130,26 @@ export class ContextMenuManager {
     }
   }
 
-  private onMouseMove(event: MouseEvent) {
-    if (this.isRightMouseDown) {
-      // Handle panning logic here
-      // You may want to update the camera position based on mouse movement
-    }
-  }
-
   addEventListeners() {
     document.addEventListener("mousedown", this.onMouseDown.bind(this));
     document.addEventListener("mouseup", this.onMouseUp.bind(this));
-    document.addEventListener("mousemove", this.onMouseMove.bind(this));
     document.addEventListener("click", this.hideContextMenu.bind(this));
 
     window.addEventListener("click", this.onMouseClick.bind(this));
+  }
+
+  private centerCameraOnHex(hexCoords: { row: number; col: number }) {
+    const worldPosition = this.hexGrid.getWorldPositionForHex(hexCoords);
+
+    // Set the camera's target to the hexagon's position
+    this.camera.position.set(
+      worldPosition.x,
+      this.camera.position.y, // Keep the current camera height
+      worldPosition.z,
+    );
+
+    // Optionally, you can add a smooth transition here
+    // using a library like Tween.js or implementing your own lerp function
   }
 
   private onMouseClick(event: MouseEvent) {
@@ -179,6 +185,8 @@ export class ContextMenuManager {
           intersects[0].object as THREE.InstancedMesh,
           intersects[0].instanceId!,
         );
+
+        this.centerCameraOnHex(hexCoords);
 
         if (this.character.isValidHexPosition(hexCoords)) {
           this.character.moveToHex(hexCoords);

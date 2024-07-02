@@ -111,6 +111,19 @@ export default class HexagonMap {
     });
   }
 
+  getWorldPositionForHex(hexCoords: { row: number; col: number }): THREE.Vector3 {
+    const { row, col } = hexCoords;
+
+    // Calculate the x and z coordinates
+    const x = ((this.hexSize * 3) / 2) * col;
+    const z = this.hexSize * Math.sqrt(3) * (row + 0.5 * (col & 1));
+
+    // y coordinate is half of the hexagon height
+    const y = this.hexSize / 2;
+
+    return new THREE.Vector3(x, y, z);
+  }
+
   private updateExistingChunks() {
     for (const [key, chunk] of this.loadedChunks) {
       this.scene.remove(chunk);
@@ -202,11 +215,6 @@ export default class HexagonMap {
         group.add(hexMesh.group);
       }
     });
-    //console.log(biomeHexes);
-
-    // const roadCount = Math.floor(rows * cols * 0.1); // Increase to 20% of hexagons
-    // // const roadGroup = this.roads.createRandomRoads(hexPositions, roadCount);
-    // group.add(roadGroup); // Add roads last to ensure they're on top
 
     group.userData.loadPromise = gridCreationPromise;
 
