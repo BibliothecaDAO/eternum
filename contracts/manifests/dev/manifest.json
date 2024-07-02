@@ -1020,8 +1020,8 @@
     {
       "kind": "DojoContract",
       "address": "0x3db3213122bf078c0dc15d5f45b542ab0a03a3fae4fe9e1373fe291357f1000",
-      "class_hash": "0x70bd946b5a24b94692690fec3837fc4f3330e3164c5650ddb2823ed82c92513",
-      "original_class_hash": "0x70bd946b5a24b94692690fec3837fc4f3330e3164c5650ddb2823ed82c92513",
+      "class_hash": "0x2281f217a4d6994a2d4203859bb8ff70b2375898bbd5285ba0bbd27520d4b2b",
+      "original_class_hash": "0x2281f217a4d6994a2d4203859bb8ff70b2375898bbd5285ba0bbd27520d4b2b",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -1470,8 +1470,8 @@
     {
       "kind": "DojoContract",
       "address": "0x33868c8253a6bdd63074cb8fbdd11cfcca50af1b0f25062d5311541487edb45",
-      "class_hash": "0x104c7adb2d97c2e35ad0b26a19f69aefd2b35977e42618f0f78d14062d6bc7b",
-      "original_class_hash": "0x104c7adb2d97c2e35ad0b26a19f69aefd2b35977e42618f0f78d14062d6bc7b",
+      "class_hash": "0x78d5cf3d35b3481c4841067f63f993910fdce6c49ead3ea6106df364e90db43",
+      "original_class_hash": "0x78d5cf3d35b3481c4841067f63f993910fdce6c49ead3ea6106df364e90db43",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -1797,10 +1797,6 @@
             },
             {
               "name": "Stable",
-              "type": "()"
-            },
-            {
-              "name": "DonkeyFarm",
               "type": "()"
             },
             {
@@ -2885,10 +2881,6 @@
               "type": "()"
             },
             {
-              "name": "DonkeyFarm",
-              "type": "()"
-            },
-            {
               "name": "TradingPost",
               "type": "()"
             },
@@ -3312,8 +3304,8 @@
     {
       "kind": "DojoContract",
       "address": "0x5d06cf4449749a6e2995c192afbfe60c314b8f763de83f0322b5f4f9151a80b",
-      "class_hash": "0x4a3a0469c88aa25ec91a7fb6ad8c6ea333ed13fdf7f12410b8fa1eab5b29d75",
-      "original_class_hash": "0x4a3a0469c88aa25ec91a7fb6ad8c6ea333ed13fdf7f12410b8fa1eab5b29d75",
+      "class_hash": "0x2d49fda7ee419bd5797a55b5417579ac21bc710c1facbdc764c5ad168ee9170",
+      "original_class_hash": "0x2d49fda7ee419bd5797a55b5417579ac21bc710c1facbdc764c5ad168ee9170",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -3763,8 +3755,8 @@
     {
       "kind": "DojoContract",
       "address": "0x61857309943a4edc7c72805af62f91e70f489e2d8526431a222f8262223ea16",
-      "class_hash": "0x658715e2ac6b62af3edd66fa2eb79871596fe3b61459fd44601d1be6b6be4ba",
-      "original_class_hash": "0x658715e2ac6b62af3edd66fa2eb79871596fe3b61459fd44601d1be6b6be4ba",
+      "class_hash": "0x6ee760599ef56a879db7f774b37abbfd60785506bcf54d92ef675f78713c185",
+      "original_class_hash": "0x6ee760599ef56a879db7f774b37abbfd60785506bcf54d92ef675f78713c185",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -3983,8 +3975,8 @@
     {
       "kind": "DojoContract",
       "address": "0x375d243e63d439b2a4ee5fe99ad108eb405fcfef78ca33ed7b0e44a7d38c9f8",
-      "class_hash": "0x277fe5bc530deae19a15a4c5a3217e828514b4d07395a4835f89dd25e911d2c",
-      "original_class_hash": "0x277fe5bc530deae19a15a4c5a3217e828514b4d07395a4835f89dd25e911d2c",
+      "class_hash": "0x3d603126fea224a1f2bfaefed9c56dcf903928a5b34c1b54cc741d3d90cd06a",
+      "original_class_hash": "0x3d603126fea224a1f2bfaefed9c56dcf903928a5b34c1b54cc741d3d90cd06a",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -4537,8 +4529,8 @@
     {
       "kind": "DojoContract",
       "address": "0x5ab60a1ee699447e6adbb6e66175261d529a60cb99b3c8c5144af739917353d",
-      "class_hash": "0x48df207bb2c7dcf882f546f3cae2677588322d55dd05aa48d59e2d2966ad912",
-      "original_class_hash": "0x48df207bb2c7dcf882f546f3cae2677588322d55dd05aa48d59e2d2966ad912",
+      "class_hash": "0x7835d3bb0d400f5f7e46e9196f717fb16091cd0fdfdfd8941663cf846d8b99a",
+      "original_class_hash": "0x7835d3bb0d400f5f7e46e9196f717fb16091cd0fdfdfd8941663cf846d8b99a",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -4783,8 +4775,8 @@
     {
       "kind": "DojoContract",
       "address": "0x1268d450a57c3a22bd0262c27c5fe1738ed33a8c20a62307a72d042e26204db",
-      "class_hash": "0x3f2d3af9b210e8d0dc87f84da5e3849eab0f8b5a0410e9ff44a439bdc9dd75f",
-      "original_class_hash": "0x3f2d3af9b210e8d0dc87f84da5e3849eab0f8b5a0410e9ff44a439bdc9dd75f",
+      "class_hash": "0x3031e9a3952d02234d5e108d092d70104ac5de02b10f8a6ada8f765ff9ff0ff",
+      "original_class_hash": "0x3031e9a3952d02234d5e108d092d70104ac5de02b10f8a6ada8f765ff9ff0ff",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -5009,8 +5001,8 @@
     {
       "kind": "DojoContract",
       "address": "0x38a93ca09a4d8aea32cfd6817754b6e1df35c061631459072928d73897fc9d5",
-      "class_hash": "0x6d3b153c4ca68394dc91fb4f0ab8c7dd4f6c6a6e9f80d64a5d03c039a4afa04",
-      "original_class_hash": "0x6d3b153c4ca68394dc91fb4f0ab8c7dd4f6c6a6e9f80d64a5d03c039a4afa04",
+      "class_hash": "0x294dfa2a99b5cb22158fd7281fc9f61aec5589a4531c9b487e67a593ad3865",
+      "original_class_hash": "0x294dfa2a99b5cb22158fd7281fc9f61aec5589a4531c9b487e67a593ad3865",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -5392,8 +5384,8 @@
     {
       "kind": "DojoContract",
       "address": "0x40533282e8878c8fc895fb212e42493b32c7115fe44acbb64b8925ef3039c72",
-      "class_hash": "0x5d9f3d5b40c3242a6c314a20600ea682d69be9bbf97e9a0f1c13f54849a7f43",
-      "original_class_hash": "0x5d9f3d5b40c3242a6c314a20600ea682d69be9bbf97e9a0f1c13f54849a7f43",
+      "class_hash": "0x5246168e056f81b70f748caffdde9fed1f5d2e6476e496c19e7b9a51b3883a0",
+      "original_class_hash": "0x5246168e056f81b70f748caffdde9fed1f5d2e6476e496c19e7b9a51b3883a0",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -7143,8 +7135,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x4dd94dc073d0385ba281f61819c8350005cf61048ea68a2b47464d437b69678",
-      "original_class_hash": "0x4dd94dc073d0385ba281f61819c8350005cf61048ea68a2b47464d437b69678",
+      "class_hash": "0x11f685ceec16b505f3b06f139cc07795da91acf70a74c41c56fa2d987f4ded0",
+      "original_class_hash": "0x11f685ceec16b505f3b06f139cc07795da91acf70a74c41c56fa2d987f4ded0",
       "abi": [
         {
           "type": "impl",
@@ -7510,10 +7502,6 @@
               "type": "()"
             },
             {
-              "name": "DonkeyFarm",
-              "type": "()"
-            },
-            {
               "name": "TradingPost",
               "type": "()"
             },
@@ -7623,8 +7611,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x49dc3f0443ba082653deafcc99848c605c61e8224a00f79f8ca5b91624cc695",
-      "original_class_hash": "0x49dc3f0443ba082653deafcc99848c605c61e8224a00f79f8ca5b91624cc695",
+      "class_hash": "0x7163e9599de67e1263cbf85d58b3d6d3737f158bc98682bd3b1c75345fafbcd",
+      "original_class_hash": "0x7163e9599de67e1263cbf85d58b3d6d3737f158bc98682bd3b1c75345fafbcd",
       "abi": [
         {
           "type": "impl",
@@ -7987,10 +7975,6 @@
             },
             {
               "name": "Stable",
-              "type": "()"
-            },
-            {
-              "name": "DonkeyFarm",
               "type": "()"
             },
             {
@@ -11371,8 +11355,8 @@
           "key": false
         }
       ],
-      "class_hash": "0xfb3f151cad6072b675757e3774b6cc26975d3c848b55870d0bece61ed3e262",
-      "original_class_hash": "0xfb3f151cad6072b675757e3774b6cc26975d3c848b55870d0bece61ed3e262",
+      "class_hash": "0x7cdb542227aa0ec61bf0ec9d8f8456196b2c4115d684719cd325942de1ca5a6",
+      "original_class_hash": "0x7cdb542227aa0ec61bf0ec9d8f8456196b2c4115d684719cd325942de1ca5a6",
       "abi": [
         {
           "type": "impl",
@@ -11738,10 +11722,6 @@
               "type": "()"
             },
             {
-              "name": "DonkeyFarm",
-              "type": "()"
-            },
-            {
               "name": "TradingPost",
               "type": "()"
             },
@@ -11841,8 +11821,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x3234df64c32212b45c82b2af8dfdc69bb9de6965881535b5419fe0310ef0b5a",
-      "original_class_hash": "0x3234df64c32212b45c82b2af8dfdc69bb9de6965881535b5419fe0310ef0b5a",
+      "class_hash": "0x7c9754777493087943f7db6f767347c489be4329b9e096166a23f54e50e6f64",
+      "original_class_hash": "0x7c9754777493087943f7db6f767347c489be4329b9e096166a23f54e50e6f64",
       "abi": [
         {
           "type": "impl",
@@ -12205,10 +12185,6 @@
             },
             {
               "name": "Stable",
-              "type": "()"
-            },
-            {
-              "name": "DonkeyFarm",
               "type": "()"
             },
             {
