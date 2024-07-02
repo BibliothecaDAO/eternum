@@ -187,38 +187,31 @@ mod swap_systems {
             amount: u128, owner_fee_scaled: u128, lp_fee_scaled: u128,
         ) -> (u128, u128, u128) {
             let amount_fixed = FixedTrait::new_unscaled(amount, false);
-
             let owner_fee_fixed = FixedTrait::new(owner_fee_scaled, false);
             let lp_fee_fixed = FixedTrait::new(lp_fee_scaled, false);
 
             let owner_amount_fixed = amount_fixed * owner_fee_fixed;
             let lp_amount_fixed = amount_fixed * lp_fee_fixed;
 
-            let rest = amount_fixed - owner_amount_fixed - lp_amount_fixed;
+            let owner_amount: u128 = owner_amount_fixed.try_into().unwrap();
+            let lp_amount: u128 = lp_amount_fixed.try_into().unwrap();
+            let rest = amount - owner_amount - lp_amount;
 
-            (
-                owner_amount_fixed.try_into().unwrap(),
-                lp_amount_fixed.try_into().unwrap(),
-                rest.try_into().unwrap()
-            )
+            (owner_amount, lp_amount, rest)
         }
 
         fn add_fees(cost: u128, owner_fee_scaled: u128, lp_fee_scaled: u128) -> (u128, u128, u128) {
             let cost_fixed = FixedTrait::new_unscaled(cost, false);
-
             let owner_fee_fixed = FixedTrait::new(owner_fee_scaled, false);
             let lp_fee_fixed = FixedTrait::new(lp_fee_scaled, false);
 
             let owner_amount_fixed = cost_fixed * owner_fee_fixed;
             let lp_amount_fixed = cost_fixed * lp_fee_fixed;
 
-            let total = cost_fixed + owner_amount_fixed + lp_amount_fixed;
-
-            (
-                owner_amount_fixed.try_into().unwrap(),
-                lp_amount_fixed.try_into().unwrap(),
-                total.try_into().unwrap()
-            )
+            let owner_amount: u128 = owner_amount_fixed.try_into().unwrap();
+            let lp_amount: u128 = lp_amount_fixed.try_into().unwrap();
+            let total = cost + owner_amount + lp_amount;
+            (owner_amount, lp_amount, total)
         }
 
         fn emit_event(
