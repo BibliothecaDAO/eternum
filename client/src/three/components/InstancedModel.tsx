@@ -38,4 +38,14 @@ export default class InstancedModel {
       }
     });
   }
+
+  needsUpdate() {
+    this.group.children.forEach((child) => {
+      if (child instanceof THREE.InstancedMesh) {
+        child.instanceMatrix.needsUpdate = true;
+        //child.computeBoundingSphere();
+        //child.frustumCulled = false;
+      }
+    });
+  }
 }

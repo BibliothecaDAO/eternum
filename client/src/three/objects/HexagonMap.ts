@@ -22,7 +22,7 @@ export default class HexagonMap {
   private fogManager: FogManager;
   contextMenuManager: ContextMenuManager;
 
-  private chunkSize = 30; // Size of each chunk
+  private chunkSize = 10; // Size of each chunk
   private loadedChunks: Map<string, THREE.Group> = new Map();
   private hexSize = 0.8;
 
@@ -30,6 +30,8 @@ export default class HexagonMap {
 
   private biomeModels: Map<BiomeType, InstancedModel> = new Map();
   private modelLoadPromises: Promise<void>[] = [];
+
+  private currentChunk: string = "null";
 
   constructor(
     private scene: Scene,
@@ -94,6 +96,7 @@ export default class HexagonMap {
             model.rotation.y = Math.PI;
             const tmp = new InstancedModel(model, this.chunkSize * this.chunkSize);
             this.biomeModels.set(biome as BiomeType, tmp);
+            this.scene.add(tmp.group);
             resolve();
           },
           undefined,
@@ -107,7 +110,7 @@ export default class HexagonMap {
     }
 
     Promise.all(this.modelLoadPromises).then(() => {
-      this.updateExistingChunks();
+      //this.updateExistingChunks();
     });
   }
 
@@ -128,14 +131,14 @@ export default class HexagonMap {
     for (const [key, chunk] of this.loadedChunks) {
       this.scene.remove(chunk);
       const [z, x] = key.split(",").map(Number);
-      const newChunk = this.createHexagonGrid(z * this.chunkSize, x * this.chunkSize, this.chunkSize, this.chunkSize);
-      this.loadedChunks.set(key, newChunk);
-      this.scene.add(newChunk);
+      // const newChunk = this.createHexagonGrid(z * this.chunkSize, x * this.chunkSize, this.chunkSize, this.chunkSize);
+      // this.loadedChunks.set(key, newChunk);
+      // this.scene.add(newChunk);
     }
   }
 
-  createHexagonGrid(startRow: number, startCol: number, rows: number, cols: number): THREE.Group {
-    const group = new THREE.Group();
+  createHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
+    //const group = new THREE.Group();
     const hexInstanced = this.createHexagonInstancedMesh(rows * cols);
     //group.add(hexInstanced);
 
@@ -164,8 +167,8 @@ export default class HexagonMap {
 
     const hexPositions: THREE.Vector3[] = [];
     const gridCreationPromise = Promise.all(this.modelLoadPromises).then(() => {
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
+      for (let row = -rows / 2; row < rows / 2; row++) {
+        for (let col = -cols / 2; col < cols / 2; col++) {
           hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
 
           dummy.position.x = (startCol + col) * horizontalSpacing + ((startRow + row) % 2) * (horizontalSpacing / 2);
@@ -212,13 +215,13 @@ export default class HexagonMap {
         matrices.forEach((matrix, index) => {
           hexMesh.setMatrixAt(index, matrix);
         });
-        group.add(hexMesh.group);
+        hexMesh.needsUpdate();
+        console.log("updating");
+        //group.add(hexMesh.group);
       }
     });
 
-    group.userData.loadPromise = gridCreationPromise;
-
-    return group;
+    //group.userData.loadPromise = gridCreationPromise;
   }
 
   private addCharacterMovementListeners() {
@@ -301,35 +304,34 @@ export default class HexagonMap {
 
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(cameraPosition.x, cameraPosition.z);
 
-    const visibleChunks = new Set<string>();
+    //const visibleChunks = new Set<string>();
 
     // Expand the range of visible chunks
-    for (let x = chunkX; x <= chunkX; x++) {
-      for (let z = chunkZ; z <= chunkZ; z++) {
-        const chunkKey = `${x},${z}`;
-        visibleChunks.add(chunkKey);
+    const z = chunkZ;
+    const x = chunkX;
+    const chunkKey = `${x},${z}`;
+    //visibleChunks.add(chunkKey);
+    if (this.currentChunk !== chunkKey) {
+      this.currentChunk = chunkKey;
+      console.log("currentChunk", this.currentChunk);
+      this.createHexagonGrid(z * this.chunkSize, x * this.chunkSize, this.chunkSize * 2, this.chunkSize * 2);
+      //this.loadedChunks.set(chunkKey, chunk);
+      //this.scene.add(chunk);
 
-        if (!this.loadedChunks.has(chunkKey)) {
-          const chunk = this.createHexagonGrid(z * this.chunkSize, x * this.chunkSize, this.chunkSize, this.chunkSize);
-          this.loadedChunks.set(chunkKey, chunk);
-          this.scene.add(chunk);
-
-          chunk.userData.loadPromise.then(() => {
-            this.scene.add(chunk);
-          });
-        }
-      }
+      // chunk.userData.loadPromise.then(() => {
+      //   this.scene.add(chunk);
+      // });
     }
 
     // Remove chunks that are no longer visible
-    for (const [key, chunk] of this.loadedChunks) {
-      if (!visibleChunks.has(key)) {
-        this.scene.remove(chunk);
-        this.loadedChunks.delete(key);
-      }
-    }
+    // for (const [key, chunk] of this.loadedChunks) {
+    //   if (!visibleChunks.has(key)) {
+    //     this.scene.remove(chunk);
+    //     this.loadedChunks.delete(key);
+    //   }
+    // }
     //console.log("chunks", this.loadedChunks);
-    this.fogManager.updateFog();
+    //this.fogManager.updateFog();
   }
 
   private updateCameraPosition() {

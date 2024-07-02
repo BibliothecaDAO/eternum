@@ -8,6 +8,7 @@ import { SetupResult } from "@/dojo/setup";
 import { ThreeStore, useThreeStore } from "@/hooks/store/useThreeStore";
 import { InputManager } from "./components/InputManager";
 import { TransitionManager } from "./components/Transition";
+import _ from "lodash";
 
 export default class Demo {
   private renderer!: THREE.WebGLRenderer;
@@ -71,7 +72,7 @@ export default class Demo {
     this.scene = new THREE.Scene();
 
     // Change camera settings for 75-degree view
-    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
     this.camera.position.set(0, cameraHeight, -cameraDepth);
@@ -94,6 +95,12 @@ export default class Demo {
     this.controls.panSpeed = 1.5;
     this.controls.screenSpacePanning = true;
     this.controls.target.set(0, 0, 0);
+    this.controls.addEventListener(
+      "change",
+      _.throttle(() => {
+        this.hexGrid.updateVisibleChunks();
+      }, 500),
+    );
 
     this.lightAmbient = new THREE.AmbientLight(0xffffff, 0.8);
     this.scene.add(this.lightAmbient);
@@ -158,15 +165,14 @@ export default class Demo {
   }
 
   onHexClick() {
-    if (this.currentScene === "main") {
-      this.raycaster.setFromCamera(this.mouse, this.camera);
-      const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-      if (intersects.length > 0) {
-        const clickedHex = intersects[0].object;
-
-        this.transitionToDetailedScene(clickedHex);
-      }
-    }
+    // if (this.currentScene === "main") {
+    //   this.raycaster.setFromCamera(this.mouse, this.camera);
+    //   const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    //   if (intersects.length > 0) {
+    //     const clickedHex = intersects[0].object;
+    //     this.transitionToDetailedScene(clickedHex);
+    //   }
+    // }
   }
 
   transitionToDetailedScene(clickedHex: THREE.Object3D) {
@@ -237,37 +243,37 @@ export default class Demo {
     if (this.controls) {
       this.controls.update();
 
-      // Calculate the camera offset based on the fixed angle and distance
-      const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
-      const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
-      const offset = new THREE.Vector3(0, cameraHeight, -cameraDepth);
+      // // Calculate the camera offset based on the fixed angle and distance
+      // const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
+      // const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
+      // const offset = new THREE.Vector3(0, cameraHeight, -cameraDepth);
 
-      // Calculate the desired camera position
-      const desiredCameraPosition = new THREE.Vector3().copy(this.controls.target).add(offset);
+      // // Calculate the desired camera position
+      // const desiredCameraPosition = new THREE.Vector3().copy(this.controls.target).add(offset);
 
-      // Lerp the camera position
-      this.camera.position.lerp(desiredCameraPosition, this.lerpFactor);
+      // // Lerp the camera position
+      // this.camera.position.lerp(desiredCameraPosition, this.lerpFactor);
 
-      // Calculate the desired controls target
-      const desiredControlsTarget = new THREE.Vector3(this.camera.position.x, 0, this.camera.position.z + cameraDepth);
+      // // Calculate the desired controls target
+      // const desiredControlsTarget = new THREE.Vector3(this.camera.position.x, 0, this.camera.position.z + cameraDepth);
 
-      // Lerp the controls target
-      this.controls.target.lerp(desiredControlsTarget, this.lerpFactor);
+      // // Lerp the controls target
+      // this.controls.target.lerp(desiredControlsTarget, this.lerpFactor);
 
-      // Look at the target
-      this.camera.lookAt(this.controls.target);
+      // // Look at the target
+      // this.camera.lookAt(this.controls.target);
 
-      // Update light positions to follow the camera
-      const lightOffset1 = new THREE.Vector3(0, 5, 5);
-      const lightOffset2 = new THREE.Vector3(0, -5, -5);
-      this.lightPoint.position.copy(this.camera.position).add(lightOffset1);
-      this.lightPoint2.position.copy(this.camera.position).add(lightOffset2);
+      // // Update light positions to follow the camera
+      // const lightOffset1 = new THREE.Vector3(0, 5, 5);
+      // const lightOffset2 = new THREE.Vector3(0, -5, -5);
+      // this.lightPoint.position.copy(this.camera.position).add(lightOffset1);
+      // this.lightPoint2.position.copy(this.camera.position).add(lightOffset2);
     }
 
     if (this.currentScene === "main") {
-      this.hexGrid.update(deltaTime);
-      this.hexGrid.updateVisibleChunks();
-      this.hexGrid.contextMenuManager.checkHexagonHover();
+      // this.hexGrid.update(deltaTime);
+      // this.hexGrid.updateVisibleChunks();
+      // this.hexGrid.contextMenuManager.checkHexagonHover();
       this.renderer.render(this.scene, this.camera);
     } else {
       //this.detailedScene.update(deltaTime);
