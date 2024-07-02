@@ -1,15 +1,17 @@
 import Button from "@/ui/elements/Button";
 import { ResourcesIds, resources } from "@bibliothecadao/eternum";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { ResourceBar } from "./ResourceBar";
+import { MarketManager } from "@/dojo/modelManager/MarketManager";
 
 const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; entityId: bigint }) => {
   const {
     account: { account },
     setup: {
+      components,
       systemCalls: { add_liquidity },
     },
   } = useDojo();
@@ -20,6 +22,32 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
   const [resourceId, setResourceId] = useState<bigint>(1n);
   const [lordsAmount, setLordsAmount] = useState(0);
   const [resourceAmount, setResourceAmount] = useState(0);
+
+  const marketManager = useMemo(
+    () =>
+      new MarketManager(
+        components.Market,
+        components.Liquidity,
+        bank_entity_id,
+        BigInt(account.address),
+        BigInt(resourceId),
+      ),
+    [components.Market, components.Liquidity, bank_entity_id, resourceId, account.address],
+  );
+
+  useEffect(() => {
+    const optimalResourceAmout = marketManager.quoteResource(lordsAmount);
+    if (resourceAmount !== optimalResourceAmout) {
+      setResourceAmount(optimalResourceAmout);
+    }
+  }, [lordsAmount]);
+
+  useEffect(() => {
+    const optimalLordsAmout = marketManager.quoteLords(resourceAmount);
+    if (lordsAmount !== optimalLordsAmout) {
+      setLordsAmount(optimalLordsAmout);
+    }
+  }, [resourceAmount]);
 
   const hasEnough =
     getBalance(entityId, Number(ResourcesIds.Lords)).balance >= multiplyByPrecision(lordsAmount) &&
@@ -48,7 +76,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
         <ResourceBar
           entityId={entityId}
           resources={resources.filter((r) => r.id === Number(ResourcesIds.Lords))}
-          amount={lordsAmount}
+          amount={Math.floor(lordsAmount)}
           setAmount={setLordsAmount}
           resourceId={BigInt(ResourcesIds.Lords)}
           setResourceId={setResourceId}
@@ -69,7 +97,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
         <ResourceBar
           entityId={entityId}
           resources={resources.filter((r) => r.id !== Number(ResourcesIds.Lords))}
-          amount={resourceAmount}
+          amount={Math.floor(resourceAmount)}
           setAmount={setResourceAmount}
           resourceId={resourceId}
           setResourceId={setResourceId}

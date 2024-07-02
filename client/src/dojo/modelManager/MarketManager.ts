@@ -69,7 +69,7 @@ export class MarketManager {
 
     let resourceOptimal = (reserveResourceAmount * lordsAmount) / reserveLordsAmount;
 
-    return Math.floor(resourceOptimal);
+    return resourceOptimal;
   };
 
   public quoteLords = (resourceAmount: number) => {
@@ -77,7 +77,7 @@ export class MarketManager {
 
     let lordsOptimal = (reserveLordsAmount * resourceAmount) / reserveResourceAmount;
 
-    return Math.floor(lordsOptimal);
+    return lordsOptimal;
   };
 
   public buyResource = (lordsAmount: number) => {
