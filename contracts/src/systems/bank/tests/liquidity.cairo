@@ -35,6 +35,7 @@ const LIQUIDITY_AMOUNT: u128 = 1000;
 const SWAP_AMOUNT: u128 = 500;
 const MARKET_TOTAL_SHARES: u128 = 18446744073709551616000;
 const PLAYER_2_ID: u128 = 420;
+const PLAYER_3_ID: u128 = 69;
 const BANK_COORD_X: u128 = 30;
 const BANK_COORD_Y: u128 = 800;
 const BANK_ID: u128 = 1;
@@ -106,6 +107,35 @@ fn setup() -> (
             },
             Resource {
                 entity_id: PLAYER_2_ID,
+                resource_type: ResourceTypes::DONKEY,
+                balance: INITIAL_RESOURCE_BALANCE
+            },
+        )
+    );
+
+    // set owner to player
+    set!(world, Owner { entity_id: PLAYER_3_ID, address: contract_address_const::<'player3'>() });
+
+    // player 3
+    // add some resources inside third player bank account
+    // wood
+    // lords
+    // donkeys
+    set!(
+        world,
+        (
+            Resource {
+                entity_id: PLAYER_3_ID,
+                resource_type: ResourceTypes::WOOD,
+                balance: INITIAL_RESOURCE_BALANCE
+            },
+            Resource {
+                entity_id: PLAYER_3_ID,
+                resource_type: ResourceTypes::LORDS,
+                balance: INITIAL_RESOURCE_BALANCE
+            },
+            Resource {
+                entity_id: PLAYER_3_ID,
                 resource_type: ResourceTypes::DONKEY,
                 balance: INITIAL_RESOURCE_BALANCE
             },
@@ -348,3 +378,54 @@ fn test_liquidity_sell() {
     assert(bank_lords.balance == 0, 'bank lords');
     assert(bank_wood.balance == 49, 'bank wood');
 }
+
+#[test]
+fn test_liquidity_no_drain() {
+    let (
+        world,
+        bank_entity_id,
+        liquidity_systems_dispatcher,
+        swap_systems_dispatcher,
+        _bank_systems_dispatcher,
+        _bank_config_dispatcher
+    ) =
+        setup();
+
+    // bank owner
+    let player2 = starknet::get_caller_address();
+
+    // original player adds liquidity
+    liquidity_systems_dispatcher
+        .add(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
+
+    // swap
+    swap_systems_dispatcher.sell(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, SWAP_AMOUNT);
+
+    // another player adds liquidity
+    starknet::testing::set_contract_address(contract_address_const::<'player3'>());
+    let player3 = starknet::get_contract_address();
+
+    // get current reserves
+    // check state
+    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let lords_amount = market.lords_amount;
+    let resource_amount = market.resource_amount;
+
+    // new player adds liquidity
+    liquidity_systems_dispatcher
+        .add(bank_entity_id, PLAYER_3_ID, ResourceTypes::WOOD, LIQUIDITY_AMOUNT, LIQUIDITY_AMOUNT);
+
+    // check state
+    let liquidity = get!(world, (bank_entity_id, player3, ResourceTypes::WOOD), Liquidity);
+    // assert(liquidity.shares.mag == 12929148156482520729617, 'liquidity.shares');
+    // new player removes liquidity
+    liquidity_systems_dispatcher
+        .remove(bank_entity_id, PLAYER_3_ID, ResourceTypes::WOOD, liquidity.shares);
+
+    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+
+    // check that market amounts hasn't changed
+    assert(market.lords_amount == lords_amount + 1, 'market.lords_amount');
+    assert(market.resource_amount == resource_amount + 1, 'market.resource_amount');
+}
+
