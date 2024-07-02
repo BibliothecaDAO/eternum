@@ -109,18 +109,11 @@ const HyperstructureConstructionTable = () => {
 
       <tbody>
         <tr className="border border-gold/10">
-          <td className="p-2">
-            {constructionCost.slice(0, 6).map((cost, index) => (
-              <div key={index}>
-                <ResourceCost resourceId={cost.resource} amount={cost.amount} size="lg" />
-              </div>
-            ))}
-          </td>
-          {[0, 1, 2, 3].map((colIndex) => (
+          {[0, 1, 2, 3, 4].map((colIndex) => (
             <td key={colIndex} className="p-2">
-              {constructionCost.slice(6 + colIndex * 6, 12 + colIndex * 6).map((cost, index) => (
+              {constructionCost.slice(colIndex * 6, (colIndex + 1) * 6).map((cost, index) => (
                 <div key={index}>
-                  <ResourceCost resourceId={cost.resource} amount={cost.amount} size="lg" />
+                  <ResourceCost className="truncate mb-1" resourceId={cost.resource} amount={cost.amount} size="lg" />
                 </div>
               ))}
             </td>
