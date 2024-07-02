@@ -14,6 +14,25 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import InstancedModel from "../components/InstancedModel";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 
+const biomeModelPaths: Record<BiomeType, string> = {
+  DeepOcean: "/models/new-biomes/deepocean.glb",
+  Ocean: "/models/new-biomes/ocean.glb",
+  Beach: "/models/new-biomes/beach.glb",
+  Scorched: "/models/new-biomes/scorched.glb",
+  Bare: "/models/new-biomes/bare.glb",
+  Tundra: "/models/new-biomes/tundra.glb",
+  Snow: "/models/new-biomes/snow.glb",
+  TemperateDesert: "/models/new-biomes/temperatedesert.glb",
+  Shrubland: "/models/new-biomes/shrublands.glb",
+  Taiga: "/models/new-biomes/taiga.glb",
+  Grassland: "/models/new-biomes/grassland.glb",
+  TemperateDeciduousForest: "/models/new-biomes/deciduousforest.glb",
+  TemperateRainForest: "/models/new-biomes/temperaterainforest.glb",
+  SubtropicalDesert: "/models/new-biomes/subtropicaldesert.glb",
+  TropicalSeasonalForest: "/models/new-biomes/tropicalseasonalforest.glb",
+  TropicalRainForest: "/models/new-biomes/tropicalrainforest.glb",
+};
+
 export default class HexagonMap {
   private character: Character;
 
@@ -22,7 +41,7 @@ export default class HexagonMap {
   private fogManager: FogManager;
   contextMenuManager: ContextMenuManager;
 
-  private chunkSize = 10; // Size of each chunk
+  private chunkSize = 13; // Size of each chunk
   private loadedChunks: Map<string, THREE.Group> = new Map();
   private hexSize = 0.8;
 
@@ -64,25 +83,6 @@ export default class HexagonMap {
   }
 
   private loadBiomeModels() {
-    const biomeModelPaths: Record<BiomeType, string> = {
-      DeepOcean: "/models/new-biomes/deepocean.glb",
-      Ocean: "/models/new-biomes/ocean.glb",
-      Beach: "/models/new-biomes/beach.glb",
-      Scorched: "/models/new-biomes/scorched.glb",
-      Bare: "/models/new-biomes/bare.glb",
-      Tundra: "/models/new-biomes/tundra.glb",
-      Snow: "/models/new-biomes/snow.glb",
-      TemperateDesert: "/models/new-biomes/temperatedesert.glb",
-      Shrubland: "/models/new-biomes/shrublands.glb",
-      Taiga: "/models/new-biomes/taiga.glb",
-      Grassland: "/models/new-biomes/grassland.glb",
-      TemperateDeciduousForest: "/models/new-biomes/deciduousforest.glb",
-      TemperateRainForest: "/models/new-biomes/temperaterainforest.glb",
-      SubtropicalDesert: "/models/new-biomes/subtropicaldesert.glb",
-      TropicalSeasonalForest: "/models/new-biomes/tropicalseasonalforest.glb",
-      TropicalRainForest: "/models/new-biomes/tropicalrainforest.glb",
-    };
-
     const loader = new GLTFLoader();
 
     for (const [biome, path] of Object.entries(biomeModelPaths)) {
@@ -91,7 +91,6 @@ export default class HexagonMap {
           path,
           (gltf) => {
             const model = gltf.scene as THREE.Group;
-            //model.scale.set(this.hexSize, this.hexSize, this.hexSize);
             model.position.set(0, 0, 0);
             model.rotation.y = Math.PI;
             const tmp = new InstancedModel(model, this.chunkSize * 2 * this.chunkSize * 2);
@@ -127,21 +126,7 @@ export default class HexagonMap {
     return new THREE.Vector3(x, y, z);
   }
 
-  private updateExistingChunks() {
-    for (const [key, chunk] of this.loadedChunks) {
-      this.scene.remove(chunk);
-      const [z, x] = key.split(",").map(Number);
-      // const newChunk = this.createHexagonGrid(z * this.chunkSize, x * this.chunkSize, this.chunkSize, this.chunkSize);
-      // this.loadedChunks.set(key, newChunk);
-      // this.scene.add(newChunk);
-    }
-  }
-
   updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
-    //const group = new THREE.Group();
-    const hexInstanced = this.createHexagonInstancedMesh(rows * cols);
-    //group.add(hexInstanced);
-
     const horizontalSpacing = this.hexSize * Math.sqrt(3);
     const verticalSpacing = (this.hexSize * 3) / 2;
 
@@ -166,7 +151,7 @@ export default class HexagonMap {
     };
 
     const hexPositions: THREE.Vector3[] = [];
-    const gridCreationPromise = Promise.all(this.modelLoadPromises).then(() => {
+    Promise.all(this.modelLoadPromises).then(() => {
       for (let row = -rows / 2; row < rows / 2; row++) {
         for (let col = -cols / 2; col < cols / 2; col++) {
           hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
@@ -178,11 +163,6 @@ export default class HexagonMap {
 
           const biome = this.biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
 
-          // const state = getComponentValue(
-          //   this.dojoConfig.components.Position,
-          //   getEntityIdFromKeys([BigInt(startRow + row + FELT_CENTER), BigInt(startCol + col + FELT_CENTER)]),
-          // );
-
           const entities = getEntitiesWithValue(this.dojoConfig.components.Position, {
             x: startCol + col + FELT_CENTER,
             y: startRow + row + FELT_CENTER,
@@ -192,35 +172,18 @@ export default class HexagonMap {
 
           dummy.updateMatrix();
 
-          // hexInstanced.setMatrixAt(index, dummy.matrix);
-          // hexInstanced.setColorAt(index, this.originalColor);
-
-          //instancedModel.setColorAt(index, this.originalColor);
-
-          //console.log(hexInstanced);
-          //const hexMesh = this.biomeModels.get(biome)!;
           biomeHexes[biome].push(dummy.matrix.clone());
-          //hexMesh.setMatrixAt(index, dummy.matrix);
-          //group.add(hexMesh.group);
-
-          // const number = this.processHexagon(startRow + row, startCol + col, dummy.position.x, dummy.position.z);
-
-          //index++;
         }
       }
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
-        //console.log("test", biome, this.biomeModels.get(biome as BiomeType));
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         matrices.forEach((matrix, index) => {
           hexMesh.setMatrixAt(index, matrix);
         });
         hexMesh.setCount(matrices.length);
         console.log("updating");
-        //group.add(hexMesh.group);
       }
     });
-
-    //group.userData.loadPromise = gridCreationPromise;
   }
 
   private addCharacterMovementListeners() {
@@ -250,36 +213,10 @@ export default class HexagonMap {
     });
   }
 
-  private createHexagonInstancedMesh(instanceCount: number): THREE.InstancedMesh {
-    // Create a minimal geometry, like a single point
-    const minimalGeometry = new THREE.SphereGeometry(0.1, 10, 10);
-    //minimalGeometry.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0], 3));
-
-    // Create a material that won't render anything
-    const invisibleMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
-
-    // Create the instanced mesh with the minimal geometry
-    const hexInstanced = new THREE.InstancedMesh(minimalGeometry, invisibleMaterial, instanceCount);
-
-    // We don't need to cast shadows for invisible geometry
-    hexInstanced.castShadow = false;
-
-    // Keep the original color in userData if needed for future reference
-    //hexInstanced.userData.originalColor = this.originalColor.clone();
-
-    return hexInstanced;
-  }
-
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
     const chunkX = Math.floor(x / (this.chunkSize * this.hexSize * Math.sqrt(3)));
     const chunkZ = Math.floor(-z / (this.chunkSize * this.hexSize * 1.5));
     return { chunkX, chunkZ };
-  }
-
-  private processHexagon(row: number, col: number, x: number, z: number): number {
-    console.log(`Processing hexagon at (${row}, ${col}) with position (${x}, ${z})`);
-
-    return Math.random();
   }
 
   getHexagonCoordinates(instancedMesh: THREE.InstancedMesh, instanceId: number): { row: number; col: number } {
@@ -301,36 +238,23 @@ export default class HexagonMap {
     const cameraPosition = new THREE.Vector3();
     this.camera.getWorldPosition(cameraPosition);
 
-    const { chunkX, chunkZ } = this.worldToChunkCoordinates(cameraPosition.x, cameraPosition.z);
+    // Adjust the camera position to load chunks earlier in both directions
+    const adjustedX = cameraPosition.x + (this.chunkSize * this.hexSize * Math.sqrt(3)) / 2;
+    const adjustedZ = cameraPosition.z - (this.chunkSize * this.hexSize * 1.5) / 3;
 
-    //const visibleChunks = new Set<string>();
+    const { chunkX, chunkZ } = this.worldToChunkCoordinates(adjustedX, adjustedZ);
 
-    // Expand the range of visible chunks
-    const z = chunkZ;
-    const x = chunkX;
-    const chunkKey = `${x},${z}`;
-    //visibleChunks.add(chunkKey);
+    const chunkKey = `${chunkX},${chunkZ}`;
     if (this.currentChunk !== chunkKey) {
       this.currentChunk = chunkKey;
       console.log("currentChunk", this.currentChunk);
-      this.updateHexagonGrid(z * this.chunkSize, x * this.chunkSize, this.chunkSize * 2, this.chunkSize * 2);
-      //this.loadedChunks.set(chunkKey, chunk);
-      //this.scene.add(chunk);
 
-      // chunk.userData.loadPromise.then(() => {
-      //   this.scene.add(chunk);
-      // });
+      // Calculate the starting position for the new chunk
+      const startCol = chunkX * this.chunkSize;
+      const startRow = chunkZ * this.chunkSize;
+
+      this.updateHexagonGrid(startRow, startCol, this.chunkSize * 2, this.chunkSize * 2);
     }
-
-    // Remove chunks that are no longer visible
-    // for (const [key, chunk] of this.loadedChunks) {
-    //   if (!visibleChunks.has(key)) {
-    //     this.scene.remove(chunk);
-    //     this.loadedChunks.delete(key);
-    //   }
-    // }
-    //console.log("chunks", this.loadedChunks);
-    //this.fogManager.updateFog();
   }
 
   private updateCameraPosition() {
