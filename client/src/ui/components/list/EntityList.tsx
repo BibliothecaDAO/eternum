@@ -15,7 +15,16 @@ interface EntityListProps {
   className?: string;
 }
 
-export const EntityList = ({ title, panel, list, headerPanel, current, entityContent, questing, className }: EntityListProps) => {
+export const EntityList = ({
+  title,
+  panel,
+  list,
+  headerPanel,
+  current,
+  entityContent,
+  questing,
+  className,
+}: EntityListProps) => {
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
 
   useEffect(() => {

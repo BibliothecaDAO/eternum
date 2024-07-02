@@ -124,17 +124,12 @@ SecondaryPopup.Head = ({
   >
     <h5>{children}</h5>
     <div className="flex flex-row">
-
-    {hintSection && (
-      <HintModalButton className="mr-2" sectionName={hintSection} />
-    )
-
-    }
-    {onClose && (
-      <Button className="outline" onClick={onClose}>
-        <CloseIcon className="w-5 h-5 cursor-pointer fill-gold mx-auto self-center" />
-      </Button>
-    )}
+      {hintSection && <HintModalButton className="mr-2" sectionName={hintSection} />}
+      {onClose && (
+        <Button className="outline" onClick={onClose}>
+          <CloseIcon className="w-5 h-5 cursor-pointer fill-gold mx-auto self-center" />
+        </Button>
+      )}
     </div>
   </div>
 );
