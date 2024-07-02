@@ -448,3 +448,8 @@ export interface SetStaminaConfigProps extends SystemSigner {
 
 export type ProtectStructureProps = Omit<ArmyCreateProps, "is_defensive_army">;
 //  & ArmyMergeTroopsProps;
+
+export interface SetMercenariesConfigProps extends SystemSigner {
+  troops: Troops;
+  rewards: { resource: number; amount: number }[];
+}

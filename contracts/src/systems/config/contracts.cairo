@@ -1,8 +1,10 @@
 use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
-use eternum::models::config::TroopConfig;
+use eternum::models::config::{TroopConfig, MercenariesConfig};
 use eternum::models::position::Coord;
+use eternum::models::combat::{Troops};
+
 #[dojo::interface]
 trait IWorldConfig {
     fn set_world_config(
@@ -101,6 +103,7 @@ trait IProductionConfig {
 trait ITroopConfig {
     fn set_troop_config(ref world: IWorldDispatcher, troop_config: TroopConfig);
 }
+
 #[dojo::interface]
 trait IBuildingConfig {
     fn set_building_config(
@@ -126,6 +129,11 @@ trait IPopulationConfig {
     fn set_population_config(ref world: IWorldDispatcher, base_population: u32);
 }
 
+#[dojo::interface]
+trait IMercenariesConfig {
+    fn set_mercenaries_config(ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>);
+}
+
 
 #[dojo::contract]
 mod config_systems {
@@ -144,13 +152,13 @@ mod config_systems {
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig,
         RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
         TroopConfig, BuildingConfig, BuildingCategoryPopConfig, PopulationConfig,
-        HyperstructureResourceConfig, StaminaConfig
+        HyperstructureResourceConfig, StaminaConfig, MercenariesConfig
     };
 
     use eternum::models::position::{Position, PositionTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
-
+    use eternum::models::combat::{Troops};
 
     fn assert_caller_is_admin(world: IWorldDispatcher) {
         let admin_address = get!(world, WORLD_CONFIG_ID, WorldConfig).admin_address;
@@ -626,6 +634,15 @@ mod config_systems {
                     resource_cost_count: cost_of_building.len()
                 })
             );
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl IMercenariesConfig of super::IMercenariesConfig<ContractState> {
+        fn set_mercenaries_config(ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>) {
+            assert_caller_is_admin(world);
+
+            set!(world, (MercenariesConfig {config_id: WORLD_CONFIG_ID, troops, rewards}));
         }
     }
 }

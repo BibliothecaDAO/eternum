@@ -166,7 +166,14 @@ export const BattleActions = ({
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Raid}
           onClick={handleRaid}
-          disabled={loading !== Loading.None || !structure || !selectedArmy || isActive || structure?.isMine}
+          disabled={
+            loading !== Loading.None ||
+            !structure ||
+            !selectedArmy ||
+            isActive ||
+            structure?.isMine ||
+            structure.isMercenary
+          }
         >
           <img className="w-10" src="/images/icons/raid.png" alt="coin" />
           Raid!

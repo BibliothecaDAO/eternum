@@ -160,7 +160,9 @@ trait ICombatContract<TContractState> {
     ///             
     /// # Returns:
     /// * None
-    fn battle_start(ref world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128);
+    fn battle_start(
+        ref world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128
+    ) -> u128;
 
     /// Join an existing battle with the specified army, assigning it to a specific side in the battle.
     ///
@@ -430,82 +432,16 @@ mod combat_systems {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
-            // set common army models
-            let mut army_id: u128 = world.uuid().into();
-            let army_owner_position: Position = get!(world, army_owner_id, Position);
-            set!(
-                world,
-                (
-                    Army {
-                        entity_id: army_id,
-                        troops: Default::default(),
-                        battle_id: 0,
-                        battle_side: Default::default()
-                    },
-                    EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id },
-                    Owner { entity_id: army_id, address: starknet::get_caller_address() },
-                    Position {
-                        entity_id: army_id, x: army_owner_position.x, y: army_owner_position.y
-                    }
+            let army_id = if is_defensive_army {
+                InternalCombatImpl::create_defensive_army(
+                    world, army_owner_id, starknet::get_caller_address()
                 )
-            );
-
-            if is_defensive_army {
-                // Defensive armies can only be assigned as structure protectors
-                get!(world, army_owner_id, Structure).assert_is_structure();
-
-                // ensure the structure does not have a defensive army 
-                let mut structure_protector: Protector = get!(world, army_owner_id, Protector);
-                structure_protector.assert_has_no_defensive_army();
-
-                // add army as structure protector
-                structure_protector.army_id = army_id;
-                set!(
-                    world, (structure_protector, Protectee { army_id, protectee_id: army_owner_id })
-                );
-
-                // stop the army from sending or receiving resources
-                set!(
-                    world,
-                    (ResourceTransferLock { entity_id: army_id, release_at: BoundedInt::max() })
-                );
             } else {
-                // set the army's speed and capacity
-                let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
-                    .sec_per_km;
-                let army_carry_capacity: CapacityConfig = CapacityConfigImpl::get(
-                    world, ARMY_ENTITY_TYPE
-                );
-                set!(
-                    world,
-                    (
-                        Movable {
-                            entity_id: army_id,
-                            sec_per_km: army_sec_per_km,
-                            blocked: false,
-                            round_trip: false,
-                            start_coord_x: army_owner_position.x,
-                            start_coord_y: army_owner_position.y,
-                            intermediate_coord_x: 0,
-                            intermediate_coord_y: 0,
-                        },
-                        Capacity {
-                            entity_id: army_id, weight_gram: army_carry_capacity.weight_gram
-                        }
-                    )
-                );
-
-                // create stamina for map exploration
-                let armies_tick_config = TickImpl::get_armies_tick_config(world);
-                set!(
-                    world,
-                    (Stamina {
-                        entity_id: army_id,
-                        amount: 0,
-                        last_refill_tick: armies_tick_config.current() - 1
-                    })
+                InternalCombatImpl::create_attacking_army(
+                    world, army_owner_id, starknet::get_caller_address()
                 )
-            }
+            };
+
             army_id
         }
 
@@ -576,20 +512,7 @@ mod combat_systems {
                 }
             }
 
-            // increase troops number
-            let mut army: Army = get!(world, army_id, Army);
-            army.troops.add(troops);
-            set!(world, (army));
-
-            // increase army health
-            let mut army_health: Health = get!(world, army_id, Health);
-            army_health.increase_by(troops.full_health(TroopConfigImpl::get(world)));
-            set!(world, (army_health));
-
-            // set troop quantity (for capacity calculation)
-            let mut army_quantity: Quantity = get!(world, army_id, Quantity);
-            army_quantity.value += troops.count().into();
-            set!(world, (army_quantity));
+            InternalCombatImpl::add_troops_to_army(world, troops, army_id);
         }
 
 
@@ -638,25 +561,16 @@ mod combat_systems {
                 let mut battle: Battle = get!(world, to_army.battle_id, Battle);
                 InternalCombatImpl::update_battle_and_army(world, ref battle, ref to_army);
             }
+
             to_army.assert_not_in_battle();
-            to_army.troops.add(troops);
-            set!(world, (to_army));
 
-            // increase to army health
-            let mut to_army_health: Health = get!(world, to_army_id, Health);
-            to_army_health.increase_by(troop_full_health);
-            set!(world, (to_army_health));
-
-            // increase to army quantity
-            let mut to_army_quantity: Quantity = get!(world, to_army_id, Quantity);
-            to_army_quantity.value += troops.count().into();
-            set!(world, (to_army_quantity));
+            InternalCombatImpl::add_troops_to_army(world, troops, to_army_id);
         }
 
 
         fn battle_start(
             ref world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128
-        ) {
+        ) -> u128 {
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             attacking_army.assert_not_in_battle();
 
@@ -737,6 +651,8 @@ mod combat_systems {
             battle.reset_delta(troop_config);
 
             set!(world, (battle));
+
+            battle_id
         }
 
 
@@ -1196,6 +1112,115 @@ mod combat_systems {
 
     #[generate_trait]
     impl InternalCombatImpl of InternalCombatTrait {
+        fn create_attacking_army(
+            world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
+        ) -> u128 {
+            let army_id = Self::create_base_army(world, army_owner_id, owner_address);
+
+            // set the army's speed and capacity
+            let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
+                .sec_per_km;
+            let army_carry_capacity: CapacityConfig = CapacityConfigImpl::get(
+                world, ARMY_ENTITY_TYPE
+            );
+            let army_owner_position: Position = get!(world, army_owner_id, Position);
+
+            set!(
+                world,
+                (
+                    Movable {
+                        entity_id: army_id,
+                        sec_per_km: army_sec_per_km,
+                        blocked: false,
+                        round_trip: false,
+                        start_coord_x: army_owner_position.x,
+                        start_coord_y: army_owner_position.y,
+                        intermediate_coord_x: 0,
+                        intermediate_coord_y: 0,
+                    },
+                    Capacity { entity_id: army_id, weight_gram: army_carry_capacity.weight_gram }
+                )
+            );
+
+            // create stamina for map exploration
+            let armies_tick_config = TickImpl::get_armies_tick_config(world);
+            set!(
+                world,
+                (Stamina {
+                    entity_id: army_id,
+                    amount: 0,
+                    last_refill_tick: armies_tick_config.current() - 1
+                })
+            );
+
+            army_id
+        }
+
+        fn create_defensive_army(
+            world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
+        ) -> u128 {
+            let army_id = Self::create_base_army(world, army_owner_id, owner_address);
+
+            // Defensive armies can only be assigned as structure protectors
+            get!(world, army_owner_id, Structure).assert_is_structure();
+
+            // ensure the structure does not have a defensive army 
+            let mut structure_protector: Protector = get!(world, army_owner_id, Protector);
+            structure_protector.assert_has_no_defensive_army();
+
+            // add army as structure protector
+            structure_protector.army_id = army_id;
+            set!(world, (structure_protector, Protectee { army_id, protectee_id: army_owner_id }));
+
+            // stop the army from sending or receiving resources
+            set!(
+                world, (ResourceTransferLock { entity_id: army_id, release_at: BoundedInt::max() })
+            );
+            army_id
+        }
+
+        fn create_base_army(
+            world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
+        ) -> u128 {
+            let mut army_id: u128 = world.uuid().into();
+            
+            let army_owner_position: Position = get!(world, army_owner_id, Position);
+            set!(
+                world,
+                (
+                    Army {
+                        entity_id: army_id,
+                        troops: Default::default(),
+                        battle_id: 0,
+                        battle_side: Default::default()
+                    },
+                    EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id },
+                    Owner { entity_id: army_id, address: owner_address },
+                    Position {
+                        entity_id: army_id, x: army_owner_position.x, y: army_owner_position.y
+                    }
+                )
+            );
+            army_id
+        }
+
+        fn add_troops_to_army(world: IWorldDispatcher, troops: Troops, army_id: u128) {
+            // increase troops number
+            let mut army: Army = get!(world, army_id, Army);
+            army.troops.add(troops);
+            set!(world, (army));
+
+            // increase army health
+            let mut army_health: Health = get!(world, army_id, Health);
+            army_health.increase_by(troops.full_health(TroopConfigImpl::get(world)));
+            set!(world, (army_health));
+
+            // set troop quantity (for capacity calculation)
+            let mut army_quantity: Quantity = get!(world, army_id, Quantity);
+            army_quantity.value += troops.count().into();
+            set!(world, (army_quantity));
+        }
+
         /// Updates battle and removes army if battle has ended
         ///
         fn update_battle_and_army(world: IWorldDispatcher, ref battle: Battle, ref army: Army) {

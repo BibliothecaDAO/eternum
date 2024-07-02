@@ -16,6 +16,8 @@ use eternum::models::realm::Realm;
 use eternum::models::resources::{Resource, ResourceFoodImpl};
 use eternum::models::stamina::Stamina;
 use eternum::models::weight::Weight;
+use eternum::models::structure::{Structure, StructureCategory, StructureCount,};
+use eternum::models::combat::{Battle};
 
 use eternum::systems::combat::contracts::{
     combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait
@@ -24,19 +26,23 @@ use eternum::systems::combat::contracts::{
 use eternum::systems::config::contracts::{
     config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait,
     IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher,
-    IWeightConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait
+    IWeightConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
+    IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait,
 };
 
 use eternum::systems::map::contracts::{
     map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait
 };
 
+use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
+
 use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
 use eternum::utils::testing::{
-    spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos, deploy_realm_systems
+    spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos, deploy_realm_systems,
+    deploy_combat_systems, get_default_mercenary_config, set_default_troop_config
 };
 
 use starknet::contract_address_const;
@@ -55,7 +61,7 @@ const TIMESTAMP: u64 = 10000;
 
 const TICK_INTERVAL_IN_SECONDS: u64 = 3;
 
-fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher, ICombatContractDispatcher) {
     let world = spawn_eternum();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
@@ -85,6 +91,10 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
             MAP_EXPLORE_RANDOM_MINT_AMOUNT,
             SHARDS_MINE_FAIL_PROBABILITY_WEIGHT
         );
+
+    let (troops, rewards) = get_default_mercenary_config();
+    IMercenariesConfigDispatcher { contract_address: config_systems_address }
+        .set_mercenaries_config(troops, rewards);
 
     // set tick config
     let tick_config = TickConfig {
@@ -123,10 +133,9 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
         )
     );
 
-    let combat_systems_address = deploy_system(world, combat_systems::TEST_CLASS_HASH);
-    let combat_systems_dispatcher = ICombatContractDispatcher {
-        contract_address: combat_systems_address
-    };
+    let combat_systems_dispatcher = deploy_combat_systems(world);
+
+    set_default_troop_config(config_systems_address);
 
     let realm_army_unit_id: u128 = combat_systems_dispatcher.army_create(realm_entity_id, false);
 
@@ -135,9 +144,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
 
     let army_quantity_value: u128 = 7;
     let army_capacity_value_per_soldier: u128 = 7;
-
-    // // set army health value to make it alive
-    // set!(world, (Health { entity_id: realm_army_unit_id, current: 1, lifetime: 1 }));
 
     set!(
         world,
@@ -159,7 +165,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
                 intermediate_coord_x: 0,
                 intermediate_coord_y: 0,
             },
-            (Health { entity_id: realm_army_unit_id, current: 1, lifetime: 1 })
         )
     );
 
@@ -174,13 +179,13 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     let map_systems_address = deploy_system(world, map_systems::TEST_CLASS_HASH);
     let map_systems_dispatcher = IMapSystemsDispatcher { contract_address: map_systems_address };
 
-    (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher)
+    (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher)
 }
 
 
 #[test]
 fn test_map_explore() {
-    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher) = setup();
+    let (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, _) = setup();
 
     starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
 
@@ -214,4 +219,47 @@ fn test_map_explore() {
     assert_eq!(realm_fish.balance, expected_fish_balance, "wrong wheat balance");
 
     army_coord = expected_explored_coord;
+}
+
+#[test]
+fn test_mercenaries_protector() {
+    let (
+        world,
+        realm_entity_id,
+        realm_army_unit_id,
+        map_systems_dispatcher,
+        combat_systems_dispatcher
+    ) =
+        setup();
+
+    let mut army_coord: Coord = get!(world, realm_army_unit_id, Position).into();
+    let explore_tile_direction: Direction = Direction::West;
+
+    map_systems_dispatcher.explore(realm_army_unit_id, explore_tile_direction);
+
+    let army_position = get!(world, realm_army_unit_id, Position).into();
+
+    let army_health = get!(world, realm_army_unit_id, Health);
+
+    let mine_entity_id = InternalMapSystemsImpl::create_shard_mine_structure(world, army_position);
+    let mine_entity_owner = get!(world, mine_entity_id, EntityOwner);
+    assert_eq!(mine_entity_owner.entity_owner_id, mine_entity_id, "wrong initial owner");
+
+    let mercenary_entity_id = InternalMapSystemsImpl::add_mercenaries_to_shard_mine(
+        world, mine_entity_id, army_position
+    );
+
+    let battle_entity_id = combat_systems_dispatcher
+        .battle_start(realm_army_unit_id, mercenary_entity_id);
+
+    let battle = get!(world, battle_entity_id, Battle);
+
+
+    starknet::testing::set_block_timestamp(99999);
+
+    combat_systems_dispatcher.battle_leave(battle_entity_id, realm_army_unit_id);
+    combat_systems_dispatcher.battle_claim(realm_army_unit_id, mine_entity_id);
+
+    let mine_entity_owner = get!(world, mine_entity_id, EntityOwner);
+    assert_eq!(mine_entity_owner.entity_owner_id, realm_entity_id, "wrong final owner");
 }

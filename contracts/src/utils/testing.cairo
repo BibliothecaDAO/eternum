@@ -1,13 +1,14 @@
 use core::array::{ArrayTrait, SpanTrait};
 use dojo::test_utils::spawn_test_world;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::constants::MAX_REALMS_PER_ADDRESS;
+use eternum::constants::{MAX_REALMS_PER_ADDRESS, ResourceTypes};
 
 use eternum::models::capacity::{capacity, Capacity};
 use eternum::models::config::{
     world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,
     weight_config, WeightConfig, road_config, RoadConfig, hyperstructure_resource_config,
-    HyperstructureResourceConfig, stamina_config, StaminaConfig, tick_config, TickConfig
+    HyperstructureResourceConfig, stamina_config, StaminaConfig, tick_config, TickConfig,
+    TroopConfig, MercenariesConfig
 };
 use eternum::models::hyperstructure::{Progress, progress, Contribution, contribution};
 use eternum::models::map::Tile;
@@ -22,6 +23,8 @@ use eternum::models::resources::{resource, Resource};
 use eternum::models::resources::{resource_cost, ResourceCost};
 use eternum::models::road::{road, Road};
 use eternum::models::trade::{status, Status, trade, Trade,};
+use eternum::models::combat::{Troops};
+
 use eternum::systems::hyperstructure::contracts::{
     hyperstructure_systems, IHyperstructureSystems, IHyperstructureSystemsDispatcher,
     IHyperstructureSystemsDispatcherTrait
@@ -30,6 +33,12 @@ use eternum::systems::hyperstructure::contracts::{
 use eternum::systems::realm::contracts::{
     realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
 };
+
+use eternum::systems::combat::contracts::{
+    combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait
+};
+
+use eternum::systems::config::contracts::{ITroopConfigDispatcher, ITroopConfigDispatcherTrait};
 
 use eternum::utils::map::biomes::Biome;
 
@@ -96,6 +105,29 @@ fn deploy_hyperstructure_systems(world: IWorldDispatcher) -> IHyperstructureSyst
     hyperstructure_systems_dispatcher
 }
 
+fn deploy_combat_systems(world: IWorldDispatcher) -> ICombatContractDispatcher {
+    let combat_systems_address = deploy_system(world, combat_systems::TEST_CLASS_HASH);
+    let combat_systems_dispatcher = ICombatContractDispatcher {
+        contract_address: combat_systems_address
+    };
+    combat_systems_dispatcher
+}
+
+fn set_default_troop_config(config_systems_address: ContractAddress) {
+    let troop_config = TroopConfig {
+        config_id: 0,
+        health: 7_200,
+        knight_strength: 1,
+        paladin_strength: 1,
+        crossbowman_strength: 1,
+        advantage_percent: 1000,
+        disadvantage_percent: 1000,
+        pillage_health_divisor: 8,
+    };
+    ITroopConfigDispatcher { contract_address: config_systems_address }
+        .set_troop_config(troop_config);
+}
+
 fn get_default_realm_pos() -> Position {
     Position { entity_id: 1, x: 100, y: 100 }
 }
@@ -122,6 +154,10 @@ fn generate_realm_positions() -> Array<Position> {
 
 fn get_default_hyperstructure_coord() -> Coord {
     Coord { x: 0, y: 0 }
+}
+
+fn get_default_mercenary_config() -> (Troops, Span<(u8, u128)>) {
+    (Troops { knight_count: 1, paladin_count: 0, crossbowman_count: 0 }, array![(ResourceTypes::WOOD, 1000), (ResourceTypes::DIAMONDS, 1000)].span())
 }
 
 fn explore_tile(world: IWorldDispatcher, explorer_id: u128, coords: Coord) {

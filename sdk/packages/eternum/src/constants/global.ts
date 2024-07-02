@@ -72,6 +72,17 @@ export const EternumGlobalConfig = {
     pillageHealthDivisor: 8,
     healthPrecision: 1000000n,
   },
+  mercenaries: {
+    troops: {
+      knight_count: 4000,
+      paladin_count: 4000,
+      crossbowman_count: 4000,
+    },
+    rewards: [
+      { resource: ResourcesIds.Gold, amount: 200 },
+      { resource: ResourcesIds.Fish, amount: 100 },
+    ],
+  },
 };
 
 export const WORLD_CONFIG_ID = 999999999999999999n;

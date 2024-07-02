@@ -20,6 +20,7 @@ export type Realm = ClientComponents["Realm"]["schema"] & {
 
 export type Structure = ClientComponents["Structure"]["schema"] & {
   isMine: boolean;
+  isMercenary: boolean;
   name: string;
   protector: ArmyInfo | undefined;
   owner: ClientComponents["Owner"]["schema"];
@@ -109,7 +110,8 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
         owner,
         name,
         protector: protector as ArmyInfo | undefined,
-        isMine: BigInt(owner!.address) === BigInt(account.address),
+        isMine: BigInt(owner?.address || 0) === BigInt(account.address),
+        isMercenary: owner === undefined,
       };
     })[0];
 
@@ -179,7 +181,8 @@ export const getStructureAtPosition = (position: Position) => {
       owner,
       name,
       protector: protector as ArmyInfo | undefined,
-      isMine: BigInt(owner!.address) === BigInt(account.address),
+      isMine: BigInt(owner?.address || 0) === BigInt(account.address),
+      isMercenary: owner === undefined,
     };
   }, [position]);
 
