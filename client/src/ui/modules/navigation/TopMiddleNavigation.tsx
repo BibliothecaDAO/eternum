@@ -24,6 +24,7 @@ import { motion } from "framer-motion";
 import { useComponentValue } from "@dojoengine/react";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import clsx from "clsx";
+import { useThreeStore } from "@/hooks/store/useThreeStore";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -52,6 +53,8 @@ export const TopMiddleNavigation = () => {
   const moveCameraToColRow = useUIStore((state) => state.moveCameraToColRow);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
+
+  const threeStore = useThreeStore((state) => state.selectedHex);
 
   // realms always first
   const structures = useMemo(() => {
@@ -101,6 +104,9 @@ export const TopMiddleNavigation = () => {
   return (
     <div className="ornate-borders bg-brown">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
+        <div>
+          {threeStore.col},{threeStore.row}
+        </div>
         <div className="self-center px-3 flex space-x-2 ">
           <TickProgress />
         </div>

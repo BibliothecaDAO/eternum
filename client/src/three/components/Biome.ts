@@ -1,4 +1,4 @@
-import { getEntityIdFromKeys, snoise } from "@dojoengine/utils";
+import { snoise } from "@dojoengine/utils";
 
 export const MAP_AMPLITUDE = 60;
 export const MOISTURE_OCTAVE = 2;

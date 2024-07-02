@@ -2,7 +2,6 @@ import * as THREE from "three";
 import { Scene, Raycaster } from "three";
 import { Character } from "../components/Character";
 import { FogManager } from "../components/Fog";
-import { Roads } from "../components/Roads";
 
 import { ContextMenuManager } from "../components/ContextMenuManager";
 import { getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
@@ -13,6 +12,7 @@ import { Biome, BiomeType, MAP_AMPLITUDE } from "../components/Biome";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import InstancedModel from "../components/InstancedModel";
+import { ThreeStore } from "@/hooks/store/useThreeStore";
 
 export default class HexagonMap {
   private character: Character;
@@ -37,6 +37,7 @@ export default class HexagonMap {
     private raycaster: Raycaster,
     private camera: THREE.PerspectiveCamera,
     private mouse: THREE.Vector2,
+    private state: ThreeStore,
   ) {
     this.character = new Character(scene, { row: 0, col: 0 });
     this.addCharacterMovementListeners();
@@ -54,6 +55,7 @@ export default class HexagonMap {
       this.hexSize,
       this.character,
       this,
+      state,
     );
 
     this.loadBiomeModels();

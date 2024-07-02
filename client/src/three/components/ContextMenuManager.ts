@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { Raycaster } from "three";
 import { Character } from "./Character";
 import HexagonMap from "../objects/HexagonMap";
+import { ThreeStore } from "@/hooks/store/useThreeStore";
 
 export class ContextMenuManager {
   private contextMenu: HTMLElement | null = null;
@@ -25,6 +26,7 @@ export class ContextMenuManager {
     private hexSize: number,
     private character: Character,
     private hexGrid: HexagonMap,
+    private state: ThreeStore,
   ) {
     this.createContextMenu();
     this.addEventListeners();
@@ -97,6 +99,8 @@ export class ContextMenuManager {
   }
 
   private onMouseDown(event: MouseEvent) {
+    this.state.setSelectedHex({ col: event.clientX, row: event.clientY });
+
     if (event.button === 2) {
       // Right mouse button
       event.preventDefault();

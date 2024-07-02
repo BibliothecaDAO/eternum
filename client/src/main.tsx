@@ -10,6 +10,8 @@ import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import Demo from "./three/Demo";
 
+import { useThreeStore } from "./hooks/store/useThreeStore";
+
 declare global {
   interface Window {
     Buffer: typeof Buffer;
@@ -27,7 +29,7 @@ async function init() {
 
   const setupResult = await setup(dojoConfig);
 
-  const graphic = new Demo(setupResult);
+  const graphic = new Demo(setupResult, useThreeStore.getState());
 
   graphic.initScene();
   graphic.initStats();
