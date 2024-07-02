@@ -22,7 +22,7 @@ export default class HexagonMap {
   private fogManager: FogManager;
   contextMenuManager: ContextMenuManager;
 
-  private chunkSize = 10; // Size of each chunk
+  private chunkSize = 20; // Size of each chunk
   private loadedChunks: Map<string, THREE.Group> = new Map();
   private hexSize = 0.8;
 
