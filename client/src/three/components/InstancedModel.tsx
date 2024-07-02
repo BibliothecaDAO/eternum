@@ -39,6 +39,7 @@ export default class InstancedModel {
         child.count = count;
       }
     });
+    this.needsUpdate();
   }
 
   needsUpdate() {

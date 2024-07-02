@@ -22,7 +22,7 @@ export default class HexagonMap {
   private fogManager: FogManager;
   contextMenuManager: ContextMenuManager;
 
-  private chunkSize = 20; // Size of each chunk
+  private chunkSize = 10; // Size of each chunk
   private loadedChunks: Map<string, THREE.Group> = new Map();
   private hexSize = 0.8;
 
@@ -94,7 +94,7 @@ export default class HexagonMap {
             //model.scale.set(this.hexSize, this.hexSize, this.hexSize);
             model.position.set(0, 0, 0);
             model.rotation.y = Math.PI;
-            const tmp = new InstancedModel(model, this.chunkSize * this.chunkSize);
+            const tmp = new InstancedModel(model, this.chunkSize * 2 * this.chunkSize * 2);
             this.biomeModels.set(biome as BiomeType, tmp);
             this.scene.add(tmp.group);
             resolve();
@@ -211,11 +211,10 @@ export default class HexagonMap {
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
         //console.log("test", biome, this.biomeModels.get(biome as BiomeType));
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
-        hexMesh.setCount(matrices.length);
         matrices.forEach((matrix, index) => {
           hexMesh.setMatrixAt(index, matrix);
         });
-        hexMesh.needsUpdate();
+        hexMesh.setCount(matrices.length);
         console.log("updating");
         //group.add(hexMesh.group);
       }
