@@ -137,7 +137,7 @@ export default class HexagonMap {
     }
   }
 
-  createHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
+  updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
     //const group = new THREE.Group();
     const hexInstanced = this.createHexagonInstancedMesh(rows * cols);
     //group.add(hexInstanced);
@@ -313,7 +313,7 @@ export default class HexagonMap {
     if (this.currentChunk !== chunkKey) {
       this.currentChunk = chunkKey;
       console.log("currentChunk", this.currentChunk);
-      this.createHexagonGrid(z * this.chunkSize, x * this.chunkSize, this.chunkSize * 2, this.chunkSize * 2);
+      this.updateHexagonGrid(z * this.chunkSize, x * this.chunkSize, this.chunkSize * 2, this.chunkSize * 2);
       //this.loadedChunks.set(chunkKey, chunk);
       //this.scene.add(chunk);
 
