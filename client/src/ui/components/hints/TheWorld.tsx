@@ -1,6 +1,4 @@
-import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 export const TheWorld = () => {
   const concepts = [

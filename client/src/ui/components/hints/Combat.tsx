@@ -1,51 +1,93 @@
+import { Headline } from "@/ui/elements/Headline";
+import { tableOfContents } from "./utils";
+
 export const Combat = () => {
+  const concepts = [
+    {
+      name: "Protecting your Structures",
+      content: (
+        <>
+          <p>
+            A formidable defensive Army is vital for protecting your structures. Without it, you risk pillages and
+            potential loss of control. A strong defense not only safeguards your assets but also deters potential
+            raiders.
+          </p>
+        </>
+      ),
+    },
+    {
+      name: "Exploration",
+      content: (
+        <p>
+          An offensive army is crucial for exploration, engaging foes, and discovering treasures in Eternum. Your army's
+          stamina fuels these expeditions.
+        </p>
+      ),
+    },
+    {
+      name: "Battles",
+      content: (
+        <p>
+          Battles occur when armies meet in the open field. Their duration varies based on troop disparities. Open to
+          all, battles can be joined at any time and may involve offensive armies or defensive forces protecting
+          structures.
+        </p>
+      ),
+    },
+    {
+      name: "Battle Chests",
+      content: (
+        <p>
+          Battle resources are locked upon engagement. Victors claim the spoils, dividing them equally among allies.
+        </p>
+      ),
+    },
+    {
+      name: "Pillaging",
+      content: (
+        <p>
+          Pillaging enemy structures becomes easier as their defensive forces weaken. Successful raids yield a portion
+          of the structure's resources.
+        </p>
+      ),
+    },
+    {
+      name: "Claiming Structures",
+      content: (
+        <p>
+          Upon defeating or bypassing an opponent's defensive forces, you can claim their structure, transferring
+          ownership to yourself.
+          <br /> Claiming a completed hyperstructure grants you point accumulation, while seizing a mine allows you to
+          harvest its earthenshards.
+        </p>
+      ),
+    },
+    {
+      name: "Leaving a Battle",
+      content: (
+        <p>Exiting a battle is possible at any moment, but comes at the cost of resources, health, and troop losses.</p>
+      ),
+    },
+  ];
+
+  const conceptNames = concepts.map((concept) => concept.name);
+
   return (
-    <div>
+    <>
+      <Headline>Combat</Headline>
+      {tableOfContents(conceptNames)}
+
       <p className="text-xl">
-        Armies allow you to protect your Realm, your structures but also allow you to explore the Eternum.
+        Armies serve a multifaceted role in Eternum: they safeguard your Realm and structures while also enabling
+        exploration of the vast world beyond.
       </p>
-      <h1>Defensive</h1>
-      <h4>Protecting your Structures (Realm, Hyperstructures and Earthenshard mines)</h4>
-      <p>
-        To protect your Base you must create a defensive Army. Without one, you will be more vulnerable to pillages.
-        Raider can also claim your structures as their own if your defensive army is inexistant or dead.
-      </p>
-      <h1>Offensive</h1>
-      <h4>Exploration</h4>
-      <p>
-        Without an attack army, you won't be able to start exploring the map, to find opponents, to discover the hidden
-        treasures of Eternum
-      </p>
-      <h4>Battles</h4>
-      <p>
-        If you catch someone or get caught in the open, you may end up in a battle against an opponent. These last a
-        variable amount of time, depending on the difference of troops between yours and your opponent's army.
-        <br /> Anyone can join a battle, as long as there's at least one person in any side of the battle.
-        <br />
-        You can engage in battle with an opponent's offensive army or a structure's defensive army.
-      </p>
-      <h4>Battle chests</h4>
-      <p>
-        Each armies' resources get locked at the beginning of a battle. The winning side takes it all, split equally
-        amongst all participant.
-      </p>
-      <h4>Pillaging</h4>
-      <p>
-        You can pillage an opponent's structure. The less health and troops the defensive army has, the more chance you
-        have of pillaging successfully. In case of success, you will get some of the structure's resources.
-      </p>
-      <h4>Claiming a structure</h4>
-      <p>
-        If the opponent's structure's defensive army is defeated (or simply isn't present), you can claim the structure
-        it protected, you will gain ownership of that structure.
-        <br /> If it was a finished hyperstructure you will start accumulating points.
-        <br /> If it was a mine, you will be able to claim its earthenshards.
-      </p>
-      <h4>Leaving a battle</h4>
-      <p>
-        You can decide that you want to leave a battle at any time. However, you will lose your resources as well as
-        some health and troops.
-      </p>
-    </div>
+
+      {concepts.map((concept) => (
+        <div key={concept.name}>
+          <h2 id={concept.name}>{concept.name}</h2>
+          {concept.content}
+        </div>
+      ))}
+    </>
   );
 };

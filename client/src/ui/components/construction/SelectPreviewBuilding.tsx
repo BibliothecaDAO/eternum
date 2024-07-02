@@ -32,6 +32,7 @@ import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
+import { HintSection } from "../hints/HintModal";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -272,8 +273,8 @@ export const SelectPreviewBuildingMenu = () => {
   );
 
   return (
-    <div className="relative flex flex-col  bg-brown border-gradient border clip-angled">
-      <HintModalButton className="absolute top-1 right-1" sectionName="Buildings & Bases" />
+    <>
+      <HintModalButton className="absolute top-1 right-1" section={HintSection.Buildings} />
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => {
@@ -292,7 +293,7 @@ export const SelectPreviewBuildingMenu = () => {
           ))}
         </Tabs.Panels>
       </Tabs>
-    </div>
+    </>
   );
 };
 

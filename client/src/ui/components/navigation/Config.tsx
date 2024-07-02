@@ -21,6 +21,7 @@ export interface OSInterface {
   title: string;
   children: React.ReactNode;
   width?: string;
+  hintSection?: string;
 }
 
 export const eventLog: OSWindows = "Event Log";

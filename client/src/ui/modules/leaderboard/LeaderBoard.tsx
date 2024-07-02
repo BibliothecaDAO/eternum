@@ -9,7 +9,7 @@ export const Leaderboard = () => {
   const isOpen = useUIStore((state) => state.isPopupOpen(leaderboard));
 
   return (
-    <OSWindow onClick={() => togglePopup(leaderboard)} show={isOpen} title={leaderboard}>
+    <OSWindow onClick={() => togglePopup(leaderboard)} show={isOpen} title={leaderboard} hintSection={"Points"}>
       <LeaderboardPanel />
     </OSWindow>
   );
