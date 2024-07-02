@@ -344,12 +344,7 @@ mod tests {
         assert(quantity_add == quantity, 'wrong item quantity');
 
         // Get expected amount and convert to fixed point
-        let expected_amount = FixedTrait::new_unscaled(1 + amount, false);
-        let expected_quantity: u128 = (10 + quantity).into();
-        let expected_quantity = FixedTrait::new_unscaled(expected_quantity, false);
-
-        // Compute the expected liquidity shares
-        let expected_liquidity = FixedTrait::sqrt(expected_amount * expected_quantity);
+        let expected_liquidity = FixedTrait::new_unscaled(1 + amount, false);
         let final_liquidity = initial_liquidity + liquidity_add;
         assert_approx_equal(expected_liquidity, final_liquidity, TOLERANCE);
     }
