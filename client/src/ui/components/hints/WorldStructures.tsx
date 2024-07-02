@@ -9,28 +9,32 @@ import {
 } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
+import { useMemo } from "react";
 
 export const WorldStructures = () => {
-  const concepts = [
-    {
-      name: "Hyperstructures",
-      content: (
-        <>
-          <HyperstructureCreationTable />
-          <HyperstructureConstructionTable />
-        </>
-      ),
-    },
-    {
-      name: "Mines",
-      content: (
-        <div>
-          Naturally occurring structures discovered during exploration, enabling players to harvest precious resources
-          from the world.
-        </div>
-      ),
-    },
-  ];
+  const concepts = useMemo(
+    () => [
+      {
+        name: "Hyperstructures",
+        content: (
+          <>
+            <HyperstructureCreationTable />
+            <HyperstructureConstructionTable />
+          </>
+        ),
+      },
+      {
+        name: "Mines",
+        content: (
+          <div>
+            Naturally occurring structures discovered during exploration, enabling players to harvest precious resources
+            from the world.
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
   const conceptNames = concepts.map((concept) => concept.name);
 
@@ -40,10 +44,10 @@ export const WorldStructures = () => {
       {tableOfContents(conceptNames)}
 
       {concepts.map((concept) => (
-        <div key={concept.name}>
+        <section key={concept.name}>
           <h2 id={concept.name}>{concept.name}</h2>
           {concept.content}
-        </div>
+        </section>
       ))}
     </>
   );
