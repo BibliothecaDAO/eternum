@@ -675,7 +675,6 @@ export const BUILDING_COSTS: ResourceInputs = {
     { resource: ResourcesIds.Wood, amount: 100 },
     { resource: ResourcesIds.ColdIron, amount: 40 },
   ],
-  [BuildingType.DonkeyFarm]: [],
   [BuildingType.TradingPost]: [],
   [BuildingType.WorkersHut]: [
     { resource: ResourcesIds.Wheat, amount: 500 },
