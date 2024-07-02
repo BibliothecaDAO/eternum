@@ -22,6 +22,7 @@ import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import { motion } from "framer-motion";
 import { useComponentValue } from "@dojoengine/react";
+import clsx from "clsx";
 
 const slideDown = {
   hidden: { y: "-100%" },
