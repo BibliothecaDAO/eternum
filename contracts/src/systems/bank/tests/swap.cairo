@@ -26,7 +26,7 @@ use starknet::contract_address_const;
 
 use traits::Into;
 
-const _0_1: u128 = 1844674407370955161; // 0.1
+const _0_1: u128 = 1844674407370955162; // 0.1
 const _1: u128 = 18446744073709551616; // 1
 const INITIAL_RESOURCE_BALANCE: u128 = 10000;
 const LIQUIDITY_AMOUNT: u128 = 1000;
@@ -294,7 +294,7 @@ fn test_swap_sell_with_fees() {
     // bank resources
     let bank_wood = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::WOOD));
     let bank_lords = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
-    assert(bank_wood.balance == 9, 'bank_wood.balance');
+    assert(bank_wood.balance == 10, 'bank_wood.balance');
     assert(bank_lords.balance == 0, 'bank_lords.balance');
 
     // player resources
@@ -310,7 +310,7 @@ fn test_swap_sell_with_fees() {
 
     // payout for 80 wood = 75 lords
     assert(market.lords_amount == 925, 'market.lords_amount');
-    // reserve wood increase = 100 - 11 (fees)
-    assert(market.resource_amount == 1089, 'market.resource_amount');
+    // reserve wood increase = 100 - 10 (fees)
+    assert(market.resource_amount == 1090, 'market.resource_amount');
     assert(liquidity.shares == FixedTrait::new_unscaled(1000, false), 'liquidity.shares');
 }
