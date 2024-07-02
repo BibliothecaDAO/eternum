@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Trading } from "./Trading";
 import { Combat } from "./Combat";
 import { Points } from "./Points";
-import { Hyperstructures } from "./Hyperstructures";
+import { WorldStructures } from "./WorldStructures";
 import { TheMap } from "./TheMap";
 import { Guilds } from "./Guilds";
 import { Transport } from "./Transport";
@@ -53,8 +53,8 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
       content: <Combat />,
     },
     {
-      name: "Hyperstructures",
-      content: <Hyperstructures />,
+      name: "World Structures",
+      content: <WorldStructures />,
     },
     {
       name: "Points",

@@ -99,7 +99,7 @@ export const WorldStructuresMenu = ({}: any) => {
 
   return (
     <>
-      <HintModalButton className="absolute top-1 right-1" sectionName="Hyperstructures" />
+      <HintModalButton className="absolute top-1 right-1" sectionName="World Structures" />
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: number) => setSelectedTab(index)}
