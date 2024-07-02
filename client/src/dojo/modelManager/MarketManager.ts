@@ -124,15 +124,10 @@ export class MarketManager {
 
   public getMyLP() {
     const [reserveLordsAmount, reserveResourceAmount] = this.getReserves();
-    const perc = this.getMyLpPercentage();
-
-    let lords_amount = 0;
-    let resource_amount = 0;
-
-    if (perc > 0) {
-      lords_amount = perc * reserveLordsAmount;
-      resource_amount = perc * reserveResourceAmount;
-    }
+    const my_shares = this.getSharesUnscaled();
+    const total_shares = this.getTotalSharesUnScaled();
+    let lords_amount = Number((my_shares * BigInt(reserveLordsAmount)) / BigInt(total_shares));
+    let resource_amount = Number(my_shares * BigInt(reserveResourceAmount) / BigInt(total_shares));    
 
     return [lords_amount, resource_amount];
   }
@@ -150,6 +145,12 @@ export class MarketManager {
   public getTotalLiquidityUnscaled() {
     const liquidity = this.getTotalLiquidity();
     return BigInt(liquidity * 2 ** 64);
+  }
+
+  public getTotalSharesUnScaled() {
+    const market = this.getMarket();
+    if (!market) return 0;
+    return market.total_shares.mag;
   }
 
   public getTotalSharesScaled() {
