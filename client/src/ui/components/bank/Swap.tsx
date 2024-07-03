@@ -179,6 +179,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
                   : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }]
               }
               travelTime={computeTravelTime(bankEntityId, entityId, EternumGlobalConfig.speed.donkey)}
+              isPickup={true}
               setCanCarry={setCanCarry}
             />
           </div>

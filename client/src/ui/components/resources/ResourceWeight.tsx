@@ -3,17 +3,18 @@ import { EternumGlobalConfig, Resource, ResourcesIds, WEIGHTS } from "@bibliothe
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { useEffect, useState } from "react";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { Headline } from "@/ui/elements/Headline";
 
 export const TravelInfo = ({
   entityId,
   resources,
   travelTime,
+  isPickup,
   setCanCarry,
 }: {
   entityId: bigint;
   resources: Resource[];
   travelTime?: number;
+  isPickup?: boolean;
   setCanCarry?: (canContinue: boolean) => void;
 }) => {
   const [resourceWeight, setResourceWeight] = useState(0);
@@ -30,7 +31,9 @@ export const TravelInfo = ({
       setResourceWeight(multipliedWeight);
 
       const { balance } = await getBalance(entityId, ResourcesIds.Donkey);
-      const currentDonkeyAmount = resources.find((r) => r.resourceId === ResourcesIds.Donkey)?.amount || 0;
+      const currentDonkeyAmount = isPickup
+        ? 0
+        : resources.find((r) => r.resourceId === ResourcesIds.Donkey)?.amount || 0;
       const calculatedDonkeyBalance = divideByPrecision(balance) - currentDonkeyAmount;
       setDonkeyBalance(calculatedDonkeyBalance);
       setSendingDonkeys(currentDonkeyAmount);
