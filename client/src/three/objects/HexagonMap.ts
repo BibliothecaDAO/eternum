@@ -257,7 +257,10 @@ export default class HexagonMap {
     return { chunkX, chunkZ };
   }
 
-  getHexagonCoordinates(instancedMesh: THREE.InstancedMesh, instanceId: number): { row: number; col: number } {
+  getHexagonCoordinates(
+    instancedMesh: THREE.InstancedMesh,
+    instanceId: number,
+  ): { row: number; col: number; x: number; z: number } {
     const matrix = new THREE.Matrix4();
     instancedMesh.getMatrixAt(instanceId, matrix);
     const position = new THREE.Vector3();
@@ -269,7 +272,7 @@ export default class HexagonMap {
     const col = Math.round(position.x / horizontalSpacing);
     const row = Math.round(-position.z / verticalSpacing);
 
-    return { row, col };
+    return { row, col, x: position.x, z: position.z };
   }
 
   updateVisibleChunks() {

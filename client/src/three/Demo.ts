@@ -9,6 +9,7 @@ import { ThreeStore, useThreeStore } from "@/hooks/store/useThreeStore";
 import { InputManager } from "./components/InputManager";
 import { TransitionManager } from "./components/Transition";
 import _ from "lodash";
+import gsap from "gsap";
 import { LocationManager } from "./helpers/LocationManager";
 
 export default class Demo {
@@ -89,6 +90,7 @@ export default class Demo {
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
 
+    document.body.style.background = "black";
     document.body.appendChild(this.renderer.domElement);
 
     // Adjust OrbitControls for new camera angle
@@ -99,6 +101,7 @@ export default class Demo {
     this.controls.panSpeed = 1;
     this.controls.zoomToCursor = true;
     this.controls.maxDistance = 20;
+    this.controls.enableDamping = true;
     this.controls.target.set(0, 0, 0);
     this.controls.addEventListener(
       "change",
@@ -179,7 +182,7 @@ export default class Demo {
 
   // Add this new method
   private transitionToHexByCoordinates(row: number, col: number) {
-    this.transitionToDetailedScene(row, col);
+    // this.transitionToDetailedScene(row, col);
   }
 
   onMouseMove(event: MouseEvent) {
@@ -188,17 +191,21 @@ export default class Demo {
   }
 
   initListeners(): void {
-    // this.inputManager.initListeners(
-    //   this.onWindowResize.bind(this),
-    //   this.onHexClick.bind(this),
-    //   this.onMouseMove.bind(this),
-    //   // todo: add double click handler
-    //   this.onHexClick.bind(this),
-    //   this.transitionToMainScene.bind(this),
-    // );
+    this.inputManager.initListeners(
+      this.onWindowResize.bind(this),
+      this.onHexClick.bind(this),
+      this.onMouseMove.bind(this),
+      // todo: add double click handler
+      this.onDoubleClick.bind(this),
+      this.transitionToMainScene.bind(this),
+    );
   }
 
   onHexClick() {
+    console.log("clicked");
+  }
+
+  onDoubleClick() {
     if (this.currentScene === "main") {
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const intersects = this.raycaster.intersectObjects(this.scene.children, true);
@@ -207,32 +214,35 @@ export default class Demo {
         if (clickedObject instanceof THREE.InstancedMesh) {
           const instanceId = intersects[0].instanceId;
           if (instanceId !== undefined) {
-            const { row, col } = this.hexGrid.getHexagonCoordinates(clickedObject, instanceId);
-            this.transitionToDetailedScene(row, col);
+            const { row, col, x, z } = this.hexGrid.getHexagonCoordinates(clickedObject, instanceId);
+            this.transitionToDetailedScene(row, col, x, z);
           }
         }
       }
     }
   }
 
-  transitionToDetailedScene(row: number, col: number) {
-    this.transitionManager.fadeOut(() => {
-      this.currentScene = "detailed";
-
-      // Reset camera and controls
-      this.camera.position.set(
-        0,
-        Math.sin(this.cameraAngle) * this.cameraDistance,
-        -Math.cos(this.cameraAngle) * this.cameraDistance,
-      );
-      this.camera.lookAt(0, 0, 0);
-      this.controls.target.set(0, 0, 0);
-      this.controls.update();
-
-      this.detailedScene.setup(row, col);
-      this.transitionManager.fadeIn();
-      this.inputManager.updateCurrentScene("detailed");
+  transitionToDetailedScene(row: number, col: number, x: number, z: number) {
+    this.cameraAnimate(new THREE.Vector3(x + 2, 4, z + 2), new THREE.Vector3(x, 0, z), 2, () => {
+      setTimeout(() => {
+        this.currentScene = "detailed";
+        // Reset camera and controls
+        this.detailedScene.setup(row, col);
+        this.camera.position.set(
+          0,
+          Math.sin(this.cameraAngle) * this.cameraDistance,
+          -Math.cos(this.cameraAngle) * this.cameraDistance,
+        );
+        this.camera.lookAt(0, 0, 0);
+        this.controls.target.set(0, 0, 0);
+        this.controls.update();
+        this.transitionManager.fadeIn();
+        this.inputManager.updateCurrentScene("detailed");
+      }, 50);
     });
+    setTimeout(() => {
+      this.transitionManager.fadeOut(() => {});
+    }, 1500);
   }
 
   transitionToMainScene() {
@@ -267,6 +277,45 @@ export default class Demo {
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
+  }
+
+  cameraAnimate(
+    newPosition: THREE.Vector3,
+    newTarget: THREE.Vector3,
+    transitionDuration: number,
+    onFinish?: () => void,
+  ) {
+    const camera = this.controls.object;
+    const target = this.controls.target;
+    gsap.killTweensOf(camera.position);
+    gsap.killTweensOf(target);
+
+    const duration = transitionDuration || 2;
+
+    gsap.timeline().to(camera.position, {
+      duration,
+      repeat: 0,
+      x: newPosition.x,
+      y: newPosition.y,
+      z: newPosition.z,
+      ease: "power3.inOut",
+      onComplete: () => {
+        onFinish?.();
+      },
+    });
+
+    gsap.timeline().to(
+      target,
+      {
+        duration,
+        repeat: 0,
+        x: newTarget.x,
+        y: newTarget.y,
+        z: newTarget.z,
+        ease: "power3.inOut",
+      },
+      "<",
+    );
   }
 
   animate() {
