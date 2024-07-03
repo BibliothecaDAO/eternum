@@ -11,7 +11,7 @@ export default class InstancedModel {
         // initial count set max number of instances
         const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
         // we can set lower count later if we have less hexes with that biome and change it at any time
-        // tmp.count = 5;
+        tmp.count = 0;
         this.group.add(tmp);
       }
     });
