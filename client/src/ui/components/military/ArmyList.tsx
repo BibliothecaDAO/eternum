@@ -3,7 +3,7 @@ import { useEntityArmies, usePositionArmies } from "@/hooks/helpers/useArmies";
 import { useResources } from "@/hooks/helpers/useResources";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
-import { EntityState, Position, determineEntityState } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { EntityList } from "../list/EntityList";
@@ -12,14 +12,10 @@ import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { ArmyViewCard } from "./ArmyViewCard";
 import { useBattles } from "@/hooks/helpers/useBattles";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import { useEntities } from "@/hooks/helpers/useEntities";
 
 export const EntityArmyList = ({ structure }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: structure?.entity_id });
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
-  const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
-  const { getEntityInfo } = useEntities();
   const { allBattles } = useBattles();
 
   const battles = allBattles();
@@ -42,13 +38,6 @@ export const EntityArmyList = ({ structure }: any) => {
       army_owner_id: structure.entity_id,
       is_defensive_army,
     }).finally(() => setIsLoading(false));
-  };
-
-  const getEntityState = (entityId: bigint) => {
-    const entity = getEntityInfo(entityId);
-    const entityResources = getResourcesFromBalance(entityId);
-    const hasResources = entityResources.length > 0;
-    return determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
   };
 
   const battleAtPosition = (position: Position) => {
@@ -95,13 +84,10 @@ export const EntityArmyList = ({ structure }: any) => {
             {/* <StaminaResource entityId={entity.entity_id} className="mb-3" /> */}
             <ArmyManagementCard owner_entity={structure?.entity_id} entity={entity} />
             <InventoryResources entityId={entity.entity_id} />
-            {getEntityState(BigInt(entity.entity_id)) !== EntityState.Traveling && (
-              <DepositResources
-                entityId={entity.entity_id}
-               
-                battleInProgress={battleAtPosition({ x: entity.x, y: entity.y })}
-              />
-            )}
+            <DepositResources
+              entityId={entity.entity_id}
+              battleInProgress={battleAtPosition({ x: entity.x, y: entity.y })}
+            />
           </React.Fragment>
         )}
         questing={
