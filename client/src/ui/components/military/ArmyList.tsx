@@ -76,7 +76,7 @@ export const EntityArmyList = ({ structure }: any) => {
           <React.Fragment key={entity.entity_id}>
             {/* <StaminaResource entityId={entity.entity_id} className="mb-3" /> */}
             <ArmyManagementCard owner_entity={structure?.entity_id} entity={entity} />
-              <InventoryResources entityId={entity.entity_id} />
+            <InventoryResources entityId={entity.entity_id} />
             <DepositResources entityId={entity.entity_id} />
           </React.Fragment>
         )}
