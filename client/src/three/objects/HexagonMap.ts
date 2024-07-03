@@ -15,23 +15,24 @@ import InstancedModel from "../components/InstancedModel";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 
+const BASE_PATH = "/models/new-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
-  DeepOcean: "/models/new-biomes/deepocean.glb",
-  Ocean: "/models/new-biomes/ocean.glb",
-  Beach: "/models/new-biomes/beach.glb",
-  Scorched: "/models/new-biomes/scorched.glb",
-  Bare: "/models/new-biomes/bare.glb",
-  Tundra: "/models/new-biomes/tundra.glb",
-  Snow: "/models/new-biomes/snow.glb",
-  TemperateDesert: "/models/new-biomes/temperatedesert.glb",
-  Shrubland: "/models/new-biomes/shrublands.glb",
-  Taiga: "/models/new-biomes/taiga.glb",
-  Grassland: "/models/new-biomes/grassland.glb",
-  TemperateDeciduousForest: "/models/new-biomes/deciduousforest.glb",
-  TemperateRainForest: "/models/new-biomes/temperaterainforest.glb",
-  SubtropicalDesert: "/models/new-biomes/subtropicaldesert.glb",
-  TropicalSeasonalForest: "/models/new-biomes/tropicalseasonalforest.glb",
-  TropicalRainForest: "/models/new-biomes/tropicalrainforest.glb",
+  DeepOcean: BASE_PATH + "deepOcean.glb",
+  Ocean: BASE_PATH + "ocean.glb",
+  Beach: BASE_PATH + "beach.glb",
+  Scorched: BASE_PATH + "scorched.glb",
+  Bare: BASE_PATH + "bare.glb",
+  Tundra: BASE_PATH + "tundra.glb",
+  Snow: BASE_PATH + "snow.glb",
+  TemperateDesert: BASE_PATH + "temperateDesert.glb",
+  Shrubland: BASE_PATH + "shrubland.glb",
+  Taiga: BASE_PATH + "taiga.glb",
+  Grassland: BASE_PATH + "grassland.glb",
+  TemperateDeciduousForest: BASE_PATH + "deciduousForest.glb",
+  TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
+  SubtropicalDesert: BASE_PATH + "subtropicalDesert.glb",
+  TropicalSeasonalForest: BASE_PATH + "tropicalSeasonalForest.glb",
+  TropicalRainForest: BASE_PATH + "tropicalRainforest.glb",
 };
 
 export default class HexagonMap {
