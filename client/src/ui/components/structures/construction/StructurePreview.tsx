@@ -88,7 +88,7 @@ export const StructurePreview = () => {
         creator_entity_id: realmEntityId,
       }).finally(() => setIsLoading(false));
     }
-  }, [hoveredBuildHex, existingStructures, exploredHexes, previewBuilding]);
+  }, [hoveredBuildHex, canPlace]);
 
   const scale = previewBuilding?.type === StructureType.Hyperstructure ? 1.5 : 3;
 

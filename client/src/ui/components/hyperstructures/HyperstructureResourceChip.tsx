@@ -1,13 +1,13 @@
-import { findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
 
-import { ResourceIcon } from "../../elements/ResourceIcon";
+import { ProgressWithPercentage } from "@/hooks/helpers/useHyperstructures";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useEffect, useState } from "react";
+import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { NumberInput } from "@/ui/elements/NumberInput";
-import useRealmStore from "@/hooks/store/useRealmStore";
-import { ProgressWithPercentage } from "@/hooks/helpers/useHyperstructures";
 import { currencyIntlFormat } from "@/ui/utils/utils";
+import { useEffect, useState } from "react";
+import { ResourceIcon } from "../../elements/ResourceIcon";
 
 type HyperstructureResourceChipProps = {
   resourceId: number;
@@ -28,10 +28,10 @@ export const HyperstructureResourceChip = ({
 
   const { getBalance } = useResourceBalance();
 
-  const maxContributableAmount = Math.min(
-    progress.costNeeded! - progress.amount,
-    getBalance(realmEntityId, resourceId).balance,
-  );
+  const maxContributableAmount =
+    Math.min(progress.costNeeded! - progress.amount, getBalance(realmEntityId, resourceId).balance) /
+    EternumGlobalConfig.resources.resourceMultiplier;
+
   useEffect(() => {
     let contributionsCopy = Object.assign({}, contributions);
     if (inputValue === 0 || isNaN(inputValue)) {
@@ -60,7 +60,7 @@ export const HyperstructureResourceChip = ({
             content: (
               <>
                 {findResourceById(getIconResourceId(resourceId, false))?.trait as string} (
-                {getBalance(realmEntityId, resourceId).balance})
+                {getBalance(realmEntityId, resourceId).balance / EternumGlobalConfig.resources.resourceMultiplier})
               </>
             ),
           });

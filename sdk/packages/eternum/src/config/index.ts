@@ -242,7 +242,10 @@ export const setSpeedConfig = async (account: Account, provider: EternumProvider
 export const setHyperstructureConfig = async (account: Account, provider: EternumProvider) => {
   const tx = await provider.set_hyperstructure_config({
     signer: account,
-    resources_for_completion: HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+    resources_for_completion: HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map((resource) => ({
+      ...resource,
+      amount: resource.amount * EternumGlobalConfig.resources.resourcePrecision,
+    })),
   });
   console.log(`Configuring hyperstructure ${tx.statusReceipt}...`);
 };
