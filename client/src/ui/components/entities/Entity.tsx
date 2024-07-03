@@ -107,7 +107,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
         </div>
       </div>
       <div className="flex items-center gap-2 flex-wrap my-2">{renderResources()}</div>
-      {entityState !== EntityState.Traveling && <DepositResources entityId={entityId} resources={entityResources} />}
+      {entityState !== EntityState.Traveling && <DepositResources entityId={entityId} />}
     </div>
   );
 };

@@ -70,7 +70,7 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
           current={entityId}
           list={playerStructures()}
           title="armies"
-          panel={({ entity }) => <ArmyPanel entity={entity} />}
+          panel={({ entity }) => <ArmyPanel structure={entity} />}
           className="pt-10"
         />
       )}

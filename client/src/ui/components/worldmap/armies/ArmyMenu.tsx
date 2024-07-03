@@ -1,23 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
-import useUIStore from "../../../../hooks/store/useUIStore";
-import clsx from "clsx";
-import {
-  type Resource,
-  ResourcesIds,
-  EXPLORATION_COSTS,
-  WeightConfig,
-  EternumGlobalConfig,
-} from "@bibliothecadao/eternum";
-import { ResourceCost } from "../../../elements/ResourceCost";
-import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
-import { useDojo } from "../../../../hooks/context/DojoContext";
-import { getComponentValue } from "@dojoengine/recs";
-import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { useResourceBalance } from "../../../../hooks/helpers/useResources";
+import { ArmyMode } from "@/hooks/store/_mapStore";
 import Button from "@/ui/elements/Button";
 import { DojoHtml } from "@/ui/elements/DojoHtml";
-import { ArmyMode } from "@/hooks/store/_mapStore";
+import { EXPLORATION_COSTS, type Resource } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
+import clsx from "clsx";
+import { useEffect, useMemo, useState } from "react";
+import { useDojo } from "../../../../hooks/context/DojoContext";
+import { useResourceBalance } from "../../../../hooks/helpers/useResources";
+import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
+import useUIStore from "../../../../hooks/store/useUIStore";
+import { ResourceCost } from "../../../elements/ResourceCost";
+import { getEntityIdFromKeys } from "../../../utils/utils";
 
 const EXPLORE_DESCRIPTION = "Explore the area to discover resources. Limit: 1 hex per tick.";
 const TRAVEL_DESCRIPTION = "Move to a new location. Limit: 5 hexes per tick.";
@@ -63,7 +57,7 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
   const {
     account: { account },
     setup: {
-      components: { ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Owner },
+      components: { ArrivalTime, EntityOwner, Owner },
     },
   } = useDojo();
 
@@ -87,15 +81,7 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
   }, [selectedEntityId, account.address]);
 
   const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([selectedEntityId]));
-  const weight = getComponentValue(Weight, getEntityIdFromKeys([selectedEntityId]));
-  const quantity = getComponentValue(Quantity, getEntityIdFromKeys([selectedEntityId]));
-  const capacity = getComponentValue(Capacity, getEntityIdFromKeys([selectedEntityId]));
   const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntityId]));
-
-  const totalCapacityInKg = useMemo(
-    () => divideByPrecision(Number(capacity?.weight_gram)) * Number(quantity?.value),
-    [capacity, quantity],
-  );
 
   const isPassiveTravel = useMemo(
     () => arrivalTime && nextBlockTimestamp && arrivalTime.arrives_at > nextBlockTimestamp,
@@ -106,14 +92,6 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const entityWeightInKg = useMemo(() => divideByPrecision(Number(weight?.value || 0)), [weight]);
-
-  const canCarryNewReward = useMemo(
-    () =>
-      totalCapacityInKg >= entityWeightInKg + EternumGlobalConfig.exploration.reward * WeightConfig[ResourcesIds.Wood],
-    [totalCapacityInKg, entityWeightInKg],
-  );
-
   const { getFoodResources } = useResourceBalance();
 
   const explorationCosts = useMemo(() => {
@@ -123,8 +101,6 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
       hasEnough: (foodBalance.find((food) => food.resourceId === res.resourceId)?.amount || 0) >= res.amount,
     }));
   }, [entityOwner, getFoodResources]);
-
-  const hasEnoughResourcesToExplore = useMemo(() => explorationCosts.every((res) => res.hasEnough), [explorationCosts]);
 
   useEffect(() => {
     const timer = setTimeout(() => setAppeared(true), 150);
