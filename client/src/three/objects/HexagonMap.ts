@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { Scene, Raycaster } from "three";
+import { Scene, Raycaster, MathUtils } from "three";
 import { Character } from "../components/Character";
 import { FogManager } from "../components/Fog";
 
@@ -93,6 +93,13 @@ export default class HexagonMap {
             const model = gltf.scene as THREE.Group;
             model.position.set(0, 0, 0);
             model.rotation.y = Math.PI;
+
+            model.traverse((child) => {
+              if (child instanceof THREE.Mesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+              }
+            });
             const tmp = new InstancedModel(model, this.chunkSize * 2 * this.chunkSize * 2);
             this.biomeModels.set(biome as BiomeType, tmp);
             this.scene.add(tmp.group);
@@ -161,6 +168,11 @@ export default class HexagonMap {
           dummy.position.y = 0;
           dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
 
+          const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
+          const rotationIndex = Math.floor(rotationSeed * 6);
+          const randomRotation = (rotationIndex * Math.PI) / 3;
+          dummy.rotation.y = randomRotation;
+
           const biome = this.biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
 
           const entities = getEntitiesWithValue(this.dojoConfig.components.Position, {
@@ -184,6 +196,12 @@ export default class HexagonMap {
         console.log("updating");
       }
     });
+  }
+
+  private hashCoordinates(x: number, y: number): number {
+    // Simple hash function to generate a deterministic value between 0 and 1
+    const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+    return hash - Math.floor(hash);
   }
 
   private addCharacterMovementListeners() {

@@ -102,32 +102,39 @@ export default class Demo {
       }, 100),
     );
 
-    this.lightAmbient = new THREE.AmbientLight(0xffffff, 0.8);
+    // Adjust point lights for new camera angle
+    this.lightAmbient = new THREE.AmbientLight(0xffffff, 3);
     this.scene.add(this.lightAmbient);
 
-    // Adjust point lights for new camera angle
-    const shadowIntensity = 1;
+    const shadowIntensity = 0.9;
+    const lightColor = 0xffffff;
 
-    this.lightPoint = new THREE.DirectionalLight(0xffffff);
-    this.lightPoint.position.set(0, cameraHeight + 5, -cameraDepth + 5);
+    this.lightPoint = new THREE.DirectionalLight(lightColor, shadowIntensity);
+    this.lightPoint.position.set(50, 100, 50);
     this.lightPoint.castShadow = true;
-    this.lightPoint.intensity = shadowIntensity;
     this.scene.add(this.lightPoint);
 
-    this.lightPoint2 = new THREE.DirectionalLight(0xffffff);
-    this.lightPoint2.position.set(0, cameraHeight - 5, -cameraDepth - 5);
-    this.lightPoint2.intensity = 1 - shadowIntensity;
+    this.lightPoint2 = new THREE.DirectionalLight(lightColor, 0.4);
+    this.lightPoint2.position.set(-50, 100, -50);
     this.lightPoint2.castShadow = false;
     this.scene.add(this.lightPoint2);
 
-    const mapSize = 1024;
-    const cameraNear = 0.5;
+    // Improve shadow quality
+    const mapSize = 2048;
+    const cameraNear = 1;
     const cameraFar = 500;
     this.lightPoint.shadow.mapSize.width = mapSize;
     this.lightPoint.shadow.mapSize.height = mapSize;
     this.lightPoint.shadow.camera.near = cameraNear;
     this.lightPoint.shadow.camera.far = cameraFar;
+    this.lightPoint.shadow.bias = -0.001;
 
+    // Adjust shadow camera frustum
+    const d = 200;
+    this.lightPoint.shadow.camera.left = -d;
+    this.lightPoint.shadow.camera.right = d;
+    this.lightPoint.shadow.camera.top = d;
+    this.lightPoint.shadow.camera.bottom = -d;
     const cameraHelper = new THREE.CameraHelper(this.lightPoint.shadow.camera);
     this.scene.add(cameraHelper);
 
