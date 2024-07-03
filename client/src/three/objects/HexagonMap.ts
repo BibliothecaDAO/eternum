@@ -16,22 +16,22 @@ import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 
 export const biomeModelPaths: Record<BiomeType, string> = {
-  DeepOcean: "/models/biomes/deepOcean.glb",
-  Ocean: "/models/biomes/ocean.glb",
-  Beach: "/models/biomes/beach.glb",
-  Scorched: "/models/biomes/scorched.glb",
-  Bare: "/models/biomes/desert.glb",
-  Tundra: "/models/biomes/tundra.glb",
-  Snow: "/models/biomes/snow.glb",
-  TemperateDesert: "/models/biomes/temperateDesert.glb",
-  Shrubland: "/models/biomes/shrubland.glb",
-  Taiga: "/models/biomes/taiga_merged.glb",
-  Grassland: "/models/biomes/grassland.glb",
-  TemperateDeciduousForest: "/models/biomes/deciduousForest.glb",
-  TemperateRainForest: "/models/biomes/temperateRainforest.glb",
-  SubtropicalDesert: "/models/biomes/subtropicalDesert.glb",
-  TropicalSeasonalForest: "/models/biomes/tropicalSeasonalForest.glb",
-  TropicalRainForest: "/models/biomes/tropicalRainforest.glb",
+  DeepOcean: "/models/new-biomes/deepocean.glb",
+  Ocean: "/models/new-biomes/ocean.glb",
+  Beach: "/models/new-biomes/beach.glb",
+  Scorched: "/models/new-biomes/scorched.glb",
+  Bare: "/models/new-biomes/bare.glb",
+  Tundra: "/models/new-biomes/tundra.glb",
+  Snow: "/models/new-biomes/snow.glb",
+  TemperateDesert: "/models/new-biomes/temperatedesert.glb",
+  Shrubland: "/models/new-biomes/shrublands.glb",
+  Taiga: "/models/new-biomes/taiga.glb",
+  Grassland: "/models/new-biomes/grassland.glb",
+  TemperateDeciduousForest: "/models/new-biomes/deciduousforest.glb",
+  TemperateRainForest: "/models/new-biomes/temperaterainforest.glb",
+  SubtropicalDesert: "/models/new-biomes/subtropicaldesert.glb",
+  TropicalSeasonalForest: "/models/new-biomes/tropicalseasonalforest.glb",
+  TropicalRainForest: "/models/new-biomes/tropicalrainforest.glb",
 };
 
 export default class HexagonMap {
