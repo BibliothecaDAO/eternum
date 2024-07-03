@@ -7,7 +7,8 @@ use starknet::ContractAddress;
 struct Bank {
     #[key]
     entity_id: u128,
-    owner_fee_scaled: u128,
+    owner_fee_num: u128,
+    owner_fee_denom: u128,
     exists: bool,
 }
 

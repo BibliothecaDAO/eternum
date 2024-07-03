@@ -204,7 +204,8 @@ export interface CreateBankProps extends SystemSigner {
     x: num.BigNumberish;
     y: num.BigNumberish;
   };
-  owner_fee_scaled: num.BigNumberish;
+  owner_fee_num: num.BigNumberish;
+  owner_fee_denom: num.BigNumberish;
 }
 
 export interface CreateAdminBankProps extends SystemSigner {
@@ -212,7 +213,8 @@ export interface CreateAdminBankProps extends SystemSigner {
     x: num.BigNumberish;
     y: num.BigNumberish;
   };
-  owner_fee_scaled: num.BigNumberish;
+  owner_fee_num: num.BigNumberish;
+  owner_fee_denom: num.BigNumberish;
 }
 
 export interface OpenAccountProps extends SystemSigner {
@@ -222,7 +224,8 @@ export interface OpenAccountProps extends SystemSigner {
 
 export interface ChangeBankOwnerFeeProps extends SystemSigner {
   bank_entity_id: num.BigNumberish;
-  new_swap_fee_unscaled: num.BigNumberish;
+  new_swap_fee_num: num.BigNumberish;
+  new_swap_fee_denom: num.BigNumberish;
 }
 
 export interface BuyResourcesProps extends SystemSigner {
@@ -386,7 +389,8 @@ export interface SetProductionConfigProps extends SystemSigner {
 
 export interface SetBankConfigProps extends SystemSigner {
   lords_cost: num.BigNumberish;
-  lp_fee_scaled: num.BigNumberish;
+  lp_fee_num: num.BigNumberish;
+  lp_fee_denom: num.BigNumberish;
 }
 
 export interface SetTroopConfigProps extends SystemSigner {

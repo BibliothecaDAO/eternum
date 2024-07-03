@@ -63,38 +63,34 @@ mod swap_systems {
             resource_type: u8,
             amount: u128
         ) -> ID {
-            let player = starknet::get_caller_address();
-
             let bank = get!(world, bank_entity_id, Bank);
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
 
-            // update market
+            // get lords price of resource expressed to be bought from amm
             let mut market = get!(world, (bank_entity_id, resource_type), Market);
-            // calculate cost of resources
-            let cost = market.buy(amount);
-            // add the lords cost to the reserves
-            market.lords_amount += cost;
-            // add to the cost the owner fees and lp fees
-            let (owner_fees_amount, lp_fees_amount, total_cost) = InternalSwapSystemsImpl::add_fees(
-                cost, bank.owner_fee_scaled, bank_config.lp_fee_scaled
-            );
-            // remove payout from the market
-            market.resource_amount -= amount;
-            // add lp fees to the reserves
-            market.lords_amount += lp_fees_amount;
-            set!(world, (market));
-
-            // update owner bank account with fees
-            let mut bank_lords = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
-            bank_lords.add(owner_fees_amount);
-            bank_lords.save(world);
+            let lords_cost_from_amm = market
+                .buy(bank_config.lp_fee_num, bank_config.lp_fee_denom, amount);
+            let lps_fee = lords_cost_from_amm - market.buy(0, 1, amount);
+            let bank_lords_fee_amount = (lords_cost_from_amm * bank.owner_fee_num)
+                / bank.owner_fee_denom;
+            let total_lords_cost = lords_cost_from_amm + bank_lords_fee_amount;
 
             // udpate player lords
             let mut player_lords = ResourceImpl::get(world, (entity_id, ResourceTypes::LORDS));
-            player_lords.burn(total_cost);
+            player_lords.burn(total_lords_cost);
             player_lords.save(world);
 
-            // pickup player resources
+            // add bank fees to bank
+            let mut bank_lords = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
+            bank_lords.add(bank_lords_fee_amount);
+            bank_lords.save(world);
+
+            // update market liquidity
+            market.lords_amount += lords_cost_from_amm;
+            market.resource_amount -= amount;
+            set!(world, (market));
+
+            // player picks up resources with donkey
             let resources = array![(resource_type, amount)].span();
             let donkey_id = InternalBankSystemsImpl::pickup_resources_from_bank(
                 world, bank_entity_id, entity_id, resources
@@ -106,10 +102,10 @@ mod swap_systems {
                 market,
                 entity_id,
                 amount,
-                cost,
-                owner_fees_amount,
-                lp_fees_amount,
-                market.quote_amount(1000),
+                lords_cost_from_amm,
+                bank_lords_fee_amount,
+                lps_fee,
+                market.buy(0, 1, 1000),
                 true
             );
 
@@ -125,40 +121,36 @@ mod swap_systems {
             resource_type: u8,
             amount: u128
         ) -> ID {
-            let player = starknet::get_caller_address();
-
             let bank = get!(world, bank_entity_id, Bank);
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
 
-            // split resource amount into fees and rest
-            let (owner_fees_amount, lp_fees_amount, rest) = InternalSwapSystemsImpl::split_fees(
-                amount, bank.owner_fee_scaled, bank_config.lp_fee_scaled
-            );
-
-            // increase owner bank account with fees
-            let mut owner_resource = ResourceImpl::get(world, (bank_entity_id, resource_type));
-            owner_resource.add(owner_fees_amount);
-            owner_resource.save(world);
-
-            // update market
+            // get lords received from amm after resource amount is sold
             let mut market = get!(world, (bank_entity_id, resource_type), Market);
-            // calculate payout on the rest
-            let payout = market.sell(rest);
-            // increase the lp with fees
-            market.resource_amount += lp_fees_amount;
-            // remove payout from the market
-            market.lords_amount -= payout;
-            // add resource amount to the market
-            market.resource_amount += rest;
+            let lords_received_from_amm = market
+                .sell(bank_config.lp_fee_num, bank_config.lp_fee_denom, amount);
+            let lps_fee = market.sell(0, 1, amount) - lords_received_from_amm;
+
+            let bank_lords_fee_amount = (lords_received_from_amm * bank.owner_fee_num)
+                / bank.owner_fee_denom;
+            let total_lords_received = lords_received_from_amm - bank_lords_fee_amount;
+
+            // burn the resource the player is exchanging for lords
+            let mut player_resource = ResourceImpl::get(world, (entity_id, resource_type));
+            player_resource.burn(amount);
+            player_resource.save(world);
+
+            // add bank fees to bank
+            let mut bank_lords = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
+            bank_lords.add(bank_lords_fee_amount);
+            bank_lords.save(world);
+
+            // update market liquidity
+            market.lords_amount -= lords_received_from_amm;
+            market.resource_amount += amount;
             set!(world, (market));
 
-            // update player resource
-            let mut resource = ResourceImpl::get(world, (entity_id, resource_type));
-            resource.burn(amount);
-            resource.save(world);
-
             // pickup player lords
-            let mut resources = array![(ResourceTypes::LORDS, payout)].span();
+            let mut resources = array![(ResourceTypes::LORDS, total_lords_received)].span();
             let donkey_id = InternalBankSystemsImpl::pickup_resources_from_bank(
                 world, bank_entity_id, entity_id, resources
             );
@@ -168,11 +160,11 @@ mod swap_systems {
                 world,
                 market,
                 entity_id,
-                payout,
-                rest,
-                owner_fees_amount,
-                lp_fees_amount,
-                market.quote_amount(1000),
+                total_lords_received,
+                amount,
+                bank_lords_fee_amount,
+                lps_fee,
+                market.buy(0, 1, 1000),
                 false
             );
 
@@ -183,44 +175,6 @@ mod swap_systems {
 
     #[generate_trait]
     impl InternalSwapSystemsImpl of InternalSwapSystemsTrait {
-        fn split_fees(
-            amount: u128, owner_fee_scaled: u128, lp_fee_scaled: u128,
-        ) -> (u128, u128, u128) {
-            let amount_fixed = FixedTrait::new_unscaled(amount, false);
-
-            let owner_fee_fixed = FixedTrait::new(owner_fee_scaled, false);
-            let lp_fee_fixed = FixedTrait::new(lp_fee_scaled, false);
-
-            let owner_amount_fixed = amount_fixed * owner_fee_fixed;
-            let lp_amount_fixed = amount_fixed * lp_fee_fixed;
-
-            let rest = amount_fixed - owner_amount_fixed - lp_amount_fixed;
-
-            (
-                owner_amount_fixed.try_into().unwrap(),
-                lp_amount_fixed.try_into().unwrap(),
-                rest.try_into().unwrap()
-            )
-        }
-
-        fn add_fees(cost: u128, owner_fee_scaled: u128, lp_fee_scaled: u128) -> (u128, u128, u128) {
-            let cost_fixed = FixedTrait::new_unscaled(cost, false);
-
-            let owner_fee_fixed = FixedTrait::new(owner_fee_scaled, false);
-            let lp_fee_fixed = FixedTrait::new(lp_fee_scaled, false);
-
-            let owner_amount_fixed = cost_fixed * owner_fee_fixed;
-            let lp_amount_fixed = cost_fixed * lp_fee_fixed;
-
-            let total = cost_fixed + owner_amount_fixed + lp_amount_fixed;
-
-            (
-                owner_amount_fixed.try_into().unwrap(),
-                lp_amount_fixed.try_into().unwrap(),
-                total.try_into().unwrap()
-            )
-        }
-
         fn emit_event(
             world: IWorldDispatcher,
             market: Market,

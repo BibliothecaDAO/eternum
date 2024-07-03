@@ -28,9 +28,10 @@ use starknet::contract_address_const;
 
 use traits::Into;
 
-const FEE_SCALE: u128 = 1844674407370955161; // 0.1
+const FEE_NUM: u128 = 1;
+const FEE_DENOM: u128 = 10; // 1/ 10 == 10%
 const ONE: u128 = 18446744073709551616; // 1
-const INITIAL_RESOURCE_BALANCE: u128 = 10000;
+const INITIAL_RESOURCE_BALANCE: u128 = 10_000;
 const LIQUIDITY_AMOUNT: u128 = 1000;
 const SWAP_AMOUNT: u128 = 500;
 const MARKET_TOTAL_SHARES: u128 = 18446744073709551616000;
@@ -53,17 +54,22 @@ fn setup() -> (
     // allows to start from entity_id 1
     let _ = world.uuid();
 
-    let owner_fee_scaled: u128 = FEE_SCALE;
-    let lp_fee_scaled: u128 = FEE_SCALE;
+    let owner_fee_num: u128 = FEE_NUM;
+    let owner_fee_denom: u128 = FEE_DENOM;
+
+    let lp_fee_num: u128 = FEE_NUM;
+    let lp_fee_denom: u128 = FEE_DENOM;
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
-    bank_config_dispatcher.set_bank_config(0, lp_fee_scaled);
+    bank_config_dispatcher.set_bank_config(0, lp_fee_num, lp_fee_denom);
 
     let bank_systems_address = deploy_system(world, bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
     let bank_entity_id = bank_systems_dispatcher
-        .create_bank(BANK_ID, Coord { x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_scaled);
+        .create_bank(
+            BANK_ID, Coord { x: BANK_COORD_X, y: BANK_COORD_Y }, owner_fee_num, owner_fee_denom
+        );
 
     let liquidity_systems_address = deploy_system(world, liquidity_systems::TEST_CLASS_HASH);
     let liquidity_systems_dispatcher = ILiquiditySystemsDispatcher {
@@ -244,6 +250,32 @@ fn test_liquidity_buy() {
     ) =
         setup();
 
+    // scale by 10 to avoid liquidity issues
+    let LIQUIDITY_AMOUNT = LIQUIDITY_AMOUNT * 10;
+    let SWAP_AMOUNT = SWAP_AMOUNT * 10;
+    let MARKET_TOTAL_SHARES = MARKET_TOTAL_SHARES * 10;
+    let INITIAL_RESOURCE_BALANCE = INITIAL_RESOURCE_BALANCE * 10;
+    set!(
+        world,
+        (
+            Resource {
+                entity_id: PLAYER_2_ID,
+                resource_type: ResourceTypes::WOOD,
+                balance: INITIAL_RESOURCE_BALANCE
+            },
+            Resource {
+                entity_id: PLAYER_2_ID,
+                resource_type: ResourceTypes::LORDS,
+                balance: INITIAL_RESOURCE_BALANCE
+            },
+            Resource {
+                entity_id: PLAYER_2_ID,
+                resource_type: ResourceTypes::DONKEY,
+                balance: INITIAL_RESOURCE_BALANCE
+            },
+        )
+    );
+
     // bank owner
     let player = starknet::get_caller_address();
 
@@ -258,8 +290,8 @@ fn test_liquidity_buy() {
         .buy(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
-    // initial reserves + 1000 (cost) + 99 (fee)
-    assert(market.lords_amount == 2099, 'market.lords_amount');
+    // initial reserves + 11_112 lords (swap cost (including lp fee))
+    assert_eq!(market.lords_amount, 21_112);
     assert(market.resource_amount == SWAP_AMOUNT, 'market.resource_amount');
 
     // remove all liquidity
@@ -270,7 +302,7 @@ fn test_liquidity_buy() {
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
 
-    // player resources
+    // // player resources
     // are on donkey
     let donkey_1_wood = ResourceImpl::get(world, (donkey_1_id, ResourceTypes::WOOD));
     let donkey_1_lords = ResourceImpl::get(world, (donkey_1_id, ResourceTypes::LORDS));
@@ -280,13 +312,13 @@ fn test_liquidity_buy() {
     let donkey_2_wood = ResourceImpl::get(world, (donkey_2_id, ResourceTypes::WOOD));
     let donkey_2_lords = ResourceImpl::get(world, (donkey_2_id, ResourceTypes::LORDS));
     assert(donkey_2_wood.balance == LIQUIDITY_AMOUNT - SWAP_AMOUNT, 'wood donkey 2');
-    assert(donkey_2_lords.balance == 2099, 'lords donkey 2');
+    assert(donkey_2_lords.balance == 21_112, 'lords donkey 2');
 
     let player_wood = ResourceImpl::get(world, (PLAYER_2_ID, ResourceTypes::WOOD));
     let player_lords = ResourceImpl::get(world, (PLAYER_2_ID, ResourceTypes::LORDS));
     assert(player_wood.balance == INITIAL_RESOURCE_BALANCE - LIQUIDITY_AMOUNT, 'player wood');
-    // 10000 - 1000 (liquidity) - 1000 (payout) - 199 (fees)
-    assert(player_lords.balance == 7801, 'player lords');
+    // initial 100_000 - 10_000 (liquidity) - 11_112 (payment for swap) - 1_111 (bank fee)
+    assert_eq!(player_lords.balance, 77777);
 
     assert(market.lords_amount == 0, 'market.lords_amount');
     assert(market.resource_amount == 0, 'market.resource_amount');
@@ -295,8 +327,8 @@ fn test_liquidity_buy() {
     // owner bank account
     let bank_lords = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
     let bank_wood = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::WOOD));
-    // bank has 99 lords fees from the swap
-    assert(bank_lords.balance == 99, 'bank lords');
+    // bank has 10% of 11_112 = 1111;
+    assert_eq!(bank_lords.balance, 1111);
     assert(bank_wood.balance == 0, 'bank wood');
 }
 
@@ -328,10 +360,9 @@ fn test_liquidity_sell() {
         .sell(bank_entity_id, PLAYER_2_ID, ResourceTypes::WOOD, SWAP_AMOUNT);
 
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
-    // remove 286 lords from the pool and give it to seller
-    assert(market.lords_amount == 714, 'market.lords_amount');
-    // initial reserves + 449 (input - owner fees)
-    assert(market.resource_amount == 1449, 'market.resource_amount');
+    assert_eq!(market.lords_amount, 690);
+    // initial reserves + sold resouce amount
+    assert_eq!(market.resource_amount, 1500);
 
     // player resources
     let wood = ResourceImpl::get(world, (PLAYER_2_ID, ResourceTypes::WOOD));
@@ -350,13 +381,16 @@ fn test_liquidity_sell() {
     let donkey_1_wood = ResourceImpl::get(world, (donkey_1_id, ResourceTypes::WOOD));
     let donkey_1_lords = ResourceImpl::get(world, (donkey_1_id, ResourceTypes::LORDS));
     assert(donkey_1_wood.balance == 0, 'wood donkey 1');
-    assert(donkey_1_lords.balance == 286, 'lords donkey 1');
+    assert_eq!(donkey_1_lords.balance, 279);
 
     let donkey_2_wood = ResourceImpl::get(world, (donkey_2_id, ResourceTypes::WOOD));
     let donkey_2_lords = ResourceImpl::get(world, (donkey_2_id, ResourceTypes::LORDS));
-    // 51 are the fees paid to the bank
-    assert(donkey_2_wood.balance == LIQUIDITY_AMOUNT + SWAP_AMOUNT - 51, 'wood donkey 2');
-    assert(donkey_2_lords.balance == LIQUIDITY_AMOUNT - 286, 'lords donkey 2');
+    assert(donkey_2_wood.balance == LIQUIDITY_AMOUNT + SWAP_AMOUNT, 'wood donkey 2');
+
+    // the initial total belonging to player was 310
+    // player paid 10% to bank = 31
+    // player is left with 310 -31 = 279
+    assert(donkey_2_lords.balance == LIQUIDITY_AMOUNT - (279 + 31), 'lords donkey 2');
 
     let player_wood = ResourceImpl::get(world, (PLAYER_2_ID, ResourceTypes::WOOD));
     let player_lords = ResourceImpl::get(world, (PLAYER_2_ID, ResourceTypes::LORDS));
@@ -374,9 +408,9 @@ fn test_liquidity_sell() {
     // owner bank account
     let bank_lords = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
     let bank_wood = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::WOOD));
-    // bank has 49 wood fees from the swap
-    assert(bank_lords.balance == 0, 'bank lords');
-    assert(bank_wood.balance == 49, 'bank wood');
+    // bank has 31 lords fee from the swap
+    assert(bank_lords.balance == 31, 'bank lords');
+    assert(bank_wood.balance == 0, 'bank wood');
 }
 
 #[test]
@@ -417,7 +451,7 @@ fn test_liquidity_no_drain() {
 
     // check state
     let liquidity = get!(world, (bank_entity_id, player3, ResourceTypes::WOOD), Liquidity);
-    // assert(liquidity.shares.mag == 12929148156482520729617, 'liquidity.shares');
+    assert_eq!(liquidity.shares.mag, 12297829382473034410666);
     // new player removes liquidity
     liquidity_systems_dispatcher
         .remove(bank_entity_id, PLAYER_3_ID, ResourceTypes::WOOD, liquidity.shares);
