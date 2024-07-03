@@ -8,18 +8,18 @@ import {
   DONKEY_ENTITY_TYPE,
   EternumGlobalConfig,
   ResourcesIds,
-  WeightConfig,
   TROOPS_STAMINAS,
+  WEIGHTS,
 } from "../constants";
-import { EternumProvider } from "../provider";
 import { BuildingType } from "../constants/structures";
+import { EternumProvider } from "../provider";
 import { TickIds } from "../types";
 import {
-  RESOURCE_BUILDING_COSTS_SCALED,
+  BUILDING_COSTS_SCALED,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  RESOURCE_BUILDING_COSTS_SCALED,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS_SCALED,
-  BUILDING_COSTS_SCALED,
 } from "../utils";
 
 // Function to configure all resources
@@ -128,15 +128,10 @@ export const setResourceBuildingConfig = async (account: Account, provider: Eter
 };
 
 export const setWeightConfig = async (account: Account, provider: EternumProvider) => {
-  const calldataArray = [];
-  for (const resourceId of Object.keys(WeightConfig) as unknown as ResourcesIds[]) {
-    const callData = {
-      entity_type: resourceId,
-      weight_gram: WeightConfig[resourceId],
-    };
-
-    calldataArray.push(callData);
-  }
+  const calldataArray = Object.entries(WEIGHTS).map(([resourceId, weight]) => ({
+    entity_type: resourceId,
+    weight_gram: weight * EternumGlobalConfig.resources.resourceMultiplier,
+  }));
 
   const tx = await provider.set_weight_config({
     signer: account,
