@@ -15,7 +15,7 @@ import InstancedModel from "../components/InstancedModel";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 
-const BASE_PATH = "/models/new-biomes/";
+const BASE_PATH = "/models/biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
   DeepOcean: BASE_PATH + "deepOcean.glb",
   Ocean: BASE_PATH + "ocean.glb",
