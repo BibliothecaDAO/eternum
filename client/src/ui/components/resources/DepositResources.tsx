@@ -9,7 +9,6 @@ import { useState } from "react";
 
 type DepositResourcesProps = {
   entityId: bigint;
-  resources: Resource[];
   battleInProgress?: boolean;
 };
 
