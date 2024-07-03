@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import Stats from "three/examples/jsm/libs/stats.module";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { MapControls } from "three/examples/jsm/controls/MapControls";
 import HexagonMap from "./objects/HexagonMap";
 
 import DetailedHexScene from "./objects/Hexception";
@@ -20,7 +20,7 @@ export default class Demo {
   private lightAmbient!: THREE.AmbientLight;
   private lightPoint!: THREE.DirectionalLight;
   private lightPoint2!: THREE.DirectionalLight;
-  private controls!: OrbitControls;
+  private controls!: MapControls;
 
   private locationManager!: LocationManager;
 
@@ -67,21 +67,6 @@ export default class Demo {
     this.locationManager = new LocationManager();
   }
 
-  private checkInitialLocation() {
-    const location = this.locationManager.getCol();
-    if (this.locationManager.getCol() && this.locationManager.getRow()) {
-      // Delay the transition to ensure the scene is fully loaded
-      setTimeout(() => {
-        this.transitionToHexByCoordinates(this.locationManager.getRow()!, this.locationManager.getCol()!);
-      }, 1000); // Adjust the delay as needed
-    }
-  }
-
-  // Add this new method
-  private transitionToHexByCoordinates(row: number, col: number) {
-    this.transitionToDetailedScene(row, col);
-  }
-
   initStats() {
     this.stats = new (Stats as any)();
     document.body.appendChild(this.stats.dom);
@@ -91,7 +76,7 @@ export default class Demo {
     this.scene = new THREE.Scene();
 
     // Change camera settings for 75-degree view
-    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
+    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 30);
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
     const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
     this.camera.position.set(0, cameraHeight, -cameraDepth);
@@ -107,12 +92,13 @@ export default class Demo {
     document.body.appendChild(this.renderer.domElement);
 
     // Adjust OrbitControls for new camera angle
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.enableRotate = true;
+    this.controls = new MapControls(this.camera, this.renderer.domElement);
+    this.controls.enableRotate = false;
     this.controls.enableZoom = true;
     this.controls.enablePan = true;
-    this.controls.panSpeed = 1.5;
-    this.controls.screenSpacePanning = true;
+    this.controls.panSpeed = 1;
+    this.controls.zoomToCursor = true;
+    this.controls.maxDistance = 20;
     this.controls.target.set(0, 0, 0);
     this.controls.addEventListener(
       "change",
@@ -128,37 +114,37 @@ export default class Demo {
     const shadowIntensity = 0.9;
     const lightColor = 0xffffff;
 
-    this.lightPoint = new THREE.DirectionalLight(lightColor, shadowIntensity);
-    this.lightPoint.position.set(50, 100, 50);
-    this.lightPoint.castShadow = true;
-    this.scene.add(this.lightPoint);
+    // this.lightPoint = new THREE.DirectionalLight(lightColor, shadowIntensity);
+    // this.lightPoint.position.set(50, 100, 50);
+    // this.lightPoint.castShadow = true;
+    // this.scene.add(this.lightPoint);
 
-    this.lightPoint2 = new THREE.DirectionalLight(lightColor, 0.4);
-    this.lightPoint2.position.set(-50, 100, -50);
-    this.lightPoint2.castShadow = false;
-    this.scene.add(this.lightPoint2);
+    // this.lightPoint2 = new THREE.DirectionalLight(lightColor, 0.4);
+    // this.lightPoint2.position.set(-50, 100, -50);
+    // this.lightPoint2.castShadow = false;
+    // this.scene.add(this.lightPoint2);
 
-    // Improve shadow quality
-    const mapSize = 2048;
-    const cameraNear = 1;
-    const cameraFar = 500;
-    this.lightPoint.shadow.mapSize.width = mapSize;
-    this.lightPoint.shadow.mapSize.height = mapSize;
-    this.lightPoint.shadow.camera.near = cameraNear;
-    this.lightPoint.shadow.camera.far = cameraFar;
-    this.lightPoint.shadow.bias = -0.001;
+    // // Improve shadow quality
+    // const mapSize = 2048;
+    // const cameraNear = 1;
+    // const cameraFar = 500;
+    // this.lightPoint.shadow.mapSize.width = mapSize;
+    // this.lightPoint.shadow.mapSize.height = mapSize;
+    // this.lightPoint.shadow.camera.near = cameraNear;
+    // this.lightPoint.shadow.camera.far = cameraFar;
+    // this.lightPoint.shadow.bias = -0.001;
 
-    // Adjust shadow camera frustum
-    const d = 200;
-    this.lightPoint.shadow.camera.left = -d;
-    this.lightPoint.shadow.camera.right = d;
-    this.lightPoint.shadow.camera.top = d;
-    this.lightPoint.shadow.camera.bottom = -d;
-    const cameraHelper = new THREE.CameraHelper(this.lightPoint.shadow.camera);
-    this.scene.add(cameraHelper);
+    // // Adjust shadow camera frustum
+    // const d = 200;
+    // this.lightPoint.shadow.camera.left = -d;
+    // this.lightPoint.shadow.camera.right = d;
+    // this.lightPoint.shadow.camera.top = d;
+    // this.lightPoint.shadow.camera.bottom = -d;
+    // const cameraHelper = new THREE.CameraHelper(this.lightPoint.shadow.camera);
+    // this.scene.add(cameraHelper);
 
-    const cameraHelper2 = new THREE.CameraHelper(this.lightPoint2.shadow.camera);
-    this.scene.add(cameraHelper2);
+    // const cameraHelper2 = new THREE.CameraHelper(this.lightPoint2.shadow.camera);
+    // this.scene.add(cameraHelper2);
 
     this.detailedScene = new DetailedHexScene(
       this.state,
@@ -170,7 +156,7 @@ export default class Demo {
     );
 
     // Add grid
-    this.hexGrid = new HexagonMap(this.scene, this.dojo, this.raycaster, this.camera, this.mouse, this.state);
+    this.hexGrid = new HexagonMap(this.scene, this.dojo, this.raycaster, this.controls, this.mouse, this.state);
     this.hexGrid.updateVisibleChunks();
 
     this.transitionManager = new TransitionManager(this.renderer);
@@ -181,22 +167,35 @@ export default class Demo {
     this.animate();
   }
 
+  private checkInitialLocation() {
+    // const location = this.locationManager.getCol();
+    // if (this.locationManager.getCol() && this.locationManager.getRow()) {
+    //   // Delay the transition to ensure the scene is fully loaded
+    //   setTimeout(() => {
+    //     this.transitionToHexByCoordinates(this.locationManager.getRow()!, this.locationManager.getCol()!);
+    //   }, 1000); // Adjust the delay as needed
+    // }
+  }
+
+  // Add this new method
+  private transitionToHexByCoordinates(row: number, col: number) {
+    this.transitionToDetailedScene(row, col);
+  }
+
   onMouseMove(event: MouseEvent) {
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   }
 
   initListeners(): void {
-    this.inputManager.initListeners(
-      this.onWindowResize.bind(this),
-      this.onHexClick.bind(this),
-      this.onMouseMove.bind(this),
-
-      // todo: add double click handler
-      this.onHexClick.bind(this),
-
-      this.transitionToMainScene.bind(this),
-    );
+    // this.inputManager.initListeners(
+    //   this.onWindowResize.bind(this),
+    //   this.onHexClick.bind(this),
+    //   this.onMouseMove.bind(this),
+    //   // todo: add double click handler
+    //   this.onHexClick.bind(this),
+    //   this.transitionToMainScene.bind(this),
+    // );
   }
 
   onHexClick() {
@@ -283,32 +282,14 @@ export default class Demo {
 
     if (this.controls) {
       this.controls.update();
-
-      // Calculate the camera offset based on the fixed angle and distance
-      const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
-      const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
-      const offset = new THREE.Vector3(0, cameraHeight, -cameraDepth);
-
-      // Calculate the desired camera position
-      const desiredCameraPosition = new THREE.Vector3().copy(this.controls.target).add(offset);
-
-      // Lerp the camera position
-      this.camera.position.lerp(desiredCameraPosition, this.lerpFactor);
-
-      // Calculate the desired controls target
-      const desiredControlsTarget = new THREE.Vector3(this.camera.position.x, 0, this.camera.position.z + cameraDepth);
-
-      // Lerp the controls target
-      this.controls.target.lerp(desiredControlsTarget, this.lerpFactor);
-
       // Look at the target
       // this.camera.lookAt(this.controls.target);
 
       // Update light positions to follow the camera
-      const lightOffset1 = new THREE.Vector3(0, 5, 5);
-      const lightOffset2 = new THREE.Vector3(0, -5, -5);
-      this.lightPoint.position.copy(this.camera.position).add(lightOffset1);
-      this.lightPoint2.position.copy(this.camera.position).add(lightOffset2);
+      // const lightOffset1 = new THREE.Vector3(0, 5, 5);
+      // const lightOffset2 = new THREE.Vector3(0, -5, -5);
+      // this.lightPoint.position.copy(this.camera.position).add(lightOffset1);
+      // this.lightPoint2.position.copy(this.camera.position).add(lightOffset2);
     }
 
     if (this.currentScene === "main") {

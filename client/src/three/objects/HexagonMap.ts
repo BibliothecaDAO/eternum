@@ -13,6 +13,7 @@ import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import InstancedModel from "../components/InstancedModel";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
+import { MapControls } from "three/examples/jsm/controls/MapControls";
 
 export const biomeModelPaths: Record<BiomeType, string> = {
   DeepOcean: "/models/new-biomes/deepocean.glb",
@@ -41,9 +42,13 @@ export default class HexagonMap {
   private fogManager: FogManager;
   contextMenuManager: ContextMenuManager;
 
-  private chunkSize = 13; // Size of each chunk
+  private chunkSize = 15; // Size of each chunk
+  private renderChunkSize = {
+    width: 35,
+    height: 30,
+  };
   private loadedChunks: Map<string, THREE.Group> = new Map();
-  private hexSize = 0.8;
+  private hexSize = 1;
 
   private originalColor: THREE.Color = new THREE.Color("white");
 
@@ -56,7 +61,7 @@ export default class HexagonMap {
     private scene: Scene,
     private dojoConfig: SetupResult,
     private raycaster: Raycaster,
-    private camera: THREE.PerspectiveCamera,
+    private controls: MapControls,
     private mouse: THREE.Vector2,
     private state: ThreeStore,
   ) {
@@ -65,12 +70,12 @@ export default class HexagonMap {
 
     this.biome = new Biome();
 
-    this.fogManager = new FogManager(scene, camera);
+    this.fogManager = new FogManager(scene, controls.object as THREE.PerspectiveCamera);
 
     this.contextMenuManager = new ContextMenuManager(
       scene,
       raycaster,
-      camera,
+      controls.object as THREE.PerspectiveCamera,
       mouse,
       this.loadedChunks,
       this.hexSize,
@@ -100,7 +105,7 @@ export default class HexagonMap {
                 child.receiveShadow = true;
               }
             });
-            const tmp = new InstancedModel(model, this.chunkSize * 2 * this.chunkSize * 2);
+            const tmp = new InstancedModel(model, this.renderChunkSize.width * this.renderChunkSize.height);
             this.biomeModels.set(biome as BiomeType, tmp);
             this.scene.add(tmp.group);
             resolve();
@@ -254,7 +259,7 @@ export default class HexagonMap {
 
   updateVisibleChunks() {
     const cameraPosition = new THREE.Vector3();
-    this.camera.getWorldPosition(cameraPosition);
+    cameraPosition.copy(this.controls.target);
 
     // Adjust the camera position to load chunks earlier in both directions
     const adjustedX = cameraPosition.x + (this.chunkSize * this.hexSize * Math.sqrt(3)) / 2;
@@ -271,7 +276,7 @@ export default class HexagonMap {
       const startCol = chunkX * this.chunkSize;
       const startRow = chunkZ * this.chunkSize;
 
-      this.updateHexagonGrid(startRow, startCol, this.chunkSize * 2, this.chunkSize * 2);
+      this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
     }
   }
 
@@ -279,14 +284,14 @@ export default class HexagonMap {
     const characterPosition = this.character.getWorldPosition();
 
     // Position the camera above and behind the character
-    this.camera.position.set(
+    this.controls.object.position.set(
       characterPosition.x,
       characterPosition.y + 15, // Adjust this value to change camera height
       characterPosition.z + 15, // Adjust this value to change camera distance
     );
 
     // Make the camera look at the character
-    this.camera.lookAt(characterPosition);
+    this.controls.object.lookAt(characterPosition);
   }
 
   update(deltaTime: number) {
