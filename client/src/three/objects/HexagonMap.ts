@@ -16,22 +16,22 @@ import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 
 export const biomeModelPaths: Record<BiomeType, string> = {
-  DeepOcean: "/models/new-biomes/deepocean.glb",
-  Ocean: "/models/new-biomes/ocean.glb",
-  Beach: "/models/new-biomes/beach.glb",
-  Scorched: "/models/new-biomes/scorched.glb",
-  Bare: "/models/new-biomes/bare.glb",
-  Tundra: "/models/new-biomes/tundra.glb",
-  Snow: "/models/new-biomes/snow.glb",
-  TemperateDesert: "/models/new-biomes/temperatedesert.glb",
-  Shrubland: "/models/new-biomes/shrublands.glb",
-  Taiga: "/models/new-biomes/taiga.glb",
-  Grassland: "/models/new-biomes/grassland.glb",
-  TemperateDeciduousForest: "/models/new-biomes/deciduousforest.glb",
-  TemperateRainForest: "/models/new-biomes/temperaterainforest.glb",
-  SubtropicalDesert: "/models/new-biomes/subtropicaldesert.glb",
-  TropicalSeasonalForest: "/models/new-biomes/tropicalseasonalforest.glb",
-  TropicalRainForest: "/models/new-biomes/tropicalrainforest.glb",
+  DeepOcean: "/models/biomes/deepOcean.glb",
+  Ocean: "/models/biomes/ocean.glb",
+  Beach: "/models/biomes/beach.glb",
+  Scorched: "/models/biomes/scorched.glb",
+  Bare: "/models/biomes/desert.glb",
+  Tundra: "/models/biomes/tundra.glb",
+  Snow: "/models/biomes/snow.glb",
+  TemperateDesert: "/models/biomes/temperateDesert.glb",
+  Shrubland: "/models/biomes/shrubland.glb",
+  Taiga: "/models/biomes/taiga_merged.glb",
+  Grassland: "/models/biomes/grassland.glb",
+  TemperateDeciduousForest: "/models/biomes/deciduousForest.glb",
+  TemperateRainForest: "/models/biomes/temperateRainforest.glb",
+  SubtropicalDesert: "/models/biomes/subtropicalDesert.glb",
+  TropicalSeasonalForest: "/models/biomes/tropicalSeasonalForest.glb",
+  TropicalRainForest: "/models/biomes/tropicalRainforest.glb",
 };
 
 export default class HexagonMap {
@@ -42,9 +42,9 @@ export default class HexagonMap {
   private fogManager: FogManager;
   contextMenuManager: ContextMenuManager;
 
-  private chunkSize = 15; // Size of each chunk
+  private chunkSize = 10; // Size of each chunk
   private renderChunkSize = {
-    width: 35,
+    width: 40,
     height: 30,
   };
   private loadedChunks: Map<string, THREE.Group> = new Map();
@@ -163,43 +163,57 @@ export default class HexagonMap {
     };
 
     const hexPositions: THREE.Vector3[] = [];
-    Promise.all(this.modelLoadPromises).then(() => {
-      for (let row = -rows / 2; row < rows / 2; row++) {
-        for (let col = -cols / 2; col < cols / 2; col++) {
-          hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
+    const batchSize = 25; // Adjust batch size as needed
+    let currentIndex = 0;
 
-          dummy.position.x = (startCol + col) * horizontalSpacing + ((startRow + row) % 2) * (horizontalSpacing / 2);
-          dummy.position.z = -(startRow + row) * verticalSpacing;
-          dummy.position.y = 0;
-          dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
+    const processBatch = () => {
+      const endIndex = Math.min(currentIndex + batchSize, rows * cols);
+      for (let i = currentIndex; i < endIndex; i++) {
+        const row = Math.floor(i / cols) - rows / 2;
+        const col = (i % cols) - cols / 2;
 
-          const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
-          const rotationIndex = Math.floor(rotationSeed * 6);
-          const randomRotation = (rotationIndex * Math.PI) / 3;
-          dummy.rotation.y = randomRotation;
+        hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
 
-          const biome = this.biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
+        dummy.position.x = (startCol + col) * horizontalSpacing + ((startRow + row) % 2) * (horizontalSpacing / 2);
+        dummy.position.z = -(startRow + row) * verticalSpacing;
+        dummy.position.y = 0;
+        dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
 
-          const entities = getEntitiesWithValue(this.dojoConfig.components.Position, {
-            x: startCol + col + FELT_CENTER,
-            y: startRow + row + FELT_CENTER,
+        const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
+        const rotationIndex = Math.floor(rotationSeed * 6);
+        const randomRotation = (rotationIndex * Math.PI) / 3;
+        dummy.rotation.y = randomRotation;
+
+        const biome = this.biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
+
+        const entities = getEntitiesWithValue(this.dojoConfig.components.Position, {
+          x: startCol + col + FELT_CENTER,
+          y: startRow + row + FELT_CENTER,
+        });
+
+        if (entities.size > 0) console.log(entities);
+
+        dummy.updateMatrix();
+
+        biomeHexes[biome].push(dummy.matrix.clone());
+      }
+
+      currentIndex = endIndex;
+      if (currentIndex < rows * cols) {
+        requestAnimationFrame(processBatch);
+      } else {
+        for (const [biome, matrices] of Object.entries(biomeHexes)) {
+          const hexMesh = this.biomeModels.get(biome as BiomeType)!;
+          matrices.forEach((matrix, index) => {
+            hexMesh.setMatrixAt(index, matrix);
           });
-
-          if (entities.size > 0) console.log(entities);
-
-          dummy.updateMatrix();
-
-          biomeHexes[biome].push(dummy.matrix.clone());
+          hexMesh.setCount(matrices.length);
         }
       }
-      for (const [biome, matrices] of Object.entries(biomeHexes)) {
-        const hexMesh = this.biomeModels.get(biome as BiomeType)!;
-        matrices.forEach((matrix, index) => {
-          hexMesh.setMatrixAt(index, matrix);
-        });
-        hexMesh.setCount(matrices.length);
-        console.log("updating");
-      }
+    };
+
+    Promise.all(this.modelLoadPromises).then(() => {
+      requestAnimationFrame(processBatch);
     });
   }
 
