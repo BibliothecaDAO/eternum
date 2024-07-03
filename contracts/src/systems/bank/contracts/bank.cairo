@@ -5,10 +5,17 @@ use eternum::models::position::{Coord};
 #[dojo::interface]
 trait IBankSystems {
     fn create_bank(
-        ref world: IWorldDispatcher, realm_entity_id: ID, coord: Coord, owner_fee_scaled: u128
+        ref world: IWorldDispatcher,
+        realm_entity_id: ID,
+        coord: Coord,
+        owner_fee_num: u128,
+        owner_fee_denom: u128,
     ) -> ID;
     fn change_owner_fee(
-        ref world: IWorldDispatcher, bank_entity_id: u128, new_swap_fee_unscaled: u128
+        ref world: IWorldDispatcher,
+        bank_entity_id: u128,
+        new_owner_fee_num: u128,
+        new_owner_fee_denom: u128,
     );
 }
 
@@ -31,7 +38,11 @@ mod bank_systems {
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_bank(
-            ref world: IWorldDispatcher, realm_entity_id: ID, coord: Coord, owner_fee_scaled: u128,
+            ref world: IWorldDispatcher,
+            realm_entity_id: ID,
+            coord: Coord,
+            owner_fee_num: u128,
+            owner_fee_denom: u128,
         ) -> ID {
             let bank_entity_id: ID = world.uuid().into();
 
@@ -56,7 +67,9 @@ mod bank_systems {
                 (
                     Structure { entity_id: bank_entity_id, category: StructureCategory::Bank },
                     StructureCount { coord, count: 1 },
-                    Bank { entity_id: bank_entity_id, owner_fee_scaled, exists: true },
+                    Bank {
+                        entity_id: bank_entity_id, owner_fee_num, owner_fee_denom, exists: true
+                    },
                     Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },
                     Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() }
                 )
@@ -66,7 +79,10 @@ mod bank_systems {
         }
 
         fn change_owner_fee(
-            ref world: IWorldDispatcher, bank_entity_id: u128, new_swap_fee_unscaled: u128
+            ref world: IWorldDispatcher,
+            bank_entity_id: u128,
+            new_owner_fee_num: u128,
+            new_owner_fee_denom: u128,
         ) {
             let player = starknet::get_caller_address();
 
@@ -74,8 +90,8 @@ mod bank_systems {
             assert(owner.address == player, 'Only owner can change fee');
 
             let mut bank = get!(world, bank_entity_id, Bank);
-            bank.owner_fee_scaled = new_swap_fee_unscaled;
-
+            bank.owner_fee_num = new_owner_fee_num;
+            bank.owner_fee_denom = new_owner_fee_denom;
             set!(world, (bank));
         }
     }

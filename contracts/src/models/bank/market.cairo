@@ -48,19 +48,80 @@ struct Market {
 
 #[generate_trait]
 impl MarketImpl of MarketTrait {
-    fn buy(self: @Market, quantity: u128) -> u128 {
-        assert(quantity < *self.resource_amount, 'not enough liquidity');
-        let (quantity, available, cash) = normalize(quantity, self);
-        let k = cash * available;
-        let cost = (k / (available - quantity)) - cash;
-        cost
+    fn get_input_price(
+        fee_rate_num: u128,
+        fee_rate_denom: u128,
+        input_amount: u128,
+        input_reserve: u128,
+        output_reserve: u128
+    ) -> u128 {
+        // Ensure reserves are not zero
+        assert(input_reserve > 0 && output_reserve > 0, 'Reserves must be > zero');
+
+        // Apply the fee to the input amount
+        let input_amount_after_fee = (input_amount * (fee_rate_denom - fee_rate_num))
+            / fee_rate_denom;
+
+        // Calculate the output amount based on the constant product formula
+        // (x + Δx) * (y - Δy) = k, where k = x * y
+        // Solving for Δy:
+        // Δy = (y * Δx) / (x + Δx)
+        let numerator = input_amount_after_fee * output_reserve;
+        let denominator = input_reserve + input_amount_after_fee;
+
+        // Calculate and return the output amount
+        numerator / denominator
     }
 
-    fn sell(self: @Market, quantity: u128) -> u128 {
-        let (quantity, available, cash) = normalize(quantity, self);
-        let k = cash * available;
-        let payout = cash - (k / (available + quantity));
-        payout
+    // Here the user gets the requested output but pays more in price to 
+    // account for lp fees. i.e fees are paid in input token
+    fn get_output_price(
+        fee_rate_num: u128,
+        fee_rate_denom: u128,
+        output_amount: u128,
+        input_reserve: u128,
+        output_reserve: u128
+    ) -> u128 {
+        // Ensure reserves are not zero and output amount is valid
+        assert(input_reserve > 0 && output_reserve > 0, 'Reserves must be > zero');
+        assert(output_amount < output_reserve, 'Output amount exceeds reserve');
+
+        // Calculate input amount based on the constant product formula with fee
+        // (x + Δx) * (y - Δy) = k, where k = x * y
+        // Solving for Δx and including the fee:
+        // Δx = (x * Δy) / ((y - Δy) * (1 - fee))
+        let numerator = input_reserve * output_amount * fee_rate_denom;
+        let denominator = (output_reserve - output_amount) * (fee_rate_denom - fee_rate_num);
+
+        // Add 1 to round up the result, ensuring sufficient input is provided
+        (numerator / denominator) + 1
+    }
+
+
+    fn buy(
+        self: @Market, lp_fee_num: u128, lp_fee_denom: u128, desired_resource_amount: u128
+    ) -> u128 {
+        let lords_cost = MarketImpl::get_output_price(
+            lp_fee_num,
+            lp_fee_denom,
+            desired_resource_amount,
+            *self.lords_amount,
+            *self.resource_amount
+        );
+        lords_cost
+    }
+
+    fn sell(
+        self: @Market, lp_fee_num: u128, lp_fee_denom: u128, sell_resource_amount: u128
+    ) -> u128 {
+        let lords_received = MarketImpl::get_input_price(
+            lp_fee_num,
+            lp_fee_denom,
+            sell_resource_amount,
+            *self.resource_amount,
+            *self.lords_amount
+        );
+        lords_received
     }
 
     // Get normalized reserve cash amount and item quantity
@@ -72,7 +133,7 @@ impl MarketImpl of MarketTrait {
 
     // Check if the market has liquidity
     fn has_liquidity(self: @Market) -> bool {
-        *self.lords_amount > 0 || *self.resource_amount > 0
+        *self.total_shares > FixedTrait::ZERO()
     }
 
     // Given some amount of cash, return the equivalent/optimal quantity of items
@@ -84,19 +145,8 @@ impl MarketImpl of MarketTrait {
         // Get normalized reserve cash amount and item quantity
         let (reserve_amount, reserve_quantity) = self.get_reserves();
 
-        // Convert amount to fixed point
-        let amount = FixedTrait::new_unscaled(amount, false);
-
-        // Convert reserve amount and quantity to fixed point
-        let reserve_amount = FixedTrait::new_unscaled(reserve_amount, false);
-        let reserve_quantity = FixedTrait::new_unscaled(reserve_quantity, false);
-
         // dy = Y * dx / X
-        let quantity_optimal = (reserve_quantity * amount) / reserve_amount;
-
-        // Convert from fixed point to u128
-        let res: u128 = quantity_optimal.try_into().unwrap();
-        res
+        (reserve_quantity * amount) / reserve_amount
     }
 
     // Given some quantity of items, return the equivalent/optimal amount of cash
@@ -108,21 +158,8 @@ impl MarketImpl of MarketTrait {
         // Get normalized reserve cash amount and item quantity
         let (reserve_amount, reserve_quantity) = self.get_reserves();
 
-        // Convert reserve amount and quantity to fixed point
-        let reserve_amount = FixedTrait::new_unscaled(reserve_amount, false);
-        let reserve_quantity = FixedTrait::new_unscaled(reserve_quantity, false);
-
-        // Normalize quantity
-        let quantity: u128 = quantity.into();
-
-        // Convert quantity to fixed point
-        let quantity = FixedTrait::new_unscaled(quantity, false);
-
         // dx = X * dy / Y
-        let amount_optimal = (reserve_amount * quantity) / reserve_quantity;
-
-        // Convert from fixed point to u128
-        amount_optimal.try_into().unwrap()
+        (reserve_amount * quantity) / reserve_quantity
     }
 
     // Inner function to add liquidity to the market, computes the optimal amount and quantity
