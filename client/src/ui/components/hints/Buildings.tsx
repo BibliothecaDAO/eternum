@@ -78,11 +78,6 @@ export const Buildings = () => {
           ))}
         </tbody>
       </table>
-      <h4>Storage of Food</h4>
-      <p className="my-5">
-        You can only store a certain capacity of resources per your storehouses. Each storehouse grants you 10k per
-        resource. You can build more storehouses to increase your capacity.
-      </p>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { useModal } from "@/hooks/store/useModal";
+import { HintSection } from "@/ui/components/hints/HintModal";
 import { EntityList } from "@/ui/components/list/EntityList";
 import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
 import { BattlesArmyTable } from "@/ui/components/military/BattlesArmyTable";
@@ -13,7 +13,6 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const { playerStructures } = useEntities();
-  const { toggleModal } = useModal();
 
   const [location, _] = useLocation();
 
@@ -47,7 +46,7 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
 
   return (
     <div className="relative">
-      <HintModalButton className="absolute top-1 right-1" sectionName="Combat" />
+      <HintModalButton className="absolute top-1 right-1" section={HintSection.Combat} />
       {isMap ? (
         <Tabs
           selectedIndex={selectedTab}
@@ -72,6 +71,7 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
           list={playerStructures()}
           title="armies"
           panel={({ entity }) => <ArmyPanel entity={entity} />}
+          className="pt-10"
         />
       )}
     </div>
