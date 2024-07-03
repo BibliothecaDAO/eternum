@@ -51,4 +51,8 @@ export default class InstancedModel {
       }
     });
   }
+
+  clone() {
+    return this.group.clone();
+  }
 }

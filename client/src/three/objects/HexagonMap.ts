@@ -14,7 +14,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import InstancedModel from "../components/InstancedModel";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 
-const biomeModelPaths: Record<BiomeType, string> = {
+export const biomeModelPaths: Record<BiomeType, string> = {
   DeepOcean: "/models/new-biomes/deepocean.glb",
   Ocean: "/models/new-biomes/ocean.glb",
   Beach: "/models/new-biomes/beach.glb",

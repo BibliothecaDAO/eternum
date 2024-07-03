@@ -317,7 +317,7 @@ export default class Demo {
       this.hexGrid.contextMenuManager.checkHexagonHover();
       this.renderer.render(this.scene, this.camera);
     } else {
-      //this.detailedScene.update(deltaTime);
+      // this.detailedScene.update(deltaTime);
       this.renderer.render(this.detailedScene.scene, this.camera);
     }
   }
