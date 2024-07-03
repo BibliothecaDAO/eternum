@@ -15,7 +15,7 @@ import InstancedModel from "../components/InstancedModel";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 
-const BASE_PATH = "/models/biomes/";
+const BASE_PATH = "/models/new-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
   DeepOcean: BASE_PATH + "deepOcean.glb",
   Ocean: BASE_PATH + "ocean.glb",
@@ -97,6 +97,7 @@ export default class HexagonMap {
           path,
           (gltf) => {
             const model = gltf.scene as THREE.Group;
+            model.scale.set(0, 0, 0);
             model.position.set(0, 0, 0);
             model.rotation.y = Math.PI;
 

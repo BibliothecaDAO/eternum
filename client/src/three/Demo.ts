@@ -11,6 +11,7 @@ import { TransitionManager } from "./components/Transition";
 import _ from "lodash";
 import gsap from "gsap";
 import { LocationManager } from "./helpers/LocationManager";
+import GUI from "lil-gui";
 
 export default class Demo {
   private renderer!: THREE.WebGLRenderer;
@@ -19,7 +20,7 @@ export default class Demo {
   private raycaster: THREE.Raycaster;
   private mouse: THREE.Vector2;
   private lightAmbient!: THREE.AmbientLight;
-  private lightPoint!: THREE.DirectionalLight;
+  private mainDirectionalLight!: THREE.DirectionalLight;
   private lightPoint2!: THREE.DirectionalLight;
   private controls!: MapControls;
 
@@ -51,6 +52,8 @@ export default class Demo {
   private lastTime: number = 0;
 
   private dojo: SetupResult;
+
+  private gui: GUI = new GUI();
 
   constructor(dojoContext: SetupResult, initialState: ThreeStore) {
     this.raycaster = new THREE.Raycaster();
@@ -111,23 +114,31 @@ export default class Demo {
     );
 
     // Adjust point lights for new camera angle
-    this.lightAmbient = new THREE.AmbientLight(0xffffff, 3);
+    this.lightAmbient = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientFolder = this.gui.addFolder("Ambient Light");
+    ambientFolder.addColor(this.lightAmbient, "color");
+    ambientFolder.add(this.lightAmbient, "intensity", 0.5, 10, 0.1);
     this.scene.add(this.lightAmbient);
 
     const shadowIntensity = 0.9;
     const lightColor = 0xffffff;
 
-    // this.lightPoint = new THREE.DirectionalLight(lightColor, shadowIntensity);
-    // this.lightPoint.position.set(50, 100, 50);
-    // this.lightPoint.castShadow = true;
-    // this.scene.add(this.lightPoint);
+    this.mainDirectionalLight = new THREE.DirectionalLight(lightColor, shadowIntensity);
+    this.mainDirectionalLight.position.set(9, 20, -7);
+    this.mainDirectionalLight.target.position.set(0, 0, 0);
 
-    // this.lightPoint2 = new THREE.DirectionalLight(lightColor, 0.4);
-    // this.lightPoint2.position.set(-50, 100, -50);
-    // this.lightPoint2.castShadow = false;
-    // this.scene.add(this.lightPoint2);
+    const pointFolder = this.gui.addFolder("Directional Light");
+    pointFolder.addColor(this.mainDirectionalLight, "color");
+    pointFolder.add(this.mainDirectionalLight, "intensity", 0.5, 10, 0.1);
+    pointFolder.add(this.mainDirectionalLight.position, "x");
+    pointFolder.add(this.mainDirectionalLight.position, "y");
+    pointFolder.add(this.mainDirectionalLight.position, "z");
 
-    // // Improve shadow quality
+    //this.lightPoint.castShadow = true;
+    this.scene.add(this.mainDirectionalLight.target);
+    this.scene.add(this.mainDirectionalLight);
+
+    // Improve shadow quality
     // const mapSize = 2048;
     // const cameraNear = 1;
     // const cameraFar = 500;
@@ -137,14 +148,14 @@ export default class Demo {
     // this.lightPoint.shadow.camera.far = cameraFar;
     // this.lightPoint.shadow.bias = -0.001;
 
-    // // Adjust shadow camera frustum
+    // Adjust shadow camera frustum
     // const d = 200;
     // this.lightPoint.shadow.camera.left = -d;
     // this.lightPoint.shadow.camera.right = d;
     // this.lightPoint.shadow.camera.top = d;
     // this.lightPoint.shadow.camera.bottom = -d;
-    // const cameraHelper = new THREE.CameraHelper(this.lightPoint.shadow.camera);
-    // this.scene.add(cameraHelper);
+    const cameraHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight);
+    this.scene.add(cameraHelper);
 
     // const cameraHelper2 = new THREE.CameraHelper(this.lightPoint2.shadow.camera);
     // this.scene.add(cameraHelper2);
