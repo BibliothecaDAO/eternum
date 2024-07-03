@@ -286,7 +286,43 @@ mod tests {
 
     const TOLERANCE: u128 = 18446744073709550; // 0.001
 
-    // Helpers
+    const LP_FEE_NUM: u128 = 3;
+    const LP_FEE_DENOM: u128 = 1000; // 1/10  = 0.3% lp fee
+
+
+    fn assert_constant_product_check(
+        initial_reserve_x: u128,
+        initial_reserve_y: u128,
+        final_reserve_x: u128,
+        final_reserve_y: u128,
+        fee_rate_num: u128,
+        fee_rate_denom: u128
+    ) {
+        let initial_product = initial_reserve_x * initial_reserve_y;
+        let final_product = final_reserve_x * final_reserve_y;
+
+        // The final product should be greater than or equal to the initial product
+        if final_product < initial_product {
+            panic!("failed constant product {} {}", final_product, initial_product);
+        }
+
+        // Calculate the maximum allowed increase due to fees
+        let max_input = if final_reserve_x > initial_reserve_x {
+            final_reserve_x - initial_reserve_x
+        } else {
+            final_reserve_y - initial_reserve_y
+        };
+
+        let max_fee = (max_input * fee_rate_num) / fee_rate_denom;
+        let max_product_increase = initial_product
+            + (max_fee * initial_product / initial_reserve_x);
+
+        // acceptable error margin (0.01% of the initial product)
+        let error_margin = initial_product / 10_000;
+
+        // Check if the final product is within the allowed range
+        assert_le!(final_product, max_product_increase + error_margin);
+    }
 
     fn assert_approx_equal(expected: Fixed, actual: Fixed, tolerance: u128) {
         let left_bound = expected - FixedTrait::new(tolerance, false);
@@ -295,7 +331,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ('not enough liquidity',))]
+    #[should_panic(expected: ('Output amount exceeds reserve',))]
     fn test_market_not_enough_quantity() {
         let market = Market {
             bank_entity_id: 1,
@@ -304,33 +340,105 @@ mod tests {
             resource_amount: 1,
             total_shares: FixedTrait::new_unscaled(1, false),
         }; // pool 1:1
-        let _cost = market.buy(10);
+        let _cost = market.buy(LP_FEE_NUM, LP_FEE_DENOM, 10);
     }
 
     #[test]
-    fn test_market_buy() {
+    fn test_market_buy_no_fee() {
         let market = Market {
             bank_entity_id: 1,
             resource_type: 1,
-            lords_amount: 1,
-            resource_amount: 10,
+            lords_amount: 170_000,
+            resource_amount: 150_000,
             total_shares: FixedTrait::new_unscaled(1, false),
-        }; // pool 1:10
-        let cost = market.buy(5);
-        assert(cost == 1, 'wrong cost');
+        }; // pool 17: 15
+
+        let desired_resource_amount = 14_890;
+        let lords_cost = market.buy(0, 1, desired_resource_amount);
+        assert_eq!(lords_cost, 18_736);
+
+        assert_constant_product_check(
+            market.lords_amount,
+            market.resource_amount,
+            market.lords_amount + lords_cost,
+            market.resource_amount - desired_resource_amount,
+            0,
+            1
+        )
     }
 
     #[test]
-    fn test_market_sell() {
+    fn test_market_buy_with_lp_fee() {
         let market = Market {
             bank_entity_id: 1,
             resource_type: 1,
-            lords_amount: 10000,
-            resource_amount: 1000,
+            lords_amount: 170_000,
+            resource_amount: 150_000,
             total_shares: FixedTrait::new_unscaled(1, false),
-        }; // pool 10:1
-        let payout = market.sell(5);
-        assert(payout == 50, 'wrong payout');
+        }; // pool 17: 15
+
+        // 10% lp fee
+        let desired_resource_amount = 14_890;
+        let lords_cost = market.buy(LP_FEE_NUM, LP_FEE_DENOM, desired_resource_amount);
+        assert_eq!(lords_cost, 18_792);
+
+        assert_constant_product_check(
+            market.lords_amount,
+            market.resource_amount,
+            market.lords_amount + lords_cost,
+            market.resource_amount - desired_resource_amount,
+            LP_FEE_NUM,
+            LP_FEE_DENOM
+        )
+    }
+
+
+    #[test]
+    fn test_market_sell_no_fee() {
+        let market = Market {
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 170_000,
+            resource_amount: 150_000,
+            total_shares: FixedTrait::new_unscaled(1, false),
+        }; // pool 17: 15
+
+        let sell_resource_amount = 17_500;
+        let lords_payout = market.sell(0, 1, sell_resource_amount);
+        assert_eq!(lords_payout, 17_761);
+
+        assert_constant_product_check(
+            market.lords_amount,
+            market.resource_amount,
+            market.lords_amount - lords_payout,
+            market.resource_amount + sell_resource_amount,
+            0,
+            1
+        )
+    }
+
+    #[test]
+    fn test_market_sell_with_fee() {
+        let market = Market {
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 170_000,
+            resource_amount: 150_000,
+            total_shares: FixedTrait::new_unscaled(1, false),
+        }; // pool 17: 15
+
+        let sell_resource_amount = 17_500;
+        let lords_payout = market.sell(LP_FEE_NUM, LP_FEE_DENOM, sell_resource_amount);
+        assert_eq!(lords_payout, 17_713);
+
+        assert_constant_product_check(
+            market.lords_amount,
+            market.resource_amount,
+            market.lords_amount - lords_payout,
+            market.resource_amount + sell_resource_amount,
+            LP_FEE_NUM,
+            LP_FEE_DENOM
+        )
     }
 
     #[test]
