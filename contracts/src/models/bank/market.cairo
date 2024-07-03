@@ -84,7 +84,12 @@ impl MarketImpl of MarketTrait {
     ) -> u128 {
         // Ensure reserves are not zero and output amount is valid
         assert(input_reserve > 0 && output_reserve > 0, 'Reserves must be > zero');
-        assert(output_amount < output_reserve, 'Output amount exceeds reserve');
+        assert!(
+            output_amount < output_reserve,
+            "Output amount exceeds reserve, amount: {}, reserve: {}",
+            output_amount,
+            output_reserve
+        );
 
         // Calculate input amount based on the constant product formula with fee
         // (x + Δx) * (y - Δy) = k, where k = x * y
@@ -287,7 +292,7 @@ mod tests {
     const TOLERANCE: u128 = 18446744073709550; // 0.001
 
     const LP_FEE_NUM: u128 = 3;
-    const LP_FEE_DENOM: u128 = 1000; // 1/10  = 0.3% lp fee
+    const LP_FEE_DENOM: u128 = 1000; // 3/1000  = 0.3% lp fee
 
 
     fn assert_constant_product_check(
@@ -331,7 +336,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ('Output amount exceeds reserve',))]
+    #[should_panic(expected: ("Output amount exceeds reserve, amount: 10, reserve: 1",))]
     fn test_market_not_enough_quantity() {
         let market = Market {
             bank_entity_id: 1,
