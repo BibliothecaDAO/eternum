@@ -93,7 +93,6 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
   };
 
   const send_resources = async (props: SystemProps.SendResourcesProps) => {
-	console.log(props);
     await provider.send_resources(props);
   };
 
