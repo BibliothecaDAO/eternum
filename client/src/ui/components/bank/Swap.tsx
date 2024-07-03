@@ -7,10 +7,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { useComponentValue } from "@dojoengine/react";
 import { ResourceBar } from "@/ui/components/bank/ResourceBar";
-import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { TravelInfo } from "../resources/ResourceWeight";
+import { useTravel } from "@/hooks/helpers/useTravel";
 
-const LORDS_RESOURCE_ID = 253n;
 const OWNER_FEE = EternumGlobalConfig.banks.ownerFees / 2 ** 64;
 const LP_FEE = EternumGlobalConfig.banks.lpFees / 2 ** 64;
 
@@ -24,12 +25,14 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
   } = useDojo();
 
   const { getBalance } = useResourceBalance();
+  const { computeTravelTime } = useTravel();
 
   const [isBuyResource, setIsBuyResource] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [resourceId, setResourceId] = useState<bigint>(1n);
   const [lordsAmount, setLordsAmount] = useState(0);
   const [resourceAmount, setResourceAmount] = useState(0);
+  const [canCarry, setCanCarry] = useState(false);
 
   const market = useComponentValue(Market, getEntityIdFromKeys([bankEntityId, resourceId]));
   const marketManager = useMemo(
@@ -50,7 +53,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
 
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount : resourceAmount;
-    const balanceId = isBuyResource ? LORDS_RESOURCE_ID : resourceId;
+    const balanceId = isBuyResource ? BigInt(ResourcesIds.Lords) : resourceId;
     return multiplyByPrecision(amount) <= getBalance(entityId, Number(balanceId)).balance;
   }, [isBuyResource, lordsAmount, resourceAmount, getBalance, entityId, resourceId]);
 
@@ -82,12 +85,12 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
         entityId={entityId}
         resources={
           isLords
-            ? resources.filter((r) => r.id === Number(LORDS_RESOURCE_ID))
-            : resources.filter((r) => r.id !== Number(LORDS_RESOURCE_ID))
+            ? resources.filter((r) => r.id === ResourcesIds.Lords)
+            : resources.filter((r) => r.id !== ResourcesIds.Lords)
         }
         amount={isLords ? lordsAmount : resourceAmount}
         setAmount={isLords ? setLordsAmount : setResourceAmount}
-        resourceId={isLords ? LORDS_RESOURCE_ID : resourceId}
+        resourceId={isLords ? BigInt(ResourcesIds.Lords) : resourceId}
         setResourceId={setResourceId}
         disableInput={disableInput}
       />
@@ -151,12 +154,34 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
           </table>
         </div>
         <div className="w-full flex flex-col justify-center mt-4">
-          <Button className="text-brown" isLoading={isLoading} disabled={!canSwap} onClick={onSwap} variant="primary">
+          <Button
+            className="text-brown"
+            isLoading={isLoading}
+            disabled={!canSwap || !canCarry}
+            onClick={onSwap}
+            variant="primary"
+          >
             Swap {isBuyResource ? "Lords" : chosenResourceName} for {isBuyResource ? chosenResourceName : "Lords"}
           </Button>
           {!canSwap && (
             <div className="px-3 text-danger font-bold">Warning: not enough resources or amount is zero</div>
           )}
+        </div>
+      </div>
+      <div className=" ">
+        <div className="p-10 bg-gold/10 clip-angled-sm h-auto">
+          <div className="flex flex-col w-full items-center">
+            <TravelInfo
+              entityId={entityId}
+              resources={
+                isBuyResource
+                  ? [{ resourceId: Number(resourceId), amount: resourceAmount }]
+                  : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }]
+              }
+              travelTime={computeTravelTime(bankEntityId, entityId, EternumGlobalConfig.speed.donkey)}
+              setCanCarry={setCanCarry}
+            />
+          </div>
         </div>
       </div>
     </div>
