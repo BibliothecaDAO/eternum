@@ -9,9 +9,11 @@ import { useState } from "react";
 
 type DepositResourcesProps = {
   entityId: bigint;
+  resources: Resource[];
+  battleInProgress?: boolean;
 };
 
-export const DepositResources = ({ entityId }: DepositResourcesProps) => {
+export const DepositResources = ({ entityId, battleInProgress }: DepositResourcesProps) => {
   const { account, setup } = useDojo();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -55,12 +57,12 @@ export const DepositResources = ({ entityId }: DepositResourcesProps) => {
           size="md"
           className="w-full"
           isLoading={isLoading}
-          disabled={entityState === EntityState.Traveling}
+          disabled={entityState === EntityState.Traveling || battleInProgress}
           onClick={() => onOffload(depositEntityId)}
           variant="primary"
           withoutSound
         >
-          {`Deposit Resources`}
+          {battleInProgress ? `Battle in progress` : `Deposit Resources`}
         </Button>
       </div>
     )
