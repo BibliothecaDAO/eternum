@@ -11,7 +11,7 @@ import { useEntities } from "@/hooks/helpers/useEntities";
 import { EntityType, EntityState, determineEntityState } from "@bibliothecadao/eternum";
 import { DepositResources } from "../resources/DepositResources";
 import { useState } from "react";
-import { useBattlesByPosition } from "@/hooks/helpers/useBattles";
+import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -44,7 +44,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
   const depositEntityId = getOwnedEntityOnPosition(entityId);
 
-  const battleInProgress = entity?.position ? useBattlesByPosition(entity.position) !== undefined : false;
+  const battleInProgress = entity?.position ? getBattlesByPosition(entity.position) !== undefined : false;
 
   if (entityState === EntityState.NotApplicable) return null;
 

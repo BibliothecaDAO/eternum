@@ -11,14 +11,11 @@ import { DepositResources } from "../resources/DepositResources";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { ArmyViewCard } from "./ArmyViewCard";
-import { useBattles } from "@/hooks/helpers/useBattles";
+import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
 
 export const EntityArmyList = ({ structure }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: structure?.entity_id });
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
-  const { allBattles } = useBattles();
-
-  const battles = allBattles();
 
   const {
     account: { account },
@@ -38,10 +35,6 @@ export const EntityArmyList = ({ structure }: any) => {
       army_owner_id: structure.entity_id,
       is_defensive_army,
     }).finally(() => setIsLoading(false));
-  };
-
-  const battleAtPosition = (position: Position) => {
-    return !!battles.find((battle) => battle?.x === position.x && battle?.y === position.y);
   };
 
   return (
@@ -86,7 +79,7 @@ export const EntityArmyList = ({ structure }: any) => {
             <InventoryResources entityId={entity.entity_id} />
             <DepositResources
               entityId={entity.entity_id}
-              battleInProgress={battleAtPosition({ x: entity.x, y: entity.y })}
+              battleInProgress={getBattlesByPosition({ x: entity.x, y: entity.y }) !== undefined}
             />
           </React.Fragment>
         )}
