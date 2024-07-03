@@ -1,6 +1,7 @@
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { LiquidityType, MarketType } from "./types";
+import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 
 export class MarketManager {
   marketModel: Component<MarketType> | OverridableComponent<MarketType>;
@@ -80,30 +81,69 @@ export class MarketManager {
     return Math.floor(lordsOptimal);
   };
 
+  public getOutputAmount(inputAmount: number, inputReserve: bigint, outputReserve: bigint) {
+    // Ensure reserves are not zero and input amount is valid
+    if (inputReserve <= 0n || outputReserve <= 0n) {
+        throw new Error('Reserves must be > zero');
+    }
+    if (inputAmount <= 0) {
+        throw new Error('Input amount must be > zero');
+    }
+
+    // Calculate the input amount after fee
+    const feeRateNum = EternumGlobalConfig.banks.ownerFeesNumerator;
+    const feeRateDenom = EternumGlobalConfig.banks.ownerFeesDenominator;
+    const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
+
+    // Calculate output amount based on the constant product formula with fee
+    // (x + Δx) * (y - Δy) = k, where k = x * y
+    // Solving for Δy and including the fee:
+    // Δy = y - (x * y) / (x + Δx * (1 - fee))
+
+    const numerator = BigInt(inputAmountWithFee) * BigInt(outputReserve);
+    const denominator = BigInt(inputReserve) * BigInt(feeRateDenom) + inputAmountWithFee;
+
+    // Subtract 1 to round down the result, ensuring the exchange rate is maintained
+    return (numerator / denominator);
+}
+
+  public getInputPrice(inputAmount: number, inputReserve: bigint, outputReserve: bigint) {
+    // Ensure reserves are not zero and input amount is valid
+    if (inputReserve <= 0 || outputReserve <= 0) {
+        throw new Error('Reserves must be > zero');
+    }
+    if (inputAmount <= 0) {
+        throw new Error('Input amount must be > zero');
+    }
+
+    // Calculate the input amount after fee
+    const feeRateNum = EternumGlobalConfig.banks.ownerFeesNumerator;
+    const feeRateDenom = EternumGlobalConfig.banks.ownerFeesDenominator;
+    const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
+
+    // Calculate output amount based on the constant product formula with fee
+    // (x + Δx) * (y - Δy) = k, where k = x * y
+    // Solving for Δy:
+    // Δy = (y * Δx) / (x + Δx)
+    const numerator = BigInt(outputReserve) * inputAmountWithFee;
+    const denominator = (BigInt(inputReserve) * BigInt(feeRateDenom)) + inputAmountWithFee;
+
+    // Round down the result
+    return numerator / denominator;
+}
   public buyResource = (lordsAmount: number) => {
     const market = this.getMarket();
     if (!market) return 0;
-    const cashInput = lordsAmount;
-    const available = Number(market.resource_amount);
-    const cash = Number(market.lords_amount);
 
-    let k = cash * available;
-    let newCash = cash + cashInput;
-    let newResource = k / newCash;
-    let resourcePayout = available - newResource;
-
-    return Math.floor(resourcePayout);
+    let outputAmount = this.getOutputAmount(lordsAmount, market.lords_amount, market.resource_amount);
+    return Number(outputAmount);
   };
 
   public sellResource = (resourceAmount: number) => {
     const market = this.getMarket();
     if (!market) return 0;
-    const quantity = resourceAmount;
-    const available = Number(market.resource_amount);
-    const cash = Number(market.lords_amount);
-    let k = cash * available;
-    let payout = cash - k / (available + quantity);
-    return Math.floor(payout);
+    let inputPrice = this.getInputPrice(resourceAmount, market.resource_amount, market.lords_amount);
+    return Number(inputPrice);
   };
 
   // price difference between swapping 1 resource and swapping N resources
