@@ -11,10 +11,10 @@ import { DepositResources } from "../resources/DepositResources";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { ArmyViewCard } from "./ArmyViewCard";
+import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
 
 export const EntityArmyList = ({ structure }: any) => {
   const { entityArmies } = useEntityArmies({ entity_id: structure?.entity_id });
-
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const {
@@ -77,7 +77,10 @@ export const EntityArmyList = ({ structure }: any) => {
             {/* <StaminaResource entityId={entity.entity_id} className="mb-3" /> */}
             <ArmyManagementCard owner_entity={structure?.entity_id} entity={entity} />
             <InventoryResources entityId={entity.entity_id} />
-            <DepositResources entityId={entity.entity_id} />
+            <DepositResources
+              entityId={entity.entity_id}
+              battleInProgress={getBattlesByPosition({ x: entity.x, y: entity.y }) !== undefined}
+            />
           </React.Fragment>
         )}
         questing={
