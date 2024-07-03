@@ -18,7 +18,7 @@ export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProp
         <thead>
           <tr className="uppercase">
             <th className="text-left">Pair</th>
-            {/* <th>Total TVL</th> */}
+            <th className="text-left">Price</th>
             <th className="text-left flex gap-1">
               <ResourceIcon resource={"Lords"} size="md" />
             </th>

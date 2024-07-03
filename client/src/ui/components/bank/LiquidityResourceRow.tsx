@@ -84,6 +84,9 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
   return (
     <tr className="text-lg hover:bg-gold/20 my-1 border border-gold/10">
       <td>{pair}</td>
+      <td className="flex items-center">
+        {marketManager.getMarketPrice().toFixed(2)} <ResourceIcon resource="Lords" size="sm" />
+      </td>
       <td>{divideByPrecision(totalLords).toLocaleString()}</td>
       <td>{divideByPrecision(totalResource).toLocaleString()}</td>
       <td>{divideByPrecision(lordsAmount).toLocaleString()}</td>
