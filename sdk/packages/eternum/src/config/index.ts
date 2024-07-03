@@ -177,7 +177,8 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
   const txBank = await provider.set_bank_config({
     signer: account,
     lords_cost: EternumGlobalConfig.banks.lordsCost * EternumGlobalConfig.resources.resourcePrecision,
-    lp_fee_scaled: EternumGlobalConfig.banks.lpFees,
+    lp_fee_num: EternumGlobalConfig.banks.lpFeesNumerator,
+    lp_fee_denom: EternumGlobalConfig.banks.lpFeesDenominator,
   });
 
   console.log(`Configuring bank config ${txBank.statusReceipt}...`);
