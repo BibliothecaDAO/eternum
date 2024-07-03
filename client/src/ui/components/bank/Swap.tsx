@@ -12,8 +12,8 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { useTravel } from "@/hooks/helpers/useTravel";
 
-const OWNER_FEE = EternumGlobalConfig.banks.ownerFees / 2 ** 64;
-const LP_FEE = EternumGlobalConfig.banks.lpFees / 2 ** 64;
+const OWNER_FEE = EternumGlobalConfig.banks.ownerFeesNumerator / EternumGlobalConfig.banks.ownerFeesDenominator;
+const LP_FEE = EternumGlobalConfig.banks.lpFeesNumerator / EternumGlobalConfig.banks.lpFeesDenominator;
 
 export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint; entityId: bigint }) => {
   const {
