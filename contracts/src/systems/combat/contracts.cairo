@@ -1183,7 +1183,7 @@ mod combat_systems {
             world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
         ) -> u128 {
             let mut army_id: u128 = world.uuid().into();
-            
+
             let army_owner_position: Position = get!(world, army_owner_id, Position);
             set!(
                 world,

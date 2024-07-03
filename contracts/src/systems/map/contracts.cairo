@@ -7,14 +7,15 @@ trait IMapSystems {
 
 #[dojo::contract]
 mod map_systems {
-    use core::option::OptionTrait;
     use core::integer::BoundedInt;
+    use core::option::OptionTrait;
     use core::traits::Into;
     use eternum::alias::ID;
     use eternum::constants::{
         WORLD_CONFIG_ID, split_resources_and_probs, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE
     };
     use eternum::models::buildings::{BuildingCategory, Building, BuildingImpl};
+    use eternum::models::capacity::Capacity;
     use eternum::models::combat::{
         Health, HealthTrait, Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
@@ -33,15 +34,14 @@ mod map_systems {
         Resource, ResourceCost, ResourceTrait, ResourceFoodImpl, ResourceTransferLock
     };
     use eternum::models::stamina::StaminaImpl;
-    use eternum::models::capacity::Capacity;
     use eternum::models::structure::{
         Structure, StructureCategory, StructureCount, StructureCountTrait
     };
+    use eternum::systems::combat::contracts::combat_systems::{InternalCombatImpl};
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl
     };
-    use eternum::systems::combat::contracts::combat_systems::{InternalCombatImpl};
     use eternum::utils::map::biomes::{Biome, get_biome};
     use eternum::utils::random;
 

@@ -491,7 +491,6 @@ impl BuildingImpl of BuildingTrait {
         produce_resource_type: Option<u8>,
         inner_coord: Coord
     ) -> Building {
-
         // check that the entity has a position
         let outer_entity_position = get!(world, outer_entity_id, Position);
         outer_entity_position.assert_not_zero();

@@ -4,6 +4,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{MAX_REALMS_PER_ADDRESS, ResourceTypes};
 
 use eternum::models::capacity::{capacity, Capacity};
+use eternum::models::combat::{Troops};
 use eternum::models::config::{
     world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,
     weight_config, WeightConfig, road_config, RoadConfig, hyperstructure_resource_config,
@@ -23,7 +24,12 @@ use eternum::models::resources::{resource, Resource};
 use eternum::models::resources::{resource_cost, ResourceCost};
 use eternum::models::road::{road, Road};
 use eternum::models::trade::{status, Status, trade, Trade,};
-use eternum::models::combat::{Troops};
+
+use eternum::systems::combat::contracts::{
+    combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait
+};
+
+use eternum::systems::config::contracts::{ITroopConfigDispatcher, ITroopConfigDispatcherTrait};
 
 use eternum::systems::hyperstructure::contracts::{
     hyperstructure_systems, IHyperstructureSystems, IHyperstructureSystemsDispatcher,
@@ -33,12 +39,6 @@ use eternum::systems::hyperstructure::contracts::{
 use eternum::systems::realm::contracts::{
     realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
 };
-
-use eternum::systems::combat::contracts::{
-    combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait
-};
-
-use eternum::systems::config::contracts::{ITroopConfigDispatcher, ITroopConfigDispatcherTrait};
 
 use eternum::utils::map::biomes::Biome;
 
@@ -157,7 +157,10 @@ fn get_default_hyperstructure_coord() -> Coord {
 }
 
 fn get_default_mercenary_config() -> (Troops, Span<(u8, u128)>) {
-    (Troops { knight_count: 1, paladin_count: 0, crossbowman_count: 0 }, array![(ResourceTypes::WOOD, 1000), (ResourceTypes::DIAMONDS, 1000)].span())
+    (
+        Troops { knight_count: 1, paladin_count: 0, crossbowman_count: 0 },
+        array![(ResourceTypes::WOOD, 1000), (ResourceTypes::DIAMONDS, 1000)].span()
+    )
 }
 
 fn explore_tile(world: IWorldDispatcher, explorer_id: u128, coords: Coord) {

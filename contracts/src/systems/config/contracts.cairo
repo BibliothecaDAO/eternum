@@ -1,9 +1,9 @@
 use dojo::world::IWorldDispatcher;
 use eternum::alias::ID;
 use eternum::models::buildings::BuildingCategory;
+use eternum::models::combat::{Troops};
 use eternum::models::config::{TroopConfig, MercenariesConfig};
 use eternum::models::position::Coord;
-use eternum::models::combat::{Troops};
 
 #[dojo::interface]
 trait IWorldConfig {
@@ -131,7 +131,9 @@ trait IPopulationConfig {
 
 #[dojo::interface]
 trait IMercenariesConfig {
-    fn set_mercenaries_config(ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>);
+    fn set_mercenaries_config(
+        ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>
+    );
 }
 
 
@@ -147,6 +149,7 @@ mod config_systems {
     };
     use eternum::models::bank::bank::{Bank};
     use eternum::models::buildings::{BuildingCategory};
+    use eternum::models::combat::{Troops};
 
     use eternum::models::config::{
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig,
@@ -158,7 +161,6 @@ mod config_systems {
     use eternum::models::position::{Position, PositionTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
-    use eternum::models::combat::{Troops};
 
     fn assert_caller_is_admin(world: IWorldDispatcher) {
         let admin_address = get!(world, WORLD_CONFIG_ID, WorldConfig).admin_address;
@@ -639,10 +641,12 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl IMercenariesConfig of super::IMercenariesConfig<ContractState> {
-        fn set_mercenaries_config(ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>) {
+        fn set_mercenaries_config(
+            ref world: IWorldDispatcher, troops: Troops, rewards: Span<(u8, u128)>
+        ) {
             assert_caller_is_admin(world);
 
-            set!(world, (MercenariesConfig {config_id: WORLD_CONFIG_ID, troops, rewards}));
+            set!(world, (MercenariesConfig { config_id: WORLD_CONFIG_ID, troops, rewards }));
         }
     }
 }

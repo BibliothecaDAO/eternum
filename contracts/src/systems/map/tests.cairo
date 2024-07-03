@@ -5,6 +5,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 
 use eternum::models::capacity::Capacity;
+use eternum::models::combat::{Battle};
 use eternum::models::combat::{Health, Troops};
 use eternum::models::config::{TickConfig, StaminaConfig};
 use eternum::models::map::Tile;
@@ -15,9 +16,8 @@ use eternum::models::quantity::Quantity;
 use eternum::models::realm::Realm;
 use eternum::models::resources::{Resource, ResourceFoodImpl};
 use eternum::models::stamina::Stamina;
-use eternum::models::weight::Weight;
 use eternum::models::structure::{Structure, StructureCategory, StructureCount,};
-use eternum::models::combat::{Battle};
+use eternum::models::weight::Weight;
 
 use eternum::systems::combat::contracts::{
     combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait
@@ -30,11 +30,11 @@ use eternum::systems::config::contracts::{
     IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait,
 };
 
+use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
+
 use eternum::systems::map::contracts::{
     map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait
 };
-
-use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
 use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
@@ -253,7 +253,6 @@ fn test_mercenaries_protector() {
         .battle_start(realm_army_unit_id, mercenary_entity_id);
 
     let battle = get!(world, battle_entity_id, Battle);
-
 
     starknet::testing::set_block_timestamp(99999);
 
