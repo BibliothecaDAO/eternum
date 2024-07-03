@@ -9,6 +9,7 @@ import { ThreeStore, useThreeStore } from "@/hooks/store/useThreeStore";
 import { InputManager } from "./components/InputManager";
 import { TransitionManager } from "./components/Transition";
 import _ from "lodash";
+import { LocationManager } from "./helpers/LocationManager";
 
 export default class Demo {
   private renderer!: THREE.WebGLRenderer;
@@ -20,6 +21,8 @@ export default class Demo {
   private lightPoint!: THREE.DirectionalLight;
   private lightPoint2!: THREE.DirectionalLight;
   private controls!: OrbitControls;
+
+  private locationManager!: LocationManager;
 
   // Store
   private state: ThreeStore;
@@ -61,6 +64,22 @@ export default class Demo {
     });
 
     this.dojo = dojoContext;
+    this.locationManager = new LocationManager();
+  }
+
+  private checkInitialLocation() {
+    const location = this.locationManager.getCol();
+    if (this.locationManager.getCol() && this.locationManager.getRow()) {
+      // Delay the transition to ensure the scene is fully loaded
+      setTimeout(() => {
+        this.transitionToHexByCoordinates(this.locationManager.getRow()!, this.locationManager.getCol()!);
+      }, 1000); // Adjust the delay as needed
+    }
+  }
+
+  // Add this new method
+  private transitionToHexByCoordinates(row: number, col: number) {
+    this.transitionToDetailedScene(row, col);
   }
 
   initStats() {
@@ -141,13 +160,22 @@ export default class Demo {
     const cameraHelper2 = new THREE.CameraHelper(this.lightPoint2.shadow.camera);
     this.scene.add(cameraHelper2);
 
-    this.detailedScene = new DetailedHexScene(this.renderer, this.camera, this.dojo);
+    this.detailedScene = new DetailedHexScene(
+      this.state,
+      this.renderer,
+      this.camera,
+      this.dojo,
+      this.mouse,
+      this.raycaster,
+    );
 
     // Add grid
     this.hexGrid = new HexagonMap(this.scene, this.dojo, this.raycaster, this.camera, this.mouse, this.state);
     this.hexGrid.updateVisibleChunks();
 
     this.transitionManager = new TransitionManager(this.renderer);
+
+    this.checkInitialLocation();
 
     // Init animation
     this.animate();
@@ -172,17 +200,23 @@ export default class Demo {
   }
 
   onHexClick() {
-    // if (this.currentScene === "main") {
-    //   this.raycaster.setFromCamera(this.mouse, this.camera);
-    //   const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-    //   if (intersects.length > 0) {
-    //     const clickedHex = intersects[0].object;
-    //     this.transitionToDetailedScene(clickedHex);
-    //   }
-    // }
+    if (this.currentScene === "main") {
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+      if (intersects.length > 0) {
+        const clickedObject = intersects[0].object;
+        if (clickedObject instanceof THREE.InstancedMesh) {
+          const instanceId = intersects[0].instanceId;
+          if (instanceId !== undefined) {
+            const { row, col } = this.hexGrid.getHexagonCoordinates(clickedObject, instanceId);
+            this.transitionToDetailedScene(row, col);
+          }
+        }
+      }
+    }
   }
 
-  transitionToDetailedScene(clickedHex: THREE.Object3D) {
+  transitionToDetailedScene(row: number, col: number) {
     this.transitionManager.fadeOut(() => {
       this.currentScene = "detailed";
 
@@ -196,7 +230,7 @@ export default class Demo {
       this.controls.target.set(0, 0, 0);
       this.controls.update();
 
-      this.detailedScene.setup(clickedHex);
+      this.detailedScene.setup(row, col);
       this.transitionManager.fadeIn();
       this.inputManager.updateCurrentScene("detailed");
     });
