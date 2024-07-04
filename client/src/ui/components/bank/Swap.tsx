@@ -132,7 +132,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
               <>
                 <tr>
                   <td>Slippage</td>
-                  <td className="text-left text-order-giants px-8">
+                  <td className="text-left text-danger px-8">
                     {(
                       marketManager.slippage(
                         (isBuyResource ? multiplyByPrecision(lordsAmount) : multiplyByPrecision(resourceAmount)) || 0,
@@ -144,7 +144,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
                 </tr>
                 <tr>
                   <td>Bank Owner Fees</td>
-                  <td className="text-left text-order-giants px-8">
+                  <td className="text-left text-danger px-8">
                     {(-(lordsAmount * OWNER_FEE)).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
@@ -154,7 +154,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
                 </tr>
                 <tr>
                   <td>LP Fees</td>
-                  <td className="text-left text-order-giants px-8">
+                  <td className="text-left text-danger px-8">
                     {(-(isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
@@ -177,7 +177,9 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
             Swap {isBuyResource ? "Lords" : chosenResourceName} for {isBuyResource ? chosenResourceName : "Lords"}
           </Button>
           {!canSwap && (
-            <div className="px-3 text-danger font-bold">Warning: not enough resources or amount is zero</div>
+            <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
+              Warning: not enough resources or amount is zero
+            </div>
           )}
         </div>
       </div>

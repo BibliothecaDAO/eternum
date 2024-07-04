@@ -63,7 +63,7 @@ export const ResourceBar = ({
           >
             Max: {selectedResourceBalance.toLocaleString()}
             {hasLordsFees && (
-              <div className="text-order-giants ml-2">
+              <div className="text-danger ml-2">
                 <div>{`[- ${lordsFee.toFixed(2)}]`}</div>
               </div>
             )}
