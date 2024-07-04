@@ -64,7 +64,6 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
 
   const onInvert = useCallback(() => setIsBuyResource((prev) => !prev), []);
 
-  const marketPrice = marketManager.getMarketPrice();
   const onSwap = useCallback(() => {
     setIsLoading(true);
     const operation = isBuyResource ? buy_resources : sell_resources;
@@ -88,6 +87,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
             ? resources.filter((r) => r.id === ResourcesIds.Lords)
             : resources.filter((r) => r.id !== ResourcesIds.Lords)
         }
+        lordsFee={lordsAmount * OWNER_FEE}
         amount={isLords ? lordsAmount : resourceAmount}
         setAmount={isLords ? setLordsAmount : setResourceAmount}
         resourceId={isLords ? BigInt(ResourcesIds.Lords) : resourceId}
@@ -116,45 +116,49 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
           <table className="w-full text-right text-xs text-gold/60">
             <tbody>
               <tr className="text-xl text-gold">
-                <td>{marketPrice.toFixed(2)}</td>
+                <td>{marketManager.getMarketPrice().toFixed(2)}</td>
                 <td className="text-left px-8 flex gap-4">
                   <>
                     {" "}
+                    <ResourceIcon size="sm" resource={"Lords"} /> {"/"}
                     <ResourceIcon size="sm" resource={chosenResourceName || ""} />
-                    {"/"}
-                    <ResourceIcon size="sm" resource={"Lords"} />{" "}
                   </>
                 </td>
               </tr>
-              {marketPrice > 0 && (
-                <>
-                  <tr>
-                    <td>Slippage</td>
-                    <td className="text-left text-order-giants px-8">
-                      {marketManager
-                        .slippage(
-                          isBuyResource ? multiplyByPrecision(lordsAmount) : multiplyByPrecision(resourceAmount),
-                          isBuyResource,
-                        )
-                        .toFixed(2)}{" "}
-                      %
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Bank Owner Fees</td>
-                    <td className="text-left text-order-giants px-8">
-                      {(-(isBuyResource ? lordsAmount : resourceAmount) * OWNER_FEE).toFixed(2)} {"Lords"}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>LP Fees</td>
-                    <td className="text-left text-order-giants px-8">
-                      {(-(isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toFixed(2)}{" "}
-                      {isBuyResource ? "Lords" : chosenResourceName}
-                    </td>
-                  </tr>
-                </>
-              )}
+              <>
+                <tr>
+                  <td>Slippage</td>
+                  <td className="text-left text-order-giants px-8">
+                    {(
+                      marketManager.slippage(
+                        isBuyResource ? multiplyByPrecision(lordsAmount) : multiplyByPrecision(resourceAmount),
+                        isBuyResource,
+                      ) || 0
+                    ).toFixed(2)}{" "}
+                    %
+                  </td>
+                </tr>
+                <tr>
+                  <td>Bank Owner Fees</td>
+                  <td className="text-left text-order-giants px-8">
+                    {(-(lordsAmount * OWNER_FEE)).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    {"Lords"}
+                  </td>
+                </tr>
+                <tr>
+                  <td>LP Fees</td>
+                  <td className="text-left text-order-giants px-8">
+                    {(-(isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    {isBuyResource ? "Lords" : chosenResourceName}
+                  </td>
+                </tr>
+              </>
             </tbody>
           </table>
         </div>

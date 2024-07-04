@@ -77,6 +77,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
           entityId={entityId}
           resources={resources.filter((r) => r.id === Number(ResourcesIds.Lords))}
           amount={Math.floor(lordsAmount)}
+          lordsFee={0}
           setAmount={setLordsAmount}
           resourceId={BigInt(ResourcesIds.Lords)}
           setResourceId={setResourceId}
@@ -98,6 +99,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
           entityId={entityId}
           resources={resources.filter((r) => r.id !== Number(ResourcesIds.Lords))}
           amount={Math.floor(resourceAmount)}
+          lordsFee={0}
           setAmount={setResourceAmount}
           resourceId={resourceId}
           setResourceId={setResourceId}
