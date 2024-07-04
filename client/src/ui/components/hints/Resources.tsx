@@ -12,9 +12,9 @@ import { useMemo } from "react";
 import { tableOfContents } from "./utils";
 
 export const Resources = () => {
-  const concepts = [
+  const chapters = [
     {
-      name: "Resource Production",
+      title: "Resource Production",
       content: (
         <>
           <p className="my-5">
@@ -28,27 +28,27 @@ export const Resources = () => {
       ),
     },
     {
-      name: "Storage",
+      title: "Storage",
       content: (
         <p className="my-5">
-          <strong>Storehouses</strong> determine your resource storage capacity. Each storehouse adds{" "}
-          <strong>10k capacity per resource type</strong>. Build more storehouses to increase storage.
+          <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
+          <span className="font-bold"> 10k capacity per resource type</span>. Build more storehouses to increase storage.
         </p>
       ),
     },
   ];
 
-  const conceptNames = concepts.map((concept) => concept.name);
+  const chapterTitles = chapters.map((chapter) => chapter.title);
 
   return (
     <>
       <Headline>Resources</Headline>
-      {tableOfContents(conceptNames)}
+      {tableOfContents(chapterTitles)}
 
-      {concepts.map((concept) => (
-        <div key={concept.name}>
-          <h4 id={concept.name}>{concept.name}</h4>
-          {concept.content}
+      {chapters.map((chapter) => (
+        <div key={chapter.title}>
+          <h2 id={chapter.title}>{chapter.title}</h2>
+          {chapter.content}
         </div>
       ))}
     </>
@@ -87,7 +87,6 @@ const ResourceTable = () => {
         {resourceTable.map((resource) => (
           <tr className="border border-gold/10" key={resource.resource_type}>
             <td>
-              {" "}
               <ResourceIcon size="xl" resource={resource.resource?.trait || ""} />
             </td>
             <td className="text-xl text-center">{currencyFormat(resource.amount, 0)}</td>

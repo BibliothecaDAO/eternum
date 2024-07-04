@@ -12,10 +12,10 @@ import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConst
 import { useMemo } from "react";
 
 export const WorldStructures = () => {
-  const concepts = useMemo(
+  const chapters = useMemo(
     () => [
       {
-        name: "Hyperstructures",
+        title: "Hyperstructures",
         content: (
           <>
             <HyperstructureCreationTable />
@@ -24,7 +24,7 @@ export const WorldStructures = () => {
         ),
       },
       {
-        name: "Mines",
+        title: "Mines",
         content: (
           <div>
             Naturally occurring structures discovered during exploration, enabling players to harvest precious resources
@@ -36,17 +36,17 @@ export const WorldStructures = () => {
     [],
   );
 
-  const conceptNames = concepts.map((concept) => concept.name);
+  const chapterTitles = chapters.map((chapter) => chapter.title);
 
   return (
     <>
       <Headline>World Structures</Headline>
-      {tableOfContents(conceptNames)}
+      {tableOfContents(chapterTitles)}
 
-      {concepts.map((concept) => (
-        <section key={concept.name}>
-          <h2 id={concept.name}>{concept.name}</h2>
-          {concept.content}
+      {chapters.map((chapter) => (
+        <section key={chapter.title}>
+          <h2 id={chapter.title}>{chapter.title}</h2>
+          {chapter.content}
         </section>
       ))}
     </>
