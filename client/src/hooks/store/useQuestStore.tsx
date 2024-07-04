@@ -55,6 +55,8 @@ export interface QuestStore {
   setSelectedQuest: (selectedQuest: Quest | undefined) => void;
   claimableQuestsLength: number;
   setClaimableQuestsLength: (claimableQuestsLength: number) => void;
+  showCompletedQuests: boolean;
+  setShowCompletedQuests: (showCompletedQuests: boolean) => void;
 }
 
 export const useQuestStore = create<QuestStore>((set) => {
@@ -65,6 +67,8 @@ export const useQuestStore = create<QuestStore>((set) => {
     setSelectedQuest: (selectedQuest: Quest | undefined) => set({ selectedQuest }),
     claimableQuestsLength: 0,
     setClaimableQuestsLength: (claimableQuestsLength: number) => set({ claimableQuestsLength }),
+    showCompletedQuests: false,
+    setShowCompletedQuests: (showCompletedQuests: boolean) => set({ showCompletedQuests }),
   };
 });
 
