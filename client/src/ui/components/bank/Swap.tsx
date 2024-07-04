@@ -46,7 +46,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
     const operation = isBuyResource ? marketManager.buyResource : marketManager.sellResource;
 
     if (amount > 0) {
-      const cost = operation(multiplyByPrecision(amount), EternumGlobalConfig.banks.lpFeesNumerator);
+      const cost = operation(multiplyByPrecision(amount) || 0, EternumGlobalConfig.banks.lpFeesNumerator);
       setAmount(divideByPrecision(cost));
     }
   }, [lordsAmount, resourceAmount, isBuyResource, marketManager]);
@@ -79,23 +79,27 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 
   const renderResourceBar = useCallback(
-    (disableInput: boolean, isLords: boolean) => (
-      <ResourceBar
-        entityId={entityId}
-        resources={
-          isLords
-            ? resources.filter((r) => r.id === ResourcesIds.Lords)
-            : resources.filter((r) => r.id !== ResourcesIds.Lords)
-        }
-        lordsFee={lordsAmount * OWNER_FEE}
-        amount={isLords ? lordsAmount : resourceAmount}
-        setAmount={isLords ? setLordsAmount : setResourceAmount}
-        resourceId={isLords ? BigInt(ResourcesIds.Lords) : resourceId}
-        setResourceId={setResourceId}
-        disableInput={disableInput}
-      />
-    ),
-    [entityId, lordsAmount, resourceAmount, resourceId],
+    (disableInput: boolean, isLords: boolean) => {
+      const lordsFee = lordsAmount * OWNER_FEE;
+      const amount = isLords ? (isBuyResource ? lordsAmount : lordsAmount - lordsFee) : resourceAmount;
+      return (
+        <ResourceBar
+          entityId={entityId}
+          resources={
+            isLords
+              ? resources.filter((r) => r.id === ResourcesIds.Lords)
+              : resources.filter((r) => r.id !== ResourcesIds.Lords)
+          }
+          lordsFee={lordsFee}
+          amount={amount}
+          setAmount={isLords ? setLordsAmount : setResourceAmount}
+          resourceId={isLords ? BigInt(ResourcesIds.Lords) : resourceId}
+          setResourceId={setResourceId}
+          disableInput={disableInput}
+        />
+      );
+    },
+    [entityId, isBuyResource, lordsAmount, resourceAmount, resourceId],
   );
 
   return (
@@ -131,7 +135,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
                   <td className="text-left text-order-giants px-8">
                     {(
                       marketManager.slippage(
-                        isBuyResource ? multiplyByPrecision(lordsAmount) : multiplyByPrecision(resourceAmount),
+                        (isBuyResource ? multiplyByPrecision(lordsAmount) : multiplyByPrecision(resourceAmount)) || 0,
                         isBuyResource,
                       ) || 0
                     ).toFixed(2)}{" "}

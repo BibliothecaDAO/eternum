@@ -52,7 +52,7 @@ export const ResourceBar = ({
       <div className="self-center">
         <TextInput
           className="text-2xl border-transparent"
-          value={amount.toString()}
+          value={amount.toLocaleString()}
           onChange={(amount) => handleAmountChange(amount)}
         />
 

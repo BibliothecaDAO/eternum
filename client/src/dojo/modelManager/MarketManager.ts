@@ -157,7 +157,7 @@ export class MarketManager {
       slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
     } else {
       executionPrice = inputAmount / outputAmount;
-      slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
+      slippagePercentage = -((executionPrice - marketPrice) / marketPrice) * 100;
     }
 
     return slippagePercentage;
