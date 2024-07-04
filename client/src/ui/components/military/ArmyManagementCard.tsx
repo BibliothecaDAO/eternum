@@ -62,7 +62,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
 
   const [troopCounts, setTroopCounts] = useState<{ [key: number]: number }>({
     [ResourcesIds.Knight]: 1000,
-    [ResourcesIds.Crossbowmen]: 1000,
+    [ResourcesIds.Crossbowman]: 1000,
     [ResourcesIds.Paladin]: 1000,
   });
 
@@ -79,13 +79,13 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
       troops: {
         knight_count: troopCounts[ResourcesIds.Knight] * EternumGlobalConfig.resources.resourcePrecision || 0,
         paladin_count: troopCounts[ResourcesIds.Paladin] * EternumGlobalConfig.resources.resourcePrecision || 0,
-        crossbowman_count: troopCounts[ResourcesIds.Crossbowmen] * EternumGlobalConfig.resources.resourcePrecision || 0,
+        crossbowman_count: troopCounts[ResourcesIds.Crossbowman] * EternumGlobalConfig.resources.resourcePrecision || 0,
       },
     }).finally(() => setIsLoading(false));
 
     setTroopCounts({
       [ResourcesIds.Knight]: 0,
-      [ResourcesIds.Crossbowmen]: 0,
+      [ResourcesIds.Crossbowman]: 0,
       [ResourcesIds.Paladin]: 0,
     });
   };
@@ -102,7 +102,7 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
 
     if (
       troopCounts[ResourcesIds.Knight] === 0 &&
-      troopCounts[ResourcesIds.Crossbowmen] === 0 &&
+      troopCounts[ResourcesIds.Crossbowman] === 0 &&
       troopCounts[ResourcesIds.Paladin] === 0
     ) {
       canCreate = false;
@@ -122,11 +122,11 @@ export const ArmyManagementCard = ({ owner_entity, entity }: ArmyManagementCardP
       attack: 10,
       defense: 10,
       strong: "Paladin",
-      weak: "Crossbowmen",
+      weak: "Crossbowman",
       current: currencyFormat(entity.troops.knight_count, 0),
     },
     {
-      name: ResourcesIds.Crossbowmen,
+      name: ResourcesIds.Crossbowman,
       cost: 10,
       attack: 10,
       defense: 10,

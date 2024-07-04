@@ -12,7 +12,7 @@ export const EternumGlobalConfig = {
     foodPerTick: 30,
     donkeysPerTick: 3,
     knightsPerTick: 2,
-    crossbowmenPerTick: 2,
+    crossbowmanPerTick: 2,
     paladinPerTick: 2,
     startingResourcesInputProductionFactor: 4,
     startingResources: [
@@ -41,7 +41,7 @@ export const EternumGlobalConfig = {
   },
   tick: {
     defaultTickIntervalInSeconds: 1,
-    armiesTickIntervalInSeconds: 7200, // 2hrs
+    armiesTickIntervalInSeconds: 200, // 2hrs
   },
   carryCapacity: {
     donkey: 100,

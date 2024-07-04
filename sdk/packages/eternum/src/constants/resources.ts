@@ -249,7 +249,7 @@ export const resources: Array<Resources> = [
     ticker: "$KNIGHT",
   },
   {
-    trait: "Crossbowmen",
+    trait: "Crossbowman",
     value: 251,
     colour: "#ec4899",
     id: 251,
@@ -332,7 +332,7 @@ export enum ResourcesIds {
   Earthenshard = 29,
   Donkey = 249,
   Knight = 250,
-  Crossbowmen = 251,
+  Crossbowman = 251,
   Paladin = 252,
   Lords = 253,
   Wheat = 254,
@@ -440,7 +440,7 @@ export const WEIGHTS: {
   [ResourcesIds.Earthenshard]: 1,
   [ResourcesIds.Donkey]: 0,
   [ResourcesIds.Knight]: 0,
-  [ResourcesIds.Crossbowmen]: 0,
+  [ResourcesIds.Crossbowman]: 0,
   [ResourcesIds.Paladin]: 0,
   [ResourcesIds.Lords]: 0.001,
   [ResourcesIds.Wheat]: 0.1,
@@ -449,7 +449,7 @@ export const WEIGHTS: {
 
 export const RESOURCE_TIERS = {
   lords: [ResourcesIds.Lords, ResourcesIds.Earthenshard],
-  military: [ResourcesIds.Knight, ResourcesIds.Crossbowmen, ResourcesIds.Paladin],
+  military: [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin],
   transport: [ResourcesIds.Donkey],
   food: [ResourcesIds.Fish, ResourcesIds.Wheat],
   common: [ResourcesIds.Wood, ResourcesIds.Stone, ResourcesIds.Coal, ResourcesIds.Copper, ResourcesIds.Obsidian],
@@ -499,7 +499,7 @@ export const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Dragonhide]: 10,
   [ResourcesIds.Donkey]: 3,
   [ResourcesIds.Knight]: 1,
-  [ResourcesIds.Crossbowmen]: 1,
+  [ResourcesIds.Crossbowman]: 1,
   [ResourcesIds.Paladin]: 1,
   [ResourcesIds.Lords]: 1,
   [ResourcesIds.Wheat]: 30,
@@ -628,7 +628,7 @@ export const RESOURCE_INPUTS: ResourceInputs = {
     { resource: ResourcesIds.Silver, amount: 1.0 },
     { resource: ResourcesIds.Ironwood, amount: 2.5 },
   ],
-  [ResourcesIds.Crossbowmen]: [
+  [ResourcesIds.Crossbowman]: [
     { resource: ResourcesIds.Wheat, amount: 2.5 },
     { resource: ResourcesIds.Silver, amount: 1.0 },
     { resource: ResourcesIds.ColdIron, amount: 2.5 },
@@ -718,7 +718,7 @@ export const RESOURCE_BUILDING_COSTS: ResourceInputs = {
   [ResourcesIds.Dragonhide]: [{ resource: ResourcesIds.Fish, amount: 500 }],
   [ResourcesIds.Donkey]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
   [ResourcesIds.Knight]: [{ resource: ResourcesIds.Fish, amount: 500 }],
-  [ResourcesIds.Crossbowmen]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
+  [ResourcesIds.Crossbowman]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
   [ResourcesIds.Paladin]: [{ resource: ResourcesIds.Fish, amount: 500 }],
   [ResourcesIds.Wheat]: [{ resource: ResourcesIds.Wheat, amount: 500 }],
   [ResourcesIds.Fish]: [{ resource: ResourcesIds.Fish, amount: 500 }],
@@ -890,7 +890,7 @@ export const QUEST_RESOURCES = {
   ],
   [QuestType.Military]: [
     { resource: ResourcesIds.Knight, amount: 3 },
-    { resource: ResourcesIds.Crossbowmen, amount: 3 },
+    { resource: ResourcesIds.Crossbowman, amount: 3 },
     { resource: ResourcesIds.Paladin, amount: 3 },
   ],
   [QuestType.Earthenshard]: [{ resource: ResourcesIds.Earthenshard, amount: 10 }],

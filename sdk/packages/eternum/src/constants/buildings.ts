@@ -70,7 +70,7 @@ export const BUILDING_RESOURCE_PRODUCED: { [key: number]: number } = {
   [BuildingType.FishingVillage]: ResourcesIds.Fish,
   [BuildingType.Barracks]: ResourcesIds.Knight,
   [BuildingType.Market]: ResourcesIds.Donkey,
-  [BuildingType.ArcheryRange]: ResourcesIds.Crossbowmen,
+  [BuildingType.ArcheryRange]: ResourcesIds.Crossbowman,
   [BuildingType.Stable]: ResourcesIds.Paladin,
   [BuildingType.DonkeyFarm]: 0,
   [BuildingType.TradingPost]: 0,

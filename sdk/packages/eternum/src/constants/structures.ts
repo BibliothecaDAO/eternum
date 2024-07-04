@@ -151,7 +151,7 @@ export function getProducedResource(name: BuildingType): number {
     case BuildingType.Market:
       return 0;
     case BuildingType.ArcheryRange:
-      return ResourcesIds.Crossbowmen;
+      return ResourcesIds.Crossbowman;
     case BuildingType.Stable:
       return ResourcesIds.Paladin;
     case BuildingType.DonkeyFarm:

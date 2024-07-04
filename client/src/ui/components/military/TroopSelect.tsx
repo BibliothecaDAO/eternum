@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 const troops = [
   { name: ResourcesIds.Knight, cost: 10, attack: 10, defense: 10, strong: "Cavalry", weak: "Archers" },
-  { name: ResourcesIds.Crossbowmen, cost: 10, attack: 10, defense: 10, strong: "Swordsmen", weak: "Cavalry" },
+  { name: ResourcesIds.Crossbowman, cost: 10, attack: 10, defense: 10, strong: "Swordsmen", weak: "Cavalry" },
   { name: ResourcesIds.Paladin, cost: 10, attack: 10, defense: 10, strong: "Archers", weak: "Swordsmen" },
 ];
 
@@ -24,7 +24,7 @@ export const TroopSelect = ({ entity }: any) => {
   const [canCreate, setCanCreate] = useState(false);
   const [troopCounts, setTroopCounts] = useState<{ [key: number]: number }>({
     [ResourcesIds.Knight]: 1,
-    [ResourcesIds.Crossbowmen]: 1,
+    [ResourcesIds.Crossbowman]: 1,
     [ResourcesIds.Paladin]: 1,
   });
 
@@ -104,7 +104,7 @@ export const TroopSelect = ({ entity }: any) => {
           {ResourcesIds[ResourcesIds.Knight]}: {troopCounts[ResourcesIds.Knight]}
         </div>
         <div>
-          {ResourcesIds[ResourcesIds.Crossbowmen]}: {troopCounts[ResourcesIds.Crossbowmen]}
+          {ResourcesIds[ResourcesIds.Crossbowman]}: {troopCounts[ResourcesIds.Crossbowman]}
         </div>
         <div>
           {ResourcesIds[ResourcesIds.Paladin]}: {troopCounts[ResourcesIds.Paladin]}
