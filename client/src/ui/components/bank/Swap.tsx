@@ -46,7 +46,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
     const operation = isBuyResource ? marketManager.buyResource : marketManager.sellResource;
 
     if (amount > 0) {
-      const cost = operation(multiplyByPrecision(amount));
+      const cost = operation(multiplyByPrecision(amount), EternumGlobalConfig.banks.lpFeesNumerator);
       setAmount(divideByPrecision(cost));
     }
   }, [lordsAmount, resourceAmount, isBuyResource, marketManager]);
@@ -130,21 +130,26 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
                 <>
                   <tr>
                     <td>Slippage</td>
-                    <td className="text-left px-8">
-                      {marketManager.slippage(lordsAmount, resourceAmount, isBuyResource).toFixed(2)} %
+                    <td className="text-left text-order-giants px-8">
+                      {marketManager
+                        .slippage(
+                          isBuyResource ? multiplyByPrecision(lordsAmount) : multiplyByPrecision(resourceAmount),
+                          isBuyResource,
+                        )
+                        .toFixed(2)}{" "}
+                      %
                     </td>
                   </tr>
                   <tr>
                     <td>Bank Owner Fees</td>
-                    <td className="text-left px-8">
-                      {((isBuyResource ? lordsAmount : resourceAmount) * OWNER_FEE).toFixed(2)}{" "}
-                      {isBuyResource ? "Lords" : chosenResourceName}
+                    <td className="text-left text-order-giants px-8">
+                      {(-(isBuyResource ? lordsAmount : resourceAmount) * OWNER_FEE).toFixed(2)} {"Lords"}
                     </td>
                   </tr>
                   <tr>
                     <td>LP Fees</td>
-                    <td className="text-left px-8">
-                      {((isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toFixed(2)}{" "}
+                    <td className="text-left text-order-giants px-8">
+                      {(-(isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toFixed(2)}{" "}
                       {isBuyResource ? "Lords" : chosenResourceName}
                     </td>
                   </tr>
