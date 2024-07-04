@@ -1,93 +1,193 @@
 import { Headline } from "@/ui/elements/Headline";
 import { tableOfContents } from "./utils";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { EternumGlobalConfig, ResourcesIds, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
 
 export const Combat = () => {
-  const concepts = [
+  const chapter = [
     {
-      name: "Protecting your Structures",
-      content: (
-        <>
-          <p>
-            A formidable defensive Army is vital for protecting your structures. Without it, you risk pillages and
-            potential loss of control. A strong defense not only safeguards your assets but also deters potential
-            raiders.
-          </p>
-        </>
-      ),
+      title: "Protecting your Structures",
+      content:
+        "A formidable defensive Army is vital for protecting your structures. Without it, you risk pillages and potential loss of control. A strong defense not only safeguards your assets but also deters potential raiders.",
     },
     {
-      name: "Exploration",
-      content: (
-        <p>
-          An offensive army is crucial for exploration, engaging foes, and discovering treasures in Eternum. Your army's
-          stamina fuels these expeditions.
-        </p>
-      ),
+      title: "Exploration",
+      content:
+        "An offensive army is crucial for exploration, engaging foes, and discovering treasures in Eternum. Your army's stamina fuels these expeditions.",
     },
     {
-      name: "Battles",
-      content: (
-        <p>
-          Battles occur when armies meet in the open field. Their duration varies based on troop disparities. Open to
-          all, battles can be joined at any time and may involve offensive armies or defensive forces protecting
-          structures.
-        </p>
-      ),
+      title: "Battles",
+      content: <Battles />,
     },
     {
-      name: "Battle Chests",
-      content: (
-        <p>
-          Battle resources are locked upon engagement. Victors claim the spoils, dividing them equally among allies.
-        </p>
-      ),
+      title: "Battle Chests",
+      content:
+        "Battle resources are locked upon engagement. Victors claim the spoils, dividing them equally among allies.",
     },
+
     {
-      name: "Pillaging",
-      content: (
-        <p>
-          Pillaging enemy structures becomes easier as their defensive forces weaken. Successful raids yield a portion
-          of the structure's resources.
-        </p>
-      ),
-    },
-    {
-      name: "Claiming Structures",
-      content: (
-        <p>
-          Upon defeating or bypassing an opponent's defensive forces, you can claim their structure, transferring
-          ownership to yourself.
-          <br /> Claiming a completed hyperstructure grants you point accumulation, while seizing a mine allows you to
-          harvest its earthenshards.
-        </p>
-      ),
-    },
-    {
-      name: "Leaving a Battle",
-      content: (
-        <p>Exiting a battle is possible at any moment, but comes at the cost of resources, health, and troop losses.</p>
-      ),
+      title: "Troops",
+      content: <Troops />,
     },
   ];
 
-  const conceptNames = concepts.map((concept) => concept.name);
+  const chapterTitles = chapter.map((chapter) => chapter.title);
 
   return (
     <>
       <Headline>Combat</Headline>
-      {tableOfContents(conceptNames)}
+      {tableOfContents(chapterTitles)}
 
       <p className="text-xl">
         Armies serve a multifaceted role in Eternum: they safeguard your Realm and structures while also enabling
         exploration of the vast world beyond.
       </p>
 
-      {concepts.map((concept) => (
-        <div key={concept.name}>
-          <h2 id={concept.name}>{concept.name}</h2>
-          {concept.content}
+      {chapter.map((chapter) => (
+        <div key={chapter.title}>
+          <h2 id={chapter.title}>{chapter.title}</h2>
+          {chapter.content}
         </div>
       ))}
     </>
+  );
+};
+
+const Battles = () => {
+  return (
+    <div className="">
+      <div className="flex flex-row items-center gap-2">
+        <img className="w-20" src="/images/icons/attack.png" alt="coin" />
+        <p>
+          Battles erupt when armies clash, with duration dependent on troop numbers. These engagements are open to all, involving both offensive forces and defenders of structures.
+        </p>
+      </div>
+
+      <div className="flex flex-row items-center gap-2">
+        <img className="w-20" src="/images/icons/raid.png" alt="coin" />
+        <p>
+          {/* <p>{EternumGlobalConfig.troop.pillageHealthDivisor}</p> */}
+          Pillaging enemy structures becomes easier as their defensive forces weaken. Successful raids yield a portion
+          of the structure's resources.
+        </p>
+      </div>
+
+      <div className="flex flex-row items-center gap-2">
+        <img className="w-20" src="/images/icons/claim.png" alt="coin" />
+        <p>
+          After overcoming enemy defenses, you can claim their structure. This transfers ownership, allowing point accumulation from hyperstructures or resource harvesting from mines.
+        </p>
+      </div>
+
+      <div className="flex flex-row items-center gap-2">
+        <img className="w-20" src="/images/icons/leave-battle.png" alt="coin" />
+        <p>Exiting a battle is possible at any moment, but comes at the cost of resources, health, and troop losses.</p>
+      </div>
+    </div>
+  );
+};
+
+const Troops = () => {
+  const troopHealth = EternumGlobalConfig.troop.health;
+
+  return (
+    <table className="not-prose w-full p-2 border-gold/10">
+      <thead>
+        <tr>
+          <th className="p-2"></th>
+          <th className="border border-gold/10 p-2">Stamina</th>
+          <th className="border border-gold/10 p-2">Strength</th>
+          <th className="border border-gold/10 p-2">Health</th>
+        </tr>
+      </thead>
+      <tbody>
+        <TroopRow
+          type="Knight"
+          resourceId={ResourcesIds.Knight}
+          strength={
+            <Strength
+              strength={EternumGlobalConfig.troop.knightStrength}
+              strongAgainst="Paladin"
+              weakAgainst="Crossbowman"
+            />
+          }
+          health={troopHealth}
+        />
+        <TroopRow
+          type="Crossbowman"
+          resourceId={ResourcesIds.Crossbowman}
+          strength={
+            <Strength
+              strength={EternumGlobalConfig.troop.crossbowmanStrength}
+              strongAgainst="Knight"
+              weakAgainst="Paladin"
+            />
+          }
+          health={troopHealth}
+        />
+        <TroopRow
+          type="Paladin"
+          resourceId={ResourcesIds.Paladin}
+          strength={
+            <Strength
+              strength={EternumGlobalConfig.troop.paladinStrength}
+              strongAgainst="Crossbowman"
+              weakAgainst="Knight"
+            />
+          }
+          health={troopHealth}
+        />
+      </tbody>
+    </table>
+  );
+};
+
+const TroopRow = ({
+  type,
+  resourceId,
+  strength,
+  health,
+}: {
+  type: string;
+  resourceId: ResourcesIds;
+  strength: JSX.Element;
+  health: number;
+}) => {
+  return (
+    <tr>
+      <td className="border border-gold/10 p-2">
+        <ResourceIcon resource={type} size="xxl" />
+      </td>
+      <td className="border border-gold/10 p-2 text-center">
+        {TROOPS_STAMINAS[resourceId as keyof typeof TROOPS_STAMINAS]}
+      </td>
+      <td className="border border-gold/10 p-2 text-center">{strength}</td>
+      <td className="border border-gold/10 p-2 text-center">{health}</td>
+    </tr>
+  );
+};
+
+const Strength = ({
+  strength,
+  strongAgainst,
+  weakAgainst,
+}: {
+  strength: number;
+  strongAgainst: string;
+  weakAgainst: string;
+}) => {
+  const advantagePercent = (EternumGlobalConfig.troop.advantagePercent / 10000) * 100;
+  const disadvantagePercent = (EternumGlobalConfig.troop.disadvantagePercent / 10000) * 100;
+
+  return (
+    <div className="flex flex-col">
+      {/* <div>{strength}</div> */}
+      <div>
+        + {advantagePercent}% vs {strongAgainst}
+      </div>
+      <div>
+        - {disadvantagePercent}% vs {weakAgainst}
+      </div>
+    </div>
   );
 };

@@ -63,7 +63,7 @@ export const ArmyViewCard = ({
             <div className="w-8 h-8 border flex self-center justify-center bg-gold text-brown">
               <div>{currencyFormat(army.troops.crossbowman_count, 0)}</div>
             </div>
-            <div className="self-center px-2">Crossbowmen</div>
+            <div className="self-center px-2">Crossbowman</div>
           </div>
           <div className="flex border">
             <div className="w-8 h-8 border flex self-center justify-center bg-gold text-brown">

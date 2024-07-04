@@ -11,7 +11,7 @@ import { Points } from "./Points";
 import { WorldStructures } from "./WorldStructures";
 import { TheMap } from "./TheMap";
 import { Guilds } from "./Guilds";
-import { Transport } from "./Transport";
+import { Transfers } from "./Transfers";
 
 export enum HintSection {
   TheWorld = "The World",
@@ -48,7 +48,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
     },
     {
       name: HintSection.Transfers,
-      content: <Transport />,
+      content: <Transfers />,
     },
     {
       name: HintSection.TheMap,

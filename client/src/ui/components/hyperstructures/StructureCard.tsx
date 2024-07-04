@@ -129,7 +129,7 @@ type TroopsProps = {
 
 const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint }) => {
   return {
-    [ResourcesIds.Crossbowmen]: troops.crossbowman_count,
+    [ResourcesIds.Crossbowman]: troops.crossbowman_count,
     [ResourcesIds.Knight]: troops.knight_count,
     [ResourcesIds.Paladin]: troops.paladin_count,
   };
@@ -137,7 +137,7 @@ const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; c
 
 const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: TroopsProps) => {
   const [troopsGiven, setTroopsGiven] = useState<Record<number, bigint>>({
-    [ResourcesIds.Crossbowmen]: 0n,
+    [ResourcesIds.Crossbowman]: 0n,
     [ResourcesIds.Knight]: 0n,
     [ResourcesIds.Paladin]: 0n,
   });
@@ -174,12 +174,12 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: Troo
         knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
         paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
         crossbowman_count:
-          troopsGiven[ResourcesIds.Crossbowmen] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
+          troopsGiven[ResourcesIds.Crossbowman] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
       },
     });
     setLoading(false);
     setTroopsGiven({
-      [ResourcesIds.Crossbowmen]: 0n,
+      [ResourcesIds.Crossbowman]: 0n,
       [ResourcesIds.Knight]: 0n,
       [ResourcesIds.Paladin]: 0n,
     });
@@ -294,7 +294,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: Troo
           onClick={() => {
             setTransferDirection(transferDirection === "to" ? "from" : "to");
             setTroopsGiven({
-              [ResourcesIds.Crossbowmen]: 0n,
+              [ResourcesIds.Crossbowman]: 0n,
               [ResourcesIds.Knight]: 0n,
               [ResourcesIds.Paladin]: 0n,
             });

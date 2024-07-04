@@ -7,7 +7,7 @@ export const TroopRow = ({ troops, defending = false }: { troops: Troops | undef
       <TroopCard
         defending={defending}
         className={`${defending ? "order-last" : ""}`}
-        id={ResourcesIds.Crossbowmen}
+        id={ResourcesIds.Crossbowman}
         count={Number(troops?.crossbowman_count || 0)}
       />
       <TroopCard defending={defending} id={ResourcesIds.Paladin} count={Number(troops?.paladin_count || 0)} />
