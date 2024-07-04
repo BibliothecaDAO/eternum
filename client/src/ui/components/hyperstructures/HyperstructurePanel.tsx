@@ -15,12 +15,19 @@ import { SortPanel } from "@/ui/elements/SortPanel";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
 import {
+  EternumGlobalConfig,
   HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
   MAX_NAME_LENGTH,
 } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
+
+enum Loading {
+  None,
+  Contribute,
+  ChangeName,
+}
 
 export const HyperstructurePanel = ({ entity }: any) => {
   const {
@@ -31,9 +38,10 @@ export const HyperstructurePanel = ({ entity }: any) => {
     },
   } = useDojo();
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<Loading>(Loading.None);
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
+  const [resetContributions, setResetContributions] = useState(false);
 
   const { realmEntityId } = useRealmStore();
   const { useProgress } = useHyperstructures();
@@ -47,15 +55,23 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
       resource: Number(resourceId),
-      amount,
+      amount: amount * EternumGlobalConfig.resources.resourcePrecision,
     }));
 
-    await contribute_to_construction({
-      signer: account,
-      contributions: formattedContributions,
-      contributor_entity_id: realmEntityId,
-      hyperstructure_entity_id: entity.entity_id,
-    });
+    setIsLoading(Loading.Contribute);
+    setResetContributions(true);
+    try {
+      await contribute_to_construction({
+        signer: account,
+        contributions: formattedContributions,
+        contributor_entity_id: realmEntityId,
+        hyperstructure_entity_id: entity.entity_id,
+      });
+    } finally {
+      setIsLoading(Loading.None);
+      setNewContributions({});
+      setResetContributions(false);
+    }
   };
 
   const resourceElements = useMemo(() => {
@@ -66,15 +82,17 @@ export const HyperstructurePanel = ({ entity }: any) => {
       );
       return (
         <HyperstructureResourceChip
+          realmEntityId={realmEntityId}
           setContributions={setNewContributions}
           contributions={newContributions}
           progress={progress!}
           key={resource}
           resourceId={resource}
+          resetContributions={resetContributions}
         />
       );
     });
-  }, [progresses]);
+  }, [progresses, contributions]);
 
   const shares = useMemo(() => {
     return calculateShares(contributions);
@@ -96,9 +114,10 @@ export const HyperstructurePanel = ({ entity }: any) => {
               />
               <Button
                 variant="default"
-                isLoading={isLoading}
+                isLoading={isLoading === Loading.ChangeName}
+                disabled={isLoading !== Loading.None}
                 onClick={async () => {
-                  setIsLoading(true);
+                  setIsLoading(Loading.ChangeName);
 
                   try {
                     await provider.set_entity_name({ signer: account, entity_id: entity.entity_id, name: naming });
@@ -106,7 +125,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
                     console.error(e);
                   }
 
-                  setIsLoading(false);
+                  setIsLoading(Loading.None);
                   setEditName(false);
                 }}
               >
@@ -148,7 +167,12 @@ export const HyperstructurePanel = ({ entity }: any) => {
           <div className="">{resourceElements}</div>
         )}
       </div>
-      <Button className="mt-4" disabled={Object.keys(newContributions).length === 0} onClick={contributeToConstruction}>
+      <Button
+        isLoading={isLoading === Loading.Contribute}
+        className="mt-4"
+        disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None}
+        onClick={contributeToConstruction}
+      >
         Contribute
       </Button>
     </div>
