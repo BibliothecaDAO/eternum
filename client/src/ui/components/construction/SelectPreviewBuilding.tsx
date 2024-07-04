@@ -21,7 +21,6 @@ import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
-import { quests as questsPopup } from "@/ui/components/navigation/Config";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -39,9 +38,6 @@ import { HintSection } from "../hints/HintModal";
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const quests = useQuestStore((state) => state.quests);
@@ -84,12 +80,6 @@ export const SelectPreviewBuildingMenu = () => {
     });
 
   const [selectedTab, setSelectedTab] = useState(1);
-
-  const closePopups = () => {
-    if (isPopupOpen(questsPopup)) {
-      togglePopup(questsPopup);
-    }
-  };
 
   const isQuestClaimedByName = (questName: QuestName) => {
     const quest = quests?.find((q) => q.name === questName);
@@ -143,7 +133,6 @@ export const SelectPreviewBuildingMenu = () => {
                     } else {
                       setPreviewBuilding({ type: BuildingType.Resource, resource: resourceId });
                       playResourceSound(resourceId);
-                      closePopups();
                     }
                   }}
                   active={previewBuilding?.resource === resourceId}
@@ -203,7 +192,6 @@ export const SelectPreviewBuildingMenu = () => {
                         setPreviewBuilding({ type: building });
                         if (building === BuildingType.Farm) {
                           playResourceSound(ResourcesIds.Wheat);
-                          closePopups();
                         }
                         if (building === BuildingType.FishingVillage) {
                           playResourceSound(ResourcesIds.Fish);
