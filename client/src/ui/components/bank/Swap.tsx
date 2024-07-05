@@ -178,8 +178,13 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
             Swap {isBuyResource ? "Lords" : chosenResourceName} for {isBuyResource ? chosenResourceName : "Lords"}
           </Button>
           {!canSwap && (
-            <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
+            <div className="px-3 mt-2 text-danger font-bold text-center">
               Warning: not enough resources or amount is zero
+            </div>
+          )}
+          {!canCarry && (
+            <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
+              Warning: not enough donkeys to pickup resources
             </div>
           )}
         </div>
