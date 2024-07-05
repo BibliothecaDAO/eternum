@@ -9,6 +9,7 @@ import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
 import useUIStore from "@/hooks/store/useUIStore";
 import { MiddleBuilding } from "@/ui/components/construction/ExistingBuildings";
 import { useQuery } from "@/hooks/helpers/useQuery";
+import { useThree } from "@react-three/fiber";
 
 const positions = {
   main: getUIPositionFromColRow(0, 0, true),
@@ -23,9 +24,11 @@ const positions = {
 export const HexceptionViewScene = () => {
   const { mainHex, neighborHexesInsideView, hexType } = useHexPosition();
   const { hexPosition } = useQuery();
+  const { gl } = useThree();
 
   const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
 
   const texture = useTexture({
     map: "/textures/paper/paper-color.jpg",
@@ -47,6 +50,21 @@ export const HexceptionViewScene = () => {
       }, 300);
     }
   }, [hexPosition]);
+
+  useEffect(() => {
+    const handleRightClick = (e: MouseEvent) => {
+      e.preventDefault();
+
+      setPreviewBuilding(null);
+    };
+
+    const canvas = gl.domElement;
+    canvas.addEventListener("contextmenu", handleRightClick);
+
+    return () => {
+      canvas.removeEventListener("contextmenu", handleRightClick);
+    };
+  }, []);
 
   return (
     <>

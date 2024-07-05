@@ -12,6 +12,7 @@ import { useEntities } from "../helpers/useEntities";
 import { useLocation } from "wouter";
 import useUIStore from "./useUIStore";
 import { getPillageEvents } from "@/dojo/events/pillageEventQueries";
+import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 
 export enum QuestName {
   BuildFarm = "Build a Farm",
@@ -76,6 +77,8 @@ export const useQuests = () => {
   } = useDojo();
 
   const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const leftView = useUIStore((state) => state.leftNavigationView);
+  const previewBuilding = useUIStore((state) => state.previewBuilding);
 
   const setQuests = useQuestStore((state) => state.setQuests);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
@@ -139,7 +142,17 @@ export const useQuests = () => {
         name: QuestName.BuildFarm,
         description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm.",
         completed: farms > 0,
-        steps: [],
+        steps: [
+          { description: "Navigate to the construction menu.", completed: leftView === LeftView.ConstructionView },
+          {
+            description: "Select the 'Farm' card",
+            completed: previewBuilding !== null,
+          },
+          {
+            description: "Left click on a hex to build it, or right click to cancel.",
+            completed: farms > 0,
+          },
+        ],
         prizes: [
           { id: QuestType.CommonResources, title: "Common Resources" },
           { id: QuestType.UncommonResources, title: "Uncommon Resources" },
@@ -154,7 +167,17 @@ export const useQuests = () => {
         name: QuestName.BuildResource,
         description: "Eternum thrives on resources. Construct resource facilities to harvest them efficiently.",
         completed: resource > 0,
-        steps: [],
+        steps: [
+          { description: "Navigate to the construction menu.", completed: leftView === LeftView.ConstructionView },
+          {
+            description: "Navigate to the 'Resources' tab and select a resource card",
+            completed: previewBuilding !== null,
+          },
+          {
+            description: "Left click on a hex to build it, or right click to cancel.",
+            completed: resource > 0,
+          },
+        ],
         prizes: [{ id: QuestType.Trade, title: "Donkeys and Lords" }],
         depth: 2,
       },
@@ -269,6 +292,8 @@ export const useQuests = () => {
     pillageHistoryLength,
     selectedEntity,
     isWorldView,
+    leftView,
+    previewBuilding,
   ]);
 
   useEffect(() => {
