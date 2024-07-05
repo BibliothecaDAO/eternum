@@ -44,7 +44,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade, show }: AcceptOfferPo
   const selectedResourceIdsGive = selectedTrade.makerGets.map((resource) => resource.resourceId);
 
   const travelTime = useMemo(
-    () => computeTravelTime(realmEntityId, selectedTrade.makerId, EternumGlobalConfig.speed.donkey),
+    () => computeTravelTime(realmEntityId, selectedTrade.makerId, EternumGlobalConfig.speed.donkey, true),
     [realmEntityId, selectedTrade],
   );
 

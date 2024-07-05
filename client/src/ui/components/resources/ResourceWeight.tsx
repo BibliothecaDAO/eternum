@@ -52,7 +52,9 @@ export const TravelInfo = ({
         <tbody className=" divide-y divide-gray-200 ">
           <tr>
             <td className="px-6 py-1 whitespace-nowrap  font-bold text-right">Travel Time</td>
-            <td className="px-6 py-1 whitespace-nowrap text-gold  text-left">{`${travelTime!} hrs`}</td>
+            <td className="px-6 py-1 whitespace-nowrap text-gold text-left">
+              {`${Math.floor(travelTime! / 60)} hrs ${travelTime! % 60} mins`}
+            </td>
           </tr>
 
           <tr>

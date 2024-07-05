@@ -120,7 +120,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
               <TravelInfo
                 entityId={entityId}
                 resources={travelResources}
-                travelTime={computeTravelTime(bankEntityId, entityId, EternumGlobalConfig.speed.donkey)}
+                travelTime={computeTravelTime(bankEntityId, entityId, EternumGlobalConfig.speed.donkey, true)}
                 isPickup={true}
                 setCanCarry={setCanCarry}
               />

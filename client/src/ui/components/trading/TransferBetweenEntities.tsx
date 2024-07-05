@@ -123,7 +123,9 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
 
       {currentStep?.id === STEP_ID.SELECT_ENTITIES && (
         <>
-          <div className="w-full flex justify-center items-center">Travel Time: {travelTime || 0} hrs</div>
+          <div className="w-full flex justify-center items-center">
+            Travel Time: {Math.floor((travelTime || 0) / 60)} hrs {(travelTime || 0) % 60} mins
+          </div>
           <div className="grid grid-cols-2 gap-6 mt-3">
             <div className="justify-around">
               <Headline>From</Headline>
