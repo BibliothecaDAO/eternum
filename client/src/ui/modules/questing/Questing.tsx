@@ -1,7 +1,7 @@
 import useUIStore from "@/hooks/store/useUIStore";
 import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import { quests } from "@/ui/components/navigation/Config";
-import { QuestList } from "@/ui/components/hints/HintBox";
+import { QuestPanel } from "@/ui/components/quest/QuestPanel";
 
 export const Questing = ({ entityId }: { entityId: bigint | undefined }) => {
   const togglePopup = useUIStore((state) => state.togglePopup);
@@ -9,7 +9,7 @@ export const Questing = ({ entityId }: { entityId: bigint | undefined }) => {
 
   return (
     <OSWindow width="600px" onClick={() => togglePopup(quests)} show={isOpen} title={quests}>
-      <QuestList entityId={entityId} />
+      <QuestPanel entityId={entityId} />
     </OSWindow>
   );
 };
