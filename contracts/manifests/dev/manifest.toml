@@ -165,8 +165,8 @@ name = "eternum::systems::leveling::contracts::leveling_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x1723599f44e8b02ac7893a4bcc993a9aa55729f0a91ee94bc5d57589a5276b5"
-class_hash = "0x1d73c368c6c5e8b3c5de88451592ae0e0fc633742680d23cbe77469e0dc024a"
-original_class_hash = "0x1d73c368c6c5e8b3c5de88451592ae0e0fc633742680d23cbe77469e0dc024a"
+class_hash = "0x8eb052dd827624d1455aee21140c66d5411294cab36a399635bb59ca1d0785"
+original_class_hash = "0x8eb052dd827624d1455aee21140c66d5411294cab36a399635bb59ca1d0785"
 base_class_hash = "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46"
 abi = "manifests/dev/abis/deployments/contracts/eternum_systems_map_contracts_map_systems.json"
 reads = []
