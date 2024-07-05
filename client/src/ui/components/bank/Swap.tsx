@@ -34,6 +34,8 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
   const [resourceAmount, setResourceAmount] = useState(0);
   const [canCarry, setCanCarry] = useState(false);
 
+  const lordsFee = lordsAmount * OWNER_FEE;
+
   const market = useComponentValue(Market, getEntityIdFromKeys([bankEntityId, resourceId]));
   const marketManager = useMemo(
     () => new MarketManager(Market, Liquidity, bankEntityId, BigInt(account.address), resourceId),
@@ -52,7 +54,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
   }, [lordsAmount, resourceAmount, isBuyResource, marketManager]);
 
   const hasEnough = useMemo(() => {
-    const amount = isBuyResource ? lordsAmount : resourceAmount;
+    const amount = isBuyResource ? lordsAmount + lordsFee : resourceAmount;
     const balanceId = isBuyResource ? BigInt(ResourcesIds.Lords) : resourceId;
     return multiplyByPrecision(amount) <= getBalance(entityId, Number(balanceId)).balance;
   }, [isBuyResource, lordsAmount, resourceAmount, getBalance, entityId, resourceId]);
@@ -80,7 +82,6 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
 
   const renderResourceBar = useCallback(
     (disableInput: boolean, isLords: boolean) => {
-      const lordsFee = lordsAmount * OWNER_FEE;
       const amount = isLords ? (isBuyResource ? lordsAmount : lordsAmount - lordsFee) : resourceAmount;
       return (
         <ResourceBar
@@ -99,7 +100,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
         />
       );
     },
-    [entityId, isBuyResource, lordsAmount, resourceAmount, resourceId],
+    [entityId, isBuyResource, lordsAmount, resourceAmount, resourceId, lordsFee],
   );
 
   return (
