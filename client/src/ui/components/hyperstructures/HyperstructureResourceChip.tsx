@@ -34,7 +34,9 @@ export const HyperstructureResourceChip = ({
 
   const safetyMargin = production !== undefined && production?.consumption_rate !== 0n ? 0.95 : 1;
 
-  const maxContributableAmount = Math.floor(safetyMargin * Math.min(progress.costNeeded! - progress.amount, balance));
+  let maxContributableAmount = Math.min(progress.costNeeded! - progress.amount, balance);
+  maxContributableAmount *= progress.costNeeded - progress.amount > balance ? safetyMargin : 1;
+  maxContributableAmount = Math.floor(maxContributableAmount);
 
   useEffect(() => {
     let contributionsCopy = Object.assign({}, contributions);
@@ -53,9 +55,9 @@ export const HyperstructureResourceChip = ({
   }, [resetContributions]);
 
   return (
-    <div className="flex mt-1">
+    <div className="flex mt-1 grid grid-cols-8 gap-2">
       <div
-        className={`flex relative items-center text-xs px-2 p-1  w-[80%]`}
+        className={`flex relative items-center text-xs px-2 p-1 col-span-4`}
         style={{
           backgroundImage:
             progress.percentage > 0
@@ -94,7 +96,12 @@ export const HyperstructureResourceChip = ({
         </div>
       </div>
 
-      <NumberInput value={inputValue} className=" w-[20%]" onChange={setInputValue} max={maxContributableAmount} />
+      <NumberInput
+        value={inputValue}
+        className="w-full col-span-3"
+        onChange={setInputValue}
+        max={maxContributableAmount}
+      />
       <div className="ml-2 flex items-center" onClick={() => setInputValue(maxContributableAmount)}>
         MAX
       </div>

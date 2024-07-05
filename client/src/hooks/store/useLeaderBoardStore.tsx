@@ -41,10 +41,12 @@ export const ResourceMultipliers: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Earthenshard]: 20.98,
 };
 
-export let TOTAL_CONTRIBUTABLE_AMOUNT: number = 0;
-HYPERSTRUCTURE_TOTAL_COSTS_SCALED.forEach(({ resource, amount }) => {
-  TOTAL_CONTRIBUTABLE_AMOUNT += ResourceMultipliers[resource as keyof typeof ResourceMultipliers]! * amount;
-});
+export const TOTAL_CONTRIBUTABLE_AMOUNT: number = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.reduce(
+  (total, { resource, amount }) => {
+    return total + (ResourceMultipliers[resource as keyof typeof ResourceMultipliers] ?? 0) * amount;
+  },
+  0,
+);
 
 function getResourceMultiplier(resourceType: BigInt): number {
   const resourceTypeNumber: ResourcesIds = Number(resourceType);
@@ -114,7 +116,6 @@ const useLeaderBoardStore = create<LeaderboardStore>((set) => {
 });
 
 export const useComputePointsLeaderboards = () => {
-  const playerPointsLeaderboards = useLeaderBoardStore((state) => state.playerPointsLeaderboard);
   const setPlayerPointsLeaderboards = useLeaderBoardStore((state) => state.setPlayerPointsLeaderboards);
   const setGuildPointsLeaderboards = useLeaderBoardStore((state) => state.setGuildPointsLeaderboards);
 
@@ -130,20 +131,17 @@ export const useComputePointsLeaderboards = () => {
 
   const updatePlayerPointsLeaderboard = useCallback(
     (
-      playerPointsLeaderboards: PlayerPointsLeaderboardInterface[],
       hyperstructureEntityId: bigint,
       finishedTimestamp: number,
       currentTimestamp: number,
     ): PlayerPointsLeaderboardInterface[] => {
       const contributions = getContributions(hyperstructureEntityId);
-
       const nbOfCycles = Math.floor(
         (currentTimestamp - finishedTimestamp) / EternumGlobalConfig.tick.defaultTickIntervalInSeconds,
       );
-      let totalHyperstructurePoints = HYPERSTRUCTURE_POINTS_PER_CYCLE * nbOfCycles;
+      const totalHyperstructurePoints = HYPERSTRUCTURE_POINTS_PER_CYCLE * nbOfCycles;
 
       return computeHyperstructureLeaderboard(
-        playerPointsLeaderboards,
         contributions,
         totalHyperstructurePoints,
         account,
@@ -190,7 +188,6 @@ export const useComputePointsLeaderboards = () => {
       events.forEach((event) => {
         const { hyperstructureEntityId, timestamp } = event;
         _tmpPlayerPointsLeaderboard = updatePlayerPointsLeaderboard(
-          playerPointsLeaderboards,
           hyperstructureEntityId,
           timestamp,
           nextBlockTimestamp,
@@ -206,14 +203,13 @@ export const useComputePointsLeaderboards = () => {
 export default useLeaderBoardStore;
 
 export const computeHyperstructureLeaderboard = (
-  playerPointsLeaderboards: PlayerPointsLeaderboardInterface[],
   contributions: any[],
   totalHyperstructurePoints: number,
   account: any,
   getAddressName: any,
   getAddressOrder: any,
 ): PlayerPointsLeaderboardInterface[] => {
-  let tempPlayerPointsLeaderboard: PlayerPointsLeaderboardInterface[] = playerPointsLeaderboards;
+  let tempPlayerPointsLeaderboard: PlayerPointsLeaderboardInterface[] = [];
 
   if (!Array.isArray(contributions)) {
     console.error("Contributions is not an array:", contributions);
@@ -244,9 +240,7 @@ export const computeHyperstructureLeaderboard = (
       });
     }
   });
-
-  setRanks(tempPlayerPointsLeaderboard);
-  return tempPlayerPointsLeaderboard;
+  return setRanks(tempPlayerPointsLeaderboard);
 };
 
 function setRanks<T extends Rankable>(leaderboard: T[]): T[] {
