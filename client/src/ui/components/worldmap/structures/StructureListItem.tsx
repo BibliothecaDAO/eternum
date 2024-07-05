@@ -1,7 +1,12 @@
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { Structure } from "@/hooks/helpers/useStructures";
-import { Headline } from "@/ui/elements/Headline";
-import { RESOURCE_OUTPUTS_SCALED, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { currencyIntlFormat } from "@/ui/utils/utils";
+import {
+  HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  RESOURCE_OUTPUTS_SCALED,
+  ResourcesIds,
+  resources,
+} from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
@@ -9,11 +14,10 @@ import { InventoryResources } from "../../resources/InventoryResources";
 
 type StructureListItemProps = {
   structure: Structure;
-  onClick?: () => void;
   extraButton?: JSX.Element;
 };
 
-export const StructureListItem = ({ structure, onClick, extraButton }: StructureListItemProps) => {
+export const StructureListItem = ({ structure, extraButton }: StructureListItemProps) => {
   const { getRealmAddressName } = useRealm();
   const addressName = getRealmAddressName(BigInt(structure.entity_id));
 
@@ -22,31 +26,44 @@ export const StructureListItem = ({ structure, onClick, extraButton }: Structure
 
   return (
     <div className="flex flex-col clip-angled-sm bg-gold/20 p-3">
-      <div className="flex items-center p-1 border-gold font-bold w-full">
-        <Headline className="text-gold">{structure.name}</Headline>
+      <div className=" h-30 p-1 border-gold w-full grid grid-cols-3 gap-2">
+        <div className="text-center font-bold p-1 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
+          {structure.name}
+        </div>
+        <div className=" h-30 text-center p-1 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
+          <div className="font-bold">Owner:</div> {addressName}
+        </div>
+        <div className=" h-30 text-center p-1 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse flex flex-row justify-center items-center">
+          {String(structure.category) === "FragmentMine" ? (
+            <div className="font-bold">
+              <ResourceIcon
+                resource={resources.find((resource) => resource.id === ResourcesIds.Earthenshard)!.trait}
+                className="inline mr-0.5"
+                size="xs"
+              />
+              {currencyIntlFormat(RESOURCE_OUTPUTS_SCALED[ResourcesIds.Earthenshard])}/tick
+            </div>
+          ) : (
+            <div className="font-bold">{HYPERSTRUCTURE_POINTS_PER_CYCLE} points/tick</div>
+          )}
+        </div>
+        {String(structure.category) === "FragmentMine" && (
+          <InventoryResources
+            className="col-span-3 grid grid-cols-10 hover:bg-crimson/40 h-30"
+            entityId={BigInt(structure.entity_id)}
+            dynamic={[ResourcesIds.Earthenshard]}
+          />
+        )}
       </div>
-      <div>Owned by {addressName}</div>
       <div className="flex items-end mt-2">
         <div className={clsx("flex items-center justify-around flex-1")}>
           <div className="flex-1 text-gold flex items-center flex-wrap">
-            {String(structure.category) === "FragmentMine" && (
-              <div className="flex text-gold items-center">
-                Produces {RESOURCE_OUTPUTS_SCALED[ResourcesIds.Earthenshard]}
-                <ResourceIcon
-                  resource={resources.find((resource) => resource.id === ResourcesIds.Earthenshard)!.trait}
-                  className="inline mx-2"
-                  size="xs"
-                />{" "}
-                / tick
-              </div>
-            )}
             {String(structure.category) === "Hyperstructure" && (
-              <div className="uppercase w-full font-bold mb-1">{progress.percentage}%</div>
+              <div className="uppercase w-full font-bold mb-1">Progress: {progress.percentage}%</div>
             )}
           </div>
         </div>
       </div>
-      <InventoryResources entityId={BigInt(structure.entity_id)} />
       {extraButton || ""}
     </div>
   );

@@ -1,13 +1,12 @@
-import type { ReactElement } from "react";
-import clsx from "clsx";
-import { ReactComponent as Donkey } from "@/assets/icons/units/donkey-circle.svg";
+import { ReactComponent as People } from "@/assets/icons/common/people.svg";
 import { ReactComponent as Cloth } from "@/assets/icons/resources/Cloth.svg";
 import { ReactComponent as DemonHide } from "@/assets/icons/resources/DemonHide.svg";
 import { ReactComponent as DesertGlass } from "@/assets/icons/resources/DesertGlass.svg";
-import { ReactComponent as Ore } from "@/assets/icons/resources/Ore.svg";
 import { ReactComponent as Lords } from "@/assets/icons/resources/Lords.svg";
+import { ReactComponent as Ore } from "@/assets/icons/resources/Ore.svg";
 import { ReactComponent as Spores } from "@/assets/icons/resources/Spores.svg";
-import { ReactComponent as People } from "@/assets/icons/common/people.svg";
+import clsx from "clsx";
+import type { ReactElement } from "react";
 
 export type Props = {
   isLabor?: boolean;
@@ -82,7 +81,7 @@ const STYLES = {
 
 export const ResourceIcon = ({ isLabor = false, withTooltip = true, ...props }: Props) => {
   const Icon = (
-    <div className={`flex paper relative group rounded-xl justify-center ${props.containerClassName}`}>
+    <div className={`flex paper relative group rounded-xl justify-center ${props.className}`}>
       <div className={`relative ${clsx(STYLES.size[props.size], props.className)} `}>
         {Components[props.resource.replace(" ", "").replace("'", "")]?.component}
         {isLabor && <People className="absolute left-4 h-2.5 top-3"></People>}

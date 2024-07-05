@@ -1,20 +1,19 @@
+import { HyperstructureEventInterface, getHyperstructureEvents } from "@/dojo/events/hyperstructureEventQueries";
+import { displayAddress, sortItems } from "@/ui/utils/utils";
 import {
   EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  ResourcesIds,
   getOrderName,
 } from "@bibliothecadao/eternum";
+import { useCallback, useEffect } from "react";
 import { create } from "zustand";
-import { HyperstructureEventInterface } from "@/dojo/events/hyperstructureEventQueries";
-import useBlockchainStore from "../store/useBlockchainStore";
+import { useDojo } from "../context/DojoContext";
 import { useContributions } from "../helpers/useContributions";
 import { useGuilds } from "../helpers/useGuilds";
-import { ResourcesIds } from "@bibliothecadao/eternum";
-import { getHyperstructureEvents } from "@/dojo/events/hyperstructureEventQueries";
-import { useCallback, useEffect } from "react";
 import { useRealm } from "../helpers/useRealm";
-import { displayAddress, sortItems } from "@/ui/utils/utils";
-import { useDojo } from "../context/DojoContext";
+import useBlockchainStore from "../store/useBlockchainStore";
 
 export const ResourceMultipliers: { [key in ResourcesIds]?: number } = {
   [ResourcesIds.Wood]: 1.0,
@@ -53,7 +52,8 @@ function getResourceMultiplier(resourceType: BigInt): number {
 }
 
 export function computeContributionPoints(totalPoints: number, qty: number, resourceType: BigInt): number {
-  const effectiveContribution = qty * getResourceMultiplier(resourceType);
+  const effectiveContribution =
+    (qty / EternumGlobalConfig.resources.resourcePrecision) * getResourceMultiplier(resourceType);
   const points = (effectiveContribution / TOTAL_CONTRIBUTABLE_AMOUNT) * totalPoints;
   return points;
 }
