@@ -1,5 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useEntityArmies, usePositionArmies } from "@/hooks/helpers/useArmies";
+import { useResources } from "@/hooks/helpers/useResources";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
 import { Position } from "@bibliothecadao/eternum";
@@ -10,11 +11,10 @@ import { DepositResources } from "../resources/DepositResources";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { ArmyViewCard } from "./ArmyViewCard";
-import { useResources } from "@/hooks/helpers/useResources";
+import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
 
-export const EntityArmyList = ({ entity_id }: any) => {
-  const { entityArmies } = useEntityArmies({ entity_id: entity_id?.entity_id });
-
+export const EntityArmyList = ({ structure }: any) => {
+  const { entityArmies } = useEntityArmies({ entity_id: structure?.entity_id });
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const {
@@ -28,15 +28,11 @@ export const EntityArmyList = ({ entity_id }: any) => {
 
   const canCreateProtector = useMemo(() => !entityArmies.find((army) => army.protectee_id), [entityArmies]);
 
-  const { getResourcesFromBalance } = useResources();
-
-  const inventoryResources = getResourcesFromBalance(entity_id?.entity_id);
-
   const handleCreateArmy = (is_defensive_army: boolean) => {
     setIsLoading(true);
     create_army({
       signer: account,
-      army_owner_id: entity_id.entity_id,
+      army_owner_id: structure.entity_id,
       is_defensive_army,
     }).finally(() => setIsLoading(false));
   };
@@ -79,11 +75,12 @@ export const EntityArmyList = ({ entity_id }: any) => {
         panel={({ entity }) => (
           <React.Fragment key={entity.entity_id}>
             {/* <StaminaResource entityId={entity.entity_id} className="mb-3" /> */}
-            <ArmyManagementCard owner_entity={entity_id?.entity_id} entity={entity} />
-            <div className="p-2 bg-gold/10 clip-angled my-4">
-              <InventoryResources entityId={entity.entity_id} />
-            </div>
-            <DepositResources entityId={entity.entity_id} resources={inventoryResources} />
+            <ArmyManagementCard owner_entity={structure?.entity_id} entity={entity} />
+            <InventoryResources entityId={entity.entity_id} />
+            <DepositResources
+              entityId={entity.entity_id}
+              battleInProgress={getBattlesByPosition({ x: entity.x, y: entity.y }) !== undefined}
+            />
           </React.Fragment>
         )}
         questing={

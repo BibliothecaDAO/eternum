@@ -21,7 +21,6 @@ import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
-import { quests as questsPopup } from "@/ui/components/navigation/Config";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -32,15 +31,13 @@ import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
+import { HintSection } from "../hints/HintModal";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const quests = useQuestStore((state) => state.quests);
@@ -83,12 +80,6 @@ export const SelectPreviewBuildingMenu = () => {
     });
 
   const [selectedTab, setSelectedTab] = useState(1);
-
-  const closePopups = () => {
-    if (isPopupOpen(questsPopup)) {
-      togglePopup(questsPopup);
-    }
-  };
 
   const isQuestClaimedByName = (questName: QuestName) => {
     const quest = quests?.find((q) => q.name === questName);
@@ -142,7 +133,6 @@ export const SelectPreviewBuildingMenu = () => {
                     } else {
                       setPreviewBuilding({ type: BuildingType.Resource, resource: resourceId });
                       playResourceSound(resourceId);
-                      closePopups();
                     }
                   }}
                   active={previewBuilding?.resource === resourceId}
@@ -202,7 +192,6 @@ export const SelectPreviewBuildingMenu = () => {
                         setPreviewBuilding({ type: building });
                         if (building === BuildingType.Farm) {
                           playResourceSound(ResourcesIds.Wheat);
-                          closePopups();
                         }
                         if (building === BuildingType.FishingVillage) {
                           playResourceSound(ResourcesIds.Fish);
@@ -272,8 +261,8 @@ export const SelectPreviewBuildingMenu = () => {
   );
 
   return (
-    <div className="relative flex flex-col  bg-brown border-gradient border clip-angled">
-      <HintModalButton className="absolute top-1 right-1" sectionName="Buildings & Bases" />
+    <>
+      <HintModalButton className="absolute top-1 right-1" section={HintSection.Buildings} />
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => {
@@ -292,7 +281,7 @@ export const SelectPreviewBuildingMenu = () => {
           ))}
         </Tabs.Panels>
       </Tabs>
-    </div>
+    </>
   );
 };
 

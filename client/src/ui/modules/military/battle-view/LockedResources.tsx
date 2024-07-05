@@ -20,7 +20,7 @@ export const LockedResources = ({
       {attackersResources.length > 0 || defendersResources.length > 0 ? (
         <div className="w-full grid overflow-auto grid-cols-12 gap-2">
           <React.Fragment>
-            <div className="flex justify-end border-r border-gold/50 col-span-6">
+            <div className="border-r border-gold/50 col-span-6">
               <InventoryResources entityId={attackersResourcesEscrowEntityId} max={4} />
             </div>
             <div className="col-span-6">

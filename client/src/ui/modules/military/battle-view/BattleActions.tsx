@@ -233,28 +233,27 @@ const ArmySelector = ({
   return (
     userArmiesInBattle &&
     userArmiesInBattle.length > 0 && (
-      <div className="self-center w-full flex flex-col justify-between bg-transparent clip-angled-sm size-xs col-span-2 text-gold text-center border border-gold">
+      <div className="self-center w-full flex flex-col justify-between bg-transparent size-xs col-span-2 text-gold text-center border border-gold rounded">
         <Select
-          value={""}
           onValueChange={(a: string) => {
             setLocalSelectedUnit(BigInt(a));
           }}
         >
-          <SelectTrigger className="">
+          <SelectTrigger className="text-gold">
             <SelectValue
               placeholder={
                 userArmiesInBattle.find((army) => localSelectedUnit === BigInt(army.entity_id))?.name || "Select army"
               }
             />
           </SelectTrigger>
-          <SelectContent className="bg-brown text-gold">
+          <SelectContent className="text-gold w-1">
             {userArmiesInBattle.map((army, index) => (
               <SelectItem
-                className="flex justify-between text-sm text-center"
+                className="flex justify-center self-center text-sm pl-0 w-full"
                 key={index}
                 value={army.entity_id?.toString() || ""}
               >
-                <h5 className="text-center flex gap-4">{army.name}</h5>
+                <h5 className="gap-4 text-gold w-full max-w-full">{army.name}</h5>
               </SelectItem>
             ))}
           </SelectContent>

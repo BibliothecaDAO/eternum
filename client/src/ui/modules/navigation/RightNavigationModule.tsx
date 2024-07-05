@@ -21,6 +21,7 @@ import { BuildingThumbs } from "./LeftNavigationModule";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Headline } from "@/ui/elements/Headline";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { HintSection } from "@/ui/components/hints/HintModal";
 
 export enum View {
   None,
@@ -149,7 +150,7 @@ export const RightNavigationModule = () => {
               <Headline>
                 <div className="flex gap-2">
                   <div className="self-center">Resources</div>
-                  <HintModalButton sectionName="Resources" />
+                  <HintModalButton section={HintSection.Resources} />
                 </div>
               </Headline>
 

@@ -1,9 +1,13 @@
 import { Hono } from "hono";
+import users from "./routes/users";
 
 const app = new Hono();
 
-app.get("/", (c) => {
-  return c.text("Hello Hono!");
-});
+const routes = app.route("/users", users);
 
-export default app;
+export type AppType = typeof routes;
+
+export default {
+  port: 7070,
+  fetch: app.fetch,
+};

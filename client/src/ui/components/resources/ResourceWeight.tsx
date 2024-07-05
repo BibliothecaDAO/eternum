@@ -25,12 +25,12 @@ export const TravelInfo = ({
   const { getBalance } = useResourceBalance();
 
   useEffect(() => {
-    const updateResourceWeight = async () => {
+    const updateResourceWeight = () => {
       const totalWeight = getTotalResourceWeight(resources);
       const multipliedWeight = multiplyByPrecision(totalWeight);
       setResourceWeight(multipliedWeight);
 
-      const { balance } = await getBalance(entityId, ResourcesIds.Donkey);
+      const { balance } = getBalance(entityId, ResourcesIds.Donkey);
       const currentDonkeyAmount = isPickup
         ? 0
         : resources.find((r) => r.resourceId === ResourcesIds.Donkey)?.amount || 0;
@@ -76,9 +76,9 @@ export const TravelInfo = ({
         </tbody>
       </table>
       <div className="flex text-xs mt-4 justify-center w-full gap-4 font-bold ">
-        <div className="ml-2">Lords: {`${WEIGHTS[253]} kg/unit`}</div>
-        <div>Food: {`${WEIGHTS[254]} kg/unit`}</div>
-        <div className="ml-2">Resource: {`${WEIGHTS[1]} kg/unit`}</div>
+        <div className="ml-2">Lords: {`${WEIGHTS[ResourcesIds.Lords]} kg/unit`}</div>
+        <div>Food: {`${WEIGHTS[ResourcesIds.Wheat]} kg/unit`}</div>
+        <div className="ml-2">Resource: {`${WEIGHTS[ResourcesIds.Wood]} kg/unit`}</div>
       </div>
     </>
   );

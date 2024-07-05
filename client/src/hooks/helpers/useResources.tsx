@@ -153,6 +153,17 @@ export function useResourceBalance() {
     ];
   };
 
+  const getResourceProductionInfo = (entityId: bigint, resourceId: number) => {
+    const productionManager = new ProductionManager(
+      Production,
+      Resource,
+      BuildingQuantityv2,
+      entityId,
+      BigInt(resourceId),
+    );
+    return productionManager.getProduction();
+  };
+
   const getBalance = (entityId: bigint, resourceId: number) => {
     const currentDefaultTick = useBlockchainStore.getState().currentDefaultTick;
     const productionManager = new ProductionManager(
@@ -194,6 +205,7 @@ export function useResourceBalance() {
     getBalance,
     useBalance,
     getResourceBalance,
+    getResourceProductionInfo,
   };
 }
 

@@ -16,6 +16,7 @@ import { HoveredHexagon } from "@/ui/components/worldmap/hexagon/HoveredHexagon.
 const scale = 20;
 export const WorldMapScene = () => {
   const clearSelection = useUIStore((state) => state.clearSelection);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const { gl } = useThree();
 
@@ -39,15 +40,23 @@ export const WorldMapScene = () => {
       setIsLoadingScreenEnabled(false);
     }, 300);
 
-    const handleRightClick = (e: any) => {
+    const handleRightClick = (e: MouseEvent) => {
+      e.preventDefault();
+      clearSelection();
+      setPreviewBuilding(null);
+    };
+
+    const handleLeftClick = (e: MouseEvent) => {
       e.preventDefault();
       clearSelection();
     };
 
     gl.domElement.addEventListener("contextmenu", handleRightClick);
+    gl.domElement.addEventListener("click", handleLeftClick);
 
     return () => {
       gl.domElement.removeEventListener("contextmenu", handleRightClick);
+      gl.domElement.removeEventListener("click", handleLeftClick);
     };
   }, []);
 

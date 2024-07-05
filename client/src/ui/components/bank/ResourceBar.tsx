@@ -5,6 +5,7 @@ import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
+import { HintSection } from "../hints/HintModal";
 
 type ResourceBarProps = {
   entityId: bigint;
@@ -76,7 +77,7 @@ export const ResourceBar = ({
         onValueChange={(trait) => handleResourceChange(trait)}
       >
         <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder="Resources" />
+          <SelectValue placeholder={HintSection.Resources} />
         </SelectTrigger>
         <SelectContent className="bg-brown text-gold">
           {resources.map((resource, index) => (

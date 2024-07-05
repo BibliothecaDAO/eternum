@@ -93,7 +93,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
       <div className="w-full flex flex-col mt-2 space-y-2 font-bold">
         <div className="grid grid-cols-3 gap-2 relative justify-between w-full text-gold">
           <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between gap-2">
-            <ResourceIcon withTooltip={false} resource={"Crossbowmen"} size="lg" />
+            <ResourceIcon withTooltip={false} resource={"Crossbowman"} size="lg" />
             <div className="text-green text-xs self-center">{currencyFormat(troops.crossbowman_count, 0)}</div>
           </div>
           <div className="px-2 py-1 bg-white/10 clip-angled-sm flex flex-col justify-between gap-2">

@@ -1,8 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useEntityArmies } from "@/hooks/helpers/useArmies";
 import { useGetMyOffers } from "@/hooks/helpers/useTrade";
-import { BuildingType, QuestType } from "@bibliothecadao/eternum";
-import { useComponentValue } from "@dojoengine/react";
+import { BuildingType, QuestType, StructureType } from "@bibliothecadao/eternum";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -12,6 +11,7 @@ import { useEntities } from "../helpers/useEntities";
 import { useLocation } from "wouter";
 import useUIStore from "./useUIStore";
 import { getPillageEvents } from "@/dojo/events/pillageEventQueries";
+import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
 
 export enum QuestName {
   BuildFarm = "Build a Farm",
@@ -54,6 +54,8 @@ export interface QuestStore {
   setSelectedQuest: (selectedQuest: Quest | undefined) => void;
   claimableQuestsLength: number;
   setClaimableQuestsLength: (claimableQuestsLength: number) => void;
+  showCompletedQuests: boolean;
+  setShowCompletedQuests: (showCompletedQuests: boolean) => void;
 }
 
 export const useQuestStore = create<QuestStore>((set) => {
@@ -64,6 +66,8 @@ export const useQuestStore = create<QuestStore>((set) => {
     setSelectedQuest: (selectedQuest: Quest | undefined) => set({ selectedQuest }),
     claimableQuestsLength: 0,
     setClaimableQuestsLength: (claimableQuestsLength: number) => set({ claimableQuestsLength }),
+    showCompletedQuests: false,
+    setShowCompletedQuests: (showCompletedQuests: boolean) => set({ showCompletedQuests }),
   };
 });
 
@@ -76,6 +80,8 @@ export const useQuests = () => {
   } = useDojo();
 
   const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const leftView = useUIStore((state) => state.leftNavigationView);
+  const previewBuilding = useUIStore((state) => state.previewBuilding);
 
   const setQuests = useQuestStore((state) => state.setQuests);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
@@ -91,7 +97,7 @@ export const useQuests = () => {
   const isWorldView = useMemo(() => location === "/map", [location]);
 
   const getBuildingQuantity = (buildingType: BuildingType) =>
-    useComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(buildingType)]))
+    getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(buildingType)]))
       ?.value || 0;
 
   const farms = getBuildingQuantity(BuildingType.Farm);
@@ -109,8 +115,14 @@ export const useQuests = () => {
     [structures],
   );
 
-  const mines = useMemo(() => countStructuresByCategory("FragmentMine"), [countStructuresByCategory]);
-  const hyperstructures = useMemo(() => countStructuresByCategory("Hyperstructure"), [countStructuresByCategory]);
+  const fragmentMines = useMemo(
+    () => countStructuresByCategory(StructureType[StructureType.FragmentMine]),
+    [countStructuresByCategory],
+  );
+  const hyperstructures = useMemo(
+    () => countStructuresByCategory(StructureType[StructureType.Hyperstructure]),
+    [countStructuresByCategory],
+  );
 
   const hyperstructureContributions = runQuery([
     HasValue(Contribution, { player_address: BigInt(account.address) }),
@@ -139,7 +151,17 @@ export const useQuests = () => {
         name: QuestName.BuildFarm,
         description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm.",
         completed: farms > 0,
-        steps: [],
+        steps: [
+          { description: "Navigate to the construction menu.", completed: leftView === LeftView.ConstructionView },
+          {
+            description: "Select the 'Farm' card",
+            completed: previewBuilding !== null,
+          },
+          {
+            description: "Left click on a hex to build it, or right click to cancel.",
+            completed: farms > 0,
+          },
+        ],
         prizes: [
           { id: QuestType.CommonResources, title: "Common Resources" },
           { id: QuestType.UncommonResources, title: "Uncommon Resources" },
@@ -154,7 +176,17 @@ export const useQuests = () => {
         name: QuestName.BuildResource,
         description: "Eternum thrives on resources. Construct resource facilities to harvest them efficiently.",
         completed: resource > 0,
-        steps: [],
+        steps: [
+          { description: "Navigate to the construction menu.", completed: leftView === LeftView.ConstructionView },
+          {
+            description: "Navigate to the 'Resources' tab and select a resource card",
+            completed: previewBuilding !== null,
+          },
+          {
+            description: "Left click on a hex to build it, or right click to cancel.",
+            completed: resource > 0,
+          },
+        ],
         prizes: [{ id: QuestType.Trade, title: "Donkeys and Lords" }],
         depth: 2,
       },
@@ -222,7 +254,7 @@ export const useQuests = () => {
       {
         name: QuestName.Mine,
         description: "Explore the world, find earthenshard mines.",
-        completed: mines > 0,
+        completed: fragmentMines > 0,
         steps: [],
         prizes: [{ id: QuestType.Mine, title: "Mine" }],
         depth: 5,
@@ -264,11 +296,14 @@ export const useQuests = () => {
     hasTraveled,
     workersHut,
     markets,
+    fragmentMines,
     hyperstructures,
     hyperstructureContributions,
     pillageHistoryLength,
     selectedEntity,
     isWorldView,
+    leftView,
+    previewBuilding,
   ]);
 
   useEffect(() => {

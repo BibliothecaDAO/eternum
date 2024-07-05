@@ -99,7 +99,9 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
 
       const name = onChainName
         ? shortString.decodeShortString(onChainName.name.toString())
-        : `${structure.category} ${structure?.entity_id}`;
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
 
       return {
         ...structure,
