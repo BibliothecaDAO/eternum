@@ -1,7 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useEntityArmies } from "@/hooks/helpers/useArmies";
 import { useGetMyOffers } from "@/hooks/helpers/useTrade";
-import { BuildingType, QuestType } from "@bibliothecadao/eternum";
+import { BuildingType, QuestType, StructureType } from "@bibliothecadao/eternum";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -115,8 +115,14 @@ export const useQuests = () => {
     [structures],
   );
 
-  const fragmentMines = useMemo(() => countStructuresByCategory("FragmentMine"), [countStructuresByCategory]);
-  const hyperstructures = useMemo(() => countStructuresByCategory("Hyperstructure"), [countStructuresByCategory]);
+  const fragmentMines = useMemo(
+    () => countStructuresByCategory(StructureType[StructureType.FragmentMine]),
+    [countStructuresByCategory],
+  );
+  const hyperstructures = useMemo(
+    () => countStructuresByCategory(StructureType[StructureType.Hyperstructure]),
+    [countStructuresByCategory],
+  );
 
   const hyperstructureContributions = runQuery([
     HasValue(Contribution, { player_address: BigInt(account.address) }),
