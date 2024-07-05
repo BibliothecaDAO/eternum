@@ -59,7 +59,8 @@ const Battles = () => {
       <div className="flex flex-row items-center gap-2">
         <img className="w-20" src="/images/icons/attack.png" alt="coin" />
         <p>
-          Battles erupt when armies clash, with duration dependent on troop numbers. These engagements are open to all, involving both offensive forces and defenders of structures.
+          Battles erupt when armies clash, with duration dependent on troop numbers. These engagements are open to all,
+          involving both offensive forces and defenders of structures.
         </p>
       </div>
 
@@ -75,7 +76,8 @@ const Battles = () => {
       <div className="flex flex-row items-center gap-2">
         <img className="w-20" src="/images/icons/claim.png" alt="coin" />
         <p>
-          After overcoming enemy defenses, you can claim their structure. This transfers ownership, allowing point accumulation from hyperstructures or resource harvesting from mines.
+          After overcoming enemy defenses, you can claim their structure. This transfers ownership, allowing point
+          accumulation from hyperstructures or resource harvesting from mines.
         </p>
       </div>
 

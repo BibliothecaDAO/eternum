@@ -6,6 +6,7 @@ import {
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
+  STOREHOUSE_CAPACITY,
   findResourceById,
 } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
@@ -32,7 +33,8 @@ export const Resources = () => {
       content: (
         <p className="my-5">
           <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse adds
-          <span className="font-bold"> 10k capacity per resource type</span>. Build more storehouses to increase storage.
+          <span className="font-bold"> {STOREHOUSE_CAPACITY / 1000000}M capacity per resource type</span>. Build more
+          storehouses to increase storage.
         </p>
       ),
     },
