@@ -236,7 +236,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
           <div className="w-full flex flex-col justify-center mt-4">
             <Button
               className="text-brown"
-              isLoading={isLoading}
+              isLoading={false}
               disabled={!canSwap}
               onClick={() => setOpenConfirmation(true)}
               variant="primary"

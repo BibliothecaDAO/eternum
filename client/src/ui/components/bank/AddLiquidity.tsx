@@ -115,7 +115,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
           <div className="mt-2 absolute top-[97px] left-1/3">
             <Button
               variant="primary"
-              isLoading={isLoading}
+              isLoading={false}
               disabled={!canAdd}
               className="text-brown bg-brown"
               onClick={() => setOpenConfirmation(true)}

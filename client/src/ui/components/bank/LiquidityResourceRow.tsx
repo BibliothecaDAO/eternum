@@ -154,12 +154,7 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
         <td>{divideByPrecision(lordsAmount).toLocaleString()}</td>
         <td>{divideByPrecision(resourceAmount).toLocaleString()}</td>
         <td>
-          <Button
-            variant="outline"
-            onClick={() => setOpenConfirmation(true)}
-            isLoading={isLoading}
-            disabled={!canWithdraw}
-          >
+          <Button variant="outline" onClick={() => setOpenConfirmation(true)} isLoading={false} disabled={!canWithdraw}>
             Withdraw
           </Button>
         </td>
