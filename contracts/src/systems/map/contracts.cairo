@@ -63,11 +63,9 @@ mod map_systems {
             // ensure unit is alive
             get!(world, unit_id, Health).assert_alive("Army");
 
-            // check that entity owner is a realm
-            // TODO: Do we need this?
+            // check that caller is owner of entityOwner
             let unit_entity_owner = get!(world, unit_id, EntityOwner);
-            let unit_realm = get!(world, unit_entity_owner.entity_owner_id, Realm);
-            assert(unit_realm.realm_id != 0, 'not owned by realm');
+            unit_entity_owner.assert_caller_owner(world);
 
             // ensure unit can move
             get!(world, unit_id, Movable).assert_moveable();
