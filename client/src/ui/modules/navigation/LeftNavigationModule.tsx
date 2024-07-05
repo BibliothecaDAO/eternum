@@ -1,5 +1,8 @@
-import { useEntityArmies } from "@/hooks/helpers/useArmies";
+import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
+import { useEntities } from "@/hooks/helpers/useEntities";
 import { useStamina } from "@/hooks/helpers/useStamina";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
@@ -8,13 +11,14 @@ import Button from "@/ui/elements/Button";
 import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
 import { Military } from "@/ui/modules/military/Military";
 import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import clsx from "clsx";
 import { motion } from "framer-motion";
 import { debounce } from "lodash";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { construction, military, worldStructures } from "../../components/navigation/Config";
+import { construction, military, quests as questsPopup, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 import { Assistant } from "../assistant/Assistant";
 import { Guilds } from "../guilds/Guilds";
@@ -22,11 +26,6 @@ import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import clsx from "clsx";
-import { quests as questsPopup } from "../../components/navigation/Config";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
-import { useEntities } from "@/hooks/helpers/useEntities";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -67,9 +66,9 @@ export const LeftNavigationModule = () => {
   const quests = useQuestStore((state) => state.quests);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { realmEntityId, realmId } = useRealmStore();
+  const { realmEntityId } = useRealmStore();
   const { getStamina } = useStamina();
-  const { entityArmies } = useEntityArmies({ entity_id: realmEntityId });
+  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: realmEntityId });
 
   const [location, _] = useLocation();
 

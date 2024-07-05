@@ -1,5 +1,5 @@
 import { ArmyInfo, usePositionArmies } from "@/hooks/helpers/useArmies";
-import { useBattlesByPosition } from "@/hooks/helpers/useBattles";
+import { BattleInfo, useBattlesByPosition } from "@/hooks/helpers/useBattles";
 import { Structure, useStructuresPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ClickedHex } from "@/types";
@@ -50,7 +50,6 @@ export const HexagonInformationPanel = () => {
     if (!ownArmySelected) return;
     return userAttackingArmies.find((army) => BigInt(army.entity_id) === ownArmySelected.id);
   }, [userAttackingArmies, selectedEntity]);
-
   const toShow = checkWhatToShow(
     battle,
     ownArmySelected,
@@ -131,7 +130,7 @@ const SelectActiveArmy = ({
 };
 
 const checkWhatToShow = (
-  battle: bigint | undefined,
+  battle: BattleInfo | undefined,
   selectedEntity:
     | {
         id: bigint;

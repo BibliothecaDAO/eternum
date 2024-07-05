@@ -3,7 +3,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { BattleLabel } from "@/ui/components/worldmap/armies/BattleLabel";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { Position } from "@bibliothecadao/eternum";
-import { useGLTF, Billboard, Image, useTexture } from "@react-three/drei";
+import { Billboard, Image, useGLTF, useTexture } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useCallback, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -21,8 +21,6 @@ export const Battles = () => {
     <group>
       {battles.map((battle, index) => {
         if (!battle?.x || !battle?.y) return null;
-        if (BigInt(battle!.attack_army_health.current) === 0n && BigInt(battle!.defence_army_health.current) === 0n)
-          return null;
         const { x, y } = getUIPositionFromColRow(battle.x, battle.y, false);
         return (
           <BattleModel

@@ -1,6 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntityArmies, usePositionArmies } from "@/hooks/helpers/useArmies";
-import { useResources } from "@/hooks/helpers/useResources";
+import { useArmiesByEntityOwner, usePositionArmies } from "@/hooks/helpers/useArmies";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
 import { Position } from "@bibliothecadao/eternum";
@@ -14,7 +13,8 @@ import { ArmyViewCard } from "./ArmyViewCard";
 import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
 
 export const EntityArmyList = ({ structure }: any) => {
-  const { entityArmies } = useEntityArmies({ entity_id: structure?.entity_id });
+  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structure?.entity_id });
+
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const {

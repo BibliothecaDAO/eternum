@@ -1,10 +1,8 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useContributions } from "@/hooks/helpers/useContributions";
 import { ProgressWithPercentage, useHyperstructures } from "@/hooks/helpers/useHyperstructures";
-import { useRealm } from "@/hooks/helpers/useRealm";
 import useLeaderBoardStore, {
   calculateShares,
-  computeHyperstructureLeaderboard,
   PlayerPointsLeaderboardInterface,
 } from "@/hooks/store/useLeaderBoardStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
@@ -16,8 +14,8 @@ import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
 import {
   EternumGlobalConfig,
-  HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
   MAX_NAME_LENGTH,
 } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
@@ -76,7 +74,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
-    return HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED.map(({ resource }) => {
+    return HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource }) => {
       const progress = progresses.progresses.find(
         (progress: ProgressWithPercentage) => progress.resource_type === resource,
       );
@@ -161,15 +159,11 @@ export const HyperstructurePanel = ({ entity }: any) => {
         </div>
       </div>
       <div className="overflow-y-scroll h-[40vh] bg-gold/10 clip-angled-sm p-2">
-        {progresses.percentage === 100 ? (
-          <HyperstructureLeaderboard contributions={contributions} />
-        ) : (
-          <div className="">{resourceElements}</div>
-        )}
+        {progresses.percentage === 100 ? <HyperstructureLeaderboard /> : <div className="">{resourceElements}</div>}
       </div>
       <Button
         isLoading={isLoading === Loading.Contribute}
-        className="mt-4"
+        className="mt-4 bg-gold/20"
         disabled={Object.keys(newContributions).length === 0 || isLoading !== Loading.None}
         onClick={contributeToConstruction}
       >
@@ -179,20 +173,15 @@ export const HyperstructurePanel = ({ entity }: any) => {
   );
 };
 
-const HyperstructureLeaderboard = ({ contributions }: any) => {
-  const {
-    account: { account },
-  } = useDojo();
-
-  const { getAddressName, getAddressOrder } = useRealm();
+const HyperstructureLeaderboard = () => {
   const playerPointsLeaderboard = useLeaderBoardStore((state) => state.playerPointsLeaderboard);
 
   const sortingParams = useMemo(() => {
     return [
-      { label: "Name", sortKey: "name", className: "ml-8" },
-      { label: "Order", sortKey: "order", className: "ml-8" },
-      { label: "Address", sortKey: "address", className: "ml-10" },
-      { label: "Shares", sortKey: "points", className: "ml-auto mr-2" },
+      { label: "Name", sortKey: "name", className: "" },
+      { label: "Order", sortKey: "order", className: "" },
+      { label: "Address", sortKey: "address", className: "" },
+      { label: "Points", sortKey: "points", className: "flex justify-end" },
     ];
   }, []);
 
@@ -203,7 +192,7 @@ const HyperstructureLeaderboard = ({ contributions }: any) => {
 
   return (
     <>
-      <SortPanel className="px-3 py-2">
+      <SortPanel className="px-3 py-2 grid grid-cols-4">
         {sortingParams.map(({ label, sortKey, className }) => (
           <SortButton
             className={className}
@@ -220,24 +209,17 @@ const HyperstructureLeaderboard = ({ contributions }: any) => {
           />
         ))}
       </SortPanel>
-      {computeHyperstructureLeaderboard(
-        playerPointsLeaderboard,
-        contributions,
-        1,
-        account,
-        getAddressName,
-        getAddressOrder,
-      )
-        .sort((playerPointsA, playerPointsB) => playerPointsA.totalPoints - playerPointsB.totalPoints)
+      {playerPointsLeaderboard
+        .sort((playerPointsA, playerPointsB) => playerPointsB.totalPoints - playerPointsA.totalPoints)
         .map((playerPoints: PlayerPointsLeaderboardInterface) => {
           return (
             <div className="flex mt-1">
               <div className={`flex relative group items-center text-xs px-2 p-1 w-full`}>
-                <div className="flex w-full">
-                  <div className=" self-center text-sm font-bold ml-8">{playerPoints.addressName}</div>
-                  <OrderIcon className="ml-10" order={playerPoints.order} size="xs" />
-                  <div className="ml-10 text-sm font-bold">{displayAddress(playerPoints.address)}</div>
-                  <div className="ml-40 pt-2">{playerPoints.totalPoints * 100}%</div>
+                <div className="flex w-full grid grid-cols-4">
+                  <div className="text-sm font-bold">{playerPoints.addressName}</div>
+                  <OrderIcon containerClassName="" order={playerPoints.order} size="xs" />
+                  <div className=" text-sm font-bold">{displayAddress(playerPoints.address)}</div>
+                  <div className="text-right">{playerPoints.totalPoints.toFixed(2)}</div>
                 </div>
               </div>
             </div>

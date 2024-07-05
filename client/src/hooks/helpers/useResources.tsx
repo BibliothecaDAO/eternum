@@ -6,14 +6,27 @@ import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
+import { filterArmy, getArmyByEntityId } from "./useArmies";
 
 export function useResources() {
   const {
     account: { account },
     setup: {
-      components: { Resource, Position, ResourceCost, Realm, EntityOwner, ArrivalTime, OwnedResourcesTracker, Owner },
+      components: {
+        Resource,
+        Position,
+        ResourceCost,
+        Realm,
+        EntityOwner,
+        ArrivalTime,
+        OwnedResourcesTracker,
+        Owner,
+        Battle,
+        Army,
+      },
     },
   } = useDojo();
+  const { getArmy } = getArmyByEntityId();
 
   const getResourcesFromBalance = (entityId: bigint): Resource[] => {
     // todo: switch back to items_count when working
@@ -94,13 +107,21 @@ export function useResources() {
   const getAllArrivalsWithResources = useMemo(() => {
     const currentTime = Date.now();
 
+    type ArrivalInfo = {
+      id: Entity;
+      entityId: bigint;
+      arrivesAt: number;
+      isOwner: boolean;
+    };
+
     return atPositionWithInventory
       .map((id) => {
         const entityOwner = getComponentValue(EntityOwner, id);
         const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || BigInt(0)]));
         const arrivalTime = getComponentValue(ArrivalTime, id);
         const position = getComponentValue(Position, id);
-
+        const army = getArmy(position?.entity_id || BigInt(0));
+        if (!army || !filterArmy(army, Battle, Army, Position, Realm)) return undefined;
         return {
           id,
           entityId: position?.entity_id || BigInt(""),
@@ -108,6 +129,7 @@ export function useResources() {
           isOwner: BigInt(owner?.address || "") === BigInt(account.address),
         };
       })
+      .filter((val: ArrivalInfo | undefined): val is ArrivalInfo => val !== undefined)
       .filter(({ isOwner, arrivesAt }) => isOwner && arrivesAt <= currentTime)
       .sort((a, b) => a.arrivesAt - b.arrivesAt)
       .map(({ entityId }) => entityId)

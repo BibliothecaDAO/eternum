@@ -91,7 +91,7 @@ export const ArmySelectionOverlay = ({ army }: ArmyProps) => {
   return (
     <>
       {showCombatLabel && <CombatLabel visible={isSelected} structureIsMine={structure?.isMine} />}
-      {showBattleLabel && <BattleLabel selectedBattle={battleAtPosition!} />}
+      {showBattleLabel && <BattleLabel selectedBattle={BigInt(battleAtPosition!.entity_id)} />}
       {isSelected && <UnitHighlight position={{ x: army.x, y: army.y }} />}
     </>
   );

@@ -103,11 +103,8 @@ const getAllProgressesAndTotalPercentage = (
   hyperstructureEntityId: bigint,
 ) => {
   let percentage = 0;
-  let allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource }) => {
+  const allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource, amount: resourceCost }) => {
     let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
-    const resourceCost = Object.values(HYPERSTRUCTURE_TOTAL_COSTS_SCALED).find(
-      ({ resource }) => resource === resource,
-    )!.amount;
     let progress = {
       hyperstructure_entity_id: hyperstructureEntityId,
       resource_type: resource,

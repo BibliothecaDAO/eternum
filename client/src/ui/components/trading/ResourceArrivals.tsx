@@ -1,22 +1,7 @@
-import { useResources } from "@/hooks/helpers/useResources";
 import { Entity } from "../entities/Entity";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { HintSection } from "../hints/HintModal";
-
-export const ResourceArrivals = ({ entityId }: { entityId: bigint }) => {
-  const { getArrivalsWithResources } = useResources();
-
-  const entityIds = getArrivalsWithResources(entityId);
-
-  return (
-    <div>
-      {entityIds.map((entityId) => {
-        return <Entity key={entityId} entityId={entityId} />;
-      })}
-    </div>
-  );
-};
 
 export const AllResourceArrivals = ({ entityIds }: { entityIds: bigint[] }) => {
   return (

@@ -1,17 +1,17 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, useEntityArmies } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { useGetMyOffers } from "@/hooks/helpers/useTrade";
 import { BuildingType, QuestType, StructureType } from "@bibliothecadao/eternum";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { create } from "zustand";
-import { useEntities } from "../helpers/useEntities";
-import { useLocation } from "wouter";
-import useUIStore from "./useUIStore";
 import { getPillageEvents } from "@/dojo/events/pillageEventQueries";
 import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
+import { useLocation } from "wouter";
+import { create } from "zustand";
+import { useEntities } from "../helpers/useEntities";
+import useUIStore from "./useUIStore";
 
 export enum QuestName {
   BuildFarm = "Build a Farm",
@@ -130,7 +130,7 @@ export const useQuests = () => {
 
   const orders = useGetMyOffers();
 
-  const { entityArmies } = useEntityArmies({ entity_id: entityId || BigInt("0") });
+  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: entityId || BigInt("0") });
 
   const [pillageHistoryLength, setPillageHistoryLength] = useState<number>(0);
 

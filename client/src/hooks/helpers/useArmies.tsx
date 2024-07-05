@@ -7,7 +7,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import { armyIsLosingSide, battleIsFinished } from "./useBattles";
+import { armyIsLosingSide, battleIsFinished, getExtraBattleInformation } from "./useBattles";
 
 export type ArmyInfo = ClientComponents["Army"]["schema"] & {
   name: string;
@@ -157,11 +157,11 @@ export const useArmies = () => {
         Owner,
         Realm,
         Stamina,
-      ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
+      ).filter((army) => filterArmy(army, Battle, Army, Position, Realm)),
   };
 };
 
-export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
+export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owner_entity_id: bigint }) => {
   const {
     setup: {
       components: {
@@ -184,7 +184,7 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
     account: { account },
   } = useDojo();
 
-  const armies = useEntityQuery([Has(Army), HasValue(EntityOwner, { entity_owner_id: entity_id })]);
+  const armies = useEntityQuery([Has(Army), HasValue(EntityOwner, { entity_owner_id: entity_owner_entity_id })]);
 
   const entityArmies = useMemo(() => {
     return formatArmies(
@@ -203,7 +203,7 @@ export const useEntityArmies = ({ entity_id }: { entity_id: bigint }) => {
       Owner,
       Realm,
       Stamina,
-    ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
+    ).filter((army) => filterArmy(army, Battle, Army, Position, Realm));
   }, [armies]);
 
   return {
@@ -251,7 +251,7 @@ export const useArmiesByBattleId = (battle_id: bigint) => {
     Owner,
     Realm,
     Stamina,
-  ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
+  ).filter((army) => filterArmy(army, Battle, Army, Position, Realm));
 };
 
 export const getArmiesByBattleId = (battle_id: bigint) => {
@@ -294,7 +294,7 @@ export const getArmiesByBattleId = (battle_id: bigint) => {
     Owner,
     Realm,
     Stamina,
-  ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
+  ).filter((army) => filterArmy(army, Battle, Army, Position, Realm));
 };
 
 export const useArmyByArmyEntityId = (entityId: bigint) => {
@@ -337,7 +337,7 @@ export const useArmyByArmyEntityId = (entityId: bigint) => {
     Owner,
     Realm,
     Stamina,
-  ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
+  ).filter((army) => filterArmy(army, Battle, Army, Position, Realm))[0];
 };
 
 export const usePositionArmies = ({ position }: { position: Position }) => {
@@ -383,7 +383,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
         Owner,
         Realm,
         Stamina,
-      ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false);
+      ).filter((army) => filterArmy(army, Battle, Army, Position, Realm));
     }, [allArmiesAtPosition]);
 
     const userArmies = useMemo(() => {
@@ -442,7 +442,7 @@ export const getArmyByEntityId = () => {
     account: { account },
   } = useDojo();
 
-  const getArmy = (entity_id: bigint) => {
+  const getArmy = (entity_id: bigint): ArmyInfo | undefined => {
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
 
     return formatArmies(
@@ -461,7 +461,7 @@ export const getArmyByEntityId = () => {
       Owner,
       Realm,
       Stamina,
-    ).filter((army) => checkIfArmyLostAFinishedBattle(Battle, Army, army) === false)[0];
+    ).filter((army) => filterArmy(army, Battle, Army, Position, Realm))[0];
   };
 
   return { getArmy };
@@ -526,7 +526,7 @@ export const getArmiesAtPosition = () => {
         Owner,
         Realm,
         Stamina,
-      ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
+      ).filter((army) => filterArmy(army, Battle, Army, Position, Realm)),
       opponentArmiesAtPosition: formatArmies(
         opponentArmies,
         account.address,
@@ -543,7 +543,7 @@ export const getArmiesAtPosition = () => {
         Owner,
         Realm,
         Stamina,
-      ).filter((army) => checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army) === false),
+      ).filter((army) => filterArmy(army, Battle, Army, Position, Realm)),
     };
   };
 
@@ -569,11 +569,8 @@ const calculateOffset = (index: number, total: number) => {
   };
 };
 
-export const checkIfArmyLostAFinishedBattle = (Battle: any, Army: any, army: any) => {
-  const battle = getComponentValue(
-    Battle,
-    getEntityIdFromKeys([BigInt(army.battle_id)]),
-  ) as ClientComponents["Battle"]["schema"];
+export const checkIfArmyLostAFinishedBattle = (Battle: any, Army: any, army: any, Position: any, Realm: any) => {
+  const battle = getExtraBattleInformation([getEntityIdFromKeys([BigInt(army.battle_id)])], Battle, Position, Realm)[0];
   if (battle && armyIsLosingSide(army, battle!) && battleIsFinished(Army, battle)) {
     return true;
   }
@@ -583,4 +580,11 @@ export const checkIfArmyLostAFinishedBattle = (Battle: any, Army: any, army: any
 export const checkIfArmyAlive = (army: ArmyInfo) => {
   if (army.current === undefined) return true;
   return BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0;
+};
+
+export const filterArmy = (army: ArmyInfo, Battle: any, Army: any, Position: any, Realm: any) => {
+  return (
+    (checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army, Position, Realm) === false) ||
+    BigInt(army?.protectee_id || 0) !== 0n
+  );
 };
