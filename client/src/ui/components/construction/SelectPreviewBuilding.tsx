@@ -56,7 +56,6 @@ export const SelectPreviewBuildingMenu = () => {
       key !== "Bank" &&
       key !== "FragmentMine" &&
       key !== "None" &&
-      key !== "DonkeyFarm" &&
       key !== "TradingPost" &&
       key !== "WatchTower" &&
       key !== "Walls" &&
