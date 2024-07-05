@@ -260,3 +260,28 @@ export const setStaminaConfig = async (account: Account, provider: EternumProvid
     console.log(`Configuring staminas ${unit_type} ${tx.statusReceipt}...`);
   }
 };
+
+export const setMercenariesConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_mercenaries_config({
+    signer: account,
+    troops: {
+      knight_count:
+        BigInt(EternumGlobalConfig.mercenaries.troops.knight_count) *
+        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+      paladin_count:
+        BigInt(EternumGlobalConfig.mercenaries.troops.paladin_count) *
+        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+      crossbowman_count:
+        BigInt(EternumGlobalConfig.mercenaries.troops.crossbowman_count) *
+        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+    },
+    rewards: EternumGlobalConfig.mercenaries.rewards.map((reward) => ({
+      resource: reward.resource,
+      amount:
+        reward.amount *
+        EternumGlobalConfig.resources.resourcePrecision *
+        EternumGlobalConfig.resources.resourceMultiplier,
+    })),
+  });
+  console.log(`Configuring mercenaries ${tx.statusReceipt}...`);
+};

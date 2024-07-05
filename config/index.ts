@@ -3,18 +3,19 @@ import productionManifest from "../contracts/manifests/prod/manifest.json";
 
 import {
   EternumProvider,
-  setProductionConfig,
   setBuildingCategoryPopConfig,
-  setResourceBuildingConfig,
-  setWeightConfig,
-  setCombatConfig,
-  setupGlobals,
-  setCapacityConfig,
-  setSpeedConfig,
-  setPopulationConfig,
-  setHyperstructureConfig,
   setBuildingConfig,
+  setCapacityConfig,
+  setCombatConfig,
+  setHyperstructureConfig,
+  setMercenariesConfig,
+  setPopulationConfig,
+  setProductionConfig,
+  setResourceBuildingConfig,
+  setSpeedConfig,
   setStaminaConfig,
+  setupGlobals,
+  setWeightConfig,
 } from "@bibliothecadao/eternum";
 import { Account } from "starknet";
 
@@ -48,3 +49,4 @@ await setSpeedConfig(account, provider);
 await setupGlobals(account, provider);
 await setHyperstructureConfig(account, provider);
 await setStaminaConfig(account, provider);
+await setMercenariesConfig(account, provider);

@@ -24,7 +24,9 @@ export const BattleProgressBar = ({
 
   const attackerName = `${attackerArmies.length > 0 ? "Attackers" : "Empty"} ${ownArmySide === "Attack" ? "(⚔️)" : ""}`;
   const defenderName = structure
-    ? `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+    ? structure.isMercenary
+      ? "Mercenaries"
+      : `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
     : defenderArmies?.length > 0
       ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
       : "Empty";

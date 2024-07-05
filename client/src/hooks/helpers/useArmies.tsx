@@ -12,6 +12,7 @@ import { armyIsLosingSide, battleIsFinished, getExtraBattleInformation } from ".
 export type ArmyInfo = ClientComponents["Army"]["schema"] & {
   name: string;
   isMine: boolean;
+  isMercenary: boolean;
   uiPos: UIPosition;
   offset: Position;
 } & ClientComponents["Health"]["schema"] &
@@ -76,7 +77,8 @@ const formatArmies = (
         getEntityIdFromKeys([BigInt(realm.realm_id)]),
       ) as ClientComponents["Position"]["schema"]);
 
-    const isMine = BigInt(owner?.address) === BigInt(playerAddress);
+    const isMine = BigInt(owner?.address || 0) === BigInt(playerAddress);
+    const isMercenary = owner === undefined;
     const ownGroupIndex = Number(army.entity_id) % 12;
     const offset = calculateOffset(ownGroupIndex, 12);
     const offsetToAvoidOverlapping = Math.random() * 1 - 0.5;
@@ -97,6 +99,7 @@ const formatArmies = (
       realm,
       homePosition,
       isMine,
+      isMercenary,
       offset,
       uiPos: { ...getUIPositionFromColRow(position?.x || 0, position?.y || 0), z: 0.32 },
 

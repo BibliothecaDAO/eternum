@@ -1,8 +1,8 @@
 import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
-import * as SystemProps from "../types/provider";
 import { EternumGlobalConfig } from "../constants";
+import * as SystemProps from "../types/provider";
 
 export const getContractByName = (manifest: any, name: string) => {
   const contract = manifest.contracts.find((contract: any) => contract.name.includes("::" + name));
@@ -871,6 +871,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, "config_systems"),
       entrypoint: "set_stamina_config",
       calldata: [unit_type, max_stamina],
+    });
+  }
+
+  public async set_mercenaries_config(props: SystemProps.SetMercenariesConfigProps) {
+    const { troops, rewards, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_mercenaries_config",
+      calldata: [troops, rewards],
     });
   }
 }

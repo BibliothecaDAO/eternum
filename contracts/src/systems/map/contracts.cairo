@@ -7,15 +7,22 @@ trait IMapSystems {
 
 #[dojo::contract]
 mod map_systems {
+    use core::integer::BoundedInt;
     use core::option::OptionTrait;
     use core::traits::Into;
     use eternum::alias::ID;
     use eternum::constants::{
-        WORLD_CONFIG_ID, split_resources_and_probs, TravelTypes, ResourceTypes
+        WORLD_CONFIG_ID, split_resources_and_probs, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE
     };
     use eternum::models::buildings::{BuildingCategory, Building, BuildingImpl};
-    use eternum::models::combat::{Health, HealthTrait};
-    use eternum::models::config::{MapExploreConfig, LevelingConfig};
+    use eternum::models::capacity::Capacity;
+    use eternum::models::combat::{
+        Health, HealthTrait, Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
+    };
+    use eternum::models::config::{
+        MapExploreConfig, LevelingConfig, MercenariesConfig, TroopConfigImpl, CapacityConfig,
+        CapacityConfigImpl
+    };
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
@@ -23,11 +30,14 @@ mod map_systems {
     use eternum::models::position::{Coord, CoordTrait, Direction, Position};
     use eternum::models::quantity::Quantity;
     use eternum::models::realm::{Realm};
-    use eternum::models::resources::{Resource, ResourceCost, ResourceTrait, ResourceFoodImpl};
+    use eternum::models::resources::{
+        Resource, ResourceCost, ResourceTrait, ResourceFoodImpl, ResourceTransferLock
+    };
     use eternum::models::stamina::StaminaImpl;
     use eternum::models::structure::{
         Structure, StructureCategory, StructureCount, StructureCountTrait
     };
+    use eternum::systems::combat::contracts::combat_systems::{InternalCombatImpl};
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl
@@ -160,35 +170,55 @@ mod map_systems {
                 true
             )[0];
 
-            let entity_id = world.uuid();
-            let caller = starknet::get_caller_address();
-
             if is_shards_mine {
-                set!(
-                    world,
-                    (
-                        Owner { entity_id: entity_id.into(), address: caller },
-                        EntityOwner {
-                            entity_id: entity_id.into(), entity_owner_id: entity_id.into()
-                        },
-                        Structure {
-                            entity_id: entity_id.into(), category: StructureCategory::FragmentMine
-                        },
-                        StructureCount { coord, count: 1 },
-                        Position { entity_id: entity_id.into(), x: coord.x, y: coord.y, },
-                    )
-                );
+                let mine_structure_entity_id = Self::create_shard_mine_structure(world, coord);
+
+                Self::add_mercenaries_to_shard_mine(world, mine_structure_entity_id, coord);
 
                 // create shards production building
                 BuildingImpl::create(
                     world,
-                    entity_id.into(),
+                    mine_structure_entity_id,
                     BuildingCategory::Resource,
                     Option::Some(ResourceTypes::EARTHEN_SHARD),
                     BuildingImpl::center(),
                 );
             }
             is_shards_mine
+        }
+
+        fn create_shard_mine_structure(world: IWorldDispatcher, coord: Coord) -> u128 {
+            let entity_id: u128 = world.uuid().into();
+            set!(
+                world,
+                (
+                    EntityOwner { entity_id: entity_id, entity_owner_id: entity_id },
+                    Structure { entity_id: entity_id, category: StructureCategory::FragmentMine },
+                    StructureCount { coord: coord, count: 1 },
+                    Position { entity_id: entity_id, x: coord.x, y: coord.y },
+                )
+            );
+            entity_id
+        }
+
+        fn add_mercenaries_to_shard_mine(
+            world: IWorldDispatcher, mine_entity_id: u128, mine_coords: Coord
+        ) -> u128 {
+            let mercenaries_config = get!(world, WORLD_CONFIG_ID, MercenariesConfig);
+
+            let troops = mercenaries_config.troops;
+
+            let army_entity_id = InternalCombatImpl::create_defensive_army(
+                world, mine_entity_id, starknet::contract_address_const::<0x0>()
+            );
+
+            InternalCombatImpl::add_troops_to_army(world, troops, army_entity_id);
+
+            InternalResourceSystemsImpl::transfer(
+                world, 0, mine_entity_id, mercenaries_config.rewards, 0, false, false
+            );
+
+            army_entity_id
         }
     }
 }
