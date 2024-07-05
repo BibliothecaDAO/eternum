@@ -70,7 +70,7 @@ export class MarketManager {
 
     let resourceOptimal = (reserveResourceAmount * lordsAmount) / reserveLordsAmount;
 
-    return Math.floor(resourceOptimal);
+    return resourceOptimal;
   };
 
   public quoteLords = (resourceAmount: number) => {
@@ -78,21 +78,20 @@ export class MarketManager {
 
     let lordsOptimal = (reserveLordsAmount * resourceAmount) / reserveResourceAmount;
 
-    return Math.floor(lordsOptimal);
+    return lordsOptimal;
   };
 
-  public getOutputAmount(inputAmount: number, inputReserve: bigint, outputReserve: bigint) {
+  public getOutputAmount(inputAmount: number, inputReserve: bigint, outputReserve: bigint, feeRateNum: number) {
     // Ensure reserves are not zero and input amount is valid
-    if (inputReserve <= 0n || outputReserve <= 0n) {
-        throw new Error('Reserves must be > zero');
+    if (inputReserve < 0n || outputReserve < 0n) {
+      throw new Error("Reserves must be >= zero");
     }
-    if (inputAmount <= 0) {
-        throw new Error('Input amount must be > zero');
+    if (inputAmount < 0) {
+      throw new Error("Input amount must be >= zero");
     }
 
     // Calculate the input amount after fee
-    const feeRateNum = EternumGlobalConfig.banks.ownerFeesNumerator;
-    const feeRateDenom = EternumGlobalConfig.banks.ownerFeesDenominator;
+    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
     const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
 
     // Calculate output amount based on the constant product formula with fee
@@ -104,21 +103,20 @@ export class MarketManager {
     const denominator = BigInt(inputReserve) * BigInt(feeRateDenom) + inputAmountWithFee;
 
     // Subtract 1 to round down the result, ensuring the exchange rate is maintained
-    return (numerator / denominator);
-}
+    return numerator / denominator;
+  }
 
-  public getInputPrice(inputAmount: number, inputReserve: bigint, outputReserve: bigint) {
+  public getInputPrice(inputAmount: number, inputReserve: bigint, outputReserve: bigint, feeRateNum: number) {
     // Ensure reserves are not zero and input amount is valid
-    if (inputReserve <= 0 || outputReserve <= 0) {
-        throw new Error('Reserves must be > zero');
+    if (inputReserve < 0 || outputReserve < 0) {
+      throw new Error("Reserves must be >= zero");
     }
-    if (inputAmount <= 0) {
-        throw new Error('Input amount must be > zero');
+    if (inputAmount < 0) {
+      throw new Error("Input amount must be >= zero");
     }
 
     // Calculate the input amount after fee
-    const feeRateNum = EternumGlobalConfig.banks.ownerFeesNumerator;
-    const feeRateDenom = EternumGlobalConfig.banks.ownerFeesDenominator;
+    const feeRateDenom = EternumGlobalConfig.banks.lpFeesDenominator;
     const inputAmountWithFee = BigInt(inputAmount) * BigInt(feeRateDenom - feeRateNum);
 
     // Calculate output amount based on the constant product formula with fee
@@ -126,37 +124,40 @@ export class MarketManager {
     // Solving for Δy:
     // Δy = (y * Δx) / (x + Δx)
     const numerator = BigInt(outputReserve) * inputAmountWithFee;
-    const denominator = (BigInt(inputReserve) * BigInt(feeRateDenom)) + inputAmountWithFee;
+    const denominator = BigInt(inputReserve) * BigInt(feeRateDenom) + inputAmountWithFee;
 
     // Round down the result
     return numerator / denominator;
-}
-  public buyResource = (lordsAmount: number) => {
+  }
+  public buyResource = (lordsAmount: number, feeRateNum: number) => {
     const market = this.getMarket();
     if (!market) return 0;
 
-    let outputAmount = this.getOutputAmount(lordsAmount, market.lords_amount, market.resource_amount);
+    let outputAmount = this.getOutputAmount(lordsAmount, market.lords_amount, market.resource_amount, feeRateNum);
     return Number(outputAmount);
   };
 
-  public sellResource = (resourceAmount: number) => {
+  public sellResource = (resourceAmount: number, feeRateNum: number) => {
     const market = this.getMarket();
     if (!market) return 0;
-    let inputPrice = this.getInputPrice(resourceAmount, market.resource_amount, market.lords_amount);
+
+    let inputPrice = this.getInputPrice(resourceAmount, market.resource_amount, market.lords_amount, feeRateNum);
     return Number(inputPrice);
   };
 
   // price difference between swapping 1 resource and swapping N resources
-  public slippage = (inputAmount: number, outputAmount: number, isSellingResource: boolean) => {
+  public slippage = (inputAmount: number, isSellingResource: boolean) => {
     const marketPrice = this.getMarketPrice();
     let executionPrice, slippagePercentage;
+
+    const outputAmount = isSellingResource ? this.sellResource(inputAmount, 0) : this.buyResource(inputAmount, 0);
 
     if (isSellingResource) {
       executionPrice = outputAmount / inputAmount;
       slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
     } else {
       executionPrice = inputAmount / outputAmount;
-      slippagePercentage = ((executionPrice - marketPrice) / marketPrice) * 100;
+      slippagePercentage = -((executionPrice - marketPrice) / marketPrice) * 100;
     }
 
     return slippagePercentage;
