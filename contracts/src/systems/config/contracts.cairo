@@ -76,7 +76,9 @@ trait ILevelingConfig {
 
 #[dojo::interface]
 trait IBankConfig {
-    fn set_bank_config(ref world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128);
+    fn set_bank_config(
+        ref world: IWorldDispatcher, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128
+    );
 }
 
 
@@ -552,10 +554,15 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl BankConfigImpl of super::IBankConfig<ContractState> {
-        fn set_bank_config(ref world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128) {
+        fn set_bank_config(
+            ref world: IWorldDispatcher, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128
+        ) {
             assert_caller_is_admin(world);
 
-            set!(world, (BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_scaled, }));
+            set!(
+                world,
+                (BankConfig { config_id: WORLD_CONFIG_ID, lords_cost, lp_fee_num, lp_fee_denom })
+            );
         }
     }
 

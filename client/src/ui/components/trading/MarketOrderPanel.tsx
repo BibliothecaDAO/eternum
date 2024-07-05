@@ -185,7 +185,7 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
 
   // TODO Distance
   const travelTime = useMemo(
-    () => computeTravelTime(entityId, offer.makerId, EternumGlobalConfig.speed.donkey),
+    () => computeTravelTime(entityId, offer.makerId, EternumGlobalConfig.speed.donkey, true),
     [entityId, offer],
   );
 
@@ -294,7 +294,11 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
           <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(getDisplayResource)?.trait || ""} />{" "}
           {getsDisplay}
         </div>
-        <div>{travelTime}hrs</div>
+        {travelTime && (
+          <div>
+            {Math.floor(travelTime / 60)} hrs {travelTime % 60} mins
+          </div>
+        )}
         <div className="flex gap-1 text-green">{offer.perLords.toFixed(2)}</div>
         <div className={`flex gap-1 font-bold ${isBuy ? "text-green" : "text-red"}`}>
           <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} />

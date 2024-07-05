@@ -35,8 +35,8 @@ name = "eternum::systems::bank::contracts::bank::bank_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x72c668dbc1e2e8dae1aa02952e3f70a7f89dfeb6648b37315c5c05bb7297754"
-class_hash = "0x64c1933752f786bc730c76ee0dea4ce662154f133547630ff7df4940314296f"
-original_class_hash = "0x64c1933752f786bc730c76ee0dea4ce662154f133547630ff7df4940314296f"
+class_hash = "0x12a85ecde2aed68fc489460bff6baab43cf03748760506e7fa196a65243429b"
+original_class_hash = "0x12a85ecde2aed68fc489460bff6baab43cf03748760506e7fa196a65243429b"
 base_class_hash = "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46"
 abi = "manifests/dev/abis/deployments/contracts/eternum_systems_bank_contracts_liquidity_liquidity_systems.json"
 reads = []

@@ -232,7 +232,8 @@ struct BankConfig {
     #[key]
     config_id: u128,
     lords_cost: u128,
-    lp_fee_scaled: u128,
+    lp_fee_num: u128,
+    lp_fee_denom: u128,
 }
 
 #[derive(Copy, Drop, Serde)]

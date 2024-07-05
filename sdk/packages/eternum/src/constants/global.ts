@@ -22,8 +22,10 @@ export const EternumGlobalConfig = {
   },
   banks: {
     lordsCost: 1000,
-    lpFees: 0,
-    ownerFees: 1844674407370955160,
+    lpFeesNumerator: 15,
+    lpFeesDenominator: 100, // %
+    ownerFeesNumerator: 15,
+    ownerFeesDenominator: 100, // %
   },
   weights: {
     resource: 1000,

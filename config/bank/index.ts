@@ -40,7 +40,8 @@ export const createAdminBank = async () => {
   const tx = await provider.create_admin_bank({
     signer: account,
     coord: { x: COORD_X, y: COORD_Y },
-    owner_fee_scaled: EternumGlobalConfig.banks.ownerFees,
+    owner_fee_num: EternumGlobalConfig.banks.ownerFeesNumerator,
+    owner_fee_denom: EternumGlobalConfig.banks.ownerFeesDenominator,
   });
   console.log(`Creating admin bank ${tx.statusReceipt}...`);
 };
