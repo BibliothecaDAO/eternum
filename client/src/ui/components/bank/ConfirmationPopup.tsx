@@ -1,29 +1,44 @@
 import Button from "@/ui/elements/Button";
+import { X } from "lucide-react";
 import React from "react";
 
 interface ConfirmationPopupProps {
   title: string;
+  warning?: string;
   children?: React.ReactNode;
   onConfirm: () => void;
   onCancel: () => void;
+  isLoading?: boolean;
+  disabled?: boolean;
 }
 
-export const ConfirmationPopup: React.FC<ConfirmationPopupProps> = ({ title, children, onConfirm, onCancel }) => {
+export const ConfirmationPopup: React.FC<ConfirmationPopupProps> = ({
+  title,
+  warning,
+  children,
+  onConfirm,
+  onCancel,
+  isLoading = false,
+  disabled,
+}) => {
   return (
-    <div className="fixed bottom-100 inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-gold/10 rounded-lg p-8 w-full max-w-md mx-auto flex flex-col items-center">
+    <div className="fixed bottom-100 inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center">
+      <div className="border border-gold/10 rounded-md bg-brown rounded-lg p-8 w-full max-w-md mx-auto flex flex-col items-center relative">
+        <div className="absolute top-3 right-3">
+          <Button className="!p-4" size="xs" variant="default" onClick={onCancel}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
         <div className="text-2xl text-center w-full">{title}</div>
         {children && <div className="text-center mt-4 w-full">{children}</div>}
         <div className="flex justify-center mt-4 w-full">
           <div className="flex justify-center space-x-4">
-            <Button className={""} onClick={onConfirm}>
+            <Button disabled={disabled} isLoading={isLoading} variant="primary" className={""} onClick={onConfirm}>
               Confirm
-            </Button>
-            <Button onClick={onCancel} variant="secondary">
-              Cancel
             </Button>
           </div>
         </div>
+        {disabled && <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">{warning}</div>}
       </div>
     </div>
   );

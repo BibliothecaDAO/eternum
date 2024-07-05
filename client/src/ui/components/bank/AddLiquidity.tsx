@@ -6,6 +6,8 @@ import { multiplyByPrecision } from "@/ui/utils/utils";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { ResourceBar } from "./ResourceBar";
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
+import { ConfirmationPopup } from "./ConfirmationPopup";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
 
 const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; entityId: bigint }) => {
   const {
@@ -22,6 +24,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
   const [resourceId, setResourceId] = useState<bigint>(1n);
   const [lordsAmount, setLordsAmount] = useState(0);
   const [resourceAmount, setResourceAmount] = useState(0);
+  const [openConfirmation, setOpenConfirmation] = useState(false);
 
   const marketManager = useMemo(
     () =>
@@ -65,48 +68,76 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
       resource_type: resourceId,
       resource_amount: multiplyByPrecision(resourceAmount),
       signer: account,
-    })
-      .then(() => setIsLoading(false))
-      .catch(() => setIsLoading(false));
+    }).finally(() => {
+      setIsLoading(false);
+      setOpenConfirmation(false);
+    });
   };
 
-  return (
-    <div className="bg-gold/10 p-1 clip-angled-sm">
-      <div className="p-2 relative space-y-1">
-        <ResourceBar
-          entityId={entityId}
-          resources={resources.filter((r) => r.id === Number(ResourcesIds.Lords))}
-          amount={Math.floor(lordsAmount)}
-          lordsFee={0}
-          setAmount={setLordsAmount}
-          resourceId={BigInt(ResourcesIds.Lords)}
-          setResourceId={setResourceId}
-        />
+  const renderConfirmationPopup = useMemo(() => {
+    const resourcesToConfirm = [
+      { amount: resourceAmount, resourceId: Number(resourceId) },
+      { amount: lordsAmount, resourceId: ResourcesIds.Lords },
+    ];
 
-        <div className="mt-2 absolute top-[97px] left-1/3">
-          <Button
-            variant="primary"
-            isLoading={isLoading}
-            disabled={!canAdd}
-            className="text-brown bg-brown"
-            onClick={onAddLiquidity}
-          >
-            Add Liquidity
-          </Button>
+    return (
+      <ConfirmationPopup
+        title="Confirm Deposit"
+        isLoading={isLoading}
+        onConfirm={onAddLiquidity}
+        onCancel={() => setOpenConfirmation(false)}
+      >
+        <div className="flex items-center justify-center space-x-2">
+          {resourcesToConfirm.map((resource, index) => (
+            <div key={index} className="flex items-center justify-center">
+              <ResourceCost withTooltip amount={resource.amount} resourceId={resource.resourceId} />
+            </div>
+          ))}
         </div>
+      </ConfirmationPopup>
+    );
+  }, [isLoading, onAddLiquidity, resourceAmount, resourceId, lordsAmount]);
 
-        <ResourceBar
-          entityId={entityId}
-          resources={resources.filter((r) => r.id !== Number(ResourcesIds.Lords))}
-          amount={Math.floor(resourceAmount)}
-          lordsFee={0}
-          setAmount={setResourceAmount}
-          resourceId={resourceId}
-          setResourceId={setResourceId}
-        />
+  return (
+    <>
+      <div className="bg-gold/10 p-1 clip-angled-sm">
+        <div className="p-2 relative space-y-1">
+          <ResourceBar
+            entityId={entityId}
+            resources={resources.filter((r) => r.id === Number(ResourcesIds.Lords))}
+            amount={Math.floor(lordsAmount)}
+            lordsFee={0}
+            setAmount={setLordsAmount}
+            resourceId={BigInt(ResourcesIds.Lords)}
+            setResourceId={setResourceId}
+          />
+
+          <div className="mt-2 absolute top-[97px] left-1/3">
+            <Button
+              variant="primary"
+              isLoading={isLoading}
+              disabled={!canAdd}
+              className="text-brown bg-brown"
+              onClick={() => setOpenConfirmation(true)}
+            >
+              Add Liquidity
+            </Button>
+          </div>
+
+          <ResourceBar
+            entityId={entityId}
+            resources={resources.filter((r) => r.id !== Number(ResourcesIds.Lords))}
+            amount={Math.floor(resourceAmount)}
+            lordsFee={0}
+            setAmount={setResourceAmount}
+            resourceId={resourceId}
+            setResourceId={setResourceId}
+          />
+        </div>
+        {!canAdd && <div className="p-2 text-danger font-bold text-md">Not enough resources or amount is zero</div>}
       </div>
-      {!canAdd && <div className="p-2 text-danger font-bold text-md">Not enough resources or amount is zero</div>}
-    </div>
+      {openConfirmation && renderConfirmationPopup}
+    </>
   );
 };
 

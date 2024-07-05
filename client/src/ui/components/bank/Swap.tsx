@@ -11,6 +11,7 @@ import { EternumGlobalConfig, ResourcesIds, resources } from "@bibliothecadao/et
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { TravelInfo } from "../resources/ResourceWeight";
 import { useTravel } from "@/hooks/helpers/useTravel";
+import { ConfirmationPopup } from "./ConfirmationPopup";
 
 const OWNER_FEE = EternumGlobalConfig.banks.ownerFeesNumerator / EternumGlobalConfig.banks.ownerFeesDenominator;
 const LP_FEE = EternumGlobalConfig.banks.lpFeesNumerator / EternumGlobalConfig.banks.lpFeesDenominator;
@@ -33,6 +34,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
   const [lordsAmount, setLordsAmount] = useState(0);
   const [resourceAmount, setResourceAmount] = useState(0);
   const [canCarry, setCanCarry] = useState(false);
+  const [openConfirmation, setOpenConfirmation] = useState(false);
 
   const lordsFee = lordsAmount * OWNER_FEE;
 
@@ -75,7 +77,10 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
       entity_id: entityId,
       resource_type: resourceId,
       amount: multiplyByPrecision(resourceAmount),
-    }).finally(() => setIsLoading(false));
+    }).finally(() => {
+      setIsLoading(false);
+      setOpenConfirmation(false);
+    });
   }, [isBuyResource, buy_resources, sell_resources, account, bankEntityId, resourceId, resourceAmount, lordsAmount]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
@@ -102,110 +107,151 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
     },
     [entityId, isBuyResource, lordsAmount, resourceAmount, resourceId, lordsFee],
   );
+  const renderConfirmationPopup = useMemo(() => {
+    const warningMessage = `Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`;
+    const negativeAmount = isBuyResource ? lordsAmount + lordsFee : resourceAmount;
+    const positiveAmount = isBuyResource ? resourceAmount : lordsAmount - lordsFee;
+    const negativeResource = isBuyResource ? "Lords" : chosenResourceName || "";
+    const positiveResource = isBuyResource ? chosenResourceName || "" : "Lords";
+    const resourcesToTransport = isBuyResource
+      ? [{ resourceId: Number(resourceId), amount: resourceAmount }]
+      : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }];
+
+    return (
+      <ConfirmationPopup
+        title="Confirm Swap"
+        warning={warningMessage}
+        disabled={!canCarry}
+        isLoading={isLoading}
+        onConfirm={onSwap}
+        onCancel={() => setOpenConfirmation(false)}
+      >
+        <div>
+          <div className="flex items-center justify-center space-x-2">
+            <div className="flex justify-center items-center text-danger">
+              -{negativeAmount}
+              <ResourceIcon resource={negativeResource} size="md" />
+            </div>
+            <span>→</span>
+            <div className="flex items-center text-green">
+              +{positiveAmount}
+              <ResourceIcon resource={positiveResource} size="md" />
+            </div>
+          </div>
+          <div className="bg-gold/10 p-2 m-2 clip-angled-sm h-auto">
+            <div className="flex flex-col p-2 items-center">
+              <TravelInfo
+                entityId={entityId}
+                resources={resourcesToTransport}
+                travelTime={computeTravelTime(bankEntityId, entityId, EternumGlobalConfig.speed.donkey)}
+                isPickup={true}
+                setCanCarry={setCanCarry}
+              />
+            </div>
+          </div>
+        </div>
+      </ConfirmationPopup>
+    );
+  }, [
+    isBuyResource,
+    chosenResourceName,
+    lordsAmount,
+    lordsFee,
+    resourceAmount,
+    resourceId,
+    canCarry,
+    isLoading,
+    onSwap,
+    entityId,
+    computeTravelTime,
+    bankEntityId,
+    setCanCarry,
+  ]);
 
   return (
-    <div className=" w-1/2 mx-auto bg-gold/10 px-3 py-1 clip-angled-sm">
-      <div className="relative my-2 space-y-1">
-        {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
-        <div className="absolute  left-1/2 top-[94px]">
-          <Button isLoading={false} disabled={false} onClick={onInvert} size="md" className="">
-            <Refresh
-              className={`text-gold cursor-pointer h-4 duration-150 ${isBuyResource ? "rotate-180" : ""}`}
-            ></Refresh>
-          </Button>
+    <div>
+      <div className=" w-1/2 mx-auto bg-gold/10 px-3 py-1 clip-angled-sm">
+        <div className="relative my-2 space-y-1">
+          {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
+          <div className="absolute  left-1/2 top-[94px]">
+            <Button isLoading={false} disabled={false} onClick={onInvert} size="md" className="">
+              <Refresh
+                className={`text-gold cursor-pointer h-4 duration-150 ${isBuyResource ? "rotate-180" : ""}`}
+              ></Refresh>
+            </Button>
+          </div>
+          {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
         </div>
-        {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
-      </div>
-      <div className="p-2">
-        <div className="mb-2 font-bold">
-          <table className="w-full text-right text-xs text-gold/60">
-            <tbody>
-              <tr className="text-xl text-gold">
-                <td>{marketManager.getMarketPrice().toFixed(2)}</td>
-                <td className="text-left px-8 flex gap-4">
-                  <>
-                    {" "}
-                    <ResourceIcon size="sm" resource={"Lords"} /> {"/"}
-                    <ResourceIcon size="sm" resource={chosenResourceName || ""} />
-                  </>
-                </td>
-              </tr>
-              <>
-                <tr>
-                  <td>Slippage</td>
-                  <td className="text-left text-danger px-8">
-                    {(
-                      marketManager.slippage(
-                        (isBuyResource ? multiplyByPrecision(lordsAmount) : multiplyByPrecision(resourceAmount)) || 0,
-                        isBuyResource,
-                      ) || 0
-                    ).toFixed(2)}{" "}
-                    %
+        <div className="p-2">
+          <div className="mb-2 font-bold">
+            <table className="w-full text-right text-xs text-gold/60">
+              <tbody>
+                <tr className="text-xl text-gold">
+                  <td>{marketManager.getMarketPrice().toFixed(2)}</td>
+                  <td className="text-left px-8 flex gap-4">
+                    <>
+                      {" "}
+                      <ResourceIcon size="sm" resource={"Lords"} /> {"/"}
+                      <ResourceIcon size="sm" resource={chosenResourceName || ""} />
+                    </>
                   </td>
                 </tr>
-                <tr>
-                  <td>Bank Owner Fees</td>
-                  <td className="text-left text-danger px-8">
-                    {(-(lordsAmount * OWNER_FEE)).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
-                    {"Lords"}
-                  </td>
-                </tr>
-                <tr>
-                  <td>LP Fees</td>
-                  <td className="text-left text-danger px-8">
-                    {(-(isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}{" "}
-                    {isBuyResource ? "Lords" : chosenResourceName}
-                  </td>
-                </tr>
-              </>
-            </tbody>
-          </table>
-        </div>
-        <div className="w-full flex flex-col justify-center mt-4">
-          <Button
-            className="text-brown"
-            isLoading={isLoading}
-            disabled={!canSwap || !canCarry}
-            onClick={onSwap}
-            variant="primary"
-          >
-            Swap {isBuyResource ? "Lords" : chosenResourceName} for {isBuyResource ? chosenResourceName : "Lords"}
-          </Button>
-          {!canSwap && (
-            <div className="px-3 mt-2 text-danger font-bold text-center">
-              Warning: not enough resources or amount is zero
-            </div>
-          )}
-          {!canCarry && (
-            <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
-              Warning: not enough donkeys to pickup resources
-            </div>
-          )}
-        </div>
-      </div>
-      <div className=" ">
-        <div className="p-10 bg-gold/10 clip-angled-sm h-auto">
-          <div className="flex flex-col w-full items-center">
-            <TravelInfo
-              entityId={entityId}
-              resources={
-                isBuyResource
-                  ? [{ resourceId: Number(resourceId), amount: resourceAmount }]
-                  : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }]
-              }
-              travelTime={computeTravelTime(bankEntityId, entityId, EternumGlobalConfig.speed.donkey)}
-              isPickup={true}
-              setCanCarry={setCanCarry}
-            />
+                <>
+                  <tr>
+                    <td>Slippage</td>
+                    <td className="text-left text-danger px-8">
+                      {(
+                        marketManager.slippage(
+                          (isBuyResource ? multiplyByPrecision(lordsAmount) : multiplyByPrecision(resourceAmount)) || 0,
+                          isBuyResource,
+                        ) || 0
+                      ).toFixed(2)}{" "}
+                      %
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Bank Owner Fees</td>
+                    <td className="text-left text-danger px-8">
+                      {(-(lordsAmount * OWNER_FEE)).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      {"Lords"}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>LP Fees</td>
+                    <td className="text-left text-danger px-8">
+                      {(-(isBuyResource ? lordsAmount : resourceAmount) * LP_FEE).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      {isBuyResource ? "Lords" : chosenResourceName}
+                    </td>
+                  </tr>
+                </>
+              </tbody>
+            </table>
+          </div>
+          <div className="w-full flex flex-col justify-center mt-4">
+            <Button
+              className="text-brown"
+              isLoading={isLoading}
+              disabled={!canSwap}
+              onClick={() => setOpenConfirmation(true)}
+              variant="primary"
+            >
+              Swap {isBuyResource ? "Lords" : chosenResourceName} for {isBuyResource ? chosenResourceName : "Lords"}
+            </Button>
+            {!canSwap && (
+              <div className="px-3 mt-2 mb-1 text-danger font-bold text-center">
+                Warning: not enough resources or amount is zero
+              </div>
+            )}
           </div>
         </div>
       </div>
+      {openConfirmation && renderConfirmationPopup}
     </div>
   );
 };
