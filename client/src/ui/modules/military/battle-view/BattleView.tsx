@@ -43,12 +43,12 @@ export const BattleView = () => {
   const attackerArmies =
     armiesInBattle.length > 0
       ? armiesInBattle.filter((army) => String(army.battle_side) === "Attack")
-      : [ownArmyBattleStarter];
+      : [ownArmyBattleStarter!];
 
   const defenderArmies =
     armiesInBattle.length > 0
       ? armiesInBattle.filter((army) => String(army.battle_side) === "Defence")
-      : [defenderArmyBattleStarter];
+      : [defenderArmyBattleStarter!];
 
   const battleAdjusted = useMemo(() => {
     if (!battleManager) return undefined;
@@ -96,7 +96,7 @@ export const BattleView = () => {
       battleAdjusted={battleAdjusted}
       attackerArmies={attackerArmies}
       attackerHealth={attackerHealth}
-      attackerTroops={attackerTroops}
+      attackerTroops={attackerTroops!}
       defenderArmies={defenderArmies}
       defenderHealth={defenderHealth}
       defenderTroops={defenderTroops}

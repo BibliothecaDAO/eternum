@@ -35,7 +35,6 @@ export const RightNavigationModule = () => {
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
 
-  const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const openedPopups = useUIStore((state) => state.openedPopups);
 
@@ -48,7 +47,6 @@ export const RightNavigationModule = () => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { getAllArrivalsWithResources } = useResources();
-
   const { toggleModal } = useModal();
 
   const navigation = useMemo(() => {

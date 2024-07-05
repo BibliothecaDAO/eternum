@@ -107,7 +107,7 @@ export const BattleActions = ({
       defending_army_id: defender!.entity_id,
     });
     setLoading(Loading.None);
-    setBattleView({ battle: { x: selectedArmy.x, y: selectedArmy.y }, target: undefined });
+    setBattleView({ battle: { x: selectedArmy?.x || 0, y: selectedArmy?.y || 0 }, target: undefined });
     clearSelection();
   };
 
@@ -246,7 +246,7 @@ const ArmySelector = ({
               }
             />
           </SelectTrigger>
-          <SelectContent className="text-gold w-1">
+          <SelectContent className="text-gold w-full">
             {userArmiesInBattle.map((army, index) => (
               <SelectItem
                 className="flex justify-center self-center text-sm pl-0 w-full"

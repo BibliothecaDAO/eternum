@@ -1,10 +1,23 @@
 #!/bin/bash
 
+commands=() 
+
 # Function to show usage
 usage() {
     echo "Usage: $0 --mode [prod|dev]"
     exit 1
 }
+
+mint_all_resources() {
+    local entity_id=$1
+    local amount=$2
+    local resources=(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 29 249 250 251 252 253 254 255)
+    
+    for resource in "${resources[@]}"; do
+        commands+=("sozo execute --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource,$amount $DEV_RESOURCE_SYSTEMS mint && sleep 0.1")
+    done
+}
+
 
 # Parse command-line arguments
 while [[ "$#" -gt 0 ]]; do
@@ -21,19 +34,28 @@ if [[ "$mode" != "prod" && "$mode" != "dev" ]]; then
     usage
 fi
 
-read -p "Enter entity id: " entity_id
-read -p "Enter resource type: " resource_type
-read -p "Enter amount: " amount
-
 world="$SOZO_WORLD"
+
 
 source ./scripts/env_variables.sh $mode
 
 source ./scripts/contracts.sh
 
-commands=(
-    "sozo execute --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource_type,$amount $DEV_RESOURCE_SYSTEMS mint"
-)
+read -p "Enter entity id: " entity_id
+read -p "Do you want to mint all resources? (y/n): " mint_all
+
+if [[ $mint_all == "y" || $mint_all == "Y" ]]; then
+    read -p "Enter amount for all resources: " all_amount
+    mint_all_resources "$entity_id" "$all_amount"
+else
+	read -p "Enter resource type: " resource_type
+	read -p "Enter amount: " amount
+    commands+=(
+        "sozo execute --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,1,$resource_type,$amount $DEV_RESOURCE_SYSTEMS mint"
+    )
+fi
+
+
 
 for cmd in "${commands[@]}"; do
     echo "Executing command: $cmd"
