@@ -17,7 +17,7 @@ trait IBuildingContract<TContractState> {
 #[dojo::contract]
 mod building_systems {
     use eternum::models::{
-        resources::{Resource, ResourceCost}, owner::{Owner, OwnerTrait}, order::Orders,
+        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerTrait}, order::Orders,
         position::{Coord, Position, PositionTrait, Direction},
         buildings::{BuildingCategory, Building, BuildingImpl},
         production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
@@ -40,7 +40,7 @@ mod building_systems {
                 assert!(realm_produces_resource, "realm does not produce specified resource");
             }
 
-            get!(world, entity_id, Owner).assert_caller_owner();
+            get!(world, entity_id, EntityOwner).assert_caller_owner(world);
 
             // todo: check that entity is a realm
             let building: Building = BuildingImpl::create(
