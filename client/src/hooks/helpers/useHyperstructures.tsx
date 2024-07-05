@@ -95,11 +95,10 @@ const getContributions = (hyperstructureEntityId: bigint, Contribution: Componen
 };
 
 const getAllProgressesAndTotalPercentage = (
-  progresses:
-    | (
-        | ComponentValue<{ hyperstructure_entity_id: Type.BigInt; resource_type: Type.Number; amount: Type.Number }>
-        | undefined
-      )[],
+  progresses: (
+    | ComponentValue<{ hyperstructure_entity_id: Type.BigInt; resource_type: Type.Number; amount: Type.Number }>
+    | undefined
+  )[],
 
   hyperstructureEntityId: bigint,
 ) => {
