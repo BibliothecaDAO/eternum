@@ -35,10 +35,10 @@ export const BattleView = () => {
 
   const ownArmySide = battleManager ? String(userArmiesInBattle[0]?.battle_side || "") : "Attack";
 
-  const { getArmy } = getArmyByEntityId();
+  const { getAliveArmy } = getArmyByEntityId();
   const ownArmyEntityId = selectedEntity?.id || BigInt(userArmiesInBattle.find((army) => army.isMine)?.entity_id || 0);
-  const ownArmyBattleStarter = getArmy(BigInt(ownArmyEntityId || 0n));
-  const defenderArmyBattleStarter = getArmy(BigInt(defenderAndStructureBattleStarter?.defender || 0n));
+  const ownArmyBattleStarter = getAliveArmy(BigInt(ownArmyEntityId || 0n));
+  const defenderArmyBattleStarter = getAliveArmy(BigInt(defenderAndStructureBattleStarter?.defender || 0n));
 
   const attackerArmies =
     armiesInBattle.length > 0

@@ -445,7 +445,7 @@ export const getArmyByEntityId = () => {
     account: { account },
   } = useDojo();
 
-  const getArmy = (entity_id: bigint): ArmyInfo | undefined => {
+  const getAliveArmy = (entity_id: bigint): ArmyInfo | undefined => {
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
 
     return formatArmies(
@@ -467,7 +467,29 @@ export const getArmyByEntityId = () => {
     ).filter((army) => isArmyAlive(army, Battle, Army, Position, Realm))[0];
   };
 
-  return { getArmy };
+  const getArmy = (entity_id: bigint) => {
+    const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
+
+    return formatArmies(
+      Array.from(armiesEntityIds),
+      account.address,
+      Army,
+      Protectee,
+      EntityName,
+      Health,
+      Quantity,
+      Movable,
+      Capacity,
+      ArrivalTime,
+      Position,
+      EntityOwner,
+      Owner,
+      Realm,
+      Stamina,
+    )[0];
+  };
+
+  return { getAliveArmy, getArmy };
 };
 
 export const getArmiesAtPosition = () => {

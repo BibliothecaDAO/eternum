@@ -1,4 +1,5 @@
-import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { getArmyByEntityId, isArmyAlive } from "@/hooks/helpers/useArmies";
 import { getBattleByPosition } from "@/hooks/helpers/useBattles";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useOwnedEntitiesOnPosition, useResources } from "@/hooks/helpers/useResources";
@@ -31,6 +32,11 @@ type EntityProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Entity = ({ entityId, ...props }: EntityProps) => {
+  const {
+    setup: {
+      components: { Battle, Army, Position, Realm },
+    },
+  } = useDojo();
   const [showTravel, setShowTravel] = useState(false);
   const { getEntityInfo } = useEntities();
   const { getResourcesFromBalance } = useResources();
@@ -48,7 +54,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const battleInProgress = battleAtPosition && battleAtPosition.duration_left > 0;
 
   const army = getArmy(entityId);
-  if (army && army.current === undefined) return;
+  if (army && !isArmyAlive(army, Battle, Army, Position, Realm)) return;
 
   if (entityState === EntityState.NotApplicable) return null;
 

@@ -59,10 +59,10 @@ export const BattleActions = ({
     },
   } = useDojo();
 
-  const { getArmy } = getArmyByEntityId();
+  const { getAliveArmy } = getArmyByEntityId();
 
   const selectedArmy = useMemo(() => {
-    return getArmy(localSelectedUnit || 0n);
+    return getAliveArmy(localSelectedUnit || 0n);
   }, [localSelectedUnit, battle]);
 
   const isRealm = useMemo(() => {

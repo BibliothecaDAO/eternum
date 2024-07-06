@@ -42,7 +42,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
     account: { account },
   } = useDojo();
 
-  const { getArmy } = getArmyByEntityId();
+  const { getAliveArmy } = getArmyByEntityId();
 
   const useFormattedRealmAtPosition = () => {
     const realmsAtPosition = useEntityQuery([HasValue(Position, position), HasValue(Structure, { category: "Realm" })]);
@@ -57,7 +57,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
         Protector,
         realm_entity_id,
       ) as unknown as ClientComponents["Protector"]["schema"];
-      protector = protector ? getArmy(BigInt(protector.army_id)) : undefined;
+      protector = protector ? getAliveArmy(BigInt(protector.army_id)) : undefined;
 
       const fullRealm = {
         ...realm,
@@ -94,7 +94,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
         Protector,
         entityId,
       ) as unknown as ClientComponents["Protector"]["schema"];
-      protector = protector ? getArmy(BigInt(protector.army_id)) : undefined;
+      protector = protector ? getAliveArmy(BigInt(protector.army_id)) : undefined;
 
       const onChainName = getComponentValue(EntityName, entityId);
 
@@ -137,7 +137,7 @@ export const getStructureAtPosition = (position: Position) => {
     },
   } = useDojo();
 
-  const { getArmy } = getArmyByEntityId();
+  const { getAliveArmy } = getArmyByEntityId();
 
   const structure = useMemo(() => {
     const structureAtPosition = runQuery([HasValue(Position, position), Has(Structure)]);
@@ -164,7 +164,7 @@ export const getStructureAtPosition = (position: Position) => {
       Protector,
       structureEntityId,
     ) as unknown as ClientComponents["Protector"]["schema"];
-    protector = protector ? getArmy(BigInt(protector.army_id)) : undefined;
+    protector = protector ? getAliveArmy(BigInt(protector.army_id)) : undefined;
 
     const onChainName = getComponentValue(EntityName, structureEntityId);
 
