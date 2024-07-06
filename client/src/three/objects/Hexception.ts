@@ -162,7 +162,6 @@ export default class DetailedHexScene {
 
     // this.updateHexagonGrid(3, 3);
     this.updateHexceptionGrid(4);
-    this.addLights();
   }
 
   updateHexceptionGrid(radius: number) {
@@ -250,15 +249,6 @@ export default class DetailedHexScene {
       //   }
       console.log("Hexagon grid updated");
     });
-  }
-
-  private addLights() {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    this.scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    directionalLight.position.set(5, 5, 5);
-    this.scene.add(directionalLight);
   }
 
   onMouseMove(event: MouseEvent) {
