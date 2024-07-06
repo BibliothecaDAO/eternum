@@ -14,6 +14,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import InstancedModel from "../components/InstancedModel";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
 const BASE_PATH = "/models/new-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -90,6 +91,10 @@ export default class HexagonMap {
 
   private loadBiomeModels() {
     const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/");
+    dracoLoader.preload();
+    loader.setDRACOLoader(dracoLoader);
 
     for (const [biome, path] of Object.entries(biomeModelPaths)) {
       const loadPromise = new Promise<void>((resolve, reject) => {

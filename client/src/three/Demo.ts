@@ -12,6 +12,7 @@ import _ from "lodash";
 import gsap from "gsap";
 import { LocationManager } from "./helpers/LocationManager";
 import GUI from "lil-gui";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
 export default class Demo {
   private renderer!: THREE.WebGLRenderer;
@@ -23,6 +24,7 @@ export default class Demo {
   private mainDirectionalLight!: THREE.DirectionalLight;
   private lightPoint2!: THREE.DirectionalLight;
   private controls!: MapControls;
+  private pmremGenerator!: THREE.PMREMGenerator;
 
   private locationManager!: LocationManager;
 
@@ -78,7 +80,6 @@ export default class Demo {
 
   initScene() {
     this.scene = new THREE.Scene();
-
     // Change camera settings for 75-degree view
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 30);
     const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
@@ -88,10 +89,15 @@ export default class Demo {
     this.camera.up.set(0, 1, 0);
 
     this.renderer = new THREE.WebGLRenderer();
+    this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 0.7;
+
+    this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
     document.body.style.background = "black";
     document.body.appendChild(this.renderer.domElement);
@@ -117,48 +123,8 @@ export default class Demo {
     this.lightAmbient = new THREE.AmbientLight(0xffffff, 0.5);
     const ambientFolder = this.gui.addFolder("Ambient Light");
     ambientFolder.addColor(this.lightAmbient, "color");
-    ambientFolder.add(this.lightAmbient, "intensity", 0.5, 10, 0.1);
-    this.scene.add(this.lightAmbient);
-
-    const shadowIntensity = 0.9;
-    const lightColor = 0xffffff;
-
-    this.mainDirectionalLight = new THREE.DirectionalLight(lightColor, shadowIntensity);
-    this.mainDirectionalLight.position.set(9, 20, -7);
-    this.mainDirectionalLight.target.position.set(0, 0, 0);
-
-    const pointFolder = this.gui.addFolder("Directional Light");
-    pointFolder.addColor(this.mainDirectionalLight, "color");
-    pointFolder.add(this.mainDirectionalLight, "intensity", 0.5, 10, 0.1);
-    pointFolder.add(this.mainDirectionalLight.position, "x");
-    pointFolder.add(this.mainDirectionalLight.position, "y");
-    pointFolder.add(this.mainDirectionalLight.position, "z");
-
-    //this.lightPoint.castShadow = true;
-    this.scene.add(this.mainDirectionalLight.target);
-    this.scene.add(this.mainDirectionalLight);
-
-    // Improve shadow quality
-    // const mapSize = 2048;
-    // const cameraNear = 1;
-    // const cameraFar = 500;
-    // this.lightPoint.shadow.mapSize.width = mapSize;
-    // this.lightPoint.shadow.mapSize.height = mapSize;
-    // this.lightPoint.shadow.camera.near = cameraNear;
-    // this.lightPoint.shadow.camera.far = cameraFar;
-    // this.lightPoint.shadow.bias = -0.001;
-
-    // Adjust shadow camera frustum
-    // const d = 200;
-    // this.lightPoint.shadow.camera.left = -d;
-    // this.lightPoint.shadow.camera.right = d;
-    // this.lightPoint.shadow.camera.top = d;
-    // this.lightPoint.shadow.camera.bottom = -d;
-    const cameraHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight);
-    this.scene.add(cameraHelper);
-
-    // const cameraHelper2 = new THREE.CameraHelper(this.lightPoint2.shadow.camera);
-    // this.scene.add(cameraHelper2);
+    ambientFolder.add(this.lightAmbient, "intensity", 0, 3, 0.1);
+    //this.scene.add(this.lightAmbient);
 
     this.detailedScene = new DetailedHexScene(
       this.state,

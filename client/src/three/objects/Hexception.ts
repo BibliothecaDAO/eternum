@@ -10,6 +10,7 @@ import InstancedModel from "../components/InstancedModel";
 import { getComponentValue } from "@dojoengine/recs";
 import { biomeModelPaths } from "./HexagonMap";
 import { BiomeType } from "../components/Biome";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -110,6 +111,10 @@ export default class DetailedHexScene {
 
   private loadBiomeModels() {
     const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/");
+    dracoLoader.preload();
+    loader.setDRACOLoader(dracoLoader);
 
     for (const [biome, path] of Object.entries(biomeModelPaths)) {
       const loadPromise = new Promise<void>((resolve, reject) => {
