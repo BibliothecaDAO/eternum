@@ -131,6 +131,7 @@ export default class Demo {
 
     const buttonsFolder = this.gui.addFolder("Buttons");
     buttonsFolder.add(this, "goToRandomColRow");
+    buttonsFolder.add(this, "moveCameraToURLLocation");
 
     this.detailedScene = new DetailedHexScene(
       this.state,
@@ -147,13 +148,13 @@ export default class Demo {
 
     this.transitionManager = new TransitionManager(this.renderer);
 
-    this.checkInitialLocation();
+    this.moveCameraToURLLocation();
 
     // Init animation
     this.animate();
   }
 
-  private checkInitialLocation() {
+  private moveCameraToURLLocation() {
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
 
