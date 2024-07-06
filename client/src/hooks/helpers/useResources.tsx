@@ -251,7 +251,7 @@ export function useOwnedEntitiesOnPosition() {
   const {
     account: { account },
     setup: {
-      components: { Owner, Position, Movable, Bank, Structure },
+      components: { Owner, Position, Movable, Bank, Army },
     },
   } = useDojo();
 
@@ -261,7 +261,7 @@ export function useOwnedEntitiesOnPosition() {
     const entities = runQuery([
       HasValue(Owner, { address }),
       Not(Movable),
-      Has(Structure),
+      Not(Army),
       // don't want bank but bank accounts
       Not(Bank),
       // @note: safer to do like this rather than deconstruct because there's a chance entity_id is also there
