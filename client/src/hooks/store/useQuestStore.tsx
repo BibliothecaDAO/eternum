@@ -14,6 +14,7 @@ import { useEntities } from "../helpers/useEntities";
 import useUIStore from "./useUIStore";
 
 export enum QuestName {
+  Settle = "Settle",
   BuildFarm = "Build a Farm",
   BuildResource = "Build a Resource Facility",
   CreateTrade = "Create a Trade",
@@ -147,6 +148,14 @@ export const useQuests = () => {
 
   const quests: Quest[] = useMemo(() => {
     const updatedQuests = [
+      {
+        name: QuestName.Settle,
+        description: "A gift of food from the gods.",
+        completed: true,
+        steps: [{ description: "Settle your first Realm.", completed: true }],
+        prizes: [{ id: QuestType.Food, title: "Common Resources" }],
+        depth: 0,
+      },
       {
         name: QuestName.BuildFarm,
         description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm.",
