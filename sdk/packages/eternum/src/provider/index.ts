@@ -569,7 +569,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
-  public async battle_raid_and_leave(props: SystemProps.BattleRaidAndLeaveProps) {
+  public async battle_leave_and_raid(props: SystemProps.BattleLeaveAndRaidProps) {
     const { army_id, structure_id, battle_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, [

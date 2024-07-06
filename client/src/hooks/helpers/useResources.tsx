@@ -121,7 +121,7 @@ export function useResources() {
         const arrivalTime = getComponentValue(ArrivalTime, id);
         const position = getComponentValue(Position, id);
         const army = getArmy(position?.entity_id || BigInt(0));
-        if (!army || !filterArmy(army, Battle, Army, Position, Realm)) return undefined;
+        if (army && !filterArmy(army, Battle, Army, Position, Realm)) return undefined;
         return {
           id,
           entityId: position?.entity_id || BigInt(""),
@@ -251,7 +251,7 @@ export function useOwnedEntitiesOnPosition() {
   const {
     account: { account },
     setup: {
-      components: { Owner, Position, Movable, Bank, Realm },
+      components: { Owner, Position, Movable, Bank, Structure },
     },
   } = useDojo();
 
@@ -261,6 +261,7 @@ export function useOwnedEntitiesOnPosition() {
     const entities = runQuery([
       HasValue(Owner, { address }),
       Not(Movable),
+      Has(Structure),
       // don't want bank but bank accounts
       Not(Bank),
       // @note: safer to do like this rather than deconstruct because there's a chance entity_id is also there

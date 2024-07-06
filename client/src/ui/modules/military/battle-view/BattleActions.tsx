@@ -107,7 +107,7 @@ export const BattleActions = ({
       defending_army_id: defender!.entity_id,
     });
     setLoading(Loading.None);
-    setBattleView({ battle: { x: selectedArmy?.x || 0, y: selectedArmy?.y || 0 }, target: undefined });
+    setBattleView({ battle: { x: selectedArmy!.x || 0, y: selectedArmy!.y || 0 }, target: undefined });
     clearSelection();
   };
 

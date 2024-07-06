@@ -240,8 +240,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.battle_claim_and_leave(props);
   };
 
-  const battle_leave_and_raid = async (props: SystemProps.BattleClaimAndLeaveProps) => {
-    await provider.battle_raid_and_leave(props);
+  const battle_leave_and_raid = async (props: SystemProps.BattleLeaveAndRaidProps) => {
+    await provider.battle_leave_and_raid(props);
   };
 
   const battle_claim = async (props: SystemProps.BattleClaimProps) => {

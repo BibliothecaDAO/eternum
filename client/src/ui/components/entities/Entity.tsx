@@ -1,5 +1,5 @@
 import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
+import { getBattleByPosition } from "@/hooks/helpers/useBattles";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useOwnedEntitiesOnPosition, useResources } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
@@ -44,10 +44,11 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
   const depositEntityId = getOwnedEntityOnPosition(entityId);
 
-  const battleInProgress = entity?.position ? getBattlesByPosition(entity.position) !== undefined : false;
+  const battleAtPosition = entity?.position ? getBattleByPosition(entity.position) : undefined;
+  const battleInProgress = battleAtPosition && battleAtPosition.duration_left > 0;
 
   const army = getArmy(entityId);
-  if (army?.current === undefined) return;
+  if (army && army.current === undefined) return;
 
   if (entityState === EntityState.NotApplicable) return null;
 

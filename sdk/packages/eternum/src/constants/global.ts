@@ -81,8 +81,8 @@ export const EternumGlobalConfig = {
       crossbowman_count: 4000,
     },
     rewards: [
-      { resource: ResourcesIds.Gold, amount: 200 },
-      { resource: ResourcesIds.Fish, amount: 100 },
+      { resource: ResourcesIds.Wheat, amount: 10 },
+      { resource: ResourcesIds.Fish, amount: 20 },
     ],
   },
 };

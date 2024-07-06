@@ -2,6 +2,7 @@ import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
+  EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
   RESOURCE_OUTPUTS_SCALED,
   ResourcesIds,
@@ -41,7 +42,10 @@ export const StructureListItem = ({ structure, extraButton }: StructureListItemP
                 className="inline mr-0.5"
                 size="xs"
               />
-              {currencyIntlFormat(RESOURCE_OUTPUTS_SCALED[ResourcesIds.Earthenshard])}/tick
+              {currencyIntlFormat(
+                RESOURCE_OUTPUTS_SCALED[ResourcesIds.Earthenshard] / EternumGlobalConfig.resources.resourcePrecision,
+              )}
+              /tick
             </div>
           ) : (
             <div className="font-bold">{HYPERSTRUCTURE_POINTS_PER_CYCLE} points/tick</div>
@@ -49,7 +53,7 @@ export const StructureListItem = ({ structure, extraButton }: StructureListItemP
         </div>
         {String(structure.category) === "FragmentMine" && (
           <InventoryResources
-            className="col-span-3 grid grid-cols-10 hover:bg-crimson/40 h-30"
+            className="col-span-3 grid grid-cols-10 gap-1 hover:bg-crimson/40 h-30"
             entityId={BigInt(structure.entity_id)}
             dynamic={[ResourcesIds.Earthenshard]}
           />
