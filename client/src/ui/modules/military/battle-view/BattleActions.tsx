@@ -59,10 +59,10 @@ export const BattleActions = ({
     },
   } = useDojo();
 
-  const { getArmy } = getArmyByEntityId();
+  const { getAliveArmy } = getArmyByEntityId();
 
   const selectedArmy = useMemo(() => {
-    return getArmy(localSelectedUnit || 0n);
+    return getAliveArmy(localSelectedUnit || 0n);
   }, [localSelectedUnit, battle]);
 
   const isRealm = useMemo(() => {
@@ -107,7 +107,7 @@ export const BattleActions = ({
       defending_army_id: defender!.entity_id,
     });
     setLoading(Loading.None);
-    setBattleView({ battle: { x: selectedArmy?.x || 0, y: selectedArmy?.y || 0 }, target: undefined });
+    setBattleView({ battle: { x: selectedArmy!.x || 0, y: selectedArmy!.y || 0 }, target: undefined });
     clearSelection();
   };
 
@@ -277,7 +277,7 @@ const checkIfArmyLostAFinishedBattle = (battle: any, army: any, isActive: boolea
   return false;
 };
 
-export const checkIfArmyAlive = (army: ArmyInfo) => {
+const checkIfArmyAlive = (army: ArmyInfo) => {
   if (army.current === undefined) return false;
   return BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0;
 };

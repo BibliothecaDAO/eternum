@@ -310,7 +310,7 @@ export const BuildingCard = ({
         backgroundImage: `url(${
           resourceId
             ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
-            : BUILDING_IMAGES_PATH[buildingId as BuildingType]
+            : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
         })`,
         backgroundSize: "cover",
         backgroundPosition: "center",

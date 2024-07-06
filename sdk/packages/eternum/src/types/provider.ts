@@ -309,8 +309,8 @@ export interface BattleClaimProps extends SystemSigner {
 type BattleClaimAndLeave = BattleClaimProps & BattleLeaveProps;
 export interface BattleClaimAndLeaveProps extends SystemSigner, BattleClaimAndLeave {}
 
-type BattleRaidAndLeave = BattlePillageProps & BattleLeaveProps;
-export interface BattleRaidAndLeaveProps extends SystemSigner, BattleRaidAndLeave {}
+type BattleLeaveAndRaid = BattlePillageProps & BattleLeaveProps;
+export interface BattleLeaveAndRaidProps extends SystemSigner, BattleLeaveAndRaid {}
 
 export interface CreateGuildProps extends SystemSigner {
   is_public: boolean;

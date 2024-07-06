@@ -1,6 +1,3 @@
-import { useMemo, useState } from "react";
-import { BaseContainer } from "../../containers/BaseContainer";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { useResources } from "@/hooks/helpers/useResources";
 import { useModal } from "@/hooks/store/useModal";
 import useRealmStore from "@/hooks/store/useRealmStore";
@@ -11,17 +8,19 @@ import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { AllResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
 import Button from "@/ui/elements/Button";
 import CircleButton from "@/ui/elements/CircleButton";
+import { useMemo, useState } from "react";
+import { BaseContainer } from "../../containers/BaseContainer";
 
-import { motion } from "framer-motion";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
-import clsx from "clsx";
-import { quests as questsPopup } from "../../components/navigation/Config";
-import { ArrowRight } from "lucide-react";
-import { BuildingThumbs } from "./LeftNavigationModule";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { Headline } from "@/ui/elements/Headline";
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
+import { Headline } from "@/ui/elements/Headline";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
+import clsx from "clsx";
+import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import { quests as questsPopup } from "../../components/navigation/Config";
+import { BuildingThumbs } from "./LeftNavigationModule";
 
 export enum View {
   None,
@@ -47,6 +46,7 @@ export const RightNavigationModule = () => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { getAllArrivalsWithResources } = useResources();
+
   const { toggleModal } = useModal();
 
   const navigation = useMemo(() => {

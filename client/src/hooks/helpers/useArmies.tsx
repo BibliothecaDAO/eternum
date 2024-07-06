@@ -160,7 +160,7 @@ export const useArmies = () => {
         Owner,
         Realm,
         Stamina,
-      ).filter((army) => filterArmy(army, Battle, Army, Position, Realm)),
+      ).filter((army) => isArmyAlive(army, Battle, Army, Position, Realm)),
   };
 };
 
@@ -206,7 +206,7 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
       Owner,
       Realm,
       Stamina,
-    ).filter((army) => filterArmy(army, Battle, Army, Position, Realm));
+    ).filter((army) => isArmyAlive(army, Battle, Army, Position, Realm));
   }, [armies]);
 
   return {
@@ -254,7 +254,7 @@ export const useArmiesByBattleId = (battle_id: bigint) => {
     Owner,
     Realm,
     Stamina,
-  ).filter((army) => filterArmy(army, Battle, Army, Position, Realm));
+  ).filter((army) => isArmyAlive(army, Battle, Army, Position, Realm));
 };
 
 export const getArmiesByBattleId = (battle_id: bigint) => {
@@ -297,7 +297,7 @@ export const getArmiesByBattleId = (battle_id: bigint) => {
     Owner,
     Realm,
     Stamina,
-  ).filter((army) => filterArmy(army, Battle, Army, Position, Realm));
+  ).filter((army) => isArmyAlive(army, Battle, Army, Position, Realm));
 };
 
 export const useArmyByArmyEntityId = (entityId: bigint) => {
@@ -340,7 +340,7 @@ export const useArmyByArmyEntityId = (entityId: bigint) => {
     Owner,
     Realm,
     Stamina,
-  ).filter((army) => filterArmy(army, Battle, Army, Position, Realm))[0];
+  ).filter((army) => isArmyAlive(army, Battle, Army, Position, Realm))[0];
 };
 
 export const usePositionArmies = ({ position }: { position: Position }) => {
@@ -386,7 +386,7 @@ export const usePositionArmies = ({ position }: { position: Position }) => {
         Owner,
         Realm,
         Stamina,
-      ).filter((army) => filterArmy(army, Battle, Army, Position, Realm));
+      ).filter((army) => isArmyAlive(army, Battle, Army, Position, Realm));
     }, [allArmiesAtPosition]);
 
     const userArmies = useMemo(() => {
@@ -445,7 +445,7 @@ export const getArmyByEntityId = () => {
     account: { account },
   } = useDojo();
 
-  const getArmy = (entity_id: bigint): ArmyInfo | undefined => {
+  const getAliveArmy = (entity_id: bigint): ArmyInfo | undefined => {
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
 
     return formatArmies(
@@ -464,10 +464,32 @@ export const getArmyByEntityId = () => {
       Owner,
       Realm,
       Stamina,
-    ).filter((army) => filterArmy(army, Battle, Army, Position, Realm))[0];
+    ).filter((army) => isArmyAlive(army, Battle, Army, Position, Realm))[0];
   };
 
-  return { getArmy };
+  const getArmy = (entity_id: bigint) => {
+    const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
+
+    return formatArmies(
+      Array.from(armiesEntityIds),
+      account.address,
+      Army,
+      Protectee,
+      EntityName,
+      Health,
+      Quantity,
+      Movable,
+      Capacity,
+      ArrivalTime,
+      Position,
+      EntityOwner,
+      Owner,
+      Realm,
+      Stamina,
+    )[0];
+  };
+
+  return { getAliveArmy, getArmy };
 };
 
 export const getArmiesAtPosition = () => {
@@ -529,7 +551,7 @@ export const getArmiesAtPosition = () => {
         Owner,
         Realm,
         Stamina,
-      ).filter((army) => filterArmy(army, Battle, Army, Position, Realm)),
+      ).filter((army) => isArmyAlive(army, Battle, Army, Position, Realm)),
       opponentArmiesAtPosition: formatArmies(
         opponentArmies,
         account.address,
@@ -546,7 +568,7 @@ export const getArmiesAtPosition = () => {
         Owner,
         Realm,
         Stamina,
-      ).filter((army) => filterArmy(army, Battle, Army, Position, Realm)),
+      ).filter((army) => isArmyAlive(army, Battle, Army, Position, Realm)),
     };
   };
 
@@ -580,14 +602,14 @@ export const checkIfArmyLostAFinishedBattle = (Battle: any, Army: any, army: any
   return false;
 };
 
-export const checkIfArmyAlive = (army: ArmyInfo) => {
+export const checkIfArmyAliveOnchain = (army: ArmyInfo) => {
   if (army.current === undefined) return true;
   return BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0;
 };
 
-export const filterArmy = (army: ArmyInfo, Battle: any, Army: any, Position: any, Realm: any) => {
+export const isArmyAlive = (army: ArmyInfo, Battle: any, Army: any, Position: any, Realm: any) => {
   return (
-    (checkIfArmyAlive(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army, Position, Realm) === false) ||
+    (checkIfArmyAliveOnchain(army) && checkIfArmyLostAFinishedBattle(Battle, Army, army, Position, Realm) === false) ||
     BigInt(army?.protectee_id || 0) !== 0n
   );
 };

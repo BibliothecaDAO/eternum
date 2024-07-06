@@ -170,7 +170,7 @@ export const useBattlesByPosition = ({ x, y }: Position) => {
   )[0];
 };
 
-export const getBattlesByPosition = ({ x, y }: Position) => {
+export const getBattleByPosition = ({ x, y }: Position) => {
   const {
     setup: {
       components: { Battle, Position, Army, Realm },
