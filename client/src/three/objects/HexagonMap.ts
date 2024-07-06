@@ -4,7 +4,7 @@ import { Character } from "../components/Character";
 import { FogManager } from "../components/Fog";
 
 import { ContextMenuManager } from "../components/ContextMenuManager";
-import { getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
+import { Entity, getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
 
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { SetupResult } from "@/dojo/setup";
@@ -52,12 +52,12 @@ export default class HexagonMap {
   private loadedChunks: Map<string, THREE.Group> = new Map();
   private hexSize = 1;
 
-  private originalColor: THREE.Color = new THREE.Color("white");
-
   private biomeModels: Map<BiomeType, InstancedModel> = new Map();
   private modelLoadPromises: Promise<void>[] = [];
 
   private currentChunk: string = "null";
+
+  private entities: Entity[] = [];
 
   constructor(
     private scene: Scene,

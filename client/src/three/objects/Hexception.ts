@@ -11,6 +11,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { biomeModelPaths } from "./HexagonMap";
 import { BiomeType } from "../components/Biome";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -38,6 +39,7 @@ export default class DetailedHexScene {
   private renderer: THREE.WebGLRenderer;
   private camera: THREE.PerspectiveCamera;
   private dojo: SetupResult;
+  private pmremGenerator: THREE.PMREMGenerator;
 
   private hexInstanced!: THREE.InstancedMesh | null;
   private buildingModel!: THREE.Object3D | null;
@@ -46,7 +48,7 @@ export default class DetailedHexScene {
 
   private locationManager!: LocationManager;
 
-  private hexSize = 0.4;
+  private hexSize = 1;
   private originalColor: THREE.Color = new THREE.Color("white");
 
   private buildingModels: Map<BuildingType, InstancedModel> = new Map();
@@ -66,10 +68,11 @@ export default class DetailedHexScene {
     this.camera = camera;
     this.dojo = dojoContext;
     this.scene = new THREE.Scene();
-
+    this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
     this.locationManager = new LocationManager();
 
-    // this.loadBuildingModels();
+    this.loadBuildingModels();
     this.loadBiomeModels();
   }
 
@@ -91,7 +94,7 @@ export default class DetailedHexScene {
                 child.receiveShadow = true;
               }
             });
-            const tmp = new InstancedModel(model, 250);
+            const tmp = new InstancedModel(model, 50);
             this.buildingModels.set(building as any, tmp);
             this.scene.add(tmp.group);
             resolve();
@@ -158,61 +161,11 @@ export default class DetailedHexScene {
     console.log(this.locationManager.getCol(), this.locationManager.getRow());
 
     // this.updateHexagonGrid(3, 3);
-    this.updateBiomeHexagonGrid(3);
+    this.updateHexceptionGrid(4);
     this.addLights();
   }
 
-  //   updateHexagonGrid(rows: number, cols: number) {
-  //     const horizontalSpacing = this.hexSize * Math.sqrt(3);
-  //     const verticalSpacing = (this.hexSize * 3) / 2;
-
-  //     const dummy = new THREE.Object3D();
-  //     const buildingHexes: Record<BuildingType, THREE.Matrix4[]> = {
-  //       [BuildingType.Bank]: [],
-  //       [BuildingType.ArcheryRange]: [],
-  //       [BuildingType.Barracks]: [],
-  //       [BuildingType.Castle]: [],
-  //       [BuildingType.DonkeyFarm]: [],
-  //       [BuildingType.Farm]: [],
-  //       [BuildingType.FishingVillage]: [],
-  //       [BuildingType.FragmentMine]: [],
-  //       [BuildingType.Market]: [],
-  //       [BuildingType.Resource]: [],
-  //       [BuildingType.Stable]: [],
-  //       [BuildingType.Storehouse]: [],
-  //       [BuildingType.TradingPost]: [],
-  //       [BuildingType.Walls]: [],
-  //       [BuildingType.WatchTower]: [],
-  //       [BuildingType.WorkersHut]: [],
-  //     };
-
-  //     Promise.all(this.modelLoadPromises).then(() => {
-  //       for (let row = -rows / 2; row < rows / 2; row++) {
-  //         for (let col = -cols / 2; col < cols / 2; col++) {
-  //           dummy.position.x = col * horizontalSpacing + (row % 2) * (horizontalSpacing / 2);
-  //           dummy.position.z = -row * verticalSpacing;
-  //           dummy.position.y = 0;
-  //           dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
-
-  //           const building = getComponentValue(this.dojo.components.Building, getEntityIdFromKeys([BigInt(0)]));
-
-  //           dummy.updateMatrix();
-
-  //           buildingHexes[BuildingType.ArcheryRange].push(dummy.matrix.clone());
-  //         }
-  //       }
-  //       for (const [biome, matrices] of Object.entries(buildingHexes)) {
-  //         const hexMesh = this.buildingModels.get(biome as any)!;
-  //         matrices.forEach((matrix, index) => {
-  //           hexMesh.setMatrixAt(index, matrix);
-  //         });
-  //         hexMesh.setCount(matrices.length);
-  //         console.log("updating");
-  //       }
-  //     });
-  //   }
-
-  updateBiomeHexagonGrid(radius: number) {
+  updateHexceptionGrid(radius: number) {
     const horizontalSpacing = this.hexSize * Math.sqrt(3);
     const verticalSpacing = (this.hexSize * 3) / 2;
 

@@ -132,6 +132,7 @@ export default class Demo {
     const buttonsFolder = this.gui.addFolder("Buttons");
     buttonsFolder.add(this, "goToRandomColRow");
     buttonsFolder.add(this, "moveCameraToURLLocation");
+    buttonsFolder.add(this, "switchScene");
 
     this.detailedScene = new DetailedHexScene(
       this.state,
@@ -157,8 +158,9 @@ export default class Demo {
   private moveCameraToURLLocation() {
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
-
+    console.log("debug 1", col, row);
     if (col && row) {
+      console.log("debug 2");
       this.moveCameraToColRow(col, row);
     }
   }
@@ -170,6 +172,7 @@ export default class Demo {
   }
 
   private moveCameraToColRow(col: number, row: number) {
+    console.log("debug 3");
     const newTargetX = (col - FELT_CENTER) * horizontalSpacing + ((row - FELT_CENTER) % 2) * (horizontalSpacing / 2);
     const newTargetZ = -(row - FELT_CENTER) * verticalSpacing;
     const newTargetY = 0;
@@ -228,6 +231,23 @@ export default class Demo {
           }
         }
       }
+    }
+  }
+
+  getLocationCoordinates() {
+    const col = this.locationManager.getCol()!;
+    const row = this.locationManager.getRow()!;
+    const x = (col - FELT_CENTER) * horizontalSpacing + ((row - FELT_CENTER) % 2) * (horizontalSpacing / 2);
+    const z = -(row - FELT_CENTER) * verticalSpacing;
+    return { col, row, x, z };
+  }
+
+  switchScene() {
+    if (this.currentScene === "main") {
+      const { row, col, x, z } = this.getLocationCoordinates();
+      this.transitionToDetailedScene(row, col, x, z);
+    } else {
+      this.transitionToMainScene();
     }
   }
 
