@@ -6,7 +6,7 @@ import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
-import { filterArmy, getArmyByEntityId } from "./useArmies";
+import { getArmyByEntityId, isArmyAlive } from "./useArmies";
 
 export function useResources() {
   const {
@@ -121,7 +121,7 @@ export function useResources() {
         const arrivalTime = getComponentValue(ArrivalTime, id);
         const position = getComponentValue(Position, id);
         const army = getArmy(position?.entity_id || BigInt(0));
-        if (army && !filterArmy(army, Battle, Army, Position, Realm)) return undefined;
+        if (army && !isArmyAlive(army, Battle, Army, Position, Realm)) return undefined;
         return {
           id,
           entityId: position?.entity_id || BigInt(""),
