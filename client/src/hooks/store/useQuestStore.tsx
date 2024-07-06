@@ -1,18 +1,17 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo, useEntityArmies } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { useGetMyOffers } from "@/hooks/helpers/useTrade";
-import { BuildingType, QuestType } from "@bibliothecadao/eternum";
-import { useComponentValue } from "@dojoengine/react";
+import { BuildingType, QuestType, StructureType } from "@bibliothecadao/eternum";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { create } from "zustand";
-import { useEntities } from "../helpers/useEntities";
-import { useLocation } from "wouter";
-import useUIStore from "./useUIStore";
 import { getPillageEvents } from "@/dojo/events/pillageEventQueries";
 import { View as LeftView } from "@/ui/modules/navigation/LeftNavigationModule";
+import { useLocation } from "wouter";
+import { create } from "zustand";
+import { useEntities } from "../helpers/useEntities";
+import useUIStore from "./useUIStore";
 
 export enum QuestName {
   BuildFarm = "Build a Farm",
@@ -55,6 +54,8 @@ export interface QuestStore {
   setSelectedQuest: (selectedQuest: Quest | undefined) => void;
   claimableQuestsLength: number;
   setClaimableQuestsLength: (claimableQuestsLength: number) => void;
+  showCompletedQuests: boolean;
+  setShowCompletedQuests: (showCompletedQuests: boolean) => void;
 }
 
 export const useQuestStore = create<QuestStore>((set) => {
@@ -65,6 +66,8 @@ export const useQuestStore = create<QuestStore>((set) => {
     setSelectedQuest: (selectedQuest: Quest | undefined) => set({ selectedQuest }),
     claimableQuestsLength: 0,
     setClaimableQuestsLength: (claimableQuestsLength: number) => set({ claimableQuestsLength }),
+    showCompletedQuests: false,
+    setShowCompletedQuests: (showCompletedQuests: boolean) => set({ showCompletedQuests }),
   };
 });
 
@@ -94,7 +97,7 @@ export const useQuests = () => {
   const isWorldView = useMemo(() => location === "/map", [location]);
 
   const getBuildingQuantity = (buildingType: BuildingType) =>
-    useComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(buildingType)]))
+    getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(entityId || "0"), BigInt(buildingType)]))
       ?.value || 0;
 
   const farms = getBuildingQuantity(BuildingType.Farm);
@@ -112,8 +115,14 @@ export const useQuests = () => {
     [structures],
   );
 
-  const mines = useMemo(() => countStructuresByCategory("FragmentMine"), [countStructuresByCategory]);
-  const hyperstructures = useMemo(() => countStructuresByCategory("Hyperstructure"), [countStructuresByCategory]);
+  const fragmentMines = useMemo(
+    () => countStructuresByCategory(StructureType[StructureType.FragmentMine]),
+    [countStructuresByCategory],
+  );
+  const hyperstructures = useMemo(
+    () => countStructuresByCategory(StructureType[StructureType.Hyperstructure]),
+    [countStructuresByCategory],
+  );
 
   const hyperstructureContributions = runQuery([
     HasValue(Contribution, { player_address: BigInt(account.address) }),
@@ -121,7 +130,7 @@ export const useQuests = () => {
 
   const orders = useGetMyOffers();
 
-  const { entityArmies } = useEntityArmies({ entity_id: entityId || BigInt("0") });
+  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: entityId || BigInt("0") });
 
   const [pillageHistoryLength, setPillageHistoryLength] = useState<number>(0);
 
@@ -245,7 +254,7 @@ export const useQuests = () => {
       {
         name: QuestName.Mine,
         description: "Explore the world, find earthenshard mines.",
-        completed: mines > 0,
+        completed: fragmentMines > 0,
         steps: [],
         prizes: [{ id: QuestType.Mine, title: "Mine" }],
         depth: 5,
@@ -287,6 +296,7 @@ export const useQuests = () => {
     hasTraveled,
     workersHut,
     markets,
+    fragmentMines,
     hyperstructures,
     hyperstructureContributions,
     pillageHistoryLength,

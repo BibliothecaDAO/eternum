@@ -136,7 +136,11 @@ export const PillageHistory = ({
                     {history.destroyedBuildingType !== undefined && (
                       <img
                         src={`${
-                          BUILDING_IMAGES_PATH[BuildingType[history.destroyedBuildingType as keyof typeof BuildingType]]
+                          BUILDING_IMAGES_PATH[
+                            BuildingType[
+                              history.destroyedBuildingType as keyof typeof BuildingType
+                            ] as keyof typeof BUILDING_IMAGES_PATH
+                          ]
                         }`}
                         alt="Destroyed Building"
                         className="w-24 h-24 mx-auto"

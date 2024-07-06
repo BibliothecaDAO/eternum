@@ -162,7 +162,6 @@
     "Battle",
     "EntityOwner",
     "Position",
-    "Owner",
     "Capacity",
     "Structure",
     "StructureCount",
@@ -170,7 +169,10 @@
     "Production",
     "BuildingQuantityv2",
     "Population",
-    "Stamina"
+    "Stamina",
+    "Protector",
+    "Protectee",
+    "ResourceTransferLock"
   ],
   "COMBAT_SYSTEMS": [
     "Health",

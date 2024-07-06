@@ -6,7 +6,7 @@ use eternum::constants::{
     HYPERSTRUCTURE_CONFIG_ID, TickIds
 };
 use eternum::models::buildings::BuildingCategory;
-
+use eternum::models::combat::{Troops};
 use starknet::ContractAddress;
 
 //
@@ -120,6 +120,16 @@ struct StaminaConfig {
     max_stamina: u16,
 }
 
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+struct MercenariesConfig {
+    #[key]
+    config_id: u128,
+    troops: Troops,
+    rewards: Span<(u8, u128)>
+}
+
+
 #[generate_trait]
 impl TickImpl of TickTrait {
     fn get_default_tick_config(world: IWorldDispatcher) -> TickConfig {
@@ -222,7 +232,8 @@ struct BankConfig {
     #[key]
     config_id: u128,
     lords_cost: u128,
-    lp_fee_scaled: u128,
+    lp_fee_num: u128,
+    lp_fee_denom: u128,
 }
 
 #[derive(Copy, Drop, Serde)]

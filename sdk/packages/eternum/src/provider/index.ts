@@ -1,8 +1,8 @@
 import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
-import * as SystemProps from "../types/provider";
 import { EternumGlobalConfig } from "../constants";
+import * as SystemProps from "../types/provider";
 
 export const getContractByName = (manifest: any, name: string) => {
   const contract = manifest.contracts.find((contract: any) => contract.name.includes("::" + name));
@@ -393,22 +393,22 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async create_bank(props: SystemProps.CreateBankProps) {
-    const { realm_entity_id, coord, owner_fee_scaled, signer } = props;
+    const { realm_entity_id, coord, owner_fee_num, owner_fee_denom, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "bank_systems"),
       entrypoint: "create_bank",
-      calldata: [realm_entity_id, coord, owner_fee_scaled],
+      calldata: [realm_entity_id, coord, owner_fee_num, owner_fee_denom],
     });
   }
 
   public async create_admin_bank(props: SystemProps.CreateAdminBankProps) {
-    const { coord, owner_fee_scaled, signer } = props;
+    const { coord, owner_fee_num, owner_fee_denom, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "dev_bank_systems"),
       entrypoint: "create_admin_bank",
-      calldata: [coord, owner_fee_scaled],
+      calldata: [coord, owner_fee_num, owner_fee_denom],
     });
   }
 
@@ -423,12 +423,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async change_bank_owner_fee(props: SystemProps.ChangeBankOwnerFeeProps) {
-    const { bank_entity_id, new_swap_fee_unscaled, signer } = props;
+    const { bank_entity_id, new_swap_fee_num, new_swap_fee_denom, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "bank_systems"),
       entrypoint: "change_owner_fee",
-      calldata: [bank_entity_id, new_swap_fee_unscaled],
+      calldata: [bank_entity_id, new_swap_fee_num, new_swap_fee_denom],
     });
   }
 
@@ -569,7 +569,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     ]);
   }
 
-  public async battle_raid_and_leave(props: SystemProps.BattleRaidAndLeaveProps) {
+  public async battle_leave_and_raid(props: SystemProps.BattleLeaveAndRaidProps) {
     const { army_id, structure_id, battle_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, [
@@ -755,12 +755,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_bank_config(props: SystemProps.SetBankConfigProps) {
-    const { lords_cost, lp_fee_scaled, signer } = props;
+    const { lords_cost, lp_fee_num, lp_fee_denom, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, "config_systems"),
       entrypoint: "set_bank_config",
-      calldata: [lords_cost, lp_fee_scaled],
+      calldata: [lords_cost, lp_fee_num, lp_fee_denom],
     });
   }
 
@@ -871,6 +871,15 @@ export class EternumProvider extends EnhancedDojoProvider {
       contractAddress: getContractByName(this.manifest, "config_systems"),
       entrypoint: "set_stamina_config",
       calldata: [unit_type, max_stamina],
+    });
+  }
+
+  public async set_mercenaries_config(props: SystemProps.SetMercenariesConfigProps) {
+    const { troops, rewards, signer } = props;
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_mercenaries_config",
+      calldata: [troops, rewards],
     });
   }
 }

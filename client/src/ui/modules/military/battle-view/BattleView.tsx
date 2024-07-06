@@ -35,20 +35,20 @@ export const BattleView = () => {
 
   const ownArmySide = battleManager ? String(userArmiesInBattle[0]?.battle_side || "") : "Attack";
 
-  const { getArmy } = getArmyByEntityId();
+  const { getAliveArmy } = getArmyByEntityId();
   const ownArmyEntityId = selectedEntity?.id || BigInt(userArmiesInBattle.find((army) => army.isMine)?.entity_id || 0);
-  const ownArmyBattleStarter = getArmy(BigInt(ownArmyEntityId || 0n));
-  const defenderArmyBattleStarter = getArmy(BigInt(defenderAndStructureBattleStarter?.defender || 0n));
+  const ownArmyBattleStarter = getAliveArmy(BigInt(ownArmyEntityId || 0n));
+  const defenderArmyBattleStarter = getAliveArmy(BigInt(defenderAndStructureBattleStarter?.defender || 0n));
 
   const attackerArmies =
     armiesInBattle.length > 0
       ? armiesInBattle.filter((army) => String(army.battle_side) === "Attack")
-      : [ownArmyBattleStarter];
+      : [ownArmyBattleStarter!];
 
   const defenderArmies =
     armiesInBattle.length > 0
       ? armiesInBattle.filter((army) => String(army.battle_side) === "Defence")
-      : [defenderArmyBattleStarter];
+      : [defenderArmyBattleStarter!];
 
   const battleAdjusted = useMemo(() => {
     if (!battleManager) return undefined;
@@ -96,7 +96,7 @@ export const BattleView = () => {
       battleAdjusted={battleAdjusted}
       attackerArmies={attackerArmies}
       attackerHealth={attackerHealth}
-      attackerTroops={attackerTroops}
+      attackerTroops={attackerTroops!}
       defenderArmies={defenderArmies}
       defenderHealth={defenderHealth}
       defenderTroops={defenderTroops}

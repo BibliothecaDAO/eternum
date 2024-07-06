@@ -73,6 +73,7 @@ export class BattleManager {
       return undefined;
     }
   }
+
   public isBattleActive(currentTick: number): boolean {
     const battle = this.getBattle();
     const timeSinceLastUpdate = this.getElapsedTime(currentTick);

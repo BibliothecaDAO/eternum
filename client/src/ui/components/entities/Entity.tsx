@@ -1,17 +1,17 @@
-import React from "react";
-import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import clsx from "clsx";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { getArmyByEntityId, isArmyAlive } from "@/hooks/helpers/useArmies";
+import { getBattleByPosition } from "@/hooks/helpers/useBattles";
+import { useEntities } from "@/hooks/helpers/useEntities";
+import { useOwnedEntitiesOnPosition, useResources } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { useResources, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
-import { TravelEntityPopup } from "./TravelEntityPopup";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { EntityType, EntityState, determineEntityState } from "@bibliothecadao/eternum";
+import { EntityState, EntityType, determineEntityState } from "@bibliothecadao/eternum";
+import clsx from "clsx";
+import React, { useState } from "react";
 import { DepositResources } from "../resources/DepositResources";
-import { useState } from "react";
-import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
+import { TravelEntityPopup } from "./TravelEntityPopup";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -32,11 +32,17 @@ type EntityProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Entity = ({ entityId, ...props }: EntityProps) => {
+  const {
+    setup: {
+      components: { Battle, Army, Position, Realm },
+    },
+  } = useDojo();
   const [showTravel, setShowTravel] = useState(false);
   const { getEntityInfo } = useEntities();
   const { getResourcesFromBalance } = useResources();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
   const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
+  const { getArmy } = getArmyByEntityId();
 
   const entity = getEntityInfo(entityId);
   const entityResources = getResourcesFromBalance(entityId);
@@ -44,7 +50,11 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
   const depositEntityId = getOwnedEntityOnPosition(entityId);
 
-  const battleInProgress = entity?.position ? getBattlesByPosition(entity.position) !== undefined : false;
+  const battleAtPosition = entity?.position ? getBattleByPosition(entity.position) : undefined;
+  const battleInProgress = battleAtPosition && battleAtPosition.duration_left > 0;
+
+  const army = getArmy(entityId);
+  if (army && !isArmyAlive(army, Battle, Army, Position, Realm)) return;
 
   if (entityState === EntityState.NotApplicable) return null;
 

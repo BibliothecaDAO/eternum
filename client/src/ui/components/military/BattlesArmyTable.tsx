@@ -1,6 +1,11 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { useDojo } from "@/hooks/context/DojoContext";
-import { ExtraBattleInfo, useBattleManager, useBattles } from "@/hooks/helpers/useBattles";
+import {
+  BattleInfo,
+  ExtraBattleInfo,
+  getBattleInfoByOwnArmyEntityId,
+  useBattleManager,
+  usePlayerBattles,
+} from "@/hooks/helpers/useBattles";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
@@ -9,19 +14,14 @@ import { useMemo } from "react";
 import { InventoryResources } from "../resources/InventoryResources";
 
 export const BattlesArmyTable = () => {
-  const {
-    account: { account },
-  } = useDojo();
-
-  const { playerBattles } = useBattles();
-
-  const battles = playerBattles(BigInt(account.address));
+  const { playerBattles } = usePlayerBattles();
+  const battles = playerBattles();
 
   return (
     <div className="p-2">
       <div className="flex flex-col gap-4">
-        {battles.map(({ battleEntityId, ownArmy }) => {
-          return <BattleChip battleEntityId={battleEntityId} ownArmy={ownArmy} />;
+        {battles.map(({ battle, ownArmy }: any) => {
+          return <BattleChip battle={battle} ownArmy={ownArmy} />;
         })}
       </div>
     </div>
@@ -29,18 +29,17 @@ export const BattlesArmyTable = () => {
 };
 
 type BattleChipProps = {
-  battleEntityId: bigint;
+  battle: BattleInfo;
   ownArmy: ClientComponents["Army"]["schema"];
 };
 
-const BattleChip = ({ battleEntityId, ownArmy }: BattleChipProps) => {
+const BattleChip = ({ battle, ownArmy }: BattleChipProps) => {
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
 
-  const { updatedBattle } = useBattleManager(battleEntityId);
-  const { getExtraBattleInformation } = useBattles();
+  const { updatedBattle } = useBattleManager(BigInt(battle.entity_id));
 
   const extraInfo = useMemo(() => {
-    const extraInfo = getExtraBattleInformation(BigInt(ownArmy.entity_id));
+    const extraInfo = getBattleInfoByOwnArmyEntityId(BigInt(ownArmy.entity_id));
     return extraInfo;
   }, [ownArmy]);
 

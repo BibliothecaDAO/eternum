@@ -172,7 +172,8 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
   const txBank = await provider.set_bank_config({
     signer: account,
     lords_cost: EternumGlobalConfig.banks.lordsCost * EternumGlobalConfig.resources.resourcePrecision,
-    lp_fee_scaled: EternumGlobalConfig.banks.lpFees,
+    lp_fee_num: EternumGlobalConfig.banks.lpFeesNumerator,
+    lp_fee_denom: EternumGlobalConfig.banks.lpFeesDenominator,
   });
 
   console.log(`Configuring bank config ${txBank.statusReceipt}...`);
@@ -259,4 +260,29 @@ export const setStaminaConfig = async (account: Account, provider: EternumProvid
     });
     console.log(`Configuring staminas ${unit_type} ${tx.statusReceipt}...`);
   }
+};
+
+export const setMercenariesConfig = async (account: Account, provider: EternumProvider) => {
+  const tx = await provider.set_mercenaries_config({
+    signer: account,
+    troops: {
+      knight_count:
+        BigInt(EternumGlobalConfig.mercenaries.troops.knight_count) *
+        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+      paladin_count:
+        BigInt(EternumGlobalConfig.mercenaries.troops.paladin_count) *
+        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+      crossbowman_count:
+        BigInt(EternumGlobalConfig.mercenaries.troops.crossbowman_count) *
+        BigInt(EternumGlobalConfig.resources.resourcePrecision),
+    },
+    rewards: EternumGlobalConfig.mercenaries.rewards.map((reward) => ({
+      resource: reward.resource,
+      amount:
+        reward.amount *
+        EternumGlobalConfig.resources.resourcePrecision *
+        EternumGlobalConfig.resources.resourceMultiplier,
+    })),
+  });
+  console.log(`Configuring mercenaries ${tx.statusReceipt}...`);
 };

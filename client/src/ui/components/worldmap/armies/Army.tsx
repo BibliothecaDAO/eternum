@@ -1,5 +1,5 @@
 import { ArmyInfo, getArmiesAtPosition } from "@/hooks/helpers/useArmies";
-import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
+import { getBattleByPosition } from "@/hooks/helpers/useBattles";
 import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
 import { Billboard, Image, useTexture } from "@react-three/drei";
 import React, { useMemo } from "react";
@@ -65,7 +65,7 @@ export const ArmySelectionOverlay = ({ army }: ArmyProps) => {
   const armyPosition = { x: army.x, y: army.y };
 
   const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const battleAtPosition = getBattlesByPosition(armyPosition);
+  const battleAtPosition = getBattleByPosition(armyPosition);
   const { getArmies } = getArmiesAtPosition();
 
   const structure = getStructureAtPosition(armyPosition);
@@ -91,7 +91,7 @@ export const ArmySelectionOverlay = ({ army }: ArmyProps) => {
   return (
     <>
       {showCombatLabel && <CombatLabel visible={isSelected} structureIsMine={structure?.isMine} />}
-      {showBattleLabel && <BattleLabel selectedBattle={battleAtPosition!} />}
+      {showBattleLabel && <BattleLabel selectedBattle={BigInt(battleAtPosition!.entity_id)} />}
       {isSelected && <UnitHighlight position={{ x: army.x, y: army.y }} />}
     </>
   );

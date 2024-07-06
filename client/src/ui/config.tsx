@@ -29,7 +29,6 @@ export const BUILDING_IMAGES_PATH = {
   [BuildingType.Stable]: BUILD_IMAGES_PREFIX + "stable.png",
   [BuildingType.Market]: BUILD_IMAGES_PREFIX + "market.png",
   [BuildingType.ArcheryRange]: BUILD_IMAGES_PREFIX + "archery.png",
-  [BuildingType.DonkeyFarm]: BUILD_IMAGES_PREFIX + "donkey_farm.png",
   [BuildingType.TradingPost]: BUILD_IMAGES_PREFIX + "trading_post.png",
   [BuildingType.WorkersHut]: BUILD_IMAGES_PREFIX + "workers_hut.png",
   [BuildingType.WatchTower]: BUILD_IMAGES_PREFIX + "watch_tower.png",

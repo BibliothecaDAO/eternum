@@ -22,8 +22,10 @@ export const EternumGlobalConfig = {
   },
   banks: {
     lordsCost: 1000,
-    lpFees: 0,
-    ownerFees: 1844674407370955160,
+    lpFeesNumerator: 15,
+    lpFeesDenominator: 100, // %
+    ownerFeesNumerator: 15,
+    ownerFeesDenominator: 100, // %
   },
   weights: {
     resource: 1000,
@@ -71,6 +73,17 @@ export const EternumGlobalConfig = {
     // weak army's loss is closer to 12.5%
     pillageHealthDivisor: 8,
     healthPrecision: 1000000n,
+  },
+  mercenaries: {
+    troops: {
+      knight_count: 4000,
+      paladin_count: 4000,
+      crossbowman_count: 4000,
+    },
+    rewards: [
+      { resource: ResourcesIds.Wheat, amount: 10 },
+      { resource: ResourcesIds.Fish, amount: 20 },
+    ],
   },
 };
 

@@ -22,12 +22,13 @@ export function useTravel() {
   } = useDojo();
   const { optimisticStaminaUpdate } = useStamina();
 
-  const computeTravelTime = (fromId: bigint, toId: bigint, speed: number) => {
+  const computeTravelTime = (fromId: bigint, toId: bigint, speed: number, pickup?: boolean) => {
     const fromPosition = getComponentValue(components.Position, getEntityIdFromKeys([fromId]));
     const toPosition = getComponentValue(components.Position, getEntityIdFromKeys([toId]));
     if (!fromPosition || !toPosition) return;
     const distanceFromPosition = calculateDistance(fromPosition, toPosition) ?? 0;
-    return Math.floor(((distanceFromPosition / speed) * 3600) / 60 / 60);
+    const onewayTime = Math.floor(((distanceFromPosition / speed) * 3600) / 60);
+    return pickup ? onewayTime * 2 : onewayTime;
   };
 
   const optimisticTravelHex = (

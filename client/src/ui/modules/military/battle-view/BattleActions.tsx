@@ -59,10 +59,10 @@ export const BattleActions = ({
     },
   } = useDojo();
 
-  const { getArmy } = getArmyByEntityId();
+  const { getAliveArmy } = getArmyByEntityId();
 
   const selectedArmy = useMemo(() => {
-    return getArmy(localSelectedUnit || 0n);
+    return getAliveArmy(localSelectedUnit || 0n);
   }, [localSelectedUnit, battle]);
 
   const isRealm = useMemo(() => {
@@ -107,7 +107,7 @@ export const BattleActions = ({
       defending_army_id: defender!.entity_id,
     });
     setLoading(Loading.None);
-    setBattleView({ battle: { x: selectedArmy.x, y: selectedArmy.y }, target: undefined });
+    setBattleView({ battle: { x: selectedArmy!.x || 0, y: selectedArmy!.y || 0 }, target: undefined });
     clearSelection();
   };
 
@@ -166,7 +166,14 @@ export const BattleActions = ({
           className="flex flex-col gap-2"
           isLoading={loading === Loading.Raid}
           onClick={handleRaid}
-          disabled={loading !== Loading.None || !structure || !selectedArmy || isActive || structure?.isMine}
+          disabled={
+            loading !== Loading.None ||
+            !structure ||
+            !selectedArmy ||
+            isActive ||
+            structure?.isMine ||
+            structure.isMercenary
+          }
         >
           <img className="w-10" src="/images/icons/raid.png" alt="coin" />
           Raid!
@@ -246,7 +253,7 @@ const ArmySelector = ({
               }
             />
           </SelectTrigger>
-          <SelectContent className="text-gold w-1">
+          <SelectContent className="text-gold w-full">
             {userArmiesInBattle.map((army, index) => (
               <SelectItem
                 className="flex justify-center self-center text-sm pl-0 w-full"
@@ -270,7 +277,7 @@ const checkIfArmyLostAFinishedBattle = (battle: any, army: any, isActive: boolea
   return false;
 };
 
-export const checkIfArmyAlive = (army: ArmyInfo) => {
+const checkIfArmyAlive = (army: ArmyInfo) => {
   if (army.current === undefined) return false;
   return BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0;
 };

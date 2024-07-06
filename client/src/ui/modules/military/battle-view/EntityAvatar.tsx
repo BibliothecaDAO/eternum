@@ -13,11 +13,14 @@ export const EntityAvatar = ({
   const isRealm = Boolean(structure) && String(structure?.category) === "Realm";
   const isHyperstructure = Boolean(structure) && String((structure as Structure).category) === "Hyperstructure";
   const isEarthenshardsMine = Boolean(structure) && String((structure as Structure).category) === "FragmentMine";
+  const isMercenary = Boolean(structure) && structure!.isMercenary;
 
   const randomAvatarIndex = (parseInt(address.slice(0, 8), 16) % 7) + 1;
   let imgSource = `./images/avatars/${randomAvatarIndex}.png`;
 
-  if (isRealm) {
+  if (isMercenary) {
+    imgSource = "./images/avatars/mercenary.png";
+  } else if (isRealm) {
     imgSource = "./images/buildings/thumb/castle.png";
   } else if (isHyperstructure) {
     imgSource = "./images/buildings/thumb/hyperstructure.png";

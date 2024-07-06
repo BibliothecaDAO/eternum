@@ -20,6 +20,7 @@ export type Realm = ClientComponents["Realm"]["schema"] & {
 
 export type Structure = ClientComponents["Structure"]["schema"] & {
   isMine: boolean;
+  isMercenary: boolean;
   name: string;
   protector: ArmyInfo | undefined;
   owner: ClientComponents["Owner"]["schema"];
@@ -41,7 +42,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
     account: { account },
   } = useDojo();
 
-  const { getArmy } = getArmyByEntityId();
+  const { getAliveArmy } = getArmyByEntityId();
 
   const useFormattedRealmAtPosition = () => {
     const realmsAtPosition = useEntityQuery([HasValue(Position, position), HasValue(Structure, { category: "Realm" })]);
@@ -56,7 +57,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
         Protector,
         realm_entity_id,
       ) as unknown as ClientComponents["Protector"]["schema"];
-      protector = protector ? getArmy(BigInt(protector.army_id)) : undefined;
+      protector = protector ? getAliveArmy(BigInt(protector.army_id)) : undefined;
 
       const fullRealm = {
         ...realm,
@@ -93,7 +94,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
         Protector,
         entityId,
       ) as unknown as ClientComponents["Protector"]["schema"];
-      protector = protector ? getArmy(BigInt(protector.army_id)) : undefined;
+      protector = protector ? getAliveArmy(BigInt(protector.army_id)) : undefined;
 
       const onChainName = getComponentValue(EntityName, entityId);
 
@@ -109,7 +110,8 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
         owner,
         name,
         protector: protector as ArmyInfo | undefined,
-        isMine: BigInt(owner!.address) === BigInt(account.address),
+        isMine: BigInt(owner?.address || 0) === BigInt(account.address),
+        isMercenary: owner === undefined,
       };
     })[0];
 
@@ -135,7 +137,7 @@ export const getStructureAtPosition = (position: Position) => {
     },
   } = useDojo();
 
-  const { getArmy } = getArmyByEntityId();
+  const { getAliveArmy } = getArmyByEntityId();
 
   const structure = useMemo(() => {
     const structureAtPosition = runQuery([HasValue(Position, position), Has(Structure)]);
@@ -162,7 +164,7 @@ export const getStructureAtPosition = (position: Position) => {
       Protector,
       structureEntityId,
     ) as unknown as ClientComponents["Protector"]["schema"];
-    protector = protector ? getArmy(BigInt(protector.army_id)) : undefined;
+    protector = protector ? getAliveArmy(BigInt(protector.army_id)) : undefined;
 
     const onChainName = getComponentValue(EntityName, structureEntityId);
 
@@ -179,7 +181,8 @@ export const getStructureAtPosition = (position: Position) => {
       owner,
       name,
       protector: protector as ArmyInfo | undefined,
-      isMine: BigInt(owner!.address) === BigInt(account.address),
+      isMine: BigInt(owner?.address || 0) === BigInt(account.address),
+      isMercenary: owner === undefined,
     };
   }, [position]);
 

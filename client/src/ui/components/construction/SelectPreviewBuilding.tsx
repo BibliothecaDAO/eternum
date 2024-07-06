@@ -56,7 +56,6 @@ export const SelectPreviewBuildingMenu = () => {
       key !== "Bank" &&
       key !== "FragmentMine" &&
       key !== "None" &&
-      key !== "DonkeyFarm" &&
       key !== "TradingPost" &&
       key !== "WatchTower" &&
       key !== "Walls" &&
@@ -311,7 +310,7 @@ export const BuildingCard = ({
         backgroundImage: `url(${
           resourceId
             ? BUILDING_IMAGES_PATH[ResourceIdToMiningType[resourceId as ResourcesIds] as ResourceMiningTypes]
-            : BUILDING_IMAGES_PATH[buildingId as BuildingType]
+            : BUILDING_IMAGES_PATH[buildingId as keyof typeof BUILDING_IMAGES_PATH]
         })`,
         backgroundSize: "cover",
         backgroundPosition: "center",

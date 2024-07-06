@@ -15,7 +15,7 @@ type BankListProps = {
 export const BankPanel = ({ entity }: BankListProps) => {
   const {
     setup: {
-      components: { Position, Bank, Owner, AddressName },
+      components: { Position, Owner },
     },
   } = useDojo();
 
@@ -24,9 +24,7 @@ export const BankPanel = ({ entity }: BankListProps) => {
   const { playerRealms } = useEntities();
 
   const realmEntityId = playerRealms()[0].entity_id!;
-  const bank = getComponentValue(Bank, getEntityIdFromKeys([entity.id]));
   const owner = getComponentValue(Owner, getEntityIdFromKeys([entity.id]));
-  const ownerName = owner ? getComponentValue(AddressName, getEntityIdFromKeys([owner.address]))?.name : undefined;
   const position = getComponentValue(Position, getEntityIdFromKeys([entity.id]));
 
   const tabs = useMemo(
@@ -48,17 +46,22 @@ export const BankPanel = ({ entity }: BankListProps) => {
           </div>
         ),
         component: (
-          <div>
-            <div className="w-1/2 mx-auto mb-8">
-              <AddLiquidity bank_entity_id={entity.id} entityId={realmEntityId!} />
-            </div>
-            <LiquidityTable bank_entity_id={entity.id} entity_id={realmEntityId} />
+          <div className="w-1/2 mx-auto">
+            <AddLiquidity bank_entity_id={entity.id} entityId={realmEntityId!} />
           </div>
         ),
       },
     ],
     [realmEntityId, position],
   );
+
+  const liquidityTable = useMemo(() => {
+    return (
+      <div className="mt-4">
+        <LiquidityTable bank_entity_id={entity.id} entity_id={realmEntityId} />
+      </div>
+    );
+  }, [entity.id, realmEntityId]);
 
   return (
     <div className="m-4">
@@ -70,10 +73,13 @@ export const BankPanel = ({ entity }: BankListProps) => {
         </Tabs.List>
         <Tabs.Panels className="overflow-hidden">
           {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+            <Tabs.Panel key={index} className="h-full">
+              {tab.component}
+            </Tabs.Panel>
           ))}
         </Tabs.Panels>
       </Tabs>
+      {liquidityTable}
     </div>
   );
 };

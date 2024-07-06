@@ -58,7 +58,6 @@ enum BuildingCategory {
     Market,
     ArcheryRange,
     Stable,
-    DonkeyFarm,
     TradingPost,
     WorkersHut,
     WatchTower,
@@ -78,12 +77,11 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
             BuildingCategory::Market => 6,
             BuildingCategory::ArcheryRange => 7,
             BuildingCategory::Stable => 8,
-            BuildingCategory::DonkeyFarm => 9,
-            BuildingCategory::TradingPost => 10,
-            BuildingCategory::WorkersHut => 11,
-            BuildingCategory::WatchTower => 12,
-            BuildingCategory::Walls => 13,
-            BuildingCategory::Storehouse => 14,
+            BuildingCategory::TradingPost => 9,
+            BuildingCategory::WorkersHut => 10,
+            BuildingCategory::WatchTower => 11,
+            BuildingCategory::Walls => 12,
+            BuildingCategory::Storehouse => 13,
         }
     }
 }
@@ -139,7 +137,6 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::Market => ResourceTypes::DONKEY,
             BuildingCategory::ArcheryRange => ResourceTypes::CROSSBOWMAN,
             BuildingCategory::Stable => ResourceTypes::PALADIN,
-            BuildingCategory::DonkeyFarm => 0,
             BuildingCategory::TradingPost => 0,
             BuildingCategory::WorkersHut => 0,
             BuildingCategory::WatchTower => 0,
@@ -159,7 +156,6 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             BuildingCategory::Market => 0,
             BuildingCategory::ArcheryRange => 0,
             BuildingCategory::Stable => 0,
-            BuildingCategory::DonkeyFarm => 0,
             BuildingCategory::TradingPost => 0,
             BuildingCategory::WorkersHut => 0,
             BuildingCategory::WatchTower => 0,
@@ -491,8 +487,6 @@ impl BuildingImpl of BuildingTrait {
         produce_resource_type: Option<u8>,
         inner_coord: Coord
     ) -> Building {
-        get!(world, outer_entity_id, Owner).assert_caller_owner();
-
         // check that the entity has a position
         let outer_entity_position = get!(world, outer_entity_id, Position);
         outer_entity_position.assert_not_zero();

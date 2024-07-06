@@ -1,6 +1,6 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntityArmies, usePositionArmies } from "@/hooks/helpers/useArmies";
-import { useResources } from "@/hooks/helpers/useResources";
+import { useArmiesByEntityOwner, usePositionArmies } from "@/hooks/helpers/useArmies";
+import { getBattleByPosition } from "@/hooks/helpers/useBattles";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
 import { Position } from "@bibliothecadao/eternum";
@@ -11,10 +11,10 @@ import { DepositResources } from "../resources/DepositResources";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { ArmyViewCard } from "./ArmyViewCard";
-import { getBattlesByPosition } from "@/hooks/helpers/useBattles";
 
 export const EntityArmyList = ({ structure }: any) => {
-  const { entityArmies } = useEntityArmies({ entity_id: structure?.entity_id });
+  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structure?.entity_id });
+
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const {
@@ -79,7 +79,7 @@ export const EntityArmyList = ({ structure }: any) => {
             <InventoryResources entityId={entity.entity_id} />
             <DepositResources
               entityId={entity.entity_id}
-              battleInProgress={getBattlesByPosition({ x: entity.x, y: entity.y }) !== undefined}
+              battleInProgress={getBattleByPosition({ x: entity.x, y: entity.y }) !== undefined}
             />
           </React.Fragment>
         )}
