@@ -1,0 +1,74 @@
+query getBattles {
+  battleModels {
+    edges {
+      node {
+        ... on Battle {
+          entity_id
+          attack_delta
+          defence_delta
+          attack_army_health {
+            current
+            lifetime
+          }
+          defence_army_health {
+            current
+            lifetime
+          }
+          attackers_resources_escrow_id
+          defenders_resources_escrow_id
+          attack_army {
+            troops {
+              paladin_count
+              knight_count
+              crossbowman_count
+            }
+          }
+          defence_army {
+            troops {
+              paladin_count
+              knight_count
+              crossbowman_count
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+query getBattles($battleId: String!) {
+  armyModels(where: { battle_idEQ: $battleId }) {
+    edges {
+      node {
+        ... on Army {
+          entity_id
+          battle_id
+          battle_side
+          troops {
+            knight_count
+            paladin_count
+            crossbowman_count
+          }
+        }
+      }
+    }
+  }
+}
+
+query getEntityOwner {
+  ownerModel {
+    entity_id
+  }
+}
+
+query getOwner {
+  ownerModels {
+    edges {
+      node {
+        ... on Owner {
+          address
+        }
+      }
+    }
+  }
+}

@@ -6,6 +6,8 @@ const numberField = z.number();
 
 export const UserQuerySchema = z.object({
   address: stringField,
+  discord: stringField,
+  telegram: stringField,
 });
 
 export interface ApiResponse<T> {
@@ -13,3 +15,9 @@ export interface ApiResponse<T> {
   message?: string;
   data?: T;
 }
+
+export const UserUpdateSchema = z.object({
+  discord: stringField.optional(),
+  telegram: stringField.optional(),
+  address: stringField.optional(),
+});
