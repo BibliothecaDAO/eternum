@@ -198,7 +198,7 @@ export default class HexagonMap {
           y: startRow + row + FELT_CENTER,
         });
 
-        if (entities.size > 0) console.log(entities);
+        if (entities.size > 0) console.log("Entities", entities);
 
         dummy.updateMatrix();
 

@@ -13,7 +13,10 @@ import gsap from "gsap";
 import { LocationManager } from "./helpers/LocationManager";
 import GUI from "lil-gui";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { FELT_CENTER } from "@/ui/config";
 
+const horizontalSpacing = Math.sqrt(3);
+const verticalSpacing = 3 / 2;
 export default class Demo {
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
@@ -126,6 +129,9 @@ export default class Demo {
     ambientFolder.add(this.lightAmbient, "intensity", 0, 3, 0.1);
     //this.scene.add(this.lightAmbient);
 
+    const buttonsFolder = this.gui.addFolder("Buttons");
+    buttonsFolder.add(this, "goToRandomColRow");
+
     this.detailedScene = new DetailedHexScene(
       this.state,
       this.renderer,
@@ -148,13 +154,38 @@ export default class Demo {
   }
 
   private checkInitialLocation() {
-    // const location = this.locationManager.getCol();
-    // if (this.locationManager.getCol() && this.locationManager.getRow()) {
-    //   // Delay the transition to ensure the scene is fully loaded
-    //   setTimeout(() => {
-    //     this.transitionToHexByCoordinates(this.locationManager.getRow()!, this.locationManager.getCol()!);
-    //   }, 1000); // Adjust the delay as needed
-    // }
+    const col = this.locationManager.getCol();
+    const row = this.locationManager.getRow();
+
+    if (col && row) {
+      this.moveCameraToColRow(col, row);
+    }
+  }
+
+  private goToRandomColRow() {
+    const col = Math.floor(Math.random() * 50) + FELT_CENTER;
+    const row = Math.floor(Math.random() * 50) + FELT_CENTER;
+    this.moveCameraToColRow(col, row);
+  }
+
+  private moveCameraToColRow(col: number, row: number) {
+    const newTargetX = (col - FELT_CENTER) * horizontalSpacing + ((row - FELT_CENTER) % 2) * (horizontalSpacing / 2);
+    const newTargetZ = -(row - FELT_CENTER) * verticalSpacing;
+    const newTargetY = 0;
+
+    const newTarget = new THREE.Vector3(newTargetX, newTargetY, newTargetZ);
+
+    const target = this.controls.target;
+    const pos = this.controls.object.position;
+
+    // go to new target with but keep same view angle
+    const deltaX = newTarget.x - target.x;
+    const deltaZ = newTarget.z - target.z;
+
+    this.cameraAnimate(new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ), newTarget, 2);
+    // target.set(newTarget.x, newTarget.y, newTarget.z);
+    // pos.set(pos.x + deltaX, pos.y, pos.z + deltaZ);
+    this.controls.update();
   }
 
   // Add this new method
