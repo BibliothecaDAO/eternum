@@ -1251,9 +1251,6 @@ mod combat_systems {
                 assert!(battle.has_ended(), "structure can only leave battle after it ends");
             }
 
-            // withdraw resources stuck in battle
-            battle.withdraw_balance_and_reward(world, army, army_protectee);
-
             // get up to date battle troop count and health
             let (mut battle_army, mut battle_army_health, mut battle_army_lifetime) = if army
                 .battle_side == BattleSide::Defence {
@@ -1323,6 +1320,9 @@ mod combat_systems {
                             * battle_army.troops.crossbowman_count
                             / battle_army_lifetime.troops.crossbowman_count
                     };
+
+            // withdraw resources stuck in battle
+            battle.withdraw_balance_and_reward(world, army, army_protectee);
 
             let army_health = Health {
                 entity_id: army_id,
