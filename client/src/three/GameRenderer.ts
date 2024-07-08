@@ -131,11 +131,11 @@ export default class Demo {
         this.hexGrid.updateVisibleChunks();
         if (this.mainDirectionalLight) {
           const target = this.controls.target;
-          this.mainDirectionalLight.position.set(target.x, target.y + 9, target.z);
+          this.mainDirectionalLight.position.set(target.x + 15, target.y + 13, target.z - 8);
           this.mainDirectionalLight.target.position.set(target.x, target.y, target.z + 5.2);
           this.mainDirectionalLight.target.updateMatrixWorld();
         }
-      }, 100),
+      }, 30),
     );
 
     // Adjust point lights for new camera angle
@@ -158,9 +158,11 @@ export default class Demo {
       this.mainDirectionalLight.shadow.mapSize.width = 2048;
       this.mainDirectionalLight.shadow.mapSize.height = 2048;
       this.mainDirectionalLight.shadow.camera.left = -24;
-      this.mainDirectionalLight.shadow.camera.right = 20;
-      this.mainDirectionalLight.shadow.camera.top = 11;
-      this.mainDirectionalLight.shadow.camera.bottom = -12;
+      this.mainDirectionalLight.shadow.camera.right = 14.5;
+      this.mainDirectionalLight.shadow.camera.top = 12;
+      this.mainDirectionalLight.shadow.camera.bottom = -9;
+      this.mainDirectionalLight.shadow.camera.far = 25;
+      this.mainDirectionalLight.shadow.camera.near = 8;
       this.mainDirectionalLight.position.set(0, 9, 0);
       this.mainDirectionalLight.target.position.set(0, 0, 5.2);
       const shadowFolder = this.gui.addFolder("Shadow");
@@ -168,6 +170,8 @@ export default class Demo {
       shadowFolder.add(this.mainDirectionalLight.shadow.camera, "right", -50, 50, 0.1);
       shadowFolder.add(this.mainDirectionalLight.shadow.camera, "top", -50, 50, 0.1);
       shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
+      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
+      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
       const directionalLightFolder = this.gui.addFolder("Directional Light");
       directionalLightFolder.addColor(this.mainDirectionalLight, "color");
       directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
