@@ -60,7 +60,7 @@ export default class HexceptionScene {
 
   private pillars: THREE.InstancedMesh | null = null;
 
-  centerColRow: number[] = [2147483647, 2147483647];
+  centerColRow: number[] = [0, 0];
 
   private biome!: Biome;
 
@@ -91,7 +91,7 @@ export default class HexceptionScene {
     this.loadBuildingModels();
     this.loadBiomeModels();
 
-    this.setup(2147483647, 2147483647);
+    this.setup(0, 0);
   }
 
   private loadBuildingModels() {
@@ -177,9 +177,13 @@ export default class HexceptionScene {
   setup(row: number, col: number) {
     console.log("clickedHex", row, col);
     console.log(this.locationManager.getCol(), this.locationManager.getRow());
-    this.centerColRow = [col, row];
+    this.centerColRow = [col + FELT_CENTER, row + FELT_CENTER];
     // this.updateHexagonGrid(3, 3);
     this.updateHexceptionGrid(4);
+  }
+
+  getCenterColRow() {
+    return [this.centerColRow[0] - FELT_CENTER, this.centerColRow[1] - FELT_CENTER];
   }
 
   updateHexceptionGrid(radius: number) {

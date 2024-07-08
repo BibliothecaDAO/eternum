@@ -8,6 +8,7 @@ import { useRealm } from "@/hooks/helpers/useRealm";
 import { useAddressStore } from "@/hooks/store/useAddressStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import SettleRealmComponent from "@/ui/components/cityview/realm/SettleRealmComponent";
+import { FELT_CENTER } from "@/ui/config";
 import Button from "@/ui/elements/Button";
 import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -388,7 +389,11 @@ export const NavigateToRealm = ({ text }: { text: string }) => {
         setIsLoadingScreenEnabled(true);
         setTimeout(() => {
           showBlankOverlay(false);
-          setLocation(`/hex?col=${playerRealms()[0]?.position.x}&row=${playerRealms()[0]?.position.y}`);
+          setLocation(
+            `/hex?col=${playerRealms()[0]?.position.x - FELT_CENTER}&row=${
+              playerRealms()[0]?.position.y - FELT_CENTER
+            }`,
+          );
         }, 300);
       }}
     >

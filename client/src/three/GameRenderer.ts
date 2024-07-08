@@ -48,7 +48,7 @@ export default class GameRenderer {
   private worldmapScene!: WorldmapScene;
   private hexceptionScene!: HexceptionScene;
 
-  private currentScene: "worldmap" | "hexception" = "hexception";
+  private currentScene: "worldmap" | "hexception" = "worldmap";
 
   private lastTime: number = 0;
 
@@ -136,7 +136,7 @@ export default class GameRenderer {
 
     this.transitionManager = new TransitionManager(this.renderer);
 
-    // this.moveCameraToURLLocation();
+    this.moveCameraToURLLocation();
 
     // Init animation
     this.animate();
@@ -148,7 +148,7 @@ export default class GameRenderer {
     console.log("debug 1", col, row);
     if (col && row) {
       console.log("debug 2");
-      this.moveCameraToColRow(col, row);
+      this.moveCameraToColRow(col, row, 0);
     }
   }
 
@@ -160,8 +160,10 @@ export default class GameRenderer {
 
   private moveCameraToColRow(col: number, row: number, duration: number = 2) {
     console.log("debug 3");
-    const newTargetX = (col - FELT_CENTER) * horizontalSpacing + ((row - FELT_CENTER) % 2) * (horizontalSpacing / 2);
-    const newTargetZ = -(row - FELT_CENTER) * verticalSpacing;
+    const colOffset = col;
+    const rowOffset = row;
+    const newTargetX = colOffset * horizontalSpacing + (rowOffset % 2) * (horizontalSpacing / 2);
+    const newTargetZ = -rowOffset * verticalSpacing;
     const newTargetY = 0;
 
     const newTarget = new THREE.Vector3(newTargetX, newTargetY, newTargetZ);
@@ -172,8 +174,12 @@ export default class GameRenderer {
     // go to new target with but keep same view angle
     const deltaX = newTarget.x - target.x;
     const deltaZ = newTarget.z - target.z;
-
-    this.cameraAnimate(new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ), newTarget, duration);
+    if (duration) {
+      this.cameraAnimate(new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ), newTarget, duration);
+    } else {
+      target.set(newTarget.x, newTarget.y, newTarget.z);
+      pos.set(pos.x + deltaX, pos.y, pos.z + deltaZ);
+    }
     // target.set(newTarget.x, newTarget.y, newTarget.z);
     // pos.set(pos.x + deltaX, pos.y, pos.z + deltaZ);
     this.controls.update();
@@ -214,7 +220,7 @@ export default class GameRenderer {
           const instanceId = intersects[0].instanceId;
           if (instanceId !== undefined) {
             const { row, col, x, z } = this.worldmapScene.getHexagonCoordinates(clickedObject, instanceId);
-            this.locationManager.addRowColToQueryString(row + FELT_CENTER, col + FELT_CENTER);
+            this.locationManager.addRowColToQueryString(row, col);
             this.transitionToDetailedScene(row, col, x, z);
           }
         }
@@ -245,7 +251,7 @@ export default class GameRenderer {
     this.transitionManager.fadeOut(() => {
       this.currentScene = "hexception";
       // Reset camera and controls
-      this.hexceptionScene.setup(row + FELT_CENTER, col + FELT_CENTER);
+      this.hexceptionScene.setup(row, col);
       this.camera.position.set(
         0,
         Math.sin(this.cameraAngle) * this.cameraDistance,
@@ -265,7 +271,7 @@ export default class GameRenderer {
     this.transitionManager.fadeOut(() => {
       this.currentScene = "worldmap";
 
-      this.moveCameraToColRow(this.hexceptionScene.centerColRow[0], this.hexceptionScene.centerColRow[1], 0.01);
+      this.moveCameraToColRow(this.hexceptionScene.getCenterColRow()[0], this.hexceptionScene.getCenterColRow()[1], 0);
 
       this.transitionManager.fadeIn();
       this.inputManager.updateCurrentScene("main");

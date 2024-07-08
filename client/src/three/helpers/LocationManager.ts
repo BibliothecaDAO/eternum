@@ -6,15 +6,18 @@ export class LocationManager {
   }
 
   public getCol(): number | null {
+    this.urlParams = new URLSearchParams(window.location.search);
     return Number(this.urlParams.get("col"));
   }
 
   public getRow(): number | null {
+    this.urlParams = new URLSearchParams(window.location.search);
     return Number(this.urlParams.get("row"));
   }
 
   // check row and col exist
   public checkRowColExist(): boolean {
+    this.urlParams = new URLSearchParams(window.location.search);
     return this.urlParams.has("row") && this.urlParams.has("col");
   }
 
