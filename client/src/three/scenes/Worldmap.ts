@@ -36,7 +36,7 @@ export const biomeModelPaths: Record<BiomeType, string> = {
   TropicalRainForest: BASE_PATH + "tropicalRainforest.glb",
 };
 
-export default class HexagonMap {
+export default class WorldmapScene {
   private character: Character;
 
   private biome!: Biome;

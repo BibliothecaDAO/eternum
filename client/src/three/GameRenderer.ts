@@ -1,9 +1,8 @@
 import * as THREE from "three";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
-import HexagonMap from "./objects/HexagonMap";
-
-import DetailedHexScene from "./objects/Hexception";
+import WorldmapScene from "./scenes/Worldmap";
+import HexceptionScene from "./scenes/Hexception";
 import { SetupResult } from "@/dojo/setup";
 import { ThreeStore, useThreeStore } from "@/hooks/store/useThreeStore";
 import { InputManager } from "./components/InputManager";
@@ -44,14 +43,14 @@ export default class Demo {
   private cameraAngle = 60 * (Math.PI / 180); // 75 degrees in radians
 
   // Components
-  private hexGrid!: HexagonMap;
+  private hexGrid!: WorldmapScene;
 
   // Managers
   private inputManager!: InputManager;
   private transitionManager!: TransitionManager;
 
   // Scenes
-  private detailedScene!: DetailedHexScene;
+  private detailedScene!: HexceptionScene;
 
   private currentScene: "main" | "detailed" = "main";
   private lastTime: number = 0;
@@ -59,6 +58,8 @@ export default class Demo {
   private dojo: SetupResult;
 
   private gui: GUI = new GUI();
+
+  private lightHelper!: THREE.DirectionalLightHelper;
 
   constructor(dojoContext: SetupResult, initialState: ThreeStore) {
     this.raycaster = new THREE.Raycaster();
@@ -114,6 +115,7 @@ export default class Demo {
     this.controls.zoomToCursor = true;
     this.controls.maxDistance = 20;
     this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.1;
     this.controls.target.set(0, 0, 0);
     this.controls.addEventListener(
       "change",
@@ -129,12 +131,44 @@ export default class Demo {
     ambientFolder.add(this.lightAmbient, "intensity", 0, 3, 0.1);
     //this.scene.add(this.lightAmbient);
 
+    // const hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
+    // const hemisphereLightFolder = this.gui.addFolder("Hemisphere Light");
+    // hemisphereLightFolder.addColor(hemisphereLight, "color");
+    // hemisphereLightFolder.addColor(hemisphereLight, "groundColor");
+    // hemisphereLightFolder.add(hemisphereLight, "intensity", 0, 3, 0.1);
+    // this.scene.add(hemisphereLight);
+
+    // const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+    // directionalLight.castShadow = true;
+    // directionalLight.shadow.mapSize.width = 256;
+    // directionalLight.shadow.mapSize.height = 256;
+    // directionalLight.shadow.camera.left = -10;
+    // directionalLight.shadow.camera.right = 10;
+    // directionalLight.shadow.camera.top = 10;
+    // directionalLight.shadow.camera.bottom = -10;
+    // directionalLight.position.set(0, 9, 0);
+    // directionalLight.target.position.set(0, 0, 5.2);
+    // const directionalLightFolder = this.gui.addFolder("Directional Light");
+    // directionalLightFolder.addColor(directionalLight, "color");
+    // directionalLightFolder.add(directionalLight.position, "x", 0, 10, 0.1);
+    // directionalLightFolder.add(directionalLight.position, "y", 0, 10, 0.1);
+    // directionalLightFolder.add(directionalLight.position, "z", 0, 10, 0.1);
+    // directionalLightFolder.add(directionalLight, "intensity", 0, 3, 0.1);
+    // directionalLightFolder.add(directionalLight.target.position, "x", 0, 10, 0.1);
+    // directionalLightFolder.add(directionalLight.target.position, "y", 0, 10, 0.1);
+    // directionalLightFolder.add(directionalLight.target.position, "z", 0, 10, 0.1);
+    // this.scene.add(directionalLight);
+    // this.scene.add(directionalLight.target);
+
+    // this.lightHelper = new THREE.DirectionalLightHelper(directionalLight, 1);
+    // this.scene.add(this.lightHelper);
+
     const buttonsFolder = this.gui.addFolder("Buttons");
     buttonsFolder.add(this, "goToRandomColRow");
     buttonsFolder.add(this, "moveCameraToURLLocation");
     buttonsFolder.add(this, "switchScene");
 
-    this.detailedScene = new DetailedHexScene(
+    this.detailedScene = new HexceptionScene(
       this.state,
       this.renderer,
       this.camera,
@@ -144,7 +178,7 @@ export default class Demo {
     );
 
     // Add grid
-    this.hexGrid = new HexagonMap(this.scene, this.dojo, this.raycaster, this.controls, this.mouse, this.state);
+    this.hexGrid = new WorldmapScene(this.scene, this.dojo, this.raycaster, this.controls, this.mouse, this.state);
     this.hexGrid.updateVisibleChunks();
 
     this.transitionManager = new TransitionManager(this.renderer);
@@ -252,29 +286,28 @@ export default class Demo {
   }
 
   transitionToDetailedScene(row: number, col: number, x: number, z: number) {
-    this.cameraAnimate(new THREE.Vector3(x + 2, 4, z + 2), new THREE.Vector3(x, 0, z), 2, () => {
-      setTimeout(() => {
-        this.currentScene = "detailed";
-        // Reset camera and controls
-        this.detailedScene.setup(row, col);
-        this.camera.position.set(
-          0,
-          Math.sin(this.cameraAngle) * this.cameraDistance,
-          -Math.cos(this.cameraAngle) * this.cameraDistance,
-        );
-        this.camera.lookAt(0, 0, 0);
-        this.controls.target.set(0, 0, 0);
-        this.controls.update();
-        this.transitionManager.fadeIn();
-        this.inputManager.updateCurrentScene("detailed");
-      }, 50);
+    // this.detailedScene.setup(row, col);
+    // this.currentScene = "detailed";
+    this.transitionManager.fadeOut(() => {
+      this.currentScene = "detailed";
+      // Reset camera and controls
+      this.detailedScene.setup(row, col);
+      this.camera.position.set(
+        0,
+        Math.sin(this.cameraAngle) * this.cameraDistance,
+        -Math.cos(this.cameraAngle) * this.cameraDistance,
+      );
+      this.camera.lookAt(0, 0, 0);
+      this.controls.target.set(0, 0, 0);
+      this.controls.update();
+      this.transitionManager.fadeIn();
+      this.inputManager.updateCurrentScene("detailed");
     });
-    setTimeout(() => {
-      this.transitionManager.fadeOut(() => {});
-    }, 1500);
   }
 
   transitionToMainScene() {
+    //this.currentScene = "main";
+
     this.transitionManager.fadeOut(() => {
       this.currentScene = "main";
 
@@ -352,22 +385,10 @@ export default class Demo {
     const deltaTime = (currentTime - this.lastTime) / 1000; // Convert to seconds
     this.lastTime = currentTime;
 
-    requestAnimationFrame(() => {
-      this.animate();
-    });
-
     if (this.stats) this.stats.update();
-
+    if (this.lightHelper) this.lightHelper.update();
     if (this.controls) {
       this.controls.update();
-      // Look at the target
-      // this.camera.lookAt(this.controls.target);
-
-      // Update light positions to follow the camera
-      // const lightOffset1 = new THREE.Vector3(0, 5, 5);
-      // const lightOffset2 = new THREE.Vector3(0, -5, -5);
-      // this.lightPoint.position.copy(this.camera.position).add(lightOffset1);
-      // this.lightPoint2.position.copy(this.camera.position).add(lightOffset2);
     }
 
     if (this.currentScene === "main") {
@@ -379,5 +400,9 @@ export default class Demo {
       // this.detailedScene.update(deltaTime);
       this.renderer.render(this.detailedScene.scene, this.camera);
     }
+
+    requestAnimationFrame(() => {
+      this.animate();
+    });
   }
 }

@@ -8,7 +8,7 @@ import { LoadingScreen } from "./ui/modules/LoadingScreen";
 import { dojoConfig } from "../dojoConfig";
 import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
-import Demo from "./three/Demo";
+import GameRenderer from "./three/GameRenderer";
 
 import { useThreeStore } from "./hooks/store/useThreeStore";
 
@@ -29,7 +29,7 @@ async function init() {
 
   const setupResult = await setup(dojoConfig);
 
-  const graphic = new Demo(setupResult, useThreeStore.getState());
+  const graphic = new GameRenderer(setupResult, useThreeStore.getState());
 
   graphic.initScene();
   graphic.initStats();

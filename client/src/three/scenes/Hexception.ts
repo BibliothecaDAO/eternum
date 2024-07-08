@@ -8,7 +8,7 @@ import { LocationManager } from "../helpers/LocationManager";
 import { BuildingType } from "@bibliothecadao/eternum";
 import InstancedModel from "../components/InstancedModel";
 import { getComponentValue } from "@dojoengine/recs";
-import { biomeModelPaths } from "./HexagonMap";
+import { biomeModelPaths } from "./Worldmap";
 import { BiomeType } from "../components/Biome";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
@@ -34,7 +34,7 @@ const buildingModelPaths: Record<BuildingType, string> = {
 
 const loader = new GLTFLoader();
 
-export default class DetailedHexScene {
+export default class HexceptionScene {
   scene: THREE.Scene;
   private renderer: THREE.WebGLRenderer;
   private camera: THREE.PerspectiveCamera;

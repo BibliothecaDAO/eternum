@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { Raycaster } from "three";
 import { Character } from "./Character";
-import HexagonMap from "../objects/HexagonMap";
+import HexagonMap from "../scenes/Worldmap";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 
 export class ContextMenuManager {
