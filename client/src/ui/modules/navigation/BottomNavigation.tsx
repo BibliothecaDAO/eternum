@@ -9,7 +9,6 @@ import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
-import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { guilds, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
 
@@ -30,12 +29,9 @@ export enum MenuEnum {
 export const BottomNavigation = () => {
   const [location, setLocation] = useLocation();
 
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const { realmEntityId } = useRealmStore();
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const toggleShowAllArmies = useUIStore((state) => state.toggleShowAllArmies);
-  const showAllArmies = useUIStore((state) => state.showAllArmies);
 
   const isWorldView = useMemo(() => location === "/map", [location]);
 
@@ -91,19 +87,6 @@ export const BottomNavigation = () => {
         button: (
           <CircleButton
             tooltipLocation="top"
-            image={BuildingThumbs.military}
-            label={""}
-            active={showAllArmies}
-            size="lg"
-            onClick={toggleShowAllArmies}
-            className={clsx({ hidden: !isWorldView })}
-          />
-        ),
-      },
-      {
-        button: (
-          <CircleButton
-            tooltipLocation="top"
             image={BuildingThumbs.guild}
             label={guilds}
             active={isPopupOpen(guilds)}
@@ -120,10 +103,6 @@ export const BottomNavigation = () => {
     hidden: { y: "100%", transition: { duration: 0.3 } },
     visible: { y: "0%", transition: { duration: 0.3 } },
   };
-
-  if (!nextBlockTimestamp) {
-    return null;
-  }
 
   return (
     <motion.div
