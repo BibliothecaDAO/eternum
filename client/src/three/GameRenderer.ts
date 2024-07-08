@@ -17,18 +17,12 @@ import { FELT_CENTER } from "@/ui/config";
 const horizontalSpacing = Math.sqrt(3);
 const verticalSpacing = 3 / 2;
 
-type LightTypes = "pmrem" | "hemisphere";
-export default class Demo {
+export default class GameRenderer {
   private renderer!: THREE.WebGLRenderer;
-  private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
-  private raycaster: THREE.Raycaster;
-  private mouse: THREE.Vector2;
-  private lightAmbient!: THREE.AmbientLight;
-  private mainDirectionalLight!: THREE.DirectionalLight;
-  private lightPoint2!: THREE.DirectionalLight;
+  private raycaster!: THREE.Raycaster;
+  private mouse!: THREE.Vector2;
   private controls!: MapControls;
-  private pmremGenerator!: THREE.PMREMGenerator;
 
   private locationManager!: LocationManager;
 
@@ -45,17 +39,16 @@ export default class Demo {
   private cameraAngle = 60 * (Math.PI / 180); // 75 degrees in radians
 
   // Components
-  private hexGrid!: WorldmapScene;
 
   // Managers
   private inputManager!: InputManager;
   private transitionManager!: TransitionManager;
 
   // Scenes
-  private detailedScene!: HexceptionScene;
+  private worldmapScene!: WorldmapScene;
+  private hexceptionScene!: HexceptionScene;
 
-  private currentScene: "main" | "detailed" = "main";
-  private lightType: LightTypes = "hemisphere";
+  private currentScene: "worldmap" | "hexception" = "worldmap";
 
   private lastTime: number = 0;
 
@@ -63,9 +56,15 @@ export default class Demo {
 
   private gui: GUI = new GUI();
 
-  private lightHelper!: THREE.DirectionalLightHelper;
-
   constructor(dojoContext: SetupResult, initialState: ThreeStore) {
+    this.renderer = new THREE.WebGLRenderer();
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 0.7;
+
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
@@ -79,6 +78,18 @@ export default class Demo {
 
     this.dojo = dojoContext;
     this.locationManager = new LocationManager();
+
+    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 30);
+    const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
+    const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
+    this.camera.position.set(0, cameraHeight, -cameraDepth);
+    this.camera.lookAt(0, 0, 0);
+    this.camera.up.set(0, 1, 0);
+
+    const buttonsFolder = this.gui.addFolder("Buttons");
+    buttonsFolder.add(this, "goToRandomColRow");
+    buttonsFolder.add(this, "moveCameraToURLLocation");
+    buttonsFolder.add(this, "switchScene");
   }
 
   initStats() {
@@ -87,30 +98,6 @@ export default class Demo {
   }
 
   initScene() {
-    this.scene = new THREE.Scene();
-    // Change camera settings for 75-degree view
-    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 30);
-    const cameraHeight = Math.sin(this.cameraAngle) * this.cameraDistance;
-    const cameraDepth = Math.cos(this.cameraAngle) * this.cameraDistance;
-    this.camera.position.set(0, cameraHeight, -cameraDepth);
-    this.camera.lookAt(0, 0, 0);
-    this.camera.up.set(0, 1, 0);
-
-    this.renderer = new THREE.WebGLRenderer();
-    this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.7;
-    this.scene.background = new THREE.Color(0x8790a1);
-    this.gui.addColor(this.scene, "background");
-
-    if (this.lightType === "pmrem") {
-      this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-    }
-
     document.body.style.background = "black";
     document.body.appendChild(this.renderer.domElement);
 
@@ -128,72 +115,13 @@ export default class Demo {
     this.controls.addEventListener(
       "change",
       _.throttle(() => {
-        this.hexGrid.updateVisibleChunks();
-        if (this.mainDirectionalLight) {
-          const target = this.controls.target;
-          this.mainDirectionalLight.position.set(target.x + 15, target.y + 13, target.z - 8);
-          this.mainDirectionalLight.target.position.set(target.x, target.y, target.z + 5.2);
-          this.mainDirectionalLight.target.updateMatrixWorld();
-        }
+        this.worldmapScene.updateVisibleChunks();
+        this.worldmapScene.updateLights(this.controls.target);
       }, 30),
     );
 
-    // Adjust point lights for new camera angle
-    this.lightAmbient = new THREE.AmbientLight(0xffffff, 0.5);
-    const ambientFolder = this.gui.addFolder("Ambient Light");
-    ambientFolder.addColor(this.lightAmbient, "color");
-    ambientFolder.add(this.lightAmbient, "intensity", 0, 3, 0.1);
-    //this.scene.add(this.lightAmbient);
-
-    if (this.lightType === "hemisphere") {
-      const hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
-      const hemisphereLightFolder = this.gui.addFolder("Hemisphere Light");
-      hemisphereLightFolder.addColor(hemisphereLight, "color");
-      hemisphereLightFolder.addColor(hemisphereLight, "groundColor");
-      hemisphereLightFolder.add(hemisphereLight, "intensity", 0, 3, 0.1);
-      this.scene.add(hemisphereLight);
-
-      this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 3);
-      this.mainDirectionalLight.castShadow = true;
-      this.mainDirectionalLight.shadow.mapSize.width = 2048;
-      this.mainDirectionalLight.shadow.mapSize.height = 2048;
-      this.mainDirectionalLight.shadow.camera.left = -22;
-      this.mainDirectionalLight.shadow.camera.right = 18;
-      this.mainDirectionalLight.shadow.camera.top = 14;
-      this.mainDirectionalLight.shadow.camera.bottom = -12;
-      this.mainDirectionalLight.shadow.camera.far = 38;
-      this.mainDirectionalLight.shadow.camera.near = 8;
-      this.mainDirectionalLight.position.set(0, 9, 0);
-      this.mainDirectionalLight.target.position.set(0, 0, 5.2);
-      const shadowFolder = this.gui.addFolder("Shadow");
-      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "left", -50, 50, 0.1);
-      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "right", -50, 50, 0.1);
-      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "top", -50, 50, 0.1);
-      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
-      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
-      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
-      const directionalLightFolder = this.gui.addFolder("Directional Light");
-      directionalLightFolder.addColor(this.mainDirectionalLight, "color");
-      directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
-      directionalLightFolder.add(this.mainDirectionalLight.position, "y", -20, 20, 0.1);
-      directionalLightFolder.add(this.mainDirectionalLight.position, "z", -20, 20, 0.1);
-      directionalLightFolder.add(this.mainDirectionalLight, "intensity", 0, 3, 0.1);
-      directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
-      directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
-      directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
-      this.scene.add(this.mainDirectionalLight);
-      this.scene.add(this.mainDirectionalLight.target);
-
-      this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
-      this.scene.add(this.lightHelper);
-    }
-
-    const buttonsFolder = this.gui.addFolder("Buttons");
-    buttonsFolder.add(this, "goToRandomColRow");
-    buttonsFolder.add(this, "moveCameraToURLLocation");
-    buttonsFolder.add(this, "switchScene");
-
-    this.detailedScene = new HexceptionScene(
+    // Change camera settings for 75-degree view
+    this.hexceptionScene = new HexceptionScene(
       this.state,
       this.renderer,
       this.camera,
@@ -203,8 +131,8 @@ export default class Demo {
     );
 
     // Add grid
-    this.hexGrid = new WorldmapScene(this.scene, this.dojo, this.raycaster, this.controls, this.mouse, this.state);
-    this.hexGrid.updateVisibleChunks();
+    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.state, this.gui);
+    this.worldmapScene.updateVisibleChunks();
 
     this.transitionManager = new TransitionManager(this.renderer);
 
@@ -277,20 +205,20 @@ export default class Demo {
   }
 
   onDoubleClick() {
-    if (this.currentScene === "main") {
-      this.raycaster.setFromCamera(this.mouse, this.camera);
-      const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-      if (intersects.length > 0) {
-        const clickedObject = intersects[0].object;
-        if (clickedObject instanceof THREE.InstancedMesh) {
-          const instanceId = intersects[0].instanceId;
-          if (instanceId !== undefined) {
-            const { row, col, x, z } = this.hexGrid.getHexagonCoordinates(clickedObject, instanceId);
-            this.transitionToDetailedScene(row, col, x, z);
-          }
-        }
-      }
-    }
+    // if (this.currentScene === "worldmap") {
+    //   this.raycaster.setFromCamera(this.mouse, this.camera);
+    //   const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    //   if (intersects.length > 0) {
+    //     const clickedObject = intersects[0].object;
+    //     if (clickedObject instanceof THREE.InstancedMesh) {
+    //       const instanceId = intersects[0].instanceId;
+    //       if (instanceId !== undefined) {
+    //         const { row, col, x, z } = this.hexGrid.getHexagonCoordinates(clickedObject, instanceId);
+    //         this.transitionToDetailedScene(row, col, x, z);
+    //       }
+    //     }
+    //   }
+    // }
   }
 
   getLocationCoordinates() {
@@ -302,7 +230,7 @@ export default class Demo {
   }
 
   switchScene() {
-    if (this.currentScene === "main") {
+    if (this.currentScene === "worldmap") {
       const { row, col, x, z } = this.getLocationCoordinates();
       this.transitionToDetailedScene(row, col, x, z);
     } else {
@@ -314,9 +242,9 @@ export default class Demo {
     // this.detailedScene.setup(row, col);
     // this.currentScene = "detailed";
     this.transitionManager.fadeOut(() => {
-      this.currentScene = "detailed";
+      this.currentScene = "hexception";
       // Reset camera and controls
-      this.detailedScene.setup(row, col);
+      this.hexceptionScene.setup(row, col);
       this.camera.position.set(
         0,
         Math.sin(this.cameraAngle) * this.cameraDistance,
@@ -334,7 +262,7 @@ export default class Demo {
     //this.currentScene = "main";
 
     this.transitionManager.fadeOut(() => {
-      this.currentScene = "main";
+      this.currentScene = "worldmap";
 
       this.camera.position.set(
         0,
@@ -414,19 +342,15 @@ export default class Demo {
     if (this.controls) {
       this.controls.update();
     }
-    if (this.mainDirectionalLight) {
-      this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
-    }
-    if (this.lightHelper) this.lightHelper.update();
 
-    if (this.currentScene === "main") {
-      this.hexGrid.update(deltaTime);
+    if (this.currentScene === "worldmap") {
+      this.worldmapScene.update(deltaTime);
       // this.hexGrid.updateVisibleChunks();
-      this.hexGrid.contextMenuManager.checkHexagonHover();
-      this.renderer.render(this.scene, this.camera);
+      this.worldmapScene.contextMenuManager.checkHexagonHover();
+      this.renderer.render(this.worldmapScene.scene, this.camera);
     } else {
       // this.detailedScene.update(deltaTime);
-      this.renderer.render(this.detailedScene.scene, this.camera);
+      this.renderer.render(this.hexceptionScene.scene, this.camera);
     }
 
     requestAnimationFrame(() => {

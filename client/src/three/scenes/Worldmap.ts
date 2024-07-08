@@ -15,6 +15,7 @@ import InstancedModel from "../components/InstancedModel";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import GUI from "lil-gui";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -37,11 +38,17 @@ export const biomeModelPaths: Record<BiomeType, string> = {
 };
 
 export default class WorldmapScene {
+  scene!: THREE.Scene;
   private character: Character;
+  private lightAmbient!: THREE.AmbientLight;
+  private mainDirectionalLight!: THREE.DirectionalLight;
+  private pmremGenerator!: THREE.PMREMGenerator;
+  private fogManager: FogManager;
 
   private biome!: Biome;
+  private lightType: "pmrem" | "hemisphere" = "hemisphere";
+  private lightHelper!: THREE.DirectionalLightHelper;
 
-  private fogManager: FogManager;
   contextMenuManager: ContextMenuManager;
 
   private chunkSize = 10; // Size of each chunk
@@ -63,23 +70,25 @@ export default class WorldmapScene {
     new Map();
 
   constructor(
-    private scene: Scene,
     private dojoConfig: SetupResult,
     private raycaster: Raycaster,
     private controls: MapControls,
     private mouse: THREE.Vector2,
     private state: ThreeStore,
+    private gui: GUI,
   ) {
-    this.character = new Character(scene, { row: 0, col: 0 });
+    this.scene = new THREE.Scene();
+
+    this.character = new Character(this.scene, { row: 0, col: 0 });
     this.addCharacterMovementListeners();
 
     this.biome = new Biome();
 
-    this.fogManager = new FogManager(scene, controls.object as THREE.PerspectiveCamera);
+    this.fogManager = new FogManager(this.scene, controls.object as THREE.PerspectiveCamera);
 
     this.contextMenuManager = new ContextMenuManager(
-      scene,
-      raycaster,
+      this.scene,
+      this.raycaster,
       controls.object as THREE.PerspectiveCamera,
       mouse,
       this.loadedChunks,
@@ -88,6 +97,50 @@ export default class WorldmapScene {
       this,
       state,
     );
+
+    this.scene.background = new THREE.Color(0x8790a1);
+    this.gui.addColor(this.scene, "background");
+
+    const hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
+    const hemisphereLightFolder = this.gui.addFolder("Hemisphere Light");
+    hemisphereLightFolder.addColor(hemisphereLight, "color");
+    hemisphereLightFolder.addColor(hemisphereLight, "groundColor");
+    hemisphereLightFolder.add(hemisphereLight, "intensity", 0, 3, 0.1);
+    this.scene.add(hemisphereLight);
+
+    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 3);
+    this.mainDirectionalLight.castShadow = true;
+    this.mainDirectionalLight.shadow.mapSize.width = 2048;
+    this.mainDirectionalLight.shadow.mapSize.height = 2048;
+    this.mainDirectionalLight.shadow.camera.left = -22;
+    this.mainDirectionalLight.shadow.camera.right = 18;
+    this.mainDirectionalLight.shadow.camera.top = 14;
+    this.mainDirectionalLight.shadow.camera.bottom = -12;
+    this.mainDirectionalLight.shadow.camera.far = 38;
+    this.mainDirectionalLight.shadow.camera.near = 8;
+    this.mainDirectionalLight.position.set(0, 9, 0);
+    this.mainDirectionalLight.target.position.set(0, 0, 5.2);
+    const shadowFolder = this.gui.addFolder("Shadow");
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "left", -50, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "right", -50, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "top", -50, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
+    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
+    const directionalLightFolder = this.gui.addFolder("Directional Light");
+    directionalLightFolder.addColor(this.mainDirectionalLight, "color");
+    directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.position, "y", -20, 20, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.position, "z", -20, 20, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight, "intensity", 0, 3, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
+    this.scene.add(this.mainDirectionalLight);
+    this.scene.add(this.mainDirectionalLight.target);
+
+    this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
+    this.scene.add(this.lightHelper);
 
     this.loadBiomeModels();
   }
@@ -333,6 +386,14 @@ export default class WorldmapScene {
     }
   }
 
+  updateLights(target: THREE.Vector3) {
+    if (this.mainDirectionalLight) {
+      this.mainDirectionalLight.position.set(target.x + 15, target.y + 13, target.z - 8);
+      this.mainDirectionalLight.target.position.set(target.x, target.y, target.z + 5.2);
+      this.mainDirectionalLight.target.updateMatrixWorld();
+    }
+  }
+
   private updateCameraPosition() {
     const characterPosition = this.character.getWorldPosition();
 
@@ -349,7 +410,10 @@ export default class WorldmapScene {
 
   update(deltaTime: number) {
     this.character.update(deltaTime);
-
+    if (this.mainDirectionalLight) {
+      this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
+    }
+    if (this.lightHelper) this.lightHelper.update();
     // this.updateCameraPosition();
   }
 }
