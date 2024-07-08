@@ -16,6 +16,8 @@ import { FELT_CENTER } from "@/ui/config";
 
 const horizontalSpacing = Math.sqrt(3);
 const verticalSpacing = 3 / 2;
+
+type LightTypes = "pmrem" | "hemisphere";
 export default class Demo {
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
@@ -53,6 +55,8 @@ export default class Demo {
   private detailedScene!: HexceptionScene;
 
   private currentScene: "main" | "detailed" = "main";
+  private lightType: LightTypes = "hemisphere";
+
   private lastTime: number = 0;
 
   private dojo: SetupResult;
@@ -101,7 +105,9 @@ export default class Demo {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.7;
 
-    this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+    if (this.lightType === "pmrem") {
+      this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+    }
 
     document.body.style.background = "black";
     document.body.appendChild(this.renderer.domElement);
@@ -121,6 +127,12 @@ export default class Demo {
       "change",
       _.throttle(() => {
         this.hexGrid.updateVisibleChunks();
+        if (this.mainDirectionalLight) {
+          const target = this.controls.target;
+          this.mainDirectionalLight.position.set(target.x, target.y + 9, target.z);
+          this.mainDirectionalLight.target.position.set(target.x, target.y, target.z + 5.2);
+          this.mainDirectionalLight.target.updateMatrixWorld();
+        }
       }, 100),
     );
 
@@ -131,37 +143,44 @@ export default class Demo {
     ambientFolder.add(this.lightAmbient, "intensity", 0, 3, 0.1);
     //this.scene.add(this.lightAmbient);
 
-    // const hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
-    // const hemisphereLightFolder = this.gui.addFolder("Hemisphere Light");
-    // hemisphereLightFolder.addColor(hemisphereLight, "color");
-    // hemisphereLightFolder.addColor(hemisphereLight, "groundColor");
-    // hemisphereLightFolder.add(hemisphereLight, "intensity", 0, 3, 0.1);
-    // this.scene.add(hemisphereLight);
+    if (this.lightType === "hemisphere") {
+      const hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
+      const hemisphereLightFolder = this.gui.addFolder("Hemisphere Light");
+      hemisphereLightFolder.addColor(hemisphereLight, "color");
+      hemisphereLightFolder.addColor(hemisphereLight, "groundColor");
+      hemisphereLightFolder.add(hemisphereLight, "intensity", 0, 3, 0.1);
+      this.scene.add(hemisphereLight);
 
-    // const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
-    // directionalLight.castShadow = true;
-    // directionalLight.shadow.mapSize.width = 256;
-    // directionalLight.shadow.mapSize.height = 256;
-    // directionalLight.shadow.camera.left = -10;
-    // directionalLight.shadow.camera.right = 10;
-    // directionalLight.shadow.camera.top = 10;
-    // directionalLight.shadow.camera.bottom = -10;
-    // directionalLight.position.set(0, 9, 0);
-    // directionalLight.target.position.set(0, 0, 5.2);
-    // const directionalLightFolder = this.gui.addFolder("Directional Light");
-    // directionalLightFolder.addColor(directionalLight, "color");
-    // directionalLightFolder.add(directionalLight.position, "x", 0, 10, 0.1);
-    // directionalLightFolder.add(directionalLight.position, "y", 0, 10, 0.1);
-    // directionalLightFolder.add(directionalLight.position, "z", 0, 10, 0.1);
-    // directionalLightFolder.add(directionalLight, "intensity", 0, 3, 0.1);
-    // directionalLightFolder.add(directionalLight.target.position, "x", 0, 10, 0.1);
-    // directionalLightFolder.add(directionalLight.target.position, "y", 0, 10, 0.1);
-    // directionalLightFolder.add(directionalLight.target.position, "z", 0, 10, 0.1);
-    // this.scene.add(directionalLight);
-    // this.scene.add(directionalLight.target);
+      this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 3);
+      this.mainDirectionalLight.castShadow = true;
+      this.mainDirectionalLight.shadow.mapSize.width = 2048;
+      this.mainDirectionalLight.shadow.mapSize.height = 2048;
+      this.mainDirectionalLight.shadow.camera.left = -24;
+      this.mainDirectionalLight.shadow.camera.right = 20;
+      this.mainDirectionalLight.shadow.camera.top = 11;
+      this.mainDirectionalLight.shadow.camera.bottom = -12;
+      this.mainDirectionalLight.position.set(0, 9, 0);
+      this.mainDirectionalLight.target.position.set(0, 0, 5.2);
+      const shadowFolder = this.gui.addFolder("Shadow");
+      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "left", -50, 50, 0.1);
+      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "right", -50, 50, 0.1);
+      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "top", -50, 50, 0.1);
+      shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
+      const directionalLightFolder = this.gui.addFolder("Directional Light");
+      directionalLightFolder.addColor(this.mainDirectionalLight, "color");
+      directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
+      directionalLightFolder.add(this.mainDirectionalLight.position, "y", -20, 20, 0.1);
+      directionalLightFolder.add(this.mainDirectionalLight.position, "z", -20, 20, 0.1);
+      directionalLightFolder.add(this.mainDirectionalLight, "intensity", 0, 3, 0.1);
+      directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
+      directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
+      directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
+      this.scene.add(this.mainDirectionalLight);
+      this.scene.add(this.mainDirectionalLight.target);
 
-    // this.lightHelper = new THREE.DirectionalLightHelper(directionalLight, 1);
-    // this.scene.add(this.lightHelper);
+      this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
+      this.scene.add(this.lightHelper);
+    }
 
     const buttonsFolder = this.gui.addFolder("Buttons");
     buttonsFolder.add(this, "goToRandomColRow");
@@ -386,10 +405,13 @@ export default class Demo {
     this.lastTime = currentTime;
 
     if (this.stats) this.stats.update();
-    if (this.lightHelper) this.lightHelper.update();
     if (this.controls) {
       this.controls.update();
     }
+    if (this.mainDirectionalLight) {
+      this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
+    }
+    if (this.lightHelper) this.lightHelper.update();
 
     if (this.currentScene === "main") {
       this.hexGrid.update(deltaTime);

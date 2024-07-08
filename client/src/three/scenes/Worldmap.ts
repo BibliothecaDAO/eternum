@@ -16,24 +16,24 @@ import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
-const BASE_PATH = "/models/new-biomes/";
+const BASE_PATH = "/models/transformed/";
 export const biomeModelPaths: Record<BiomeType, string> = {
-  DeepOcean: BASE_PATH + "deepOcean.glb",
+  DeepOcean: BASE_PATH + "deepocean.glb",
   Ocean: BASE_PATH + "ocean.glb",
   Beach: BASE_PATH + "beach.glb",
   Scorched: BASE_PATH + "scorched.glb",
   Bare: BASE_PATH + "bare.glb",
   Tundra: BASE_PATH + "tundra.glb",
   Snow: BASE_PATH + "snow.glb",
-  TemperateDesert: BASE_PATH + "temperateDesert.glb",
-  Shrubland: BASE_PATH + "shrubland.glb",
+  TemperateDesert: BASE_PATH + "temperatedessert.glb",
+  Shrubland: BASE_PATH + "shrublands.glb",
   Taiga: BASE_PATH + "taiga.glb",
   Grassland: BASE_PATH + "grassland.glb",
-  TemperateDeciduousForest: BASE_PATH + "deciduousForest.glb",
+  TemperateDeciduousForest: BASE_PATH + "deciduousforest.glb",
   TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
-  SubtropicalDesert: BASE_PATH + "subtropicalDesert.glb",
-  TropicalSeasonalForest: BASE_PATH + "tropicalSeasonalForest.glb",
-  TropicalRainForest: BASE_PATH + "tropicalRainforest.glb",
+  SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
+  TropicalSeasonalForest: BASE_PATH + "tropicalseasonalforest.glb",
+  TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
 };
 
 export default class WorldmapScene {
