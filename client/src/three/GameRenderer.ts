@@ -104,6 +104,8 @@ export default class Demo {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.7;
+    this.scene.background = new THREE.Color(0x8790a1);
+    this.gui.addColor(this.scene, "background");
 
     if (this.lightType === "pmrem") {
       this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;

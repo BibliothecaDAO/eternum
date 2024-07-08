@@ -5,27 +5,23 @@ export default class InstancedModel {
 
   constructor(model: THREE.Group, count: number) {
     this.group = new THREE.Group();
-    //console.log(model);
-    let i = 0;
-    let group = "";
+
     model.traverse((child) => {
-      if (child instanceof THREE.Group) {
-        group = child.name;
-      }
       if (child instanceof THREE.Mesh) {
         // initial count set max number of instances
         const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
 
-        if (group.includes("big_details") || child.name.includes("big_details")) {
+        if (child.name.includes("big_details") || child.parent?.name.includes("big_details")) {
           tmp.castShadow = true;
         }
-        if (group.includes("land") || child.name.includes("land")) {
+        if (child.name.includes("land") || child.parent?.name.includes("land")) {
           tmp.receiveShadow = true;
         }
-        i++;
         // we can set lower count later if we have less hexes with that biome and change it at any time
         tmp.count = 0;
-        this.group.add(tmp);
+        if (!child.name.includes("small_details") && !child.parent?.name.includes("small_details")) {
+          this.group.add(tmp);
+        }
       }
     });
   }

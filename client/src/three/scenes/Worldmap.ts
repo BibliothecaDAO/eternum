@@ -16,7 +16,7 @@ import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
-const BASE_PATH = "/models/transformed/";
+const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
   DeepOcean: BASE_PATH + "deepocean.glb",
   Ocean: BASE_PATH + "ocean.glb",
@@ -32,7 +32,7 @@ export const biomeModelPaths: Record<BiomeType, string> = {
   TemperateDeciduousForest: BASE_PATH + "deciduousforest.glb",
   TemperateRainForest: BASE_PATH + "temperateRainforest.glb",
   SubtropicalDesert: BASE_PATH + "subtropicaldesert.glb",
-  TropicalSeasonalForest: BASE_PATH + "tropicalseasonalforest.glb",
+  TropicalSeasonalForest: BASE_PATH + "tropicalrainforest.glb",
   TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
 };
 
