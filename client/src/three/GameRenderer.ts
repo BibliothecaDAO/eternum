@@ -136,7 +136,7 @@ export default class GameRenderer {
 
     this.transitionManager = new TransitionManager(this.renderer);
 
-    this.moveCameraToURLLocation();
+    // this.moveCameraToURLLocation();
 
     // Init animation
     this.animate();
@@ -158,7 +158,7 @@ export default class GameRenderer {
     this.moveCameraToColRow(col, row);
   }
 
-  private moveCameraToColRow(col: number, row: number) {
+  private moveCameraToColRow(col: number, row: number, duration: number = 2) {
     console.log("debug 3");
     const newTargetX = (col - FELT_CENTER) * horizontalSpacing + ((row - FELT_CENTER) % 2) * (horizontalSpacing / 2);
     const newTargetZ = -(row - FELT_CENTER) * verticalSpacing;
@@ -173,7 +173,7 @@ export default class GameRenderer {
     const deltaX = newTarget.x - target.x;
     const deltaZ = newTarget.z - target.z;
 
-    this.cameraAnimate(new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ), newTarget, 2);
+    this.cameraAnimate(new THREE.Vector3(pos.x + deltaX, pos.y, pos.z + deltaZ), newTarget, duration);
     // target.set(newTarget.x, newTarget.y, newTarget.z);
     // pos.set(pos.x + deltaX, pos.y, pos.z + deltaZ);
     this.controls.update();
@@ -205,20 +205,21 @@ export default class GameRenderer {
   }
 
   onDoubleClick() {
-    // if (this.currentScene === "worldmap") {
-    //   this.raycaster.setFromCamera(this.mouse, this.camera);
-    //   const intersects = this.raycaster.intersectObjects(this.scene.children, true);
-    //   if (intersects.length > 0) {
-    //     const clickedObject = intersects[0].object;
-    //     if (clickedObject instanceof THREE.InstancedMesh) {
-    //       const instanceId = intersects[0].instanceId;
-    //       if (instanceId !== undefined) {
-    //         const { row, col, x, z } = this.hexGrid.getHexagonCoordinates(clickedObject, instanceId);
-    //         this.transitionToDetailedScene(row, col, x, z);
-    //       }
-    //     }
-    //   }
-    // }
+    if (this.currentScene === "worldmap") {
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.worldmapScene.scene.children, true);
+      if (intersects.length > 0) {
+        const clickedObject = intersects[0].object;
+        if (clickedObject instanceof THREE.InstancedMesh) {
+          const instanceId = intersects[0].instanceId;
+          if (instanceId !== undefined) {
+            const { row, col, x, z } = this.worldmapScene.getHexagonCoordinates(clickedObject, instanceId);
+            this.locationManager.addRowColToQueryString(row + FELT_CENTER, col + FELT_CENTER);
+            this.transitionToDetailedScene(row, col, x, z);
+          }
+        }
+      }
+    }
   }
 
   getLocationCoordinates() {
@@ -244,7 +245,7 @@ export default class GameRenderer {
     this.transitionManager.fadeOut(() => {
       this.currentScene = "hexception";
       // Reset camera and controls
-      this.hexceptionScene.setup(row, col);
+      this.hexceptionScene.setup(row + FELT_CENTER, col + FELT_CENTER);
       this.camera.position.set(
         0,
         Math.sin(this.cameraAngle) * this.cameraDistance,
@@ -264,14 +265,7 @@ export default class GameRenderer {
     this.transitionManager.fadeOut(() => {
       this.currentScene = "worldmap";
 
-      this.camera.position.set(
-        0,
-        Math.sin(this.cameraAngle) * this.cameraDistance,
-        -Math.cos(this.cameraAngle) * this.cameraDistance,
-      );
-      this.camera.lookAt(0, 0, 0);
-      this.controls.target.set(0, 0, 0);
-      this.controls.update();
+      this.moveCameraToColRow(this.hexceptionScene.centerColRow[0], this.hexceptionScene.centerColRow[1], 0.01);
 
       this.transitionManager.fadeIn();
       this.inputManager.updateCurrentScene("main");

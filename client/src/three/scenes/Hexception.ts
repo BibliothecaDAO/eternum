@@ -60,7 +60,7 @@ export default class HexceptionScene {
 
   private pillars: THREE.InstancedMesh | null = null;
 
-  private centerColRow: number[] = [0, 0];
+  centerColRow: number[] = [2147483647, 2147483647];
 
   private biome!: Biome;
 
@@ -91,7 +91,7 @@ export default class HexceptionScene {
     this.loadBuildingModels();
     this.loadBiomeModels();
 
-    this.setup(0, 0);
+    this.setup(2147483647, 2147483647);
   }
 
   private loadBuildingModels() {
