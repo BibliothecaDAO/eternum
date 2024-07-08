@@ -16,7 +16,6 @@ type ArmyHitBoxProps = {
 export const ArmyHitBox = ({ army, hovered, isAnimating, setHovered }: ArmyHitBoxProps) => {
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
-  const showAllArmies = useUIStore((state) => state.showAllArmies);
   const { play: playSelectedArmy } = useSelectedArmySound();
   const { play: playClick } = useUiSounds(soundSelector.click);
   const { play: playHover } = useUiSounds(soundSelector.hoverClick);
@@ -24,10 +23,6 @@ export const ArmyHitBox = ({ army, hovered, isAnimating, setHovered }: ArmyHitBo
   useEffect(() => {
     if (hovered && !isAnimating) playHover();
   }, [hovered, isAnimating, playHover]);
-
-  const showArmyInfo = useMemo(() => {
-    return showAllArmies || hovered;
-  }, [showAllArmies, hovered]);
 
   const onRightClick = useCallback(() => {
     playClick();
@@ -55,7 +50,7 @@ export const ArmyHitBox = ({ army, hovered, isAnimating, setHovered }: ArmyHitBo
 
   return (
     <group>
-      <ArmyInfoLabel visible={showArmyInfo} army={army} />
+      {hovered && <ArmyInfoLabel visible={true} army={army} />}
       <Box
         visible={false}
         position={[0, 1.5, 0]}

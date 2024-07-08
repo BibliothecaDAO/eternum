@@ -43,7 +43,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
   } = useDojo();
 
   const { getRealmAddressName } = useRealm();
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp as number;
   const { entity_id, entity_owner_id, address, arrives_at, realm, troops, battle_id } = army;
 
   const isPassiveTravel = useMemo(
