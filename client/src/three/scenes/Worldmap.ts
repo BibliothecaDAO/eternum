@@ -255,7 +255,7 @@ export default class WorldmapScene {
           y: startRow + row + FELT_CENTER,
         });
 
-        if (entities.size > 0) console.log("Entities", entities);
+        // if (entities.size > 0) console.log("Entities", entities);
 
         dummy.updateMatrix();
 

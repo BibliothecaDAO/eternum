@@ -231,8 +231,8 @@ export default class GameRenderer {
   getLocationCoordinates() {
     const col = this.locationManager.getCol()!;
     const row = this.locationManager.getRow()!;
-    const x = (col - FELT_CENTER) * horizontalSpacing + ((row - FELT_CENTER) % 2) * (horizontalSpacing / 2);
-    const z = -(row - FELT_CENTER) * verticalSpacing;
+    const x = col * horizontalSpacing + (row % 2) * (horizontalSpacing / 2);
+    const z = -row * verticalSpacing;
     return { col, row, x, z };
   }
 
