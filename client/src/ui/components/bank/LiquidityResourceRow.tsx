@@ -51,12 +51,10 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
 
   const pair = useMemo(
     () => (
-      <div className="flex flex-row">
-        <>
-          <ResourceIcon resource={"Lords"} size="md" />
-          {" / "}
-          {resource?.trait && <ResourceIcon resource={resource.trait} size="md" />}
-        </>
+      <div className="flex flex-row items-center">
+        <ResourceIcon resource={"Lords"} size="md" />
+        {" / "}
+        {resource?.trait && <ResourceIcon resource={resource.trait} size="md" />}
       </div>
     ),
     [resource],
@@ -143,21 +141,43 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
 
   return (
     <>
-      <tr className="text-lg hover:bg-gold/20 my-1 border border-gold/10">
-        <td>{pair}</td>
-        <td className="flex items-center">
+      <div className="grid grid-cols-7 gap-4 text-lg hover:bg-gold/20 my-1 border border-gold/10 px-2">
+        {pair}
+
+        <div className="flex items-center">
           {marketManager.getMarketPrice().toFixed(2)} <ResourceIcon resource="Lords" size="sm" />
-        </td>
-        <td>{divideByPrecision(totalLords).toLocaleString()}</td>
-        <td>{divideByPrecision(totalResource).toLocaleString()}</td>
-        <td>{divideByPrecision(lordsAmount).toLocaleString()}</td>
-        <td>{divideByPrecision(resourceAmount).toLocaleString()}</td>
-        <td>
+        </div>
+
+        <div className="flex flex-col col-span-2">
+          <div className="flex">
+            <div>{divideByPrecision(totalLords).toLocaleString()}</div>
+            <ResourceIcon resource="Lords" size="sm" />
+          </div>
+
+          <div className="flex">
+            <div>{divideByPrecision(totalResource).toLocaleString()}</div>
+            <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
+          </div>
+        </div>
+
+        <div className="flex flex-col col-span-2">
+          <div className="flex">
+            <div>{divideByPrecision(lordsAmount).toLocaleString()}</div>
+            <ResourceIcon resource="Lords" size="sm" />
+          </div>
+
+          <div className="flex">
+            <div>{divideByPrecision(resourceAmount).toLocaleString()}</div>
+            <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
+          </div>
+        </div>
+
+        <div>
           <Button variant="outline" onClick={() => setOpenConfirmation(true)} isLoading={false} disabled={!canWithdraw}>
             Withdraw
           </Button>
-        </td>
-      </tr>
+        </div>
+      </div>
       {openConfirmation && renderConfirmationPopup}
     </>
   );
