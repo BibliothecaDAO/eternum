@@ -26,6 +26,23 @@ export default class InstancedModel {
     });
   }
 
+  getMatricesAndCount() {
+    return {
+      matrices: (this.group.children[0] as THREE.InstancedMesh).instanceMatrix.clone(),
+      count: (this.group.children[0] as THREE.InstancedMesh).count,
+    };
+  }
+
+  setMatricesAndCount(matrices: THREE.InstancedBufferAttribute, count: number) {
+    this.group.children.forEach((child) => {
+      if (child instanceof THREE.InstancedMesh) {
+        child.instanceMatrix.copy(matrices);
+        child.count = count;
+        child.instanceMatrix.needsUpdate = true;
+      }
+    });
+  }
+
   setMatrixAt(index: number, matrix: THREE.Matrix4) {
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {

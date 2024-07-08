@@ -59,6 +59,9 @@ export default class WorldmapScene {
 
   private entities: Entity[] = [];
 
+  private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
+    new Map();
+
   constructor(
     private scene: Scene,
     private dojoConfig: SetupResult,
@@ -146,6 +149,7 @@ export default class WorldmapScene {
   }
 
   updateHexagonGrid(startRow: number, startCol: number, rows: number, cols: number) {
+    if (this.applyCachedMatricesForChunk(startRow, startCol)) return;
     const horizontalSpacing = this.hexSize * Math.sqrt(3);
     const verticalSpacing = (this.hexSize * 3) / 2;
 
@@ -216,12 +220,37 @@ export default class WorldmapScene {
           });
           hexMesh.setCount(matrices.length);
         }
+        this.cacheMatricesForChunk(startRow, startCol);
       }
     };
 
     Promise.all(this.modelLoadPromises).then(() => {
       requestAnimationFrame(processBatch);
     });
+  }
+
+  private cacheMatricesForChunk(startRow: number, startCol: number) {
+    const chunkKey = `${startRow},${startCol}`;
+    for (const [biome, model] of this.biomeModels) {
+      const { matrices, count } = model.getMatricesAndCount();
+      if (!this.cachedMatrices.has(chunkKey)) {
+        this.cachedMatrices.set(chunkKey, new Map());
+      }
+      this.cachedMatrices.get(chunkKey)!.set(biome, { matrices: matrices as any, count });
+    }
+  }
+
+  private applyCachedMatricesForChunk(startRow: number, startCol: number) {
+    const chunkKey = `${startRow},${startCol}`;
+    const cachedMatrices = this.cachedMatrices.get(chunkKey);
+    if (cachedMatrices) {
+      for (const [biome, { matrices, count }] of cachedMatrices) {
+        const hexMesh = this.biomeModels.get(biome as BiomeType)!;
+        hexMesh.setMatricesAndCount(matrices, count);
+      }
+      return true;
+    }
+    return false;
   }
 
   private hashCoordinates(x: number, y: number): number {
