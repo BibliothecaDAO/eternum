@@ -23,7 +23,6 @@ export const LiquidityTable = ({ bank_entity_id, entity_id }: LiquidityTableProp
         <div className="uppercase font-bold col-span-2">Total Liquidity</div>
 
         <div className="uppercase font-bold col-span-2">My Liquidity</div>
-
       </div>
       <div className="overflow-y-auto">
         <div className="grid gap-2 relative">
