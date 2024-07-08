@@ -157,11 +157,11 @@ export default class Demo {
       this.mainDirectionalLight.castShadow = true;
       this.mainDirectionalLight.shadow.mapSize.width = 2048;
       this.mainDirectionalLight.shadow.mapSize.height = 2048;
-      this.mainDirectionalLight.shadow.camera.left = -24;
-      this.mainDirectionalLight.shadow.camera.right = 14.5;
-      this.mainDirectionalLight.shadow.camera.top = 12;
-      this.mainDirectionalLight.shadow.camera.bottom = -9;
-      this.mainDirectionalLight.shadow.camera.far = 25;
+      this.mainDirectionalLight.shadow.camera.left = -22;
+      this.mainDirectionalLight.shadow.camera.right = 18;
+      this.mainDirectionalLight.shadow.camera.top = 14;
+      this.mainDirectionalLight.shadow.camera.bottom = -12;
+      this.mainDirectionalLight.shadow.camera.far = 38;
       this.mainDirectionalLight.shadow.camera.near = 8;
       this.mainDirectionalLight.position.set(0, 9, 0);
       this.mainDirectionalLight.target.position.set(0, 0, 5.2);
