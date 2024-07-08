@@ -5,13 +5,16 @@ import { SetupResult } from "@/dojo/setup";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { LocationManager } from "../helpers/LocationManager";
-import { BuildingType } from "@bibliothecadao/eternum";
+import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import InstancedModel from "../components/InstancedModel";
 import { getComponentValue } from "@dojoengine/recs";
 import { biomeModelPaths } from "./Worldmap";
-import { BiomeType } from "../components/Biome";
+import { Biome, BiomeType } from "../components/Biome";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { pseudoRandom } from "@/ui/utils/utils";
+import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
+import { FELT_CENTER } from "@/ui/config";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -33,7 +36,6 @@ const buildingModelPaths: Record<BuildingType, string> = {
 };
 
 const loader = new GLTFLoader();
-
 export default class HexceptionScene {
   scene: THREE.Scene;
   private renderer: THREE.WebGLRenderer;
@@ -56,6 +58,12 @@ export default class HexceptionScene {
 
   private biomeModels: Map<BiomeType, InstancedModel> = new Map();
 
+  private pillars: THREE.InstancedMesh | null = null;
+
+  private centerColRow: number[] = [0, 0];
+
+  private biome!: Biome;
+
   constructor(
     private state: ThreeStore,
     renderer: THREE.WebGLRenderer,
@@ -67,10 +75,18 @@ export default class HexceptionScene {
     this.renderer = renderer;
     this.camera = camera;
     this.dojo = dojoContext;
+    this.biome = new Biome();
     this.scene = new THREE.Scene();
     this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
     this.locationManager = new LocationManager();
+
+    const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
+    pillarGeometry.rotateX(Math.PI / 2);
+    this.pillars = new THREE.InstancedMesh(pillarGeometry, new THREE.MeshStandardMaterial({ color: 0xffce31 }), 1000);
+    this.pillars.position.y = 0.05;
+    this.pillars.count = 0;
+    this.scene.add(this.pillars);
 
     this.loadBuildingModels();
     this.loadBiomeModels();
@@ -161,7 +177,7 @@ export default class HexceptionScene {
   setup(row: number, col: number) {
     console.log("clickedHex", row, col);
     console.log(this.locationManager.getCol(), this.locationManager.getRow());
-
+    this.centerColRow = [col, row];
     // this.updateHexagonGrid(3, 3);
     this.updateHexceptionGrid(4);
   }
@@ -212,28 +228,38 @@ export default class HexceptionScene {
     const hexPositions: THREE.Vector3[] = [];
     Promise.all(this.modelLoadPromises).then(() => {
       let centers = [
-        [0, 0],
-        [7, 6],
-        [6.5, -7.5],
-        [-6.5, 7.5],
-        [-7, -6],
-        [0.5, 13.5],
-        [-0.5, -13.5],
+        [0, 0], //0, 0
+        [-6.5, 7.5], //-1, 1
+        [7, 6], //1, 0
+        [0.5, 13.5], //0, 1
+        [-7, -6], //-1, 0
+        [-0.5, -13.5], //0, -1
+        [6.5, -7.5], //1, -1
       ];
-      for (const center of centers) {
+      const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
+      for (const center in centers) {
+        const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
         for (let q = -radius; q <= radius; q++) {
           for (let r = Math.max(-radius, -q - radius); r <= Math.min(radius, -q + radius); r++) {
             const s = -q - r;
-
-            dummy.position.x = (q + r / 2) * horizontalSpacing + center[0] * horizontalSpacing;
-            dummy.position.z = ((r * 3) / 2) * this.hexSize + center[1] * this.hexSize;
-            dummy.position.y = 0;
+            const isBorderHex =
+              q === radius ||
+              q === -radius ||
+              r === Math.max(-radius, -q - radius) ||
+              r === Math.min(radius, -q + radius);
+            dummy.position.x = (q + r / 2) * horizontalSpacing + centers[center][0] * horizontalSpacing;
+            dummy.position.z = ((r * 3) / 2) * this.hexSize + centers[center][1] * this.hexSize;
+            dummy.position.y = isBorderHex || isMainHex ? 0 : pseudoRandom(q, r);
             dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
 
             const building = getComponentValue(this.dojo.components.Building, getEntityIdFromKeys([BigInt(0)]));
 
             dummy.updateMatrix();
-            biomeHexes[center[0] === 0 && center[1] === 0 ? "Bare" : "Grassland"].push(dummy.matrix.clone());
+            const targetHex = isMainHex
+              ? [this.centerColRow[0], this.centerColRow[1]]
+              : [neighbors[Number(center) - 1].col, neighbors[Number(center) - 1].row];
+            const biome = this.biome.getBiome(targetHex[0], targetHex[1]);
+            biomeHexes[biome].push(dummy.matrix.clone());
 
             //   const buildingDummy = dummy.clone();
             //   buildingDummy.scale.set(0.05, 0.05, 0.05); // Adjust these values as needed
@@ -243,14 +269,22 @@ export default class HexceptionScene {
           }
         }
       }
-
+      //const color = new THREE.Color(0xff0000);
+      let i = 0;
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         matrices.forEach((matrix, index) => {
           hexMesh.setMatrixAt(index, matrix);
+          this.pillars!.setMatrixAt(index + i, matrix);
+          this.pillars!.setColorAt(index + i, hexMesh.getLandColor());
         });
+        this.pillars!.count = i + matrices.length;
+        this.pillars!.instanceMatrix.needsUpdate = true;
+        this.pillars!.computeBoundingSphere();
         hexMesh.setCount(matrices.length);
+        i += matrices.length;
       }
+
       //   for (const [buildingType, matrices] of Object.entries(buildingHexes)) {
       //     const buildingMesh = this.buildingModels.get(buildingType as any);
       //     if (buildingMesh && matrices.length > 0) {

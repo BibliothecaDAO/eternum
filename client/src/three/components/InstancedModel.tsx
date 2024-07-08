@@ -16,6 +16,7 @@ export default class InstancedModel {
         }
         if (child.name.includes("land") || child.parent?.name.includes("land")) {
           tmp.receiveShadow = true;
+          tmp.name = "land";
         }
         // we can set lower count later if we have less hexes with that biome and change it at any time
         tmp.count = 0;
@@ -24,6 +25,14 @@ export default class InstancedModel {
         }
       }
     });
+  }
+
+  getLandColor() {
+    const land = this.group.children.find((child) => child.name === "land");
+    if (land instanceof THREE.InstancedMesh) {
+      return (land.material as THREE.MeshStandardMaterial).color;
+    }
+    return new THREE.Color(0xff0000);
   }
 
   getMatricesAndCount() {

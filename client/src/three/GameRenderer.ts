@@ -48,7 +48,7 @@ export default class GameRenderer {
   private worldmapScene!: WorldmapScene;
   private hexceptionScene!: HexceptionScene;
 
-  private currentScene: "worldmap" | "hexception" = "worldmap";
+  private currentScene: "worldmap" | "hexception" = "hexception";
 
   private lastTime: number = 0;
 
