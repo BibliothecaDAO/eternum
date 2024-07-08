@@ -74,6 +74,8 @@ export default class HexceptionScene {
 
     this.loadBuildingModels();
     this.loadBiomeModels();
+
+    this.setup(0, 0);
   }
 
   private loadBuildingModels() {
@@ -136,7 +138,7 @@ export default class HexceptionScene {
                 child.receiveShadow = true;
               }
             });
-            const tmp = new InstancedModel(model, 250);
+            const tmp = new InstancedModel(model, 900);
             this.biomeModels.set(biome as BiomeType, tmp);
             this.scene.add(tmp.group);
             resolve();
@@ -209,25 +211,36 @@ export default class HexceptionScene {
 
     const hexPositions: THREE.Vector3[] = [];
     Promise.all(this.modelLoadPromises).then(() => {
-      for (let q = -radius; q <= radius; q++) {
-        for (let r = Math.max(-radius, -q - radius); r <= Math.min(radius, -q + radius); r++) {
-          const s = -q - r;
+      let centers = [
+        [0, 0],
+        [7, 6],
+        [6.5, -7.5],
+        [-6.5, 7.5],
+        [-7, -6],
+        [0.5, 13.5],
+        [-0.5, -13.5],
+      ];
+      for (const center of centers) {
+        for (let q = -radius; q <= radius; q++) {
+          for (let r = Math.max(-radius, -q - radius); r <= Math.min(radius, -q + radius); r++) {
+            const s = -q - r;
 
-          dummy.position.x = (q + r / 2) * horizontalSpacing;
-          dummy.position.z = ((r * 3) / 2) * this.hexSize;
-          dummy.position.y = 0;
-          dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
+            dummy.position.x = (q + r / 2) * horizontalSpacing + center[0] * horizontalSpacing;
+            dummy.position.z = ((r * 3) / 2) * this.hexSize + center[1] * this.hexSize;
+            dummy.position.y = 0;
+            dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
 
-          const building = getComponentValue(this.dojo.components.Building, getEntityIdFromKeys([BigInt(0)]));
+            const building = getComponentValue(this.dojo.components.Building, getEntityIdFromKeys([BigInt(0)]));
 
-          dummy.updateMatrix();
-          biomeHexes["Bare"].push(dummy.matrix.clone());
+            dummy.updateMatrix();
+            biomeHexes[center[0] === 0 && center[1] === 0 ? "Bare" : "Grassland"].push(dummy.matrix.clone());
 
-          //   const buildingDummy = dummy.clone();
-          //   buildingDummy.scale.set(0.05, 0.05, 0.05); // Adjust these values as needed
-          //   buildingDummy.position.y += 0.02; // Raise the building slightly above the hex
-          //   buildingDummy.updateMatrix();
-          //   buildingHexes[BuildingType.ArcheryRange].push(buildingDummy.matrix.clone());
+            //   const buildingDummy = dummy.clone();
+            //   buildingDummy.scale.set(0.05, 0.05, 0.05); // Adjust these values as needed
+            //   buildingDummy.position.y += 0.02; // Raise the building slightly above the hex
+            //   buildingDummy.updateMatrix();
+            //   buildingHexes[BuildingType.ArcheryRange].push(buildingDummy.matrix.clone());
+          }
         }
       }
 
