@@ -4,8 +4,13 @@ import { shortString } from "starknet";
 import * as THREE from "three";
 import { SetupResult } from "@/dojo/setup";
 import WorldmapScene from "../scenes/Worldmap";
+import { Character } from "../components/Army";
+import { getColRowFromUIPosition } from "@/ui/utils/utils";
+import { FELT_CENTER } from "@/ui/config";
 
 export class ArmySystem {
+  private armies: Map<string, Character> = new Map();
+
   constructor(private dojo: SetupResult, private worldMapScene: WorldmapScene) {}
 
   setupSystem() {
@@ -15,38 +20,23 @@ export class ArmySystem {
       const army = getComponentValue(this.dojo.components.Army, update.entity);
       if (!army) return;
 
-      this.updateArmies(value[0]?.x || 0, value[0]?.y || 0);
+      this.updateArmies(update.entity, value[0]?.x || 0, value[0]?.y || 0);
     });
   }
 
-  private updateArmies(x: number, y: number) {
-    console.log({ x, y, type: "army" });
-    // const chunkX = Math.floor((x - OFFSET) / this.chunkManager.chunkSize);
-    // const chunkZ = Math.floor((y - OFFSET) / this.chunkManager.chunkSize);
-    // const chunkKey = `${chunkX},${chunkZ}`;
-    // if (this.chunkManager.loadedChunks.has(chunkKey)) {
-    //   const chunk = this.chunkManager.loadedChunks.get(chunkKey)!;
-    //   let localX = (x - OFFSET) % this.chunkManager.chunkSize;
-    //   let localZ = (y - OFFSET) % this.chunkManager.chunkSize;
-    //   // Ensure localX and localZ are always positive
-    //   if (localX < 0) localX += this.chunkManager.chunkSize;
-    //   if (localZ < 0) localZ += this.chunkManager.chunkSize;
-    //   // Swap X and Z when calculating the index
-    //   const tileIndex = localZ + localX * this.chunkManager.chunkSize;
-    //   // console.log(`World coordinates: (${x}, ${y})`);
-    //   // console.log(`Chunk coordinates: (${chunkX}, ${chunkZ})`);
-    //   // console.log(`Local coordinates: (${localX}, ${localZ})`);
-    //   // console.log(`Updating tile at index ${tileIndex}`);
-    //   const tile = chunk.children[tileIndex] as THREE.Mesh;
-    //   if (tile instanceof THREE.Mesh) {
-    //     const material = tile.material as THREE.MeshBasicMaterial;
-    //     material.color.setHex(parseInt(shortString.decodeShortString(value)));
-    //     material.opacity = 0.5;
-    //   } else {
-    //     console.log(`Tile not found at index ${tileIndex}`);
-    //   }
-    // } else {
-    //   console.log(`Chunk not loaded for tile at (${x}, ${y})`);
-    // }
+  private updateArmies(entityId: string, x: number, y: number) {
+    const normalizedCoord = { x: x - FELT_CENTER, y: y - FELT_CENTER };
+    console.log({ normalizedCoord, type: "army" });
+
+    const uiCoords = getColRowFromUIPosition(x, y);
+
+    if (!this.armies.has(entityId)) {
+      // Create a new Character if it doesn't exist
+      this.armies.set(entityId, new Character(this.worldMapScene.scene, uiCoords));
+    } else {
+      // Update the existing Character's position
+      const army = this.armies.get(entityId)!;
+      army.moveToHex(uiCoords);
+    }
   }
 }

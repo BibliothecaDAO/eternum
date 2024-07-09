@@ -15,6 +15,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { FELT_CENTER } from "@/ui/config";
 import { StructureSystem } from "./systems/StructureSystem";
 import { ArmySystem } from "./systems/ArmySystem";
+import { getUIPositionFromColRow } from "@/ui/utils/utils";
 
 const horizontalSpacing = Math.sqrt(3);
 const verticalSpacing = 3 / 2;
@@ -92,6 +93,24 @@ export default class GameRenderer {
     buttonsFolder.add(this, "goToRandomColRow");
     buttonsFolder.add(this, "moveCameraToURLLocation");
     buttonsFolder.add(this, "switchScene");
+
+    // Add new button for moving camera to specific col and row
+    const moveCameraFolder = this.gui.addFolder("Move Camera");
+    const moveCameraParams = { col: 0, row: 0 };
+    moveCameraFolder.add(moveCameraParams, "col").name("Column");
+    moveCameraFolder.add(moveCameraParams, "row").name("Row");
+    moveCameraFolder
+      .add(
+        {
+          move: () =>
+            this.moveCameraToColRow(
+              getUIPositionFromColRow(moveCameraParams.col + FELT_CENTER, moveCameraParams.row + FELT_CENTER).x,
+              getUIPositionFromColRow(moveCameraParams.col + FELT_CENTER, moveCameraParams.row + FELT_CENTER).y,
+            ),
+        },
+        "move",
+      )
+      .name("Move Camera");
   }
 
   initStats() {
@@ -168,6 +187,7 @@ export default class GameRenderer {
 
   private moveCameraToColRow(col: number, row: number, duration: number = 2) {
     console.log("debug 3");
+    console.log("move camera to: ", col, row);
     const colOffset = col;
     const rowOffset = row;
     const newTargetX = colOffset * horizontalSpacing + (rowOffset % 2) * (horizontalSpacing / 2);
