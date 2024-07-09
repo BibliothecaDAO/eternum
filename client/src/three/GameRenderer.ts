@@ -13,6 +13,8 @@ import { LocationManager } from "./helpers/LocationManager";
 import GUI from "lil-gui";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { FELT_CENTER } from "@/ui/config";
+import { StructureSystem } from "./systems/StructureSystem";
+import { ArmySystem } from "./systems/ArmySystem";
 
 const horizontalSpacing = Math.sqrt(3);
 const verticalSpacing = 3 / 2;
@@ -140,6 +142,12 @@ export default class GameRenderer {
 
     // Init animation
     this.animate();
+
+    const structureSystem = new StructureSystem(this.dojo, this.worldmapScene);
+    structureSystem.setupSystem();
+
+    const armySystem = new ArmySystem(this.dojo, this.worldmapScene);
+    armySystem.setupSystem();
   }
 
   private moveCameraToURLLocation() {
