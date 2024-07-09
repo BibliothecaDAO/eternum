@@ -25,8 +25,6 @@ import { useComponentValue } from "@dojoengine/react";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import clsx from "clsx";
 import { useThreeStore } from "@/hooks/store/useThreeStore";
-import { getColRowFromUIPosition } from "@/ui/utils/utils";
-import { FELT_CENTER } from "@/ui/config";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -57,8 +55,6 @@ export const TopMiddleNavigation = () => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const threeStore = useThreeStore((state) => state.selectedHex);
-
-  console.log({ threeStore });
 
   // realms always first
   const structures = useMemo(() => {
@@ -105,16 +101,11 @@ export const TopMiddleNavigation = () => {
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
   }, []);
 
-  const colRowNormalized = Object.values(getColRowFromUIPosition(threeStore.col, threeStore.row)).map(
-    (v) => v - FELT_CENTER,
-  );
-
   return (
     <div className="ornate-borders bg-brown">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
         <div>
-          <div className="text-white">col: {colRowNormalized[0]}</div>
-          <div className="text-white">row: {colRowNormalized[1]}</div>
+          {threeStore.col},{threeStore.row}
         </div>
         <div className="self-center px-3 flex space-x-2 ">
           <TickProgress />

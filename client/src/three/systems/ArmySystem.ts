@@ -1,17 +1,17 @@
 import { defineComponentSystem, getComponentValue } from "@dojoengine/recs";
-// import { ChunkManager, OFFSET } from "./ChunkManager";
-import { shortString } from "starknet";
-import * as THREE from "three";
 import { SetupResult } from "@/dojo/setup";
 import WorldmapScene from "../scenes/Worldmap";
-import { Character } from "../components/Army";
-import { getColRowFromUIPosition } from "@/ui/utils/utils";
+import { getColRowFromUIPosition, getUIPositionFromColRow } from "@/ui/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
+import { ArmyManager } from "../components/Armies";
 
 export class ArmySystem {
-  private armies: Map<string, Character> = new Map();
+  private armyManager: ArmyManager;
+  private armyIndices: Map<string, number> = new Map();
 
-  constructor(private dojo: SetupResult, private worldMapScene: WorldmapScene) {}
+  constructor(private dojo: SetupResult, private worldMapScene: WorldmapScene) {
+    this.armyManager = new ArmyManager(this.worldMapScene.scene, "models/dark_knight.glb", 1000);
+  }
 
   setupSystem() {
     defineComponentSystem(this.dojo.network.world, this.dojo.components.Position, (update) => {
@@ -22,21 +22,28 @@ export class ArmySystem {
 
       this.updateArmies(update.entity, value[0]?.x || 0, value[0]?.y || 0);
     });
+
+    console.log("Army system setup complete");
   }
 
-  private updateArmies(entityId: string, x: number, y: number) {
+  private async updateArmies(entityId: string, x: number, y: number) {
     const normalizedCoord = { x: x - FELT_CENTER, y: y - FELT_CENTER };
     console.log({ normalizedCoord, type: "army" });
 
-    const uiCoords = getColRowFromUIPosition(x, y);
+    const uiCoords = getUIPositionFromColRow(x, y);
 
-    if (!this.armies.has(entityId)) {
-      // Create a new Character if it doesn't exist
-      this.armies.set(entityId, new Character(this.worldMapScene.scene, uiCoords));
-    } else {
-      // Update the existing Character's position
-      const army = this.armies.get(entityId)!;
-      army.moveToHex(uiCoords);
+    try {
+      if (!this.armyIndices.has(entityId)) {
+        // Create a new army instance if it doesn't exist
+        const index = await this.armyManager.addCharacter(uiCoords);
+        this.armyIndices.set(entityId, index);
+      } else {
+        // Update the existing army's position
+        const index = this.armyIndices.get(entityId)!;
+        this.armyManager.moveCharacter(index, uiCoords);
+      }
+    } catch (error) {
+      console.error("Error updating army:", error);
     }
   }
 }
