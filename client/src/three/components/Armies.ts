@@ -16,6 +16,7 @@ export class ArmyManager {
         modelPath,
         (gltf) => {
           this.instancedModel = new InstancedModel(gltf.scene, maxInstances);
+          this.instancedModel.setCount(0);
           scene.add(this.instancedModel.group);
           this.isLoaded = true;
           resolve();
@@ -29,8 +30,10 @@ export class ArmyManager {
     });
   }
 
-  async addCharacter(position: { x: number; y: number }): Promise<number> {
-    await this.loadPromise;
+  addCharacter(position: { col: number; row: number }): number {
+    if (!this.isLoaded) {
+      throw new Error("Model not loaded yet");
+    }
     const index = this.characters.length;
     const character = new Character(position, index);
     this.characters.push(character);
@@ -38,7 +41,7 @@ export class ArmyManager {
     return index;
   }
 
-  moveCharacter(index: number, newPosition: { x: number; y: number }) {
+  moveCharacter(index: number, newPosition: { col: number; row: number }) {
     const character = this.characters[index];
     character.moveToHex(newPosition);
     this.updateInstanceMatrix(character);
@@ -47,40 +50,43 @@ export class ArmyManager {
   private updateInstanceMatrix(character: Character) {
     const position = this.calculateWorldPosition(character.getPosition());
     this.dummy.position.copy(position);
-    this.dummy.scale.set(0.005, 0.005, 0.005);
+    // this.dummy.scale.set(0.005, 0.005, 0.005);
+    this.dummy.scale.set(1, 1, 1);
     this.dummy.updateMatrix();
+    console.log({ instancedModel: this.instancedModel });
     this.instancedModel?.setMatrixAt(character.index, this.dummy.matrix);
-    this.instancedModel?.needsUpdate();
+    this.instancedModel?.setCount(this.characters.length);
   }
 
-  private calculateWorldPosition(hexPosition: { x: number; y: number }): THREE.Vector3 {
-    const { x, y } = hexPosition;
-    const hexSize = 1;
+  private calculateWorldPosition(hexCoords: { col: number; row: number }): THREE.Vector3 {
+    const { row, col } = hexCoords;
+    const hexSize = 1; // Make sure this matches the hexSize in HexagonMap
     const horizontalSpacing = hexSize * Math.sqrt(3);
     const verticalSpacing = (hexSize * 3) / 2;
 
-    const worldX = x * horizontalSpacing + (y % 2) * (horizontalSpacing / 2);
-    const z = -y * verticalSpacing;
-    const worldY = 0.5;
+    const x = col * horizontalSpacing + (row % 2) * (horizontalSpacing / 2);
+    const z = -row * verticalSpacing;
+    const y = 0; // Adjust this value to place the character on top of the hexagons
 
-    return new THREE.Vector3(worldX, worldY, z);
+    // return new THREE.Vector3(x, y, z);
+    return new THREE.Vector3(0, 5, 0);
   }
 }
 
 class Character {
-  private currentHexPosition: { x: number; y: number };
+  private currentHexPosition: { col: number; row: number };
   public index: number;
 
-  constructor(initialPosition: { x: number; y: number }, index: number) {
+  constructor(initialPosition: { col: number; row: number }, index: number) {
     this.currentHexPosition = initialPosition;
     this.index = index;
   }
 
-  moveToHex(newPosition: { x: number; y: number }) {
+  moveToHex(newPosition: { col: number; row: number }) {
     this.currentHexPosition = newPosition;
   }
 
-  getPosition(): { x: number; y: number } {
+  getPosition(): { col: number; row: number } {
     return this.currentHexPosition;
   }
 }

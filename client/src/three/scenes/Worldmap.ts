@@ -79,7 +79,7 @@ export default class WorldmapScene {
   ) {
     this.scene = new THREE.Scene();
 
-    this.character = new Character(this.scene, { row: 0, col: 0 });
+    this.character = new Character(this.scene, { col: 262, row: 126 });
     this.addCharacterMovementListeners();
 
     this.biome = new Biome();

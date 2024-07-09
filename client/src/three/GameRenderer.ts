@@ -15,7 +15,6 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { FELT_CENTER } from "@/ui/config";
 import { StructureSystem } from "./systems/StructureSystem";
 import { ArmySystem } from "./systems/ArmySystem";
-import { getUIPositionFromColRow } from "@/ui/utils/utils";
 
 const horizontalSpacing = Math.sqrt(3);
 const verticalSpacing = 3 / 2;
@@ -102,11 +101,7 @@ export default class GameRenderer {
     moveCameraFolder
       .add(
         {
-          move: () =>
-            this.moveCameraToColRow(
-              getUIPositionFromColRow(moveCameraParams.col + FELT_CENTER, moveCameraParams.row + FELT_CENTER).x,
-              getUIPositionFromColRow(moveCameraParams.col + FELT_CENTER, moveCameraParams.row + FELT_CENTER).y,
-            ),
+          move: () => this.moveCameraToColRow(moveCameraParams.col, moveCameraParams.row),
         },
         "move",
       )

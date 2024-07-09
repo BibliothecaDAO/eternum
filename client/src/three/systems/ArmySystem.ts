@@ -26,21 +26,21 @@ export class ArmySystem {
     console.log("Army system setup complete");
   }
 
-  private async updateArmies(entityId: string, x: number, y: number) {
-    const normalizedCoord = { x: x - FELT_CENTER, y: y - FELT_CENTER };
+  private updateArmies(entityId: string, col: number, row: number) {
+    const normalizedCoord = { col: col - FELT_CENTER, row: row - FELT_CENTER };
     console.log({ normalizedCoord, type: "army" });
 
-    const uiCoords = getUIPositionFromColRow(x, y);
+    // const uiCoords2 = this.worldMapScene.getWorldPositionForHex({ col: x, row: y });
 
     try {
       if (!this.armyIndices.has(entityId)) {
         // Create a new army instance if it doesn't exist
-        const index = await this.armyManager.addCharacter(uiCoords);
+        const index = this.armyManager.addCharacter(normalizedCoord);
         this.armyIndices.set(entityId, index);
       } else {
         // Update the existing army's position
         const index = this.armyIndices.get(entityId)!;
-        this.armyManager.moveCharacter(index, uiCoords);
+        this.armyManager.moveCharacter(index, { col, row });
       }
     } catch (error) {
       console.error("Error updating army:", error);
