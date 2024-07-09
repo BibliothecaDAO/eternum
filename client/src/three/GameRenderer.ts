@@ -101,7 +101,7 @@ export default class GameRenderer {
     moveCameraFolder
       .add(
         {
-          move: () => this.moveCameraToColRow(moveCameraParams.col, moveCameraParams.row),
+          move: () => this.moveCameraToColRow(moveCameraParams.col, moveCameraParams.row, 0),
         },
         "move",
       )

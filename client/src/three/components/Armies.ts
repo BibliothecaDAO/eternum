@@ -7,7 +7,8 @@ export class ArmyManager {
   private characters: Character[] = [];
   private dummy: THREE.Object3D = new THREE.Object3D();
   private isLoaded: boolean = false;
-  private loadPromise: Promise<void>;
+  loadPromise: Promise<void>;
+  private interval: any;
 
   constructor(scene: THREE.Scene, modelPath: string, maxInstances: number) {
     this.loadPromise = new Promise<void>((resolve, reject) => {
@@ -38,6 +39,12 @@ export class ArmyManager {
     const character = new Character(position, index);
     this.characters.push(character);
     this.updateInstanceMatrix(character);
+    this.interval = setInterval(() => {
+      this.moveCharacter(index, {
+        col: this.characters[index].getPosition().col + 1,
+        row: this.characters[index].getPosition().row,
+      });
+    }, 1000);
     return index;
   }
 
@@ -59,6 +66,7 @@ export class ArmyManager {
   }
 
   private calculateWorldPosition(hexCoords: { col: number; row: number }): THREE.Vector3 {
+    console.log({ hexCoords });
     const { row, col } = hexCoords;
     const hexSize = 1; // Make sure this matches the hexSize in HexagonMap
     const horizontalSpacing = hexSize * Math.sqrt(3);
@@ -66,10 +74,10 @@ export class ArmyManager {
 
     const x = col * horizontalSpacing + (row % 2) * (horizontalSpacing / 2);
     const z = -row * verticalSpacing;
-    const y = 0; // Adjust this value to place the character on top of the hexagons
+    const y = 0.2; // Adjust this value to place the character on top of the hexagons
 
     // return new THREE.Vector3(x, y, z);
-    return new THREE.Vector3(0, 5, 0);
+    return new THREE.Vector3(x, y, z);
   }
 }
 

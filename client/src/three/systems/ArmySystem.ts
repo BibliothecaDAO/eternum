@@ -26,10 +26,10 @@ export class ArmySystem {
     console.log("Army system setup complete");
   }
 
-  private updateArmies(entityId: string, col: number, row: number) {
+  private async updateArmies(entityId: string, col: number, row: number) {
     const normalizedCoord = { col: col - FELT_CENTER, row: row - FELT_CENTER };
     console.log({ normalizedCoord, type: "army" });
-
+    await this.armyManager.loadPromise;
     // const uiCoords2 = this.worldMapScene.getWorldPositionForHex({ col: x, row: y });
 
     try {
