@@ -27,7 +27,8 @@ export class Character {
 
     const loader = new GLTFLoader();
     loader.load(
-      "/models/new-biomes/Horse.glb",
+      // "/models/new-biomes/Horse.glb",
+      "/models/dark_knight.glb",
       (gltf) => {
         this.model = gltf.scene;
         this.model.scale.set(0.005, 0.005, 0.005); // Adjust scale as needed

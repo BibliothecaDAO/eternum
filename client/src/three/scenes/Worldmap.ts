@@ -16,6 +16,7 @@ import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import GUI from "lil-gui";
+import { ArmySystem } from "../systems/ArmySystem";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -44,6 +45,7 @@ export default class WorldmapScene {
   private mainDirectionalLight!: THREE.DirectionalLight;
   private pmremGenerator!: THREE.PMREMGenerator;
   private fogManager: FogManager;
+  armySystem: ArmySystem;
 
   private biome!: Biome;
   private lightType: "pmrem" | "hemisphere" = "hemisphere";
@@ -143,6 +145,9 @@ export default class WorldmapScene {
     this.scene.add(this.lightHelper);
 
     this.loadBiomeModels();
+
+    this.armySystem = new ArmySystem(this.dojoConfig, this.scene);
+    this.armySystem.setupSystem();
   }
 
   private loadBiomeModels() {

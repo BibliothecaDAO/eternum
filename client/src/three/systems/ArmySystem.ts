@@ -3,14 +3,16 @@ import { SetupResult } from "@/dojo/setup";
 import WorldmapScene from "../scenes/Worldmap";
 import { getColRowFromUIPosition, getUIPositionFromColRow } from "@/ui/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
-import { ArmyManager } from "../components/Armies";
+import { ArmyManager } from "../components/ArmyManager";
+import { Scene } from "three";
 
 export class ArmySystem {
   private armyManager: ArmyManager;
   private armyIndices: Map<string, number> = new Map();
+  private modelPrinted: boolean = false;
 
-  constructor(private dojo: SetupResult, private worldMapScene: WorldmapScene) {
-    this.armyManager = new ArmyManager(this.worldMapScene.scene, "models/dark_knight.glb", 1000);
+  constructor(private dojo: SetupResult, private worldMapScene: Scene) {
+    this.armyManager = new ArmyManager(this.worldMapScene, "models/dark_knight.glb", 1000);
   }
 
   setupSystem() {
@@ -28,9 +30,11 @@ export class ArmySystem {
 
   private async updateArmies(entityId: string, col: number, row: number) {
     const normalizedCoord = { col: col - FELT_CENTER, row: row - FELT_CENTER };
-    console.log({ normalizedCoord, type: "army" });
     await this.armyManager.loadPromise;
-    // const uiCoords2 = this.worldMapScene.getWorldPositionForHex({ col: x, row: y });
+    if (!this.modelPrinted) {
+      this.armyManager.printModel();
+      this.modelPrinted = true;
+    }
 
     try {
       if (!this.armyIndices.has(entityId)) {
@@ -45,5 +49,9 @@ export class ArmySystem {
     } catch (error) {
       console.error("Error updating army:", error);
     }
+  }
+
+  update(deltaTime: number) {
+    this.armyManager.update(deltaTime);
   }
 }

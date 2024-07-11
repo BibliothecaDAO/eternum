@@ -90,4 +90,9 @@ export default class InstancedModel {
   clone() {
     return this.group.clone();
   }
+
+  scaleModel(scale: THREE.Vector3) {
+    this.group.scale.copy(scale);
+    this.group.updateMatrixWorld(true);
+  }
 }

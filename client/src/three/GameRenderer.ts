@@ -156,12 +156,6 @@ export default class GameRenderer {
 
     // Init animation
     this.animate();
-
-    const structureSystem = new StructureSystem(this.dojo, this.worldmapScene);
-    structureSystem.setupSystem();
-
-    const armySystem = new ArmySystem(this.dojo, this.worldmapScene);
-    armySystem.setupSystem();
   }
 
   private moveCameraToURLLocation() {
@@ -368,6 +362,7 @@ export default class GameRenderer {
 
     if (this.currentScene === "worldmap") {
       this.worldmapScene.update(deltaTime);
+      this.worldmapScene.armySystem.update(deltaTime);
       // this.hexGrid.updateVisibleChunks();
       this.worldmapScene.contextMenuManager.checkHexagonHover();
       this.renderer.render(this.worldmapScene.scene, this.camera);
