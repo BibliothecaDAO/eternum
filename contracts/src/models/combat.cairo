@@ -1,15 +1,17 @@
 use core::array::ArrayTrait;
 use core::integer::BoundedInt;
 use core::option::OptionTrait;
+use core::poseidon::poseidon_hash_span;
 use core::traits::Into;
 use core::traits::TryInto;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::all_resource_ids;
 use eternum::models::capacity::{Capacity, CapacityTrait};
 use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
 use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
 use eternum::models::config::{WeightConfig, WeightConfigImpl};
-use eternum::models::quantity::{Quantity, QuantityTrait};
+use eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrackerType, QuantityTrait};
 use eternum::models::resources::OwnedResourcesTrackerTrait;
 use eternum::models::resources::ResourceTrait;
 use eternum::models::resources::ResourceTransferLockTrait;
@@ -22,7 +24,6 @@ use eternum::models::weight::Weight;
 use eternum::models::weight::WeightTrait;
 use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min};
 use eternum::utils::number::NumberTrait;
-
 
 const STRENGTH_PRECISION: u256 = 10_000;
 
@@ -312,6 +313,12 @@ impl TroopsImpl of TroopsTrait {
     }
 }
 
+#[generate_trait]
+impl ArmyQuantityTracker of ArmyQuantityTrackerTrait {
+    fn key(entity_id: ID) -> felt252 {
+        poseidon_hash_span(array![entity_id.into(), QuantityTrackerType::ARMY_COUNT.into()].span())
+    }
+}
 
 #[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
@@ -804,7 +811,9 @@ mod tests {
             crossbowman_strength: 1,
             advantage_percent: 1000,
             disadvantage_percent: 1000,
-            pillage_health_divisor: 8
+            pillage_health_divisor: 8,
+            army_free_per_structure: 100,
+            army_extra_per_building: 100,
         }
     }
 

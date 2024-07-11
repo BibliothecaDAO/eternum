@@ -284,7 +284,13 @@ struct TroopConfig {
     // get to losing 12.5% each. If an army is far stronger than the order, 
     // they lose a small precentage (it goes closer to 0% health loss) while the
     // weak army's loss is closer to 12.5% 
-    pillage_health_divisor: u8
+    pillage_health_divisor: u8,
+    // the number of armies that can be created per structure
+    // before military buildings are required to create more
+    army_free_per_structure: u8,
+    // the number of additional  armies that can be create with 
+    // each new military building
+    army_extra_per_building: u8,
 }
 
 

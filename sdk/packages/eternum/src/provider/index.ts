@@ -480,6 +480,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async delete_army(props: SystemProps.ArmyDeleteProps) {
+    const { army_id, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "army_delete",
+      calldata: [army_id],
+    });
+  }
+
   public async army_buy_troops(props: SystemProps.ArmyBuyTroopsProps) {
     const { army_id, payer_id, troops, signer } = props;
 
@@ -773,6 +783,8 @@ export class EternumProvider extends EnhancedDojoProvider {
       advantage_percent,
       disadvantage_percent,
       pillage_health_divisor,
+      army_free_per_structure,
+      army_extra_per_military_building,
     } = props;
 
     return await this.executeAndCheckTransaction(signer, {
@@ -787,6 +799,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         advantage_percent,
         disadvantage_percent,
         pillage_health_divisor,
+        army_free_per_structure,
+        army_extra_per_military_building,
       ],
     });
   }

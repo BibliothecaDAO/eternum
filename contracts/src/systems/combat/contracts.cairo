@@ -47,6 +47,11 @@ trait ICombatContract<TContractState> {
         ref world: IWorldDispatcher, army_owner_id: u128, is_defensive_army: bool
     ) -> u128;
 
+    /// Delete an army
+    /// - army must not be a defensive army
+    /// - army must be dead (in battle or otherwise)
+    /// 
+    fn army_delete(ref world: IWorldDispatcher, army_id: u128);
     /// Purchases and adds troops to an existing army entity.
     ///
     /// # Preconditions:
@@ -370,7 +375,7 @@ mod combat_systems {
         get_resources_without_earthenshards_probs
     };
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
-    use eternum::models::buildings::{Building, BuildingImpl, BuildingCategory};
+    use eternum::models::buildings::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
     use eternum::models::capacity::Capacity;
     use eternum::models::combat::BattleEscrowTrait;
     use eternum::models::combat::ProtectorTrait;
@@ -385,7 +390,7 @@ mod combat_systems {
     use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
     use eternum::models::position::CoordTrait;
     use eternum::models::position::{Position, Coord, PositionTrait, Direction};
-    use eternum::models::quantity::{Quantity, QuantityTrait};
+    use eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrait};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
     use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockTrait};
@@ -396,7 +401,7 @@ mod combat_systems {
         combat::{
             Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait,
             Battle, BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait,
-            BattleHealthTrait, BattleEscrowImpl
+            BattleHealthTrait, BattleEscrowImpl, ArmyQuantityTracker, ArmyQuantityTrackerTrait,
         },
     };
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
@@ -443,6 +448,86 @@ mod combat_systems {
             };
 
             army_id
+        }
+
+        fn army_delete(ref world: IWorldDispatcher, army_id: u128) {
+            // ensure caller owns the entity paying
+            let mut entity_owner: EntityOwner = get!(world, army_id, EntityOwner);
+            entity_owner.assert_caller_owner(world);
+
+            // ensure army is dead
+            let mut army: Army = get!(world, army_id, Army);
+            if army.is_in_battle() {
+                let mut battle: Battle = get!(world, army.battle_id, Battle);
+                InternalCombatImpl::update_battle_and_army(world, ref battle, ref army);
+                set!(world, (battle));
+            }
+
+            // ensure number of troops is 0
+            assert!(army.troops.count().is_zero(), "Army has troops");
+
+            // ensure army is not a defensive army
+            let army_protectee: Protectee = get!(world, army_id, Protectee);
+            assert!(army_protectee.is_none(), "Army is a defensive army");
+
+            // decrement attack army count
+            let owner_armies_key: felt252 = ArmyQuantityTracker::key(entity_owner.entity_owner_id);
+            let mut owner_armies_quantity: QuantityTracker = get!(
+                world, owner_armies_key, QuantityTracker
+            );
+            owner_armies_quantity.count -= 1;
+            set!(world, (owner_armies_quantity));
+            // reset components connected to army 
+            // let (
+            //     owner,
+            //     position,
+            //     quantity,
+            //     health,
+            //     stamina,
+            //     resource_transfer_lock,
+            //     movable,
+            //     capacity
+            // ) =
+            //     get!(
+            //     world,
+            //     army_id,
+            //     (
+            //         Owner,
+            //         Position,
+            //         Quantity,
+            //         Health,
+            //         Stamina,
+            //         ResourceTransferLock,
+            //         Movable,
+            //         Capacity
+            //     )
+            // );
+            // delete!(
+            //     world,
+            //     (
+            //         army,
+            //         entity_owner,
+            //         owner,
+            //         position,
+            //         quantity,
+            //         health,
+            //         stamina,
+            //         resource_transfer_lock,
+            //         movable,
+            //         capacity
+            //     )
+            // );
+
+            army.entity_id = 0;
+            set!(world, (army));
+
+            entity_owner.entity_owner_id = 0;
+            set!(world, (entity_owner));
+
+            let mut position: Position = get!(world, army_id, Position);
+            position.x = 0;
+            position.y = 0;
+            set!(world, (position));
         }
 
 
@@ -1182,8 +1267,44 @@ mod combat_systems {
         fn create_base_army(
             world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
         ) -> u128 {
-            let mut army_id: u128 = world.uuid().into();
+            // ensure army owner is a structure 
+            get!(world, army_owner_id, Structure).assert_is_structure();
 
+            // ensure owner has enough military buildings to create army
+            let owner_armies_key: felt252 = ArmyQuantityTracker::key(army_owner_id);
+            let mut owner_armies_quantity: QuantityTracker = get!(
+                world, owner_armies_key, QuantityTracker
+            );
+            let troop_config = TroopConfigImpl::get(world);
+            if owner_armies_quantity.count >= troop_config.army_free_per_structure.into() {
+                let archery_range_building_count = get!(
+                    world, (army_owner_id, BuildingCategory::ArcheryRange), BuildingQuantityv2
+                )
+                    .value;
+                let barracks_building_count = get!(
+                    world, (army_owner_id, BuildingCategory::Barracks), BuildingQuantityv2
+                )
+                    .value;
+                let stables_building_count = get!(
+                    world, (army_owner_id, BuildingCategory::Stable), BuildingQuantityv2
+                )
+                    .value;
+                let total_military_building_count = stables_building_count
+                    + archery_range_building_count
+                    + barracks_building_count;
+                let total_allowed_armies = troop_config.army_free_per_structure.into()
+                    + (troop_config.army_extra_per_building.into() * total_military_building_count);
+                assert!(
+                    owner_armies_quantity.count < total_allowed_armies.into(),
+                    "not enough military buildings to support new army"
+                );
+            }
+            // increment army count
+            owner_armies_quantity.count += 1;
+            set!(world, (owner_armies_quantity));
+
+            // create army
+            let mut army_id: u128 = world.uuid().into();
             let army_owner_position: Position = get!(world, army_owner_id, Position);
             set!(
                 world,
