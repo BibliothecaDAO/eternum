@@ -115,7 +115,7 @@ export const TopMiddleNavigation = () => {
               <SelectTrigger className="">
                 <SelectValue placeholder="Select Realm" />
               </SelectTrigger>
-              <SelectContent className="bg-brown ">
+              <SelectContent className="bg-black ">
                 {structures.map((structure, index) => (
                   <SelectItem
                     className="flex justify-between text-sm"
