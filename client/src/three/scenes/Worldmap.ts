@@ -17,6 +17,7 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import GUI from "lil-gui";
 import { ArmySystem } from "../systems/ArmySystem";
+import { StructureSystem } from "../systems/StructureSystem";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -45,7 +46,7 @@ export default class WorldmapScene {
   private mainDirectionalLight!: THREE.DirectionalLight;
   private pmremGenerator!: THREE.PMREMGenerator;
   private fogManager: FogManager;
-  armySystem: ArmySystem;
+  structureSystem: StructureSystem;
 
   private biome!: Biome;
   private lightType: "pmrem" | "hemisphere" = "hemisphere";
@@ -146,8 +147,11 @@ export default class WorldmapScene {
 
     this.loadBiomeModels();
 
-    this.armySystem = new ArmySystem(this.dojoConfig, this.scene);
-    this.armySystem.setupSystem();
+    // this.armySystem = new ArmySystem(this.dojoConfig, this.scene);
+    // this.armySystem.setupSystem();
+
+    this.structureSystem = new StructureSystem(this.dojoConfig, this);
+    this.structureSystem.setupSystem();
   }
 
   private loadBiomeModels() {
@@ -191,6 +195,11 @@ export default class WorldmapScene {
     Promise.all(this.modelLoadPromises).then(() => {
       //this.updateExistingChunks();
     });
+  }
+
+  setupSystems() {
+    // this.armySystem.setupSystem();
+    // this.structureSystem.setupSystem();
   }
 
   getWorldPositionForHex(hexCoords: { row: number; col: number }): THREE.Vector3 {
@@ -415,7 +424,7 @@ export default class WorldmapScene {
 
   update(deltaTime: number) {
     this.character.update(deltaTime);
-    this.armySystem.update(deltaTime);
+    // this.armySystem.update(deltaTime);
     if (this.mainDirectionalLight) {
       this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
     }

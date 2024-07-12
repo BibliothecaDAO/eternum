@@ -51,7 +51,6 @@ export class ArmyManager {
   }
 
   addCharacter(position: { col: number; row: number }): number {
-    console.log({ position });
     if (!this.isLoaded) {
       throw new Error("Model not loaded yet");
     }
