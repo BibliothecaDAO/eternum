@@ -415,6 +415,7 @@ export default class WorldmapScene {
 
   update(deltaTime: number) {
     this.character.update(deltaTime);
+    this.armySystem.update(deltaTime);
     if (this.mainDirectionalLight) {
       this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
     }

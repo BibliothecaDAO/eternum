@@ -362,7 +362,6 @@ export default class GameRenderer {
 
     if (this.currentScene === "worldmap") {
       this.worldmapScene.update(deltaTime);
-      this.worldmapScene.armySystem.update(deltaTime);
       // this.hexGrid.updateVisibleChunks();
       this.worldmapScene.contextMenuManager.checkHexagonHover();
       this.renderer.render(this.worldmapScene.scene, this.camera);
