@@ -8,8 +8,8 @@ export const LoadingScreen = () => {
     "Stepping the world...",
     "Painting the Sky...",
     "Crafting Stories...",
-    "Finalizing Details...",
-    "Almost There...",
+    "Harvesting Wood...",
+    "Breading Donkeys...",
     "Preparing Surprises...",
     "Ready to Explore!",
   ];
@@ -33,7 +33,7 @@ export const LoadingScreen = () => {
     <div className="relative h-screen w-screen bg-black">
       <img className="absolute h-screen w-screen object-cover" src="/images/cover.png" alt="" />
       <div
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl text-center bg-brown p-10 text-gold border-y-2 border-gradient ornate-borders ${
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 animatedBackground -translate-y-1/2 text-2xl text-center bg-black/60 backdrop-blur-2xl p-10 border border-gradient bg-hex-bg rounded-sm min-w-96  ${
           fade ? "fade-in" : "fade-out"
         }`}
       >

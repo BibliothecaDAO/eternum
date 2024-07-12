@@ -98,7 +98,7 @@ export const TopMiddleNavigation = () => {
   }, []);
 
   return (
-    <div className="ornate-borders bg-brown">
+    <div className=" bg-black/60 backdrop-blur-2xl bg-hex-bg rounded-b-2xl border border-gradient">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
         <div className="self-center px-3 flex space-x-2 ">
           <TickProgress />
@@ -163,7 +163,7 @@ export const TopMiddleNavigation = () => {
         </div>
       </motion.div>
 
-      <div className="flex justify-between w-full bg-brown text-gold p-1 text-xs">
+      <div className="flex justify-between w-full  text-gold p-1 text-xs">
         {population && (
           <div
             onMouseEnter={() => {

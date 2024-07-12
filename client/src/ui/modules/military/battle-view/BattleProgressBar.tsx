@@ -28,8 +28,8 @@ export const BattleProgressBar = ({
       ? "Mercenaries"
       : `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
     : defenderArmies?.length > 0
-      ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
-      : "Empty";
+    ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
+    : "Empty";
 
   const totalHealth = useMemo(
     () => (attackingHealth?.current || 0) + (defendingHealth?.current || 0),
@@ -83,13 +83,13 @@ export const BattleProgressBar = ({
       ? Number(attackingHealthPercentage) === 100
         ? "You Won"
         : Number(attackingHealthPercentage) === 0
-          ? "You Lost"
-          : undefined
+        ? "You Lost"
+        : undefined
       : Number(defendingHealthPercentage) === 100
-        ? "You Won"
-        : Number(defendingHealthPercentage) === 0
-          ? "You Lost"
-          : undefined;
+      ? "You Won"
+      : Number(defendingHealthPercentage) === 0
+      ? "You Lost"
+      : undefined;
   }, [time]);
 
   return (
@@ -102,7 +102,7 @@ export const BattleProgressBar = ({
         visible: { y: "0%", transition: { duration: 0.5 } },
       }}
     >
-      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl text-gold backdrop-blur-lg bg-[#1b1a1a] px-8 py-2  ornate-borders-top-y">
+      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl text-gold backdrop-blur-lg bg-[#1b1a1a] px-8 py-2  -top-y">
         <div className="text-left">
           <p>{attackerName}</p>
         </div>
@@ -113,10 +113,7 @@ export const BattleProgressBar = ({
           <p>{defenderName}</p>
         </div>
       </div>
-      <div
-        className="relative h-8  mx-auto w-2/3 ornate-borders-y animate-slowPulse"
-        style={{ background: gradient }}
-      ></div>
+      <div className="relative h-8  mx-auto w-2/3 -y animate-slowPulse" style={{ background: gradient }}></div>
     </motion.div>
   );
 };

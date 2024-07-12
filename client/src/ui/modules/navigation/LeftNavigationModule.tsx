@@ -240,7 +240,7 @@ export const LeftNavigationModule = () => {
         }}
         onPointerLeave={debouncedSetIsOffscreen}
       >
-        <BaseContainer className={`w-full overflow-y-scroll ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}>
+        <BaseContainer className={`w-full overflow-y-auto ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}>
           {view === View.EntityView && <EntityDetails />}
           {view === View.MilitaryView && <Military entityId={realmEntityId} />}
           {!isWorldView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}

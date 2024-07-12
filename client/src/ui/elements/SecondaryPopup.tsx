@@ -5,6 +5,7 @@ import { ReactComponent as CloseIcon } from "@/assets/icons/common/cross-circle.
 import Button from "./Button";
 import { motion } from "framer-motion";
 import { HintModalButton } from "./HintModalButton";
+import { Cross, PanelTopClose, X } from "lucide-react";
 
 type FilterPopupProps = {
   children: React.ReactNode;
@@ -112,7 +113,7 @@ SecondaryPopup.Head = ({
 }) => (
   <div
     className={clsx(
-      " items-center relative cursor-move z-30 p-2 rounded-t  w-full whitespace-nowrap handle flex justify-between bg-brown  hover:bg-brown backdrop-blur-lg border-gradient border-y-2",
+      " items-center relative cursor-move z-30 p-2 rounded-t bg-black/30  w-full whitespace-nowrap handle flex justify-between  backdrop-blur-2xl border-gradient border",
       className,
     )}
     onKeyDown={(e) => {
@@ -122,12 +123,13 @@ SecondaryPopup.Head = ({
     }}
     tabIndex={0}
   >
-    <h5>{children}</h5>
+    <div>{children}</div>
     <div className="flex flex-row">
       {hintSection && <HintModalButton className="mr-2" section={hintSection} />}
+
       {onClose && (
-        <Button className="outline" onClick={onClose}>
-          <CloseIcon className="w-5 h-5 cursor-pointer fill-gold mx-auto self-center" />
+        <Button variant="ghost" size="xs" onClick={onClose}>
+          <X className="w-5 h-5" />
         </Button>
       )}
     </div>
@@ -176,9 +178,13 @@ SecondaryPopup.Body = ({
         width ? "" : "min-w-[438px]",
         height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
-        `relative z-10 bg-brown flex flex-col border-brown/50 border-2 rounded-b overflow-auto bg-map `,
+        `relative z-10 flex flex-col bg-black/60 backdrop-blur-2xl border-gradient border rounded-b overflow-auto bg-hex-bg bg-repeat`,
       )}
-      style={{ width: width ? width : "", height: height ? height : "", maxHeight: maxHeight ? `${maxHeight}px` : "" }}
+      style={{
+        width: width ? width : "",
+        height: height ? height : "",
+        maxHeight: maxHeight ? `${maxHeight}px` : "",
+      }}
     >
       {withWrapper ? (
         <div className="relative z-10 border flex flex-col border-gray-gold rounded-md overflow-auto ">{children}</div>

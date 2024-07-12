@@ -86,7 +86,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
 
   return (
     <ModalContainer>
-      <div className="grid grid-cols-12 container mx-auto gap-4 bg-brown my-10 p-4 ornate-borders ">
+      <div className="grid grid-cols-12 container mx-auto gap-4 bg-brown my-10 p-4  ">
         <div className="col-span-12 text-center">
           <h3>The Lordpedia</h3>
         </div>
