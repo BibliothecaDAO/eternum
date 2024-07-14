@@ -93,8 +93,8 @@ export const MarketTradingHistory = ({ realmEntityId }: MarketTradingHistoryProp
   return (
     <div className="flex flex-col px-8 mt-8">
       <TradeHistoryRowHeader />
-      {tradeEvents.map((trade) => {
-        return <TradeHistoryEvent trade={trade} />;
+      {tradeEvents.map((trade, index) => {
+        return <TradeHistoryEvent key={index} trade={trade} />;
       })}
     </div>
   );
