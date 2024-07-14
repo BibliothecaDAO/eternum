@@ -19,7 +19,7 @@ import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
-import {  useQuestStore } from "@/hooks/store/useQuestStore";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
 import { QuestName, QuestStatus } from "@/hooks/helpers/useQuests";

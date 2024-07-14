@@ -20,7 +20,7 @@ import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
 import { StructureCard } from "./StructureCard";
-import {  useQuestStore } from "@/hooks/store/useQuestStore";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import clsx from "clsx";
 import { QuestName } from "@/hooks/helpers/useQuests";
 

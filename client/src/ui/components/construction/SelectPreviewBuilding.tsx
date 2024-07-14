@@ -79,7 +79,6 @@ export const SelectPreviewBuildingMenu = () => {
 
   const [selectedTab, setSelectedTab] = useState(1);
 
-
   const tabs = useMemo(
     () => [
       {
