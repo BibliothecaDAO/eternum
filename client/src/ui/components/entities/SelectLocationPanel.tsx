@@ -85,7 +85,7 @@ export const SelectLocationPanel = ({
             takerRealmId = realmId;
           }
           const entityId = realm?.entity_id || bank?.entity_id;
-          const distance = entityId ? calculateDistance(travelingEntityId, BigInt(entityId)) ?? 0 : 0;
+          const distance = entityId ? (calculateDistance(travelingEntityId, BigInt(entityId)) ?? 0) : 0;
           // const defence = entityId ? getDefenceOnRealm(BigInt(entityId)) : undefined;
           const level = entityId ? getEntityLevel(BigInt(entityId)) : undefined;
           const addressName = entityId ? getRealmAddressName(entityId) : "";
