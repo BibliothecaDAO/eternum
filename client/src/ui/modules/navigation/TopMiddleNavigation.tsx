@@ -19,9 +19,10 @@ import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import {  useQuestStore } from "@/hooks/store/useQuestStore";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
+import { QuestName, QuestStatus } from "@/hooks/helpers/useQuests";
 import { motion } from "framer-motion";
 
 const slideDown = {
@@ -136,7 +137,7 @@ export const TopMiddleNavigation = () => {
             className={clsx({
               "animate-pulse":
                 (selectedQuest?.name === QuestName.Travel || selectedQuest?.name === QuestName.Hyperstructure) &&
-                !selectedQuest.completed &&
+                selectedQuest.status !== QuestStatus.Completed &&
                 isHexView,
             })}
             onClick={() => {

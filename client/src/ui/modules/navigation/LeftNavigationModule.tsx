@@ -2,7 +2,7 @@ import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useStamina } from "@/hooks/helpers/useStamina";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
@@ -26,6 +26,7 @@ import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
+import { QuestName, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -56,30 +57,25 @@ export enum View {
 export const LeftNavigationModule = () => {
   const [lastView, setLastView] = useState<View>(View.None);
 
-  const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const openedPopups = useUIStore((state) => state.openedPopups);
 
-  const quests = useQuestStore((state) => state.quests);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { realmEntityId } = useRealmStore();
-  const { getStamina } = useStamina();
+
   const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: realmEntityId });
 
+  const { useArmiesCanMoveCount } = useStamina();
+  const armiesCanMoveCount = useArmiesCanMoveCount(entityArmies);
+
+  const { questClaimStatus } = useQuestClaimStatus();
   const [location, _] = useLocation();
 
   const isWorldView = useMemo(() => location === "/map", [location]);
-
-  const armiesWithStaminaLeft = entityArmies?.filter((entity) => {
-    return (
-      getStamina({ travelingEntityId: BigInt(entity.entity_id), currentArmiesTick })?.amount ||
-      0 >= EternumGlobalConfig.stamina.travelCost
-    );
-  });
 
   const isBuildQuest = useMemo(() => {
     return (
@@ -99,7 +95,7 @@ export const LeftNavigationModule = () => {
         name: "entityDetails",
         button: (
           <CircleButton
-            className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.CreateArmy)?.claimed })}
+            className={clsx({ hidden: !questClaimStatus[QuestName.CreateArmy] })}
             image={BuildingThumbs.hex}
             tooltipLocation="top"
             label={"Details"}
@@ -121,7 +117,7 @@ export const LeftNavigationModule = () => {
                 view != View.ConstructionView &&
                 selectedQuest?.name === QuestName.CreateArmy &&
                 isPopupOpen(questsPopup),
-              hidden: !quests?.find((quest) => quest.name === QuestName.BuildResource)?.claimed,
+              hidden: !questClaimStatus[QuestName.CreateTrade],
             })}
             image={BuildingThumbs.military}
             tooltipLocation="top"
@@ -132,7 +128,7 @@ export const LeftNavigationModule = () => {
               setLastView(View.MilitaryView);
               setView(View.MilitaryView);
             }}
-            notification={armiesWithStaminaLeft.length}
+            notification={armiesCanMoveCount}
             notificationLocation="topright"
           />
         ),
@@ -162,7 +158,7 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             className={clsx({
-              hidden: !quests?.find((quest) => quest.name === QuestName.CreateArmy)?.claimed,
+              hidden: !questClaimStatus[QuestName.CreateArmy],
               "animate-pulse":
                 view != View.ConstructionView &&
                 selectedQuest?.name === QuestName.Contribution &&
@@ -197,7 +193,8 @@ export const LeftNavigationModule = () => {
             item.name === MenuEnum.construction ||
             item.name === MenuEnum.worldStructures,
         );
-  }, [location, view, armiesWithStaminaLeft, quests, openedPopups]);
+  }, [location, view, openedPopups, selectedQuest, armiesCanMoveCount]);
+  // }, [location, view, armiesWithStaminaLeft, openedPopups]);
 
   if (realmEntityId === undefined) {
     return null;

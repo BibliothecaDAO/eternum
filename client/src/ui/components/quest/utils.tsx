@@ -1,4 +1,4 @@
-import { Quest } from "@/hooks/store/useQuestStore";
+import { Quest, QuestStatus } from "@/hooks/helpers/useQuests";
 
 export const groupQuestsByDepth = (quests: Quest[]): Record<number, Quest[]> => {
   return quests?.reduce((groupedQuests: Record<number, Quest[]>, quest) => {
@@ -11,4 +11,4 @@ export const groupQuestsByDepth = (quests: Quest[]): Record<number, Quest[]> => 
   }, {});
 };
 
-export const areAllQuestsClaimed = (quests: Quest[]) => quests.every((quest) => quest.claimed);
+export const areAllQuestsClaimed = (quests: Quest[]) => quests.every((quest) => quest.status === QuestStatus.Claimed);
