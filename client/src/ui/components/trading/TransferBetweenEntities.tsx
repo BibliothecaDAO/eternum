@@ -15,6 +15,7 @@ import { useTravel } from "@/hooks/helpers/useTravel";
 import { ToggleComponent } from "../toggle/ToggleComponent";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import TextInput from "@/ui/elements/TextInput";
+import { useRealm } from "@/hooks/helpers/useRealm";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -42,6 +43,8 @@ interface SelectedEntity {
 }
 
 export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { entities: any[]; name: string }[] }) => {
+  const { getRealmAddressName } = useRealm();
+
   const [selectedEntityIdFrom, setSelectedEntityIdFrom] = useState<SelectedEntity | null>(null);
   const [selectedEntityIdTo, setSelectedEntityIdTo] = useState<SelectedEntity | null>(null);
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
@@ -55,6 +58,16 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
   const [toSearchTerm, setToSearchTerm] = useState("");
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
+
+  const entitiesListWithAccountNames = useMemo(() => {
+    return entitiesList.map(({ entities, name }) => ({
+      entities: entities.map((entity) => ({
+        ...entity,
+        accountName: getRealmAddressName(entity.entity_id),
+      })),
+      name,
+    }));
+  }, [entitiesList]);
 
   const {
     account: { account },
@@ -110,7 +123,10 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
 
   const filterEntities = (entities: any[], searchTerm: string, selectedEntityId: bigint | undefined) => {
     return entities.filter(
-      (entity) => entity.entity_id === selectedEntityId || entity.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      (entity) =>
+        entity.entity_id === selectedEntityId ||
+        entity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entity.accountName && entity.accountName.toLowerCase().includes(searchTerm.toLowerCase())),
     );
   };
 
@@ -148,7 +164,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
                 onChange={(fromSearchTerm) => setFromSearchTerm(fromSearchTerm)}
                 className="my-2"
               />
-              {entitiesList
+              {entitiesListWithAccountNames
                 .filter(({ name }) => name !== "Other Realms")
                 .map(({ entities, name: title }, index) => (
                   <ToggleComponent
@@ -176,7 +192,7 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
                 onChange={(toSearchTerm) => setToSearchTerm(toSearchTerm)}
                 className="my-2"
               />
-              {entitiesList.map(({ entities, name: title }, index) => (
+              {entitiesListWithAccountNames.map(({ entities, name: title }, index) => (
                 <ToggleComponent
                   title={title}
                   key={index}
@@ -276,27 +292,34 @@ const SelectEntityFromList = ({
   selectedCounterpartyId: bigint | null;
   entities: any[];
 }) => {
+  const { getRealmAddressName } = useRealm();
+
   return (
     <div className="overflow-y-scroll max-h-72 border border-gold/10">
-      {entities.map((entity, index) => (
-        <div
-          key={index}
-          className={clsx(
-            "flex w-full justify-between hover:bg-white/10 items-center  p-1  text-xs pl-2",
-            selectedEntityId === entity.entity_id && " border-gold/10 border",
-          )}
-        >
-          <h6 className="text-sm">{entity.name}</h6>
-          <Button
-            disabled={selectedEntityId === entity.entity_id || selectedCounterpartyId === entity.entity_id}
-            size="xs"
-            variant={"default"}
-            onClick={() => onSelect(entity.name, entity.entity_id!)}
+      {entities.map((entity, index) => {
+        const realmName = getRealmAddressName(entity.entity_id);
+        return (
+          <div
+            key={index}
+            className={clsx(
+              "flex w-full justify-between hover:bg-white/10 items-center p-1 text-xs pl-2",
+              selectedEntityId === entity.entity_id && "border-gold/10 border",
+            )}
           >
-            {selectedEntityId === entity.entity_id ? "Selected" : "Select"}
-          </Button>
-        </div>
-      ))}
+            <h6 className="text-sm">
+              {realmName} ({entity.name})
+            </h6>
+            <Button
+              disabled={selectedEntityId === entity.entity_id || selectedCounterpartyId === entity.entity_id}
+              size="xs"
+              variant="default"
+              onClick={() => onSelect(entity.name, entity.entity_id!)}
+            >
+              {selectedEntityId === entity.entity_id ? "Selected" : "Select"}
+            </Button>
+          </div>
+        );
+      })}
     </div>
   );
 };
