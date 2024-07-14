@@ -14,6 +14,7 @@ import { Headline } from "@/ui/elements/Headline";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import { ToggleComponent } from "../toggle/ToggleComponent";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
+import TextInput from "@/ui/elements/TextInput";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -50,6 +51,8 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
   const [canCarry, setCanCarry] = useState(true);
   const [isOriginDonkeys, setIsOriginDonkeys] = useState(true);
   const [travelTime, setTravelTime] = useState<number | undefined>(undefined);
+  const [fromSearchTerm, setFromSearchTerm] = useState("");
+  const [toSearchTerm, setToSearchTerm] = useState("");
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
 
@@ -101,6 +104,16 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
     });
   };
 
+  const isEntitySelected = (entities: any[], selectedEntityId: bigint | undefined) => {
+    return entities.some((entity) => entity.entity_id === selectedEntityId);
+  };
+
+  const filterEntities = (entities: any[], searchTerm: string, selectedEntityId: bigint | undefined) => {
+    return entities.filter(
+      (entity) => entity.entity_id === selectedEntityId || entity.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  };
+
   return (
     <div className="p-2 h-full">
       <h4 className="text-center capitalize my-5">{currentStep?.title}</h4>
@@ -129,26 +142,54 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
           <div className="grid grid-cols-2 gap-6 mt-3">
             <div className="justify-around">
               <Headline>From</Headline>
-              {entitiesList.map(({ entities, name: title }, index) => (
-                <ToggleComponent title={title} key={index}>
-                  <SelectEntityFromList
-                    onSelect={(name, entityId) => setSelectedEntityIdFrom({ name, entityId })}
-                    selectedCounterpartyId={selectedEntityIdTo?.entityId!}
-                    selectedEntityId={selectedEntityIdFrom?.entityId!}
-                    entities={entities}
-                  />
-                </ToggleComponent>
-              ))}
+              <TextInput
+                placeholder="Search entities..."
+                value={fromSearchTerm}
+                onChange={(fromSearchTerm) => setFromSearchTerm(fromSearchTerm)}
+                className="my-2"
+              />
+              {entitiesList
+                .filter(({ name }) => name !== "Other Realms")
+                .map(({ entities, name: title }, index) => (
+                  <ToggleComponent
+                    title={title}
+                    key={index}
+                    props={{
+                      searchTerm: fromSearchTerm,
+                      open: fromSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdFrom?.entityId),
+                    }}
+                  >
+                    <SelectEntityFromList
+                      onSelect={(name, entityId) => setSelectedEntityIdFrom({ name, entityId })}
+                      selectedCounterpartyId={selectedEntityIdTo?.entityId!}
+                      selectedEntityId={selectedEntityIdFrom?.entityId!}
+                      entities={filterEntities(entities, fromSearchTerm, selectedEntityIdFrom?.entityId)}
+                    />
+                  </ToggleComponent>
+                ))}
             </div>
             <div className="justify-around overflow-auto">
               <Headline>To</Headline>
+              <TextInput
+                placeholder="Search entities..."
+                value={toSearchTerm}
+                onChange={(toSearchTerm) => setToSearchTerm(toSearchTerm)}
+                className="my-2"
+              />
               {entitiesList.map(({ entities, name: title }, index) => (
-                <ToggleComponent title={title} key={index}>
+                <ToggleComponent
+                  title={title}
+                  key={index}
+                  props={{
+                    searchTerm: toSearchTerm,
+                    open: toSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdTo?.entityId),
+                  }}
+                >
                   <SelectEntityFromList
                     onSelect={(name, entityId) => setSelectedEntityIdTo({ name, entityId })}
                     selectedCounterpartyId={selectedEntityIdFrom?.entityId!}
                     selectedEntityId={selectedEntityIdTo?.entityId!}
-                    entities={entities}
+                    entities={filterEntities(entities, toSearchTerm, selectedEntityIdTo?.entityId)}
                   />
                 </ToggleComponent>
               ))}
