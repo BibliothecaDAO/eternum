@@ -17,8 +17,7 @@ import {
 import { useMemo, useState } from "react";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { useProductionManager } from "@/hooks/helpers/useResources";
-import { Headline } from "@/ui/elements/Headline";
-import { getRealmNameById } from "@/ui/utils/realms";
+import { useRealm } from "@/hooks/helpers/useRealm";
 
 export const MarketResource = ({
   entityId,
@@ -180,6 +179,8 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
     },
   } = useDojo();
 
+  const { getRealmAddressName } = useRealm();
+
   // TODO: Do we need this?
   const deleteTrade = useMarketStore((state) => state.deleteTrade);
 
@@ -277,6 +278,10 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
     return (isBuy ? offer.takerGets[0].amount < balance : offer.makerGets[0].amount < balance) && enoughDonkeys;
   }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId, enoughDonkeys]);
 
+  const accountName = useMemo(() => {
+    return getRealmAddressName(offer.makerId);
+  }, [offer.originName]);
+
   return (
     <div
       key={offer.tradeId}
@@ -333,7 +338,9 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
         <div className="col-span-2 text-xxs text-gold/50 uppercase">
           expire: {new Date(offer.expiresAt * 1000).toLocaleString()}
         </div>
-        <div className="col-span-3 text-xxs uppercase text-right text-gold/50">{offer.originName}</div>
+        <div className="col-span-3 text-xxs uppercase text-right text-gold/50">
+          {accountName} ({offer.originName})
+        </div>
       </div>
     </div>
   );
