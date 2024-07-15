@@ -20,9 +20,13 @@ use eternum::systems::realm::contracts::{
 use eternum::utils::map::biomes::Biome;
 
 use eternum::utils::testing::{
-    spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos, spawn_hyperstructure,
-    get_default_hyperstructure_coord, generate_realm_positions, deploy_realm_systems,
-    deploy_hyperstructure_systems
+    world::spawn_eternum,
+    systems::{deploy_system, deploy_realm_systems, deploy_hyperstructure_systems},
+    general::{
+        spawn_realm, get_default_realm_pos, generate_realm_positions, spawn_hyperstructure,
+        get_default_hyperstructure_coord
+    },
+    config::{set_combat_config}
 };
 
 use starknet::contract_address_const;

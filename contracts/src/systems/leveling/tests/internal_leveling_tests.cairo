@@ -18,7 +18,7 @@ mod internal_leveling_systems {
         InternalLevelingSystemsImpl as leveling
     };
 
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 
     const LEVELING_CONFIG_ID: u128 = 8888;
     const MAX_LEVEL: u64 = 10_u64;

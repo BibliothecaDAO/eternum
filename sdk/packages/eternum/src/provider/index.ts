@@ -677,7 +677,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_explore_config(props: SystemProps.SetExplorationConfigProps) {
+  public async set_exploration_config(props: SystemProps.SetExplorationConfigProps) {
     const { wheat_burn_amount, fish_burn_amount, reward_amount, shards_mines_fail_probability, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {

@@ -790,7 +790,7 @@ mod tests {
     use eternum::models::resources::ResourceTrait;
     use eternum::models::resources::ResourceTransferLockTrait;
     use eternum::models::resources::{Resource, ResourceImpl, ResourceTransferLock};
-    use eternum::utils::testing::spawn_eternum;
+    use eternum::utils::testing::world::spawn_eternum;
     use super::{
         Battle, BattleHealth, BattleArmy, BattleSide, Troops, TroopConfig, Army, ArmyImpl, Protectee
     };
