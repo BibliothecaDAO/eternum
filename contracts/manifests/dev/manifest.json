@@ -1001,7 +1001,7 @@
     ],
     "address": "0x161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824",
     "transaction_hash": "0x612de8b84ba9c5454887b576a17af10b7be97dab5f01bf79d1ec2d3cca3e6c5",
-    "block_number": 18,
+    "block_number": 28,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -1020,8 +1020,8 @@
     {
       "kind": "DojoContract",
       "address": "0x3db3213122bf078c0dc15d5f45b542ab0a03a3fae4fe9e1373fe291357f1000",
-      "class_hash": "0x2281f217a4d6994a2d4203859bb8ff70b2375898bbd5285ba0bbd27520d4b2b",
-      "original_class_hash": "0x2281f217a4d6994a2d4203859bb8ff70b2375898bbd5285ba0bbd27520d4b2b",
+      "class_hash": "0x60f537be65aa0992a5cb2feedc4af036cbb7784da94c87ed6cc3453eb84188a",
+      "original_class_hash": "0x60f537be65aa0992a5cb2feedc4af036cbb7784da94c87ed6cc3453eb84188a",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -1114,7 +1114,11 @@
                   "type": "eternum::models::position::Coord"
                 },
                 {
-                  "name": "owner_fee_scaled",
+                  "name": "owner_fee_num",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "owner_fee_denom",
                   "type": "core::integer::u128"
                 }
               ],
@@ -1134,7 +1138,11 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "new_swap_fee_unscaled",
+                  "name": "new_owner_fee_num",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "new_owner_fee_denom",
                   "type": "core::integer::u128"
                 }
               ],
@@ -1230,8 +1238,8 @@
     {
       "kind": "DojoContract",
       "address": "0x72c668dbc1e2e8dae1aa02952e3f70a7f89dfeb6648b37315c5c05bb7297754",
-      "class_hash": "0x12a85ecde2aed68fc489460bff6baab43cf03748760506e7fa196a65243429b",
-      "original_class_hash": "0x12a85ecde2aed68fc489460bff6baab43cf03748760506e7fa196a65243429b",
+      "class_hash": "0x723d625e9272bd2117192336ce207ad93d65a377c1fd6571216c76e3f0e2e63",
+      "original_class_hash": "0x723d625e9272bd2117192336ce207ad93d65a377c1fd6571216c76e3f0e2e63",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -1470,8 +1478,8 @@
     {
       "kind": "DojoContract",
       "address": "0x33868c8253a6bdd63074cb8fbdd11cfcca50af1b0f25062d5311541487edb45",
-      "class_hash": "0x78d5cf3d35b3481c4841067f63f993910fdce6c49ead3ea6106df364e90db43",
-      "original_class_hash": "0x78d5cf3d35b3481c4841067f63f993910fdce6c49ead3ea6106df364e90db43",
+      "class_hash": "0x3c9804f6b875898cd8313c7e50eb1911a21a2128ad54a70df35f950f95f43db",
+      "original_class_hash": "0x3c9804f6b875898cd8313c7e50eb1911a21a2128ad54a70df35f950f95f43db",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -1968,8 +1976,8 @@
     {
       "kind": "DojoContract",
       "address": "0xca567be002d22ad080bf3ed80d869374022ee3d215462da7b048543dd79535",
-      "class_hash": "0x52228c1f092d974bc2d67dead9ce2bb762c13b213a037d7661624bec5122229",
-      "original_class_hash": "0x52228c1f092d974bc2d67dead9ce2bb762c13b213a037d7661624bec5122229",
+      "class_hash": "0x1ef8391291abe1678e533b62964f028c9a7d64a6a6326f5f5bc70052d5b08d9",
+      "original_class_hash": "0x1ef8391291abe1678e533b62964f028c9a7d64a6a6326f5f5bc70052d5b08d9",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -2322,8 +2330,8 @@
     {
       "kind": "DojoContract",
       "address": "0x73f0efc06b135109b40f185f2a04a3a30e317f189642958f4f6848c1bb95a8e",
-      "class_hash": "0x6d8eac87d7284c8d946d66f9d38912c3728c63e7f9e724dd0faa1b704537565",
-      "original_class_hash": "0x6d8eac87d7284c8d946d66f9d38912c3728c63e7f9e724dd0faa1b704537565",
+      "class_hash": "0x6ac03a6cf52309eb6eb3e0e2feaf789e5b5de19b106af0c8839f7ce904b9bf4",
+      "original_class_hash": "0x6ac03a6cf52309eb6eb3e0e2feaf789e5b5de19b106af0c8839f7ce904b9bf4",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -2765,7 +2773,11 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "lp_fee_scaled",
+                  "name": "lp_fee_num",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "lp_fee_denom",
                   "type": "core::integer::u128"
                 }
               ],
@@ -3114,8 +3126,8 @@
     {
       "kind": "DojoContract",
       "address": "0x2b516f55f0ce07ab936099bc3c77471857170a39461adf49c67eb0f67921221",
-      "class_hash": "0x11efdc80c04daa4f2f4a2f88d153c4f3c9fbceba55240dae4cf5e32088f6ba5",
-      "original_class_hash": "0x11efdc80c04daa4f2f4a2f88d153c4f3c9fbceba55240dae4cf5e32088f6ba5",
+      "class_hash": "0x40752f21fda4bc129fa90c8a40b192acdb7982e253de18a5ad5f5ba86783425",
+      "original_class_hash": "0x40752f21fda4bc129fa90c8a40b192acdb7982e253de18a5ad5f5ba86783425",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -3204,7 +3216,11 @@
                   "type": "eternum::models::position::Coord"
                 },
                 {
-                  "name": "owner_fee_scaled",
+                  "name": "owner_fee_num",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "owner_fee_denom",
                   "type": "core::integer::u128"
                 }
               ],
@@ -5828,7 +5844,12 @@
           "key": true
         },
         {
-          "name": "owner_fee_scaled",
+          "name": "owner_fee_num",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "owner_fee_denom",
           "type": "u128",
           "key": false
         },
@@ -5838,8 +5859,8 @@
           "key": false
         }
       ],
-      "class_hash": "0x6ef534336e545ee79b455746d111688b7eccf03bf7a7dcbd83672fbae431b9b",
-      "original_class_hash": "0x6ef534336e545ee79b455746d111688b7eccf03bf7a7dcbd83672fbae431b9b",
+      "class_hash": "0xf37bf9908301861b36eb6ac33bb403d1165df67d66f85061b7be42275be89",
+      "original_class_hash": "0xf37bf9908301861b36eb6ac33bb403d1165df67d66f85061b7be42275be89",
       "abi": [
         {
           "type": "impl",
@@ -6187,7 +6208,11 @@
               "type": "core::integer::u128"
             },
             {
-              "name": "owner_fee_scaled",
+              "name": "owner_fee_num",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "owner_fee_denom",
               "type": "core::integer::u128"
             },
             {
@@ -10574,13 +10599,18 @@
           "key": false
         },
         {
-          "name": "lp_fee_scaled",
+          "name": "lp_fee_num",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "lp_fee_denom",
           "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x73ff2ce7a723e107fa8e074c239945f2a0ed51aad3d089da0ae54ed3749127e",
-      "original_class_hash": "0x73ff2ce7a723e107fa8e074c239945f2a0ed51aad3d089da0ae54ed3749127e",
+      "class_hash": "0x2a29a61f74c4df129238a83095d15d893ff51d2ec8b59798b52776e2085394d",
+      "original_class_hash": "0x2a29a61f74c4df129238a83095d15d893ff51d2ec8b59798b52776e2085394d",
       "abi": [
         {
           "type": "impl",
@@ -10918,7 +10948,11 @@
               "type": "core::integer::u128"
             },
             {
-              "name": "lp_fee_scaled",
+              "name": "lp_fee_num",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "lp_fee_denom",
               "type": "core::integer::u128"
             }
           ]
