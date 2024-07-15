@@ -55,7 +55,7 @@ export class ArmyManager {
       throw new Error("Model not loaded yet");
     }
     const index = this.characters.length;
-    const character = new Character(position, index, this.animationClip);
+    const character = new Character(position, index, this.instancedModel!, this.animationClip);
     this.characters.push(character);
     this.updateInstanceMatrix(character);
 
@@ -76,11 +76,27 @@ export class ArmyManager {
       this.updateInstanceMatrix(character);
     }
     this.instancedModel?.needsUpdate();
+    if (this.instancedModel) {
+      this.instancedModel.instancedMeshes.forEach((instanceMesh, i) => {
+        if (this.instancedModel!.group.children[i] instanceof THREE.Mesh) {
+          console.log("is mesh yessssss");
+          try {
+            instanceMesh.setMorphAt(0, this.instancedModel!.group.children[i] as THREE.Mesh);
+          } catch (error) {
+            console.error("An error occurred while setting morph target:", error);
+          }
+        }
+      });
+    }
   }
 
   moveCharacter(index: number, newPosition: { col: number; row: number }) {
     const character = this.characters[index];
     character.moveToHex(newPosition);
+  }
+
+  getCharacter(index: number): Character {
+    return this.characters[index];
   }
 
   private updateInstanceMatrix(character: Character) {
@@ -109,24 +125,29 @@ export class ArmyManager {
 class Character {
   private currentHexPosition: { col: number; row: number };
   public index: number;
-  private animationObject: THREE.Object3D;
   private mixer: THREE.AnimationMixer;
   private walkAction: THREE.AnimationAction | undefined;
   private targetPosition: { col: number; row: number } | null = null;
   private rotation: number = 0;
   private isMoving: boolean = false;
   private moveSpeed: number = 2;
+  private morphInfluences: number[] = [];
 
-  constructor(initialPosition: { col: number; row: number }, index: number, animationClip?: THREE.AnimationClip) {
+  constructor(
+    initialPosition: { col: number; row: number },
+    index: number,
+    instancedModel: InstancedModel,
+    animationClip?: THREE.AnimationClip,
+  ) {
     this.currentHexPosition = initialPosition;
     this.index = index;
-    this.animationObject = new THREE.Object3D();
-    this.mixer = new THREE.AnimationMixer(this.animationObject);
+    this.mixer = new THREE.AnimationMixer(instancedModel.group);
     if (animationClip) {
       this.walkAction = this.mixer.clipAction(animationClip);
       this.walkAction.play();
       this.walkAction.paused = true;
     }
+    this.morphInfluences = new Array(instancedModel.group.children.length).fill(0);
   }
 
   moveToHex(newPosition: { col: number; row: number }) {
@@ -136,7 +157,6 @@ class Character {
     this.isMoving = true;
     if (this.walkAction) {
       console.log("play walk action");
-      // this.walkAction.reset().play();
       this.walkAction.paused = false;
     }
   }
@@ -156,16 +176,11 @@ class Character {
 
       this.currentHexPosition = { col: currentPos.x, row: currentPos.z };
 
-      // update the animation object
-      this.animationObject.position.set(currentPos.x, 0, currentPos.z);
-      this.animationObject.rotation.y = this.rotation;
-
       if (currentPos.distanceTo(targetPos) < 0.01) {
         this.isMoving = false;
         this.currentHexPosition = this.targetPosition;
         this.targetPosition = null;
         if (this.walkAction) {
-          // this.walkAction.stop();
           this.walkAction.paused = true;
         }
       }
@@ -175,10 +190,14 @@ class Character {
   private rotateTowardsTarget(newPosition: { col: number; row: number }) {
     const dx = newPosition.col - this.currentHexPosition.col;
     const dz = newPosition.row - this.currentHexPosition.row;
-    this.rotation = Math.atan2(dz, dx) + Math.PI / 2; // Store rotation instead of setting index
+    this.rotation = Math.atan2(dz, dx) + Math.PI / 2;
   }
 
   getRotation(): number {
     return this.rotation;
+  }
+
+  getMorphInfluences(): number[] {
+    return this.morphInfluences;
   }
 }

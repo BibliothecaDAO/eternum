@@ -47,6 +47,7 @@ export default class WorldmapScene {
   private pmremGenerator!: THREE.PMREMGenerator;
   private fogManager: FogManager;
   structureSystem: StructureSystem;
+  armySystem: ArmySystem;
 
   private biome!: Biome;
   private lightType: "pmrem" | "hemisphere" = "hemisphere";
@@ -152,6 +153,9 @@ export default class WorldmapScene {
 
     this.structureSystem = new StructureSystem(this.dojoConfig, this);
     this.structureSystem.setupSystem();
+
+    this.armySystem = new ArmySystem(this.dojoConfig, this.scene);
+    this.armySystem.setupSystem();
   }
 
   private loadBiomeModels() {
@@ -424,7 +428,7 @@ export default class WorldmapScene {
 
   update(deltaTime: number) {
     this.character.update(deltaTime);
-    // this.armySystem.update(deltaTime);
+    this.armySystem.update(deltaTime);
     if (this.mainDirectionalLight) {
       this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
     }
