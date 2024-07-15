@@ -10,7 +10,7 @@ import WorldmapScene from "../scenes/Worldmap";
 export class StructureSystem {
   structureManager: StructureManager;
   constructor(private dojo: SetupResult, private worldMapScene: WorldmapScene) {
-    this.structureManager = new StructureManager(worldMapScene, "models/buildings/castle.glb", 1000);
+    this.structureManager = new StructureManager(worldMapScene, "models/buildings/castle2.glb", 1000);
   }
 
   setupSystem() {

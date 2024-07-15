@@ -24,20 +24,8 @@ export class StructureManager {
         modelPath,
         (gltf) => {
           const model = gltf.scene as THREE.Group;
-          model.position.set(0, 0, 0);
-          model.rotation.y = Math.PI;
-
-          //   model.scale.set(0.1, 0.1, 0.1);
-
-          model.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
           this.instancedModel = new InstancedModel(model, maxInstances);
           this.instancedModel.setCount(0);
-          this.instancedModel.scaleModel(new THREE.Vector3(0.3, 0.3, 0.3));
           this.worldMapScene.scene.add(this.instancedModel.group);
           this.isLoaded = true;
           resolve();
@@ -76,19 +64,6 @@ export class StructureManager {
 
     console.log({ models: this.instancedModel });
   }
-
-  //   private calculateWorldPosition(hexCoords: { col: number; row: number }): THREE.Vector3 {
-  //     const { row, col } = hexCoords;
-  //     const hexSize = 2; // Make sure this matches the hexSize in HexagonMap
-  //     const horizontalSpacing = hexSize * Math.sqrt(3);
-  //     const verticalSpacing = (hexSize * 3) / 2;
-
-  //     const x = col * horizontalSpacing + (row % 2) * (horizontalSpacing / 2);
-  //     const z = -row * verticalSpacing;
-  //     const y = 3; // Adjust this value to place the character on top of the hexagons
-
-  //     return new THREE.Vector3(x, y, z);
-  //   }
 
   calculateWorldPosition(hexCoords: { col: number; row: number }) {
     const { row, col } = hexCoords;
