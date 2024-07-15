@@ -171,16 +171,7 @@ export default class WorldmapScene {
           path,
           (gltf) => {
             const model = gltf.scene as THREE.Group;
-            model.scale.set(0, 0, 0);
-            model.position.set(0, 0, 0);
-            model.rotation.y = Math.PI;
 
-            model.traverse((child) => {
-              if (child instanceof THREE.Mesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            });
             const tmp = new InstancedModel(model, this.renderChunkSize.width * this.renderChunkSize.height);
             this.biomeModels.set(biome as BiomeType, tmp);
             this.scene.add(tmp.group);
@@ -248,6 +239,7 @@ export default class WorldmapScene {
     const hexPositions: THREE.Vector3[] = [];
     const batchSize = 25; // Adjust batch size as needed
     let currentIndex = 0;
+    const structures = this.structureSystem.getStructures();
 
     const processBatch = () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
@@ -258,8 +250,11 @@ export default class WorldmapScene {
         hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
         const pos = this.getWorldPositionForHex({ row: (startRow + row), col: (startCol + col) })
         dummy.position.copy(pos)
-        dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
-
+        if (structures.some(s => s.col === startCol + col && s.row === startRow + row)) {
+          dummy.scale.set(0, 0, 0);
+        } else {
+          dummy.scale.set(this.hexSize, this.hexSize, this.hexSize)
+        }
         const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
         const rotationIndex = Math.floor(rotationSeed * 6);
         const randomRotation = (rotationIndex * Math.PI) / 3;
