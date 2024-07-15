@@ -113,6 +113,8 @@ trait ICombatContract<TContractState> {
     /// # Preconditions:
     /// - The caller must own the `attacking_army_id`.
     /// - Both `attacking_army_id` and `defending_army_id` must not already be in battle.
+    ///   If the attacked army is in a battle that has ended, it is automatically forced 
+    ///   to leave the battle.
     /// - Both armies must be at the same location.
     ///
     /// # Arguments:
@@ -125,8 +127,7 @@ trait ICombatContract<TContractState> {
     ///     - Verifies the attacking and defending armies are not already in battle.
     ///     - Ensures the caller owns the attacking army.
     ///     - Checks that both armies are at the same position.
-    ///     - Ensure that attacking army is alive
-    ///     - Defending Army does not need to be alive
+    ///     - Ensure that both armies are alive
     /// 2. **Battle ID Assignment**:
     ///     - Generates a new unique battle ID and assigns it to both armies.
     ///     - Sets the battle side for each army (attack or defense).
@@ -170,7 +171,7 @@ trait ICombatContract<TContractState> {
     /// - The specified `battle_side` must be either `BattleSide::Attack` or `BattleSide::Defence`.
     /// - The caller must own the `army_id`.
     /// - The battle must be ongoing.
-    /// - The army must not already be in a battle.
+    /// - The army must not already be in a battle. 
     /// - The army must be at the same location as the battle.
     ///
     /// # Arguments:
@@ -187,6 +188,7 @@ trait ICombatContract<TContractState> {
     ///     - Updates the battle state before performing any other actions.
     ///     - Ensures the battle is still ongoing.
     /// 3. **Army Validations**:
+    ///     - Ensures both armies are alive
     ///     - Ensures the army is not already in a battle.
     ///     - Checks that the army is at the same location as the battle.
     /// 4. **Army Assignment to Battle**:
@@ -577,8 +579,40 @@ mod combat_systems {
             get!(world, attacking_army_id, EntityOwner).assert_caller_owner(world);
 
             let mut defending_army: Army = get!(world, defending_army_id, Army);
+            if defending_army.battle_id.is_non_zero() {
+                // defending army appears to be in battle
+                // so we want to update the defending army's battle status
+                // to see if the battle has ended. if it has ended, then the 
+                // army will be removed from the battle
+                let mut defending_army_battle: Battle = get!(
+                    world, defending_army.battle_id, Battle
+                );
+                InternalCombatImpl::update_battle_and_army(
+                    world, ref defending_army_battle, ref defending_army
+                );
+                set!(world, (defending_army_battle))
+            }
+            // ensure defending army is not in battle
             defending_army.assert_not_in_battle();
 
+            let troop_config = TroopConfigImpl::get(world);
+            let attacking_army_health: Health = get!(world, attacking_army_id, Health);
+            let defending_army_health: Health = get!(world, defending_army_id, Health);
+            // ensure health invariant checks pass
+            assert!(
+                attacking_army_health.current == attacking_army.troops.full_health(troop_config),
+                "attacking army health sanity check fail"
+            );
+            assert!(
+                defending_army_health.current == defending_army.troops.full_health(troop_config),
+                "defending army health sanity check fail"
+            );
+
+            // ensure both armies are alive
+            attacking_army_health.assert_alive("your army");
+            defending_army_health.assert_alive("the army you are attacking");
+
+            // ensure both armies are in the same location
             let attacking_army_position: Position = get!(world, attacking_army_id, Position);
             let defending_army_position: Position = get!(world, defending_army_id, Position);
             attacking_army_position.assert_same_location(defending_army_position.into());
@@ -609,22 +643,6 @@ mod combat_systems {
             }
 
             // create battle 
-            let troop_config = TroopConfigImpl::get(world);
-            let attacking_army_health: Health = get!(world, attacking_army_id, Health);
-            // health sanity check 
-            assert!(
-                attacking_army_health.current == attacking_army.troops.full_health(troop_config),
-                "attacking army health sanity check fail"
-            );
-            attacking_army_health.assert_alive("Army");
-
-            let defending_army_health: Health = get!(world, defending_army_id, Health);
-            // health sanity check 
-            assert!(
-                defending_army_health.current == defending_army.troops.full_health(troop_config),
-                "defending army health sanity check fail"
-            );
-
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;
             battle.attack_army = attacking_army.into();
@@ -667,6 +685,9 @@ mod combat_systems {
             // update battle state before any other actions
             let mut battle: Battle = get!(world, battle_id, Battle);
             battle.update_state();
+
+            // ensure battle has not ended
+            assert!(!battle.has_ended(), "Battle has ended");
 
             // ensure caller army is not in battle
             let mut caller_army: Army = get!(world, army_id, Army);
