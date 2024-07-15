@@ -1,6 +1,6 @@
 import Button from "@/ui/elements/Button";
-import React, { useState } from "react";
-import clsx from "clsx"; // Import clsx
+import React, { useEffect, useState } from "react";
+import clsx from "clsx";
 
 type ToggleComponentProps = {
   title: string;
@@ -15,6 +15,14 @@ export const ToggleComponent = ({ title, children, props }: ToggleComponentProps
     setIsToggled(!isToggled);
   };
 
+  useEffect(() => {
+    if (props.searchTerm !== undefined) {
+      setIsToggled(false);
+    }
+  }, [props.searchTerm]);
+
+  const effectiveIsToggled = props?.open ? props?.open && !isToggled : isToggled;
+
   return (
     <div className="w-full" {...props}>
       <Button onClick={toggleList} className="mt-2 w-full transition-all duration-200" variant="outline">
@@ -23,7 +31,7 @@ export const ToggleComponent = ({ title, children, props }: ToggleComponentProps
       <div
         className={clsx(
           "transition-max-height duration-300 ease-in-out overflow-hidden",
-          isToggled ? "max-h-[500px] visible" : "max-h-0 invisible",
+          effectiveIsToggled ? "max-h-[500px] visible" : "max-h-0 invisible",
         )}
       >
         <div>{children}</div>

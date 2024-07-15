@@ -47,7 +47,7 @@ export const RoadRealmSelector = ({
             if (!realmData) return undefined;
             const { name, order, realmId: takerRealmId } = realmData;
             const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
-            const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
+            const distance = takerEntityId ? (calculateDistance(realmEntityId, takerEntityId) ?? 0) : 0;
             const addressName = takerEntityId ? getRealmAddressName(takerEntityId) : "";
             return {
               entityId: realm.entity_id,

@@ -17,8 +17,7 @@ import {
 import { useMemo, useState } from "react";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { useProductionManager } from "@/hooks/helpers/useResources";
-import { Headline } from "@/ui/elements/Headline";
-import { getRealmNameById } from "@/ui/utils/realms";
+import { useRealm } from "@/hooks/helpers/useRealm";
 
 export const MarketResource = ({
   entityId,
@@ -51,22 +50,21 @@ export const MarketResource = ({
   return (
     <div
       onClick={() => onClick(resource.id)}
-      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer flex gap-1 hover:bg-gold/10  hover:clip-angled-sm clip-angled-sm group ${
-        active ? "bg-gold/10  " : ""
+      className={`w-full border border-gold/5 h-8 p-1 cursor-pointer grid grid-cols-5 gap-1 hover:bg-gold/10 hover:clip-angled-sm clip-angled-sm group ${
+        active ? "bg-gold/10" : ""
       }`}
     >
-      <ResourceIcon size="sm" resource={resource.trait} withTooltip={false} />
-      <div className="truncate text-xs self-center">{resource.trait}</div>
-
-      <div className="text-xs text-gold/70 group-hover:text-green self-center">
-        [{currencyFormat(balance ? Number(balance) : 0, 0)}]
+      <div className="flex items-center gap-2 col-span-2">
+        <ResourceIcon size="sm" resource={resource.trait} withTooltip={false} />
+        <div className="truncate text-xs">{resource.trait}</div>
+        <div className="text-xs text-gold/70 group-hover:text-green">
+          [{currencyFormat(balance ? Number(balance) : 0, 0)}]
+        </div>
       </div>
 
-      <div className="ml-auto flex gap-6 w-3/6 justify-between font-bold">
-        <div className="text-red w-5/12">{bidPrice}</div>
-        <div className="text-green text-left  w-5/12">{askPrice}</div>
-        <div className="text-blueish  w-2/12">{depth}</div>
-      </div>
+      <div className="text-red font-bold flex items-center justify-center">{bidPrice}</div>
+      <div className="text-green font-bold flex items-center justify-center">{askPrice}</div>
+      <div className="text-blueish font-bold flex items-center justify-center">{depth}</div>
     </div>
   );
 };
@@ -180,6 +178,8 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
     },
   } = useDojo();
 
+  const { getRealmAddressName } = useRealm();
+
   // TODO: Do we need this?
   const deleteTrade = useMarketStore((state) => state.deleteTrade);
 
@@ -277,6 +277,10 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
     return (isBuy ? offer.takerGets[0].amount < balance : offer.makerGets[0].amount < balance) && enoughDonkeys;
   }, [productionManager, production, currentDefaultTick, entityId, offer.makerId, offer.tradeId, enoughDonkeys]);
 
+  const accountName = useMemo(() => {
+    return getRealmAddressName(offer.makerId);
+  }, [offer.originName]);
+
   return (
     <div
       key={offer.tradeId}
@@ -333,7 +337,9 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
         <div className="col-span-2 text-xxs text-gold/50 uppercase">
           expire: {new Date(offer.expiresAt * 1000).toLocaleString()}
         </div>
-        <div className="col-span-3 text-xxs uppercase text-right text-gold/50">{offer.originName}</div>
+        <div className="col-span-3 text-xxs uppercase text-right text-gold/50">
+          {accountName} ({offer.originName})
+        </div>
       </div>
     </div>
   );
