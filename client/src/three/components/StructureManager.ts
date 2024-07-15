@@ -43,12 +43,7 @@ export class StructureManager {
     if (!this.isLoaded) {
       throw new Error("Model not loaded yet");
     }
-    console.log({ hexCoords });
-    // const position = this.calculateWorldPosition({ col: hexCoords.col, row: hexCoords.row + 3 });
-    // const position = this.worldMapScene.getWorldPositionForHex(hexCoords);
-    const position = this.worldMapScene.getWorldPositionForHex({ col: 10, row: 0 });
-    // const position = this.worldMapScene.getWorldPositionForHex(hexCoords);
-    // const position = this.worldMapScene.getWorldPositionForHex({ col: 10, row: 0 });
+    const position = this.worldMapScene.getWorldPositionForHex(hexCoords);
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
 
@@ -59,10 +54,6 @@ export class StructureManager {
       this.instancedModel.setMatrixAt(index, this.dummy.matrix);
       this.instancedModel.setCount(this.structures.counter); // Set the count to the current number of structures
     }
-
-    console.log({ counter: this.structures.counter });
-
-    console.log({ models: this.instancedModel });
   }
 
   calculateWorldPosition(hexCoords: { col: number; row: number }) {
