@@ -113,6 +113,8 @@ trait ICombatContract<TContractState> {
     /// # Preconditions:
     /// - The caller must own the `attacking_army_id`.
     /// - Both `attacking_army_id` and `defending_army_id` must not already be in battle.
+    ///   If the attacked army is in a battle that has ended, it is automatically forced 
+    ///   to leave the battle.
     /// - Both armies must be at the same location.
     ///
     /// # Arguments:
@@ -125,8 +127,7 @@ trait ICombatContract<TContractState> {
     ///     - Verifies the attacking and defending armies are not already in battle.
     ///     - Ensures the caller owns the attacking army.
     ///     - Checks that both armies are at the same position.
-    ///     - Ensure that attacking army is alive
-    ///     - Defending Army does not need to be alive
+    ///     - Ensure that both armies are alive
     /// 2. **Battle ID Assignment**:
     ///     - Generates a new unique battle ID and assigns it to both armies.
     ///     - Sets the battle side for each army (attack or defense).
@@ -170,7 +171,7 @@ trait ICombatContract<TContractState> {
     /// - The specified `battle_side` must be either `BattleSide::Attack` or `BattleSide::Defence`.
     /// - The caller must own the `army_id`.
     /// - The battle must be ongoing.
-    /// - The army must not already be in a battle.
+    /// - The army must not already be in a battle. 
     /// - The army must be at the same location as the battle.
     ///
     /// # Arguments:
@@ -187,6 +188,7 @@ trait ICombatContract<TContractState> {
     ///     - Updates the battle state before performing any other actions.
     ///     - Ensures the battle is still ongoing.
     /// 3. **Army Validations**:
+    ///     - Ensures both armies are alive
     ///     - Ensures the army is not already in a battle.
     ///     - Checks that the army is at the same location as the battle.
     /// 4. **Army Assignment to Battle**:
