@@ -232,6 +232,8 @@ export function useGetRealms(): RealmExtended[] {
     },
   } = useDojo();
 
+  const { getRealmAddressName } = useRealm();
+
   // will force update the values when they change in the contract
   const realmEntityIds = useEntityQuery([Has(Realm)]);
 
@@ -261,6 +263,7 @@ export function useGetRealms(): RealmExtended[] {
                 order: realm.order,
                 position: realmData.position,
                 owner: owner?.address,
+                ownerName: getRealmAddressName(realm.entity_id),
                 entity_id: realm.entity_id,
                 resources,
               };

@@ -9,11 +9,13 @@ export const TravelInfo = ({
   resources,
   travelTime,
   setCanCarry,
+  isAmm,
 }: {
   entityId: bigint;
   resources: Resource[];
   travelTime?: number;
   setCanCarry?: (canContinue: boolean) => void;
+  isAmm?: boolean;
 }) => {
   const [resourceWeight, setResourceWeight] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
@@ -27,7 +29,7 @@ export const TravelInfo = ({
     setResourceWeight(multipliedWeight);
 
     const { balance } = getBalance(entityId, ResourcesIds.Donkey);
-    const currentDonkeyAmount = resources.find((r) => r.resourceId === ResourcesIds.Donkey)?.amount || 0;
+    const currentDonkeyAmount = isAmm ? 0 : resources.find((r) => r.resourceId === ResourcesIds.Donkey)?.amount || 0;
     const calculatedDonkeyBalance = divideByPrecision(balance) - currentDonkeyAmount;
     setDonkeyBalance(calculatedDonkeyBalance);
 

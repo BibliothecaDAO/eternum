@@ -27,7 +27,7 @@ export const MarketModal = () => {
   const banks = useGetBanks();
   const bank = banks.length === 1 ? banks[0] : null;
 
-  const { userTrades, bidOffers, askOffers } = useSetMarket();
+  const { bidOffers, askOffers } = useSetMarket();
 
   //   TODO: This changes the realm, but if they are on hexception it doesn't change the location, so it's a bit confusing
   const { realmEntityId, setRealmEntityId } = useRealmStore();
@@ -117,7 +117,7 @@ export const MarketModal = () => {
           </div>
         </div>
 
-        <div className="col-span-3 p-1  row-span-10 overflow-y-auto ">
+        <div className="col-span-3 p-1 row-span-10 overflow-y-auto ">
           <MarketResourceSidebar
             entityId={realmEntityId}
             search={""}
@@ -177,13 +177,15 @@ export const MarketResourceSidebar = ({
 
   return (
     <div className=" px-1 ">
-      <div className="w-full flex justify-end gap-8 mb-1">
-        <div className="w-3/6 flex justify-between text-xs font-bold uppercase">
-          <div>Sell</div>
-          <div>Buy</div>
-          <div>Qty</div>
+      <div className="w-full mb-1">
+        <div className="grid grid-cols-5 text-xs font-bold uppercase">
+          <div className="col-span-2"></div>
+          <div className="flex items-center justify-center">Sell</div>
+          <div className="flex items-center justify-center">Buy</div>
+          <div className="flex items-center justify-center">Qty</div>
         </div>
       </div>
+
       <div className="flex flex-col h-full gap-[0.1]">
         {filteredResources
           .filter((resource) => resource.id !== ResourcesIds.Lords)
