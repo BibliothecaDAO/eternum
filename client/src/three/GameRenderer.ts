@@ -59,7 +59,10 @@ export default class GameRenderer {
   private gui: GUI = new GUI();
 
   constructor(dojoContext: SetupResult, initialState: ThreeStore) {
-    this.renderer = new THREE.WebGLRenderer();
+    this.renderer = new THREE.WebGLRenderer({
+      powerPreference: "high-performance",
+    });
+    this.renderer.setPixelRatio(1);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setPixelRatio(window.devicePixelRatio);

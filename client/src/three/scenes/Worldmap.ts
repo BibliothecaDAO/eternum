@@ -204,13 +204,14 @@ export default class WorldmapScene {
 
   getWorldPositionForHex(hexCoords: { row: number; col: number }): THREE.Vector3 {
     const { row, col } = hexCoords;
-
+    const horizontalSpacing = this.hexSize * Math.sqrt(3);
+    const verticalSpacing = (this.hexSize * 3) / 2;
     // Calculate the x and z coordinates
-    const x = ((this.hexSize * 3) / 2) * col;
-    const z = this.hexSize * Math.sqrt(3) * (row + 0.5 * (col & 1));
+    const x = col * horizontalSpacing + (row % 2) * (horizontalSpacing / 2);
+    const z = -row * verticalSpacing;
 
     // y coordinate is half of the hexagon height
-    const y = this.hexSize / 2;
+    const y = 0
 
     return new THREE.Vector3(x, y, z);
   }
@@ -251,10 +252,8 @@ export default class WorldmapScene {
         const col = (i % cols) - cols / 2;
 
         hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
-
-        dummy.position.x = (startCol + col) * horizontalSpacing + ((startRow + row) % 2) * (horizontalSpacing / 2);
-        dummy.position.z = -(startRow + row) * verticalSpacing;
-        dummy.position.y = 0;
+        const pos = this.getWorldPositionForHex({ row: (startRow + row), col: (startCol + col) })
+        dummy.position.copy(pos)
         dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
 
         const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);

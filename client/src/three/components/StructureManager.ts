@@ -24,20 +24,17 @@ export class StructureManager {
         modelPath,
         (gltf) => {
           const model = gltf.scene as THREE.Group;
-          model.position.set(0, 0, 0);
-          model.rotation.y = Math.PI;
-
           //   model.scale.set(0.1, 0.1, 0.1);
 
-          model.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
-            }
-          });
+          // model.traverse((child) => {
+          //   if (child instanceof THREE.Mesh) {
+          //     child.castShadow = true;
+          //     child.receiveShadow = true;
+          //   }
+          // });
           this.instancedModel = new InstancedModel(model, maxInstances);
           this.instancedModel.setCount(0);
-          this.instancedModel.scaleModel(new THREE.Vector3(0.3, 0.3, 0.3));
+          //this.instancedModel.scaleModel(new THREE.Vector3(0.3, 0.3, 0.3));
           this.worldMapScene.scene.add(this.instancedModel.group);
           this.isLoaded = true;
           resolve();
