@@ -13,8 +13,6 @@ import { LocationManager } from "./helpers/LocationManager";
 import GUI from "lil-gui";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { FELT_CENTER } from "@/ui/config";
-import { StructureSystem } from "./systems/StructureSystem";
-import { ArmySystem } from "./systems/ArmySystem";
 
 const horizontalSpacing = Math.sqrt(3);
 const verticalSpacing = 3 / 2;

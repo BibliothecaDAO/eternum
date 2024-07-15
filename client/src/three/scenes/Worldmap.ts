@@ -148,13 +148,10 @@ export default class WorldmapScene {
 
     this.loadBiomeModels();
 
-    // this.armySystem = new ArmySystem(this.dojoConfig, this.scene);
-    // this.armySystem.setupSystem();
-
     this.structureSystem = new StructureSystem(this.dojoConfig, this);
     this.structureSystem.setupSystem();
 
-    this.armySystem = new ArmySystem(this.dojoConfig, this.scene);
+    this.armySystem = new ArmySystem(this.dojoConfig, this);
     this.armySystem.setupSystem();
   }
 
@@ -215,7 +212,7 @@ export default class WorldmapScene {
     const z = -row * verticalSpacing;
 
     // y coordinate is half of the hexagon height
-    const y = 0
+    const y = 0;
 
     return new THREE.Vector3(x, y, z);
   }
@@ -256,8 +253,8 @@ export default class WorldmapScene {
         const col = (i % cols) - cols / 2;
 
         hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
-        const pos = this.getWorldPositionForHex({ row: (startRow + row), col: (startCol + col) })
-        dummy.position.copy(pos)
+        const pos = this.getWorldPositionForHex({ row: startRow + row, col: startCol + col });
+        dummy.position.copy(pos);
         dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
 
         const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);

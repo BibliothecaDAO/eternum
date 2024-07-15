@@ -11,8 +11,9 @@ export class ArmySystem {
   private armyIndices: Map<string, number> = new Map();
   private modelPrinted: boolean = false;
 
-  constructor(private dojo: SetupResult, private worldMapScene: Scene) {
-    this.armyManager = new ArmyManager(this.worldMapScene, "models/dark_knight.glb", 1000);
+  constructor(private dojo: SetupResult, private worldMapScene: WorldmapScene) {
+    // this.armyManager = new ArmyManager(this.worldMapScene, "models/dark_knight.glb", 1000);
+    this.armyManager = new ArmyManager(this.worldMapScene, "models/biomes/Horse.glb", 1000);
   }
 
   setupSystem() {
@@ -33,21 +34,23 @@ export class ArmySystem {
     await this.armyManager.loadPromise;
     if (!this.modelPrinted) {
       this.armyManager.printModel();
+      console.log("print army");
       this.modelPrinted = true;
     }
 
     try {
-      if (!this.armyIndices.has(entityId)) {
-        // Create a new army instance if it doesn't exist
-        const index = this.armyManager.addCharacter(normalizedCoord);
-        this.armyIndices.set(entityId, index);
-      } else {
-        // Update the existing army's position
-        const index = this.armyIndices.get(entityId)!;
-        this.armyManager.moveCharacter(index, { col, row });
-      }
+      this.armyManager.updateArmy(entityId, normalizedCoord);
     } catch (error) {
       console.error("Error updating army:", error);
+    }
+
+    // Move army once after 5 seconds
+    // testing
+    if (entityId === "0x191f1433e21c7e509dd0b6341590bca8eb798fa6a6cf1a08cec052dfdfd2a54") {
+      console.log("adding timeout ");
+      setTimeout(() => {
+        this.armyManager.moveArmy(entityId, { col: normalizedCoord.col + 1, row: normalizedCoord.row + 1 });
+      }, 15000);
     }
   }
 

@@ -1,36 +1,51 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import InstancedModel from "./InstancedModel";
+import WorldmapScene from "../scenes/Worldmap";
 
 export class ArmyManager {
   private instancedModel: InstancedModel | undefined;
-  private characters: Character[] = [];
-  private dummy: THREE.Object3D = new THREE.Object3D();
+  private dummy: THREE.Mesh;
   private isLoaded: boolean = false;
   loadPromise: Promise<void>;
   private animationClip: THREE.AnimationClip | undefined;
+  private mixer: THREE.AnimationMixer | undefined;
   private interval: any;
+  private mesh: THREE.InstancedMesh;
+  private armies: Map<string, number> = new Map<string, number>();
+  private scale: THREE.Vector3;
+  private movingArmies: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
 
-  constructor(scene: THREE.Scene, modelPath: string, maxInstances: number) {
+  constructor(private worldMapScene: WorldmapScene, modelPath: string, maxInstances: number) {
+    this.dummy = new THREE.Mesh();
+    this.mesh = new THREE.InstancedMesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial(), 0);
+    this.scale = new THREE.Vector3(0.005, 0.005, 0.005);
     this.loadPromise = new Promise<void>((resolve, reject) => {
+      this.worldMapScene = worldMapScene;
       const loader = new GLTFLoader();
       loader.load(
         modelPath,
         (gltf) => {
-          this.instancedModel = new InstancedModel(gltf.scene, maxInstances);
-          this.instancedModel.scaleModel(new THREE.Vector3(1, 1, 1));
-          this.instancedModel.setCount(0);
-          scene.add(this.instancedModel.group);
+          this.dummy = gltf.scene.children[0] as THREE.Mesh;
+          this.mesh = new THREE.InstancedMesh(this.dummy.geometry, this.dummy.material, maxInstances);
+          this.mesh.castShadow = true;
+          // this.mesh.scale.set(0.005, 0.005, 0.005);
+
+          this.dummy.position.set(0, 0, 0);
+          this.dummy.updateMatrix();
+          this.mesh.setMatrixAt(0, this.dummy.matrix);
+
+          this.mesh.count = 0;
+          this.mesh.instanceMatrix.needsUpdate = true;
+
+          worldMapScene.scene.add(this.mesh);
           this.isLoaded = true;
 
-          // Log animations for debugging
-          console.log("Loaded animations:", gltf.animations);
-
-          // Store the animation clip instead of creating a mixer here
-          const animations = gltf.animations;
-          if (animations && animations.length > 0) {
-            this.animationClip = animations[0];
-          }
+          this.mixer = new THREE.AnimationMixer(gltf.scene);
+          const action = this.mixer.clipAction(gltf.animations[0]);
+          // cannot play is count = 0
+          // action.play();
+          // action.paused = true;
 
           resolve();
         },
@@ -43,161 +58,79 @@ export class ArmyManager {
     });
   }
 
-  printModel() {
-    console.log({ instancedModel: this.instancedModel });
-    this.instancedModel?.group.children.forEach((child) => {
-      console.log({ name: child.name, child });
+  updateArmy(entityId: string, hexCoords: { col: number; row: number }) {
+    console.log("updating armies");
+    if (!this.isLoaded) {
+      return;
+    }
+    if (this.armies.has(entityId)) {
+      this.moveArmy(entityId, hexCoords);
+    } else {
+      this.addArmy(entityId, hexCoords);
+    }
+  }
+
+  addArmy(entityId: string, hexCoords: { col: number; row: number }) {
+    console.log("add army: ", entityId, hexCoords);
+    const index = this.mesh.count;
+    this.mesh.count++;
+    this.armies.set(entityId, index);
+    const position = this.worldMapScene.getWorldPositionForHex(hexCoords);
+    this.dummy.position.copy(position);
+    this.dummy.scale.copy(this.scale);
+    this.dummy.updateMatrix();
+    this.mesh.setMatrixAt(index, this.dummy.matrix);
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  moveArmy(entityId: string, hexCoords: { col: number; row: number }) {
+    console.log("move army: ", entityId);
+    const index = this.armies.get(entityId);
+    if (index === undefined) {
+      console.error(`No army found with entityId: ${entityId}`);
+      return;
+    }
+    const newPosition = this.worldMapScene.getWorldPositionForHex(hexCoords);
+    const currentPosition = new THREE.Vector3();
+    this.mesh.getMatrixAt(index, this.dummy.matrix);
+    currentPosition.setFromMatrixPosition(this.dummy.matrix);
+
+    this.movingArmies.set(index, {
+      startPos: currentPosition,
+      endPos: newPosition,
+      progress: 0,
     });
   }
 
-  addCharacter(position: { col: number; row: number }): number {
-    if (!this.isLoaded) {
-      throw new Error("Model not loaded yet");
-    }
-    const index = this.characters.length;
-    const character = new Character(position, index, this.instancedModel!, this.animationClip);
-    this.characters.push(character);
-    this.updateInstanceMatrix(character);
-
-    this.interval = setInterval(() => {
-      console.log("move character");
-      this.moveCharacter(index, {
-        col: this.characters[index].getPosition().col + 1,
-        row: this.characters[index].getPosition().row,
-      });
-    }, 3000);
-
-    return index;
+  printModel() {
+    console.log({ instancedModel: this.instancedModel });
   }
 
   update(deltaTime: number) {
-    for (const character of this.characters) {
-      character.update(deltaTime);
-      this.updateInstanceMatrix(character);
+    if (this.mixer) {
+      this.mixer.update(deltaTime); // Slow down animation by reducing deltaTime
     }
-    this.instancedModel?.needsUpdate();
-    if (this.instancedModel) {
-      this.instancedModel.instancedMeshes.forEach((instanceMesh, i) => {
-        if (this.instancedModel!.group.children[i] instanceof THREE.Mesh) {
-          console.log("is mesh yessssss");
-          try {
-            instanceMesh.setMorphAt(0, this.instancedModel!.group.children[i] as THREE.Mesh);
-          } catch (error) {
-            console.error("An error occurred while setting morph target:", error);
-          }
-        }
-      });
-    }
-  }
-
-  moveCharacter(index: number, newPosition: { col: number; row: number }) {
-    const character = this.characters[index];
-    character.moveToHex(newPosition);
-  }
-
-  getCharacter(index: number): Character {
-    return this.characters[index];
-  }
-
-  private updateInstanceMatrix(character: Character) {
-    const position = this.calculateWorldPosition(character.getPosition());
-    this.dummy.position.copy(position);
-    this.dummy.rotation.y = character.getRotation();
-    this.dummy.updateMatrix();
-    this.instancedModel?.setMatrixAt(character.index, this.dummy.matrix);
-    this.instancedModel?.setCount(this.characters.length);
-  }
-
-  private calculateWorldPosition(hexCoords: { col: number; row: number }): THREE.Vector3 {
-    const { row, col } = hexCoords;
-    const hexSize = 1; // Make sure this matches the hexSize in HexagonMap
-    const horizontalSpacing = hexSize * Math.sqrt(3);
-    const verticalSpacing = (hexSize * 3) / 2;
-
-    const x = col * horizontalSpacing + (row % 2) * (horizontalSpacing / 2);
-    const z = -row * verticalSpacing;
-    const y = 0.2; // Adjust this value to place the character on top of the hexagons
-
-    return new THREE.Vector3(x, y, z);
-  }
-}
-
-class Character {
-  private currentHexPosition: { col: number; row: number };
-  public index: number;
-  private mixer: THREE.AnimationMixer;
-  private walkAction: THREE.AnimationAction | undefined;
-  private targetPosition: { col: number; row: number } | null = null;
-  private rotation: number = 0;
-  private isMoving: boolean = false;
-  private moveSpeed: number = 2;
-  private morphInfluences: number[] = [];
-
-  constructor(
-    initialPosition: { col: number; row: number },
-    index: number,
-    instancedModel: InstancedModel,
-    animationClip?: THREE.AnimationClip,
-  ) {
-    this.currentHexPosition = initialPosition;
-    this.index = index;
-    this.mixer = new THREE.AnimationMixer(instancedModel.group);
-    if (animationClip) {
-      this.walkAction = this.mixer.clipAction(animationClip);
-      this.walkAction.play();
-      this.walkAction.paused = true;
-    }
-    this.morphInfluences = new Array(instancedModel.group.children.length).fill(0);
-  }
-
-  moveToHex(newPosition: { col: number; row: number }) {
-    console.log("moveToHex", { newPosition });
-    this.targetPosition = newPosition;
-    this.rotateTowardsTarget(newPosition);
-    this.isMoving = true;
-    if (this.walkAction) {
-      console.log("play walk action");
-      this.walkAction.paused = false;
-    }
-  }
-
-  getPosition(): { col: number; row: number } {
-    return this.currentHexPosition;
-  }
-
-  update(deltaTime: number) {
-    this.mixer.update(deltaTime);
-    if (this.isMoving && this.targetPosition) {
-      const currentPos = new THREE.Vector3(this.currentHexPosition.col, 0, this.currentHexPosition.row);
-      const targetPos = new THREE.Vector3(this.targetPosition.col, 0, this.targetPosition.row);
-
-      const t = Math.min(1, this.moveSpeed * deltaTime);
-      currentPos.lerp(targetPos, t);
-
-      this.currentHexPosition = { col: currentPos.x, row: currentPos.z };
-
-      if (currentPos.distanceTo(targetPos) < 0.01) {
-        this.isMoving = false;
-        this.currentHexPosition = this.targetPosition;
-        this.targetPosition = null;
-        if (this.walkAction) {
-          this.walkAction.paused = true;
-        }
+    this.movingArmies.forEach((movement, index) => {
+      movement.progress += deltaTime * 0.5; // Adjust this value to change movement speed
+      if (movement.progress >= 1) {
+        this.dummy.position.copy(movement.endPos);
+        this.movingArmies.delete(index);
+      } else {
+        this.dummy.position.copy(movement.startPos).lerp(movement.endPos, movement.progress);
       }
+      this.dummy.scale.copy(this.scale);
+      this.dummy.updateMatrix();
+      this.mesh.setMatrixAt(index, this.dummy.matrix);
+    });
+
+    if (this.movingArmies.size > 0) {
+      this.mesh.instanceMatrix.needsUpdate = true;
     }
-  }
-
-  private rotateTowardsTarget(newPosition: { col: number; row: number }) {
-    const dx = newPosition.col - this.currentHexPosition.col;
-    const dz = newPosition.row - this.currentHexPosition.row;
-    this.rotation = Math.atan2(dz, dx) + Math.PI / 2;
-  }
-
-  getRotation(): number {
-    return this.rotation;
-  }
-
-  getMorphInfluences(): number[] {
-    return this.morphInfluences;
+    for (let i = 0; i < this.mesh.count; i++) {
+      this.mesh.setMorphAt(i, this.dummy);
+    }
+    if (this.mesh.morphTexture) {
+      this.mesh.morphTexture.needsUpdate = true;
+    }
   }
 }

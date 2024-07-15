@@ -1,12 +1,7 @@
 import * as THREE from "three";
-import { SetupResult } from "@/dojo/setup";
 import { GLTFLoader } from "three-stdlib";
 import WorldmapScene from "../scenes/Worldmap";
 import InstancedModel from "./InstancedModel";
-import { world } from "@/dojo/world";
-
-const horizontalSpacing = Math.sqrt(3);
-const verticalSpacing = 3 / 2;
 
 export class StructureManager {
   private worldMapScene: WorldmapScene;
@@ -54,17 +49,6 @@ export class StructureManager {
       this.instancedModel.setMatrixAt(index, this.dummy.matrix);
       this.instancedModel.setCount(this.structures.counter); // Set the count to the current number of structures
     }
-  }
-
-  calculateWorldPosition(hexCoords: { col: number; row: number }) {
-    const { row, col } = hexCoords;
-    const colOffset = col;
-    const rowOffset = row;
-    const newTargetX = colOffset * horizontalSpacing + (rowOffset % 2) * (horizontalSpacing / 2);
-    const newTargetZ = -rowOffset * verticalSpacing;
-    const newTargetY = 0;
-
-    return new THREE.Vector3(newTargetX, newTargetY, newTargetZ);
   }
 }
 
