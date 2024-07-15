@@ -34,6 +34,7 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   quantity: ComponentValue<ClientComponents["Quantity"]["schema"]> | undefined;
   movable: ComponentValue<ClientComponents["Movable"]["schema"]> | undefined;
   capacity: ComponentValue<ClientComponents["Capacity"]["schema"]> | undefined;
+  weight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined;
   arrivalTime: ComponentValue<ClientComponents["ArrivalTime"]["schema"]> | undefined;
   stamina: ComponentValue<ClientComponents["Stamina"]["schema"]> | undefined;
   realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined;
@@ -50,6 +51,7 @@ export const formatArmies = (
   Quantity: Component<ClientComponents["Quantity"]["schema"]>,
   Movable: Component<ClientComponents["Movable"]["schema"]>,
   Capacity: Component<ClientComponents["Capacity"]["schema"]>,
+  Weight: Component<ClientComponents["Weight"]["schema"]>,
   ArrivalTime: Component<ClientComponents["ArrivalTime"]["schema"]>,
   Position: Component<ClientComponents["Position"]["schema"]>,
   EntityOwner: Component<ClientComponents["EntityOwner"]["schema"]>,
@@ -91,9 +93,37 @@ export const formatArmies = (
         };
       }
       const protectee = getComponentValue(Protectee, armyEntityId);
+
       const quantity = getComponentValue(Quantity, armyEntityId);
+      let quantityClone = structuredClone(quantity);
+      if (quantityClone) {
+        quantityClone.value = BigInt(quantityClone.value) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+      } else {
+        quantityClone = {
+          entity_id: army.entity_id,
+          value: 0n,
+        };
+      }
+
       const movable = getComponentValue(Movable, armyEntityId);
+
       const capacity = getComponentValue(Capacity, armyEntityId);
+      let capacityClone = structuredClone(capacity);
+      capacityClone.weight_gram =
+        (Number(capacityClone.weight_gram) * Number(quantityClone.value || 0)) /
+        EternumGlobalConfig.resources.resourceMultiplier;
+
+      const weight = getComponentValue(Weight, armyEntityId);
+      let weightClone = structuredClone(weight);
+      if (weightClone) {
+        weightClone.value = weightClone.value / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+      } else {
+        weightClone = {
+          entity_id: army.entity_id,
+          value: 0n,
+        };
+      }
+
       const arrivalTime = getComponentValue(ArrivalTime, armyEntityId);
       const stamina = getComponentValue(Stamina, armyEntityId);
       const name = getComponentValue(Name, armyEntityId);
@@ -114,6 +144,7 @@ export const formatArmies = (
         quantity,
         movable,
         capacity,
+        weight,
         arrivalTime,
         position,
         entityOwner,
@@ -144,6 +175,7 @@ export const useMovableArmies = () => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -176,6 +208,7 @@ export const useMovableArmies = () => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Position,
         EntityOwner,
@@ -197,6 +230,7 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -221,6 +255,7 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
       Quantity,
       Movable,
       Capacity,
+      Weight,
       ArrivalTime,
       Position,
       EntityOwner,
@@ -246,6 +281,7 @@ export const useArmiesByBattleId = (battle_id: bigint) => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -268,6 +304,7 @@ export const useArmiesByBattleId = (battle_id: bigint) => {
     Quantity,
     Movable,
     Capacity,
+    Weight,
     ArrivalTime,
     Position,
     EntityOwner,
@@ -288,6 +325,7 @@ export const getArmiesByBattleId = () => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -311,6 +349,7 @@ export const getArmiesByBattleId = () => {
       Quantity,
       Movable,
       Capacity,
+      Weight,
       ArrivalTime,
       Position,
       EntityOwner,
@@ -333,6 +372,7 @@ export const useArmyByArmyEntityId = (entityId: bigint) => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -355,6 +395,7 @@ export const useArmyByArmyEntityId = (entityId: bigint) => {
     Quantity,
     Movable,
     Capacity,
+    Weight,
     ArrivalTime,
     Position,
     EntityOwner,
@@ -429,6 +470,7 @@ export const useOwnArmiesByPosition = ({ position, inBattle }: { position: Posit
           Quantity,
           Movable,
           Capacity,
+          Weight,
           ArrivalTime,
           Realm,
           Army,
@@ -458,6 +500,7 @@ export const useOwnArmiesByPosition = ({ position, inBattle }: { position: Posit
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Position,
         EntityOwner,
@@ -484,6 +527,7 @@ export const useEnemyArmiesByPosition = ({ position }: { position: Position }) =
           Quantity,
           Movable,
           Capacity,
+          Weight,
           ArrivalTime,
           Realm,
           Army,
@@ -512,6 +556,7 @@ export const useEnemyArmiesByPosition = ({ position }: { position: Position }) =
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Position,
         EntityOwner,
@@ -536,6 +581,7 @@ export const getArmyByEntityId = () => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -560,6 +606,7 @@ export const getArmyByEntityId = () => {
       Quantity,
       Movable,
       Capacity,
+      Weight,
       ArrivalTime,
       Position,
       EntityOwner,
@@ -582,6 +629,7 @@ export const getArmyByEntityId = () => {
       Quantity,
       Movable,
       Capacity,
+      Weight,
       ArrivalTime,
       Position,
       EntityOwner,
@@ -605,6 +653,7 @@ export const getArmiesAtPosition = () => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -642,6 +691,7 @@ export const getArmiesAtPosition = () => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Position,
         EntityOwner,
@@ -660,6 +710,7 @@ export const getArmiesAtPosition = () => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Position,
         EntityOwner,

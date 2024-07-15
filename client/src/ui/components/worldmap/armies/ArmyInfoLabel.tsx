@@ -1,7 +1,7 @@
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { currencyFormat } from "../../../utils/utils";
 
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -12,6 +12,7 @@ import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { getRealmNameById } from "../../../utils/realms";
 import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
 import { InventoryResources } from "../../resources/InventoryResources";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 interface ArmyInfoLabelProps {
   army: ArmyInfo;
@@ -104,7 +105,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             <div className="text-green text-xs self-center">{currencyFormat(troops.paladin_count, 0)}</div>
           </div>
         </div>
-
+        <ArmyCapacity army={updatedArmy} />
         <div className="flex flex-row justify-between">
           <InventoryResources max={2} entityIds={[entity_id]} />
         </div>

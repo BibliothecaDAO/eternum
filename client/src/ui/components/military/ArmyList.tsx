@@ -13,6 +13,7 @@ import React, { useMemo, useState } from "react";
 import { EntityList } from "../list/EntityList";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
+import { ArmyCapacity } from "@/ui/elements/ArmyCapacity";
 
 const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
 
@@ -75,7 +76,6 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
       is_defensive_army,
     }).finally(() => setLoading(Loading.None));
   };
-
   return (
     <>
       <EntityList
@@ -129,6 +129,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         title="armies"
         panel={({ entity, setSelectedEntity }) => (
           <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
+          <ArmyCapacity army={entity} className="my-2 ml-5" />
         )}
         questing={selectedQuest?.id === QuestId.CreateArmy}
       />
