@@ -72,7 +72,9 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             {/* <OrderIcon order={getRealmOrderNameById(realmId)} className="mr-1" size="md" /> */}
 
             <Headline className="text-center">
-              <div><span className="text-lg">{attackerAddressName}</span> ({originRealmName})</div>
+              <div>
+                <span className="text-lg">{attackerAddressName}</span> ({originRealmName})
+              </div>
 
               <div className="text-lg">{army.name}</div>
             </Headline>
