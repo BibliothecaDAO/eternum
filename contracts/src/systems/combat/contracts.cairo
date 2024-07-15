@@ -371,6 +371,7 @@ mod combat_systems {
     use core::option::OptionTrait;
     use core::traits::Destruct;
     use core::traits::Into;
+    use core::traits::TryInto;
     use eternum::alias::ID;
     use eternum::constants::{
         ResourceTypes, ErrorMessages, get_resources_without_earthenshards,
@@ -472,69 +473,13 @@ mod combat_systems {
             let army_protectee: Protectee = get!(world, army_id, Protectee);
             assert!(army_protectee.is_none(), "Army is a defensive army");
 
-            // decrement attack army count
-            let owner_armies_key: felt252 = ArmyQuantityTracker::key(entity_owner.entity_owner_id);
-            let mut owner_armies_quantity: QuantityTracker = get!(
-                world, owner_armies_key, QuantityTracker
-            );
-            owner_armies_quantity.count -= 1;
-            set!(world, (owner_armies_quantity));
-            // reset components connected to army 
-            // let (
-            //     owner,
-            //     position,
-            //     quantity,
-            //     health,
-            //     stamina,
-            //     resource_transfer_lock,
-            //     movable,
-            //     capacity
-            // ) =
-            //     get!(
-            //     world,
-            //     army_id,
-            //     (
-            //         Owner,
-            //         Position,
-            //         Quantity,
-            //         Health,
-            //         Stamina,
-            //         ResourceTransferLock,
-            //         Movable,
-            //         Capacity
-            //     )
-            // );
-            // delete!(
-            //     world,
-            //     (
-            //         army,
-            //         entity_owner,
-            //         owner,
-            //         position,
-            //         quantity,
-            //         health,
-            //         stamina,
-            //         resource_transfer_lock,
-            //         movable,
-            //         capacity
-            //     )
-            // );
-
-            army.entity_id = 0;
-            set!(world, (army));
-
-            entity_owner.entity_owner_id = 0;
-            set!(world, (entity_owner));
-
-            let mut position: Position = get!(world, army_id, Position);
-            position.x = 0;
-            position.y = 0;
-            set!(world, (position));
+            // delete army
+            InternalCombatImpl::delete_army(world, ref entity_owner, ref army);
         }
 
 
         fn army_buy_troops(
-            ref world: IWorldDispatcher, army_id: u128, payer_id: u128, troops: Troops
+            ref world: IWorldDispatcher, army_id: u128, payer_id: u128, mut troops: Troops
         ) {
             // ensure caller owns the entity paying
             get!(world, payer_id, EntityOwner).assert_caller_owner(world);
@@ -607,7 +552,8 @@ mod combat_systems {
             ref world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops,
         ) {
             // ensure caller owns from and to armies
-            get!(world, from_army_id, EntityOwner).assert_caller_owner(world);
+            let mut from_army_owner: EntityOwner = get!(world, from_army_id, EntityOwner);
+            from_army_owner.assert_caller_owner(world);
             get!(world, to_army_id, EntityOwner).assert_caller_owner(world);
 
             // ensure from and to armies are at the same position
@@ -641,6 +587,11 @@ mod combat_systems {
             let mut from_army_quantity: Quantity = get!(world, from_army_id, Quantity);
             from_army_quantity.value -= troops.count().into();
             set!(world, (from_army_quantity));
+
+            // delete army if troop count is 0
+            if from_army.troops.count().is_zero() {
+                InternalCombatImpl::delete_army(world, ref from_army_owner, ref from_army);
+            }
 
             // increase to army troops
             let mut to_army: Army = get!(world, to_army_id, Army);
@@ -1361,6 +1312,68 @@ mod combat_systems {
             let mut army_quantity: Quantity = get!(world, army_id, Quantity);
             army_quantity.value += troops.count().into();
             set!(world, (army_quantity));
+        }
+
+        fn delete_army(world: IWorldDispatcher, ref entity_owner: EntityOwner, ref army: Army) {
+            // decrement attack army count
+            let owner_armies_key: felt252 = ArmyQuantityTracker::key(entity_owner.entity_owner_id);
+            let mut owner_armies_quantity: QuantityTracker = get!(
+                world, owner_armies_key, QuantityTracker
+            );
+            owner_armies_quantity.count -= 1;
+            set!(world, (owner_armies_quantity));
+
+            // delete army
+            army.entity_id = 0;
+            set!(world, (army));
+
+            entity_owner.entity_owner_id = 0;
+            set!(world, (entity_owner));
+
+            let mut position: Position = get!(world, army.entity_id, Position);
+            position.x = 0;
+            position.y = 0;
+            set!(world, (position));
+        // reset components connected to army 
+        // let (
+        //     owner,
+        //     position,
+        //     quantity,
+        //     health,
+        //     stamina,
+        //     resource_transfer_lock,
+        //     movable,
+        //     capacity
+        // ) =
+        //     get!(
+        //     world,
+        //     army_id,
+        //     (
+        //         Owner,
+        //         Position,
+        //         Quantity,
+        //         Health,
+        //         Stamina,
+        //         ResourceTransferLock,
+        //         Movable,
+        //         Capacity
+        //     )
+        // );
+        // delete!(
+        //     world,
+        //     (
+        //         army,
+        //         entity_owner,
+        //         owner,
+        //         position,
+        //         quantity,
+        //         health,
+        //         stamina,
+        //         resource_transfer_lock,
+        //         movable,
+        //         capacity
+        //     )
+        // );
         }
 
         /// Updates battle and removes army if battle has ended
