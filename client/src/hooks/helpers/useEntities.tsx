@@ -62,6 +62,8 @@ export const useEntities = () => {
     const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityId]));
     const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || BigInt("")]));
 
+    const name = getEntityName(entityId);
+
     const resources = getResourcesFromBalance(entityId);
     const army = getComponentValue(Army, getEntityIdFromKeys([entityId]));
     const rawIntermediateDestination = movable
@@ -90,6 +92,7 @@ export const useEntities = () => {
       isRoundTrip: movable?.round_trip || false,
       resources,
       entityType: army ? EntityType.TROOP : EntityType.DONKEY,
+      name,
     };
   };
 

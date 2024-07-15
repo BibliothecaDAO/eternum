@@ -110,7 +110,11 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
         <div className="w-full flex justify-between">
           <div className="flex gap-3 font-bold">
             <span> {entityIcon[entity.entityType]}</span>
-            <span>{entityName[entity.entityType]}</span>
+            <span>
+              {entity.name === entity.entityId.toString()
+                ? `${entityName[entity.entityType]} ${entity.name}`
+                : entity.name}
+            </span>
           </div>
 
           <div className="flex items-center gap-1 self-center">
