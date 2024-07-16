@@ -344,10 +344,15 @@ export default class GameRenderer {
   onClick() {
     if (this.currentScene === "worldmap") {
       const hoveredHex = this.getHoveredHex();
-      if (hoveredHex && this.travelPaths?.isHighlighted(hoveredHex.row, hoveredHex.col)) {
-        useThreeStore
-          .getState()
-          .setSelectedPath(this.travelPaths.get(TravelPaths.posKey(hoveredHex, true))?.path ?? []);
+      const selectedEntityId = this.state.selectedEntityId;
+      if (selectedEntityId && hoveredHex && this.travelPaths?.isHighlighted(hoveredHex.row, hoveredHex.col)) {
+        const travelPath = this.travelPaths.get(TravelPaths.posKey(hoveredHex, true));
+        const selectedPath = travelPath?.path ?? [];
+        const isExplored = travelPath?.isExplored ?? false;
+        if (!isExplored && selectedPath.length > 0) {
+          const armyMovementManager = new ArmyMovementManager(this.dojo, Date.now() / 1000, selectedEntityId);
+          armyMovementManager.exploreHex(selectedPath);
+        }
       }
     }
   }

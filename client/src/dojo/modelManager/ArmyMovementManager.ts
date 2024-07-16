@@ -9,10 +9,12 @@ import {
 } from "@bibliothecadao/eternum";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Component, Entity, getComponentValue } from "@dojoengine/recs";
+import { Component, Entity, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
 import { HexPosition } from "@/types";
+import { uuid } from "@latticexyz/utils";
+import { findDirection } from "@/ui/utils/utils";
 
 export class TravelPaths {
   private paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
@@ -62,14 +64,15 @@ export class TravelPaths {
 }
 
 export class ArmyMovementManager {
-  private staminaModel: Component<ClientComponents["Stamina"]["schema"]>;
-  private positionModel: Component<ClientComponents["Position"]["schema"]>;
+  private staminaModel: OverridableComponent<ClientComponents["Stamina"]["schema"]>;
+  private positionModel: OverridableComponent<ClientComponents["Position"]["schema"]>;
   private armyModel: Component<ClientComponents["Army"]["schema"]>;
   private ownerModel: Component<ClientComponents["Owner"]["schema"]>;
   private entityOwnerModel: Component<ClientComponents["EntityOwner"]["schema"]>;
   private staminaConfigModel: Component<ClientComponents["StaminaConfig"]["schema"]>;
   private currentArmiesTick: number;
   private entity: Entity;
+  private entityId: bigint;
   private address: bigint;
 
   constructor(private dojo: SetupResult, currentArmiesTick: number, entityId: number) {
@@ -81,6 +84,7 @@ export class ArmyMovementManager {
     this.staminaConfigModel = dojo.components.StaminaConfig;
     this.currentArmiesTick = currentArmiesTick;
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
+    this.entityId = BigInt(entityId);
     this.address = BigInt(this.dojo.network.burnerManager.account?.address || 0n);
   }
 
@@ -269,4 +273,61 @@ export class ArmyMovementManager {
 
     return travelPaths;
   }
+
+  private _optimisticStaminaUpdate = (overrideId: string, cost: number) => {
+    const stamina = this.getStamina();
+
+    // substract the costs
+    this.staminaModel.addOverride(overrideId, {
+      entity: this.entity,
+      value: {
+        entity_id: stamina.entity_id,
+        last_refill_tick: stamina.last_refill_tick,
+        amount: stamina.amount - cost,
+      },
+    });
+  };
+
+  private _optimisticExplore = (col: number, row: number) => {
+    let overrideId = uuid();
+
+    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.exploreCost);
+
+    this.positionModel.addOverride(overrideId, {
+      entity: this.entity,
+      value: {
+        entity_id: this.entityId,
+        x: col,
+        y: row,
+      },
+    });
+    return overrideId;
+  };
+
+  private _findDirection = (path: HexPosition[]) => {
+    return path.length === 2
+      ? findDirection({ col: path[0].col, row: path[0].row }, { col: path[1].col, row: path[1].row })
+      : undefined;
+  };
+
+  exploreHex = async (path: HexPosition[]) => {
+    // setExploredHexes(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
+
+    const direction = this._findDirection(path);
+    if (direction === undefined) return;
+
+    const overrideId = this._optimisticExplore(path[1].x, path[1].y);
+
+    this.dojo.systemCalls
+      .explore({
+        unit_id: this.entityId,
+        direction,
+        signer: this.dojo.network.burnerManager.account!,
+      })
+      .catch((e) => {
+        // removeHex(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
+        this.positionModel.removeOverride(overrideId);
+        this.staminaModel.removeOverride(overrideId);
+      });
+  };
 }

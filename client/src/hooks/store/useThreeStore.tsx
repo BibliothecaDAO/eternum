@@ -15,10 +15,6 @@ export interface ThreeStore {
   // Hexception
   setSelectedBuilding: (building: BuildingType) => void;
   selectedBuilding: BuildingType;
-
-  // travel path
-  selectedPath: HexPosition[];
-  setSelectedPath: (path: HexPosition[]) => void;
 }
 
 export const useThreeStore = create<ThreeStore>((set, get) => ({
