@@ -208,6 +208,10 @@ export default class WorldmapScene {
       const highlightMesh = new THREE.Mesh(hexagonGeometry, this.highlightMaterial.clone());
       highlightMesh.position.set(position.x, 0.32, position.z);
       highlightMesh.rotation.x = -Math.PI / 2;
+
+      // Disable raycasting for this mesh
+      highlightMesh.raycast = () => {};
+
       this.scene.add(highlightMesh);
       this.highlightedHexes.push(highlightMesh);
     });

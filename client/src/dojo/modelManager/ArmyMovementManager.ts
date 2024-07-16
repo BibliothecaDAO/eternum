@@ -24,6 +24,10 @@ export class TravelPaths {
     this.paths.set(key, value);
   }
 
+  deleteAll(): void {
+    this.paths.clear();
+  }
+
   get(key: string): { path: Position[]; isExplored: boolean } | undefined {
     return this.paths.get(key);
   }

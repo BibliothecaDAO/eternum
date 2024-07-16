@@ -14,6 +14,7 @@ import GUI from "lil-gui";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { FELT_CENTER } from "@/ui/config";
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
+import { ActionInfo } from "./components/ActionInfo";
 
 const horizontalSpacing = Math.sqrt(3);
 const verticalSpacing = 3 / 2;
@@ -58,6 +59,7 @@ export default class GameRenderer {
   private gui: GUI = new GUI();
 
   private travelPaths: TravelPaths | undefined;
+  private actionInfo: ActionInfo;
 
   constructor(dojoContext: SetupResult, initialState: ThreeStore) {
     this.renderer = new THREE.WebGLRenderer({
@@ -110,6 +112,9 @@ export default class GameRenderer {
         "move",
       )
       .name("Move Camera");
+
+    // travel/explore info
+    this.actionInfo = new ActionInfo();
   }
 
   initStats() {
@@ -212,26 +217,49 @@ export default class GameRenderer {
   }
 
   onMouseMove(event: MouseEvent) {
-    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    this.updateMousePosition(event);
 
-    // check if hovered hex is in the travel path
     if (this.travelPaths) {
-      this.raycaster.setFromCamera(this.mouse, this.camera);
-      const intersects = this.raycaster.intersectObjects(this.worldmapScene.scene.children, true);
-      if (intersects.length > 0) {
-        const clickedObject = intersects[0].object;
-        if (clickedObject instanceof THREE.InstancedMesh) {
-          const instanceId = intersects[0].instanceId;
-          if (instanceId !== undefined) {
-            const { row, col } = this.worldmapScene.getHexagonCoordinates(clickedObject, instanceId);
-            if (this.travelPaths.isHighlighted(row, col)) {
-              console.log("hovering on highlighted hex");
-            }
-          }
+      const hoveredHex = this.getHoveredHex();
+      if (hoveredHex) {
+        const { row, col } = hoveredHex;
+        this.handleHexHover(row, col, event);
+      } else {
+        this.actionInfo.hideHoverMessage();
+      }
+    } else {
+      this.actionInfo.hideHoverMessage();
+    }
+  }
+
+  private handleHexHover(row: number, col: number, event: MouseEvent) {
+    if (this.travelPaths?.isHighlighted(row, col)) {
+      this.actionInfo.showHoverMessage(`Highlighted Hex: (${col}, ${row})`, event.clientX, event.clientY);
+    } else {
+      this.actionInfo.hideHoverMessage();
+    }
+  }
+
+  private getHoveredHex(): { row: number; col: number } | null {
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.worldmapScene.scene.children, true);
+
+    if (intersects.length > 0) {
+      const clickedObject = intersects[0].object;
+      if (clickedObject instanceof THREE.InstancedMesh) {
+        const instanceId = intersects[0].instanceId;
+        if (instanceId !== undefined) {
+          return this.worldmapScene.getHexagonCoordinates(clickedObject, instanceId);
         }
       }
     }
+
+    return null;
+  }
+
+  private updateMousePosition(event: MouseEvent) {
+    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   }
 
   initListeners(): void {
@@ -253,28 +281,43 @@ export default class GameRenderer {
 
   onRightClick(event: MouseEvent) {
     event.preventDefault();
-    if (this.currentScene === "worldmap") {
-      this.raycaster.setFromCamera(this.mouse, this.camera);
-      const intersects = this.raycaster.intersectObjects(this.worldmapScene.scene.children, true);
-      if (intersects.length > 0) {
-        const clickedObject = intersects[0].object;
-        if (clickedObject instanceof THREE.InstancedMesh) {
-          const instanceId = intersects[0].instanceId;
-          if (instanceId !== undefined) {
-            const entityIdMap = intersects[0].object.userData.entityIdMap;
-            if (entityIdMap) {
-              const entityId = entityIdMap[instanceId];
-              useThreeStore.getState().setSelectedEntityId(entityId);
-              const armyMovementManager = new ArmyMovementManager(this.dojo, Date.now() / 1000, entityId);
-              this.travelPaths = armyMovementManager.findAccessiblePositionsAndPaths(
-                this.worldmapScene.systemManager.tileSystem.getExplored(),
-              );
-              this.worldmapScene.highlightHexes(this.travelPaths.getHighlightedHexes());
-            }
-          }
-        }
-      }
+    if (this.currentScene !== "worldmap") return;
+
+    const intersects = this.getIntersects();
+    if (intersects.length === 0) return;
+
+    const clickedObject = intersects[0].object;
+    if (!(clickedObject instanceof THREE.InstancedMesh)) return;
+
+    const instanceId = intersects[0].instanceId;
+    if (instanceId === undefined) return;
+
+    const entityIdMap = clickedObject.userData.entityIdMap;
+    if (entityIdMap) {
+      this.handleEntitySelection(entityIdMap[instanceId]);
+    } else {
+      this.clearEntitySelection();
     }
+  }
+
+  private getIntersects() {
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    return this.raycaster.intersectObjects(this.worldmapScene.scene.children, true);
+  }
+
+  private handleEntitySelection(entityId: number) {
+    useThreeStore.getState().setSelectedEntityId(entityId);
+    const armyMovementManager = new ArmyMovementManager(this.dojo, Date.now() / 1000, entityId);
+    this.travelPaths = armyMovementManager.findAccessiblePositionsAndPaths(
+      this.worldmapScene.systemManager.tileSystem.getExplored(),
+    );
+    this.worldmapScene.highlightHexes(this.travelPaths.getHighlightedHexes());
+  }
+
+  private clearEntitySelection() {
+    useThreeStore.getState().setSelectedEntityId(null);
+    this.worldmapScene.highlightHexes([]);
+    this.travelPaths?.deleteAll();
   }
 
   onDoubleClick() {
