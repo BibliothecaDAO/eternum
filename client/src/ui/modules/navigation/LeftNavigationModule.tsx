@@ -194,7 +194,6 @@ export const LeftNavigationModule = () => {
             item.name === MenuEnum.worldStructures,
         );
   }, [location, view, openedPopups, selectedQuest, armiesCanMoveCount]);
-  // }, [location, view, armiesWithStaminaLeft, openedPopups]);
 
   if (realmEntityId === undefined) {
     return null;

@@ -24,30 +24,12 @@ export enum QuestName {
   Hyperstructure = "Build a hyperstructure",
 }
 
-const questPrize = new Map<QuestName, Prize[]>([
-  [QuestName.Settle, [{ id: QuestType.Food, title: "Common Resources" }]],
-  [
-    QuestName.BuildFarm,
-    [
-      { id: QuestType.CommonResources, title: "Common Resources" },
-      { id: QuestType.UncommonResources, title: "Uncommon Resources" },
-      { id: QuestType.RareResources, title: "Rare Resources" },
-      { id: QuestType.UniqueResources, title: "Unique Resources" },
-      { id: QuestType.LegendaryResources, title: "Legendary Resources" },
-      { id: QuestType.MythicResources, title: "Mythic Resources" },
-    ],
-  ],
-  [QuestName.BuildResource, [{ id: QuestType.Trade, title: "Donkeys and Lords" }]],
-  [QuestName.CreateTrade, [{ id: QuestType.Military, title: "Claim Starting Army" }]],
-  [QuestName.CreateArmy, [{ id: QuestType.Earthenshard, title: "Claim Earthen Shard" }]],
-  [QuestName.Travel, [{ id: QuestType.Travel, title: "Travel" }]],
-  [QuestName.BuildWorkersHut, [{ id: QuestType.Population, title: "Population" }]],
-  [QuestName.Market, [{ id: QuestType.Market, title: "Market" }]],
-  [QuestName.Pillage, [{ id: QuestType.Pillage, title: "Pillage" }]],
-  [QuestName.Mine, [{ id: QuestType.Mine, title: "Mine" }]],
-  [QuestName.Contribution, [{ id: QuestType.Contribution, title: "Contribution" }]],
-  [QuestName.Hyperstructure, [{ id: QuestType.Hyperstructure, title: "Hyperstructure" }]],
-]);
+interface StaticQuestInfo {
+  description: string;
+  steps: string[];
+  prizes: Prize[];
+  depth: number;
+}
 
 export interface Quest {
   name: QuestName;
@@ -69,6 +51,132 @@ export enum QuestStatus {
   Claimed,
 }
 
+const questInfo = new Map<QuestName, StaticQuestInfo>([
+  [
+    QuestName.Settle,
+    {
+      description: "A gift of food from the gods",
+      steps: ["Settle your first Realm"],
+      prizes: [{ id: QuestType.Food, title: "Common Resources" }],
+      depth: 0,
+    },
+  ],
+  [
+    QuestName.BuildFarm,
+    {
+      description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm",
+      steps: [
+        "Navigate to the construction menu",
+        "Select the 'Farm' card",
+        "Left click on a hex to build it, or right click to cancel",
+      ],
+      prizes: [
+        { id: QuestType.CommonResources, title: "Common Resources" },
+        { id: QuestType.UncommonResources, title: "Uncommon Resources" },
+        { id: QuestType.RareResources, title: "Rare Resources" },
+        { id: QuestType.UniqueResources, title: "Unique Resources" },
+        { id: QuestType.LegendaryResources, title: "Legendary Resources" },
+        { id: QuestType.MythicResources, title: "Mythic Resources" },
+      ],
+      depth: 1,
+    },
+  ],
+  [
+    QuestName.BuildResource,
+    {
+      description: "Eternum thrives on resources. Construct resource facilities to harvest them efficiently",
+      steps: [
+        "Navigate to the construction menu",
+        "Navigate to the 'Resources' tab and select a resource card",
+        "Left click on a hex to build it, or right click to cancel",
+      ],
+      prizes: [{ id: QuestType.Trade, title: "Donkeys and Lords" }],
+      depth: 2,
+    },
+  ],
+  [
+    QuestName.CreateTrade,
+    {
+      description: "Trading is the lifeblood of Eternum. Create a trade to start your economy",
+      steps: [],
+      prizes: [{ id: QuestType.Military, title: "Claim Starting Army" }],
+      depth: 3,
+    },
+  ],
+  [
+    QuestName.CreateArmy,
+    {
+      description: "Conquest is fulfilling. Create an army to conquer your enemies",
+      steps: ["Create an army to conquer your enemies", "Assign troops to your army"],
+      prizes: [{ id: QuestType.Earthenshard, title: "Claim Earthen Shard" }],
+      depth: 4,
+    },
+  ],
+  [
+    QuestName.Travel,
+    {
+      description: "Travel with your army",
+      steps: ["Go to world view", "Right click on your army", "Travel w/ your army"],
+      prizes: [{ id: QuestType.Travel, title: "Travel" }],
+      depth: 5,
+    },
+  ],
+  [
+    QuestName.BuildWorkersHut,
+    {
+      description: "Build worker huts to extend your population capacity",
+      steps: [],
+      prizes: [{ id: QuestType.Population, title: "Population" }],
+      depth: 6,
+    },
+  ],
+  [
+    QuestName.Market,
+    {
+      description: "Build a market to produce donkeys. Donkeys are a resource used to transport goods",
+      steps: [],
+      prizes: [{ id: QuestType.Market, title: "Market" }],
+      depth: 6,
+    },
+  ],
+  [
+    QuestName.Pillage,
+    {
+      description: "Pillage a realm, hyperstructure or earthenshard mine",
+      steps: [],
+      prizes: [{ id: QuestType.Pillage, title: "Pillage" }],
+      depth: 6,
+    },
+  ],
+  [
+    QuestName.Mine,
+    {
+      description: "Explore the world, find earthenshard mines",
+      steps: [],
+      prizes: [{ id: QuestType.Mine, title: "Mine" }],
+      depth: 6,
+    },
+  ],
+  [
+    QuestName.Contribution,
+    {
+      description: "Contribute to a Hyperstructure",
+      steps: [],
+      prizes: [{ id: QuestType.Contribution, title: "Contribution" }],
+      depth: 6,
+    },
+  ],
+  [
+    QuestName.Hyperstructure,
+    {
+      description: "Build a Hyperstructure",
+      steps: [],
+      prizes: [{ id: QuestType.Hyperstructure, title: "Hyperstructure" }],
+      depth: 6,
+    },
+  ],
+]);
+
 export const useQuests = () => {
   const {
     buildingQuantities,
@@ -82,214 +190,35 @@ export const useQuests = () => {
     hyperstructureContributions,
   } = useQuestDependencies();
 
-  const { questClaimStatus } = useQuestClaimStatus();
+  const {
+    useSettleQuest,
+    useBuildFarmQuest,
+    useBuildResourceQuest,
+    useCreateTradeQuest,
+    useCreateArmyQuest,
+    useTravelQuest,
+    useBuildWorkersHutQuest,
+    useMarketQuest,
+    usePillageQuest,
+    useMineQuest,
+    useContributionQuest,
+    useHyperstructureQuest,
+  } = useBuildQuests();
 
-  const settleQuest = useMemo(() => {
-    return {
-      name: QuestName.Settle,
-      description: "A gift of food from the gods",
-      steps: ["Settle your first Realm"],
-      prizes: questPrize.get(QuestName.Settle) || [],
-      depth: 0,
-      status: questClaimStatus[QuestName.Settle] ? QuestStatus.Claimed : QuestStatus.Completed,
-    };
-  }, [questClaimStatus[QuestName.Settle]]);
+  const settleQuest = useSettleQuest();
+  const buildFarmQuest = useBuildFarmQuest(buildingQuantities.farms);
+  const buildResourceQuest = useBuildResourceQuest(buildingQuantities.resource);
+  const createTradeQuest = useCreateTradeQuest(orders);
+  const createArmyQuest = useCreateArmyQuest(entityArmies, hasTroops);
+  const travelQuest = useTravelQuest(hasTraveled);
+  const buildWorkersHutQuest = useBuildWorkersHutQuest(buildingQuantities.workersHut);
+  const marketQuest = useMarketQuest(buildingQuantities.markets);
+  const pillageQuest = usePillageQuest(pillageHistoryLength);
+  const mineQuest = useMineQuest(fragmentMines);
+  const contributionQuest = useContributionQuest(hyperstructureContributions);
+  const hyperstructureQuest = useHyperstructureQuest(hyperstructures);
 
-  const buildFarmQuest = useMemo(
-    () => ({
-      name: QuestName.BuildFarm,
-      description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm",
-      status:
-        buildingQuantities.farms > 0
-          ? questClaimStatus[QuestName.BuildFarm]
-            ? QuestStatus.Claimed
-            : QuestStatus.Completed
-          : QuestStatus.InProgress,
-      steps: [
-        "Navigate to the construction menu",
-        "Select the 'Farm' card",
-        "Left click on a hex to build it, or right click to cancel",
-      ],
-      prizes: questPrize.get(QuestName.BuildFarm) || [],
-      depth: 1,
-    }),
-    [questClaimStatus[QuestName.BuildFarm], buildingQuantities.farms],
-  );
-
-  const buildResourceQuest = useMemo(
-    () => ({
-      name: QuestName.BuildResource,
-      description: "Eternum thrives on resources. Construct resource facilities to harvest them efficiently",
-      status:
-        buildingQuantities.resource > 0
-          ? questClaimStatus[QuestName.BuildResource]
-            ? QuestStatus.Claimed
-            : QuestStatus.Completed
-          : QuestStatus.InProgress,
-      steps: [
-        "Navigate to the construction menu",
-        "Navigate to the 'Resources' tab and select a resource card",
-        "Left click on a hex to build it, or right click to cancel",
-      ],
-      prizes: questPrize.get(QuestName.BuildResource) || [],
-      depth: 2,
-    }),
-    [questClaimStatus[QuestName.BuildResource], buildingQuantities.resource],
-  );
-
-  const createTradeQuest = useMemo(
-    () => ({
-      name: QuestName.CreateTrade,
-      description: "Trading is the lifeblood of Eternum. Create a trade to start your economy",
-      status:
-        orders.length > 0
-          ? questClaimStatus[QuestName.CreateTrade]
-            ? QuestStatus.Claimed
-            : QuestStatus.Completed
-          : QuestStatus.InProgress,
-      steps: [],
-      prizes: questPrize.get(QuestName.CreateTrade) || [],
-      depth: 3,
-    }),
-    [questClaimStatus[QuestName.CreateTrade], orders],
-  );
-
-  const createArmyQuest = useMemo(
-    () => ({
-      name: QuestName.CreateArmy,
-      description: "Conquest is fulfilling. Create an army to conquer your enemies",
-      status:
-        entityArmies.length > 0 && hasTroops
-          ? questClaimStatus[QuestName.CreateArmy]
-            ? QuestStatus.Claimed
-            : QuestStatus.Completed
-          : QuestStatus.InProgress,
-      steps: ["Create an army to conquer your enemies", "Assign troops to your army"],
-      prizes: questPrize.get(QuestName.CreateArmy) || [],
-      depth: 4,
-    }),
-    [questClaimStatus[QuestName.CreateArmy], entityArmies, hasTroops],
-  );
-
-  const travelQuest = useMemo(
-    () => ({
-      name: QuestName.Travel,
-      description: "Travel with your army",
-      status: hasTraveled
-        ? questClaimStatus[QuestName.Travel]
-          ? QuestStatus.Claimed
-          : QuestStatus.Completed
-        : QuestStatus.InProgress,
-      steps: ["Go to world view", "Right click on your army", "Travel w/ your army"],
-      prizes: questPrize.get(QuestName.Travel) || [],
-      depth: 5,
-    }),
-    [questClaimStatus[QuestName.Travel], hasTraveled],
-  );
-
-  const buildWorkersHutQuest = useMemo(
-    () => ({
-      name: QuestName.BuildWorkersHut,
-      description: "Build worker huts to extend your population capacity",
-      status:
-        buildingQuantities.workersHut > 0
-          ? questClaimStatus[QuestName.BuildWorkersHut]
-            ? QuestStatus.Claimed
-            : QuestStatus.Completed
-          : QuestStatus.InProgress,
-      steps: [],
-      prizes: questPrize.get(QuestName.BuildWorkersHut) || [],
-      depth: 6,
-    }),
-    [questClaimStatus[QuestName.BuildWorkersHut], buildingQuantities.workersHut],
-  );
-
-  const marketQuest = useMemo(
-    () => ({
-      name: QuestName.Market,
-      description: "Build a market to produce donkeys. Donkeys are a resource used to transport goods",
-      status:
-        buildingQuantities.markets > 0
-          ? questClaimStatus[QuestName.Market]
-            ? QuestStatus.Claimed
-            : QuestStatus.Completed
-          : QuestStatus.InProgress,
-      steps: [],
-      prizes: questPrize.get(QuestName.Market) || [],
-      depth: 6,
-    }),
-    [questClaimStatus[QuestName.Market], buildingQuantities.markets],
-  );
-
-  const pillageQuest = useMemo(
-    () => ({
-      name: QuestName.Pillage,
-      description: "Pillage a realm, hyperstructure or earthenshard mine",
-      steps: [],
-      prizes: questPrize.get(QuestName.Pillage) || [],
-      depth: 6,
-      status:
-        pillageHistoryLength > 0
-          ? questClaimStatus[QuestName.Pillage]
-            ? QuestStatus.Claimed
-            : QuestStatus.Completed
-          : QuestStatus.InProgress,
-    }),
-    [questClaimStatus[QuestName.Pillage], pillageHistoryLength],
-  );
-
-  const mineQuest = useMemo(
-    () => ({
-      name: QuestName.Mine,
-      description: "Explore the world, find earthenshard mines",
-      status:
-        fragmentMines > 0
-          ? questClaimStatus[QuestName.Mine]
-            ? QuestStatus.Claimed
-            : QuestStatus.Completed
-          : QuestStatus.InProgress,
-      steps: [],
-      prizes: questPrize.get(QuestName.Mine) || [],
-      depth: 6,
-    }),
-    [questClaimStatus[QuestName.Mine], fragmentMines],
-  );
-
-  const contributionQuest = useMemo(
-    () => ({
-      name: QuestName.Contribution,
-      description: "Contribute to a Hyperstructure",
-      status:
-        hyperstructureContributions > 0
-          ? questClaimStatus[QuestName.Contribution]
-            ? QuestStatus.Claimed
-            : QuestStatus.Completed
-          : QuestStatus.InProgress,
-      steps: [],
-      prizes: questPrize.get(QuestName.Contribution) || [],
-      depth: 6,
-    }),
-    [questClaimStatus[QuestName.Contribution], hyperstructureContributions],
-  );
-
-  const hyperstructureQuest = useMemo(
-    () => ({
-      name: QuestName.Hyperstructure,
-      description: "Build a Hyperstructure",
-      status:
-        hyperstructures > 0
-          ? questClaimStatus[QuestName.Hyperstructure]
-            ? QuestStatus.Claimed
-            : QuestStatus.Completed
-          : QuestStatus.InProgress,
-      steps: [],
-      prizes: questPrize.get(QuestName.Hyperstructure) || [],
-      depth: 6,
-    }),
-    [questClaimStatus[QuestName.Hyperstructure], hyperstructures],
-  );
-
-  const quests: Quest[] = useMemo(
+  const quests = useMemo(
     () => [
       settleQuest,
       buildFarmQuest,
@@ -332,8 +261,8 @@ const useQuestDependencies = () => {
   } = useDojo();
 
   const { playerRealms } = useEntities();
-  const realm = playerRealms()[0];
-  const realmEntityId = realm?.entity_id;
+  const realm = useMemo(() => playerRealms()[0], [playerRealms]);
+  const realmEntityId = useMemo(() => realm?.entity_id, [realm]);
 
   const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: BigInt(realmEntityId || "0") })]);
 
@@ -392,20 +321,225 @@ const useQuestDependencies = () => {
       hyperstructures,
       hyperstructureContributions,
     }),
-    [entityUpdate],
+    [entityUpdate, orders],
   );
+};
+
+const useBuildQuests = () => {
+  const { questClaimStatus } = useQuestClaimStatus();
+
+  const useSettleQuest = (): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.Settle)!,
+        name: QuestName.Settle,
+        status: questClaimStatus[QuestName.Settle] ? QuestStatus.Claimed : QuestStatus.Completed,
+      }),
+      [questClaimStatus[QuestName.Settle]],
+    );
+  };
+
+  const useBuildFarmQuest = (farmCount: number): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.BuildFarm)!,
+        name: QuestName.BuildFarm,
+        status:
+          farmCount > 0
+            ? questClaimStatus[QuestName.BuildFarm]
+              ? QuestStatus.Claimed
+              : QuestStatus.Completed
+            : QuestStatus.InProgress,
+      }),
+      [farmCount, questClaimStatus[QuestName.BuildFarm]],
+    );
+  };
+
+  const useBuildResourceQuest = (resourceCount: number): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.BuildResource)!,
+        name: QuestName.BuildResource,
+        status:
+          resourceCount > 0
+            ? questClaimStatus[QuestName.BuildResource]
+              ? QuestStatus.Claimed
+              : QuestStatus.Completed
+            : QuestStatus.InProgress,
+      }),
+      [resourceCount, questClaimStatus[QuestName.BuildResource]],
+    );
+  };
+
+  const useCreateTradeQuest = (orders: any[]): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.CreateTrade)!,
+        name: QuestName.CreateTrade,
+        status:
+          orders.length > 0
+            ? questClaimStatus[QuestName.CreateTrade]
+              ? QuestStatus.Claimed
+              : QuestStatus.Completed
+            : QuestStatus.InProgress,
+      }),
+      [orders, questClaimStatus[QuestName.CreateTrade]],
+    );
+  };
+
+  const useCreateArmyQuest = (entityArmies: ArmyInfo[], hasTroops: boolean): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.CreateArmy)!,
+        name: QuestName.CreateArmy,
+        status:
+          entityArmies.length > 0 && hasTroops
+            ? questClaimStatus[QuestName.CreateArmy]
+              ? QuestStatus.Claimed
+              : QuestStatus.Completed
+            : QuestStatus.InProgress,
+      }),
+      [entityArmies, hasTroops, questClaimStatus[QuestName.CreateArmy]],
+    );
+  };
+
+  const useTravelQuest = (hasTraveled: boolean): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.Travel)!,
+        name: QuestName.Travel,
+        status: hasTraveled
+          ? questClaimStatus[QuestName.Travel]
+            ? QuestStatus.Claimed
+            : QuestStatus.Completed
+          : QuestStatus.InProgress,
+      }),
+      [hasTraveled, questClaimStatus[QuestName.Travel]],
+    );
+  };
+
+  const useBuildWorkersHutQuest = (workersHutCount: number): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.BuildWorkersHut)!,
+        name: QuestName.BuildWorkersHut,
+        status:
+          workersHutCount > 0
+            ? questClaimStatus[QuestName.BuildWorkersHut]
+              ? QuestStatus.Claimed
+              : QuestStatus.Completed
+            : QuestStatus.InProgress,
+      }),
+      [workersHutCount, questClaimStatus[QuestName.BuildWorkersHut]],
+    );
+  };
+
+  const useMarketQuest = (marketsCount: number): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.Market)!,
+        name: QuestName.Market,
+        status:
+          marketsCount > 0
+            ? questClaimStatus[QuestName.Market]
+              ? QuestStatus.Claimed
+              : QuestStatus.Completed
+            : QuestStatus.InProgress,
+      }),
+      [marketsCount, questClaimStatus[QuestName.Market]],
+    );
+  };
+
+  const usePillageQuest = (pillageHistoryLength: number): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.Pillage)!,
+        name: QuestName.Pillage,
+        status:
+          pillageHistoryLength > 0
+            ? questClaimStatus[QuestName.Pillage]
+              ? QuestStatus.Claimed
+              : QuestStatus.Completed
+            : QuestStatus.InProgress,
+      }),
+      [pillageHistoryLength, questClaimStatus[QuestName.Pillage]],
+    );
+  };
+
+  const useMineQuest = (fragmentMines: number): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.Mine)!,
+        name: QuestName.Mine,
+        status:
+          fragmentMines > 0
+            ? questClaimStatus[QuestName.Mine]
+              ? QuestStatus.Claimed
+              : QuestStatus.Completed
+            : QuestStatus.InProgress,
+      }),
+      [fragmentMines, questClaimStatus[QuestName.Mine]],
+    );
+  };
+
+  const useContributionQuest = (hyperstructureContributions: number): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.Contribution)!,
+        name: QuestName.Contribution,
+        status:
+          hyperstructureContributions > 0
+            ? questClaimStatus[QuestName.Contribution]
+              ? QuestStatus.Claimed
+              : QuestStatus.Completed
+            : QuestStatus.InProgress,
+      }),
+      [hyperstructureContributions, questClaimStatus[QuestName.Contribution]],
+    );
+  };
+
+  const useHyperstructureQuest = (hyperstructures: number): Quest => {
+    return useMemo(
+      () => ({
+        ...questInfo.get(QuestName.Hyperstructure)!,
+        name: QuestName.Hyperstructure,
+        status:
+          hyperstructures > 0
+            ? questClaimStatus[QuestName.Hyperstructure]
+              ? QuestStatus.Claimed
+              : QuestStatus.Completed
+            : QuestStatus.InProgress,
+      }),
+      [hyperstructures, questClaimStatus[QuestName.Hyperstructure]],
+    );
+  };
+
+  return {
+    useSettleQuest,
+    useBuildFarmQuest,
+    useBuildResourceQuest,
+    useCreateTradeQuest,
+    useCreateArmyQuest,
+    useTravelQuest,
+    useBuildWorkersHutQuest,
+    useMarketQuest,
+    usePillageQuest,
+    useMineQuest,
+    useContributionQuest,
+    useHyperstructureQuest,
+  };
 };
 
 export const useQuestClaimStatus = () => {
   const {
     setup: {
-      components: { HasClaimedStartingResources, EntityOwner },
+      components: { HasClaimedStartingResources },
     },
   } = useDojo();
 
   const { playerRealms } = useEntities();
-  const realm = playerRealms()[0];
-  const realmEntityId = realm?.entity_id;
+  const realm = useMemo(() => playerRealms()[0], [playerRealms]);
+  const realmEntityId = useMemo(() => realm?.entity_id, [realm]);
 
   const prizeUpdate = useEntityQuery([
     HasValue(HasClaimedStartingResources, { entity_id: BigInt(realmEntityId || "0") }),
@@ -422,10 +556,10 @@ export const useQuestClaimStatus = () => {
   };
 
   const questClaimStatus = useMemo(() => {
-    return Array.from(questPrize.keys()).reduce(
+    return Array.from(questInfo.keys()).reduce(
       (acc, questName) => ({
         ...acc,
-        [questName]: checkPrizesClaimed(questPrize.get(questName) || []),
+        [questName]: checkPrizesClaimed(questInfo.get(questName)?.prizes || []),
       }),
       {} as Record<QuestName, boolean>,
     );
