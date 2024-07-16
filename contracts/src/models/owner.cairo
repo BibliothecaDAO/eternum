@@ -49,7 +49,7 @@ mod tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     use eternum::models::owner::{EntityOwner, EntityOwnerTrait};
     use eternum::models::realm::Realm;
-    use eternum::utils::testing::spawn_eternum;
+    use eternum::utils::testing::world::spawn_eternum;
 
     #[test]
     #[available_gas(30000000)]

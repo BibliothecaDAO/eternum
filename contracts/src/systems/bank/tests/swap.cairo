@@ -20,7 +20,7 @@ use eternum::systems::bank::contracts::swap::swap_systems;
 use eternum::systems::bank::contracts::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait,};
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::contracts::{IBankConfigDispatcher, IBankConfigDispatcherTrait,};
-use eternum::utils::testing::{spawn_eternum, deploy_system};
+use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 
 use starknet::contract_address_const;
 

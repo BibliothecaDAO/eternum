@@ -18,7 +18,7 @@ mod resource_approval_system_tests {
         resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
     };
 
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
     use starknet::contract_address_const;
 
 
