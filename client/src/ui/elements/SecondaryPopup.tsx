@@ -1,11 +1,10 @@
 import clsx from "clsx";
-import { useEffect, useState, useRef } from "react";
-import Draggable from "react-draggable";
-import { ReactComponent as CloseIcon } from "@/assets/icons/common/cross-circle.svg";
-import Button from "./Button";
 import { motion } from "framer-motion";
+import { X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import Draggable from "react-draggable";
+import Button from "./Button";
 import { HintModalButton } from "./HintModalButton";
-import { Cross, PanelTopClose, X } from "lucide-react";
 
 type FilterPopupProps = {
   children: React.ReactNode;
@@ -128,7 +127,7 @@ SecondaryPopup.Head = ({
       {hintSection && <HintModalButton className="mr-2" section={hintSection} />}
 
       {onClose && (
-        <Button variant="ghost" size="xs" onClick={onClose}>
+        <Button variant="default" size="xs" onClick={onClose}>
           <X className="w-5 h-5" />
         </Button>
       )}
