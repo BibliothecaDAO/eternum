@@ -9,8 +9,8 @@ import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
   EternumGlobalConfig,
-  Position,
   STOREHOUSE_CAPACITY,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -20,9 +20,9 @@ import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
-import { motion } from "framer-motion";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
+import { motion } from "framer-motion";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -55,8 +55,8 @@ export const TopMiddleNavigation = () => {
   // realms always first
   const structures = useMemo(() => {
     return playerStructures().sort((a, b) => {
-      if (a.category === "Realm") return -1;
-      if (b.category === "Realm") return 1;
+      if (a.category === StructureType[StructureType.Realm]) return -1;
+      if (b.category === StructureType[StructureType.Realm]) return 1;
       return a.category!.localeCompare(b.category!);
     });
   }, [playerStructures().length, realmEntityId]);
@@ -76,8 +76,8 @@ export const TopMiddleNavigation = () => {
   };
 
   const goToMapView = (entityId: any) => {
-    const position = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)])) as Position;
-    moveCameraToColRow(position.x, position.y);
+    const contractPosition = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+    moveCameraToColRow(Number(contractPosition?.x), Number(contractPosition?.y));
 
     setRealmEntityId(BigInt(entityId));
   };

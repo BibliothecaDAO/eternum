@@ -1,18 +1,26 @@
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { LiquidityType, MarketType } from "./types";
 import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { ClientComponents } from "../createClientComponents";
 
 export class MarketManager {
-  marketModel: Component<MarketType> | OverridableComponent<MarketType>;
-  liquidityModel: Component<LiquidityType> | OverridableComponent<LiquidityType>;
+  marketModel:
+    | Component<ClientComponents["Market"]["schema"]>
+    | OverridableComponent<ClientComponents["Market"]["schema"]>;
+  liquidityModel:
+    | Component<ClientComponents["Liquidity"]["schema"]>
+    | OverridableComponent<ClientComponents["Liquidity"]["schema"]>;
   bankEntityId: bigint;
   player: bigint;
   resourceId: bigint;
 
   constructor(
-    marketModel: Component<MarketType> | OverridableComponent<MarketType>,
-    liquidityModel: Component<LiquidityType> | OverridableComponent<LiquidityType>,
+    marketModel:
+      | Component<ClientComponents["Market"]["schema"]>
+      | OverridableComponent<ClientComponents["Market"]["schema"]>,
+    liquidityModel:
+      | Component<ClientComponents["Liquidity"]["schema"]>
+      | OverridableComponent<ClientComponents["Liquidity"]["schema"]>,
     bankEntityId: bigint,
     player: bigint,
     resourceId: bigint,

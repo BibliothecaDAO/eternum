@@ -1,4 +1,5 @@
 import { UIPosition } from "@bibliothecadao/eternum";
+import { ArmyProps } from "./Army";
 
 export const applyOffset = (point: UIPosition, offset: { x: number; y: number }) => ({
   x: point.x + offset.x,
@@ -7,8 +8,10 @@ export const applyOffset = (point: UIPosition, offset: { x: number; y: number })
 });
 
 export const arePropsEqual = (
-  prevProps: any & JSX.IntrinsicElements["group"],
-  nextProps: any & JSX.IntrinsicElements["group"],
+  prevProps: ArmyProps & JSX.IntrinsicElements["group"],
+  nextProps: ArmyProps & JSX.IntrinsicElements["group"],
 ) => {
-  return prevProps.army.x === nextProps.army.x && prevProps.army.y === nextProps.army.y;
+  return (
+    prevProps.army.position.x === nextProps.army.position.x && prevProps.army.position.y === nextProps.army.position.y
+  );
 };

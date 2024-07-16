@@ -1,7 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { getBattleByPosition } from "@/hooks/helpers/battles/useBattles";
 import { getArmyByEntityId, isArmyAlive } from "@/hooks/helpers/useArmies";
-import { getBattleByPosition } from "@/hooks/helpers/useBattles";
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useOwnedEntitiesOnPosition, useResources } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
@@ -9,7 +9,7 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { EntityState, EntityType, determineEntityState } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { DepositResources } from "../resources/DepositResources";
 import { TravelEntityPopup } from "./TravelEntityPopup";
 
@@ -34,11 +34,11 @@ type EntityProps = {
 export const Entity = ({ entityId, ...props }: EntityProps) => {
   const {
     setup: {
-      components: { Battle, Army, Position, Realm },
+      components: { Battle, Army },
     },
   } = useDojo();
   const [showTravel, setShowTravel] = useState(false);
-  const { getEntityInfo } = useEntities();
+  const { getEntityInfo } = useEntitiesUtils();
   const { getResourcesFromBalance } = useResources();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
   const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
@@ -47,14 +47,24 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const entity = getEntityInfo(entityId);
   const entityResources = getResourcesFromBalance(entityId);
   const hasResources = entityResources.length > 0;
-  const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
+  const entityState = determineEntityState(
+    nextBlockTimestamp,
+    entity.blocked,
+    Number(entity.arrivalTime),
+    hasResources,
+  );
   const depositEntityId = getOwnedEntityOnPosition(entityId);
+  const getBattle = getBattleByPosition();
 
-  const battleAtPosition = entity?.position ? getBattleByPosition(entity.position) : undefined;
-  const battleInProgress = battleAtPosition && battleAtPosition.duration_left > 0;
+  const battleInProgress = useMemo(() => {
+    const battleAtPosition = entity?.position
+      ? getBattle({ x: Number(entity.position.x), y: Number(entity.position.y) })
+      : undefined;
+    return battleAtPosition && battleAtPosition.duration_left > 0;
+  }, [entity?.position?.x, entity?.position?.y]);
 
   const army = getArmy(entityId);
-  if (army && !isArmyAlive(army, Battle, Army, Position, Realm)) return;
+  if (army && !isArmyAlive(army, Battle, Army)) return;
 
   if (entityState === EntityState.NotApplicable) return null;
 
@@ -72,7 +82,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
       case EntityState.Traveling:
         return entity.arrivalTime && nextBlockTimestamp ? (
           <div className="flex ml-auto -mt-2 italic self-center">
-            {formatSecondsLeftInDaysHours(entity.arrivalTime - nextBlockTimestamp)}
+            {formatSecondsLeftInDaysHours(Number(entity.arrivalTime) - nextBlockTimestamp)}
           </div>
         ) : null;
       default:
@@ -98,6 +108,8 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     );
   };
 
+  const name = entity.entityType === EntityType.TROOP ? army.name : entityName[entity.entityType];
+
   const bgColour = entityState === EntityState.Traveling ? "bg-gold/10" : "bg-green/10 animate-pulse";
 
   return (
@@ -110,11 +122,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
         <div className="w-full flex justify-between">
           <div className="flex gap-3 font-bold">
             <span> {entityIcon[entity.entityType]}</span>
-            <span>
-              {entity.name === entity.entityId.toString()
-                ? `${entityName[entity.entityType]} ${entity.name}`
-                : entity.name}
-            </span>
+            <span>{name}</span>
           </div>
 
           <div className="flex items-center gap-1 self-center">

@@ -1,21 +1,15 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import {
-  CombatInfo,
-  SelectableLocationInterface,
-  SelectableRealmInterface,
-  getOrderName,
-} from "@bibliothecadao/eternum";
-import { Entity, getComponentValue } from "@dojoengine/recs";
-import { useCaravan } from "@/hooks/helpers/useCaravans";
-import { SortButton, SortInterface } from "@/ui/elements/SortButton";
-import { getRealm } from "@/ui/utils/realms";
 import { useDojo } from "@/hooks/context/DojoContext";
-import TextInput from "@/ui/elements/TextInput";
-import { SortPanel } from "@/ui/elements/SortPanel";
-import { OrderIcon } from "@/ui/elements/OrderIcon";
-import { useLevel } from "@/hooks/helpers/useLevel";
+import { useCaravan } from "@/hooks/helpers/useCaravans";
 import { useRealm } from "@/hooks/helpers/useRealm";
+import { OrderIcon } from "@/ui/elements/OrderIcon";
+import { SortButton, SortInterface } from "@/ui/elements/SortButton";
+import { SortPanel } from "@/ui/elements/SortPanel";
+import TextInput from "@/ui/elements/TextInput";
+import { getRealm } from "@/ui/utils/realms";
+import { SelectableLocationInterface, getOrderName } from "@bibliothecadao/eternum";
+import { Entity, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
 export const SelectLocationPanel = ({
   travelingEntityId,
@@ -39,9 +33,6 @@ export const SelectLocationPanel = ({
     },
   } = useDojo();
 
-  // const { getDefenceOnRealm } = useCombat();
-
-  const { getEntityLevel } = useLevel();
   const { getRealmAddressName } = useRealm();
 
   const { calculateDistance } = useCaravan();
@@ -86,8 +77,6 @@ export const SelectLocationPanel = ({
           }
           const entityId = realm?.entity_id || bank?.entity_id;
           const distance = entityId ? (calculateDistance(travelingEntityId, BigInt(entityId)) ?? 0) : 0;
-          // const defence = entityId ? getDefenceOnRealm(BigInt(entityId)) : undefined;
-          const level = entityId ? getEntityLevel(BigInt(entityId)) : undefined;
           const addressName = entityId ? getRealmAddressName(entityId) : "";
           return {
             entityId,
@@ -97,7 +86,6 @@ export const SelectLocationPanel = ({
             order: order ? getOrderName(order) : "",
             distance,
             undefined, // defence,
-            level: level?.level,
             addressName,
           };
         })

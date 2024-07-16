@@ -1,7 +1,7 @@
-import { BattleType } from "@/dojo/modelManager/types";
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
+import { armyHasLost } from "@/hooks/helpers/battles/useBattlesUtils";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
-import { armyIsLosingSide } from "@/hooks/helpers/useBattles";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { useModal } from "@/hooks/store/useModal";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -9,7 +9,6 @@ import { ModalContainer } from "@/ui/components/ModalContainer";
 import { PillageHistory } from "@/ui/components/military/Battle";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo, useState } from "react";
@@ -24,6 +23,7 @@ enum Loading {
 
 export const BattleActions = ({
   userArmiesInBattle,
+  userArmiesAtPosition,
   isActive,
   ownArmyEntityId,
   defender,
@@ -31,13 +31,16 @@ export const BattleActions = ({
   battle,
 }: {
   userArmiesInBattle: ArmyInfo[] | undefined;
+  userArmiesAtPosition: ArmyInfo[] | undefined;
   ownArmyEntityId: bigint | undefined;
   defender: ArmyInfo | undefined;
   structure: Structure | undefined;
-  battle: ComponentValue<BattleType, unknown> | undefined;
+  battle: ComponentValue<ClientComponents["Battle"]["schema"]> | undefined;
   isActive: boolean;
 }) => {
-  const [localSelectedUnit, setLocalSelectedUnit] = useState<bigint | undefined>(ownArmyEntityId);
+  const [localSelectedUnit, setLocalSelectedUnit] = useState<bigint | undefined>(
+    ownArmyEntityId || BigInt(userArmiesAtPosition?.[0]?.entity_id || 0),
+  );
   const [loading, setLoading] = useState<Loading>(Loading.None);
 
   const setBattleView = useUIStore((state) => state.setBattleView);
@@ -93,7 +96,7 @@ export const BattleActions = ({
       <ModalContainer size="half">
         <PillageHistory
           structureId={BigInt(structure!.entity_id)}
-          attackerRealmEntityId={BigInt(selectedArmy!.entity_owner_id)}
+          attackerRealmEntityId={BigInt(selectedArmy!.entityOwner.entity_owner_id)}
         />
       </ModalContainer>,
     );
@@ -107,7 +110,10 @@ export const BattleActions = ({
       defending_army_id: defender!.entity_id,
     });
     setLoading(Loading.None);
-    setBattleView({ battle: { x: selectedArmy!.x || 0, y: selectedArmy!.y || 0 }, target: undefined });
+    setBattleView({
+      battle: { x: Number(selectedArmy!.position.x), y: Number(selectedArmy!.position.y) },
+      target: undefined,
+    });
     clearSelection();
   };
 
@@ -199,7 +205,7 @@ export const BattleActions = ({
             loading !== Loading.None ||
             !selectedArmy ||
             !Boolean(selectedArmy.battle_id) ||
-            (isActive && selectedArmy.protectee_id !== undefined)
+            (isActive && selectedArmy.protectee !== undefined)
           }
         >
           <img className="w-10" src="/images/icons/leave-battle.png" alt="coin" />
@@ -271,13 +277,12 @@ const ArmySelector = ({
 };
 
 const checkIfArmyLostAFinishedBattle = (battle: any, army: any, isActive: boolean) => {
-  if (battle && armyIsLosingSide(army, battle!) && !isActive) {
+  if (battle && armyHasLost(army, battle!) && !isActive) {
     return true;
   }
   return false;
 };
 
 const checkIfArmyAlive = (army: ArmyInfo) => {
-  if (army.current === undefined) return false;
-  return BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0;
+  return BigInt(army.health.current) > 0;
 };

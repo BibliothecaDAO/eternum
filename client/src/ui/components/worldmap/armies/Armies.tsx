@@ -1,20 +1,12 @@
 // @ts-ignore
-import { ArmyInfo, useArmies } from "@/hooks/helpers/useArmies";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { ArmyInfo, useMovableArmies } from "@/hooks/helpers/useArmies";
 import { Army } from "./Army";
 
 export const Armies = ({}: {}) => {
-  const { getArmies } = useArmies();
+  const { getArmies } = useMovableArmies();
   const armies = getArmies();
 
-  // not show armies that are in a battle
-  const filterArmiesNotInBattle = (armies: ArmyInfo[]): ArmyInfo[] => {
-    return armies.filter((army: any) => {
-      return army.battle_id === 0n;
-    });
-  };
-
-  return filterArmiesNotInBattle(armies)
-    .filter((army) => BigInt(army.current) / EternumGlobalConfig.troop.healthPrecision > 0)
-    .map((army: any) => <Army key={army.entity_id} army={army} />);
+  return armies
+    .filter((army) => BigInt(army.health.current) > 0)
+    .map((army: ArmyInfo) => <Army key={army.entity_id} army={army} />);
 };

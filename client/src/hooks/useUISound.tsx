@@ -315,11 +315,9 @@ export const useBuildingSound = () => {
   const { play: playBuildFishingVillage } = useUiSounds(soundSelector.buildFishingVillage);
   const { play: playBuildMine } = useUiSounds(soundSelector.buildMine);
   const { play: playBuildStables } = useUiSounds(soundSelector.buildStables);
-  const { play: playBuildWorkHut } = useUiSounds(soundSelector.buildWorkHut);
   const { play: playBuildArcherRange } = useUiSounds(soundSelector.buildArcherRange);
   const { play: playBuildBarracks } = useUiSounds(soundSelector.buildBarracks);
   const { play: playBuildMarket } = useUiSounds(soundSelector.buildMarket);
-  const { play: playBuildStorehouse } = useUiSounds(soundSelector.buildStorehouse);
   const { play: playLumberMill } = useUiSounds(soundSelector.buildLumberMill);
 
   const playBuildingSound = (buildingType: BuildingType | ResourceMiningTypes) => {

@@ -1,39 +1,25 @@
-import { Component, ComponentValue, OverridableComponent, Type, getComponentValue } from "@dojoengine/recs";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { BattleSide, EternumGlobalConfig, Troops } from "@bibliothecadao/eternum";
+import { Component, ComponentValue, Components, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { BattleType } from "./types";
+import { ClientComponents } from "../createClientComponents";
 
 export class BattleManager {
-  battleModel: Component<BattleType> | OverridableComponent<BattleType>;
   battleId: bigint;
+  battleModel: Component<ClientComponents["Battle"]["schema"]>;
 
-  constructor(battleModel: Component<BattleType> | OverridableComponent<BattleType>, battleId: bigint) {
-    this.battleModel = battleModel;
+  constructor(battleId: bigint, battleModel: Component<ClientComponents["Battle"]["schema"]>) {
     this.battleId = battleId;
+    this.battleModel = battleModel;
   }
 
-  public getUpdatedBattle(currentTick: number) {
+  public getUpdatedBattle(currentTimestamp: number) {
     const battle = this.getBattle();
     if (!battle) return;
 
     const battleClone = structuredClone(battle);
 
-    const durationPassed: number = this.getElapsedTime(currentTick);
-
-    const attackDelta = this.attackingDelta();
-    const defenceDelta = this.defendingDelta();
-
-    const damagesDoneToAttack = this.damagesDone(defenceDelta, durationPassed);
-    const damagesDoneToDefence = this.damagesDone(attackDelta, durationPassed);
-
-    battleClone.attack_army_health.current =
-      damagesDoneToAttack > BigInt(battleClone.attack_army_health.current)
-        ? 0n
-        : BigInt(battleClone.attack_army_health.current) - damagesDoneToAttack;
-
-    battleClone.defence_army_health.current =
-      damagesDoneToDefence > BigInt(battleClone.defence_army_health.current)
-        ? 0n
-        : BigInt(battleClone.defence_army_health.current) - damagesDoneToDefence;
+    this.updateHealth(battleClone, currentTimestamp);
 
     battleClone.defence_army.troops = this.getUpdatedTroops(
       battleClone.defence_army_health,
@@ -47,10 +33,10 @@ export class BattleManager {
     return battleClone;
   }
 
-  public getElapsedTime(currentTick: number): number {
+  public getElapsedTime(currentTimestamp: number): number {
     const battle = this.getBattle();
     if (!battle) return 0;
-    const duractionSinceLastUpdate = currentTick - Number(battle.last_updated);
+    const duractionSinceLastUpdate = currentTimestamp - Number(battle.last_updated);
     if (Number(battle.duration_left) >= duractionSinceLastUpdate) {
       return duractionSinceLastUpdate;
     } else {
@@ -74,26 +60,90 @@ export class BattleManager {
     }
   }
 
-  public isBattleActive(currentTick: number): boolean {
+  public isBattleActive(currentTimestamp: number): boolean {
     const battle = this.getBattle();
-    const timeSinceLastUpdate = this.getElapsedTime(currentTick);
+    const timeSinceLastUpdate = this.getElapsedTime(currentTimestamp);
     return battle ? timeSinceLastUpdate < battle.duration_left : false;
   }
 
-  public getBattle() {
+  private getBattle(): ComponentValue<ClientComponents["Battle"]["schema"]> | undefined {
     return getComponentValue(this.battleModel, getEntityIdFromKeys([this.battleId]));
+  }
+
+  public getUpdatedArmy(army: ArmyInfo, battle?: ComponentValue<ClientComponents["Battle"]["schema"]>) {
+    if (BigInt(army.battle_id) !== this.battleId) {
+      throw new Error("Army is not in the battle");
+    }
+    if (!battle) return army;
+
+    const cloneArmy = structuredClone(army);
+
+    let battle_army, battle_army_lifetime;
+    if (String(army.battle_side) === BattleSide[BattleSide.Defence]) {
+      battle_army = battle.defence_army;
+      battle_army_lifetime = battle.defence_army_lifetime;
+    } else {
+      battle_army = battle.attack_army;
+      battle_army_lifetime = battle.attack_army_lifetime;
+    }
+
+    cloneArmy.health.current = this.getTroopFullHealth(battle_army.troops);
+
+    cloneArmy.troops.knight_count =
+      cloneArmy.troops.knight_count === 0n
+        ? 0n
+        : BigInt(
+            Math.floor(
+              Number(
+                (cloneArmy.troops.knight_count * battle_army.troops.knight_count) /
+                  battle_army_lifetime.troops.knight_count,
+              ),
+            ),
+          );
+
+    cloneArmy.troops.paladin_count =
+      cloneArmy.troops.paladin_count === 0n
+        ? 0n
+        : BigInt(
+            Math.floor(
+              Number(
+                (cloneArmy.troops.paladin_count * battle_army.troops.paladin_count) /
+                  battle_army_lifetime.troops.paladin_count,
+              ),
+            ),
+          );
+
+    cloneArmy.troops.crossbowman_count =
+      cloneArmy.troops.crossbowman_count === 0n
+        ? 0n
+        : BigInt(
+            Math.floor(
+              Number(
+                (cloneArmy.troops.crossbowman_count * battle_army.troops.crossbowman_count) /
+                  battle_army_lifetime.troops.crossbowman_count,
+              ),
+            ),
+          );
+    return cloneArmy;
+  }
+
+  private getTroopFullHealth(troops: Troops): bigint {
+    const health = EternumGlobalConfig.troop.health;
+    let total_knight_health = health * Number(troops.knight_count);
+    let total_paladin_health = health * Number(troops.paladin_count);
+    let total_crossbowman_health = health * Number(troops.crossbowman_count);
+    return BigInt(
+      Math.floor(
+        (total_knight_health + total_paladin_health + total_crossbowman_health) /
+          (EternumGlobalConfig.resources.resourceMultiplier * Number(EternumGlobalConfig.troop.healthPrecision)),
+      ),
+    );
   }
 
   private getUpdatedTroops = (
     health: { current: bigint; lifetime: bigint },
-    currentTroops: ComponentValue<
-      { knight_count: Type.BigInt; paladin_count: Type.BigInt; crossbowman_count: Type.BigInt },
-      unknown
-    >,
-  ): ComponentValue<
-    { knight_count: Type.BigInt; paladin_count: Type.BigInt; crossbowman_count: Type.BigInt },
-    unknown
-  > => {
+    currentTroops: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint },
+  ): { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint } => {
     if (health.lifetime === 0n) {
       return {
         knight_count: 0n,
@@ -101,24 +151,51 @@ export class BattleManager {
         crossbowman_count: 0n,
       };
     }
+
     return {
-      knight_count: (BigInt(health.current) * BigInt(currentTroops.knight_count)) / BigInt(health.lifetime),
-      paladin_count: (BigInt(health.current) * BigInt(currentTroops.paladin_count)) / BigInt(health.lifetime),
-      crossbowman_count: (BigInt(health.current) * BigInt(currentTroops.crossbowman_count)) / BigInt(health.lifetime),
+      knight_count: (health.current * currentTroops.knight_count) / health.lifetime,
+      paladin_count: (health.current * currentTroops.paladin_count) / health.lifetime,
+      crossbowman_count: (health.current * currentTroops.crossbowman_count) / health.lifetime,
     };
   };
 
-  private attackingDelta() {
-    const battle = this.getBattle();
-    return battle ? battle.attack_delta : 0n;
+  private updateHealth(battle: ComponentValue<Components["Battle"]["schema"]>, currentTimestamp: number) {
+    const durationPassed: number = this.getElapsedTime(currentTimestamp);
+
+    const attackDelta = this.attackingDelta(battle);
+    const defenceDelta = this.defendingDelta(battle);
+
+    battle.attack_army_health.current = this.getUdpdatedHealth(attackDelta, battle.attack_army_health, durationPassed);
+    battle.defence_army_health.current = this.getUdpdatedHealth(
+      defenceDelta,
+      battle.defence_army_health,
+      durationPassed,
+    );
   }
 
-  private defendingDelta() {
-    const battle = this.getBattle();
-    return battle ? battle.defence_delta : 0n;
+  private getUdpdatedHealth(
+    delta: bigint,
+    health: ComponentValue<Components["Health"]["schema"]>,
+    durationPassed: number,
+  ) {
+    const damagesDone = this.damagesDone(delta, durationPassed);
+    const currentHealthAfterDamage = this.getCurrentHealthAfterDamage(health, damagesDone);
+    return currentHealthAfterDamage;
+  }
+
+  private attackingDelta(battle: ComponentValue<Components["Battle"]["schema"]>) {
+    return battle.attack_delta;
+  }
+
+  private defendingDelta(battle: ComponentValue<Components["Battle"]["schema"]>) {
+    return battle.defence_delta;
   }
 
   private damagesDone(delta: bigint, durationPassed: number): bigint {
     return delta * BigInt(durationPassed);
+  }
+
+  private getCurrentHealthAfterDamage(health: ComponentValue<Components["Health"]["schema"]>, damages: bigint) {
+    return damages > health.current ? 0n : health.current - damages;
   }
 }

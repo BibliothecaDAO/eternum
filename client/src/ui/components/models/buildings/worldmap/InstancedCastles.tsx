@@ -1,10 +1,10 @@
-import { Points, useGLTF, useTexture } from "@react-three/drei";
-import { getUIPositionFromColRow, pseudoRandom } from "../../../../utils/utils";
-import * as THREE from "three";
-import { useMemo } from "react";
-import { GLTF } from "three-stdlib";
 import useUIStore from "@/hooks/store/useUIStore";
 import { StructureType } from "@bibliothecadao/eternum";
+import { useGLTF, useTexture } from "@react-three/drei";
+import { useMemo } from "react";
+import * as THREE from "three";
+import { GLTF } from "three-stdlib";
+import { getUIPositionFromColRow, pseudoRandom } from "../../../../utils/utils";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -59,7 +59,7 @@ export function InstancedCastles() {
     let idx = 0;
     let matrix = new THREE.Matrix4();
     castles.forEach((castle: any) => {
-      const { x, y } = getUIPositionFromColRow(castle.col, castle.row, false);
+      const { x, y } = getUIPositionFromColRow(Number(castle.col), Number(castle.row), false);
       const seededRandom = pseudoRandom(x, y);
       matrix.makeRotationY((Math.PI / 3) * Math.floor(seededRandom * 6));
       matrix.setPosition(x, 1.5, -y);

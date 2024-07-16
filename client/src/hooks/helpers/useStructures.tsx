@@ -2,34 +2,34 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { unpackResources } from "@/ui/utils/packedData";
 import { getRealm, getRealmNameById } from "@/ui/utils/realms";
 import { calculateDistance } from "@/ui/utils/utils";
-import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, Position, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { ComponentValue, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
 
-export type Realm = ClientComponents["Realm"]["schema"] & {
+export type Realm = ComponentValue<ClientComponents["Realm"]["schema"]> & {
   resources: number[];
   self: boolean;
   name: string;
   protector: ArmyInfo | undefined;
 };
 
-export type Structure = ClientComponents["Structure"]["schema"] & {
+export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   isMine: boolean;
   isMercenary: boolean;
   name: string;
   protector: ArmyInfo | undefined;
-  owner: ClientComponents["Owner"]["schema"];
-  entityOwner: ClientComponents["EntityOwner"]["schema"];
+  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
+  entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
 };
 
-export type FullStructure = ClientComponents["Structure"]["schema"] & {
-  entityOwner: ClientComponents["EntityOwner"]["schema"];
-  owner: ClientComponents["Owner"]["schema"];
+export type FullStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+  entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
+  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   protector: ArmyInfo | undefined;
   isMine: boolean;
 };
@@ -45,19 +45,22 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
   const { getAliveArmy } = getArmyByEntityId();
 
   const useFormattedRealmAtPosition = () => {
-    const realmsAtPosition = useEntityQuery([HasValue(Position, position), HasValue(Structure, { category: "Realm" })]);
-    const formattedRealmAtPosition: Realm = realmsAtPosition.map((realm_entity_id: any) => {
-      const realm = getComponentValue(Realm as Component, realm_entity_id) as ClientComponents["Realm"]["schema"];
+    const realmsAtPosition = useEntityQuery([
+      HasValue(Position, position),
+      HasValue(Structure, { category: StructureType[StructureType.Realm] }),
+    ]);
+    const formattedRealmAtPosition: Realm | undefined = realmsAtPosition.map((realm_entity_id: any) => {
+      const realm = getComponentValue(Realm, realm_entity_id);
+      if (!realm) return;
       const entityOwner = getComponentValue(EntityOwner, realm_entity_id);
+      if (!entityOwner) return;
       const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+      if (!owner) return;
       const resources = unpackResources(BigInt(realm?.resource_types_packed || 0n), realm?.resource_types_count || 0);
       const name = getRealmNameById(BigInt(realm?.realm_id) || 0n);
 
-      let protector: ClientComponents["Protector"]["schema"] | undefined | ArmyInfo = getComponentValue(
-        Protector,
-        realm_entity_id,
-      ) as unknown as ClientComponents["Protector"]["schema"];
-      protector = protector ? getAliveArmy(BigInt(protector.army_id)) : undefined;
+      const protectorArmy = getComponentValue(Protector, realm_entity_id);
+      const protector = protectorArmy ? getAliveArmy(BigInt(protectorArmy.army_id)) : undefined;
 
       const fullRealm = {
         ...realm,
@@ -77,24 +80,17 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
     const structuresAtPosition = useEntityQuery([HasValue(Position, position), Has(Structure)]);
 
     const formattedStructureAtPosition: Structure | undefined = structuresAtPosition.map((entityId: any) => {
-      const structure = getComponentValue(Structure, entityId) as unknown as ClientComponents["Structure"]["schema"];
+      const structure = getComponentValue(Structure, entityId);
       if (!structure) {
         return;
       }
 
-      const entityOwner = getComponentValue(
-        EntityOwner,
-        entityId,
-      ) as unknown as ClientComponents["EntityOwner"]["schema"];
-      const owner = getComponentValue(
-        Owner,
-        getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id) || 0n]),
-      ) as unknown as ClientComponents["Owner"]["schema"];
-      let protector: ClientComponents["Protector"]["schema"] | undefined | ArmyInfo = getComponentValue(
-        Protector,
-        entityId,
-      ) as unknown as ClientComponents["Protector"]["schema"];
-      protector = protector ? getAliveArmy(BigInt(protector.army_id)) : undefined;
+      const entityOwner = getComponentValue(EntityOwner, entityId);
+      if (!entityOwner) return;
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+      if (!owner) return;
+      const protectorArmy = getComponentValue(Protector, entityId);
+      const protector = protectorArmy ? getAliveArmy(BigInt(protectorArmy.army_id)) : undefined;
 
       const onChainName = getComponentValue(EntityName, entityId);
 
@@ -129,7 +125,7 @@ export const useStructuresPosition = ({ position }: { position: Position }) => {
   };
 };
 
-export const getStructureAtPosition = (position: Position) => {
+export const getStructureAtPosition = ({ x, y }: Position): Structure | undefined => {
   const {
     account: { account },
     setup: {
@@ -140,36 +136,24 @@ export const getStructureAtPosition = (position: Position) => {
   const { getAliveArmy } = getArmyByEntityId();
 
   const structure = useMemo(() => {
-    const structureAtPosition = runQuery([HasValue(Position, position), Has(Structure)]);
+    const structureAtPosition = runQuery([HasValue(Position, { x, y }), Has(Structure)]);
 
     const structureEntityId = Array.from(structureAtPosition)[0];
-    const structure = getComponentValue(
-      Structure,
-      structureEntityId,
-    ) as unknown as ClientComponents["Structure"]["schema"];
-    if (!structure) {
-      return;
-    }
+    const structure = getComponentValue(Structure, structureEntityId);
+    if (!structure) return;
 
-    const entityOwner = getComponentValue(
-      EntityOwner,
-      structureEntityId,
-    ) as unknown as ClientComponents["EntityOwner"]["schema"];
-    const owner = getComponentValue(
-      Owner,
-      getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id) || 0n]),
-    ) as unknown as ClientComponents["Owner"]["schema"];
+    const entityOwner = getComponentValue(EntityOwner, structureEntityId);
+    if (!entityOwner) return;
 
-    let protector: ClientComponents["Protector"]["schema"] | undefined | ArmyInfo = getComponentValue(
-      Protector,
-      structureEntityId,
-    ) as unknown as ClientComponents["Protector"]["schema"];
-    protector = protector ? getAliveArmy(BigInt(protector.army_id)) : undefined;
+    const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+    if (!owner) return undefined;
+    const protectorArmy = getComponentValue(Protector, structureEntityId);
+    const protector = protectorArmy ? getAliveArmy(BigInt(protectorArmy.army_id)) : undefined;
 
     const onChainName = getComponentValue(EntityName, structureEntityId);
 
     const name =
-      String(structure.category) === "Realm"
+      structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
         : onChainName
           ? shortString.decodeShortString(onChainName.name.toString())
@@ -180,11 +164,11 @@ export const getStructureAtPosition = (position: Position) => {
       entityOwner,
       owner,
       name,
-      protector: protector as ArmyInfo | undefined,
+      protector,
       isMine: BigInt(owner?.address || 0) === BigInt(account.address),
       isMercenary: owner === undefined,
     };
-  }, [position]);
+  }, [x, y]);
 
   return structure;
 };
