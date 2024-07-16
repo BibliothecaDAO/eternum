@@ -9,7 +9,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Component, getComponentValue } from "@dojoengine/recs";
+import { Component, Entity, getComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
 
@@ -60,22 +60,28 @@ export class ArmyMovementManager {
   private staminaModel: Component<ClientComponents["Stamina"]["schema"]>;
   private positionModel: Component<ClientComponents["Position"]["schema"]>;
   private armyModel: Component<ClientComponents["Army"]["schema"]>;
+  private ownerModel: Component<ClientComponents["Owner"]["schema"]>;
+  private entityOwnerModel: Component<ClientComponents["EntityOwner"]["schema"]>;
   private staminaConfigModel: Component<ClientComponents["StaminaConfig"]["schema"]>;
   private currentArmiesTick: number;
-  private entityId: bigint;
+  private entity: Entity;
+  private address: bigint;
 
   constructor(private dojo: SetupResult, currentArmiesTick: number, entityId: number) {
     this.staminaModel = dojo.components.Stamina;
     this.positionModel = dojo.components.Position;
     this.armyModel = dojo.components.Army;
+    this.ownerModel = dojo.components.Owner;
+    this.entityOwnerModel = dojo.components.EntityOwner;
     this.staminaConfigModel = dojo.components.StaminaConfig;
     this.currentArmiesTick = currentArmiesTick;
-    this.entityId = BigInt(entityId);
+    this.entity = getEntityIdFromKeys([BigInt(entityId)]);
+    this.address = BigInt(this.dojo.network.burnerManager.account?.address || 0n);
   }
 
   getStamina() {
-    let staminaEntity = getComponentValue(this.staminaModel, getEntityIdFromKeys([this.entityId]));
-    const armyEntity = getComponentValue(this.armyModel, getEntityIdFromKeys([this.entityId]));
+    let staminaEntity = getComponentValue(this.staminaModel, this.entity);
+    const armyEntity = getComponentValue(this.armyModel, this.entity);
 
     if (this.currentArmiesTick !== staminaEntity?.last_refill_tick) {
       staminaEntity = {
@@ -84,7 +90,7 @@ export class ArmyMovementManager {
         amount: this.getMaxStamina(armyEntity!.troops),
       };
     }
-    return staminaEntity as unknown as ClientComponents["Stamina"]["schema"];
+    return staminaEntity;
   }
 
   getMaxStamina = (troops: any): number => {
@@ -205,9 +211,17 @@ export class ArmyMovementManager {
   };
 
   private _getCurrentPosition = () => {
-    console.log({ entityId: this.entityId });
-    const position = getComponentValue(this.positionModel, getEntityIdFromKeys([this.entityId]));
+    const position = getComponentValue(this.positionModel, this.entity);
     return { x: position!.x, y: position!.y };
+  };
+
+  public isMine = () => {
+    let entityOwner = getComponentValue(this.entityOwnerModel, this.entity);
+    let owner = getComponentValue(this.ownerModel, this.entity);
+    if (!owner && entityOwner?.entity_owner_id) {
+      owner = getComponentValue(this.ownerModel, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
+    }
+    return owner?.address === this.address;
   };
 
   public findAccessiblePositionsAndPaths(exploredHexes: Map<number, Set<number>>): TravelPaths {

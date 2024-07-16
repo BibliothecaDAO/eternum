@@ -306,12 +306,14 @@ export default class GameRenderer {
   }
 
   private handleEntitySelection(entityId: number) {
-    useThreeStore.getState().setSelectedEntityId(entityId);
     const armyMovementManager = new ArmyMovementManager(this.dojo, Date.now() / 1000, entityId);
-    this.travelPaths = armyMovementManager.findAccessiblePositionsAndPaths(
-      this.worldmapScene.systemManager.tileSystem.getExplored(),
-    );
-    this.worldmapScene.highlightHexes(this.travelPaths.getHighlightedHexes());
+    if (armyMovementManager.isMine()) {
+      useThreeStore.getState().setSelectedEntityId(entityId);
+      this.travelPaths = armyMovementManager.findAccessiblePositionsAndPaths(
+        this.worldmapScene.systemManager.tileSystem.getExplored(),
+      );
+      this.worldmapScene.highlightHexes(this.travelPaths.getHighlightedHexes());
+    }
   }
 
   private clearEntitySelection() {

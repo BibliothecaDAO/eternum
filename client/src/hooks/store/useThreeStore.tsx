@@ -9,12 +9,16 @@ export interface ThreeStore {
   setSelectedUnit: (unit: HexPosition) => void;
 
   // entities on the map
-  selectedEntityId: string | null;
-  setSelectedEntityId: (entityId: string | null) => void;
+  selectedEntityId: number | null;
+  setSelectedEntityId: (entityId: number | null) => void;
 
   // Hexception
   setSelectedBuilding: (building: BuildingType) => void;
   selectedBuilding: BuildingType;
+
+  // travel path
+  selectedPath: HexPosition[];
+  setSelectedPath: (path: HexPosition[]) => void;
 }
 
 export const useThreeStore = create<ThreeStore>((set, get) => ({
@@ -26,4 +30,6 @@ export const useThreeStore = create<ThreeStore>((set, get) => ({
   setSelectedUnit: (unit) => set({ selectedUnit: unit }),
   selectedBuilding: BuildingType.Farm,
   setSelectedBuilding: (building) => set({ selectedBuilding: building }),
+  selectedPath: [],
+  setSelectedPath: (path) => set({ selectedPath: path }),
 }));
