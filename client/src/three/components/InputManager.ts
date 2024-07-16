@@ -22,6 +22,8 @@ export class InputManager {
     onMouseMove: (event: MouseEvent) => void,
     onDoubleClick: (event: MouseEvent) => void,
     onTransitionToMainScene: () => void,
+    onClick: (event: MouseEvent) => void,
+    onRightClick: (event: MouseEvent) => void,
   ): void {
     this.resizeHandler = onResize;
     this.keydownHandler = (event: KeyboardEvent) => onKeyDown(event.key);
@@ -35,6 +37,8 @@ export class InputManager {
     window.addEventListener("keydown", this.keydownHandler);
     window.addEventListener("mousemove", this.mousemoveHandler);
     window.addEventListener("dblclick", this.dblclickHandler);
+    window.addEventListener("click", onClick);
+    window.addEventListener("contextmenu", onRightClick);
 
     window.addEventListener("keydown", (event) => {
       const { key } = event;

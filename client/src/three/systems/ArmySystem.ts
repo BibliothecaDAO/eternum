@@ -23,13 +23,14 @@ export class ArmySystem {
       const army = getComponentValue(this.dojo.components.Army, update.entity);
       if (!army) return;
 
-      this.updateArmies(update.entity, value[0]?.x || 0, value[0]?.y || 0);
+      this.updateArmies(Number(army.entity_id), value[0]?.x || 0, value[0]?.y || 0);
     });
 
     console.log("Army system setup complete");
   }
 
-  private async updateArmies(entityId: string, col: number, row: number) {
+  private async updateArmies(entityId: number, col: number, row: number) {
+    console.log({ entityId });
     const normalizedCoord = { col: col - FELT_CENTER, row: row - FELT_CENTER };
     await this.armyManager.loadPromise;
     if (!this.modelPrinted) {
@@ -46,7 +47,7 @@ export class ArmySystem {
 
     // Move army once after 5 seconds
     // testing
-    if (entityId === "0x191f1433e21c7e509dd0b6341590bca8eb798fa6a6cf1a08cec052dfdfd2a54") {
+    if (entityId === 41) {
       console.log("adding timeout ");
       setTimeout(() => {
         this.armyManager.moveArmy(entityId, { col: normalizedCoord.col + 1, row: normalizedCoord.row + 1 });

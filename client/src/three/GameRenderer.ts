@@ -221,11 +221,34 @@ export default class GameRenderer {
       // todo: add double click handler
       this.onDoubleClick.bind(this),
       this.transitionToMainScene.bind(this),
+      this.onClick.bind(this),
+      this.onRightClick.bind(this),
     );
   }
 
   onHexClick() {
     console.log("clicked");
+  }
+
+  onRightClick(event: MouseEvent) {
+    event.preventDefault();
+    if (this.currentScene === "worldmap") {
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.worldmapScene.scene.children, true);
+      if (intersects.length > 0) {
+        const clickedObject = intersects[0].object;
+        if (clickedObject instanceof THREE.InstancedMesh) {
+          const instanceId = intersects[0].instanceId;
+          if (instanceId !== undefined) {
+            const entityIdMap = intersects[0].object.userData.entityIdMap;
+            if (entityIdMap) {
+              const entityId = entityIdMap[instanceId];
+              useThreeStore.getState().setSelectedEntityId(entityId);
+            }
+          }
+        }
+      }
+    }
   }
 
   onDoubleClick() {
@@ -245,6 +268,8 @@ export default class GameRenderer {
       }
     }
   }
+
+  onClick() {}
 
   getLocationCoordinates() {
     const col = this.locationManager.getCol()!;

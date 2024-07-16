@@ -34,7 +34,7 @@ export class StructureManager {
     });
   }
 
-  updateInstanceMatrix(entityId: string, hexCoords: { col: number; row: number }) {
+  updateInstanceMatrix(entityId: number, hexCoords: { col: number; row: number }) {
     if (!this.isLoaded) {
       throw new Error("Model not loaded yet");
     }
@@ -53,10 +53,10 @@ export class StructureManager {
 }
 
 class Structures {
-  private structures: Map<string, number> = new Map();
+  private structures: Map<number, number> = new Map();
   counter: number = 0;
 
-  addStructure(entityId: string): number {
+  addStructure(entityId: number): number {
     if (!this.structures.has(entityId)) {
       this.structures.set(entityId, this.counter);
       this.counter++;
@@ -64,7 +64,7 @@ class Structures {
     return this.structures.get(entityId)!;
   }
 
-  getStructureIndex(entityId: string) {
+  getStructureIndex(entityId: number) {
     return this.structures.get(entityId);
   }
 }

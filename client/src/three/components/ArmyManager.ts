@@ -12,7 +12,7 @@ export class ArmyManager {
   private mixer: THREE.AnimationMixer | undefined;
   private interval: any;
   private mesh: THREE.InstancedMesh;
-  private armies: Map<string, number> = new Map<string, number>();
+  private armies: Map<number, number> = new Map<number, number>();
   private scale: THREE.Vector3;
   private movingArmies: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
 
@@ -58,7 +58,7 @@ export class ArmyManager {
     });
   }
 
-  updateArmy(entityId: string, hexCoords: { col: number; row: number }) {
+  updateArmy(entityId: number, hexCoords: { col: number; row: number }) {
     console.log("updating armies");
     if (!this.isLoaded) {
       return;
@@ -70,7 +70,7 @@ export class ArmyManager {
     }
   }
 
-  addArmy(entityId: string, hexCoords: { col: number; row: number }) {
+  addArmy(entityId: number, hexCoords: { col: number; row: number }) {
     console.log("add army: ", entityId, hexCoords);
     const index = this.mesh.count;
     this.mesh.count++;
@@ -81,9 +81,15 @@ export class ArmyManager {
     this.dummy.updateMatrix();
     this.mesh.setMatrixAt(index, this.dummy.matrix);
     this.mesh.instanceMatrix.needsUpdate = true;
+
+    // Map the index to the entityId in the instancedMesh userData
+    if (!this.mesh.userData.entityIdMap) {
+      this.mesh.userData.entityIdMap = {};
+    }
+    this.mesh.userData.entityIdMap[index] = entityId;
   }
 
-  moveArmy(entityId: string, hexCoords: { col: number; row: number }) {
+  moveArmy(entityId: number, hexCoords: { col: number; row: number }) {
     console.log("move army: ", entityId);
     const index = this.armies.get(entityId);
     if (index === undefined) {

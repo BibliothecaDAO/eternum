@@ -9,7 +9,7 @@ import WorldmapScene from "../scenes/Worldmap";
 
 export class StructureSystem {
   structureManager: StructureManager;
-  structuresList: { col: number; row: number; }[] = [];
+  structuresList: { col: number; row: number }[] = [];
 
   constructor(private dojo: SetupResult, private worldMapScene: WorldmapScene) {
     this.structureManager = new StructureManager(worldMapScene, "models/buildings/castle2.glb", 1000);
@@ -23,11 +23,16 @@ export class StructureSystem {
       if (!structure) return;
 
       const categoryKey = structure.category as keyof typeof StructureType;
-      this.updateStructures(update.entity, value[0]?.x || 0, value[0]?.y || 0, StructureType[categoryKey]);
+      this.updateStructures(
+        Number(structure.entity_id),
+        value[0]?.x || 0,
+        value[0]?.y || 0,
+        StructureType[categoryKey],
+      );
     });
   }
 
-  private async updateStructures(entityId: string, col: number, row: number, structureType: StructureType) {
+  private async updateStructures(entityId: number, col: number, row: number, structureType: StructureType) {
     await this.structureManager.loadPromise;
     const normalizedCoord = { col: col - FELT_CENTER, row: row - FELT_CENTER };
     this.structuresList.push(normalizedCoord);
