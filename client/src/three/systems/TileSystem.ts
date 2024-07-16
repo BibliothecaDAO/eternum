@@ -4,7 +4,7 @@ import { FELT_CENTER } from "@/ui/config";
 import WorldmapScene from "../scenes/Worldmap";
 
 export class TileSystem {
-  private exploredTiles: { col: number; row: number }[] = [];
+  private exploredTiles: Map<number, Set<number>> = new Map();
 
   constructor(private dojo: SetupResult, private worldMapScene: WorldmapScene) {}
 
@@ -20,7 +20,10 @@ export class TileSystem {
 
   private async updateTiles(col: number, row: number) {
     const normalizedCoord = { col: col - FELT_CENTER, row: row - FELT_CENTER };
-    this.exploredTiles.push(normalizedCoord);
+    if (!this.exploredTiles.has(normalizedCoord.col)) {
+      this.exploredTiles.set(normalizedCoord.col, new Set());
+    }
+    this.exploredTiles.get(normalizedCoord.col)!.add(normalizedCoord.row);
   }
 
   getExplored() {

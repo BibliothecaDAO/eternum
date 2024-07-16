@@ -13,6 +13,7 @@ import { LocationManager } from "./helpers/LocationManager";
 import GUI from "lil-gui";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { FELT_CENTER } from "@/ui/config";
+import { ArmyMovementManager } from "@/dojo/modelManager/ArmyMovementManager";
 
 const horizontalSpacing = Math.sqrt(3);
 const verticalSpacing = 3 / 2;
@@ -240,14 +241,21 @@ export default class GameRenderer {
         if (clickedObject instanceof THREE.InstancedMesh) {
           const instanceId = intersects[0].instanceId;
           if (instanceId !== undefined) {
-            // const entityIdMap = intersects[0].object.userData.entityIdMap;
-            // if (entityIdMap) {
-            //   const entityId = entityIdMap[instanceId];
-            //   useThreeStore.getState().setSelectedEntityId(entityId);
-            // }
-            const { row, col, x, z } = this.worldmapScene.getHexagonCoordinates(clickedObject, instanceId);
-            console.log({ row, col });
-            this.worldmapScene.highlightHexes([{ row, col }]);
+            const entityIdMap = intersects[0].object.userData.entityIdMap;
+            if (entityIdMap) {
+              const entityId = entityIdMap[instanceId];
+              useThreeStore.getState().setSelectedEntityId(entityId);
+              const armyMovementManager = new ArmyMovementManager(this.dojo, Date.now() / 1000, entityId);
+              const accessiblePositions = armyMovementManager.findAccessiblePositionsAndPaths(
+                this.worldmapScene.systemManager.tileSystem.getExplored(),
+              );
+              const highlightedHexes = Array.from(accessiblePositions.values()).map(
+                ({ path }) => path[path.length - 1],
+              );
+              this.worldmapScene.highlightHexes(
+                highlightedHexes.map(({ x, y }) => ({ col: x - FELT_CENTER, row: y - FELT_CENTER })),
+              );
+            }
           }
         }
       }

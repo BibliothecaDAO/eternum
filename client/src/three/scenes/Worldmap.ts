@@ -49,7 +49,7 @@ export default class WorldmapScene {
   private mainDirectionalLight!: THREE.DirectionalLight;
   private pmremGenerator!: THREE.PMREMGenerator;
   private fogManager: FogManager;
-  private systemManager: SystemManager;
+  public systemManager: SystemManager;
 
   private biome!: Biome;
   private lightType: "pmrem" | "hemisphere" = "hemisphere";
@@ -256,9 +256,8 @@ export default class WorldmapScene {
     const batchSize = 25; // Adjust batch size as needed
     let currentIndex = 0;
     const structures = this.systemManager.structureSystem.getStructures();
-    const explored = this.systemManager.tileSystem.getExplored();
+    const exploredMap = this.systemManager.tileSystem.getExplored();
     const structuresMap = new Map(structures.map((s) => [`${s.col},${s.row}`, true]));
-    const exploredMap = new Map(explored.map((e) => [`${e.col},${e.row}`, true]));
 
     const processBatch = () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
@@ -274,7 +273,7 @@ export default class WorldmapScene {
         dummy.position.copy(pos);
 
         const isStructure = structuresMap.has(`${globalCol},${globalRow}`);
-        // const isExplored = exploredMap.has(`${globalCol},${globalRow}`);
+        // const isExplored = exploredMap.get(globalCol)?.has(globalRow) || false;
         const isExplored = true;
         if (isStructure || !isExplored) {
           dummy.scale.set(0, 0, 0);
