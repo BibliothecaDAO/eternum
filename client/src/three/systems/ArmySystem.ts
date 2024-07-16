@@ -45,14 +45,14 @@ export class ArmySystem {
       console.error("Error updating army:", error);
     }
 
-    // Move army once after 5 seconds
-    // testing
-    if (entityId === 41) {
-      console.log("adding timeout ");
-      setTimeout(() => {
-        this.armyManager.moveArmy(entityId, { col: normalizedCoord.col + 1, row: normalizedCoord.row + 1 });
-      }, 15000);
-    }
+    // // Move army once after 5 seconds
+    // // testing
+    // if (entityId === 41) {
+    //   console.log("adding timeout ");
+    //   setTimeout(() => {
+    //     this.armyManager.moveArmy(entityId, { col: normalizedCoord.col + 1, row: normalizedCoord.row + 1 });
+    //   }, 15000);
+    // }
   }
 
   update(deltaTime: number) {
