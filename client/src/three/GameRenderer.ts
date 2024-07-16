@@ -240,11 +240,14 @@ export default class GameRenderer {
         if (clickedObject instanceof THREE.InstancedMesh) {
           const instanceId = intersects[0].instanceId;
           if (instanceId !== undefined) {
-            const entityIdMap = intersects[0].object.userData.entityIdMap;
-            if (entityIdMap) {
-              const entityId = entityIdMap[instanceId];
-              useThreeStore.getState().setSelectedEntityId(entityId);
-            }
+            // const entityIdMap = intersects[0].object.userData.entityIdMap;
+            // if (entityIdMap) {
+            //   const entityId = entityIdMap[instanceId];
+            //   useThreeStore.getState().setSelectedEntityId(entityId);
+            // }
+            const { row, col, x, z } = this.worldmapScene.getHexagonCoordinates(clickedObject, instanceId);
+            console.log({ row, col });
+            this.worldmapScene.highlightHexes([{ row, col }]);
           }
         }
       }

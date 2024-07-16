@@ -19,6 +19,8 @@ import GUI from "lil-gui";
 import { ArmySystem } from "../systems/ArmySystem";
 import { StructureSystem } from "../systems/StructureSystem";
 import { SystemManager } from "../systems/SystemManager";
+import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
+import { placeholderMaterial } from "@/shaders/placeholderMaterial";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -73,6 +75,10 @@ export default class WorldmapScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
+  // green highlighted hexes
+  private highlightedHexes: THREE.Mesh[] = [];
+  private highlightMaterial: THREE.ShaderMaterial;
+
   constructor(
     private dojoConfig: SetupResult,
     private raycaster: Raycaster,
@@ -101,6 +107,9 @@ export default class WorldmapScene {
       this,
       state,
     );
+
+    // Create the highlight material
+    this.highlightMaterial = placeholderMaterial;
 
     this.scene.background = new THREE.Color(0x8790a1);
     this.gui.addColor(this.scene, "background");
@@ -182,6 +191,25 @@ export default class WorldmapScene {
 
     Promise.all(this.modelLoadPromises).then(() => {
       //this.updateExistingChunks();
+    });
+  }
+
+  highlightHexes(hexes: { row: number; col: number }[]) {
+    // Remove existing highlights
+    this.highlightedHexes.forEach((mesh) => this.scene.remove(mesh));
+    this.highlightedHexes = [];
+
+    // Create new highlight meshes
+    const bigHexagonShape = createHexagonShape(this.hexSize);
+    const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
+
+    hexes.forEach((hex) => {
+      const position = this.getWorldPositionForHex(hex);
+      const highlightMesh = new THREE.Mesh(hexagonGeometry, this.highlightMaterial.clone());
+      highlightMesh.position.set(position.x, 0.32, position.z);
+      highlightMesh.rotation.x = -Math.PI / 2;
+      this.scene.add(highlightMesh);
+      this.highlightedHexes.push(highlightMesh);
     });
   }
 
@@ -416,5 +444,14 @@ export default class WorldmapScene {
     }
     if (this.lightHelper) this.lightHelper.update();
     // this.updateCameraPosition();
+
+    // Update highlight pulse
+    const elapsedTime = performance.now() / 1000; // Convert to seconds
+    const pulseFactor = Math.abs(Math.sin(elapsedTime * 2) / 16);
+    this.highlightedHexes.forEach((mesh) => {
+      if (mesh.material instanceof THREE.ShaderMaterial) {
+        mesh.material.uniforms.opacity.value = pulseFactor;
+      }
+    });
   }
 }
