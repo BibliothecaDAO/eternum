@@ -16,7 +16,7 @@ import { calculateShares } from "@/hooks/store/useLeaderBoardStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { HintSection } from "@/ui/components/hints/HintModal";
-import { QuestName } from "@/hooks/helpers/useQuests";
+import { QuestName } from "@/ui/components/quest/questDetails";
 
 export const WorldStructuresMenu = ({}: any) => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);

@@ -12,7 +12,7 @@ import { DepositResources } from "../resources/DepositResources";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { ArmyViewCard } from "./ArmyViewCard";
-import { QuestName } from "@/hooks/helpers/useQuests";
+import { QuestName } from "@/ui/components/quest/questDetails";
 
 export const EntityArmyList = ({ structure }: { structure: PlayerStructures }) => {
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({

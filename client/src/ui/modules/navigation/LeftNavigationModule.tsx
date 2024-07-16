@@ -26,7 +26,8 @@ import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
-import { QuestName, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { QuestName } from "@/ui/components/quest/questDetails";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",

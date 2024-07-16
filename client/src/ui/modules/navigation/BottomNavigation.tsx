@@ -11,13 +11,8 @@ import { useMemo } from "react";
 import { useLocation } from "wouter";
 import { guilds, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
-import {
-  QuestName,
-  QuestStatus,
-  useUnclaimedQuestsCount,
-  useQuests,
-  useQuestClaimStatus,
-} from "@/hooks/helpers/useQuests";
+import { QuestStatus, useUnclaimedQuestsCount, useQuests, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { QuestName } from "@/ui/components/quest/questDetails";
 
 export enum MenuEnum {
   realm = "realm",

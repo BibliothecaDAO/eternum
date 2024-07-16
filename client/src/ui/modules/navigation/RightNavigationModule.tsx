@@ -21,7 +21,8 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { quests as questsPopup } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
-import { QuestName, QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { QuestName } from "@/ui/components/quest/questDetails";
 
 export enum View {
   None,

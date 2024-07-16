@@ -22,7 +22,7 @@ import { Headline } from "@/ui/elements/Headline";
 import { StructureCard } from "./StructureCard";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import clsx from "clsx";
-import { QuestName } from "@/hooks/helpers/useQuests";
+import { QuestName } from "@/ui/components/quest/questDetails";
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {

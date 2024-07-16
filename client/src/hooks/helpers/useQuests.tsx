@@ -8,7 +8,7 @@ import { useEntities } from "./useEntities";
 import { ArmyInfo, useArmiesByEntityOwner } from "./useArmies";
 import { useGetMyOffers } from "./useTrade";
 import { getPillageEvents } from "@/dojo/events/pillageEventQueries";
-import { QuestName, questDetails } from "@/ui/components/quest/QuestDetails";
+import { QuestName, questDetails } from "@/ui/components/quest/questDetails";
 
 export interface Quest {
   name: QuestName;

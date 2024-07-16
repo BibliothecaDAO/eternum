@@ -22,7 +22,8 @@ import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
-import { QuestName, QuestStatus } from "@/hooks/helpers/useQuests";
+import { QuestStatus } from "@/hooks/helpers/useQuests";
+import { QuestName } from "@/ui/components/quest/questDetails";
 import { motion } from "framer-motion";
 
 const slideDown = {

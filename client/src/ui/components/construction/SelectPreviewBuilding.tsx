@@ -32,7 +32,8 @@ import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { HintSection } from "../hints/HintModal";
-import { QuestName, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { QuestName } from "@/ui/components/quest/questDetails";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
