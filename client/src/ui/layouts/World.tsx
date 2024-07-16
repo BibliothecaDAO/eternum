@@ -53,7 +53,7 @@ export const World = () => {
       <HooksComponent />
 
       <BackgroundContainer className=" clip-angled relative  ">
-        <div className="h-full w-full main-scene z-100 ornate-borders">
+        <div className="h-full w-full main-scene z-100">
           <MainScene />
         </div>
       </BackgroundContainer>
