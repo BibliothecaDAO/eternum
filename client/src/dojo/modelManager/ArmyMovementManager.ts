@@ -12,15 +12,16 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Component, Entity, getComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
+import { HexPosition } from "@/types";
 
 export class TravelPaths {
-  private paths: Map<string, { path: Position[]; isExplored: boolean }>;
+  private paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
 
   constructor() {
     this.paths = new Map();
   }
 
-  set(key: string, value: { path: Position[]; isExplored: boolean }): void {
+  set(key: string, value: { path: HexPosition[]; isExplored: boolean }): void {
     this.paths.set(key, value);
   }
 
@@ -28,7 +29,7 @@ export class TravelPaths {
     this.paths.clear();
   }
 
-  get(key: string): { path: Position[]; isExplored: boolean } | undefined {
+  get(key: string): { path: HexPosition[]; isExplored: boolean } | undefined {
     return this.paths.get(key);
   }
 
@@ -36,23 +37,27 @@ export class TravelPaths {
     return this.paths.has(key);
   }
 
-  values(): IterableIterator<{ path: Position[]; isExplored: boolean }> {
+  values(): IterableIterator<{ path: HexPosition[]; isExplored: boolean }> {
     return this.paths.values();
   }
 
   getHighlightedHexes(): { col: number; row: number }[] {
     return Array.from(this.paths.values()).map(({ path }) => ({
-      col: path[path.length - 1].x - FELT_CENTER,
-      row: path[path.length - 1].y - FELT_CENTER,
+      col: path[path.length - 1].col - FELT_CENTER,
+      row: path[path.length - 1].row - FELT_CENTER,
     }));
   }
 
   isHighlighted(row: number, col: number): boolean {
-    return this.paths.has(TravelPaths.posKey({ x: col + FELT_CENTER, y: row + FELT_CENTER }));
+    return this.paths.has(TravelPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER }));
   }
 
-  static posKey(pos: Position): string {
-    return `${pos.x},${pos.y}`;
+  static posKey(pos: HexPosition, normalized = false): string {
+    const col = normalized ? pos.col + FELT_CENTER : pos.col;
+    const row = normalized ? pos.row + FELT_CENTER : pos.row;
+    console.log("hello");
+    console.log({ col, row });
+    return `${col},${row}`;
   }
 }
 
@@ -157,17 +162,17 @@ export class ArmyMovementManager {
     return Math.floor(maxStamina / minCost);
   }
 
-  public findShortestPathBFS(endPos: Position, exploredHexes: Map<number, Set<number>>): Position[] {
+  public findShortestPathBFS(endPos: HexPosition, exploredHexes: Map<number, Set<number>>): HexPosition[] {
     const startPos = this._getCurrentPosition();
     const maxHex = this.getMaxSteps();
 
-    const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
+    const queue: { position: HexPosition; distance: number }[] = [{ position: startPos, distance: 0 }];
     const visited = new Set<string>();
-    const path = new Map<string, Position>();
+    const path = new Map<string, HexPosition>();
 
     while (queue.length > 0) {
       const { position: current, distance } = queue.shift()!;
-      if (current.x === endPos.x && current.y === endPos.y) {
+      if (current.col === endPos.col && current.row === endPos.row) {
         // Reconstruct the path upon reaching the end position
         let temp = current;
         const result = [];
@@ -186,17 +191,17 @@ export class ArmyMovementManager {
       const currentKey = TravelPaths.posKey(current);
       if (!visited.has(currentKey)) {
         visited.add(currentKey);
-        const neighbors = getNeighborHexes(current.x, current.y); // Assuming getNeighbors is defined elsewhere
-        for (const { col: x, row: y } of neighbors) {
-          const neighborKey = TravelPaths.posKey({ x, y });
-          const isExplored = exploredHexes.get(x - FELT_CENTER)?.has(y - FELT_CENTER);
+        const neighbors = getNeighborHexes(current.col, current.row); // Assuming getNeighbors is defined elsewhere
+        for (const { col, row } of neighbors) {
+          const neighborKey = TravelPaths.posKey({ col, row });
+          const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER);
           if (
             !visited.has(neighborKey) &&
             !queue.some((e) => TravelPaths.posKey(e.position) === neighborKey) &&
             isExplored
           ) {
             path.set(neighborKey, current); // Map each neighbor back to the current position
-            queue.push({ position: { x, y }, distance: distance + 1 });
+            queue.push({ position: { col, row }, distance: distance + 1 });
           }
         }
       }
@@ -212,7 +217,7 @@ export class ArmyMovementManager {
 
   private _getCurrentPosition = () => {
     const position = getComponentValue(this.positionModel, this.entity);
-    return { x: position!.x, y: position!.y };
+    return { col: position!.x, row: position!.y };
   };
 
   public isMine = () => {
@@ -229,7 +234,7 @@ export class ArmyMovementManager {
     const maxHex = this._calculateMaxTravelPossible();
     const canExplore = this.canExplore();
 
-    const priorityQueue: { position: Position; distance: number; path: Position[] }[] = [
+    const priorityQueue: { position: HexPosition; distance: number; path: HexPosition[] }[] = [
       { position: startPos, distance: 0, path: [startPos] },
     ];
     const travelPaths = new TravelPaths();
@@ -242,20 +247,20 @@ export class ArmyMovementManager {
 
       if (!shortestDistances.has(currentKey) || distance < shortestDistances.get(currentKey)!) {
         shortestDistances.set(currentKey, distance);
-        const isExplored = exploredHexes.get(current.x - FELT_CENTER)?.has(current.y - FELT_CENTER) || false;
+        const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
         travelPaths.set(currentKey, { path: path, isExplored });
         if (!isExplored) continue;
 
-        const neighbors = getNeighborHexes(current.x, current.y); // This function needs to be defined
-        for (const { col: x, row: y } of neighbors) {
-          const neighborKey = TravelPaths.posKey({ x, y });
+        const neighbors = getNeighborHexes(current.col, current.row); // This function needs to be defined
+        for (const { col, row } of neighbors) {
+          const neighborKey = TravelPaths.posKey({ col, row });
           const nextDistance = distance + 1;
-          const nextPath = [...path, { x, y }];
+          const nextPath = [...path, { col, row }];
 
-          const isExplored = exploredHexes.get(x - FELT_CENTER)?.has(y - FELT_CENTER) || false;
+          const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER) || false;
           if ((isExplored && nextDistance <= maxHex) || (!isExplored && canExplore && nextDistance === 1)) {
             if (!shortestDistances.has(neighborKey) || nextDistance < shortestDistances.get(neighborKey)!) {
-              priorityQueue.push({ position: { x, y }, distance: nextDistance, path: nextPath });
+              priorityQueue.push({ position: { col, row }, distance: nextDistance, path: nextPath });
             }
           }
         }

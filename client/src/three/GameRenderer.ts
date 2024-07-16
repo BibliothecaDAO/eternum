@@ -341,7 +341,16 @@ export default class GameRenderer {
     }
   }
 
-  onClick() {}
+  onClick() {
+    if (this.currentScene === "worldmap") {
+      const hoveredHex = this.getHoveredHex();
+      if (hoveredHex && this.travelPaths?.isHighlighted(hoveredHex.row, hoveredHex.col)) {
+        useThreeStore
+          .getState()
+          .setSelectedPath(this.travelPaths.get(TravelPaths.posKey(hoveredHex, true))?.path ?? []);
+      }
+    }
+  }
 
   getLocationCoordinates() {
     const col = this.locationManager.getCol()!;
