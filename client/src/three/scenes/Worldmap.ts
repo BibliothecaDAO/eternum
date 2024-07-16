@@ -18,6 +18,7 @@ import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import GUI from "lil-gui";
 import { ArmySystem } from "../systems/ArmySystem";
 import { StructureSystem } from "../systems/StructureSystem";
+import { SystemManager } from "../systems/SystemManager";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -46,8 +47,7 @@ export default class WorldmapScene {
   private mainDirectionalLight!: THREE.DirectionalLight;
   private pmremGenerator!: THREE.PMREMGenerator;
   private fogManager: FogManager;
-  structureSystem: StructureSystem;
-  armySystem: ArmySystem;
+  private systemManager: SystemManager;
 
   private biome!: Biome;
   private lightType: "pmrem" | "hemisphere" = "hemisphere";
@@ -148,11 +148,7 @@ export default class WorldmapScene {
 
     this.loadBiomeModels();
 
-    this.structureSystem = new StructureSystem(this.dojoConfig, this);
-    this.structureSystem.setupSystem();
-
-    this.armySystem = new ArmySystem(this.dojoConfig, this);
-    this.armySystem.setupSystem();
+    this.systemManager = new SystemManager(this.dojoConfig, this);
   }
 
   private loadBiomeModels() {
@@ -187,11 +183,6 @@ export default class WorldmapScene {
     Promise.all(this.modelLoadPromises).then(() => {
       //this.updateExistingChunks();
     });
-  }
-
-  setupSystems() {
-    // this.armySystem.setupSystem();
-    // this.structureSystem.setupSystem();
   }
 
   getWorldPositionForHex(hexCoords: { row: number; col: number }): THREE.Vector3 {
@@ -236,7 +227,7 @@ export default class WorldmapScene {
     const hexPositions: THREE.Vector3[] = [];
     const batchSize = 25; // Adjust batch size as needed
     let currentIndex = 0;
-    const structures = this.structureSystem.getStructures();
+    const structures = this.systemManager.structureSystem.getStructures();
 
     const processBatch = () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
@@ -418,8 +409,8 @@ export default class WorldmapScene {
   }
 
   update(deltaTime: number) {
-    this.character.update(deltaTime);
-    this.armySystem.update(deltaTime);
+    this.systemManager.update(deltaTime);
+
     if (this.mainDirectionalLight) {
       this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
     }
