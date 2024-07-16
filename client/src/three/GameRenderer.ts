@@ -318,6 +318,7 @@ export default class GameRenderer {
     useThreeStore.getState().setSelectedEntityId(null);
     this.worldmapScene.highlightHexes([]);
     this.travelPaths?.deleteAll();
+    this.actionInfo.hideHoverMessage();
   }
 
   onDoubleClick() {
