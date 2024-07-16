@@ -13,6 +13,37 @@ import { Component, getComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
 
+export class TravelPaths {
+  private paths: Map<string, { path: Position[]; isExplored: boolean }>;
+
+  constructor() {
+    this.paths = new Map();
+  }
+
+  set(key: string, value: { path: Position[]; isExplored: boolean }): void {
+    this.paths.set(key, value);
+  }
+
+  get(key: string): { path: Position[]; isExplored: boolean } | undefined {
+    return this.paths.get(key);
+  }
+
+  has(key: string): boolean {
+    return this.paths.has(key);
+  }
+
+  values(): IterableIterator<{ path: Position[]; isExplored: boolean }> {
+    return this.paths.values();
+  }
+
+  getHighlightedHexes(): { col: number; row: number }[] {
+    return Array.from(this.paths.values()).map(({ path }) => ({
+      col: path[path.length - 1].x - FELT_CENTER,
+      row: path[path.length - 1].y - FELT_CENTER,
+    }));
+  }
+}
+
 export class ArmyMovementManager {
   private staminaModel: Component<ClientComponents["Stamina"]["schema"]>;
   private positionModel: Component<ClientComponents["Position"]["schema"]>;
@@ -165,9 +196,7 @@ export class ArmyMovementManager {
     return { x: position!.x, y: position!.y };
   };
 
-  public findAccessiblePositionsAndPaths(
-    exploredHexes: Map<number, Set<number>>,
-  ): Map<string, { path: Position[]; isExplored: boolean }> {
+  public findAccessiblePositionsAndPaths(exploredHexes: Map<number, Set<number>>): TravelPaths {
     const startPos = this._getCurrentPosition();
     const maxHex = this._calculateMaxTravelPossible();
     const canExplore = this.canExplore();
@@ -176,7 +205,7 @@ export class ArmyMovementManager {
     const priorityQueue: { position: Position; distance: number; path: Position[] }[] = [
       { position: startPos, distance: 0, path: [startPos] },
     ];
-    const travelPaths = new Map<string, { path: Position[]; isExplored: boolean }>();
+    const travelPaths = new TravelPaths();
     const shortestDistances = new Map<string, number>();
 
     while (priorityQueue.length > 0) {
