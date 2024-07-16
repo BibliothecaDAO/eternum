@@ -16,14 +16,11 @@ use eternum::systems::config::contracts::{
 
 use eternum::utils::testing::constants::{
     get_resource_weights, MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT,
-    MAP_EXPLORE_RANDOM_MINT_AMOUNT, SHARDS_MINE_FAIL_PROBABILITY_WEIGHT
+    MAP_EXPLORE_RANDOM_MINT_AMOUNT, SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM,
+    LP_FEE_DENOM
 };
 
 use starknet::{ContractAddress};
-
-const LORDS_COST: u128 = 1_000_000;
-const LP_FEES_NUM: u128 = 15;
-const LP_FEE_DENOM: u128 = 100;
 
 fn setup_globals(config_systems_address: ContractAddress) {
     set_bank_config(config_systems_address);
@@ -100,8 +97,6 @@ fn set_mercenaries_config(config_systems_address: ContractAddress) {
     let mercenaries_rewards = array![(ResourceTypes::WHEAT, 10_000), (ResourceTypes::FISH, 20_000)]
         .span();
 
-    let mercenaries_resources = array![(ResourceTypes::WOOD, 1000), (ResourceTypes::DIAMONDS, 1000)]
-        .span();
     IMercenariesConfigDispatcher { contract_address: config_systems_address }
         .set_mercenaries_config(mercenaries_troops, mercenaries_rewards);
 }

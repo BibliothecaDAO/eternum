@@ -6,6 +6,10 @@ const MAP_EXPLORE_FISH_BURN_AMOUNT: u128 = 100_000;
 const MAP_EXPLORE_RANDOM_MINT_AMOUNT: u128 = 3;
 const SHARDS_MINE_FAIL_PROBABILITY_WEIGHT: u128 = 1000;
 
+const LORDS_COST: u128 = 1_000_000;
+const LP_FEES_NUM: u128 = 15;
+const LP_FEE_DENOM: u128 = 100;
+
 fn get_resource_weights() -> Span<(u128, u128)> {
     array![
         (ResourceTypes::WOOD.into(), 1_000),
