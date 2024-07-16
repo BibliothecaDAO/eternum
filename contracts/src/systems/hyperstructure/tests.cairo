@@ -143,7 +143,7 @@ fn test_create_hyperstructure() {
 #[available_gas(3000000000000)]
 #[should_panic(
     expected: (
-        "not enough resources, Resource (entity id: 1, resource type: EARTHEN SHARD, balance: 0). deduction: 1000000",
+        "not enough resources, Resource (entity id: 2, resource type: EARTHEN SHARD, balance: 0). deduction: 1000000",
         'ENTRYPOINT_FAILED'
     )
 )]
