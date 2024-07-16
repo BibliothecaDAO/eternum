@@ -214,6 +214,24 @@ export default class GameRenderer {
   onMouseMove(event: MouseEvent) {
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    // check if hovered hex is in the travel path
+    if (this.travelPaths) {
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.worldmapScene.scene.children, true);
+      if (intersects.length > 0) {
+        const clickedObject = intersects[0].object;
+        if (clickedObject instanceof THREE.InstancedMesh) {
+          const instanceId = intersects[0].instanceId;
+          if (instanceId !== undefined) {
+            const { row, col } = this.worldmapScene.getHexagonCoordinates(clickedObject, instanceId);
+            if (this.travelPaths.isHighlighted(row, col)) {
+              console.log("hovering on highlighted hex");
+            }
+          }
+        }
+      }
+    }
   }
 
   initListeners(): void {

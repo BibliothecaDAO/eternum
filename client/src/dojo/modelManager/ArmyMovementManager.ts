@@ -42,6 +42,14 @@ export class TravelPaths {
       row: path[path.length - 1].y - FELT_CENTER,
     }));
   }
+
+  isHighlighted(row: number, col: number): boolean {
+    return this.paths.has(TravelPaths.posKey({ x: col + FELT_CENTER, y: row + FELT_CENTER }));
+  }
+
+  static posKey(pos: Position): string {
+    return `${pos.x},${pos.y}`;
+  }
 }
 
 export class ArmyMovementManager {
@@ -147,8 +155,6 @@ export class ArmyMovementManager {
     const visited = new Set<string>();
     const path = new Map<string, Position>();
 
-    const posKey = (pos: Position) => `${pos.x},${pos.y}`;
-
     while (queue.length > 0) {
       const { position: current, distance } = queue.shift()!;
       if (current.x === endPos.x && current.y === endPos.y) {
@@ -158,7 +164,7 @@ export class ArmyMovementManager {
         while (temp) {
           result.unshift(temp); // Add to the beginning of the result array
           //@ts-ignore:
-          temp = path.get(posKey(temp)); // Move backwards through the path
+          temp = path.get(TravelPaths.posKey(temp)); // Move backwards through the path
         }
         return result;
       }
@@ -167,14 +173,18 @@ export class ArmyMovementManager {
         break; // Stop processing if the current distance exceeds maxHex
       }
 
-      const currentKey = posKey(current);
+      const currentKey = TravelPaths.posKey(current);
       if (!visited.has(currentKey)) {
         visited.add(currentKey);
         const neighbors = getNeighborHexes(current.x, current.y); // Assuming getNeighbors is defined elsewhere
         for (const { col: x, row: y } of neighbors) {
-          const neighborKey = posKey({ x, y });
+          const neighborKey = TravelPaths.posKey({ x, y });
           const isExplored = exploredHexes.get(x - FELT_CENTER)?.has(y - FELT_CENTER);
-          if (!visited.has(neighborKey) && !queue.some((e) => posKey(e.position) === neighborKey) && isExplored) {
+          if (
+            !visited.has(neighborKey) &&
+            !queue.some((e) => TravelPaths.posKey(e.position) === neighborKey) &&
+            isExplored
+          ) {
             path.set(neighborKey, current); // Map each neighbor back to the current position
             queue.push({ position: { x, y }, distance: distance + 1 });
           }
@@ -201,7 +211,6 @@ export class ArmyMovementManager {
     const maxHex = this._calculateMaxTravelPossible();
     const canExplore = this.canExplore();
 
-    const posKey = (pos: Position) => `${pos.x},${pos.y}`;
     const priorityQueue: { position: Position; distance: number; path: Position[] }[] = [
       { position: startPos, distance: 0, path: [startPos] },
     ];
@@ -211,7 +220,7 @@ export class ArmyMovementManager {
     while (priorityQueue.length > 0) {
       priorityQueue.sort((a, b) => a.distance - b.distance); // This makes the queue work as a priority queue
       const { position: current, distance, path } = priorityQueue.shift()!;
-      const currentKey = posKey(current);
+      const currentKey = TravelPaths.posKey(current);
 
       if (!shortestDistances.has(currentKey) || distance < shortestDistances.get(currentKey)!) {
         shortestDistances.set(currentKey, distance);
@@ -221,7 +230,7 @@ export class ArmyMovementManager {
 
         const neighbors = getNeighborHexes(current.x, current.y); // This function needs to be defined
         for (const { col: x, row: y } of neighbors) {
-          const neighborKey = posKey({ x, y });
+          const neighborKey = TravelPaths.posKey({ x, y });
           const nextDistance = distance + 1;
           const nextPath = [...path, { x, y }];
 
