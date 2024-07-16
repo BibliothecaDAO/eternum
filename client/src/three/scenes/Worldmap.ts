@@ -256,6 +256,9 @@ export default class WorldmapScene {
     const batchSize = 25; // Adjust batch size as needed
     let currentIndex = 0;
     const structures = this.systemManager.structureSystem.getStructures();
+    const explored = this.systemManager.tileSystem.getExplored();
+    const structuresMap = new Map(structures.map((s) => [`${s.col},${s.row}`, true]));
+    const exploredMap = new Map(explored.map((e) => [`${e.col},${e.row}`, true]));
 
     const processBatch = () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
@@ -263,10 +266,17 @@ export default class WorldmapScene {
         const row = Math.floor(i / cols) - rows / 2;
         const col = (i % cols) - cols / 2;
 
+        const globalRow = startRow + row;
+        const globalCol = startCol + col;
+
         hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
-        const pos = this.getWorldPositionForHex({ row: startRow + row, col: startCol + col });
+        const pos = this.getWorldPositionForHex({ row: globalRow, col: globalCol });
         dummy.position.copy(pos);
-        if (structures.some((s) => s.col === startCol + col && s.row === startRow + row)) {
+
+        const isStructure = structuresMap.has(`${globalCol},${globalRow}`);
+        // const isExplored = exploredMap.has(`${globalCol},${globalRow}`);
+        const isExplored = true;
+        if (isStructure || !isExplored) {
           dummy.scale.set(0, 0, 0);
         } else {
           dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
