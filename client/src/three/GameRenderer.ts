@@ -77,7 +77,6 @@ export default class GameRenderer {
     this.mouse = new THREE.Vector2();
 
     this.inputManager = new InputManager(this.currentScene);
-    this.initListeners();
 
     this.state = initialState;
     this.unsubscribe = useThreeStore.subscribe((state) => {
