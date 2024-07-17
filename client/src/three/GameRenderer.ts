@@ -60,7 +60,7 @@ export default class GameRenderer {
   private gui: GUI = new GUI();
 
   private travelPaths: TravelPaths | undefined;
-  private actionInfo: ActionInfo;
+  private actionInfo!: ActionInfo;
 
   private mouseHandler!: MouseHandler;
   private sceneManager!: SceneManager;
@@ -113,9 +113,6 @@ export default class GameRenderer {
         "move",
       )
       .name("Move Camera");
-
-    // travel/explore info
-    this.actionInfo = new ActionInfo();
   }
 
   initStats() {
@@ -174,6 +171,9 @@ export default class GameRenderer {
     this.sceneManager.initScene(this.hexceptionScene);
 
     this.inputManager = new InputManager();
+
+    // travel/explore info
+    this.actionInfo = new ActionInfo(this.camera);
 
     this.mouseHandler = new MouseHandler(
       this.dojo,

@@ -6,9 +6,11 @@ import * as THREE from "three";
 import { SceneManager } from "./SceneManager";
 import { SetupResult } from "@/dojo/setup";
 import { LocationManager } from "./helpers/LocationManager";
+import { throttle } from "lodash";
 
 export class MouseHandler {
   private worldmapScene: WorldmapScene | undefined;
+  private throttledHandleHexHover: (hexCoords: { row: number; col: number }) => void;
   public selectedEntityId: number | null = null;
 
   constructor(
@@ -21,7 +23,9 @@ export class MouseHandler {
     private actionInfo: ActionInfo,
     public sceneManager: SceneManager,
     private locationManager: LocationManager,
-  ) {}
+  ) {
+    this.throttledHandleHexHover = throttle(this.handleHexHover.bind(this), 100);
+  }
 
   initScene(worldmapScene: WorldmapScene) {
     this.worldmapScene = worldmapScene;
@@ -97,13 +101,12 @@ export class MouseHandler {
     if (this.travelPaths) {
       const hoveredHex = this.getHoveredHex();
       if (hoveredHex) {
-        const { row, col } = hoveredHex;
-        this.handleHexHover(row, col, event);
+        this.throttledHandleHexHover(hoveredHex);
       } else {
-        this.actionInfo.hideHoverMessage();
+        this.actionInfo.hideTooltip();
       }
     } else {
-      this.actionInfo.hideHoverMessage();
+      this.actionInfo.hideTooltip();
     }
   }
 
@@ -112,11 +115,14 @@ export class MouseHandler {
     this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   }
 
-  private handleHexHover(row: number, col: number, event: MouseEvent) {
-    if (this.travelPaths?.isHighlighted(row, col)) {
-      this.actionInfo.showHoverMessage(`Highlighted Hex: (${col}, ${row})`, event.clientX, event.clientY);
+  private handleHexHover(hexCoords: { row: number; col: number }) {
+    const travelPath = this.travelPaths?.get(TravelPaths.posKey(hexCoords, true));
+    if (travelPath) {
+      const hexPosition = this.worldmapScene!.getWorldPositionForHex(hexCoords);
+      console.log({ hexPosition, hexCoords });
+      this.actionInfo.showTooltip(hexPosition, travelPath.isExplored, travelPath.path.length - 1, 10000, 10000);
     } else {
-      this.actionInfo.hideHoverMessage();
+      this.actionInfo.hideTooltip();
     }
   }
 
@@ -141,7 +147,7 @@ export class MouseHandler {
     this._setSelectedEntityId(null);
     this.worldmapScene!.highlightHexes([]);
     this.travelPaths?.deleteAll();
-    this.actionInfo.hideHoverMessage();
+    this.actionInfo.hideTooltip();
   }
 
   private getHoveredHex(): { row: number; col: number } | null {
