@@ -145,8 +145,9 @@ export const getStructureAtPosition = ({ x, y }: Position): Structure | undefine
     const entityOwner = getComponentValue(EntityOwner, structureEntityId);
     if (!entityOwner) return;
 
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
-    if (!owner) return undefined;
+    const ownerOnChain = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
+    const owner = ownerOnChain ? ownerOnChain : { entity_id: structure.entity_id, address: BigInt(0) };
+
     const protectorArmy = getComponentValue(Protector, structureEntityId);
     const protector = protectorArmy ? getAliveArmy(BigInt(protectorArmy.army_id)) : undefined;
 
@@ -156,8 +157,10 @@ export const getStructureAtPosition = ({ x, y }: Position): Structure | undefine
       structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
         : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${structure.category} ${structure?.entity_id}`;
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
 
     return {
       ...structure,

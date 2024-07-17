@@ -3,11 +3,11 @@ import { ArmyInfo, usePositionArmies } from "@/hooks/helpers/useArmies";
 import { Structure, useStructuresPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ClickedHex } from "@/types";
-import { StructureCard } from "@/ui/components/hyperstructures/StructureCard";
+import { ArmyChip } from "@/ui/components/military/ArmyChip";
 import { EnemyArmies } from "@/ui/components/military/Battle";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Position } from "@bibliothecadao/eternum";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type ToShow = {
   showSelectableUnits: boolean;
@@ -36,7 +36,7 @@ export const EntityDetails = () => {
   });
 
   const panelSelectedEntity = useMemo(() => {
-    if (selectedEntity) return selectedEntity;
+    if (ownArmySelected) return ownArmySelected;
     if (userAttackingArmies.length > 0 && clickedHex && enemyArmies.length > 0) {
       const entity = {
         id: BigInt(userAttackingArmies[0].entity_id),
@@ -45,15 +45,16 @@ export const EntityDetails = () => {
       setOwnArmySelected(entity);
       return entity;
     }
-  }, [clickedHex]);
+  }, [clickedHex, ownArmySelected]);
 
   const ownArmy = useMemo(() => {
-    if (!ownArmySelected) return;
-    return userAttackingArmies.find((army) => BigInt(army.entity_id) === ownArmySelected.id);
-  }, [userAttackingArmies, selectedEntity]);
+    if (!panelSelectedEntity) return;
+    return userAttackingArmies.find((army) => army.entity_id === panelSelectedEntity.id);
+  }, [userAttackingArmies, panelSelectedEntity]);
+
   const toShow = checkWhatToShow(
     battle,
-    ownArmySelected,
+    panelSelectedEntity,
     clickedHex,
     userAttackingArmies,
     enemyArmies,
@@ -62,7 +63,7 @@ export const EntityDetails = () => {
 
   return (
     hexPosition && (
-      <div className="p-2 h-full">
+      <div className="px-2 h-full">
         <Coordinates position={hexPosition} />
         {toShow.showSelectableUnits && (
           <SelectActiveArmy
@@ -71,7 +72,7 @@ export const EntityDetails = () => {
             userAttackingArmies={userAttackingArmies}
           />
         )}
-        {toShow.showStructure && <StructureCard position={hexPosition} ownArmySelected={ownArmy} />}
+        {/* {toShow.showStructure && <StructureCard position={hexPosition} ownArmySelected={ownArmy} />} */}
         {toShow.showEnnemies && <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmy!} />}
         {!toShow.showEnnemies && !toShow.showStructure && "Nothing to show here"}
       </div>
@@ -105,29 +106,51 @@ const SelectActiveArmy = ({
   setOwnArmySelected: (val: any) => void;
   userAttackingArmies: ArmyInfo[];
 }) => {
+  const [currentEntity, setCurrentEntity] = useState(selectedEntity);
+
+  useEffect(() => {
+    setOwnArmySelected(currentEntity);
+  }, [currentEntity]);
+
   return (
-    <div className="absolute top-[-2vh] left-[25%] w-60 ">
+    <div className="w-[31rem]">
       <Select
-        value={selectedEntity?.id.toString() || ""}
+        value={currentEntity?.id.toString() || ""}
         onValueChange={(a: string) => {
-          setOwnArmySelected({ id: BigInt(a), position: selectedEntity?.position || 0n });
+          console.log(a);
+          setCurrentEntity({ id: BigInt(a), position: selectedEntity?.position || { x: 0, y: 0 } });
         }}
       >
-        <SelectTrigger className="">
-          <SelectValue placeholder="Your armies" />
+        <SelectTrigger className="w-[31rem] px-2">
+          <SelectValue placeholder="Your armies">
+            {currentEntity &&
+              userAttackingArmies.find((army) => army.entity_id.toString() === currentEntity.id.toString()) && (
+                <ArmyChip
+                  key={currentEntity.id.toString()}
+                  className={`w-[27rem] bg-green/10`}
+                  army={userAttackingArmies.find((army) => army.entity_id.toString() === currentEntity.id.toString())!}
+                />
+              )}
+          </SelectValue>
         </SelectTrigger>
-        <SelectContent className="bg-brown text-gold">
-          {userAttackingArmies.map((army, index) => (
-            <SelectItem className="flex justify-between text-sm" key={index} value={army.entity_id?.toString() || ""}>
-              <h5 className="self-center flex gap-4">{army.name}</h5>
-            </SelectItem>
-          ))}
+        <SelectContent className="text-gold w-[31rem]">
+          {userAttackingArmies.map((army, index) => {
+            army.isMine = false;
+            return (
+              <SelectItem
+                className="flex justify-between text-sm w-full"
+                key={index}
+                value={army.entity_id?.toString() || ""}
+              >
+                <ArmyChip className={`w-[27rem] bg-green/10`} army={army} />
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
     </div>
   );
 };
-
 const checkWhatToShow = (
   battle: BattleInfo | undefined,
   selectedEntity:
