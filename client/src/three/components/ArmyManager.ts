@@ -90,7 +90,7 @@ export class ArmyManager {
   }
 
   moveArmy(entityId: number, hexCoords: { col: number; row: number }) {
-    console.log("move army: ", entityId);
+    console.log("move army: ", entityId, hexCoords);
     const index = this.armies.get(entityId);
     if (index === undefined) {
       console.error(`No army found with entityId: ${entityId}`);

@@ -316,7 +316,9 @@ export class ArmyMovementManager {
     const direction = this._findDirection(path);
     if (direction === undefined) return;
 
-    const overrideId = this._optimisticExplore(path[1].x, path[1].y);
+    const overrideId = this._optimisticExplore(path[1].col, path[1].row);
+
+    // console.log({ direction });
 
     this.dojo.systemCalls
       .explore({

@@ -26,6 +26,4 @@ export const useThreeStore = create<ThreeStore>((set, get) => ({
   setSelectedUnit: (unit) => set({ selectedUnit: unit }),
   selectedBuilding: BuildingType.Farm,
   setSelectedBuilding: (building) => set({ selectedBuilding: building }),
-  selectedPath: [],
-  setSelectedPath: (path) => set({ selectedPath: path }),
 }));
