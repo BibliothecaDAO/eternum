@@ -1,11 +1,11 @@
 import {
   EternumGlobalConfig,
-  Position,
-  Resource,
   ResourcesIds,
   TROOPS_STAMINAS,
   WORLD_CONFIG_ID,
   getNeighborHexes,
+  neighborOffsetsEven,
+  neighborOffsetsOdd,
 } from "@bibliothecadao/eternum";
 import { FELT_CENTER } from "@/ui/config";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -14,7 +14,6 @@ import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
 import { HexPosition } from "@/types";
 import { uuid } from "@latticexyz/utils";
-import { findDirection } from "@/ui/utils/utils";
 
 export class TravelPaths {
   private paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
@@ -57,8 +56,6 @@ export class TravelPaths {
   static posKey(pos: HexPosition, normalized = false): string {
     const col = normalized ? pos.col + FELT_CENTER : pos.col;
     const row = normalized ? pos.row + FELT_CENTER : pos.row;
-    console.log("hello");
-    console.log({ col, row });
     return `${col},${row}`;
   }
 }
@@ -233,7 +230,7 @@ export class ArmyMovementManager {
     return owner?.address === this.address;
   };
 
-  public findAccessiblePositionsAndPaths(exploredHexes: Map<number, Set<number>>): TravelPaths {
+  public findPaths(exploredHexes: Map<number, Set<number>>): TravelPaths {
     const startPos = this._getCurrentPosition();
     const maxHex = this._calculateMaxTravelPossible();
     const canExplore = this.canExplore();
@@ -305,12 +302,20 @@ export class ArmyMovementManager {
   };
 
   private _findDirection = (path: HexPosition[]) => {
-    return path.length === 2
-      ? findDirection({ col: path[0].col, row: path[0].row }, { col: path[1].col, row: path[1].row })
-      : undefined;
+    if (path.length !== 2) return undefined;
+
+    const startPos = { col: path[0].col, row: path[0].row };
+    const endPos = { col: path[1].col, row: path[1].row };
+    const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+
+    for (let offset of neighborOffsets) {
+      if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
+        return offset.direction;
+      }
+    }
   };
 
-  exploreHex = async (path: HexPosition[]) => {
+  private _exploreHex = async (path: HexPosition[]) => {
     // setExploredHexes(path[1].x - FELT_CENTER, path[1].y - FELT_CENTER);
 
     const direction = this._findDirection(path);
@@ -331,5 +336,54 @@ export class ArmyMovementManager {
         this.positionModel.removeOverride(overrideId);
         this.staminaModel.removeOverride(overrideId);
       });
+  };
+
+  private _optimisticTravelHex = (col: number, row: number, pathLength: number) => {
+    let overrideId = uuid();
+
+    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.travelCost * pathLength);
+
+    this.positionModel.addOverride(overrideId, {
+      entity: this.entity,
+      value: {
+        entity_id: this.entityId,
+        x: col,
+        y: row,
+      },
+    });
+    return overrideId;
+  };
+
+  private _travelToHex = async (path: HexPosition[]) => {
+    const overrideId = this._optimisticTravelHex(path[path.length - 1].col, path[path.length - 1].row, path.length - 1);
+
+    const directions = path
+      .map((_, i) => {
+        if (path[i + 1] === undefined) return undefined;
+        return this._findDirection([
+          { col: path[i].col, row: path[i].row },
+          { col: path[i + 1].col, row: path[i + 1].row },
+        ]);
+      })
+      .filter((d) => d !== undefined) as number[];
+
+    this.dojo.systemCalls
+      .travel_hex({
+        signer: this.dojo.network.burnerManager.account!,
+        travelling_entity_id: this.entityId,
+        directions,
+      })
+      .catch(() => {
+        this.positionModel.removeOverride(overrideId);
+        this.staminaModel.removeOverride(overrideId);
+      });
+  };
+
+  public moveArmy = (path: HexPosition[], isExplored: boolean) => {
+    if (!isExplored) {
+      this._exploreHex(path);
+    } else {
+      this._travelToHex(path);
+    }
   };
 }

@@ -308,9 +308,7 @@ export default class GameRenderer {
     const armyMovementManager = new ArmyMovementManager(this.dojo, Date.now() / 1000, entityId);
     if (armyMovementManager.isMine()) {
       useThreeStore.getState().setSelectedEntityId(entityId);
-      this.travelPaths = armyMovementManager.findAccessiblePositionsAndPaths(
-        this.worldmapScene.systemManager.tileSystem.getExplored(),
-      );
+      this.travelPaths = armyMovementManager.findPaths(this.worldmapScene.systemManager.tileSystem.getExplored());
       this.worldmapScene.highlightHexes(this.travelPaths.getHighlightedHexes());
     }
   }
@@ -348,9 +346,11 @@ export default class GameRenderer {
         const travelPath = this.travelPaths.get(TravelPaths.posKey(hoveredHex, true));
         const selectedPath = travelPath?.path ?? [];
         const isExplored = travelPath?.isExplored ?? false;
-        if (!isExplored && selectedPath.length > 0) {
+        if (selectedPath.length > 0) {
+          console.log({ selectedPath, isExplored });
           const armyMovementManager = new ArmyMovementManager(this.dojo, Date.now() / 1000, selectedEntityId);
-          armyMovementManager.exploreHex(selectedPath);
+          // will travel if explored and explore if not
+          armyMovementManager.moveArmy(selectedPath, isExplored);
         }
       }
     }
