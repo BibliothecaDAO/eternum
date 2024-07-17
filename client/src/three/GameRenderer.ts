@@ -12,9 +12,10 @@ import gsap from "gsap";
 import { LocationManager } from "./helpers/LocationManager";
 import GUI from "lil-gui";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { FELT_CENTER } from "@/ui/config";
-import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
+import { TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 import { ActionInfo } from "./components/ActionInfo";
+import { MouseHandler } from "./MouseHandler";
+import { SceneManager } from "./SceneManager";
 
 const horizontalSpacing = Math.sqrt(3);
 const verticalSpacing = 3 / 2;
@@ -50,7 +51,7 @@ export default class GameRenderer {
   private worldmapScene!: WorldmapScene;
   private hexceptionScene!: HexceptionScene;
 
-  private currentScene: "worldmap" | "hexception" = "worldmap";
+  // private currentScene: "worldmap" | "hexception" = "worldmap";
 
   private lastTime: number = 0;
 
@@ -60,6 +61,9 @@ export default class GameRenderer {
 
   private travelPaths: TravelPaths | undefined;
   private actionInfo: ActionInfo;
+
+  private mouseHandler!: MouseHandler;
+  private sceneManager!: SceneManager;
 
   constructor(dojoContext: SetupResult, initialState: ThreeStore) {
     this.renderer = new THREE.WebGLRenderer({
@@ -75,8 +79,6 @@ export default class GameRenderer {
 
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
-
-    this.inputManager = new InputManager(this.currentScene);
 
     this.state = initialState;
     this.unsubscribe = useThreeStore.subscribe((state) => {
@@ -162,6 +164,30 @@ export default class GameRenderer {
 
     this.moveCameraToURLLocation();
 
+    this.sceneManager = new SceneManager(
+      this.cameraAngle,
+      this.cameraDistance,
+      this.camera,
+      this.controls,
+      this.transitionManager,
+    );
+    this.sceneManager.initScene(this.hexceptionScene);
+
+    this.inputManager = new InputManager();
+
+    this.mouseHandler = new MouseHandler(
+      this.dojo,
+      this.state,
+      this.raycaster,
+      this.mouse,
+      this.camera,
+      this.travelPaths,
+      this.actionInfo,
+      this.sceneManager,
+      this.locationManager,
+    );
+    this.mouseHandler.initScene(this.worldmapScene);
+
     // Init animation
     this.animate();
   }
@@ -176,15 +202,7 @@ export default class GameRenderer {
     }
   }
 
-  private goToRandomColRow() {
-    const col = Math.floor(Math.random() * 50) + FELT_CENTER;
-    const row = Math.floor(Math.random() * 50) + FELT_CENTER;
-    this.moveCameraToColRow(col, row);
-  }
-
   private moveCameraToColRow(col: number, row: number, duration: number = 2) {
-    console.log("debug 3");
-    console.log("move camera to: ", col, row);
     const colOffset = col;
     const rowOffset = row;
     const newTargetX = colOffset * horizontalSpacing + (rowOffset % 2) * (horizontalSpacing / 2);
@@ -210,149 +228,31 @@ export default class GameRenderer {
     this.controls.update();
   }
 
-  // Add this new method
-  private transitionToHexByCoordinates(row: number, col: number) {
-    // this.transitionToDetailedScene(row, col);
-  }
-
-  onMouseMove(event: MouseEvent) {
-    this.updateMousePosition(event);
-
-    if (this.travelPaths) {
-      const hoveredHex = this.getHoveredHex();
-      if (hoveredHex) {
-        const { row, col } = hoveredHex;
-        this.handleHexHover(row, col, event);
-      } else {
-        this.actionInfo.hideHoverMessage();
-      }
-    } else {
-      this.actionInfo.hideHoverMessage();
-    }
-  }
-
-  private handleHexHover(row: number, col: number, event: MouseEvent) {
-    if (this.travelPaths?.isHighlighted(row, col)) {
-      this.actionInfo.showHoverMessage(`Highlighted Hex: (${col}, ${row})`, event.clientX, event.clientY);
-    } else {
-      this.actionInfo.hideHoverMessage();
-    }
-  }
-
-  private getHoveredHex(): { row: number; col: number } | null {
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.worldmapScene.scene.children, true);
-
-    if (intersects.length > 0) {
-      const clickedObject = intersects[0].object;
-      if (clickedObject instanceof THREE.InstancedMesh) {
-        const instanceId = intersects[0].instanceId;
-        if (instanceId !== undefined) {
-          return this.worldmapScene.getHexagonCoordinates(clickedObject, instanceId);
-        }
-      }
-    }
-
-    return null;
-  }
-
-  private updateMousePosition(event: MouseEvent) {
-    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  }
-
   initListeners(): void {
     this.inputManager.initListeners(
       this.onWindowResize.bind(this),
-      this.onHexClick.bind(this),
-      this.onMouseMove.bind(this),
-      // todo: add double click handler
-      this.onDoubleClick.bind(this),
-      this.transitionToMainScene.bind(this),
-      this.onClick.bind(this),
-      this.onRightClick.bind(this),
+      this.mouseHandler.onMouseMove.bind(this.mouseHandler),
+      this.mouseHandler.onDoubleClick.bind(this.mouseHandler),
+      this.sceneManager.transitionToMainScene.bind(this),
+      this.mouseHandler.onClick.bind(this.mouseHandler),
+      this.mouseHandler.onRightClick.bind(this.mouseHandler),
+      this.handleKeyEvent.bind(this.handleKeyEvent),
     );
   }
 
-  onHexClick() {
-    console.log("clicked");
-  }
+  handleKeyEvent(event: KeyboardEvent): void {
+    const { key } = event;
 
-  onRightClick(event: MouseEvent) {
-    event.preventDefault();
-    if (this.currentScene !== "worldmap") return;
-
-    const intersects = this.getIntersects();
-    if (intersects.length === 0) return;
-
-    const clickedObject = intersects[0].object;
-    if (!(clickedObject instanceof THREE.InstancedMesh)) return;
-
-    const instanceId = intersects[0].instanceId;
-    if (instanceId === undefined) return;
-
-    const entityIdMap = clickedObject.userData.entityIdMap;
-    if (entityIdMap) {
-      this.handleEntitySelection(entityIdMap[instanceId]);
-    } else {
-      this.clearEntitySelection();
-    }
-  }
-
-  private getIntersects() {
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    return this.raycaster.intersectObjects(this.worldmapScene.scene.children, true);
-  }
-
-  private handleEntitySelection(entityId: number) {
-    const armyMovementManager = new ArmyMovementManager(this.dojo, Date.now() / 1000, entityId);
-    if (armyMovementManager.isMine()) {
-      useThreeStore.getState().setSelectedEntityId(entityId);
-      this.travelPaths = armyMovementManager.findPaths(this.worldmapScene.systemManager.tileSystem.getExplored());
-      this.worldmapScene.highlightHexes(this.travelPaths.getHighlightedHexes());
-    }
-  }
-
-  private clearEntitySelection() {
-    useThreeStore.getState().setSelectedEntityId(null);
-    this.worldmapScene.highlightHexes([]);
-    this.travelPaths?.deleteAll();
-    this.actionInfo.hideHoverMessage();
-  }
-
-  onDoubleClick() {
-    if (this.currentScene === "worldmap") {
-      this.raycaster.setFromCamera(this.mouse, this.camera);
-      const intersects = this.raycaster.intersectObjects(this.worldmapScene.scene.children, true);
-      if (intersects.length > 0) {
-        const clickedObject = intersects[0].object;
-        if (clickedObject instanceof THREE.InstancedMesh) {
-          const instanceId = intersects[0].instanceId;
-          if (instanceId !== undefined) {
-            const { row, col, x, z } = this.worldmapScene.getHexagonCoordinates(clickedObject, instanceId);
-            this.locationManager.addRowColToQueryString(row, col);
-            this.transitionToDetailedScene(row, col, x, z);
-          }
+    switch (key) {
+      case "e":
+        break;
+      case "Escape":
+        if (this.sceneManager?.currentScene === "hexception") {
+          this.sceneManager.transitionToMainScene();
         }
-      }
-    }
-  }
-
-  onClick() {
-    if (this.currentScene === "worldmap") {
-      const hoveredHex = this.getHoveredHex();
-      const selectedEntityId = this.state.selectedEntityId;
-      if (selectedEntityId && hoveredHex && this.travelPaths?.isHighlighted(hoveredHex.row, hoveredHex.col)) {
-        const travelPath = this.travelPaths.get(TravelPaths.posKey(hoveredHex, true));
-        const selectedPath = travelPath?.path ?? [];
-        const isExplored = travelPath?.isExplored ?? false;
-        if (selectedPath.length > 0) {
-          console.log({ selectedPath, isExplored });
-          const armyMovementManager = new ArmyMovementManager(this.dojo, Date.now() / 1000, selectedEntityId);
-          // will travel if explored and explore if not
-          armyMovementManager.moveArmy(selectedPath, isExplored);
-        }
-      }
+        break;
+      default:
+        break;
     }
   }
 
@@ -365,45 +265,12 @@ export default class GameRenderer {
   }
 
   switchScene() {
-    if (this.currentScene === "worldmap") {
+    if (this.sceneManager.currentScene === "worldmap") {
       const { row, col, x, z } = this.getLocationCoordinates();
-      this.transitionToDetailedScene(row, col, x, z);
+      this.sceneManager.transitionToDetailedScene(row, col, x, z);
     } else {
-      this.transitionToMainScene();
+      this.sceneManager.transitionToMainScene();
     }
-  }
-
-  transitionToDetailedScene(row: number, col: number, x: number, z: number) {
-    // this.detailedScene.setup(row, col);
-    // this.currentScene = "detailed";
-    this.transitionManager.fadeOut(() => {
-      this.currentScene = "hexception";
-      // Reset camera and controls
-      this.hexceptionScene.setup(row, col);
-      this.camera.position.set(
-        0,
-        Math.sin(this.cameraAngle) * this.cameraDistance,
-        -Math.cos(this.cameraAngle) * this.cameraDistance,
-      );
-      this.camera.lookAt(0, 0, 0);
-      this.controls.target.set(0, 0, 0);
-      this.controls.update();
-      this.transitionManager.fadeIn();
-      this.inputManager.updateCurrentScene("detailed");
-    });
-  }
-
-  transitionToMainScene() {
-    //this.currentScene = "main";
-
-    this.transitionManager.fadeOut(() => {
-      this.currentScene = "worldmap";
-
-      this.moveCameraToColRow(this.hexceptionScene.getCenterColRow()[0], this.hexceptionScene.getCenterColRow()[1], 0);
-
-      this.transitionManager.fadeIn();
-      this.inputManager.updateCurrentScene("main");
-    });
   }
 
   onWindowResize() {
@@ -471,7 +338,7 @@ export default class GameRenderer {
       this.controls.update();
     }
 
-    if (this.currentScene === "worldmap") {
+    if (this.sceneManager.currentScene === "worldmap") {
       this.worldmapScene.update(deltaTime);
       // this.hexGrid.updateVisibleChunks();
       this.worldmapScene.contextMenuManager.checkHexagonHover();

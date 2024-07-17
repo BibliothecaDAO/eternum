@@ -1,6 +1,7 @@
 import { HexPosition } from "@/types";
 import { BuildingType } from "@bibliothecadao/eternum";
 import { create } from "zustand";
+import { useEffect } from "react";
 
 export interface ThreeStore {
   selectedHex: HexPosition;
@@ -27,3 +28,12 @@ export const useThreeStore = create<ThreeStore>((set, get) => ({
   selectedBuilding: BuildingType.Farm,
   setSelectedBuilding: (building) => set({ selectedBuilding: building }),
 }));
+
+// Custom hook to log selectedEntityId changes
+export const useLogSelectedEntityId = () => {
+  const selectedEntityId = useThreeStore((state) => state.selectedEntityId);
+
+  useEffect(() => {
+    console.log("selectedEntityId changed:", selectedEntityId);
+  }, [selectedEntityId]);
+};

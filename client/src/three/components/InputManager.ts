@@ -5,28 +5,16 @@ export class InputManager {
   private dblclickHandler: ((event: MouseEvent) => void) | null = null;
   private onTransitionToMainScene!: () => void;
 
-  private currentScene: string;
-
-  constructor(initialScene: string) {
-    this.currentScene = initialScene;
-    console.log("Input manager");
-  }
-
-  updateCurrentScene(newScene: string): void {
-    this.currentScene = newScene;
-  }
-
   initListeners(
     onResize: (event: UIEvent) => void,
-    onKeyDown: (key: string) => void,
     onMouseMove: (event: MouseEvent) => void,
     onDoubleClick: (event: MouseEvent) => void,
     onTransitionToMainScene: () => void,
     onClick: (event: MouseEvent) => void,
     onRightClick: (event: MouseEvent) => void,
+    onKeyDown: (event: KeyboardEvent) => void,
   ): void {
     this.resizeHandler = onResize;
-    this.keydownHandler = (event: KeyboardEvent) => onKeyDown(event.key);
     this.mousemoveHandler = (event: MouseEvent) => {
       onMouseMove(event);
     };
@@ -34,27 +22,11 @@ export class InputManager {
     this.onTransitionToMainScene = onTransitionToMainScene;
 
     window.addEventListener("resize", this.resizeHandler);
-    window.addEventListener("keydown", this.keydownHandler);
     window.addEventListener("mousemove", this.mousemoveHandler);
     window.addEventListener("dblclick", this.dblclickHandler);
     window.addEventListener("click", onClick);
     window.addEventListener("contextmenu", onRightClick);
-
-    window.addEventListener("keydown", (event) => {
-      const { key } = event;
-
-      switch (key) {
-        case "e":
-          break;
-        case "Escape":
-          if (this.currentScene === "detailed") {
-            this.onTransitionToMainScene();
-          }
-          break;
-        default:
-          break;
-      }
-    });
+    window.addEventListener("keydown", onKeyDown);
   }
 
   removeListeners(): void {
