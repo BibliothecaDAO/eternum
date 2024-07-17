@@ -1,8 +1,6 @@
-use core::traits::TryInto;
 use core::array::SpanTrait;
 use core::traits::IndexView;
-
-use starknet::contract_address_const;
+use core::traits::TryInto;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -41,6 +39,8 @@ use eternum::{
     }
 };
 
+use starknet::contract_address_const;
+
 const INITIAL_KNIGHT_BALANCE: u128 = 50_000;
 
 const TIMESTAMP: u64 = 10000;
@@ -61,7 +61,7 @@ fn setup() -> (IWorldDispatcher, u128, Span<u128>, ICombatContractDispatcher) {
     set_speed_config(config_systems_address);
 
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
-    
+
     dev_resource_systems_dispatcher
         .mint(realm_entity_id, array![(ResourceTypes::KNIGHT, INITIAL_KNIGHT_BALANCE)].span());
 
