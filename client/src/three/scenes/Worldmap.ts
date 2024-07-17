@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { Scene, Raycaster, MathUtils } from "three";
-import { Character } from "../components/Character";
 import { FogManager } from "../components/Fog";
 
 import { ContextMenuManager } from "../components/ContextMenuManager";
@@ -44,7 +43,6 @@ export const biomeModelPaths: Record<BiomeType, string> = {
 
 export default class WorldmapScene {
   scene!: THREE.Scene;
-  private character: Character;
   private lightAmbient!: THREE.AmbientLight;
   private mainDirectionalLight!: THREE.DirectionalLight;
   private pmremGenerator!: THREE.PMREMGenerator;
@@ -89,9 +87,6 @@ export default class WorldmapScene {
   ) {
     this.scene = new THREE.Scene();
 
-    this.character = new Character(this.scene, { col: 262, row: 126 });
-    this.addCharacterMovementListeners();
-
     this.biome = new Biome();
 
     this.fogManager = new FogManager(this.scene, controls.object as THREE.PerspectiveCamera);
@@ -103,7 +98,6 @@ export default class WorldmapScene {
       mouse,
       this.loadedChunks,
       this.hexSize,
-      this.character,
       this,
       state,
     );
@@ -353,33 +347,6 @@ export default class WorldmapScene {
     return hash - Math.floor(hash);
   }
 
-  private addCharacterMovementListeners() {
-    document.addEventListener("keydown", (event) => {
-      const currentPosition = this.character.getPosition();
-      let newPosition = { ...currentPosition };
-
-      switch (event.key) {
-        case "ArrowUp":
-          newPosition.row--;
-          break;
-        case "ArrowDown":
-          newPosition.row++;
-          break;
-        case "ArrowLeft":
-          newPosition.col++;
-          break;
-        case "ArrowRight":
-          newPosition.col--;
-          break;
-      }
-
-      if (this.character.isValidHexPosition(newPosition)) {
-        this.character.moveToHex(newPosition);
-        //this.updateVisibleChunks(); // Ensure the map updates when the character moves
-      }
-    });
-  }
-
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
     const chunkX = Math.floor(x / (this.chunkSize * this.hexSize * Math.sqrt(3)));
     const chunkZ = Math.floor(-z / (this.chunkSize * this.hexSize * 1.5));
@@ -435,20 +402,6 @@ export default class WorldmapScene {
     }
   }
 
-  private updateCameraPosition() {
-    const characterPosition = this.character.getWorldPosition();
-
-    // Position the camera above and behind the character
-    this.controls.object.position.set(
-      characterPosition.x,
-      characterPosition.y + 15, // Adjust this value to change camera height
-      characterPosition.z + 15, // Adjust this value to change camera distance
-    );
-
-    // Make the camera look at the character
-    this.controls.object.lookAt(characterPosition);
-  }
-
   update(deltaTime: number) {
     this.systemManager.update(deltaTime);
 
@@ -456,7 +409,6 @@ export default class WorldmapScene {
       this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
     }
     if (this.lightHelper) this.lightHelper.update();
-    // this.updateCameraPosition();
 
     // Update highlight pulse
     const elapsedTime = performance.now() / 1000; // Convert to seconds

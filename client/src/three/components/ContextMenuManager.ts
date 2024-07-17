@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { Raycaster } from "three";
-import { Character } from "./Character";
 import HexagonMap from "../scenes/Worldmap";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 
@@ -24,7 +23,6 @@ export class ContextMenuManager {
     private mouse: THREE.Vector2,
     private loadedChunks: Map<string, THREE.Group>,
     private hexSize: number,
-    private character: Character,
     private hexGrid: HexagonMap,
     private state: ThreeStore,
   ) {
@@ -168,32 +166,6 @@ export class ContextMenuManager {
         }
       });
     });
-
-    if (!this.character.isSelected()) {
-      // Check if character is clicked
-      const characterPosition = this.character.getWorldPosition();
-      const distance = this.raycaster.ray.distanceToPoint(characterPosition);
-      if (distance < 0.5) {
-        // Adjust this value based on your character's size
-        this.character.toggleSelect();
-        return;
-      }
-    } else {
-      // Character is selected, check for hex intersection
-      if (intersects.length > 0) {
-        const hexCoords = this.hexGrid.getHexagonCoordinates(
-          intersects[0].object as THREE.InstancedMesh,
-          intersects[0].instanceId!,
-        );
-
-        this.centerCameraOnHex(hexCoords);
-
-        if (this.character.isValidHexPosition(hexCoords)) {
-          this.character.moveToHex(hexCoords);
-          this.character.toggleSelect();
-        }
-      }
-    }
   }
 
   private animateHaloPulse = () => {
