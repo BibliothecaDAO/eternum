@@ -33,9 +33,7 @@ impl RoadCustomImpl of RoadCustomTrait {
     }
 
     #[inline(always)]
-    fn use_road(
-        world: IWorldDispatcher, travel_time: u64, start_coord: Coord, end_coord: Coord
-    ) -> u64 {
+    fn use_road(world: IWorldDispatcher, travel_time: u64, start_coord: Coord, end_coord: Coord) -> u64 {
         let mut new_travel_time = travel_time;
         let mut road = Self::get(world, start_coord, end_coord);
         if road.usage_count > 0 {

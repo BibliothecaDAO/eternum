@@ -368,9 +368,7 @@ mod tests {
         fn test_neighbor_even_row_north_east() {
             let start = even_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::NorthEast), Coord { x: start.x + 1, y: start.y + 1 }
-            );
+            assert_eq!(start.neighbor(Direction::NorthEast), Coord { x: start.x + 1, y: start.y + 1 });
         }
 
         #[test]
@@ -400,9 +398,7 @@ mod tests {
         fn test_neighbor_even_row_south_east() {
             let start = even_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::SouthEast), Coord { x: start.x + 1, y: start.y - 1 }
-            );
+            assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x + 1, y: start.y - 1 });
         }
 
 
@@ -426,9 +422,7 @@ mod tests {
         fn test_neighbor_odd_row_north_west() {
             let start = odd_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::NorthWest), Coord { x: start.x - 1, y: start.y + 1 }
-            );
+            assert_eq!(start.neighbor(Direction::NorthWest), Coord { x: start.x - 1, y: start.y + 1 });
         }
 
         #[test]
@@ -443,9 +437,7 @@ mod tests {
         fn test_neighbor_odd_row_south_west() {
             let start = odd_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::SouthWest), Coord { x: start.x - 1, y: start.y - 1 }
-            );
+            assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x - 1, y: start.y - 1 });
         }
 
 

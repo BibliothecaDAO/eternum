@@ -47,21 +47,15 @@ impl StaminaCustomImpl of StaminaCustomTrait {
         let armies_tick_config = TickImpl::get_armies_tick_config(world);
 
         if (troops.knight_count > 0) {
-            let knight_config = get!(
-                world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), StaminaConfig
-            );
+            let knight_config = get!(world, (WORLD_CONFIG_ID, ResourceTypes::KNIGHT), StaminaConfig);
             maxes.append(knight_config.max_stamina);
         }
         if (troops.paladin_count > 0) {
-            let paladin_config = get!(
-                world, (WORLD_CONFIG_ID, ResourceTypes::PALADIN), StaminaConfig
-            );
+            let paladin_config = get!(world, (WORLD_CONFIG_ID, ResourceTypes::PALADIN), StaminaConfig);
             maxes.append(paladin_config.max_stamina);
         }
         if (troops.crossbowman_count > 0) {
-            let crossbowman_config = get!(
-                world, (WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN), StaminaConfig
-            );
+            let crossbowman_config = get!(world, (WORLD_CONFIG_ID, ResourceTypes::CROSSBOWMAN), StaminaConfig);
             maxes.append(crossbowman_config.max_stamina);
         }
 

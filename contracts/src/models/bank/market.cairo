@@ -49,18 +49,13 @@ struct Market {
 #[generate_trait]
 impl MarketCustomImpl of MarketCustomTrait {
     fn get_input_price(
-        fee_rate_num: u128,
-        fee_rate_denom: u128,
-        input_amount: u128,
-        input_reserve: u128,
-        output_reserve: u128
+        fee_rate_num: u128, fee_rate_denom: u128, input_amount: u128, input_reserve: u128, output_reserve: u128
     ) -> u128 {
         // Ensure reserves are not zero
         assert(input_reserve > 0 && output_reserve > 0, 'Reserves must be > zero');
 
         // Apply the fee to the input amount
-        let input_amount_after_fee = (input_amount * (fee_rate_denom - fee_rate_num))
-            / fee_rate_denom;
+        let input_amount_after_fee = (input_amount * (fee_rate_denom - fee_rate_num)) / fee_rate_denom;
 
         // Calculate the output amount based on the constant product formula
         // (x + Δx) * (y - Δy) = k, where k = x * y
@@ -76,11 +71,7 @@ impl MarketCustomImpl of MarketCustomTrait {
     // Here the user gets the requested output but pays more in price to 
     // account for lp fees. i.e fees are paid in input token
     fn get_output_price(
-        fee_rate_num: u128,
-        fee_rate_denom: u128,
-        output_amount: u128,
-        input_reserve: u128,
-        output_reserve: u128
+        fee_rate_num: u128, fee_rate_denom: u128, output_amount: u128, input_reserve: u128, output_reserve: u128
     ) -> u128 {
         // Ensure reserves are not zero and output amount is valid
         assert(input_reserve > 0 && output_reserve > 0, 'Reserves must be > zero');
@@ -103,28 +94,16 @@ impl MarketCustomImpl of MarketCustomTrait {
     }
 
 
-    fn buy(
-        self: @Market, lp_fee_num: u128, lp_fee_denom: u128, desired_resource_amount: u128
-    ) -> u128 {
+    fn buy(self: @Market, lp_fee_num: u128, lp_fee_denom: u128, desired_resource_amount: u128) -> u128 {
         let lords_cost = Self::get_output_price(
-            lp_fee_num,
-            lp_fee_denom,
-            desired_resource_amount,
-            *self.lords_amount,
-            *self.resource_amount
+            lp_fee_num, lp_fee_denom, desired_resource_amount, *self.lords_amount, *self.resource_amount
         );
         lords_cost
     }
 
-    fn sell(
-        self: @Market, lp_fee_num: u128, lp_fee_denom: u128, sell_resource_amount: u128
-    ) -> u128 {
+    fn sell(self: @Market, lp_fee_num: u128, lp_fee_denom: u128, sell_resource_amount: u128) -> u128 {
         let lords_received = Self::get_input_price(
-            lp_fee_num,
-            lp_fee_denom,
-            sell_resource_amount,
-            *self.resource_amount,
-            *self.lords_amount
+            lp_fee_num, lp_fee_denom, sell_resource_amount, *self.resource_amount, *self.lords_amount
         );
         lords_received
     }
@@ -319,8 +298,7 @@ mod tests {
         };
 
         let max_fee = (max_input * fee_rate_num) / fee_rate_denom;
-        let max_product_increase = initial_product
-            + (max_fee * initial_product / initial_reserve_x);
+        let max_product_increase = initial_product + (max_fee * initial_product / initial_reserve_x);
 
         // acceptable error margin (0.01% of the initial product)
         let error_margin = initial_product / 10_000;
@@ -514,8 +492,7 @@ mod tests {
         // Add liquidity without the same ratio
         let (amount, quantity) = (2, 10); // pool 1:5
 
-        let (amount_add, quantity_add, liquidity_add, total_shares) = market
-            .add_liquidity(amount, quantity);
+        let (amount_add, quantity_add, liquidity_add, total_shares) = market.add_liquidity(amount, quantity);
 
         // Assert that the amount added is optimal even though the
         // amount originally requested was not
@@ -542,8 +519,7 @@ mod tests {
         let two = FixedTrait::new_unscaled(2, false);
         let liquidity_remove = initial_liquidity / two;
 
-        let (amount_remove, quantity_remove, total_shares) = market
-            .remove_liquidity(liquidity_remove);
+        let (amount_remove, quantity_remove, total_shares) = market.remove_liquidity(liquidity_remove);
 
         // Assert that the amount and quantity removed are half of the initial amount and quantity
         assert(amount_remove == 1, 'wrong cash amount');

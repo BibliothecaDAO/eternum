@@ -35,17 +35,13 @@ impl LevelCustomImpl of LevelCustomTrait {
     fn get_multiplier(leveling_config: LevelingConfig, tier: u64) -> u128 {
         let decay_fixed = FixedTrait::new(leveling_config.decay_scaled, false);
         let tier_fixed = FixedTrait::new_unscaled(tier.into(), false);
-        let base_multiplier_fixed = FixedTrait::new_unscaled(
-            leveling_config.base_multiplier, false
-        );
+        let base_multiplier_fixed = FixedTrait::new_unscaled(leveling_config.base_multiplier, false);
         let nom = FixedTrait::ONE() - fixed_pow(FixedTrait::ONE() - decay_fixed, tier_fixed);
         let denom = decay_fixed;
         (base_multiplier_fixed * (nom / denom)).try_into().unwrap()
     }
 
-    fn get_index_multiplier(
-        self: Level, leveling_config: LevelingConfig, index: u8, start_tier: u64
-    ) -> u128 {
+    fn get_index_multiplier(self: Level, leveling_config: LevelingConfig, index: u8, start_tier: u64) -> u128 {
         let current_level = self.get_level();
 
         if current_level < start_tier * 4 + 1 {
@@ -70,8 +66,7 @@ impl LevelCustomImpl of LevelCustomTrait {
             return 100;
         } else {
             let coefficient = fixed_pow(
-                cost_percentage + FixedTrait::ONE(),
-                FixedTrait::new_unscaled((next_tier - 1).into(), false)
+                cost_percentage + FixedTrait::ONE(), FixedTrait::new_unscaled((next_tier - 1).into(), false)
             );
             (coefficient * FixedTrait::new_unscaled(100, false)).try_into().unwrap()
         }
@@ -81,9 +76,7 @@ impl LevelCustomImpl of LevelCustomTrait {
 
 #[cfg(test)]
 mod tests {
-    use eternum::constants::{
-        LevelIndex, REALM_LEVELING_START_TIER, HYPERSTRUCTURE_LEVELING_START_TIER
-    };
+    use eternum::constants::{LevelIndex, REALM_LEVELING_START_TIER, HYPERSTRUCTURE_LEVELING_START_TIER};
     use eternum::models::config::{LevelingConfig};
     use super::{Level, LevelCustomTrait};
 
@@ -173,32 +166,27 @@ mod tests {
         // set level 
         // tier 1
         let level = Level { entity_id: 1, level: 1, valid_until: 1000 };
-        let multiplier = level
-            .get_index_multiplier(leveling_config, LevelIndex::FOOD, REALM_LEVELING_START_TIER);
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD, REALM_LEVELING_START_TIER);
         assert(multiplier == 100, 'wrong multiplier');
 
         // tier 2
         let level = Level { entity_id: 1, level: 6, valid_until: 1000 };
-        let multiplier = level
-            .get_index_multiplier(leveling_config, LevelIndex::FOOD, REALM_LEVELING_START_TIER);
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD, REALM_LEVELING_START_TIER);
         assert(multiplier == 125, 'wrong multiplier');
 
         // tier 2
         let level = Level { entity_id: 1, level: 6, valid_until: 1000 };
-        let multiplier = level
-            .get_index_multiplier(leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER);
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER);
         assert(multiplier == 100, 'wrong multiplier');
 
         // tier 2
         let level = Level { entity_id: 1, level: 8, valid_until: 1000 };
-        let multiplier = level
-            .get_index_multiplier(leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER);
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER);
         assert(multiplier == 125, 'wrong multiplier');
 
         // tier 11
         let level = Level { entity_id: 1, level: 43, valid_until: 1000 };
-        let multiplier = level
-            .get_index_multiplier(leveling_config, LevelIndex::FOOD, REALM_LEVELING_START_TIER);
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD, REALM_LEVELING_START_TIER);
         assert(multiplier == 262, 'wrong multiplier');
     }
 

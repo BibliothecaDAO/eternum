@@ -5,14 +5,13 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, DONKEY_ENTITY_TYPE};
 
 use eternum::models::{
-    movable::{Movable, ArrivalTime}, owner::Owner, position::Position,
-    resources::{Resource, ResourceImpl}, trade::{Trade, Status, TradeStatus}, weight::Weight
+    movable::{Movable, ArrivalTime}, owner::Owner, position::Position, resources::{Resource, ResourceCustomImpl},
+    trade::{Trade, Status, TradeStatus}, weight::Weight
 };
 
 use eternum::systems::config::contracts::{
-    config_systems, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
-    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, ICapacityConfigDispatcher,
-    ICapacityConfigDispatcherTrait
+    config_systems, ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher,
+    IWeightConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait
 };
 
 use eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
@@ -23,8 +22,7 @@ use eternum::systems::trade::contracts::trade_systems::{
 
 
 use eternum::utils::testing::{
-    world::spawn_eternum,
-    systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
+    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
     general::{spawn_realm, get_default_realm_pos}
 };
 
@@ -58,31 +56,19 @@ fn setup() -> (IWorldDispatcher, u128, u128, ITradeSystemsDispatcher) {
     dev_resource_systems
         .mint(
             maker_id,
-            array![
-                (ResourceTypes::STONE, 100),
-                (ResourceTypes::GOLD, 100),
-                (ResourceTypes::DONKEY, 20_000)
-            ]
-                .span()
+            array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100), (ResourceTypes::DONKEY, 20_000)].span()
         );
     dev_resource_systems
         .mint(
             taker_id,
-            array![
-                (ResourceTypes::STONE, 500),
-                (ResourceTypes::GOLD, 500),
-                (ResourceTypes::DONKEY, 20_000)
-            ]
-                .span()
+            array![(ResourceTypes::STONE, 500), (ResourceTypes::GOLD, 500), (ResourceTypes::DONKEY, 20_000)].span()
         );
 
     set!(world, (Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }));
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
     let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
-    let trade_systems_dispatcher = ITradeSystemsDispatcher {
-        contract_address: trade_systems_address
-    };
+    let trade_systems_dispatcher = ITradeSystemsDispatcher { contract_address: trade_systems_address };
 
     (world, maker_id, taker_id, trade_systems_dispatcher)
 }
@@ -105,17 +91,17 @@ fn test_create_order() {
         );
 
     // check maker balances
-    let maker_stone_balance = ResourceImpl::get(world, (maker_id, ResourceTypes::STONE)).balance;
+    let maker_stone_balance = ResourceCustomImpl::get(world, (maker_id, ResourceTypes::STONE)).balance;
     assert(maker_stone_balance == 0, 'm stone balance should be 0');
 
-    let maker_gold_balance = ResourceImpl::get(world, (maker_id, ResourceTypes::GOLD)).balance;
+    let maker_gold_balance = ResourceCustomImpl::get(world, (maker_id, ResourceTypes::GOLD)).balance;
     assert(maker_gold_balance == 0, 'm gold balance should be 0');
 
     // check that taker balance is unmodified
-    let taker_stone_balance = ResourceImpl::get(world, (taker_id, ResourceTypes::STONE)).balance;
+    let taker_stone_balance = ResourceCustomImpl::get(world, (taker_id, ResourceTypes::STONE)).balance;
     assert(taker_stone_balance == 500, 't stone balance should be 500');
 
-    let taker_gold_balance = ResourceImpl::get(world, (taker_id, ResourceTypes::GOLD)).balance;
+    let taker_gold_balance = ResourceCustomImpl::get(world, (taker_id, ResourceTypes::GOLD)).balance;
     assert(taker_gold_balance == 500, 't gold balance should be 500');
 
     let trade = get!(world, trade_id, Trade);
@@ -158,9 +144,7 @@ fn test_caller_not_maker() {
 fn test_transport_not_enough_capacity() {
     let (world, maker_id, taker_id, trade_systems_dispatcher) = setup();
 
-    set!(
-        world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 0 })
-    );
+    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }));
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
     trade_systems_dispatcher

@@ -5,9 +5,7 @@ use debug::PrintTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, resource_type_name};
 use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION, BASE_STOREHOUSE_CAPACITY};
-use eternum::models::buildings::{
-    Building, BuildingCustomTrait, BuildingCategory, BuildingQuantityv2
-};
+use eternum::models::buildings::{Building, BuildingCustomTrait, BuildingCategory, BuildingQuantityv2};
 use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
 
 use eternum::models::production::{Production, ProductionOutputCustomImpl, ProductionRateTrait};
@@ -120,9 +118,7 @@ impl ResourceFoodImpl of ResourceFoodTrait {
     }
 
     /// Fails if the paid amount is insufficient
-    fn pay(
-        world: IWorldDispatcher, entity_id: u128, mut wheat_amount: u128, mut fish_amount: u128,
-    ) {
+    fn pay(world: IWorldDispatcher, entity_id: u128, mut wheat_amount: u128, mut fish_amount: u128,) {
         let (mut wheat, mut fish) = Self::get(world, entity_id);
 
         if wheat_amount > wheat.balance {
@@ -139,9 +135,7 @@ impl ResourceFoodImpl of ResourceFoodTrait {
     }
 
     /// Does not fail even if amount is insufficient
-    fn burn(
-        world: IWorldDispatcher, entity_id: u128, mut wheat_amount: u128, mut fish_amount: u128,
-    ) {
+    fn burn(world: IWorldDispatcher, entity_id: u128, mut wheat_amount: u128, mut fish_amount: u128,) {
         let mut wheat: Resource = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::WHEAT));
         let mut fish: Resource = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::FISH));
 
@@ -205,9 +199,7 @@ impl ResourceCustomImpl of ResourceCustomTrait {
                 world, (self.entity_id, BuildingCategory::Storehouse), BuildingQuantityv2
             );
             let max_resource_balance = BASE_STOREHOUSE_CAPACITY * RESOURCE_PRECISION
-                + (storehouse_building_quantity.value.into()
-                    * BASE_STOREHOUSE_CAPACITY
-                    * RESOURCE_PRECISION);
+                + (storehouse_building_quantity.value.into() * BASE_STOREHOUSE_CAPACITY * RESOURCE_PRECISION);
             self.balance = min(self.balance, max_resource_balance);
         }
 
@@ -239,9 +231,7 @@ impl ResourceCustomImpl of ResourceCustomTrait {
     }
 
     fn harvest(ref self: Resource, world: IWorldDispatcher) {
-        let mut production: Production = get!(
-            world, (self.entity_id, self.resource_type), Production
-        );
+        let mut production: Production = get!(world, (self.entity_id, self.resource_type), Production);
         let tick = TickImpl::get_default_tick_config(world);
         if production.is_active() && production.last_updated_tick != tick.current() {
             production.harvest(ref self, @tick);
@@ -325,10 +315,8 @@ mod tests_resource_traits {
     use eternum::models::resources::ResourceCustomTrait;
     use eternum::models::structure::{Structure, StructureCategory};
     use eternum::systems::config::contracts::config_systems;
-    use eternum::systems::config::contracts::{
-        IProductionConfigDispatcher, IProductionConfigDispatcherTrait
-    };
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use eternum::systems::config::contracts::{IProductionConfigDispatcher, IProductionConfigDispatcherTrait};
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
     use super::{Production, ProductionOutputCustomImpl, Resource, ResourceCustomImpl};
     use traits::Into;
     use traits::TryInto;
@@ -475,7 +463,7 @@ mod owned_resources_tracker_tests {
     use eternum::constants::ResourceTypes;
     use eternum::models::resources::{Resource, ResourceCustomImpl};
     use eternum::models::structure::{Structure, StructureCategory};
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
     use super::{OwnedResourcesTracker, OwnedResourcesTrackerCustomTrait};
 
 
@@ -503,9 +491,7 @@ mod owned_resources_tracker_tests {
         let entity_id = 44;
         // make entity a structure
         set!(world, (Structure { entity_id, category: StructureCategory::Realm, }));
-        let mut entity_gold_resource = ResourceCustomImpl::get(
-            world, (entity_id, ResourceTypes::GOLD)
-        );
+        let mut entity_gold_resource = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::GOLD));
         entity_gold_resource.balance += 300;
         entity_gold_resource.save(world);
 

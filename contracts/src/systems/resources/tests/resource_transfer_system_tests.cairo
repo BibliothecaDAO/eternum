@@ -17,9 +17,7 @@ mod resource_transfer_system_tests {
     use eternum::models::quantity::Quantity;
     use eternum::models::resources::{Resource, ResourceAllowance};
 
-    use eternum::systems::config::contracts::{
-        config_systems, IWeightConfigDispatcher, IWeightConfigDispatcherTrait
-    };
+    use eternum::systems::config::contracts::{config_systems, IWeightConfigDispatcher, IWeightConfigDispatcherTrait};
 
     use eternum::systems::resources::contracts::{
         resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
@@ -55,61 +53,36 @@ mod resource_transfer_system_tests {
 
         let resource_systems_address = deploy_system(world, resource_systems::TEST_CLASS_HASH);
 
-        let resource_systems_dispatcher = IResourceSystemsDispatcher {
-            contract_address: resource_systems_address
-        };
+        let resource_systems_dispatcher = IResourceSystemsDispatcher { contract_address: resource_systems_address };
 
         (world, resource_systems_dispatcher)
     }
 
 
-    fn make_owner_and_receiver(
-        world: IWorldDispatcher, sender_entity_id: u64, receiver_entity_id: u64
-    ) {
-        let sender_entity_position = Position {
-            x: 100_000, y: 200_000, entity_id: sender_entity_id.into()
-        };
+    fn make_owner_and_receiver(world: IWorldDispatcher, sender_entity_id: u64, receiver_entity_id: u64) {
+        let sender_entity_position = Position { x: 100_000, y: 200_000, entity_id: sender_entity_id.into() };
 
         set!(world, (sender_entity_position));
         set!(
             world,
             (
-                Owner {
-                    address: contract_address_const::<'owner_entity'>(),
-                    entity_id: sender_entity_id.into()
-                },
-                EntityOwner {
-                    entity_id: sender_entity_id.into(), entity_owner_id: sender_entity_id.into()
-                },
+                Owner { address: contract_address_const::<'owner_entity'>(), entity_id: sender_entity_id.into() },
+                EntityOwner { entity_id: sender_entity_id.into(), entity_owner_id: sender_entity_id.into() },
+                Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::STONE, balance: 1000 },
                 Resource {
-                    entity_id: sender_entity_id.into(),
-                    resource_type: ResourceTypes::STONE,
-                    balance: 1000
+                    entity_id: sender_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1_000_000_000
                 },
-                Resource {
-                    entity_id: sender_entity_id.into(),
-                    resource_type: ResourceTypes::DONKEY,
-                    balance: 1_000_000_000
-                },
-                Resource {
-                    entity_id: sender_entity_id.into(),
-                    resource_type: ResourceTypes::WOOD,
-                    balance: 1000
-                }
+                Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000 }
             )
         );
 
-        let receiver_entity_position = Position {
-            x: 200_000, y: 100_000, entity_id: receiver_entity_id.into()
-        };
+        let receiver_entity_position = Position { x: 200_000, y: 100_000, entity_id: receiver_entity_id.into() };
         set!(world, (receiver_entity_position));
         set!(
             world,
             (
                 Resource {
-                    entity_id: receiver_entity_id.into(),
-                    resource_type: ResourceTypes::DONKEY,
-                    balance: 1_000_000_000
+                    entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 1_000_000_000
                 },
             )
         );
@@ -143,12 +116,8 @@ mod resource_transfer_system_tests {
             );
 
         // verify sender's resource balances
-        let sender_entity_resource_stone = get!(
-            world, (sender_entity_id, ResourceTypes::STONE), Resource
-        );
-        let sender_entity_resource_wood = get!(
-            world, (sender_entity_id, ResourceTypes::WOOD), Resource
-        );
+        let sender_entity_resource_stone = get!(world, (sender_entity_id, ResourceTypes::STONE), Resource);
+        let sender_entity_resource_wood = get!(world, (sender_entity_id, ResourceTypes::WOOD), Resource);
         assert(sender_entity_resource_stone.balance == 600, 'stone balance mismatch');
         assert(sender_entity_resource_wood.balance == 300, 'wood balance mismatch');
     }
@@ -171,14 +140,7 @@ mod resource_transfer_system_tests {
 
         // set sender's donkey balance to 0
         set!(
-            world,
-            (
-                Resource {
-                    entity_id: sender_entity_id.into(),
-                    resource_type: ResourceTypes::DONKEY,
-                    balance: 0
-                },
-            )
+            world, (Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 0 },)
         );
 
         // set receiving entity capacity, and weight config 
@@ -230,8 +192,7 @@ mod resource_transfer_system_tests {
         // transfer resources 
         starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
-        resource_systems_dispatcher
-            .send(1, 2, array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span());
+        resource_systems_dispatcher.send(1, 2, array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span());
     }
 
 
@@ -257,11 +218,8 @@ mod resource_transfer_system_tests {
             .send(
                 sender_entity_id.into(),
                 receiver_entity_id.into(),
-                array![
-                    (ResourceTypes::STONE, 7700), // more than balance
-                     (ResourceTypes::WOOD, 700),
-                ]
-                    .span()
+                array![(ResourceTypes::STONE, 7700), // more than balance
+                 (ResourceTypes::WOOD, 700),].span()
             );
     }
 
@@ -283,13 +241,8 @@ mod resource_transfer_system_tests {
         set!(
             world,
             (
-                Owner {
-                    address: contract_address_const::<'approved_entity'>(),
-                    entity_id: approved_entity_id.into()
-                },
-                EntityOwner {
-                    entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into()
-                }
+                Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() },
+                EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() }
             )
         );
 
@@ -323,12 +276,8 @@ mod resource_transfer_system_tests {
         assert(approved_entity_wood_allowance.amount == 100, 'wood allowance mismatch');
 
         // verify sender's resource balances
-        let owner_entity_resource_stone = get!(
-            world, (owner_entity_id, ResourceTypes::STONE), Resource
-        );
-        let owner_entity_resource_wood = get!(
-            world, (owner_entity_id, ResourceTypes::WOOD), Resource
-        );
+        let owner_entity_resource_stone = get!(world, (owner_entity_id, ResourceTypes::STONE), Resource);
+        let owner_entity_resource_wood = get!(world, (owner_entity_id, ResourceTypes::WOOD), Resource);
         assert(owner_entity_resource_stone.balance == 600, 'stone balance mismatch');
         assert(owner_entity_resource_wood.balance == 300, 'wood balance mismatch');
     }
@@ -348,13 +297,8 @@ mod resource_transfer_system_tests {
         set!(
             world,
             (
-                Owner {
-                    address: contract_address_const::<'approved_entity'>(),
-                    entity_id: approved_entity_id.into()
-                },
-                EntityOwner {
-                    entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into()
-                }
+                Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() },
+                EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() }
             )
         );
 
@@ -364,11 +308,7 @@ mod resource_transfer_system_tests {
             .approve(
                 owner_entity_id.into(),
                 approved_entity_id.into(),
-                array![
-                    (ResourceTypes::STONE, BoundedInt::max()),
-                    (ResourceTypes::WOOD, BoundedInt::max()),
-                ]
-                    .span()
+                array![(ResourceTypes::STONE, BoundedInt::max()), (ResourceTypes::WOOD, BoundedInt::max()),].span()
             );
 
         // approved entity transfers resources
@@ -388,20 +328,12 @@ mod resource_transfer_system_tests {
         let approved_entity_wood_allowance = get!(
             world, (owner_entity_id, approved_entity_id, ResourceTypes::WOOD), ResourceAllowance
         );
-        assert(
-            approved_entity_stone_allowance.amount == BoundedInt::max(), 'stone allowance mismatch'
-        );
-        assert(
-            approved_entity_wood_allowance.amount == BoundedInt::max(), 'wood allowance mismatch'
-        );
+        assert(approved_entity_stone_allowance.amount == BoundedInt::max(), 'stone allowance mismatch');
+        assert(approved_entity_wood_allowance.amount == BoundedInt::max(), 'wood allowance mismatch');
 
         // verify owner's resource balances
-        let owner_entity_resource_stone = get!(
-            world, (owner_entity_id, ResourceTypes::STONE), Resource
-        );
-        let owner_entity_resource_wood = get!(
-            world, (owner_entity_id, ResourceTypes::WOOD), Resource
-        );
+        let owner_entity_resource_stone = get!(world, (owner_entity_id, ResourceTypes::STONE), Resource);
+        let owner_entity_resource_wood = get!(world, (owner_entity_id, ResourceTypes::WOOD), Resource);
         assert(owner_entity_resource_stone.balance == 600, 'stone balance mismatch');
         assert(owner_entity_resource_wood.balance == 300, 'wood balance mismatch');
     }

@@ -7,20 +7,16 @@ trait IBuildingContract<TContractState> {
         building_category: eternum::models::buildings::BuildingCategory,
         produce_resource_type: Option<u8>
     );
-    fn destroy(
-        ref world: IWorldDispatcher,
-        entity_id: u128,
-        building_coord: eternum::models::position::Coord
-    );
+    fn destroy(ref world: IWorldDispatcher, entity_id: u128, building_coord: eternum::models::position::Coord);
 }
 
 #[dojo::contract]
 mod building_systems {
     use eternum::models::{
-        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait},
-        order::Orders, position::{Coord, Position, PositionCustomTrait, Direction},
-        buildings::{BuildingCategory, Building, BuildingCustomImpl},
-        production::{Production, ProductionRateTrait}, realm::{Realm, RealmCustomImpl}
+        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait}, order::Orders,
+        position::{Coord, Position, PositionCustomTrait, Direction},
+        buildings::{BuildingCategory, Building, BuildingCustomImpl}, production::{Production, ProductionRateTrait},
+        realm::{Realm, RealmCustomImpl}
     };
 
     #[abi(embed_v0)]

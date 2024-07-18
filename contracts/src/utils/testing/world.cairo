@@ -4,10 +4,9 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::capacity::{capacity, Capacity};
 
 use eternum::models::config::{
-    world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig,
-    weight_config, WeightConfig, road_config, RoadConfig, hyperstructure_resource_config,
-    HyperstructureResourceConfig, stamina_config, StaminaConfig, tick_config, TickConfig,
-    MercenariesConfig
+    world_config, WorldConfig, speed_config, SpeedConfig, capacity_config, CapacityConfig, weight_config, WeightConfig,
+    road_config, RoadConfig, hyperstructure_resource_config, HyperstructureResourceConfig, stamina_config,
+    StaminaConfig, tick_config, TickConfig, MercenariesConfig
 };
 use eternum::models::hyperstructure::{Progress, progress, Contribution, contribution};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};

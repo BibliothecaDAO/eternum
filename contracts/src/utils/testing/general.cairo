@@ -5,17 +5,13 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{MAX_REALMS_PER_ADDRESS};
 use eternum::models::{map::Tile, position::{Position, Coord, CoordTrait}, combat::Troops};
 use eternum::systems::{
-    hyperstructure::contracts::{
-        IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait
-    },
+    hyperstructure::contracts::{IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait},
     realm::contracts::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
     combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
 };
 use eternum::utils::map::biomes::Biome;
 
-fn spawn_realm(
-    world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsDispatcher, position: Position
-) -> u128 {
+fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsDispatcher, position: Position) -> u128 {
     let realm_entity_id = realm_systems_dispatcher
         .create(
             1, // realm id

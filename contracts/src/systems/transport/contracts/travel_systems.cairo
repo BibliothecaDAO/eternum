@@ -31,9 +31,7 @@ mod travel_systems {
     use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::weight::Weight;
 
-    use eternum::systems::leveling::contracts::leveling_systems::{
-        InternalLevelingSystemsImpl as leveling
-    };
+    use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
     use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
@@ -82,18 +80,12 @@ mod travel_systems {
             assert(travelling_entity_coord != destination_coord, 'entity is at destination');
 
             InternalTravelSystemsImpl::travel(
-                world,
-                travelling_entity_id,
-                travelling_entity_movable,
-                travelling_entity_coord,
-                destination_coord
+                world, travelling_entity_id, travelling_entity_movable, travelling_entity_coord, destination_coord
             );
         }
 
 
-        fn travel_hex(
-            ref world: IWorldDispatcher, travelling_entity_id: ID, directions: Span<Direction>
-        ) {
+        fn travel_hex(ref world: IWorldDispatcher, travelling_entity_id: ID, directions: Span<Direction>) {
             get!(world, travelling_entity_id, EntityOwner).assert_caller_owner(world);
 
             let travelling_entity_movable = get!(world, travelling_entity_id, Movable);
@@ -108,13 +100,9 @@ mod travel_systems {
             let travelling_entity_coord: Coord = travelling_entity_position.into();
 
             let num_moves = directions.len().try_into().unwrap();
-            StaminaCustomImpl::handle_stamina_costs(
-                travelling_entity_id, TravelTypes::Travel(num_moves), world
-            );
+            StaminaCustomImpl::handle_stamina_costs(travelling_entity_id, TravelTypes::Travel(num_moves), world);
 
-            InternalTravelSystemsImpl::travel_hex(
-                world, travelling_entity_id, travelling_entity_coord, directions
-            );
+            InternalTravelSystemsImpl::travel_hex(world, travelling_entity_id, travelling_entity_coord, directions);
         }
     }
 
@@ -150,12 +138,7 @@ mod travel_systems {
             return new_travel_time;
         }
 
-        fn travel_hex(
-            world: IWorldDispatcher,
-            transport_id: ID,
-            from_coord: Coord,
-            mut directions: Span<Direction>
-        ) {
+        fn travel_hex(world: IWorldDispatcher, transport_id: ID, from_coord: Coord, mut directions: Span<Direction>) {
             // get destination coordinate
             let mut travel_path = array![from_coord];
             let mut to_coord = from_coord;
@@ -186,9 +169,7 @@ mod travel_systems {
             set!(
                 world,
                 (
-                    ArrivalTime {
-                        entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into()
-                    },
+                    ArrivalTime { entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into() },
                     Position { entity_id: transport_id, x: to_coord.x, y: to_coord.y }
                 )
             );
@@ -210,17 +191,12 @@ mod travel_systems {
 
 
         fn travel(
-            world: IWorldDispatcher,
-            transport_id: ID,
-            transport_movable: Movable,
-            from_coord: Coord,
-            to_coord: Coord
+            world: IWorldDispatcher, transport_id: ID, transport_movable: Movable, from_coord: Coord, to_coord: Coord
         ) {
             // ensure destination tile is explored
             Self::assert_tile_explored(world, to_coord);
 
-            let mut travel_time = from_coord
-                .calculate_travel_time(to_coord, transport_movable.sec_per_km);
+            let mut travel_time = from_coord.calculate_travel_time(to_coord, transport_movable.sec_per_km);
 
             // check if entity owner is a realm and apply bonuses if it is
             let entity_owner = get!(world, (transport_id), EntityOwner);
@@ -239,8 +215,7 @@ mod travel_systems {
                 world,
                 (
                     ArrivalTime {
-                        entity_id: transport_id,
-                        arrives_at: starknet::get_block_timestamp().into() + travel_time
+                        entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into() + travel_time
                     },
                     Position { entity_id: transport_id, x: to_coord.x, y: to_coord.y },
                     Movable {
@@ -291,8 +266,7 @@ mod travel_systems {
         fn check_arrival_time(world: IWorldDispatcher, transport_id: ID) {
             let transport_arrival_time = get!(world, transport_id, ArrivalTime);
             assert(
-                transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(),
-                'transport has not arrived'
+                transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(), 'transport has not arrived'
             );
         }
 
@@ -300,19 +274,15 @@ mod travel_systems {
         fn get_travel_time(
             world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position
         ) -> (u64, u64) {
-            let (transport_movable, transport_position) = get!(
-                world, transport_id, (Movable, Position)
-            );
-            let mut one_way_trip_time = from_pos
-                .calculate_travel_time(to_pos, transport_movable.sec_per_km);
+            let (transport_movable, transport_position) = get!(world, transport_id, (Movable, Position));
+            let mut one_way_trip_time = from_pos.calculate_travel_time(to_pos, transport_movable.sec_per_km);
 
             // check if entity owner is a realm and apply bonuses if it is
             let entity_owner = get!(world, (transport_id), EntityOwner);
             let realm = get!(world, entity_owner.entity_owner_id, Realm);
 
             if realm.cities > 0 {
-                one_way_trip_time =
-                    Self::use_travel_bonus(world, @realm, @entity_owner, one_way_trip_time);
+                one_way_trip_time = Self::use_travel_bonus(world, @realm, @entity_owner, one_way_trip_time);
             }
 
             let round_trip_time: u64 = 2 * one_way_trip_time;

@@ -13,9 +13,7 @@ trait IRealmSystems {
         order: u8,
         position: eternum::models::position::Position
     ) -> eternum::alias::ID;
-    fn mint_starting_resources(
-        ref world: IWorldDispatcher, config_id: u32, entity_id: u128
-    ) -> eternum::alias::ID;
+    fn mint_starting_resources(ref world: IWorldDispatcher, config_id: u32, entity_id: u128) -> eternum::alias::ID;
 }
 
 
@@ -37,12 +35,8 @@ mod realm_systems {
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::QuantityTracker;
     use eternum::models::realm::{Realm, RealmCustomTrait};
-    use eternum::models::resources::{
-        DetachedResource, Resource, ResourceCustomImpl, ResourceCustomTrait
-    };
-    use eternum::models::structure::{
-        Structure, StructureCategory, StructureCount, StructureCountCustomTrait
-    };
+    use eternum::models::resources::{DetachedResource, Resource, ResourceCustomImpl, ResourceCustomTrait};
+    use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
 
@@ -51,14 +45,10 @@ mod realm_systems {
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
-        fn mint_starting_resources(
-            ref world: IWorldDispatcher, config_id: u32, entity_id: u128
-        ) -> ID {
+        fn mint_starting_resources(ref world: IWorldDispatcher, config_id: u32, entity_id: u128) -> ID {
             get!(world, (entity_id), Realm).assert_is_set();
 
-            let mut claimed_resources = get!(
-                world, (entity_id, config_id), HasClaimedStartingResources
-            );
+            let mut claimed_resources = get!(world, (entity_id, config_id), HasClaimedStartingResources);
 
             assert(!claimed_resources.claimed, 'already claimed');
 
@@ -116,13 +106,8 @@ mod realm_systems {
 
             let caller_realm_quantity_arr = array![caller.into(), REALM_ENTITY_TYPE.into()];
             let caller_realm_quantity_key = poseidon_hash_span(caller_realm_quantity_arr.span());
-            let mut caller_realms_quantity = get!(
-                world, caller_realm_quantity_key, QuantityTracker
-            );
-            assert(
-                caller_realms_quantity.count < MAX_REALMS_PER_ADDRESS.into(),
-                'max num of realms settled'
-            );
+            let mut caller_realms_quantity = get!(world, caller_realm_quantity_key, QuantityTracker);
+            assert(caller_realms_quantity.count < MAX_REALMS_PER_ADDRESS.into(), 'max num of realms settled');
 
             caller_realms_quantity.count += 1;
             set!(world, (caller_realms_quantity));
@@ -154,9 +139,7 @@ mod realm_systems {
             let mut tile: Tile = get!(world, (position.x, position.y), Tile);
             if tile.explored_at == 0 {
                 // set realm's position tile to explored
-                InternalMapSystemsImpl::explore(
-                    world, entity_id.into(), position.into(), array![].span()
-                );
+                InternalMapSystemsImpl::explore(world, entity_id.into(), position.into(), array![].span());
             }
 
             entity_id.into()

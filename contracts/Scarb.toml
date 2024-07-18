@@ -40,4 +40,4 @@ website = "https://alpha-eternum.realms.world/"
 
 [tool.fmt]
 sort-module-level-items = true
-
+max-line-length = 120

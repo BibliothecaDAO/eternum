@@ -21,9 +21,7 @@ mod leveling_systems {
     use eternum::models::resources::ResourceCustomTrait;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
 
-    use eternum::systems::leveling::contracts::leveling_systems::{
-        InternalLevelingSystemsImpl as leveling
-    };
+    use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
 
     #[abi(embed_v0)]
     impl LevelingSystemsImpl of super::ILevelingSystems<ContractState> {
@@ -44,13 +42,9 @@ mod leveling_systems {
 
     #[generate_trait]
     impl InternalLevelingSystemsImpl of InternalLevelingSystemsTrait {
-        fn get_realm_level_bonus(
-            world: IWorldDispatcher, realm_entity_id: ID, leveling_index: u8
-        ) -> u128 {
+        fn get_realm_level_bonus(world: IWorldDispatcher, realm_entity_id: ID, leveling_index: u8) -> u128 {
             let level = get!(world, (realm_entity_id), Level);
-            let leveling_config: LevelingConfig = get!(
-                world, REALM_LEVELING_CONFIG_ID, LevelingConfig
-            );
+            let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
             level.get_index_multiplier(leveling_config, leveling_index, REALM_LEVELING_START_TIER)
         }
 
@@ -103,9 +97,7 @@ mod leveling_systems {
 
                     let total_cost = (cost_multiplier * resource_cost.amount) / 100;
 
-                    let mut resource = ResourceCustomImpl::get(
-                        world, (entity_id, resource_cost.resource_type)
-                    );
+                    let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_cost.resource_type));
                     assert(resource.balance >= total_cost, 'not enough resource');
                     resource.burn(total_cost);
                     resource.save(world);

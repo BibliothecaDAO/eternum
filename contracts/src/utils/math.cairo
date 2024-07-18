@@ -14,9 +14,7 @@ fn pow(base: felt252, exp: felt252) -> felt252 {
 }
 
 
-fn min<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
-    a: T, b: T
-) -> T {
+fn min<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(a: T, b: T) -> T {
     return if (a < b) {
         return a;
     } else {
@@ -24,9 +22,7 @@ fn min<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop
     };
 }
 
-fn max<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
-    a: T, b: T
-) -> T {
+fn max<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(a: T, b: T) -> T {
     return if (a > b) {
         return a;
     } else {

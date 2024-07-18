@@ -41,15 +41,8 @@ fn test_create() {
         (
             Owner { entity_id: entity_id, address: contract_address_const::<'entity'>() },
             Resource { entity_id: entity_id, resource_type: ResourceTypes::STONE, balance: 400 },
-            ResourceCost {
-                entity_id: 1, index: 0, resource_type: ResourceTypes::STONE, amount: 10,
-            },
-            RoadConfig {
-                config_id: ROAD_CONFIG_ID,
-                resource_cost_id: 1,
-                resource_cost_count: 1,
-                speed_up_by: 2
-            }
+            ResourceCost { entity_id: 1, index: 0, resource_type: ResourceTypes::STONE, amount: 10, },
+            RoadConfig { config_id: ROAD_CONFIG_ID, resource_cost_id: 1, resource_cost_count: 1, speed_up_by: 2 }
         )
     );
 
@@ -58,10 +51,8 @@ fn test_create() {
 
     starknet::testing::set_contract_address(contract_address_const::<'entity'>());
     road_systems_dispatcher
-        .create(
-            entity_id, *end_coord, // end first because order should not matter
-             *start_coord, 33
-        );
+        .create(entity_id, *end_coord, // end first because order should not matter
+         *start_coord, 33);
 
     let road = RoadCustomImpl::get(world, *start_coord, *end_coord);
     assert(road.usage_count == 33, 'usage count should be 33');
@@ -96,9 +87,8 @@ fn test_not_entity() {
 
     // call as unknown address
     starknet::testing::set_contract_address(contract_address_const::<'some_unknown'>());
-    road_systems_dispatcher
-        .create(entity_id, end_coord, // end first because order should not matter
-         start_coord, 1);
+    road_systems_dispatcher.create(entity_id, end_coord, // end first because order should not matter
+     start_coord, 1);
 }
 
 
@@ -120,15 +110,8 @@ fn test_insufficient_balance() {
         (
             Owner { entity_id: entity_id, address: contract_address_const::<'entity'>() },
             Resource { entity_id: entity_id, resource_type: ResourceTypes::STONE, balance: 400 },
-            ResourceCost {
-                entity_id: 1, index: 0, resource_type: ResourceTypes::STONE, amount: 10,
-            },
-            RoadConfig {
-                config_id: ROAD_CONFIG_ID,
-                resource_cost_id: 1,
-                resource_cost_count: 1,
-                speed_up_by: 2
-            }
+            ResourceCost { entity_id: 1, index: 0, resource_type: ResourceTypes::STONE, amount: 10, },
+            RoadConfig { config_id: ROAD_CONFIG_ID, resource_cost_id: 1, resource_cost_count: 1, speed_up_by: 2 }
         )
     );
 

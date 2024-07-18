@@ -2,8 +2,7 @@ use core::debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{
-    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION,
-    HYPERSTRUCTURE_CONFIG_ID, TickIds
+    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds
 };
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
@@ -251,9 +250,7 @@ struct BuildingConfig {
 
 #[generate_trait]
 impl BuildingConfigCustomImpl of BuildingConfigCustomTrait {
-    fn get(
-        world: IWorldDispatcher, category: BuildingCategory, resource_type: u8
-    ) -> BuildingConfig {
+    fn get(world: IWorldDispatcher, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
         return get!(
             world,
             (
@@ -340,9 +337,7 @@ struct PopulationConfig {
 #[generate_trait]
 impl BuildingCategoryPopulationConfigCustomImpl of BuildingCategoryPopConfigCustomTrait {
     fn get(world: IWorldDispatcher, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
-        get!(
-            world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig
-        )
+        get!(world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig)
     }
 }
 
