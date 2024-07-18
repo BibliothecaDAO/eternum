@@ -11,7 +11,9 @@ use eternum::models::level::Level;
 use eternum::models::owner::Owner;
 use eternum::models::position::Position;
 use eternum::models::resources::Resource;
-use eternum::models::structure::{Structure, StructureCount, StructureCountCustomTrait, StructureCategory};
+use eternum::models::structure::{
+    Structure, StructureCount, StructureCountCustomTrait, StructureCategory
+};
 
 use eternum::systems::config::contracts::{
     config_systems, config_systems::HyperstructureConfigCustomImpl, IHyperstructureConfigDispatcher,

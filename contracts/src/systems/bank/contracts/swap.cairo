@@ -76,12 +76,16 @@ mod swap_systems {
             let total_lords_cost = lords_cost_from_amm + bank_lords_fee_amount;
 
             // udpate player lords
-            let mut player_lords = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::LORDS));
+            let mut player_lords = ResourceCustomImpl::get(
+                world, (entity_id, ResourceTypes::LORDS)
+            );
             player_lords.burn(total_lords_cost);
             player_lords.save(world);
 
             // add bank fees to bank
-            let mut bank_lords = ResourceCustomImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
+            let mut bank_lords = ResourceCustomImpl::get(
+                world, (bank_entity_id, ResourceTypes::LORDS)
+            );
             bank_lords.add(bank_lords_fee_amount);
             bank_lords.save(world);
 
@@ -140,7 +144,9 @@ mod swap_systems {
             player_resource.save(world);
 
             // add bank fees to bank
-            let mut bank_lords = ResourceCustomImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
+            let mut bank_lords = ResourceCustomImpl::get(
+                world, (bank_entity_id, ResourceTypes::LORDS)
+            );
             bank_lords.add(bank_lords_fee_amount);
             bank_lords.save(world);
 

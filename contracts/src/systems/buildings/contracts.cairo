@@ -17,8 +17,8 @@ trait IBuildingContract<TContractState> {
 #[dojo::contract]
 mod building_systems {
     use eternum::models::{
-        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait}, order::Orders,
-        position::{Coord, Position, PositionCustomTrait, Direction},
+        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait},
+        order::Orders, position::{Coord, Position, PositionCustomTrait, Direction},
         buildings::{BuildingCategory, Building, BuildingCustomImpl},
         production::{Production, ProductionRateTrait}, realm::{Realm, RealmCustomImpl}
     };

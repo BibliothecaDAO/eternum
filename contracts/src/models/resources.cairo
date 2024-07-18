@@ -5,7 +5,9 @@ use debug::PrintTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, resource_type_name};
 use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION, BASE_STOREHOUSE_CAPACITY};
-use eternum::models::buildings::{Building, BuildingCustomTrait, BuildingCategory, BuildingQuantityv2};
+use eternum::models::buildings::{
+    Building, BuildingCustomTrait, BuildingCategory, BuildingQuantityv2
+};
 use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
 
 use eternum::models::production::{Production, ProductionOutputCustomImpl, ProductionRateTrait};
@@ -501,7 +503,9 @@ mod owned_resources_tracker_tests {
         let entity_id = 44;
         // make entity a structure
         set!(world, (Structure { entity_id, category: StructureCategory::Realm, }));
-        let mut entity_gold_resource = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::GOLD));
+        let mut entity_gold_resource = ResourceCustomImpl::get(
+            world, (entity_id, ResourceTypes::GOLD)
+        );
         entity_gold_resource.balance += 300;
         entity_gold_resource.save(world);
 

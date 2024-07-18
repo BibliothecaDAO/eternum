@@ -63,7 +63,9 @@ mod liquidity_systems {
             let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_type));
             assert(resource.balance >= resource_amount, 'not enough resources');
 
-            let mut player_lords = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::LORDS));
+            let mut player_lords = ResourceCustomImpl::get(
+                world, (entity_id, ResourceTypes::LORDS)
+            );
             assert(lords_amount <= player_lords.balance, 'not enough lords');
 
             let mut market = get!(world, (bank_entity_id, resource_type), Market);

@@ -29,7 +29,9 @@ mod donkey_systems {
             let donkey_amount = Self::get_donkey_needed(world, weight);
 
             // burn amount of donkey needed
-            let mut donkeys: Resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::DONKEY));
+            let mut donkeys: Resource = ResourceCustomImpl::get(
+                world, (payer_id, ResourceTypes::DONKEY)
+            );
             donkeys.burn(donkey_amount);
             donkeys.save(world);
         }
@@ -39,7 +41,9 @@ mod donkey_systems {
             let donkey_amount = Self::get_donkey_needed(world, weight);
 
             // return amount of donkey needed
-            let mut donkeys: Resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::DONKEY));
+            let mut donkeys: Resource = ResourceCustomImpl::get(
+                world, (payer_id, ResourceTypes::DONKEY)
+            );
             donkeys.add(donkey_amount);
             donkeys.save(world);
         }

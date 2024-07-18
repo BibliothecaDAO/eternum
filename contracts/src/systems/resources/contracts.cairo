@@ -278,7 +278,9 @@ mod resource_systems {
 
                         // update total weight
                         total_resources_weight +=
-                            WeightConfigCustomImpl::get_weight(world, resource_type, resource_amount);
+                            WeightConfigCustomImpl::get_weight(
+                                world, resource_type, resource_amount
+                            );
 
                         // update resources hash
                         resources_felt_arr.append(resource_type.into());

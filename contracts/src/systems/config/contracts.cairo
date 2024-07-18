@@ -577,7 +577,9 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BuildingCategoryPopulationConfigCustomImpl of super::IBuildingCategoryPopConfig<ContractState> {
+    impl BuildingCategoryPopulationConfigCustomImpl of super::IBuildingCategoryPopConfig<
+        ContractState
+    > {
         fn set_building_category_pop_config(
             ref world: IWorldDispatcher,
             building_category: BuildingCategory,

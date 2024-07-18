@@ -1,11 +1,11 @@
 use core::fmt::{Display, Formatter, Error};
+use core::zeroable::Zeroable;
 use debug::PrintTrait;
 
 use eternum::utils::number::{NumberTrait};
 use option::OptionTrait;
 use traits::Into;
 use traits::TryInto;
-use core::zeroable::Zeroable;
 
 // todo@credence revisit zone calculation
 
@@ -210,7 +210,7 @@ impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde,  Default)]
+#[derive(PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]
 struct Position {
     #[key]

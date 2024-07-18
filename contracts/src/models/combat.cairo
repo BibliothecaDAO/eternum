@@ -11,7 +11,9 @@ use eternum::models::capacity::{Capacity, CapacityCustomTrait};
 use eternum::models::config::{BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait};
 use eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
 use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
-use eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrackerType, QuantityCustomTrait};
+use eternum::models::quantity::{
+    Quantity, QuantityTracker, QuantityTrackerType, QuantityCustomTrait
+};
 use eternum::models::resources::OwnedResourcesTrackerCustomTrait;
 use eternum::models::resources::ResourceCustomTrait;
 use eternum::models::resources::ResourceTransferLockCustomTrait;
@@ -646,7 +648,9 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
                             // update army's added weight
                             added_resources_weight +=
-                                WeightConfigCustomImpl::get_weight(world, resource_type, share_amount);
+                                WeightConfigCustomImpl::get_weight(
+                                    world, resource_type, share_amount
+                                );
                         }
                     }
                 },
@@ -790,16 +794,17 @@ impl BattleCustomImpl of BattleCustomTrait {
 mod tests {
     use dojo::world::IWorldDispatcherTrait;
     use eternum::constants::ResourceTypes;
+    use eternum::models::combat::BattleCustomTrait;
     use eternum::models::combat::BattleEscrowTrait;
     use eternum::models::combat::BattleHealthCustomTrait;
-    use eternum::models::combat::BattleCustomTrait;
     use eternum::models::combat::TroopsTrait;
     use eternum::models::resources::ResourceCustomTrait;
     use eternum::models::resources::ResourceTransferLockCustomTrait;
     use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceTransferLock};
     use eternum::utils::testing::spawn_eternum;
     use super::{
-        Battle, BattleHealth, BattleArmy, BattleSide, Troops, TroopConfig, Army, ArmyCustomImpl, Protectee
+        Battle, BattleHealth, BattleArmy, BattleSide, Troops, TroopConfig, Army, ArmyCustomImpl,
+        Protectee
     };
 
     fn mock_troop_config() -> TroopConfig {

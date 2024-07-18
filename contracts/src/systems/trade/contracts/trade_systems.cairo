@@ -133,7 +133,9 @@ mod trade_systems {
 
                         // update maker resources weight
                         maker_gives_resources_weight +=
-                            WeightConfigCustomImpl::get_weight(world, *resource_type, *resource_amount);
+                            WeightConfigCustomImpl::get_weight(
+                                world, *resource_type, *resource_amount
+                            );
 
                         maker_gives_resources_felt_arr.append((*resource_type).into());
                         maker_gives_resources_felt_arr.append((*resource_amount).into());
@@ -173,7 +175,9 @@ mod trade_systems {
 
                         // update taker resources weight
                         taker_gives_resources_weight +=
-                            WeightConfigCustomImpl::get_weight(world, *resource_type, *resource_amount);
+                            WeightConfigCustomImpl::get_weight(
+                                world, *resource_type, *resource_amount
+                            );
 
                         taker_gives_resources_felt_arr.append((*resource_type).into());
                         taker_gives_resources_felt_arr.append((*resource_amount).into());

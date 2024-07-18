@@ -17,7 +17,8 @@ mod map_systems {
     use eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
     use eternum::models::capacity::Capacity;
     use eternum::models::combat::{
-        Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
+        Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait,
+        Protector, Protectee
     };
     use eternum::models::config::{
         MapExploreConfig, LevelingConfig, MercenariesConfig, TroopConfigCustomImpl, CapacityConfig,
@@ -25,7 +26,9 @@ mod map_systems {
     };
     use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
-    use eternum::models::movable::{Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait};
+    use eternum::models::movable::{
+        Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait
+    };
     use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
     use eternum::models::position::{Coord, CoordTrait, Direction, Position};
     use eternum::models::quantity::Quantity;

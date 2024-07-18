@@ -29,7 +29,9 @@ mod dev_resource_systems {
                         let (resource_type, amount) = (*resource_type, *amount);
                         assert(amount > 0, 'amount must not be 0');
 
-                        let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_type));
+                        let mut resource = ResourceCustomImpl::get(
+                            world, (entity_id, resource_type)
+                        );
                         resource.add(amount);
                         resource.save(world);
                     },

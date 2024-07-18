@@ -378,19 +378,23 @@ mod combat_systems {
         get_resources_without_earthenshards_probs
     };
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
-    use eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
+    use eternum::models::buildings::{
+        Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,
+    };
     use eternum::models::capacity::Capacity;
     use eternum::models::combat::BattleEscrowTrait;
     use eternum::models::combat::ProtectorCustomTrait;
     use eternum::models::config::{
         TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl,
-        TroopConfigCustomTrait, BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig,
-        CapacityConfigCustomImpl
+        TroopConfigCustomTrait, BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait,
+        CapacityConfig, CapacityConfigCustomImpl
     };
     use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
 
     use eternum::models::movable::{Movable, MovableCustomTrait};
-    use eternum::models::owner::{EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
+    use eternum::models::owner::{
+        EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait
+    };
     use eternum::models::position::CoordTrait;
     use eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
     use eternum::models::quantity::{Quantity, QuantityTracker, QuantityCustomTrait};
@@ -402,9 +406,10 @@ mod combat_systems {
     use eternum::models::weight::Weight;
     use eternum::models::{
         combat::{
-            Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait,
-            Battle, BattleCustomImpl, BattleCustomTrait, BattleSide, Protector, Protectee, ProtecteeCustomTrait,
-            BattleHealthCustomTrait, BattleEscrowImpl, ArmyQuantityTracker, ArmyQuantityTrackerTrait,
+            Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl,
+            HealthCustomTrait, Battle, BattleCustomImpl, BattleCustomTrait, BattleSide, Protector,
+            Protectee, ProtecteeCustomTrait, BattleHealthCustomTrait, BattleEscrowImpl,
+            ArmyQuantityTracker, ArmyQuantityTrackerTrait,
         },
     };
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
@@ -491,7 +496,9 @@ mod combat_systems {
 
             // make payment for troops
             let knight_resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::KNIGHT));
-            let paladin_resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::PALADIN));
+            let paladin_resource = ResourceCustomImpl::get(
+                world, (payer_id, ResourceTypes::PALADIN)
+            );
             let crossbowman_resource = ResourceCustomImpl::get(
                 world, (payer_id, ResourceTypes::CROSSBOWMAN)
             );
@@ -942,7 +949,8 @@ mod combat_systems {
                 loop {
                     match chosen_resource_types.pop_front() {
                         Option::Some(chosen_resource_type) => {
-                            let pillaged_resource_from_structure: Resource = ResourceCustomImpl::get(
+                            let pillaged_resource_from_structure: Resource =
+                                ResourceCustomImpl::get(
                                 world, (structure_id, *chosen_resource_type)
                             );
 
@@ -953,7 +961,9 @@ mod combat_systems {
                                     * attacking_army.troops.count().into();
                                 let army_weight: Weight = get!(world, army_id, Weight);
                                 let max_carriable = (army_total_capacity - army_weight.value)
-                                    / (WeightConfigCustomImpl::get_weight(world, *chosen_resource_type, 1)
+                                    / (WeightConfigCustomImpl::get_weight(
+                                        world, *chosen_resource_type, 1
+                                    )
                                         + 1);
 
                                 if max_carriable > 0 {

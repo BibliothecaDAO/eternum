@@ -10,7 +10,8 @@ use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner};
 use eternum::models::population::{Population, PopulationCustomTrait};
 use eternum::models::position::{Coord, Position, Direction, PositionCustomTrait, CoordTrait};
 use eternum::models::production::{
-    Production, ProductionInput, ProductionRateTrait, ProductionInputCustomImpl, ProductionInputCustomTrait
+    Production, ProductionInput, ProductionRateTrait, ProductionInputCustomImpl,
+    ProductionInputCustomTrait
 };
 use eternum::models::resources::ResourceCustomTrait;
 use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
@@ -46,7 +47,7 @@ struct BuildingQuantityv2 {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde,  Introspect)]
+#[derive(PartialEq, Copy, Drop, Serde, Introspect)]
 #[dojo::model]
 enum BuildingCategory {
     None,
@@ -627,7 +628,9 @@ impl BuildingCustomImpl of BuildingCustomTrait {
             let resource_cost: ResourceCost = get!(
                 world, (building_config.resource_cost_id, index), ResourceCost
             );
-            let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_cost.resource_type));
+            let mut resource = ResourceCustomImpl::get(
+                world, (entity_id, resource_cost.resource_type)
+            );
             resource.burn(resource_cost.amount);
             resource.save(world);
             index += 1;

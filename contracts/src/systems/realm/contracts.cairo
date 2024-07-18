@@ -37,7 +37,9 @@ mod realm_systems {
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::QuantityTracker;
     use eternum::models::realm::{Realm, RealmCustomTrait};
-    use eternum::models::resources::{DetachedResource, Resource, ResourceCustomImpl, ResourceCustomTrait};
+    use eternum::models::resources::{
+        DetachedResource, Resource, ResourceCustomImpl, ResourceCustomTrait
+    };
     use eternum::models::structure::{
         Structure, StructureCategory, StructureCount, StructureCountCustomTrait
     };

@@ -25,7 +25,7 @@ impl StructureCustomImpl of StructureCustomTrait {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde,  Introspect)]
+#[derive(PartialEq, Copy, Drop, Serde, Introspect)]
 enum StructureCategory {
     None,
     Realm,
