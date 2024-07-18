@@ -10,7 +10,7 @@ export const QuestPanel = ({ entityId }: { entityId: bigint | undefined }) => {
   }));
 
   const { quests } = useQuests();
-  const updatedSelectedQuest = quests.find((quest) => quest.name === selectedQuest?.name);
+  const updatedSelectedQuest = quests.find((quest) => quest.id === selectedQuest?.id);
 
   return selectedQuest ? (
     <div className="p-3 flex flex-col gap-2">

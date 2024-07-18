@@ -12,7 +12,7 @@ import { DepositResources } from "../resources/DepositResources";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { ArmyViewCard } from "./ArmyViewCard";
-import { QuestName } from "@/ui/components/quest/questDetails";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 export const EntityArmyList = ({ structure }: { structure: PlayerStructures }) => {
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({
@@ -63,7 +63,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructures }) =
                 onClick={() => handleCreateArmy(false)}
                 disabled={isLoading}
                 className={clsx({
-                  "animate-pulse": selectedQuest?.name === QuestName.CreateArmy && !entityArmies.length,
+                  "animate-pulse": selectedQuest?.id === QuestId.CreateArmy && !entityArmies.length,
                 })}
               >
                 Create Army
@@ -91,7 +91,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructures }) =
             />
           </React.Fragment>
         )}
-        questing={selectedQuest?.name === QuestName.CreateArmy}
+        questing={selectedQuest?.id === QuestId.CreateArmy}
       />
     </>
   );

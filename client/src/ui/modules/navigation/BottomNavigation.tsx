@@ -12,7 +12,7 @@ import { useLocation } from "wouter";
 import { guilds, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { QuestStatus, useUnclaimedQuestsCount, useQuests, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { QuestName } from "@/ui/components/quest/questDetails";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 export enum MenuEnum {
   realm = "realm",
@@ -82,7 +82,7 @@ export const BottomNavigation = () => {
             active={isPopupOpen(leaderboard)}
             size="lg"
             onClick={() => togglePopup(leaderboard)}
-            className={clsx({ hidden: !questClaimStatus[QuestName.Travel] })}
+            className={clsx({ hidden: !questClaimStatus[QuestId.Travel] })}
           />
         ),
       },
@@ -96,7 +96,7 @@ export const BottomNavigation = () => {
             size="lg"
             onClick={() => togglePopup(guilds)}
             className={clsx({
-              hidden: !questClaimStatus[QuestName.Travel],
+              hidden: !questClaimStatus[QuestId.Travel],
             })}
           />
         ),

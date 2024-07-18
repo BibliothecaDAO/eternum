@@ -22,7 +22,7 @@ import { ArrowRight } from "lucide-react";
 import { quests as questsPopup } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
 import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { QuestName } from "@/ui/components/quest/questDetails";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 export enum View {
   None,
@@ -74,7 +74,7 @@ export const RightNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!realmIsMine}
-            className={clsx({ hidden: !questClaimStatus[QuestName.CreateTrade] })}
+            className={clsx({ hidden: !questClaimStatus[QuestId.CreateTrade] })}
             image={BuildingThumbs.trade}
             tooltipLocation="top"
             label={"Resource Arrivals"}
@@ -97,10 +97,10 @@ export const RightNavigationModule = () => {
             disabled={!realmIsMine}
             className={clsx({
               "animate-pulse":
-                selectedQuest?.name === QuestName.CreateTrade &&
+                selectedQuest?.id === QuestId.CreateTrade &&
                 selectedQuest.status !== QuestStatus.Completed &&
                 isPopupOpen(questsPopup),
-              hidden: !questClaimStatus[QuestName.BuildResource],
+              hidden: !questClaimStatus[QuestId.BuildResource],
             })}
             image={BuildingThumbs.scale}
             tooltipLocation="top"

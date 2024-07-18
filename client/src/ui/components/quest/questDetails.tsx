@@ -2,31 +2,33 @@ import { Prize } from "@/hooks/helpers/useQuests";
 import { QuestType } from "@bibliothecadao/eternum";
 
 interface StaticQuestInfo {
+  name: string;
   description: string;
   steps: string[];
   prizes: Prize[];
   depth: number;
 }
 
-export enum QuestName {
-  Settle = "Settle",
-  BuildFarm = "Build a Farm",
-  BuildResource = "Build a Resource Facility",
-  CreateTrade = "Create a Trade",
-  CreateArmy = "Create an Army",
-  Travel = "Travel with your Army",
-  BuildWorkersHut = "Build a workers hut",
-  Market = "Build a market",
-  Pillage = "Pillage a structure",
-  Mine = "Discover an earthenshard mine",
-  Contribution = "Contribute to a hyperstructure",
-  Hyperstructure = "Build a hyperstructure",
+export enum QuestId {
+  Settle,
+  BuildFarm,
+  BuildResource,
+  CreateTrade,
+  CreateArmy,
+  Travel,
+  BuildWorkersHut,
+  Market,
+  Pillage,
+  Mine,
+  Contribution,
+  Hyperstructure,
 }
 
-export const questDetails = new Map<QuestName, StaticQuestInfo>([
+export const questDetails = new Map<QuestId, StaticQuestInfo>([
   [
-    QuestName.Settle,
+    QuestId.Settle,
     {
+      name: "Settle",
       description: "A gift of food from the gods",
       steps: ["Settle your first Realm"],
       prizes: [{ id: QuestType.Food, title: "Common Resources" }],
@@ -34,8 +36,9 @@ export const questDetails = new Map<QuestName, StaticQuestInfo>([
     },
   ],
   [
-    QuestName.BuildFarm,
+    QuestId.BuildFarm,
     {
+      name: "Build a Farm",
       description: "Wheat is the lifeblood of your people. Go to the construction menu and build a farm",
       steps: [
         "Navigate to the construction menu",
@@ -54,8 +57,9 @@ export const questDetails = new Map<QuestName, StaticQuestInfo>([
     },
   ],
   [
-    QuestName.BuildResource,
+    QuestId.BuildResource,
     {
+      name: "Build a Resource Facility",
       description: "Eternum thrives on resources. Construct resource facilities to harvest them efficiently",
       steps: [
         "Navigate to the construction menu",
@@ -67,8 +71,9 @@ export const questDetails = new Map<QuestName, StaticQuestInfo>([
     },
   ],
   [
-    QuestName.CreateTrade,
+    QuestId.CreateTrade,
     {
+      name: "Create a Trade",
       description: "Trading is the lifeblood of Eternum. Create a trade to start your economy",
       steps: [],
       prizes: [{ id: QuestType.Military, title: "Claim Starting Army" }],
@@ -76,8 +81,9 @@ export const questDetails = new Map<QuestName, StaticQuestInfo>([
     },
   ],
   [
-    QuestName.CreateArmy,
+    QuestId.CreateArmy,
     {
+      name: "Create an Army",
       description: "Conquest is fulfilling. Create an army to conquer your enemies",
       steps: ["Create an army to conquer your enemies", "Assign troops to your army"],
       prizes: [{ id: QuestType.Earthenshard, title: "Claim Earthen Shard" }],
@@ -85,8 +91,9 @@ export const questDetails = new Map<QuestName, StaticQuestInfo>([
     },
   ],
   [
-    QuestName.Travel,
+    QuestId.Travel,
     {
+      name: "Travel with your Army",
       description: "Travel with your army",
       steps: ["Go to world view", "Right click on your army", "Travel w/ your army"],
       prizes: [{ id: QuestType.Travel, title: "Travel" }],
@@ -94,8 +101,9 @@ export const questDetails = new Map<QuestName, StaticQuestInfo>([
     },
   ],
   [
-    QuestName.BuildWorkersHut,
+    QuestId.BuildWorkersHut,
     {
+      name: "Build a workers hut",
       description: "Build worker huts to extend your population capacity",
       steps: [],
       prizes: [{ id: QuestType.Population, title: "Population" }],
@@ -103,8 +111,9 @@ export const questDetails = new Map<QuestName, StaticQuestInfo>([
     },
   ],
   [
-    QuestName.Market,
+    QuestId.Market,
     {
+      name: "Build a market",
       description: "Build a market to produce donkeys. Donkeys are a resource used to transport goods",
       steps: [],
       prizes: [{ id: QuestType.Market, title: "Market" }],
@@ -112,8 +121,9 @@ export const questDetails = new Map<QuestName, StaticQuestInfo>([
     },
   ],
   [
-    QuestName.Pillage,
+    QuestId.Pillage,
     {
+      name: "Pillage a structure",
       description: "Pillage a realm, hyperstructure or earthenshard mine",
       steps: [],
       prizes: [{ id: QuestType.Pillage, title: "Pillage" }],
@@ -121,8 +131,9 @@ export const questDetails = new Map<QuestName, StaticQuestInfo>([
     },
   ],
   [
-    QuestName.Mine,
+    QuestId.Mine,
     {
+      name: "Discover an earthenshard mine",
       description: "Explore the world, find earthenshard mines",
       steps: [],
       prizes: [{ id: QuestType.Mine, title: "Mine" }],
@@ -130,8 +141,9 @@ export const questDetails = new Map<QuestName, StaticQuestInfo>([
     },
   ],
   [
-    QuestName.Contribution,
+    QuestId.Contribution,
     {
+      name: "Contribute to a hyperstructure",
       description: "Contribute to a Hyperstructure",
       steps: [],
       prizes: [{ id: QuestType.Contribution, title: "Contribution" }],
@@ -139,8 +151,9 @@ export const questDetails = new Map<QuestName, StaticQuestInfo>([
     },
   ],
   [
-    QuestName.Hyperstructure,
+    QuestId.Hyperstructure,
     {
+      name: "Build a hyperstructure",
       description: "Build a Hyperstructure",
       steps: [],
       prizes: [{ id: QuestType.Hyperstructure, title: "Hyperstructure" }],

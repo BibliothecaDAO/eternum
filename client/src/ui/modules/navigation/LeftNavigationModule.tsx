@@ -27,7 +27,7 @@ import { Questing } from "../questing/Questing";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
 import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { QuestName } from "@/ui/components/quest/questDetails";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -80,11 +80,11 @@ export const LeftNavigationModule = () => {
 
   const isBuildQuest = useMemo(() => {
     return (
-      selectedQuest?.name === QuestName.BuildFarm ||
-      selectedQuest?.name === QuestName.BuildResource ||
-      selectedQuest?.name === QuestName.BuildWorkersHut ||
-      selectedQuest?.name === QuestName.Market ||
-      (selectedQuest?.name === QuestName.Hyperstructure && isWorldView)
+      selectedQuest?.id === QuestId.BuildFarm ||
+      selectedQuest?.id === QuestId.BuildResource ||
+      selectedQuest?.id === QuestId.BuildWorkersHut ||
+      selectedQuest?.id === QuestId.Market ||
+      (selectedQuest?.id === QuestId.Hyperstructure && isWorldView)
     );
   }, [selectedQuest, isWorldView]);
   const { getEntityInfo } = useEntitiesUtils();
@@ -96,7 +96,7 @@ export const LeftNavigationModule = () => {
         name: "entityDetails",
         button: (
           <CircleButton
-            className={clsx({ hidden: !questClaimStatus[QuestName.CreateArmy] })}
+            className={clsx({ hidden: !questClaimStatus[QuestId.CreateArmy] })}
             image={BuildingThumbs.hex}
             tooltipLocation="top"
             label={"Details"}
@@ -115,10 +115,8 @@ export const LeftNavigationModule = () => {
           <CircleButton
             className={clsx({
               "animate-pulse":
-                view != View.ConstructionView &&
-                selectedQuest?.name === QuestName.CreateArmy &&
-                isPopupOpen(questsPopup),
-              hidden: !questClaimStatus[QuestName.CreateTrade],
+                view != View.ConstructionView && selectedQuest?.id === QuestId.CreateArmy && isPopupOpen(questsPopup),
+              hidden: !questClaimStatus[QuestId.CreateTrade],
             })}
             image={BuildingThumbs.military}
             tooltipLocation="top"
@@ -159,11 +157,9 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             className={clsx({
-              hidden: !questClaimStatus[QuestName.CreateArmy],
+              hidden: !questClaimStatus[QuestId.CreateArmy],
               "animate-pulse":
-                view != View.ConstructionView &&
-                selectedQuest?.name === QuestName.Contribution &&
-                isPopupOpen(questsPopup),
+                view != View.ConstructionView && selectedQuest?.id === QuestId.Contribution && isPopupOpen(questsPopup),
             })}
             image={BuildingThumbs.worldStructures}
             tooltipLocation="top"

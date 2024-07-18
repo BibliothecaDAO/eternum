@@ -16,7 +16,7 @@ import { calculateShares } from "@/hooks/store/useLeaderBoardStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { HintSection } from "@/ui/components/hints/HintModal";
-import { QuestName } from "@/ui/components/quest/questDetails";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 export const WorldStructuresMenu = ({}: any) => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
@@ -65,7 +65,7 @@ export const WorldStructuresMenu = ({}: any) => {
         ),
         component: (
           <EntityList
-            questing={selectedQuest?.name === QuestName.Contribution}
+            questing={selectedQuest?.id === QuestId.Contribution}
             title="Hyperstructures"
             panel={({ entity }) => <HyperstructurePanel entity={entity} />}
             entityContent={hyperstructureExtraContent}

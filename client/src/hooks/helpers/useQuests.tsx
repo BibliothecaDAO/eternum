@@ -8,10 +8,11 @@ import { useEntities } from "./useEntities";
 import { ArmyInfo, useArmiesByEntityOwner } from "./useArmies";
 import { useGetMyOffers } from "./useTrade";
 import { getPillageEvents } from "@/dojo/events/pillageEventQueries";
-import { QuestName, questDetails } from "@/ui/components/quest/questDetails";
+import { QuestId, questDetails } from "@/ui/components/quest/questDetails";
 
 export interface Quest {
-  name: QuestName;
+  id: QuestId;
+  name: string;
   description: string;
   steps: string[];
   prizes: Prize[];
@@ -31,75 +32,36 @@ export enum QuestStatus {
 }
 
 export const useQuests = () => {
-  const {
-    buildingQuantities,
-    entityArmies,
-    orders,
-    pillageHistoryLength,
-    hasTroops,
-    hasTraveled,
-    fragmentMines,
-    hyperstructures,
-    hyperstructureContributions,
-  } = useQuestDependencies();
+  const questDependencies = useQuestDependencies();
 
-  const {
-    useSettleQuest,
-    useBuildFarmQuest,
-    useBuildResourceQuest,
-    useCreateTradeQuest,
-    useCreateArmyQuest,
-    useTravelQuest,
-    useBuildWorkersHutQuest,
-    useMarketQuest,
-    usePillageQuest,
-    useMineQuest,
-    useContributionQuest,
-    useHyperstructureQuest,
-  } = useBuildQuests();
-
-  const settleQuest = useSettleQuest();
-  const buildFarmQuest = useBuildFarmQuest(buildingQuantities.farms);
-  const buildResourceQuest = useBuildResourceQuest(buildingQuantities.resource);
-  const createTradeQuest = useCreateTradeQuest(orders);
-  const createArmyQuest = useCreateArmyQuest(entityArmies, hasTroops);
-  const travelQuest = useTravelQuest(hasTraveled);
-  const buildWorkersHutQuest = useBuildWorkersHutQuest(buildingQuantities.workersHut);
-  const marketQuest = useMarketQuest(buildingQuantities.markets);
-  const pillageQuest = usePillageQuest(pillageHistoryLength);
-  const mineQuest = useMineQuest(fragmentMines);
-  const contributionQuest = useContributionQuest(hyperstructureContributions);
-  const hyperstructureQuest = useHyperstructureQuest(hyperstructures);
+  const createQuest = useCallback(
+    (questId: QuestId) => {
+      const dependency = questDependencies[questId];
+      return {
+        id: questId,
+        ...questDetails.get(questId)!,
+        status: dependency.status,
+      };
+    },
+    [questDependencies],
+  );
 
   const quests = useMemo(
     () => [
-      settleQuest,
-      buildFarmQuest,
-      buildResourceQuest,
-      createTradeQuest,
-      createArmyQuest,
-      travelQuest,
-      buildWorkersHutQuest,
-      marketQuest,
-      pillageQuest,
-      mineQuest,
-      contributionQuest,
-      hyperstructureQuest,
+      createQuest(QuestId.Settle),
+      createQuest(QuestId.BuildFarm),
+      createQuest(QuestId.BuildResource),
+      createQuest(QuestId.CreateTrade),
+      createQuest(QuestId.CreateArmy),
+      createQuest(QuestId.Travel),
+      createQuest(QuestId.BuildWorkersHut),
+      createQuest(QuestId.Market),
+      createQuest(QuestId.Pillage),
+      createQuest(QuestId.Mine),
+      createQuest(QuestId.Contribution),
+      createQuest(QuestId.Hyperstructure),
     ],
-    [
-      settleQuest,
-      buildFarmQuest,
-      buildResourceQuest,
-      createTradeQuest,
-      createArmyQuest,
-      travelQuest,
-      buildWorkersHutQuest,
-      marketQuest,
-      pillageQuest,
-      mineQuest,
-      contributionQuest,
-      hyperstructureQuest,
-    ],
+    [createQuest],
   );
 
   return { quests };
@@ -162,225 +124,118 @@ const useQuestDependencies = () => {
     [realmEntityId],
   );
 
+  const { questClaimStatus } = useQuestClaimStatus();
+  const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
+
   return useMemo(
     () => ({
-      buildingQuantities,
-      entityArmies,
-      orders,
-      pillageHistoryLength,
-      hasTroops,
-      hasTraveled,
-      fragmentMines,
-      hyperstructures,
-      hyperstructureContributions,
-    }),
-    [entityUpdate, orders],
-  );
-};
-
-const useBuildQuests = () => {
-  const { questClaimStatus } = useQuestClaimStatus();
-
-  const useSettleQuest = (): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.Settle)!,
-        name: QuestName.Settle,
-        status: questClaimStatus[QuestName.Settle] ? QuestStatus.Claimed : QuestStatus.Completed,
-      }),
-      [questClaimStatus[QuestName.Settle]],
-    );
-  };
-
-  const useBuildFarmQuest = (farmCount: number): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.BuildFarm)!,
-        name: QuestName.BuildFarm,
+      [QuestId.Settle]: {
+        value: true,
+        status: questClaimStatus[QuestId.Settle] ? QuestStatus.Claimed : QuestStatus.Completed,
+      },
+      [QuestId.BuildFarm]: {
+        value: questClaimStatus[QuestId.BuildFarm] ? null : buildingQuantities.farms,
         status:
-          farmCount > 0
-            ? questClaimStatus[QuestName.BuildFarm]
+          buildingQuantities.farms > 0
+            ? questClaimStatus[QuestId.BuildFarm]
               ? QuestStatus.Claimed
               : QuestStatus.Completed
             : QuestStatus.InProgress,
-      }),
-      [farmCount, questClaimStatus[QuestName.BuildFarm]],
-    );
-  };
-
-  const useBuildResourceQuest = (resourceCount: number): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.BuildResource)!,
-        name: QuestName.BuildResource,
+      },
+      [QuestId.BuildResource]: {
+        value: questClaimStatus[QuestId.BuildResource] ? null : buildingQuantities.resource,
         status:
-          resourceCount > 0
-            ? questClaimStatus[QuestName.BuildResource]
+          buildingQuantities.resource > 0
+            ? questClaimStatus[QuestId.BuildResource]
               ? QuestStatus.Claimed
               : QuestStatus.Completed
             : QuestStatus.InProgress,
-      }),
-      [resourceCount, questClaimStatus[QuestName.BuildResource]],
-    );
-  };
-
-  const useCreateTradeQuest = (orders: any[]): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.CreateTrade)!,
-        name: QuestName.CreateTrade,
+      },
+      [QuestId.CreateTrade]: {
+        value: questClaimStatus[QuestId.CreateTrade] ? null : orders.length,
         status:
           orders.length > 0
-            ? questClaimStatus[QuestName.CreateTrade]
+            ? questClaimStatus[QuestId.CreateTrade]
               ? QuestStatus.Claimed
               : QuestStatus.Completed
             : QuestStatus.InProgress,
-      }),
-      [orders, questClaimStatus[QuestName.CreateTrade]],
-    );
-  };
-
-  const useCreateArmyQuest = (entityArmies: ArmyInfo[], hasTroops: boolean): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.CreateArmy)!,
-        name: QuestName.CreateArmy,
+      },
+      [QuestId.CreateArmy]: {
+        value: questClaimStatus[QuestId.CreateArmy]
+          ? { armyCount: null, hasTroops: null }
+          : { armyCount: entityArmies.length, hasTroops },
         status:
           entityArmies.length > 0 && hasTroops
-            ? questClaimStatus[QuestName.CreateArmy]
+            ? questClaimStatus[QuestId.CreateArmy]
               ? QuestStatus.Claimed
               : QuestStatus.Completed
             : QuestStatus.InProgress,
-      }),
-      [entityArmies, hasTroops, questClaimStatus[QuestName.CreateArmy]],
-    );
-  };
-
-  const useTravelQuest = (hasTraveled: boolean): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.Travel)!,
-        name: QuestName.Travel,
+      },
+      [QuestId.Travel]: {
+        value: questClaimStatus[QuestId.Travel] ? null : hasTraveled,
         status: hasTraveled
-          ? questClaimStatus[QuestName.Travel]
+          ? questClaimStatus[QuestId.Travel]
             ? QuestStatus.Claimed
             : QuestStatus.Completed
           : QuestStatus.InProgress,
-      }),
-      [hasTraveled, questClaimStatus[QuestName.Travel]],
-    );
-  };
-
-  const useBuildWorkersHutQuest = (workersHutCount: number): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.BuildWorkersHut)!,
-        name: QuestName.BuildWorkersHut,
+      },
+      [QuestId.BuildWorkersHut]: {
+        value: questClaimStatus[QuestId.BuildWorkersHut] ? null : buildingQuantities.workersHut,
         status:
-          workersHutCount > 0
-            ? questClaimStatus[QuestName.BuildWorkersHut]
+          buildingQuantities.workersHut > 0
+            ? questClaimStatus[QuestId.BuildWorkersHut]
               ? QuestStatus.Claimed
               : QuestStatus.Completed
             : QuestStatus.InProgress,
-      }),
-      [workersHutCount, questClaimStatus[QuestName.BuildWorkersHut]],
-    );
-  };
-
-  const useMarketQuest = (marketsCount: number): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.Market)!,
-        name: QuestName.Market,
+      },
+      [QuestId.Market]: {
+        value: questClaimStatus[QuestId.Market] ? null : buildingQuantities.markets,
         status:
-          marketsCount > 0
-            ? questClaimStatus[QuestName.Market]
+          buildingQuantities.markets > 0
+            ? questClaimStatus[QuestId.Market]
               ? QuestStatus.Claimed
               : QuestStatus.Completed
             : QuestStatus.InProgress,
-      }),
-      [marketsCount, questClaimStatus[QuestName.Market]],
-    );
-  };
-
-  const usePillageQuest = (pillageHistoryLength: number): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.Pillage)!,
-        name: QuestName.Pillage,
+      },
+      [QuestId.Pillage]: {
+        value: questClaimStatus[QuestId.Pillage] ? null : pillageHistoryLength,
         status:
           pillageHistoryLength > 0
-            ? questClaimStatus[QuestName.Pillage]
+            ? questClaimStatus[QuestId.Pillage]
               ? QuestStatus.Claimed
               : QuestStatus.Completed
             : QuestStatus.InProgress,
-      }),
-      [pillageHistoryLength, questClaimStatus[QuestName.Pillage]],
-    );
-  };
-
-  const useMineQuest = (fragmentMines: number): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.Mine)!,
-        name: QuestName.Mine,
+      },
+      [QuestId.Mine]: {
+        value: questClaimStatus[QuestId.Mine] ? null : fragmentMines,
         status:
           fragmentMines > 0
-            ? questClaimStatus[QuestName.Mine]
+            ? questClaimStatus[QuestId.Mine]
               ? QuestStatus.Claimed
               : QuestStatus.Completed
             : QuestStatus.InProgress,
-      }),
-      [fragmentMines, questClaimStatus[QuestName.Mine]],
-    );
-  };
-
-  const useContributionQuest = (hyperstructureContributions: number): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.Contribution)!,
-        name: QuestName.Contribution,
+      },
+      [QuestId.Contribution]: {
+        value: questClaimStatus[QuestId.Contribution] ? null : hyperstructureContributions,
         status:
           hyperstructureContributions > 0
-            ? questClaimStatus[QuestName.Contribution]
+            ? questClaimStatus[QuestId.Contribution]
               ? QuestStatus.Claimed
               : QuestStatus.Completed
             : QuestStatus.InProgress,
-      }),
-      [hyperstructureContributions, questClaimStatus[QuestName.Contribution]],
-    );
-  };
-
-  const useHyperstructureQuest = (hyperstructures: number): Quest => {
-    return useMemo(
-      () => ({
-        ...questDetails.get(QuestName.Hyperstructure)!,
-        name: QuestName.Hyperstructure,
+      },
+      [QuestId.Hyperstructure]: {
+        value: questClaimStatus[QuestId.Hyperstructure] ? null : hyperstructures,
         status:
           hyperstructures > 0
-            ? questClaimStatus[QuestName.Hyperstructure]
+            ? questClaimStatus[QuestId.Hyperstructure]
               ? QuestStatus.Claimed
               : QuestStatus.Completed
             : QuestStatus.InProgress,
-      }),
-      [hyperstructures, questClaimStatus[QuestName.Hyperstructure]],
-    );
-  };
-
-  return {
-    useSettleQuest,
-    useBuildFarmQuest,
-    useBuildResourceQuest,
-    useCreateTradeQuest,
-    useCreateArmyQuest,
-    useTravelQuest,
-    useBuildWorkersHutQuest,
-    useMarketQuest,
-    usePillageQuest,
-    useMineQuest,
-    useContributionQuest,
-    useHyperstructureQuest,
-  };
+      },
+    }),
+    [questClaimStatus, unclaimedQuestsCount > 0 ? entityUpdate : null, unclaimedQuestsCount > 0 ? orders : null],
+  );
 };
 
 export const useQuestClaimStatus = () => {
@@ -414,7 +269,7 @@ export const useQuestClaimStatus = () => {
         ...acc,
         [questName]: checkPrizesClaimed(questDetails.get(questName)?.prizes || []),
       }),
-      {} as Record<QuestName, boolean>,
+      {} as Record<QuestId, boolean>,
     );
   }, [prizeUpdate]);
 

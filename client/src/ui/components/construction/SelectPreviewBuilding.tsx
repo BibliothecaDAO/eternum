@@ -33,7 +33,7 @@ import React, { useMemo, useState } from "react";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { HintSection } from "../hints/HintModal";
 import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { QuestName } from "@/ui/components/quest/questDetails";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -88,8 +88,7 @@ export const SelectPreviewBuildingMenu = () => {
           <div className="flex relative group flex-col items-center">
             <div
               className={clsx({
-                "animate-pulse  border-b border-gold":
-                  selectedTab !== 0 && selectedQuest?.name === QuestName.BuildResource,
+                "animate-pulse  border-b border-gold": selectedTab !== 0 && selectedQuest?.id === QuestId.BuildResource,
               })}
             >
               Resources
@@ -113,7 +112,7 @@ export const SelectPreviewBuildingMenu = () => {
               return (
                 <BuildingCard
                   className={clsx({
-                    hidden: !questClaimStatus[QuestName.BuildFarm],
+                    hidden: !questClaimStatus[QuestId.BuildFarm],
                   })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
@@ -168,11 +167,11 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isFarm && !questClaimStatus[QuestName.BuildResource],
+                      hidden: !isFarm && !questClaimStatus[QuestId.BuildResource],
                       "animate-pulse":
-                        (isFarm && selectedQuest?.name === QuestName.BuildFarm) ||
-                        (isWorkersHut && selectedQuest?.name === QuestName.BuildWorkersHut) ||
-                        (isMarket && selectedQuest?.name === QuestName.Market),
+                        (isFarm && selectedQuest?.id === QuestId.BuildFarm) ||
+                        (isWorkersHut && selectedQuest?.id === QuestId.BuildWorkersHut) ||
+                        (isMarket && selectedQuest?.id === QuestId.Market),
                     })}
                     key={index}
                     buildingId={building}
@@ -226,7 +225,7 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !questClaimStatus[QuestName.BuildResource],
+                      hidden: !questClaimStatus[QuestId.BuildResource],
                     })}
                     key={index}
                     buildingId={building}
