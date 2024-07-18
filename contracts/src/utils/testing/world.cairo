@@ -21,7 +21,6 @@ use eternum::models::config::{
 use eternum::models::guild::{guild, guild_member, guild_whitelist};
 use eternum::models::hyperstructure::{Progress, progress, Contribution, contribution};
 use eternum::models::level::level;
-use eternum::models::map::map_explored;
 use eternum::models::map::tile;
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
 use eternum::models::metadata::{foreign_key, ForeignKey};
@@ -47,10 +46,12 @@ use eternum::models::stamina::stamina;
 use eternum::models::structure::structure;
 use eternum::models::structure::structure_count;
 use eternum::models::trade::{status, Status, trade, Trade,};
+use eternum::models::weight::weight;
 
 // used to spawn a test world with all the models and systems registered
 fn spawn_eternum() -> IWorldDispatcher {
     let mut models = array![
+        weight::TEST_CLASS_HASH,
         building::TEST_CLASS_HASH,
         health::TEST_CLASS_HASH,
         army::TEST_CLASS_HASH,
@@ -63,7 +64,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         building_quantityv_2::TEST_CLASS_HASH,
         level::TEST_CLASS_HASH,
         tile::TEST_CLASS_HASH,
-        map_explored::TEST_CLASS_HASH,
         orders::TEST_CLASS_HASH,
         entity_owner::TEST_CLASS_HASH,
         population::TEST_CLASS_HASH,
