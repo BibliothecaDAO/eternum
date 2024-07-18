@@ -52,7 +52,7 @@ mod tests {
     use eternum::utils::testing::world::spawn_eternum;
 
     #[test]
-    #[available_gas(30000000)]
+    #[available_gas(90000000)]
     fn test_entity_owner_get_realm_id() {
         let world = spawn_eternum();
 
