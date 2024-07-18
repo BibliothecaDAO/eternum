@@ -92,7 +92,7 @@ impl HealthCustomImpl of HealthCustomTrait {
 }
 
 
-#[derive(Copy, Drop, Serde, Introspect, Default)]
+#[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq, Default)]
 struct Troops {
     knight_count: u64,
     paladin_count: u64,
@@ -448,7 +448,7 @@ struct Battle {
 }
 
 
-#[derive(Copy, Drop, Serde, PartialEq, Introspect)]
+#[derive(Copy, Drop, Serde, PartialEq, Debug, Introspect)]
 enum BattleSide {
     None,
     Attack,

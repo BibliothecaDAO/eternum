@@ -9,6 +9,7 @@ use eternum::systems::{
     map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait},
     dev::contracts::resource::{dev_resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait},
 };
+use eternum::systems::config::contracts::config_systems;
 use starknet::{ContractAddress};
 
 

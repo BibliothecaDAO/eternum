@@ -1,1 +1,1 @@
-mod tests {}
+mod army_create_test;
