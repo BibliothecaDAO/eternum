@@ -5,14 +5,14 @@ import WorldmapScene from "../scenes/Worldmap";
 export class BorderHexManager {
   private worldMap: WorldmapScene;
   private hexSize: number;
-  private highlightMaterial: THREE.ShaderMaterial;
+  private material: THREE.ShaderMaterial;
   private borderHexes: { col: number; row: number }[] = [];
   private borderMeshes: THREE.Mesh[] = [];
 
-  constructor(worldMap: WorldmapScene, hexSize: number, highlightMaterial: THREE.ShaderMaterial) {
+  constructor(worldMap: WorldmapScene, hexSize: number, material: THREE.ShaderMaterial) {
     this.worldMap = worldMap;
     this.hexSize = hexSize;
-    this.highlightMaterial = highlightMaterial;
+    this.material = material;
   }
 
   addBorderHex(hex: { col: number; row: number }) {
@@ -30,7 +30,7 @@ export class BorderHexManager {
 
     this.borderHexes.forEach((hex) => {
       const position = this.worldMap.getWorldPositionForHex(hex);
-      const highlightMesh = new THREE.Mesh(hexagonGeometry, this.highlightMaterial.clone());
+      const highlightMesh = new THREE.Mesh(hexagonGeometry, this.material.clone());
       highlightMesh.position.set(position.x, 0.1, position.z);
       highlightMesh.rotation.x = -Math.PI / 2;
 

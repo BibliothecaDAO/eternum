@@ -35,7 +35,7 @@ void main() {
 const greenColor = new Color("darkgreen");
 greenColor.multiplyScalar(12);
 
-export const placeholderMaterial = new ShaderMaterial({
+export const highlightHexMaterial = new ShaderMaterial({
   vertexShader,
   fragmentShader,
   uniforms: {

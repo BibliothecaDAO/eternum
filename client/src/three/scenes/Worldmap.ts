@@ -7,9 +7,8 @@ import { ContextMenuManager } from "../components/ContextMenuManager";
 
 import { SetupResult } from "@/dojo/setup";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
-import { placeholderMaterial } from "@/shaders/placeholderMaterial";
+import { highlightHexMaterial } from "@/shaders/highlightHexMaterial";
 import { borderHexMaterial } from "@/shaders/borderHexMaterial";
-import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
 import { FELT_CENTER } from "@/ui/config";
 import GUI from "lil-gui";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
@@ -20,6 +19,7 @@ import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { BorderHexManager } from "../components/BorderHexManager";
+import { HighlightHexManager } from "../components/HighlightHexManager";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -73,11 +73,8 @@ export default class WorldmapScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
-  // green highlighted hexes
-  private highlightedHexes: THREE.Mesh[] = [];
-  private highlightMaterial: THREE.ShaderMaterial;
-
   private borderHexManager: BorderHexManager;
+  public highlightHexManager: HighlightHexManager;
 
   constructor(
     private dojoConfig: SetupResult,
@@ -103,9 +100,6 @@ export default class WorldmapScene {
       this,
       state,
     );
-
-    // Create the highlight material
-    this.highlightMaterial = placeholderMaterial;
 
     this.scene.background = new THREE.Color(0x8790a1);
     this.gui.addColor(this.scene, "background");
@@ -156,6 +150,7 @@ export default class WorldmapScene {
     this.systemManager = new SystemManager(this.dojoConfig, this);
 
     this.borderHexManager = new BorderHexManager(this, this.hexSize, borderHexMaterial);
+    this.highlightHexManager = new HighlightHexManager(this, this.hexSize, highlightHexMaterial);
   }
 
   private loadBiomeModels() {
@@ -189,29 +184,6 @@ export default class WorldmapScene {
 
     Promise.all(this.modelLoadPromises).then(() => {
       //this.updateExistingChunks();
-    });
-  }
-
-  highlightHexes(hexes: { row: number; col: number }[]) {
-    // Remove existing highlights
-    this.highlightedHexes.forEach((mesh) => this.scene.remove(mesh));
-    this.highlightedHexes = [];
-
-    // Create new highlight meshes
-    const bigHexagonShape = createHexagonShape(this.hexSize);
-    const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
-
-    hexes.forEach((hex) => {
-      const position = this.getWorldPositionForHex(hex);
-      const highlightMesh = new THREE.Mesh(hexagonGeometry, this.highlightMaterial.clone());
-      highlightMesh.position.set(position.x, 0.32, position.z);
-      highlightMesh.rotation.x = -Math.PI / 2;
-
-      // Disable raycasting for this mesh
-      highlightMesh.raycast = () => {};
-
-      this.scene.add(highlightMesh);
-      this.highlightedHexes.push(highlightMesh);
     });
   }
 
@@ -282,10 +254,7 @@ export default class WorldmapScene {
           dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
         }
 
-        if (isExplored) {
-          // revealedHexes.push({ col: globalCol, row: globalRow });
-        } else {
-          // Check if this unexplored hex is a border hex
+        if (!isExplored) {
           const neighborOffsets = globalRow % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
           const isBorder = neighborOffsets.some(({ i, j }) => {
             const neighborCol = globalCol + i;
@@ -455,10 +424,6 @@ export default class WorldmapScene {
     // Update highlight pulse
     const elapsedTime = performance.now() / 1000; // Convert to seconds
     const pulseFactor = Math.abs(Math.sin(elapsedTime * 2) / 16);
-    this.highlightedHexes.forEach((mesh) => {
-      if (mesh.material instanceof THREE.ShaderMaterial) {
-        mesh.material.uniforms.opacity.value = pulseFactor;
-      }
-    });
+    this.highlightHexManager.updateHighlightPulse(pulseFactor);
   }
 }

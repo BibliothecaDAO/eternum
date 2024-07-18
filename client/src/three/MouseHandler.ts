@@ -140,14 +140,14 @@ export class MouseHandler {
     if (armyMovementManager.isMine()) {
       this._setSelectedEntityId(entityId);
       this.travelPaths = armyMovementManager.findPaths(this.worldmapScene!.systemManager.tileSystem.getExplored());
-      this.worldmapScene!.highlightHexes(this.travelPaths.getHighlightedHexes());
+      this.worldmapScene!.highlightHexManager.highlightHexes(this.travelPaths.getHighlightedHexes());
     }
   }
 
   private clearEntitySelection() {
     this._checkIfSceneIsInitialized();
     this._setSelectedEntityId(null);
-    this.worldmapScene!.highlightHexes([]);
+    this.worldmapScene!.highlightHexManager.highlightHexes([]);
     this.travelPaths?.deleteAll();
     this.actionInfo.hideTooltip();
   }

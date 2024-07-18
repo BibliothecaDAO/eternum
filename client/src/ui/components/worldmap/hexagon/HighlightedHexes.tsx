@@ -1,11 +1,11 @@
-import { placeholderMaterial } from "@/shaders/placeholderMaterial";
+import { highlightHexMaterial } from "@/shaders/highlightHexMaterial";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { createHexagonShape } from "./HexagonGeometry";
 
-const hexMaterial = placeholderMaterial.clone();
+const hexMaterial = highlightHexMaterial.clone();
 
 const bigHexagonShape = createHexagonShape(3);
 const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);

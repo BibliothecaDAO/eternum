@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { BuildingType, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
-import { placeholderMaterial } from "@/shaders/placeholderMaterial";
+import { highlightHexMaterial } from "@/shaders/highlightHexMaterial";
 import { Text, useGLTF } from "@react-three/drei";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
 import { HEX_RADIUS } from "@/ui/config";
@@ -69,7 +69,7 @@ const GroundGrid = () => {
                 name="free-cell-placeholder"
                 position={[hexPosition.x, hexPosition.y, hexPosition.z + 0.1]}
                 geometry={invisibleHexagonGeometry}
-                material={placeholderMaterial}
+                material={highlightHexMaterial}
               />
             )}
 
