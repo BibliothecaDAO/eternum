@@ -113,6 +113,11 @@ export class ArmyManager {
     this.mesh.getMatrixAt(index, this.dummy.matrix);
     currentPosition.setFromMatrixPosition(this.dummy.matrix);
 
+    // Calculate direction and set rotation
+    const direction = new THREE.Vector3().subVectors(newPosition, currentPosition).normalize();
+    const angle = Math.atan2(direction.x, direction.z);
+    this.dummy.rotation.set(0, angle, 0);
+
     this.movingArmies.set(index, {
       startPos: currentPosition,
       endPos: newPosition,
