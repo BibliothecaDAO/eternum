@@ -1,25 +1,22 @@
 import * as THREE from "three";
-import { Scene, Raycaster, MathUtils } from "three";
+import { Raycaster } from "three";
 import { FogManager } from "../components/Fog";
 
+import { Entity } from "@dojoengine/recs";
 import { ContextMenuManager } from "../components/ContextMenuManager";
-import { Entity, getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
 
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { SetupResult } from "@/dojo/setup";
-import { Biome, BiomeType, MAP_AMPLITUDE } from "../components/Biome";
-import { FELT_CENTER } from "@/ui/config";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import InstancedModel from "../components/InstancedModel";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
+import { placeholderMaterial } from "@/shaders/placeholderMaterial";
+import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
+import { FELT_CENTER } from "@/ui/config";
+import GUI from "lil-gui";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
-import GUI from "lil-gui";
-import { ArmySystem } from "../systems/ArmySystem";
-import { StructureSystem } from "../systems/StructureSystem";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { Biome, BiomeType } from "../components/Biome";
+import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
-import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
-import { placeholderMaterial } from "@/shaders/placeholderMaterial";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -271,8 +268,7 @@ export default class WorldmapScene {
         dummy.position.copy(pos);
 
         const isStructure = structuresMap.has(`${globalCol},${globalRow}`);
-        // const isExplored = exploredMap.get(globalCol)?.has(globalRow) || false;
-        const isExplored = true;
+        const isExplored = exploredMap.get(globalCol)?.has(globalRow) || false;
         if (isStructure || !isExplored) {
           dummy.scale.set(0, 0, 0);
         } else {
@@ -284,11 +280,6 @@ export default class WorldmapScene {
         dummy.rotation.y = randomRotation;
 
         const biome = this.biome.getBiome(startCol + col + FELT_CENTER, startRow + row + FELT_CENTER);
-
-        const entities = getEntitiesWithValue(this.dojoConfig.components.Position, {
-          x: startCol + col + FELT_CENTER,
-          y: startRow + row + FELT_CENTER,
-        });
 
         // if (entities.size > 0) console.log("Entities", entities);
 
@@ -315,6 +306,33 @@ export default class WorldmapScene {
     Promise.all(this.modelLoadPromises).then(() => {
       requestAnimationFrame(processBatch);
     });
+  }
+
+  public createGroundMesh() {
+    const scale = 60;
+    const metalness = 0.5;
+    const roughness = 0.7;
+
+    const geometry = new THREE.PlaneGeometry(2668, 1390.35);
+    const texture = new THREE.TextureLoader().load("/textures/paper/worldmap-bg.png", () => {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(scale, scale / 2.5);
+    });
+
+    const material = new THREE.MeshStandardMaterial({
+      map: texture,
+      metalness: metalness,
+      roughness: roughness,
+      side: THREE.DoubleSide,
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.rotation.set(Math.PI / 2, 0, 0);
+    mesh.position.set(1334.1, 0.05, -695.175);
+    mesh.receiveShadow = true;
+
+    this.scene.add(mesh);
   }
 
   private cacheMatricesForChunk(startRow: number, startCol: number) {
@@ -389,7 +407,6 @@ export default class WorldmapScene {
       // Calculate the starting position for the new chunk
       const startCol = chunkX * this.chunkSize;
       const startRow = chunkZ * this.chunkSize;
-
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
     }
   }

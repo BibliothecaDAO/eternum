@@ -1,21 +1,20 @@
-import * as THREE from "three";
-import Stats from "three/examples/jsm/libs/stats.module";
-import { MapControls } from "three/examples/jsm/controls/MapControls";
-import WorldmapScene from "./scenes/Worldmap";
-import HexceptionScene from "./scenes/Hexception";
+import { TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 import { SetupResult } from "@/dojo/setup";
 import { ThreeStore, useThreeStore } from "@/hooks/store/useThreeStore";
+import gsap from "gsap";
+import GUI from "lil-gui";
+import _ from "lodash";
+import * as THREE from "three";
+import { MapControls } from "three/examples/jsm/controls/MapControls";
+import Stats from "three/examples/jsm/libs/stats.module";
+import { ActionInfo } from "./components/ActionInfo";
 import { InputManager } from "./components/InputManager";
 import { TransitionManager } from "./components/Transition";
-import _ from "lodash";
-import gsap from "gsap";
 import { LocationManager } from "./helpers/LocationManager";
-import GUI from "lil-gui";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
-import { ActionInfo } from "./components/ActionInfo";
 import { MouseHandler } from "./MouseHandler";
 import { SceneManager } from "./SceneManager";
+import HexceptionScene from "./scenes/Hexception";
+import WorldmapScene from "./scenes/Worldmap";
 
 const horizontalSpacing = Math.sqrt(3);
 const verticalSpacing = 3 / 2;
@@ -156,6 +155,8 @@ export default class GameRenderer {
     // Add grid
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.state, this.gui);
     this.worldmapScene.updateVisibleChunks();
+
+    this.worldmapScene.createGroundMesh();
 
     this.transitionManager = new TransitionManager(this.renderer);
 
