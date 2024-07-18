@@ -6,7 +6,11 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "components": "npx @dojoengine/core ../contracts/manifests/dev/manifest.json src/dojo/contractComponents.ts http://localhost:5050 0x177a3f3d912cf4b55f0f74eccf3b7def7c6144efeba033e9f21d9cdb0230c64"
+    "components": "npx @dojoengine/core ../contracts/manifests/dev/manifest.json src/dojo/contractComponents.ts http://localhost:5050 0x161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage"
   },
   "peerDependencies": {
     "starknet": "6.7.0"
@@ -30,6 +34,7 @@
     "@react-three/fiber": "^8.16.1",
     "@react-three/postprocessing": "2.16.2",
     "@reactour/tour": "^3.6.1",
+    "@testing-library/react-hooks": "^8.0.1",
     "@vercel/analytics": "^1.2.2",
     "@web3mq/client": "^1.0.25",
     "buffer": "^6.0.3",
@@ -44,6 +49,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.365.0",
     "postprocessing": "^6.35.2",
+    "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-blurhash": "^0.3.0",
     "react-dom": "^18.2.0",
@@ -63,17 +69,17 @@
   },
   "devDependencies": {
     "@svgr/rollup": "^8.1.0",
-    "vite-plugin-top-level-await": "^1.4.1",
-    "vite-plugin-wasm": "^3.3.0",
     "@tailwindcss/typography": "^0.5.13",
+    "@testing-library/react": "^16.0.0",
     "@types/lodash": "^4.14.202",
+    "@types/node": "^20.11.10",
     "@types/react": "^18.2.74",
     "@types/react-dom": "^18.2.21",
-    "@types/three": "^0.163.0",
-    "@types/node": "^20.11.10",
     "@types/react-resizable": "^3.0.7",
+    "@types/three": "^0.163.0",
     "@typescript-eslint/eslint-plugin": "^7.5.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/ui": "^2.0.1",
     "autoprefixer": "^10.4.18",
     "eslint": "^8.57.0",
     "eslint-config-standard-with-typescript": "^43.0.1",
@@ -81,12 +87,16 @@
     "eslint-plugin-n": "^17.0.0",
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-react": "^7.34.1",
+    "jsdom": "^24.1.0",
     "leva": "^0.9.35",
     "postcss": "^8.4.35",
     "r3f-perf": "^7.2.1",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.4.4",
     "vite": "^5.2.8",
-    "vite-plugin-svgr": "^4.2.0"
+    "vite-plugin-svgr": "^4.2.0",
+    "vite-plugin-top-level-await": "^1.4.1",
+    "vite-plugin-wasm": "^3.3.0",
+    "vitest": "^2.0.1"
   }
 }

@@ -68,8 +68,7 @@ export const StructureCard = ({
   const target = formattedStructureAtPosition || formattedRealmAtPosition;
 
   return (
-    Boolean(formattedStructureAtPosition) &&
-    BigInt(target.protector?.battle_id || 0n) === 0n && (
+    Boolean(formattedStructureAtPosition) && (
       <div className="h-full flex flex-col justify-center">
         {!showMergeTroopsPopup && formattedRealmAtPosition && (
           <RealmListItem realm={formattedRealmAtPosition} extraButton={button} />
@@ -83,8 +82,7 @@ export const StructureCard = ({
               <MergeTroopsPanel
                 giverArmy={ownArmySelected}
                 setShowMergeTroopsPopup={setShowMergeTroopsPopup}
-                structureEntityId={BigInt(target.entity_id)}
-                structureName={target.name}
+                structureEntityId={BigInt(target!.entity_id)}
               />
             )}
           </div>
@@ -98,15 +96,9 @@ type MergeTroopsPanelProps = {
   giverArmy: ArmyInfo;
   setShowMergeTroopsPopup: (val: boolean) => void;
   structureEntityId: bigint;
-  structureName: string;
 };
 
-const MergeTroopsPanel = ({
-  giverArmy,
-  setShowMergeTroopsPopup,
-  structureEntityId,
-  structureName,
-}: MergeTroopsPanelProps) => {
+const MergeTroopsPanel = ({ giverArmy, setShowMergeTroopsPopup, structureEntityId }: MergeTroopsPanelProps) => {
   return (
     <div className="flex flex-col clip-angled-sm bg-gold/20 p-3 max-h-[42vh] overflow-y-auto">
       <Button className="mb-3 w-[30%]" variant="default" size="xs" onClick={() => setShowMergeTroopsPopup(false)}>

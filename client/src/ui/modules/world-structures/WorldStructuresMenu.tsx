@@ -29,8 +29,8 @@ export const WorldStructuresMenu = ({}: any) => {
     return (
       <HyperStructureExtraContent
         hyperstructureEntityId={hyperstructure.entity_id!}
-        x={hyperstructure.x!}
-        y={hyperstructure.y!}
+        x={Number(hyperstructure.x!)}
+        y={Number(hyperstructure.y!)}
       />
     );
   };
@@ -44,8 +44,8 @@ export const WorldStructuresMenu = ({}: any) => {
     return (
       <ShardMineExtraContent
         shardMineEntityId={shardMine.entity_id!}
-        x={shardMine.x!}
-        y={shardMine.y!}
+        x={Number(shardMine.x!)}
+        y={Number(shardMine.y!)}
         balance={shardMine.balance!}
       />
     );

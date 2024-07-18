@@ -30,7 +30,7 @@ export const DepositResources = ({ entityId, battleInProgress }: DepositResource
   const entityState = determineEntityState(
     nextBlockTimestamp,
     false,
-    arrivalTime?.arrives_at,
+    Number(arrivalTime?.arrives_at || 0n),
     inventoryResources.length > 0,
   );
 

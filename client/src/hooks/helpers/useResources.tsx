@@ -121,7 +121,7 @@ export function useResources() {
         const arrivalTime = getComponentValue(ArrivalTime, id);
         const position = getComponentValue(Position, id);
         const army = getArmy(position?.entity_id || BigInt(0));
-        if (army && !isArmyAlive(army, Battle, Army, Position, Realm)) return undefined;
+        if (army && !isArmyAlive(army, Battle, Army)) return undefined;
         return {
           id,
           entityId: position?.entity_id || BigInt(""),
@@ -279,7 +279,9 @@ export function useOwnedEntitiesOnPosition() {
 
   const getOwnedEntityOnPosition = (entityId: bigint) => {
     const position = getComponentValue(Position, getEntityIdFromKeys([entityId]));
-    const depositEntityIds = position ? getOwnedEntitiesOnPosition(BigInt(account.address), position) : [];
+    const depositEntityIds = position
+      ? getOwnedEntitiesOnPosition(BigInt(account.address), { x: Number(position.x), y: Number(position.y) })
+      : [];
     return depositEntityIds[0];
   };
 

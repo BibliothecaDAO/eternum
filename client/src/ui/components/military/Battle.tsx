@@ -20,8 +20,7 @@ export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; o
     <div className="h-full flex flex-col justify-center justify-items-center">
       {armies.length !== 0 && (
         <>
-          <Headline className="my-3 mt-4">Enemy armies</Headline>
-          <div className="grid grid-cols-1 gap-2 h-[60%]">
+          <div className="grid grid-cols-1 gap-2">
             {armies.map((army: ArmyInfo, index) => {
               const { attacker, defender } =
                 String(army.battle_side) === "Attacker"
@@ -29,9 +28,9 @@ export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; o
                   : { attacker: ownArmySelected, defender: army };
               const extraButton =
                 ownArmySelected && !army.isMine ? (
-                  <div className="flex w-full justify-center">
+                  <div className="my-auto w-4 ml-2 ">
                     <Button
-                      className="self-center m-auto"
+                      className={`m-auto ${army.battle_id ? "animate-pulse" : ""}`}
                       onClick={() =>
                         setBattleView({
                           battle: undefined,
@@ -39,7 +38,7 @@ export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; o
                         })
                       }
                     >
-                      Combat
+                      {army.battle_id ? "In battle" : "Combat"}
                     </Button>
                   </div>
                 ) : undefined;

@@ -1,55 +1,74 @@
+import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import Button from "@/ui/elements/Button";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { InventoryResources } from "../resources/InventoryResources";
-import { ArmyManagementCard, ViewOnMapButton } from "./ArmyManagementCard";
+import { ArmyManagementCard, ViewOnMapIcon } from "./ArmyManagementCard";
 import { TroopMenuRow } from "./TroopChip";
 
 export const ArmyChip = ({ army, extraButton }: { army: ArmyInfo; extraButton?: JSX.Element }) => {
+  const {
+    setup: {
+      components: { Battle },
+    },
+  } = useDojo();
+  const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
+
   const [editMode, setEditMode] = useState(false);
+
+  const battleManager = useMemo(() => new BattleManager(BigInt(army.battle_id), Battle), [army.battle_id]);
+
+  const { updatedArmy, updatedBattle } = useMemo(() => {
+    const updatedBattle = battleManager.getUpdatedBattle(currentTimestamp!);
+    const updatedArmy = battleManager.getUpdatedArmy(army, updatedBattle);
+    return { updatedArmy, updatedBattle };
+  }, [currentTimestamp]);
 
   return (
     <div className=" items-center text-xs px-2 hover:bg-blueish/20 clip-angled bg-blueish/20 rounded-md border-gold/20  ">
       {editMode ? (
         <>
-          <Button className="mb-2" size="xs" onClick={() => setEditMode(!editMode)}>
+          <Button className="my-2" size="xs" onClick={() => setEditMode(!editMode)}>
             Close Manager
           </Button>
-          <ArmyManagementCard entity={army} owner_entity={BigInt(army.entity_owner_id)} />
+          <ArmyManagementCard army={updatedArmy!} owner_entity={BigInt(updatedArmy!.entityOwner.entity_owner_id)} />
         </>
       ) : (
         <>
-          <div className=" text-xl w-full  justify-between">
-            <div className="flex justify-between my-4">
-              <div className="flex flex-col justify-between ">
-                <div className="h4 text-2xl mb-2">{army.name}</div>
+          <div className="text-xl w-full h-full content-center">
+            <div className="flex justify-between py-2">
+              <div className="flex flex-col w-[45%]">
+                <div className="h4 text-2xl mb-2 flex flex-row">
+                  <div className="mr-2">{updatedArmy!.name}</div>
+                  <div className="flex flex-row gap-1">
+                    <Pen className={"w-5 fill-gold"} onClick={() => setEditMode(!editMode)} />
+                    <ViewOnMapIcon
+                      className={"w-5 fill-gold"}
+                      position={{ x: Number(updatedArmy!.position.x), y: Number(updatedArmy!.position.y) }}
+                    />
+                  </div>
+                </div>
                 <div className="font-bold text-xs">
-                  {army.current && (
-                    <div className="text-green">
-                      HP: {(BigInt(army.current.toString()) / BigInt(1000000n)).toLocaleString()} /{" "}
-                      {(BigInt(army.lifetime.toString()) / BigInt(1000000n)).toLocaleString()}
-                    </div>
-                  )}
-                  <StaminaResource entityId={BigInt(army.entity_id)} />
+                  <StaminaResource entityId={BigInt(updatedArmy!.entity_id)} />
                 </div>
               </div>
-              <div className="flex flex-col   gap-1">
-                <ViewOnMapButton position={{ x: army.x, y: army.y }} />
-                <Button size="xs" onClick={() => setEditMode(!editMode)}>
-                  Manage
-                </Button>
+              <div className="flex flex-row content-center w-[55%]">
+                <div className={`flex flex-col content-center ${extraButton ? "" : "w-full"}`}>
+                  <TroopMenuRow army={updatedArmy!} />
+                  <InventoryResources
+                    entityId={BigInt(updatedArmy!.entity_id)}
+                    className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
+                    resourcesIconSize="xs"
+                  />
+                </div>
+                {extraButton || ""}
               </div>
             </div>
           </div>
-          <div className="my-3 flex gap-3">
-            <TroopMenuRow army={army} />
-            <div className="flex flex-col  items-center justify-between">
-              <InventoryResources entityId={BigInt(army.entity_id)} max={3} className="flex gap-1" />
-            </div>
-          </div>
-
-          {extraButton || ""}
         </>
       )}
     </div>

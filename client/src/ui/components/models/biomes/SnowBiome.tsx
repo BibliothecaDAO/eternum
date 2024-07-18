@@ -1,9 +1,8 @@
 import { useGLTF } from "@react-three/drei";
-import { getUIPositionFromColRow, pseudoRandom } from "../../../utils/utils";
-import * as THREE from "three";
 import { useMemo } from "react";
-import { Hexagon } from "../../../../types";
+import * as THREE from "three";
 import { GLTF } from "three-stdlib";
+import { pseudoRandom } from "../../../utils/utils";
 
 type SnowBiomeGLTF = GLTF & {
   nodes: {

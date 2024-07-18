@@ -2,6 +2,7 @@ import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { Health } from "./Battle";
 
 export const BattleProgressBar = ({
   ownArmySide,
@@ -13,9 +14,9 @@ export const BattleProgressBar = ({
   durationLeft,
 }: {
   ownArmySide: string;
-  attackingHealth: { current: number; lifetime: number } | undefined;
+  attackingHealth: Health | undefined;
   attackerArmies: ArmyInfo[];
-  defendingHealth: { current: number; lifetime: number } | undefined;
+  defendingHealth: Health | undefined;
   defenderArmies: ArmyInfo[];
   structure: Structure | undefined;
   durationLeft?: Date;
@@ -25,23 +26,23 @@ export const BattleProgressBar = ({
   const attackerName = `${attackerArmies.length > 0 ? "Attackers" : "Empty"} ${ownArmySide === "Attack" ? "(⚔️)" : ""}`;
   const defenderName = structure
     ? structure.isMercenary
-      ? "Mercenaries"
+      ? "Bandits"
       : `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
     : defenderArmies?.length > 0
       ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
       : "Empty";
 
   const totalHealth = useMemo(
-    () => (attackingHealth?.current || 0) + (defendingHealth?.current || 0),
+    () => (attackingHealth?.current || 0n) + (defendingHealth?.current || 0n),
     [attackingHealth, defendingHealth],
   );
 
   const attackingHealthPercentage = useMemo(
-    () => (((attackingHealth?.current || 0) / totalHealth) * 100).toFixed(2),
+    () => ((Number(attackingHealth?.current || 0) / Number(totalHealth)) * 100).toFixed(2),
     [attackingHealth, totalHealth],
   );
   const defendingHealthPercentage = useMemo(
-    () => (((defendingHealth?.current || 0) / totalHealth) * 100).toFixed(2),
+    () => ((Number(defendingHealth?.current || 0) / Number(totalHealth)) * 100).toFixed(2),
     [defendingHealth, totalHealth],
   );
 
