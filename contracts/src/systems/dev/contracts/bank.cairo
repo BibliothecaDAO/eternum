@@ -17,7 +17,7 @@ mod dev_bank_systems {
     use eternum::models::config::{BankConfig};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
-    use eternum::models::resources::{Resource, ResourceImpl};
+    use eternum::models::resources::{Resource, ResourceCustomImpl};
     use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 

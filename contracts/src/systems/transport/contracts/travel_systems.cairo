@@ -17,18 +17,18 @@ mod travel_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex, TravelTypes};
-    use eternum::models::capacity::{Capacity, CapacityTrait};
+    use eternum::models::capacity::{Capacity, CapacityCustomTrait};
     use eternum::models::config::{RoadConfig, LevelingConfig};
-    use eternum::models::level::{Level, LevelTrait};
+    use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::order::{Orders, OrdersTrait};
-    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
+    use eternum::models::order::{Orders, OrdersCustomTrait};
+    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
-    use eternum::models::quantity::{Quantity, QuantityTrait};
+    use eternum::models::quantity::{Quantity, QuantityCustomTrait};
     use eternum::models::realm::Realm;
-    use eternum::models::road::RoadImpl;
-    use eternum::models::stamina::StaminaImpl;
+    use eternum::models::road::RoadCustomImpl;
+    use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::weight::Weight;
 
     use eternum::systems::leveling::contracts::leveling_systems::{
@@ -108,7 +108,7 @@ mod travel_systems {
             let travelling_entity_coord: Coord = travelling_entity_position.into();
 
             let num_moves = directions.len().try_into().unwrap();
-            StaminaImpl::handle_stamina_costs(
+            StaminaCustomImpl::handle_stamina_costs(
                 travelling_entity_id, TravelTypes::Travel(num_moves), world
             );
 
@@ -231,7 +231,7 @@ mod travel_systems {
             }
 
             // reduce travel time if there is a road
-            let travel_time = RoadImpl::use_road(world, travel_time, from_coord, to_coord);
+            let travel_time = RoadCustomImpl::use_road(world, travel_time, from_coord, to_coord);
 
             let current_position = get!(world, transport_id, Position);
 
@@ -317,7 +317,7 @@ mod travel_systems {
 
             let round_trip_time: u64 = 2 * one_way_trip_time;
             // reduce round trip time if there is a road
-            let round_trip_time = RoadImpl::use_road(
+            let round_trip_time = RoadCustomImpl::use_road(
                 world, round_trip_time, transport_position.into(), to_pos.into()
             );
             // update one way trip time incase round_trip_time was reduced

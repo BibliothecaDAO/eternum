@@ -34,22 +34,22 @@ mod resource_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{WORLD_CONFIG_ID};
-    use eternum::models::capacity::{Capacity, CapacityTrait};
-    use eternum::models::config::{WeightConfig, WeightConfigImpl};
+    use eternum::models::capacity::{Capacity, CapacityCustomTrait};
+    use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
     use eternum::models::metadata::ForeignKey;
-    use eternum::models::movable::{ArrivalTime, ArrivalTimeTrait};
-    use eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
+    use eternum::models::movable::{ArrivalTime, ArrivalTimeCustomTrait};
+    use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::position::{Position, Coord};
-    use eternum::models::quantity::{Quantity, QuantityTrait};
+    use eternum::models::quantity::{Quantity, QuantityCustomTrait};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{
-        Resource, ResourceImpl, ResourceTrait, ResourceAllowance, ResourceTransferLock,
-        ResourceTransferLockTrait
+        Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceAllowance, ResourceTransferLock,
+        ResourceTransferLockCustomTrait
     };
     use eternum::models::resources::{DetachedResource};
-    use eternum::models::road::RoadImpl;
+    use eternum::models::road::RoadCustomImpl;
     use eternum::models::weight::Weight;
-    use eternum::models::weight::WeightTrait;
+    use eternum::models::weight::WeightCustomTrait;
     use eternum::systems::transport::contracts::donkey_systems::donkey_systems::{
         InternalDonkeySystemsImpl as donkey
     };
@@ -262,7 +262,7 @@ mod resource_systems {
 
                         if enforce_owner_payment {
                             // burn resources from sender's balance
-                            let mut owner_resource = ResourceImpl::get(
+                            let mut owner_resource = ResourceCustomImpl::get(
                                 world, (owner_id, resource_type)
                             );
                             owner_resource.burn(resource_amount);
@@ -270,7 +270,7 @@ mod resource_systems {
                         }
 
                         // add resources to recipient's balance
-                        let mut recipient_resource = ResourceImpl::get(
+                        let mut recipient_resource = ResourceCustomImpl::get(
                             world, (actual_recipient_id, resource_type)
                         );
                         recipient_resource.add(resource_amount);
@@ -278,7 +278,7 @@ mod resource_systems {
 
                         // update total weight
                         total_resources_weight +=
-                            WeightConfigImpl::get_weight(world, resource_type, resource_amount);
+                            WeightConfigCustomImpl::get_weight(world, resource_type, resource_amount);
 
                         // update resources hash
                         resources_felt_arr.append(resource_type.into());

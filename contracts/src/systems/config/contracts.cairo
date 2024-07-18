@@ -160,7 +160,7 @@ mod config_systems {
         HyperstructureResourceConfig, StaminaConfig, MercenariesConfig
     };
 
-    use eternum::models::position::{Position, PositionTrait, Coord};
+    use eternum::models::position::{Position, PositionCustomTrait, Coord};
     use eternum::models::production::{ProductionInput, ProductionOutput};
     use eternum::models::resources::{ResourceCost, DetachedResource};
 
@@ -172,7 +172,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl WorldConfigImpl of super::IWorldConfig<ContractState> {
+    impl WorldConfigCustomImpl of super::IWorldConfig<ContractState> {
         fn set_world_config(
             ref world: IWorldDispatcher,
             admin_address: starknet::ContractAddress,
@@ -188,7 +188,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl RealmFreeMintConfigImpl of super::IRealmFreeMintConfig<ContractState> {
+    impl RealmFreeMintConfigCustomImpl of super::IRealmFreeMintConfig<ContractState> {
         fn set_mint_config(
             ref world: IWorldDispatcher, config_id: u32, resources: Span<(u8, u128)>
         ) {
@@ -238,7 +238,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl MapConfigImpl of super::IMapConfig<ContractState> {
+    impl MapConfigCustomImpl of super::IMapConfig<ContractState> {
         fn set_exploration_config(
             ref world: IWorldDispatcher,
             wheat_burn_amount: u128,
@@ -267,7 +267,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl CapacityConfigImpl of super::ICapacityConfig<ContractState> {
+    impl CapacityConfigCustomImpl of super::ICapacityConfig<ContractState> {
         fn set_capacity_config(ref world: IWorldDispatcher, entity_type: u128, weight_gram: u128) {
             assert_caller_is_admin(world);
 
@@ -284,7 +284,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl WeightConfigImpl of super::IWeightConfig<ContractState> {
+    impl WeightConfigCustomImpl of super::IWeightConfig<ContractState> {
         fn set_weight_config(ref world: IWorldDispatcher, entity_type: u128, weight_gram: u128) {
             assert_caller_is_admin(world);
 
@@ -301,7 +301,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl TickConfigImpl of super::ITickConfig<ContractState> {
+    impl TickConfigCustomImpl of super::ITickConfig<ContractState> {
         fn set_tick_config(
             ref world: IWorldDispatcher, tick_id: u8, tick_interval_in_seconds: u64
         ) {
@@ -315,7 +315,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl StaminaConfigImpl of super::IStaminaConfig<ContractState> {
+    impl StaminaConfigCustomImpl of super::IStaminaConfig<ContractState> {
         fn set_stamina_config(ref world: IWorldDispatcher, unit_type: u8, max_stamina: u16) {
             assert_caller_is_admin(world);
 
@@ -324,7 +324,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl LevelingConfigImpl of super::ILevelingConfig<ContractState> {
+    impl LevelingConfigCustomImpl of super::ILevelingConfig<ContractState> {
         fn set_leveling_config(
             ref world: IWorldDispatcher,
             config_id: u128,
@@ -416,7 +416,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl ProductionConfigImpl of super::IProductionConfig<ContractState> {
+    impl ProductionConfigCustomImpl of super::IProductionConfig<ContractState> {
         fn set_production_config(
             ref world: IWorldDispatcher, resource_type: u8, amount: u128, mut cost: Span<(u8, u128)>
         ) {
@@ -475,7 +475,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl TransportConfigImpl of super::ITransportConfig<ContractState> {
+    impl TransportConfigCustomImpl of super::ITransportConfig<ContractState> {
         fn set_road_config(
             ref world: IWorldDispatcher, resource_costs: Span<(u8, u128)>, speed_up_by: u64
         ) {
@@ -527,7 +527,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl HyperstructureConfigImpl of super::IHyperstructureConfig<ContractState> {
+    impl HyperstructureConfigCustomImpl of super::IHyperstructureConfig<ContractState> {
         fn set_hyperstructure_config(
             ref world: IWorldDispatcher, resources_for_completion: Span<(u8, u128)>
         ) {
@@ -553,7 +553,7 @@ mod config_systems {
 
 
     #[abi(embed_v0)]
-    impl BankConfigImpl of super::IBankConfig<ContractState> {
+    impl BankConfigCustomImpl of super::IBankConfig<ContractState> {
         fn set_bank_config(
             ref world: IWorldDispatcher, lords_cost: u128, lp_fee_num: u128, lp_fee_denom: u128
         ) {
@@ -567,7 +567,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl TroopConfigImpl of super::ITroopConfig<ContractState> {
+    impl TroopConfigCustomImpl of super::ITroopConfig<ContractState> {
         fn set_troop_config(ref world: IWorldDispatcher, mut troop_config: TroopConfig) {
             assert_caller_is_admin(world);
 
@@ -577,7 +577,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BuildingCategoryPopulationConfigImpl of super::IBuildingCategoryPopConfig<ContractState> {
+    impl BuildingCategoryPopulationConfigCustomImpl of super::IBuildingCategoryPopConfig<ContractState> {
         fn set_building_category_pop_config(
             ref world: IWorldDispatcher,
             building_category: BuildingCategory,
@@ -599,7 +599,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl PopulationConfigImpl of super::IPopulationConfig<ContractState> {
+    impl PopulationConfigCustomImpl of super::IPopulationConfig<ContractState> {
         fn set_population_config(ref world: IWorldDispatcher, base_population: u32,) {
             assert_caller_is_admin(world);
 
@@ -608,7 +608,7 @@ mod config_systems {
     }
 
     #[abi(embed_v0)]
-    impl BuildingConfigImpl of super::IBuildingConfig<ContractState> {
+    impl BuildingConfigCustomImpl of super::IBuildingConfig<ContractState> {
         fn set_building_config(
             ref world: IWorldDispatcher,
             building_category: BuildingCategory,

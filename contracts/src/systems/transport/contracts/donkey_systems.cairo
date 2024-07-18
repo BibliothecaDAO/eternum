@@ -5,16 +5,16 @@ mod donkey_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes, RESOURCE_PRECISION
     };
-    use eternum::models::config::{SpeedConfig, CapacityConfig, CapacityConfigImpl};
-    use eternum::models::movable::{Movable, MovableImpl, ArrivalTime};
-    use eternum::models::order::{Orders, OrdersTrait};
-    use eternum::models::owner::{Owner, EntityOwner, OwnerTrait};
+    use eternum::models::config::{SpeedConfig, CapacityConfig, CapacityConfigCustomImpl};
+    use eternum::models::movable::{Movable, MovableCustomImpl, ArrivalTime};
+    use eternum::models::order::{Orders, OrdersCustomTrait};
+    use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait};
     use eternum::models::position::{
-        Coord, Position, TravelTrait, CoordTrait, Direction, PositionTrait
+        Coord, Position, TravelTrait, CoordTrait, Direction, PositionCustomTrait
     };
     use eternum::models::realm::Realm;
-    use eternum::models::resources::{Resource, ResourceImpl};
-    use eternum::models::road::RoadImpl;
+    use eternum::models::resources::{Resource, ResourceCustomImpl};
+    use eternum::models::road::RoadCustomImpl;
     use eternum::models::weight::Weight;
 
     use eternum::systems::resources::contracts::resource_systems::{
@@ -29,7 +29,7 @@ mod donkey_systems {
             let donkey_amount = Self::get_donkey_needed(world, weight);
 
             // burn amount of donkey needed
-            let mut donkeys: Resource = ResourceImpl::get(world, (payer_id, ResourceTypes::DONKEY));
+            let mut donkeys: Resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::DONKEY));
             donkeys.burn(donkey_amount);
             donkeys.save(world);
         }
@@ -39,7 +39,7 @@ mod donkey_systems {
             let donkey_amount = Self::get_donkey_needed(world, weight);
 
             // return amount of donkey needed
-            let mut donkeys: Resource = ResourceImpl::get(world, (payer_id, ResourceTypes::DONKEY));
+            let mut donkeys: Resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::DONKEY));
             donkeys.add(donkey_amount);
             donkeys.save(world);
         }
@@ -57,7 +57,7 @@ mod donkey_systems {
                     world,
                     start_coord,
                     intermediate_coord,
-                    MovableImpl::sec_per_km(world, DONKEY_ENTITY_TYPE),
+                    MovableCustomImpl::sec_per_km(world, DONKEY_ENTITY_TYPE),
                     is_round_trip
                 );
 
@@ -75,7 +75,7 @@ mod donkey_systems {
         }
 
         fn get_donkey_needed(world: IWorldDispatcher, resources_weight: u128,) -> u128 {
-            let donkey_capacity = CapacityConfigImpl::get(world, DONKEY_ENTITY_TYPE);
+            let donkey_capacity = CapacityConfigCustomImpl::get(world, DONKEY_ENTITY_TYPE);
             let reminder = resources_weight % donkey_capacity.weight_gram;
             let donkeys = if reminder == 0 {
                 resources_weight / donkey_capacity.weight_gram
@@ -97,7 +97,7 @@ mod donkey_systems {
                 .calculate_travel_time(destination_coord, sec_per_km);
 
             // reduce travel time if there is a road
-            let mut travel_time = RoadImpl::use_road(
+            let mut travel_time = RoadCustomImpl::use_road(
                 world, travel_time, resources_coord, destination_coord
             );
 

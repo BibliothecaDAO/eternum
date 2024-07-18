@@ -7,7 +7,7 @@ struct Orders {
 }
 
 #[generate_trait]
-impl OrdersImpl of OrdersTrait {
+impl OrdersCustomImpl of OrdersCustomTrait {
     fn get_bonus_multiplier(self: Orders) -> u128 {
         self.hyperstructure_count * 25
     }

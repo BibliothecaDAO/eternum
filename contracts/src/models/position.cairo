@@ -1,10 +1,11 @@
 use core::fmt::{Display, Formatter, Error};
 use debug::PrintTrait;
 
-use eternum::utils::number::{NumberTrait, i128Div};
+use eternum::utils::number::{NumberTrait};
 use option::OptionTrait;
 use traits::Into;
 use traits::TryInto;
+use core::zeroable::Zeroable;
 
 // todo@credence revisit zone calculation
 
@@ -115,7 +116,7 @@ impl DirectionDisplay of Display<Direction> {
 }
 
 
-#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect, Debug, Zeroable)]
+#[derive(Copy, Drop, PartialEq, Serde, Introspect, Debug)]
 struct Coord {
     x: u128,
     y: u128
@@ -209,7 +210,7 @@ impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, PrintTrait, Default)]
+#[derive(PartialEq, Copy, Drop, Serde,  Default)]
 #[dojo::model]
 struct Position {
     #[key]
@@ -234,7 +235,7 @@ impl PositionIntoCube of Into<Position, Cube> {
 
 
 #[generate_trait]
-impl PositionImpl of PositionTrait {
+impl PositionCustomImpl of PositionCustomTrait {
     // world is divided into 10 timezones
     fn get_zone(self: Position) -> u128 {
         // use highest and lowest x to divide map into 10 timezones
@@ -254,7 +255,7 @@ impl PositionImpl of PositionTrait {
 #[cfg(test)]
 mod tests {
     use debug::PrintTrait;
-    use super::{Position, PositionTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
+    use super::{Position, PositionCustomTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
     use traits::Into;
     use traits::TryInto;
 

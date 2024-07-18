@@ -17,10 +17,10 @@ trait IBuildingContract<TContractState> {
 #[dojo::contract]
 mod building_systems {
     use eternum::models::{
-        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerTrait}, order::Orders,
-        position::{Coord, Position, PositionTrait, Direction},
-        buildings::{BuildingCategory, Building, BuildingImpl},
-        production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
+        resources::{Resource, ResourceCost}, owner::{EntityOwner, EntityOwnerCustomTrait}, order::Orders,
+        position::{Coord, Position, PositionCustomTrait, Direction},
+        buildings::{BuildingCategory, Building, BuildingCustomImpl},
+        production::{Production, ProductionRateTrait}, realm::{Realm, RealmCustomImpl}
     };
 
     #[abi(embed_v0)]
@@ -43,18 +43,18 @@ mod building_systems {
             get!(world, entity_id, EntityOwner).assert_caller_owner(world);
 
             // todo: check that entity is a realm
-            let building: Building = BuildingImpl::create(
+            let building: Building = BuildingCustomImpl::create(
                 world, entity_id, building_category, produce_resource_type, building_coord
             );
 
             // make payment for building
-            BuildingImpl::make_payment(
+            BuildingCustomImpl::make_payment(
                 world, building.outer_entity_id, building.category, building.produced_resource_type
             );
         }
 
         fn destroy(ref world: IWorldDispatcher, entity_id: u128, building_coord: Coord) {
-            BuildingImpl::destroy(world, entity_id, building_coord);
+            BuildingCustomImpl::destroy(world, entity_id, building_coord);
         }
     }
 }

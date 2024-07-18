@@ -15,7 +15,7 @@ struct Level {
 }
 
 #[generate_trait]
-impl LevelImpl of LevelTrait {
+impl LevelCustomImpl of LevelCustomTrait {
     fn get_level(self: Level) -> u64 {
         let ts: u64 = starknet::get_block_timestamp();
         if self.valid_until <= ts {
@@ -85,7 +85,7 @@ mod tests {
         LevelIndex, REALM_LEVELING_START_TIER, HYPERSTRUCTURE_LEVELING_START_TIER
     };
     use eternum::models::config::{LevelingConfig};
-    use super::{Level, LevelTrait};
+    use super::{Level, LevelCustomTrait};
 
     #[test]
     #[available_gas(30000000)]
@@ -138,15 +138,15 @@ mod tests {
         };
 
         // tier 2
-        let level_multiplier = LevelTrait::get_multiplier(leveling_config, 2);
+        let level_multiplier = LevelCustomTrait::get_multiplier(leveling_config, 2);
         assert(level_multiplier == 47, 'wrong multiplier');
 
         // tier 40
-        let level_multiplier = LevelTrait::get_multiplier(leveling_config, 40);
+        let level_multiplier = LevelCustomTrait::get_multiplier(leveling_config, 40);
         assert(level_multiplier == 246, 'wrong multi');
 
         // tier 100
-        let level_multiplier = LevelTrait::get_multiplier(leveling_config, 100);
+        let level_multiplier = LevelCustomTrait::get_multiplier(leveling_config, 100);
         assert(level_multiplier == 249, 'wrong multi');
     }
 

@@ -19,15 +19,15 @@ mod hyperstructure_systems {
     use eternum::constants::{
         HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards
     };
-    use eternum::models::config::HyperstructureConfigTrait;
+    use eternum::models::config::HyperstructureConfigCustomTrait;
     use eternum::models::hyperstructure::{Progress, Contribution};
     use eternum::models::order::{Orders};
-    use eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
+    use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::position::{Coord, Position, PositionIntoCoord};
     use eternum::models::realm::{Realm};
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
     use eternum::models::structure::{
-        Structure, StructureCount, StructureCountTrait, StructureCategory
+        Structure, StructureCount, StructureCountCustomTrait, StructureCategory
     };
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
         InternalTravelSystemsImpl
@@ -52,11 +52,11 @@ mod hyperstructure_systems {
             let structure_count: StructureCount = get!(world, coord, StructureCount);
             structure_count.assert_none();
 
-            let hyperstructure_shards_config = HyperstructureConfigTrait::get(
+            let hyperstructure_shards_config = HyperstructureConfigCustomTrait::get(
                 world, ResourceTypes::EARTHEN_SHARD
             );
 
-            let mut creator_resources = ResourceImpl::get(
+            let mut creator_resources = ResourceCustomImpl::get(
                 world, (creator_entity_id, ResourceTypes::EARTHEN_SHARD)
             );
 
@@ -163,7 +163,7 @@ mod hyperstructure_systems {
             resource_amount: u128,
             contributor_entity_id: u128
         ) {
-            let mut creator_resources = ResourceImpl::get(
+            let mut creator_resources = ResourceCustomImpl::get(
                 world, (contributor_entity_id, resource_type)
             );
 
@@ -180,7 +180,7 @@ mod hyperstructure_systems {
             let resource_progress = get!(
                 world, (hyperstructure_entity_id, resource_type), Progress
             );
-            let hyperstructure_resource_config = HyperstructureConfigTrait::get(
+            let hyperstructure_resource_config = HyperstructureConfigCustomTrait::get(
                 world, resource_type
             );
             let resource_amount_for_completion = hyperstructure_resource_config
@@ -253,7 +253,7 @@ mod hyperstructure_systems {
                 world, (hyperstructure_entity_id, resource_type), Progress
             );
 
-            let hyperstructure_resource_config = HyperstructureConfigTrait::get(
+            let hyperstructure_resource_config = HyperstructureConfigCustomTrait::get(
                 world, resource_type
             );
             let resource_amount_for_completion = hyperstructure_resource_config

@@ -573,7 +573,7 @@
       },
       {
         "type": "impl",
-        "name": "ConfigImpl",
+        "name": "ConfigCustomImpl",
         "interface_name": "dojo::config::interface::IConfig"
       },
       {
@@ -2402,7 +2402,7 @@
         },
         {
           "type": "impl",
-          "name": "WorldConfigImpl",
+          "name": "WorldConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IWorldConfig"
         },
         {
@@ -2429,7 +2429,7 @@
         },
         {
           "type": "impl",
-          "name": "RealmFreeMintConfigImpl",
+          "name": "RealmFreeMintConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IRealmFreeMintConfig"
         },
         {
@@ -2466,7 +2466,7 @@
         },
         {
           "type": "impl",
-          "name": "MapConfigImpl",
+          "name": "MapConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IMapConfig"
         },
         {
@@ -2501,7 +2501,7 @@
         },
         {
           "type": "impl",
-          "name": "CapacityConfigImpl",
+          "name": "CapacityConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::ICapacityConfig"
         },
         {
@@ -2528,7 +2528,7 @@
         },
         {
           "type": "impl",
-          "name": "WeightConfigImpl",
+          "name": "WeightConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IWeightConfig"
         },
         {
@@ -2555,7 +2555,7 @@
         },
         {
           "type": "impl",
-          "name": "TickConfigImpl",
+          "name": "TickConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::ITickConfig"
         },
         {
@@ -2582,7 +2582,7 @@
         },
         {
           "type": "impl",
-          "name": "StaminaConfigImpl",
+          "name": "StaminaConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IStaminaConfig"
         },
         {
@@ -2609,7 +2609,7 @@
         },
         {
           "type": "impl",
-          "name": "LevelingConfigImpl",
+          "name": "LevelingConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::ILevelingConfig"
         },
         {
@@ -2672,7 +2672,7 @@
         },
         {
           "type": "impl",
-          "name": "ProductionConfigImpl",
+          "name": "ProductionConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IProductionConfig"
         },
         {
@@ -2703,7 +2703,7 @@
         },
         {
           "type": "impl",
-          "name": "TransportConfigImpl",
+          "name": "TransportConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::ITransportConfig"
         },
         {
@@ -2746,7 +2746,7 @@
         },
         {
           "type": "impl",
-          "name": "HyperstructureConfigImpl",
+          "name": "HyperstructureConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IHyperstructureConfig"
         },
         {
@@ -2769,7 +2769,7 @@
         },
         {
           "type": "impl",
-          "name": "BankConfigImpl",
+          "name": "BankConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IBankConfig"
         },
         {
@@ -2800,7 +2800,7 @@
         },
         {
           "type": "impl",
-          "name": "TroopConfigImpl",
+          "name": "TroopConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::ITroopConfig"
         },
         {
@@ -2869,7 +2869,7 @@
         },
         {
           "type": "impl",
-          "name": "BuildingCategoryPopulationConfigImpl",
+          "name": "BuildingCategoryPopulationConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IBuildingCategoryPopConfig"
         },
         {
@@ -2962,7 +2962,7 @@
         },
         {
           "type": "impl",
-          "name": "PopulationConfigImpl",
+          "name": "PopulationConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IPopulationConfig"
         },
         {
@@ -2985,7 +2985,7 @@
         },
         {
           "type": "impl",
-          "name": "BuildingConfigImpl",
+          "name": "BuildingConfigCustomImpl",
           "interface_name": "eternum::systems::config::contracts::IBuildingConfig"
         },
         {

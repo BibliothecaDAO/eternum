@@ -27,9 +27,9 @@ mod bank_systems {
     use eternum::models::config::{BankConfig};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
-    use eternum::models::resources::{Resource, ResourceImpl};
+    use eternum::models::resources::{Resource, ResourceCustomImpl};
     use eternum::models::structure::{
-        Structure, StructureCategory, StructureCount, StructureCountTrait
+        Structure, StructureCategory, StructureCount, StructureCountCustomTrait
     };
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
 
@@ -55,7 +55,7 @@ mod bank_systems {
             // remove the resources from the realm
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
 
-            let mut realm_resource = ResourceImpl::get(
+            let mut realm_resource = ResourceCustomImpl::get(
                 world, (realm_entity_id, ResourceTypes::LORDS)
             );
 
@@ -114,7 +114,7 @@ mod bank_systems {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
                         // add resources to recipient's balance
-                        let mut recipient_resource = ResourceImpl::get(
+                        let mut recipient_resource = ResourceCustomImpl::get(
                             world, (bank_entity_id, resource_type)
                         );
                         recipient_resource.add(resource_amount);

@@ -5,7 +5,7 @@ use core::option::OptionTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::config::{ProductionConfig};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
-use eternum::models::resources::{Resource, ResourceImpl};
+use eternum::models::resources::{Resource, ResourceCustomImpl};
 use starknet::get_block_timestamp;
 
 #[derive(Copy, Drop, Serde)]
@@ -105,7 +105,7 @@ impl ProductionRateImpl of ProductionRateTrait {
     }
 
 
-    fn set_input_finish_tick(
+    fn set__input_finish_tick(
         ref self: Production, ref resource: Resource, tick: @TickConfig, value: u64
     ) {
         self.harvest(ref resource, tick);
@@ -168,7 +168,7 @@ struct ProductionInput {
 }
 
 #[generate_trait]
-impl ProductionInputImpl of ProductionInputTrait {
+impl ProductionInputCustomImpl of ProductionInputCustomTrait {
     /// Production ends when any input material runs out of balance so what this 
     /// function does is that it finds the first input resource to run out of balance that 
     /// returns the tick it runs out 
@@ -187,7 +187,7 @@ impl ProductionInputImpl of ProductionInputTrait {
                 world, (*production.resource_type, count), ProductionInput
             );
 
-            let mut input_resource: Resource = ResourceImpl::get(
+            let mut input_resource: Resource = ResourceCustomImpl::get(
                 world, (*production.entity_id, production_input.input_resource_type)
             );
 
@@ -219,7 +219,7 @@ struct ProductionOutput {
 }
 
 #[generate_trait]
-impl ProductionOutputImpl of ProductionOutputTrait {
+impl ProductionOutputCustomImpl of ProductionOutputCustomTrait {
     /// Updates end ticks for dependent resources based 
     /// on changes in this resource's balance.
     fn sync_all_inputs_exhaustion_ticks_for(resource: @Resource, world: IWorldDispatcher) {
@@ -257,12 +257,12 @@ impl ProductionOutputImpl of ProductionOutputTrait {
             if output_resource_production.building_count > 0 {
                 // Update the end tick for the output resource
                 let output_resource_production_finish_tick =
-                    ProductionInputImpl::first_input_finish_tick(
+                    ProductionInputCustomImpl::first_input_finish_tick(
                     @output_resource_production, world
                 );
 
                 output_resource_production
-                    .set_input_finish_tick(
+                    .set__input_finish_tick(
                         ref output_resource, @tick, output_resource_production_finish_tick
                     );
 

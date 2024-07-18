@@ -1,7 +1,7 @@
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::models::guild::{
-    Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait
+    Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait
 };
 use eternum::models::name::EntityName;
 use eternum::models::owner::Owner;

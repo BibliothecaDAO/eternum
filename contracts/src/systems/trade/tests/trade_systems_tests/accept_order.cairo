@@ -9,7 +9,7 @@ use eternum::models::config::{LevelingConfig};
 use eternum::models::level::{Level};
 use eternum::models::metadata::ForeignKey;
 use eternum::models::movable::{Movable, ArrivalTime};
-use eternum::models::order::{Orders, OrdersTrait};
+use eternum::models::order::{Orders, OrdersCustomTrait};
 use eternum::models::owner::Owner;
 use eternum::models::position::{Position, Coord};
 use eternum::models::realm::Realm;

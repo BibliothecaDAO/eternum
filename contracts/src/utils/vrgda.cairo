@@ -4,7 +4,7 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
 /// A Linear Variable Rate Gradual Dutch Auction (VRGDA) struct.
 /// Represents an auction where the price decays linearly based on the target price,
 /// decay constant, and per-time-unit rate.
-#[derive(Copy, Drop, Serde, starknet::Storage)]
+#[derive(Copy, Drop, Serde)]
 struct LinearVRGDA {
     target_price: Fixed,
     decay_constant: Fixed,

@@ -13,7 +13,7 @@ struct Quantity {
 
 
 #[generate_trait]
-impl QuantityImpl of QuantityTrait {
+impl QuantityCustomImpl of QuantityCustomTrait {
     /// Get quantity value
     ///
     /// This should be used rather than accessing the value directly

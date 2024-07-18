@@ -14,28 +14,28 @@ mod map_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, split_resources_and_probs, TravelTypes, ResourceTypes, ARMY_ENTITY_TYPE
     };
-    use eternum::models::buildings::{BuildingCategory, Building, BuildingImpl};
+    use eternum::models::buildings::{BuildingCategory, Building, BuildingCustomImpl};
     use eternum::models::capacity::Capacity;
     use eternum::models::combat::{
-        Health, HealthTrait, Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
+        Health, HealthCustomTrait, Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Protector, Protectee
     };
     use eternum::models::config::{
-        MapExploreConfig, LevelingConfig, MercenariesConfig, TroopConfigImpl, CapacityConfig,
-        CapacityConfigImpl
+        MapExploreConfig, LevelingConfig, MercenariesConfig, TroopConfigCustomImpl, CapacityConfig,
+        CapacityConfigCustomImpl
     };
-    use eternum::models::level::{Level, LevelTrait};
+    use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
-    use eternum::models::movable::{Movable, ArrivalTime, MovableTrait, ArrivalTimeTrait};
-    use eternum::models::owner::{Owner, EntityOwner, OwnerTrait, EntityOwnerTrait};
+    use eternum::models::movable::{Movable, ArrivalTime, MovableCustomTrait, ArrivalTimeCustomTrait};
+    use eternum::models::owner::{Owner, EntityOwner, OwnerCustomTrait, EntityOwnerCustomTrait};
     use eternum::models::position::{Coord, CoordTrait, Direction, Position};
     use eternum::models::quantity::Quantity;
     use eternum::models::realm::{Realm};
     use eternum::models::resources::{
-        Resource, ResourceCost, ResourceTrait, ResourceFoodImpl, ResourceTransferLock
+        Resource, ResourceCost, ResourceCustomTrait, ResourceFoodImpl, ResourceTransferLock
     };
-    use eternum::models::stamina::StaminaImpl;
+    use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::structure::{
-        Structure, StructureCategory, StructureCount, StructureCountTrait
+        Structure, StructureCategory, StructureCount, StructureCountCustomTrait
     };
     use eternum::systems::combat::contracts::combat_systems::{InternalCombatImpl};
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
@@ -83,7 +83,7 @@ mod map_systems {
             // ensure unit is not in transit
             get!(world, unit_id, ArrivalTime).assert_not_travelling();
 
-            StaminaImpl::handle_stamina_costs(unit_id, TravelTypes::Explore, world);
+            StaminaCustomImpl::handle_stamina_costs(unit_id, TravelTypes::Explore, world);
 
             // explore coordinate, pay food and mint reward
             let exploration_reward = InternalMapSystemsImpl::pay_food_and_get_explore_reward(
@@ -176,12 +176,12 @@ mod map_systems {
                 Self::add_mercenaries_to_shard_mine(world, mine_structure_entity_id, coord);
 
                 // create shards production building
-                BuildingImpl::create(
+                BuildingCustomImpl::create(
                     world,
                     mine_structure_entity_id,
                     BuildingCategory::Resource,
                     Option::Some(ResourceTypes::EARTHEN_SHARD),
-                    BuildingImpl::center(),
+                    BuildingCustomImpl::center(),
                 );
             }
             is_shards_mine

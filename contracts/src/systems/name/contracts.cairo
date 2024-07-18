@@ -7,7 +7,7 @@ trait INameSystems {
 #[dojo::contract]
 mod name_systems {
     use eternum::models::name::{AddressName, EntityName};
-    use eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
+    use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
 
     #[abi(embed_v0)]
     impl NameSystemsImpl of super::INameSystems<ContractState> {

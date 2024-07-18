@@ -3,21 +3,21 @@ use core::zeroable::Zeroable;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID};
 use eternum::models::config::{
-    TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigImpl,
-    BuildingCategoryPopConfigTrait, PopulationConfig
+    TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigCustomImpl,
+    BuildingCategoryPopConfigCustomTrait, PopulationConfig
 };
-use eternum::models::owner::{Owner, OwnerTrait, EntityOwner};
-use eternum::models::population::{Population, PopulationTrait};
-use eternum::models::position::{Coord, Position, Direction, PositionTrait, CoordTrait};
+use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner};
+use eternum::models::population::{Population, PopulationCustomTrait};
+use eternum::models::position::{Coord, Position, Direction, PositionCustomTrait, CoordTrait};
 use eternum::models::production::{
-    Production, ProductionInput, ProductionRateTrait, ProductionInputImpl, ProductionInputTrait
+    Production, ProductionInput, ProductionRateTrait, ProductionInputCustomImpl, ProductionInputCustomTrait
 };
-use eternum::models::resources::ResourceTrait;
-use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+use eternum::models::resources::ResourceCustomTrait;
+use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
 
 //todo we need to define border of innner hexes
 
-#[derive(PartialEq, Copy, Drop, Serde, PrintTrait)]
+#[derive(PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
 struct Building {
     #[key]
@@ -35,7 +35,7 @@ struct Building {
     outer_entity_id: u128,
 }
 
-#[derive(PartialEq, Copy, Drop, Serde, PrintTrait)]
+#[derive(PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
 struct BuildingQuantityv2 {
     #[key]
@@ -46,7 +46,7 @@ struct BuildingQuantityv2 {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, PrintTrait, Introspect)]
+#[derive(PartialEq, Copy, Drop, Serde,  Introspect)]
 #[dojo::model]
 enum BuildingCategory {
     None,
@@ -104,7 +104,7 @@ impl BonusPercentageImpl of BonusPercentageTrait {
 
 
 #[generate_trait]
-impl BuildingProductionImpl of BuildingProductionTrait {
+impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
     fn is_resource_producer(self: Building) -> bool {
         self.produced_resource().is_non_zero()
     }
@@ -156,7 +156,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         if self.is_resource_producer() {
             let tick = TickImpl::get_default_tick_config(world);
             let produced_resource_type = self.produced_resource();
-            let mut produced_resource: Resource = ResourceImpl::get(
+            let mut produced_resource: Resource = ResourceCustomImpl::get(
                 world, (self.outer_entity_id, produced_resource_type)
             );
 
@@ -195,7 +195,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 let (input_resource_type, input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
-                let mut input_resource: Resource = ResourceImpl::get(
+                let mut input_resource: Resource = ResourceCustomImpl::get(
                     world, (self.outer_entity_id, input_resource_type)
                 );
                 let mut input_production: Production = get!(
@@ -212,11 +212,11 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             };
 
             // reset the time that materials used for production will finish
-            let first_input_finish_tick = ProductionInputImpl::first_input_finish_tick(
+            let first_input_finish_tick = ProductionInputCustomImpl::first_input_finish_tick(
                 @resource_production, world
             );
             resource_production
-                .set_input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
+                .set__input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
             produced_resource.save(world);
 
             set!(world, (resource_production));
@@ -235,7 +235,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
         if self.is_resource_producer() {
             let tick = TickImpl::get_default_tick_config(world);
             let produced_resource_type = self.produced_resource();
-            let mut produced_resource: Resource = ResourceImpl::get(
+            let mut produced_resource: Resource = ResourceCustomImpl::get(
                 world, (self.outer_entity_id, produced_resource_type)
             );
 
@@ -274,7 +274,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
                 let (input_resource_type, input_resource_amount) = (
                     production_input.input_resource_type, production_input.input_resource_amount
                 );
-                let mut input_resource: Resource = ResourceImpl::get(
+                let mut input_resource: Resource = ResourceCustomImpl::get(
                     world, (self.outer_entity_id, input_resource_type)
                 );
                 let mut input_production: Production = get!(
@@ -290,11 +290,11 @@ impl BuildingProductionImpl of BuildingProductionTrait {
             };
 
             // reset the time that materials used for production will finish
-            let first_input_finish_tick = ProductionInputImpl::first_input_finish_tick(
+            let first_input_finish_tick = ProductionInputCustomImpl::first_input_finish_tick(
                 @resource_production, world
             );
             resource_production
-                .set_input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
+                .set__input_finish_tick(ref produced_resource, @tick, first_input_finish_tick);
             produced_resource.save(world);
             set!(world, (resource_production));
         }
@@ -462,7 +462,7 @@ impl BuildingProductionImpl of BuildingProductionTrait {
 }
 
 #[generate_trait]
-impl BuildingImpl of BuildingTrait {
+impl BuildingCustomImpl of BuildingCustomTrait {
     fn center() -> Coord {
         Coord { x: 10, y: 10 }
     }
@@ -524,7 +524,7 @@ impl BuildingImpl of BuildingTrait {
         set!(world, (building_quantity));
 
         let mut population = get!(world, outer_entity_id, Population);
-        let building_category_population_config = BuildingCategoryPopConfigTrait::get(
+        let building_category_population_config = BuildingCategoryPopConfigCustomTrait::get(
             world, building.category
         );
         let population_config = get!(world, POPULATION_CONFIG_ID, PopulationConfig);
@@ -580,7 +580,7 @@ impl BuildingImpl of BuildingTrait {
 
         // decrease population
         let mut population = get!(world, outer_entity_id, Population);
-        let building_category_population_config = BuildingCategoryPopConfigTrait::get(
+        let building_category_population_config = BuildingCategoryPopConfigCustomTrait::get(
             world, building.category
         );
 
@@ -615,7 +615,7 @@ impl BuildingImpl of BuildingTrait {
     fn make_payment(
         world: IWorldDispatcher, entity_id: u128, category: BuildingCategory, resource_type: u8
     ) {
-        let building_config: BuildingConfig = BuildingConfigImpl::get(
+        let building_config: BuildingConfig = BuildingConfigCustomImpl::get(
             world, category, resource_type
         );
         let mut index = 0;
@@ -627,7 +627,7 @@ impl BuildingImpl of BuildingTrait {
             let resource_cost: ResourceCost = get!(
                 world, (building_config.resource_cost_id, index), ResourceCost
             );
-            let mut resource = ResourceImpl::get(world, (entity_id, resource_cost.resource_type));
+            let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_cost.resource_type));
             resource.burn(resource_cost.amount);
             resource.save(world);
             index += 1;

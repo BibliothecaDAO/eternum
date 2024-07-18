@@ -12,13 +12,13 @@ use eternum::models::config::{RoadConfig, TickConfig, StaminaConfig, LevelingCon
 use eternum::models::level::Level;
 use eternum::models::map::Tile;
 use eternum::models::movable::{Movable, ArrivalTime};
-use eternum::models::order::{Orders, OrdersTrait};
+use eternum::models::order::{Orders, OrdersCustomTrait};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::CoordTrait;
 use eternum::models::position::{Coord, Position, Direction};
 use eternum::models::realm::Realm;
 use eternum::models::resources::{Resource, ResourceCost};
-use eternum::models::road::{Road, RoadImpl};
+use eternum::models::road::{Road, RoadCustomImpl};
 
 use eternum::systems::config::contracts::{
     config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait
@@ -375,7 +375,7 @@ fn test_travel_with_road() {
     assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
 
     // verify road usage count
-    let road = RoadImpl::get(world, travelling_entity_position.into(), destination_coord);
+    let road = RoadCustomImpl::get(world, travelling_entity_position.into(), destination_coord);
     assert(road.usage_count == 1, 'road usage count not correct');
 }
 

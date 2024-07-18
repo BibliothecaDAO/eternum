@@ -24,11 +24,11 @@ trait IGuildSystems {
 #[dojo::contract]
 mod guild_systems {
     use eternum::models::guild::{
-        Guild, GuildMember, GuildMemberTrait, GuildWhitelist, GuildWhitelistTrait
+        Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait
     };
     use eternum::models::name::AddressName;
     use eternum::models::name::EntityName;
-    use eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
+    use eternum::models::owner::{Owner, OwnerCustomTrait, EntityOwner, EntityOwnerCustomTrait};
     use starknet::ContractAddress;
     use starknet::contract_address::contract_address_const;
 

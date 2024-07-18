@@ -15,11 +15,11 @@ mod leveling_systems {
         HYPERSTRUCTURE_LEVELING_START_TIER
     };
     use eternum::models::config::{LevelingConfig};
-    use eternum::models::level::{Level, LevelTrait};
+    use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::owner::{Owner};
     use eternum::models::realm::{Realm};
-    use eternum::models::resources::ResourceTrait;
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+    use eternum::models::resources::ResourceCustomTrait;
+    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
 
     use eternum::systems::leveling::contracts::leveling_systems::{
         InternalLevelingSystemsImpl as leveling
@@ -70,12 +70,12 @@ mod leveling_systems {
 
             if (next_index == LevelIndex::FOOD) {
                 let wheat_cost = (cost_multiplier * leveling_config.wheat_base_amount) / 100;
-                let mut wheat = ResourceImpl::get(world, (entity_id, ResourceTypes::WHEAT));
+                let mut wheat = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::WHEAT));
                 wheat.burn(wheat_cost);
                 wheat.save(world);
 
                 let fish_cost = (cost_multiplier * leveling_config.fish_base_amount) / 100;
-                let mut fish = ResourceImpl::get(world, (entity_id, ResourceTypes::FISH));
+                let mut fish = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::FISH));
                 fish.burn(fish_cost);
                 fish.save(world);
             } else {
@@ -103,7 +103,7 @@ mod leveling_systems {
 
                     let total_cost = (cost_multiplier * resource_cost.amount) / 100;
 
-                    let mut resource = ResourceImpl::get(
+                    let mut resource = ResourceCustomImpl::get(
                         world, (entity_id, resource_cost.resource_type)
                     );
                     assert(resource.balance >= total_cost, 'not enough resource');

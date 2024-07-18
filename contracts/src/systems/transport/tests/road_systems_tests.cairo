@@ -9,7 +9,7 @@ use eternum::models::config::RoadConfig;
 use eternum::models::owner::Owner;
 use eternum::models::position::{Coord};
 use eternum::models::resources::{Resource, ResourceCost};
-use eternum::models::road::{Road, RoadImpl};
+use eternum::models::road::{Road, RoadCustomImpl};
 use eternum::systems::transport::contracts::road_systems::{
     road_systems, IRoadSystemsDispatcher, IRoadSystemsDispatcherTrait
 };
@@ -63,7 +63,7 @@ fn test_create() {
              *start_coord, 33
         );
 
-    let road = RoadImpl::get(world, *start_coord, *end_coord);
+    let road = RoadCustomImpl::get(world, *start_coord, *end_coord);
     assert(road.usage_count == 33, 'usage count should be 33');
 
     let entity_fee_resource = get!(world, (entity_id, ResourceTypes::STONE), Resource);

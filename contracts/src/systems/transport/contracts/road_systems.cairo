@@ -15,8 +15,8 @@ mod road_systems {
     use eternum::models::config::RoadConfig;
     use eternum::models::owner::Owner;
     use eternum::models::position::{Coord};
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-    use eternum::models::road::{Road, RoadImpl};
+    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
+    use eternum::models::road::{Road, RoadCustomImpl};
 
     #[abi(embed_v0)]
     impl RoadSystemsImpl of super::IRoadSystems<ContractState> {
@@ -45,7 +45,7 @@ mod road_systems {
                 'entity id not owned by caller'
             );
 
-            let road = RoadImpl::get(world, start_coord, end_coord);
+            let road = RoadCustomImpl::get(world, start_coord, end_coord);
             assert(road.usage_count == 0, 'road already exists');
 
             let road_config = get!(world, ROAD_CONFIG_ID, RoadConfig);
@@ -58,7 +58,7 @@ mod road_systems {
                 let resource_cost = get!(
                     world, (road_config.resource_cost_id, index), ResourceCost
                 );
-                let mut realm_resource = ResourceImpl::get(
+                let mut realm_resource = ResourceCustomImpl::get(
                     world, (entity_id, resource_cost.resource_type)
                 );
 

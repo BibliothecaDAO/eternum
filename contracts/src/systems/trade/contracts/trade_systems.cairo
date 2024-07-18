@@ -29,21 +29,21 @@ mod trade_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{REALM_ENTITY_TYPE, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE, ResourceTypes};
-    use eternum::models::capacity::{Capacity, CapacityTrait};
+    use eternum::models::capacity::{Capacity, CapacityCustomTrait};
     use eternum::models::config::RoadConfig;
-    use eternum::models::config::{WeightConfig, WeightConfigImpl};
+    use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
     use eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig};
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::owner::Owner;
-    use eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
-    use eternum::models::quantity::{Quantity, QuantityTrait, QuantityTracker};
+    use eternum::models::position::{Position, PositionCustomTrait, Coord, TravelTrait};
+    use eternum::models::quantity::{Quantity, QuantityCustomTrait, QuantityTracker};
     use eternum::models::realm::Realm;
     use eternum::models::resources::{DetachedResource};
 
-    use eternum::models::resources::{Resource, ResourceImpl};
-    use eternum::models::road::{Road, RoadTrait, RoadImpl};
+    use eternum::models::resources::{Resource, ResourceCustomImpl};
+    use eternum::models::road::{Road, RoadCustomTrait, RoadCustomImpl};
     use eternum::models::trade::{Trade, Status, TradeStatus};
-    use eternum::models::weight::{Weight, WeightTrait};
+    use eternum::models::weight::{Weight, WeightCustomTrait};
     use eternum::systems::resources::contracts::resource_systems::{
         InternalResourceSystemsImpl as internal_resources,
     };
@@ -112,7 +112,7 @@ mod trade_systems {
                     )) => {
                         assert(*resource_amount != 0, 'maker resource amount is 0');
                         // burn offered resource from maker balance
-                        let mut maker_resource: Resource = ResourceImpl::get(
+                        let mut maker_resource: Resource = ResourceCustomImpl::get(
                             world, (maker_id, *resource_type)
                         );
                         maker_resource.burn(*resource_amount);
@@ -133,7 +133,7 @@ mod trade_systems {
 
                         // update maker resources weight
                         maker_gives_resources_weight +=
-                            WeightConfigImpl::get_weight(world, *resource_type, *resource_amount);
+                            WeightConfigCustomImpl::get_weight(world, *resource_type, *resource_amount);
 
                         maker_gives_resources_felt_arr.append((*resource_type).into());
                         maker_gives_resources_felt_arr.append((*resource_amount).into());
@@ -173,7 +173,7 @@ mod trade_systems {
 
                         // update taker resources weight
                         taker_gives_resources_weight +=
-                            WeightConfigImpl::get_weight(world, *resource_type, *resource_amount);
+                            WeightConfigCustomImpl::get_weight(world, *resource_type, *resource_amount);
 
                         taker_gives_resources_felt_arr.append((*resource_type).into());
                         taker_gives_resources_felt_arr.append((*resource_amount).into());

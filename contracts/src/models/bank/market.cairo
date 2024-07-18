@@ -47,7 +47,7 @@ struct Market {
 }
 
 #[generate_trait]
-impl MarketImpl of MarketTrait {
+impl MarketCustomImpl of MarketCustomTrait {
     fn get_input_price(
         fee_rate_num: u128,
         fee_rate_denom: u128,
@@ -106,7 +106,7 @@ impl MarketImpl of MarketTrait {
     fn buy(
         self: @Market, lp_fee_num: u128, lp_fee_denom: u128, desired_resource_amount: u128
     ) -> u128 {
-        let lords_cost = MarketImpl::get_output_price(
+        let lords_cost = Self::get_output_price(
             lp_fee_num,
             lp_fee_denom,
             desired_resource_amount,
@@ -119,7 +119,7 @@ impl MarketImpl of MarketTrait {
     fn sell(
         self: @Market, lp_fee_num: u128, lp_fee_denom: u128, sell_resource_amount: u128
     ) -> u128 {
-        let lords_received = MarketImpl::get_input_price(
+        let lords_received = Self::get_input_price(
             lp_fee_num,
             lp_fee_denom,
             sell_resource_amount,
@@ -285,7 +285,7 @@ mod tests {
     use super::{Fixed, FixedTrait};
     // Local imports
 
-    use super::{Market, MarketTrait};
+    use super::{Market, MarketCustomTrait};
 
     // Constants
 

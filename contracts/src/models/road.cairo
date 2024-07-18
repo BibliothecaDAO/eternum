@@ -22,7 +22,7 @@ struct Road {
 
 
 #[generate_trait]
-impl RoadImpl of RoadTrait {
+impl RoadCustomImpl of RoadCustomTrait {
     #[inline(always)]
     fn get(world: IWorldDispatcher, start_coord: Coord, end_coord: Coord) -> Road {
         let mut road = get!(world, (start_coord.x, start_coord.y, end_coord.x, end_coord.y), Road);
@@ -57,7 +57,7 @@ mod tests {
 
     use dojo::world::IWorldDispatcherTrait;
     use eternum::models::position::{Coord};
-    use eternum::models::road::{Road, RoadImpl, RoadTrait};
+    use eternum::models::road::{Road, RoadCustomImpl, RoadCustomTrait};
 
     use eternum::utils::testing::spawn_eternum;
 
@@ -81,10 +81,10 @@ mod tests {
             })
         );
 
-        let road = RoadImpl::get(world, start_coord, end_coord);
+        let road = RoadCustomImpl::get(world, start_coord, end_coord);
         assert(road.usage_count == usage_count, 'usage count should be 33');
 
-        let road = RoadImpl::get(world, end_coord, start_coord); // reverse order
+        let road = RoadCustomImpl::get(world, end_coord, start_coord); // reverse order
         assert(road.usage_count == usage_count, 'usage count should be 33');
     }
 }

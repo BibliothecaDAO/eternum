@@ -15,7 +15,7 @@ struct Stamina {
 }
 
 #[generate_trait]
-impl StaminaImpl of StaminaTrait {
+impl StaminaCustomImpl of StaminaCustomTrait {
     fn handle_stamina_costs(army_entity_id: u128, travel: TravelTypes, world: IWorldDispatcher) {
         let mut stamina = get!(world, (army_entity_id), Stamina);
         stamina.refill_if_next_tick(world);
@@ -33,10 +33,10 @@ impl StaminaImpl of StaminaTrait {
 
     fn substract_costs(ref self: Stamina, costs: u16, world: IWorldDispatcher) {
         self.amount -= costs;
-        self.set(world);
+        self.sset(world);
     }
 
-    fn set(ref self: Stamina, world: IWorldDispatcher) {
+    fn sset(ref self: Stamina, world: IWorldDispatcher) {
         set!(world, (self));
     }
 
@@ -69,7 +69,7 @@ impl StaminaImpl of StaminaTrait {
 
         self.amount = maxes.min().unwrap();
         self.last_refill_tick = armies_tick_config.current();
-        self.set(world);
+        self.sset(world);
     }
 
 

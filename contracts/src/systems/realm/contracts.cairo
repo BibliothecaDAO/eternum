@@ -36,10 +36,10 @@ mod realm_systems {
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::QuantityTracker;
-    use eternum::models::realm::{Realm, RealmTrait};
-    use eternum::models::resources::{DetachedResource, Resource, ResourceImpl, ResourceTrait};
+    use eternum::models::realm::{Realm, RealmCustomTrait};
+    use eternum::models::resources::{DetachedResource, Resource, ResourceCustomImpl, ResourceCustomTrait};
     use eternum::models::structure::{
-        Structure, StructureCategory, StructureCount, StructureCountTrait
+        Structure, StructureCategory, StructureCount, StructureCountCustomTrait
     };
     use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
@@ -73,7 +73,7 @@ mod realm_systems {
                 let mut detached_resource = get!(
                     world, (realm_free_mint_config.detached_resource_id, index), DetachedResource
                 );
-                let mut realm_resource = ResourceImpl::get(
+                let mut realm_resource = ResourceCustomImpl::get(
                     world, (entity_id.into(), detached_resource.resource_type)
                 );
 
