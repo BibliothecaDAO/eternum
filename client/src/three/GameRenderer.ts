@@ -9,7 +9,7 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 import Stats from "three/examples/jsm/libs/stats.module";
 import { ActionInfo } from "./components/ActionInfo";
 import { InputManager } from "./components/InputManager";
-import { TransitionManager } from "./components/Transition";
+import { TransitionManager } from "./components/TransitionManager";
 import { LocationManager } from "./helpers/LocationManager";
 import { MouseHandler } from "./MouseHandler";
 import { SceneManager } from "./SceneManager";

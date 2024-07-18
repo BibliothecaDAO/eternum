@@ -1,7 +1,7 @@
 import { PerspectiveCamera } from "three";
 import HexceptionScene from "./scenes/Hexception";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { TransitionManager } from "./components/Transition";
+import { TransitionManager } from "./components/TransitionManager";
 
 export class SceneManager {
   public hexceptionScene: HexceptionScene | undefined;

@@ -1,4 +1,4 @@
-import { Vector3, Scene, Camera } from "three";
+import { Vector3, Camera } from "three";
 import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
 
 export class ActionInfo {
