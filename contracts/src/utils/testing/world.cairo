@@ -52,7 +52,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         tick_config::TEST_CLASS_HASH,
     ];
 
-    let world = spawn_test_world(models);
+    let world = spawn_test_world("eternum", models);
 
     world.uuid();
 
