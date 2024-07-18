@@ -59,7 +59,7 @@ mod tests {
     use eternum::models::position::{Coord};
     use eternum::models::road::{Road, RoadCustomImpl, RoadCustomTrait};
 
-    use eternum::utils::testing::spawn_eternum;
+    use eternum::utils::testing::world::spawn_eternum;
 
     #[test]
     #[available_gas(3000000000000)]

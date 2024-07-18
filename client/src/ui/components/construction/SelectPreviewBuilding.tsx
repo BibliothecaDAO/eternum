@@ -274,6 +274,7 @@ export const SelectPreviewBuildingMenu = () => {
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
           ))}
         </Tabs.List>
+
         <Tabs.Panels className="overflow-hidden">
           {tabs.map((tab, index) => (
             <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>

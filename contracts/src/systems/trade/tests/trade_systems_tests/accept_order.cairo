@@ -29,7 +29,9 @@ use eternum::systems::trade::contracts::trade_systems::{
     trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, deploy_realm_systems};
+use eternum::utils::testing::{
+    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm}
+};
 
 use starknet::contract_address_const;
 
@@ -246,7 +248,7 @@ fn test_caller_not_taker() {
 #[available_gas(3000000000000)]
 #[should_panic(
     expected: (
-        "not enough resources, Resource (entity id: 2, resource type: DONKEY, balance: 0). deduction: 1000",
+        "not enough resources, Resource (entity id: 3, resource type: DONKEY, balance: 0). deduction: 1000",
         'ENTRYPOINT_FAILED'
     )
 )]

@@ -61,7 +61,7 @@ export const BattleSideView = ({
 
   return (
     <div
-      className={`flex col-span-5 ornate-borders-bottom-y px-4 bg-[#1b1a1a] bg-map ${
+      className={`flex col-span-5 -bottom-y px-4 bg-[#1b1a1a] bg-map ${
         battleSide === BattleSide.Attack ? "flex-row" : "flex-row-reverse"
       }`}
     >

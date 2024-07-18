@@ -86,7 +86,7 @@ export const Battle = ({
           structure={structure}
           durationLeft={durationLeft}
         />
-        <div className="w-screen bg-brown/80 backdrop-blur-lg ornate-borders-top bg-map h-[35vh]">
+        <div className="w-screen bg-brown/80 backdrop-blur-lg -top bg-map h-[35vh]">
           <div className="grid grid-cols-12 justify-between gap-4 h-full">
             <BattleSideView
               battleSide={BattleSide.Attack}

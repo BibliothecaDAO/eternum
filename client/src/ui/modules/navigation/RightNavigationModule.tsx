@@ -120,7 +120,7 @@ export const RightNavigationModule = () => {
   return (
     <>
       <div
-        className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] text-gold right-4 self-center pointer-events-auto ${
+        className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] right-4 self-center pointer-events-auto ${
           isOffscreen(view) ? "translate-x-[79%]" : ""
         }`}
       >
@@ -142,7 +142,7 @@ export const RightNavigationModule = () => {
           </div>
         </motion.div>
 
-        <BaseContainer className={`w-full  overflow-y-scroll py-4 ${isOffscreen(view) ? "h-[20vh]" : "h-[80vh]"}`}>
+        <BaseContainer className={`w-full  overflow-y-scroll ${isOffscreen(view) ? "h-[20vh]" : "h-[80vh]"}`}>
           {view === View.ResourceTable ? (
             <div className="px-2 flex flex-col space-y-1 overflow-y-auto">
               <Headline>

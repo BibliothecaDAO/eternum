@@ -197,7 +197,7 @@ export const setupGlobals = async (account: Account, provider: EternumProvider) 
 
   console.log(`Configuring tick config ${txArmiesTick.statusReceipt}...`);
 
-  const txExplore = await provider.set_explore_config({
+  const txExplore = await provider.set_exploration_config({
     signer: account,
     wheat_burn_amount: EternumGlobalConfig.exploration.wheatBurn * EternumGlobalConfig.resources.resourcePrecision,
     fish_burn_amount: EternumGlobalConfig.exploration.fishBurn * EternumGlobalConfig.resources.resourcePrecision,

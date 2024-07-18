@@ -30,6 +30,8 @@ use eternum::systems::config::contracts::{
     IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait,
 };
 
+use eternum::systems::dev::contracts::resource::IResourceSystemsDispatcherTrait;
+
 use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
 use eternum::systems::map::contracts::{
@@ -41,147 +43,28 @@ use eternum::systems::transport::contracts::travel_systems::{
 };
 
 use eternum::utils::testing::{
-    spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos, deploy_realm_systems,
-    deploy_combat_systems, get_default_mercenary_config, set_default_troop_config
+    world::{spawn_eternum},
+    systems::{
+        deploy_realm_systems, deploy_combat_systems, deploy_system, deploy_map_systems,
+        deploy_dev_resource_systems
+    },
+    general::{spawn_realm, get_default_realm_pos, create_army_with_troops},
+    config::{
+        set_combat_config, set_stamina_config, set_capacity_config, set_speed_config,
+        set_mercenaries_config, set_tick_config, set_exploration_config, set_weight_config
+    },
+    constants::{MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT}
 };
 
 use starknet::contract_address_const;
 
-const INITIAL_WHEAT_BALANCE: u128 = 7000;
-const INITIAL_FISH_BALANCE: u128 = 2000;
-const INITIAL_KNIGHT_BALANCE: u128 = 100;
-const MAP_EXPLORE_WHEAT_BURN_AMOUNT: u128 = 1000;
-const MAP_EXPLORE_FISH_BURN_AMOUNT: u128 = 500;
+const INITIAL_WHEAT_BALANCE: u128 = 1_000_000;
+const INITIAL_FISH_BALANCE: u128 = 1_000_000;
+const INITIAL_KNIGHT_BALANCE: u128 = 100_000_000;
 
-const MAP_EXPLORE_RANDOM_MINT_AMOUNT: u128 = 3;
-const MAP_EXPLORE_PRECOMPUTED_RANDOM_MINT_RESOURCE: u8 = 6; // silver
-const SHARDS_MINE_FAIL_PROBABILITY_WEIGHT: u128 = 1000;
-
-const TIMESTAMP: u64 = 10000;
+const TIMESTAMP: u64 = 10_000;
 
 const TICK_INTERVAL_IN_SECONDS: u64 = 3;
-
-fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher, ICombatContractDispatcher) {
-    let world = spawn_eternum();
-
-    starknet::testing::set_block_timestamp(TIMESTAMP);
-
-    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
-
-    // set initial food resources
-    let mint_config_index = 0;
-    let initial_resources = array![
-        (ResourceTypes::WHEAT, INITIAL_WHEAT_BALANCE),
-        (ResourceTypes::FISH, INITIAL_FISH_BALANCE),
-        (ResourceTypes::KNIGHT, INITIAL_KNIGHT_BALANCE)
-    ];
-
-    IRealmFreeMintConfigDispatcher { contract_address: config_systems_address }
-        .set_mint_config(mint_config_index, initial_resources.span());
-
-    // set weight configuration for rewarded resource (silver)
-    IWeightConfigDispatcher { contract_address: config_systems_address }
-        .set_weight_config(ResourceTypes::SILVER.into(), 1);
-
-    // set map exploration config
-    IMapConfigDispatcher { contract_address: config_systems_address }
-        .set_exploration_config(
-            MAP_EXPLORE_WHEAT_BURN_AMOUNT,
-            MAP_EXPLORE_FISH_BURN_AMOUNT,
-            MAP_EXPLORE_RANDOM_MINT_AMOUNT,
-            SHARDS_MINE_FAIL_PROBABILITY_WEIGHT
-        );
-
-    let (troops, rewards) = get_default_mercenary_config();
-    IMercenariesConfigDispatcher { contract_address: config_systems_address }
-        .set_mercenaries_config(troops, rewards);
-
-    // set tick config
-    let tick_config = TickConfig {
-        config_id: WORLD_CONFIG_ID,
-        tick_id: TickIds::DEFAULT,
-        tick_interval_in_seconds: TICK_INTERVAL_IN_SECONDS
-    };
-    set!(world, (tick_config));
-
-    starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
-
-    let realm_position = get_default_realm_pos();
-    let realm_systems_dispatcher = deploy_realm_systems(world);
-
-    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, realm_position);
-    let realm_owner: Owner = get!(world, realm_entity_id, Owner);
-
-    set!(
-        world,
-        (
-            Resource {
-                entity_id: realm_entity_id,
-                resource_type: ResourceTypes::WHEAT,
-                balance: INITIAL_WHEAT_BALANCE
-            },
-            Resource {
-                entity_id: realm_entity_id,
-                resource_type: ResourceTypes::FISH,
-                balance: INITIAL_FISH_BALANCE
-            },
-            Resource {
-                entity_id: realm_entity_id,
-                resource_type: ResourceTypes::KNIGHT,
-                balance: INITIAL_KNIGHT_BALANCE
-            }
-        )
-    );
-
-    let combat_systems_dispatcher = deploy_combat_systems(world);
-
-    set_default_troop_config(config_systems_address);
-
-    let realm_army_unit_id: u128 = combat_systems_dispatcher.army_create(realm_entity_id, false);
-
-    let troops = Troops { knight_count: 50, paladin_count: 0, crossbowman_count: 0 };
-    combat_systems_dispatcher.army_buy_troops(realm_army_unit_id, realm_entity_id, troops);
-
-    let army_quantity_value: u128 = 7;
-    let army_capacity_value_per_soldier: u128 = 7;
-
-    set!(
-        world,
-        (
-            Owner { entity_id: realm_army_unit_id, address: realm_owner.address },
-            EntityOwner { entity_id: realm_army_unit_id, entity_owner_id: realm_entity_id },
-            Quantity { entity_id: realm_army_unit_id, value: army_quantity_value },
-            Position { entity_id: realm_army_unit_id, x: realm_position.x, y: realm_position.y },
-            Capacity {
-                entity_id: realm_army_unit_id, weight_gram: army_capacity_value_per_soldier
-            },
-            Movable {
-                entity_id: realm_army_unit_id,
-                sec_per_km: 1,
-                blocked: false,
-                round_trip: false,
-                start_coord_x: 0,
-                start_coord_y: 0,
-                intermediate_coord_x: 0,
-                intermediate_coord_y: 0,
-            },
-        )
-    );
-
-    let stamina_config_dispatcher = IStaminaConfigDispatcher {
-        contract_address: config_systems_address
-    };
-    stamina_config_dispatcher.set_stamina_config(ResourceTypes::KNIGHT, 1000);
-
-    set!(world, Stamina { entity_id: realm_army_unit_id, amount: 100, last_refill_tick: 0 });
-
-    // deploy map systems
-    let map_systems_address = deploy_system(world, map_systems::TEST_CLASS_HASH);
-    let map_systems_dispatcher = IMapSystemsDispatcher { contract_address: map_systems_address };
-
-    (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher)
-}
-
 
 #[test]
 fn test_map_explore() {
@@ -262,3 +145,52 @@ fn test_mercenaries_protector() {
     let mine_entity_owner = get!(world, mine_entity_id, EntityOwner);
     assert_eq!(mine_entity_owner.entity_owner_id, realm_entity_id, "wrong final owner");
 }
+
+fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher, ICombatContractDispatcher) {
+    let world = spawn_eternum();
+
+    starknet::testing::set_block_timestamp(TIMESTAMP);
+
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+
+    set_combat_config(config_systems_address);
+    set_capacity_config(config_systems_address);
+    set_stamina_config(config_systems_address);
+    set_speed_config(config_systems_address);
+    set_mercenaries_config(config_systems_address);
+    set_tick_config(config_systems_address);
+    set_exploration_config(config_systems_address);
+    set_weight_config(config_systems_address);
+
+    starknet::testing::set_contract_address(contract_address_const::<'realm_owner'>());
+
+    let realm_systems_dispatcher = deploy_realm_systems(world);
+    let combat_systems_dispatcher = deploy_combat_systems(world);
+    let map_systems_dispatcher = deploy_map_systems(world);
+
+    let realm_position = get_default_realm_pos();
+    let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, realm_position);
+
+    deploy_dev_resource_systems(world)
+        .mint(
+            realm_entity_id,
+            array![
+                (ResourceTypes::WHEAT, INITIAL_WHEAT_BALANCE),
+                (ResourceTypes::FISH, INITIAL_FISH_BALANCE),
+                (ResourceTypes::KNIGHT, INITIAL_KNIGHT_BALANCE)
+            ]
+                .span()
+        );
+
+    let troops = Troops {
+        knight_count: INITIAL_KNIGHT_BALANCE.try_into().unwrap(),
+        paladin_count: 0,
+        crossbowman_count: 0
+    };
+    let realm_army_unit_id: u128 = create_army_with_troops(
+        world, combat_systems_dispatcher, realm_entity_id, troops, false
+    );
+
+    (world, realm_entity_id, realm_army_unit_id, map_systems_dispatcher, combat_systems_dispatcher)
+}
+
