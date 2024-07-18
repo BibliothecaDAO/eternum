@@ -8,6 +8,7 @@ import { ContextMenuManager } from "../components/ContextMenuManager";
 import { SetupResult } from "@/dojo/setup";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { placeholderMaterial } from "@/shaders/placeholderMaterial";
+import { borderHexMaterial } from "@/shaders/borderHexMaterial";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
 import { FELT_CENTER } from "@/ui/config";
 import GUI from "lil-gui";
@@ -18,6 +19,7 @@ import { Biome, BiomeType } from "../components/Biome";
 import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { BorderHexManager } from "../components/BorderHexManager";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -64,9 +66,6 @@ export default class WorldmapScene {
   private biomeModels: Map<BiomeType, InstancedModel> = new Map();
   private modelLoadPromises: Promise<void>[] = [];
 
-  private borderMesh: THREE.InstancedMesh | null = null;
-  private borderHexes: { col: number; row: number }[] = [{ col: 0, row: 0 }];
-
   private currentChunk: string = "null";
 
   private entities: Entity[] = [];
@@ -77,6 +76,8 @@ export default class WorldmapScene {
   // green highlighted hexes
   private highlightedHexes: THREE.Mesh[] = [];
   private highlightMaterial: THREE.ShaderMaterial;
+
+  private borderHexManager: BorderHexManager;
 
   constructor(
     private dojoConfig: SetupResult,
@@ -153,6 +154,8 @@ export default class WorldmapScene {
     this.loadBiomeModels();
 
     this.systemManager = new SystemManager(this.dojoConfig, this);
+
+    this.borderHexManager = new BorderHexManager(this, this.hexSize, borderHexMaterial);
   }
 
   private loadBiomeModels() {
@@ -291,7 +294,7 @@ export default class WorldmapScene {
           });
 
           if (isBorder) {
-            // this.borderHexes.push({ col: globalCol, row: globalRow });
+            this.borderHexManager.addBorderHex({ col: globalCol, row: globalRow });
           }
         }
 
@@ -321,7 +324,7 @@ export default class WorldmapScene {
           hexMesh.setCount(matrices.length);
         }
         this.cacheMatricesForChunk(startRow, startCol);
-        this.renderBorderHexes();
+        this.borderHexManager.renderBorderHexes();
       }
     };
 
@@ -431,42 +434,6 @@ export default class WorldmapScene {
       const startRow = chunkZ * this.chunkSize;
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
     }
-  }
-
-  private renderBorderHexes() {
-    if (this.borderMesh) {
-      this.scene.remove(this.borderMesh);
-    }
-
-    console.log("Border hexes:", this.borderHexes.length);
-
-    // const geometry = new THREE.CircleGeometry(this.hexSize * 0.95, 6);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0x00ff00,
-      transparent: true,
-      opacity: 0.7,
-    });
-    const bigHexagonShape = createHexagonShape(this.hexSize);
-    const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
-
-    this.borderMesh = new THREE.InstancedMesh(hexagonGeometry, material, this.borderHexes.length);
-
-    const dummy = new THREE.Object3D();
-    this.borderHexes.forEach((hex, index) => {
-      const position = this.getWorldPositionForHex(hex);
-      dummy.position.set(position.x, 0.33, position.z);
-      dummy.updateMatrix();
-      if (this.borderMesh) {
-        this.borderMesh.setMatrixAt(index, dummy.matrix);
-      } else {
-        console.error("Border mesh not initialized");
-      }
-    });
-
-    this.borderMesh.count = this.borderHexes.length;
-    this.borderMesh.instanceMatrix.needsUpdate = true;
-    console.log({ borderMesh: this.borderMesh });
-    this.scene.add(this.borderMesh);
   }
 
   updateLights(target: THREE.Vector3) {

@@ -156,7 +156,7 @@ export default class GameRenderer {
     this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.state, this.gui);
     this.worldmapScene.updateVisibleChunks();
 
-    // this.worldmapScene.createGroundMesh();
+    this.worldmapScene.createGroundMesh();
 
     this.transitionManager = new TransitionManager(this.renderer);
 
