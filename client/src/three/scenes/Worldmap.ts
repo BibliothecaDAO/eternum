@@ -17,6 +17,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { Biome, BiomeType } from "../components/Biome";
 import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
+import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -62,6 +63,9 @@ export default class WorldmapScene {
 
   private biomeModels: Map<BiomeType, InstancedModel> = new Map();
   private modelLoadPromises: Promise<void>[] = [];
+
+  private borderMesh: THREE.InstancedMesh | null = null;
+  private borderHexes: { col: number; row: number }[] = [{ col: 0, row: 0 }];
 
   private currentChunk: string = "null";
 
@@ -274,6 +278,23 @@ export default class WorldmapScene {
         } else {
           dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
         }
+
+        if (isExplored) {
+          // revealedHexes.push({ col: globalCol, row: globalRow });
+        } else {
+          // Check if this unexplored hex is a border hex
+          const neighborOffsets = globalRow % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+          const isBorder = neighborOffsets.some(({ i, j }) => {
+            const neighborCol = globalCol + i;
+            const neighborRow = globalRow + j;
+            return exploredMap.get(neighborCol)?.has(neighborRow) || false;
+          });
+
+          if (isBorder) {
+            // this.borderHexes.push({ col: globalCol, row: globalRow });
+          }
+        }
+
         const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
         const rotationIndex = Math.floor(rotationSeed * 6);
         const randomRotation = (rotationIndex * Math.PI) / 3;
@@ -300,6 +321,7 @@ export default class WorldmapScene {
           hexMesh.setCount(matrices.length);
         }
         this.cacheMatricesForChunk(startRow, startCol);
+        this.renderBorderHexes();
       }
     };
 
@@ -409,6 +431,42 @@ export default class WorldmapScene {
       const startRow = chunkZ * this.chunkSize;
       this.updateHexagonGrid(startRow, startCol, this.renderChunkSize.height, this.renderChunkSize.width);
     }
+  }
+
+  private renderBorderHexes() {
+    if (this.borderMesh) {
+      this.scene.remove(this.borderMesh);
+    }
+
+    console.log("Border hexes:", this.borderHexes.length);
+
+    // const geometry = new THREE.CircleGeometry(this.hexSize * 0.95, 6);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x00ff00,
+      transparent: true,
+      opacity: 0.7,
+    });
+    const bigHexagonShape = createHexagonShape(this.hexSize);
+    const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
+
+    this.borderMesh = new THREE.InstancedMesh(hexagonGeometry, material, this.borderHexes.length);
+
+    const dummy = new THREE.Object3D();
+    this.borderHexes.forEach((hex, index) => {
+      const position = this.getWorldPositionForHex(hex);
+      dummy.position.set(position.x, 0.33, position.z);
+      dummy.updateMatrix();
+      if (this.borderMesh) {
+        this.borderMesh.setMatrixAt(index, dummy.matrix);
+      } else {
+        console.error("Border mesh not initialized");
+      }
+    });
+
+    this.borderMesh.count = this.borderHexes.length;
+    this.borderMesh.instanceMatrix.needsUpdate = true;
+    console.log({ borderMesh: this.borderMesh });
+    this.scene.add(this.borderMesh);
   }
 
   updateLights(target: THREE.Vector3) {
