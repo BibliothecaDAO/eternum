@@ -2,6 +2,10 @@ import * as THREE from "three";
 import { GLTFLoader } from "three-stdlib";
 import WorldmapScene from "../scenes/Worldmap";
 import InstancedModel from "./InstancedModel";
+import { LabelManager } from "./LabelManager";
+
+const neutralColor = new THREE.Color(0xffffff);
+const myColor = new THREE.Color("lime");
 
 export class StructureManager {
   private worldMapScene: WorldmapScene;
@@ -10,9 +14,12 @@ export class StructureManager {
   private isLoaded: boolean = false;
   loadPromise: Promise<void>;
   structures: Structures = new Structures();
+  private labelManager: LabelManager;
 
-  constructor(worldMapScene: WorldmapScene, modelPath: string, maxInstances: number) {
+  constructor(worldMapScene: WorldmapScene, modelPath: string, labelPath: string, maxInstances: number) {
     this.worldMapScene = worldMapScene;
+    this.labelManager = new LabelManager(labelPath);
+
     this.loadPromise = new Promise<void>((resolve, reject) => {
       const loader = new GLTFLoader();
       loader.load(
@@ -34,7 +41,7 @@ export class StructureManager {
     });
   }
 
-  updateInstanceMatrix(entityId: number, hexCoords: { col: number; row: number }) {
+  updateInstanceMatrix(entityId: number, hexCoords: { col: number; row: number }, isMine: boolean) {
     if (!this.isLoaded) {
       throw new Error("Model not loaded yet");
     }
@@ -48,6 +55,11 @@ export class StructureManager {
     if (this.instancedModel) {
       this.instancedModel.setMatrixAt(index, this.dummy.matrix);
       this.instancedModel.setCount(this.structures.counter); // Set the count to the current number of structures
+
+      // Add label on top of the structure with appropriate color
+      const labelColor = isMine ? myColor : neutralColor;
+      const label = this.labelManager.createLabel(position, labelColor);
+      this.worldMapScene.scene.add(label);
     }
   }
 }

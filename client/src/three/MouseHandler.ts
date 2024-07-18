@@ -129,7 +129,9 @@ export class MouseHandler {
   private getIntersects() {
     this._checkIfSceneIsInitialized();
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    return this.raycaster.intersectObjects(this.worldmapScene!.scene.children, true);
+    return this.raycaster
+      .intersectObjects(this.worldmapScene!.scene.children, true)
+      .filter((intersection) => !intersection.object.userData.isLabel === true);
   }
 
   private handleEntitySelection(entityId: number) {

@@ -2,6 +2,10 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import InstancedModel from "./InstancedModel";
 import WorldmapScene from "../scenes/Worldmap";
+import { LabelManager } from "./LabelManager";
+
+const myColor = new THREE.Color(0, 1.5, 0);
+const neutralColor = new THREE.Color(0xffffff);
 
 export class ArmyManager {
   private instancedModel: InstancedModel | undefined;
@@ -15,11 +19,14 @@ export class ArmyManager {
   private armies: Map<number, number> = new Map<number, number>();
   private scale: THREE.Vector3;
   private movingArmies: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
+  private labelManager: LabelManager;
+  private labels: Map<number, THREE.Points> = new Map<number, THREE.Points>();
 
   constructor(private worldMapScene: WorldmapScene, modelPath: string, maxInstances: number) {
     this.dummy = new THREE.Mesh();
     this.mesh = new THREE.InstancedMesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial(), 0);
     this.scale = new THREE.Vector3(0.005, 0.005, 0.005);
+    this.labelManager = new LabelManager("textures/army_label.png", 1.5);
     this.loadPromise = new Promise<void>((resolve, reject) => {
       this.worldMapScene = worldMapScene;
       const loader = new GLTFLoader();
@@ -58,7 +65,7 @@ export class ArmyManager {
     });
   }
 
-  updateArmy(entityId: number, hexCoords: { col: number; row: number }) {
+  updateArmy(entityId: number, hexCoords: { col: number; row: number }, isMine: boolean) {
     console.log("updating armies");
     if (!this.isLoaded) {
       return;
@@ -66,11 +73,11 @@ export class ArmyManager {
     if (this.armies.has(entityId)) {
       this.moveArmy(entityId, hexCoords);
     } else {
-      this.addArmy(entityId, hexCoords);
+      this.addArmy(entityId, hexCoords, isMine);
     }
   }
 
-  addArmy(entityId: number, hexCoords: { col: number; row: number }) {
+  addArmy(entityId: number, hexCoords: { col: number; row: number }, isMine: boolean) {
     console.log("add army: ", entityId, hexCoords);
     const index = this.mesh.count;
     this.mesh.count++;
@@ -87,6 +94,11 @@ export class ArmyManager {
       this.mesh.userData.entityIdMap = {};
     }
     this.mesh.userData.entityIdMap[index] = entityId;
+
+    // Add label on top of the army
+    const label = this.labelManager.createLabel(position, isMine ? myColor : neutralColor);
+    this.labels.set(entityId, label);
+    this.worldMapScene.scene.add(label);
   }
 
   moveArmy(entityId: number, hexCoords: { col: number; row: number }) {
@@ -127,6 +139,13 @@ export class ArmyManager {
       this.dummy.scale.copy(this.scale);
       this.dummy.updateMatrix();
       this.mesh.setMatrixAt(index, this.dummy.matrix);
+
+      // Update label position continuously during movement
+      const entityId = this.mesh.userData.entityIdMap[index];
+      const label = this.labels.get(entityId);
+      if (label) {
+        label.position.set(this.dummy.position.x, this.dummy.position.y + 1.5, this.dummy.position.z);
+      }
     });
 
     if (this.movingArmies.size > 0) {

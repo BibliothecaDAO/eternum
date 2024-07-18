@@ -23,24 +23,21 @@ export class ArmySystem {
       const army = getComponentValue(this.dojo.components.Army, update.entity);
       if (!army) return;
 
-      this.updateArmies(Number(army.entity_id), value[0]?.x || 0, value[0]?.y || 0);
+      const owner = getComponentValue(this.dojo.components.Owner, update.entity);
+      const isMine = owner?.address === BigInt(this.dojo.network.burnerManager.account?.address || 0);
+
+      this.updateArmies(Number(army.entity_id), value[0]?.x || 0, value[0]?.y || 0, isMine);
     });
 
     console.log("Army system setup complete");
   }
 
-  private async updateArmies(entityId: number, col: number, row: number) {
-    console.log({ entityId });
+  private async updateArmies(entityId: number, col: number, row: number, isMine: boolean) {
     const normalizedCoord = { col: col - FELT_CENTER, row: row - FELT_CENTER };
     await this.armyManager.loadPromise;
-    if (!this.modelPrinted) {
-      this.armyManager.printModel();
-      console.log("print army");
-      this.modelPrinted = true;
-    }
 
     try {
-      this.armyManager.updateArmy(entityId, normalizedCoord);
+      this.armyManager.updateArmy(entityId, normalizedCoord, isMine);
     } catch (error) {
       console.error("Error updating army:", error);
     }
