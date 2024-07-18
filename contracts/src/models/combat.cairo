@@ -22,7 +22,7 @@ use eternum::models::resources::{
 use eternum::models::structure::{Structure, StructureCustomImpl};
 use eternum::models::weight::Weight;
 use eternum::models::weight::WeightCustomTrait;
-use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min};
+use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, max};
 use eternum::utils::number::NumberTrait;
 
 const STRENGTH_PRECISION: u256 = 10_000;
@@ -75,7 +75,12 @@ impl HealthCustomImpl of HealthCustomTrait {
             num_steps += 1;
         }
 
-        num_steps
+        // this condition is here in case
+        // self.current < deduction which would make 
+        // num_steps = 0 but that would cause the 
+        // "inaccurate winner invariant" error so we make it
+        // at least 1.
+        max(num_steps, 1)
     }
 
     fn percentage_left(self: Health) -> u128 {
