@@ -3,6 +3,7 @@ use core::array::{ArrayTrait, SpanTrait};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::constants::{MAX_REALMS_PER_ADDRESS};
+use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
 use eternum::models::{map::Tile, position::{Position, Coord, CoordTrait}, combat::Troops};
 use eternum::systems::{
     hyperstructure::contracts::{IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait},
@@ -96,4 +97,20 @@ fn explore_tile(world: IWorldDispatcher, explorer_id: u128, coords: Coord) {
             biome: Biome::Beach
         }
     );
+}
+
+
+fn mint(world: IWorldDispatcher, entity: u128, mut resources: Span<(u8, u128)>) {
+    loop {
+        match resources.pop_back() {
+            Option::Some((
+                _type, amount
+            )) => {
+                let mut resource = ResourceCustomImpl::get(world, (entity, *_type));
+                resource.add(*amount);
+                resource.save(world);
+            },
+            Option::None => { break; }
+        }
+    };
 }
