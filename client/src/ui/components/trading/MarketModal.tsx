@@ -154,7 +154,7 @@ export const MarketModal = () => {
   );
 };
 
-export const MarketResourceSidebar = ({
+const MarketResourceSidebar = ({
   entityId,
   search,
   onClick,
@@ -220,7 +220,7 @@ export const MarketResourceSidebar = ({
   );
 };
 
-export const TransferView = () => {
+const TransferView = () => {
   const { playerRealms, playerStructures, otherRealms } = useEntities();
 
   return (

@@ -16,7 +16,7 @@ import * as THREE from "three";
 import { CameraControls } from "../../utils/Camera";
 import FPSLimiter from "../../utils/FPSLimiter";
 
-export const Camera = () => {
+const Camera = () => {
   const cameraPosition = useUIStore((state) => state.cameraPosition);
   const cameraTarget = useUIStore((state) => state.cameraTarget);
 

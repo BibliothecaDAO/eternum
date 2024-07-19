@@ -40,7 +40,7 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   homePosition: ComponentValue<ClientComponents["Position"]["schema"]> | undefined;
 };
 
-export const formatArmies = (
+const formatArmies = (
   armies: Entity[],
   playerAddress: string,
   Army: Component<ClientComponents["Army"]["schema"]>,

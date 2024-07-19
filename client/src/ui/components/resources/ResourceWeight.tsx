@@ -2,7 +2,7 @@ import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { EternumGlobalConfig, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
-import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
+import { getTotalResourceWeight } from "@/ui/utils/utils";
 
 export const TravelInfo = ({
   entityId,

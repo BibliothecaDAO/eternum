@@ -1,9 +1,8 @@
-import { numberToHex } from "@/ui/utils/utils";
 import { Event, client, getEventsQuery } from "./graphqlClient";
 import { SWAP_EVENT } from "@bibliothecadao/eternum";
 
-export const MAX_EVENTS = 5000;
-export const ADMIN_BANK_ENTITY_ID = "0xde0b6b3a763fffe"; //999999999999999998n;
+const MAX_EVENTS = 5000;
+const ADMIN_BANK_ENTITY_ID = "0xde0b6b3a763fffe"; //999999999999999998n;
 
 export interface BankStatsInterface {
   ownerTotalLordsFees: number;

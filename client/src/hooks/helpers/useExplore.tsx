@@ -35,6 +35,7 @@ export function useExplore() {
     },
     account: { account },
   } = useDojo();
+
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const setExploredHexes = useExploredHexesStore((state) => state.setExploredHexes);
   const { optimisticStaminaUpdate } = useStamina();

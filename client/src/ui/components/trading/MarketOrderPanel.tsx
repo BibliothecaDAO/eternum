@@ -15,7 +15,7 @@ import {
   findResourceById,
 } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
+import { getTotalResourceWeight } from "@/ui/utils/utils";
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import { useRealm } from "@/hooks/helpers/useRealm";
 
@@ -100,7 +100,7 @@ export const MarketOrderPanel = ({
   );
 };
 
-export const MarketOrders = ({
+const MarketOrders = ({
   resourceId,
   entityId,
   isBuy = false,
@@ -148,7 +148,7 @@ export const MarketOrders = ({
   );
 };
 
-export const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
+const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
   return (
     <div className="grid grid-cols-5 gap-2 p-2 uppercase text-xs font-bold ">
       <div>qty.</div>
@@ -169,7 +169,7 @@ export const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
   );
 };
 
-export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId: bigint; isBuy: boolean }) => {
+const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId: bigint; isBuy: boolean }) => {
   const { computeTravelTime } = useTravel();
   const {
     account: { account },
@@ -345,7 +345,7 @@ export const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; e
   );
 };
 
-export const OrderCreation = ({
+const OrderCreation = ({
   initialBid,
   entityId,
   resourceId,

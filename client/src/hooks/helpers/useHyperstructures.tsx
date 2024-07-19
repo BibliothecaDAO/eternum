@@ -7,7 +7,7 @@ import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { ResourceMultipliers, TOTAL_CONTRIBUTABLE_AMOUNT } from "../store/useLeaderBoardStore";
 
-export type Hyperstructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+type Hyperstructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   entityIdPoseidon: Entity;
   name: string;
   progress: ComponentValue<ClientComponents["Progress"]["schema"]>;
@@ -23,7 +23,7 @@ export type ProgressWithPercentage = {
   amount: number;
 };
 
-export type Progress = {
+type Progress = {
   percentage: number;
   progresses: ProgressWithPercentage[];
 };

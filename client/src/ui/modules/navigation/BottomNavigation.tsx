@@ -15,16 +15,9 @@ import { QuestStatus, useUnclaimedQuestsCount, useQuests, useQuestClaimStatus } 
 import { QuestId } from "@/ui/components/quest/questDetails";
 
 export enum MenuEnum {
-  realm = "realm",
-  worldMap = "world-map",
   military = "military",
   construction = "construction",
-  trade = "trade",
-  resources = "resources",
-  bank = "bank",
   worldStructures = "worldStructures",
-  structures = "structures",
-  leaderboard = "leaderboard",
   entityDetails = "entityDetails",
 }
 

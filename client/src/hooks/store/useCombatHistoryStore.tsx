@@ -1,10 +1,8 @@
 import { create } from "zustand";
 import { numberToHex } from "../../ui/utils/utils";
 import { pollForEvents, Event } from "../eventPoller";
-import { parseCombatEvent } from "../../ui/utils/combat";
 import { COMBAT_EVENT } from "@bibliothecadao/eternum";
-import { CombatResultInterface } from "@bibliothecadao/eternum";
-
+import { CombatResultInterface, Resource, Winner } from "@bibliothecadao/eternum";
 interface CombatHistoryStore {
   loading: boolean;
   setLoading: (loading: boolean) => void;
@@ -49,5 +47,51 @@ const useCombatHistoryStore = create<CombatHistoryStore>((set, get) => ({
     });
   },
 }));
+
+const parseCombatEvent = (event: Event): CombatResultInterface => {
+  const attackers_len = parseInt(event.data[0]);
+  let attacking_entity_ids = [];
+  for (let i = 0; i < attackers_len; i++) {
+    attacking_entity_ids.push(BigInt(event.data[1 + i]));
+  }
+  const stolen_resources_ids_len = parseInt(event.data[1 + attackers_len]);
+  let stolen_resources: Resource[] = [];
+  let nextIndex = 2 + attackers_len + stolen_resources_ids_len;
+  for (let i = 0; i < stolen_resources_ids_len; i++) {
+    stolen_resources.push({
+      resourceId: parseInt(event.data[2 + attackers_len + i]),
+      amount: Number(event.data[nextIndex]),
+    });
+    nextIndex += 1;
+  }
+
+  const stolenChestIdsLen = parseInt(event.data[nextIndex]);
+  let stolenChestsIds: bigint[] = [];
+  for (let i = 0; i < stolenChestIdsLen; i++) {
+    let chest_id = event.data[nextIndex + i + 1];
+    stolenChestsIds.push(BigInt(chest_id));
+  }
+
+  nextIndex += 1 + stolenChestIdsLen;
+
+  const winner = parseInt(event.data[nextIndex]) === 0 ? Winner.Attacker : Winner.Target;
+  nextIndex += 1;
+  let damage: number | undefined;
+  let attackTimestamp: number | undefined;
+  damage = parseInt(event.data[nextIndex]);
+  nextIndex += 1;
+  attackTimestamp = parseInt(event.data[nextIndex]);
+
+  return {
+    attackerRealmEntityId: BigInt(event.keys[1]),
+    targetRealmEntityId: BigInt(event.keys[2]),
+    attackingEntityIds: attacking_entity_ids,
+    winner,
+    stolenResources: stolen_resources,
+    damage,
+    attackTimestamp,
+    stolenChestsIds,
+  };
+};
 
 export default useCombatHistoryStore;

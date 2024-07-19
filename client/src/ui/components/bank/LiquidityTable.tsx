@@ -1,6 +1,5 @@
 import { RESOURCE_TIERS } from "@bibliothecadao/eternum";
 import { LiquidityResourceRow } from "./LiquidityResourceRow";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 
 type LiquidityTableProps = {
   bank_entity_id: bigint | undefined;

@@ -10,7 +10,7 @@ import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { getRealmNameById } from "../../../utils/realms";
-import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
+import { formatSecondsLeftInDaysHours } from "@/ui/utils/utils";
 import { InventoryResources } from "../../resources/InventoryResources";
 
 interface ArmyInfoLabelProps {

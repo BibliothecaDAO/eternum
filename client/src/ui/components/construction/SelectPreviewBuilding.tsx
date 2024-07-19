@@ -283,7 +283,7 @@ export const SelectPreviewBuildingMenu = () => {
   );
 };
 
-export const BuildingCard = ({
+const BuildingCard = ({
   buildingId,
   onClick,
   active,

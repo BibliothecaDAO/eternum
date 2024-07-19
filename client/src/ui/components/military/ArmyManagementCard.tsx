@@ -14,7 +14,7 @@ import { Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { formatSecondsInHoursMinutes } from "../cityview/realm/labor/laborUtils";
+import { formatSecondsInHoursMinutes } from "@/ui/utils/utils";
 
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
@@ -396,7 +396,7 @@ interface TravelToLocationProps {
   onClose: () => void;
 }
 
-export const TravelToLocation = ({
+const TravelToLocation = ({
   isTraveling,
   checkSamePosition,
   entityOwnerPosition,

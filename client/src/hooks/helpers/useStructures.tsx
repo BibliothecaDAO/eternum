@@ -27,7 +27,7 @@ export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> 
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
 };
 
-export type FullStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+type FullStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   protector: ArmyInfo | undefined;

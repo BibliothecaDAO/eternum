@@ -4,7 +4,6 @@ import { useEntityQuery } from "@dojoengine/react";
 import { Entity, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 import { shortString } from "starknet";
-import { calculateRatio } from "../../ui/components/cityview/realm/trade/Market/MarketOffer";
 import { SortInterface } from "../../ui/elements/SortButton";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
@@ -23,7 +22,7 @@ type TradeResources = {
   makerGets: Resource[];
 };
 
-export function useTrade() {
+function useTrade() {
   const {
     setup: {
       components: { Resource, Trade, Realm, DetachedResource, EntityName },
@@ -207,72 +206,14 @@ export function useSetMarket() {
   };
 }
 
-export function useSetDirectOffers() {
-  const {
-    setup: {
-      components: { Status, Trade },
-    },
-  } = useDojo();
-
-  const { computeTrades } = useTrade();
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const setDirectOffers = useMarketStore((state) => state.setDirectOffers);
-
-  const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: realmEntityId })]);
-
-  useEffect(() => {
-    if (!nextBlockTimestamp) return;
-    const trades = computeTrades(entityIds, nextBlockTimestamp);
-    setDirectOffers(trades);
-  }, [entityIds, nextBlockTimestamp]);
-}
-
-/**
- * sort trades based on active filters
- */
-export function sortTrades(trades: MarketInterface[], _activeSort: SortInterface): MarketInterface[] {
-  // todo: find a way to sort even though not in marketinterface anymore
-
-  // if (activeSort.sort !== "none") {
-  //   if (activeSort.sortKey === "ratio") {
-  //     return trades.sort((a, b) => {
-  //       if (activeSort.sort === "asc") {
-  //         return a.ratio - b.ratio;
-  //       } else {
-  //         return b.ratio - a.ratio;
-  //       }
-  //     });
-  //   } else if (activeSort.sortKey === "time") {
-  //     return trades.sort((a, b) => {
-  //       if (activeSort.sort === "asc") {
-  //         return a.expiresAt - b.expiresAt;
-  //       } else {
-  //         return b.expiresAt - a.expiresAt;
-  //       }
-  //     });
-  //   } else if (activeSort.sortKey === "distance") {
-  //     return trades.sort((a, b) => {
-  //       if (activeSort.sort === "asc") {
-  //         return a.distance - b.distance;
-  //       } else {
-  //         return b.distance - a.distance;
-  //       }
-  //     });
-  //   } else if (activeSort.sortKey === "realm") {
-  //     return trades.sort((a, b) => {
-  //       if (activeSort.sort === "asc") {
-  //         return Number(a.makerId - b.makerId);
-  //       } else {
-  //         return Number(b.makerId - a.makerId);
-  //       }
-  //     });
-  //   } else {
-  //     return trades;
-  //   }
-  // } else {
-  //   return trades.sort((a, b) => Number(b!.tradeId - a!.tradeId));
-  // }
-  return trades;
-}
+const calculateRatio = (resourcesGive: Resource[], resourcesGet: Resource[]) => {
+  let quantityGive = 0;
+  for (let i = 0; i < resourcesGive.length; i++) {
+    quantityGive += resourcesGive[i].amount;
+  }
+  let quantityGet = 0;
+  for (let i = 0; i < resourcesGet.length; i++) {
+    quantityGet += resourcesGet[i].amount;
+  }
+  return quantityGet / quantityGive;
+};

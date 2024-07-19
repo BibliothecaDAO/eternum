@@ -18,16 +18,15 @@ export const createUpdates = async () => {
       createEventSubscription([TRAVEL_EVENT, numberToHex(x), numberToHex(y)]),
     createDirectOffersEvents: async (entityId: bigint) =>
       createEventSubscription([CREATE_ORDER_EVENT, numberToHex(Number(entityId)), "*"]),
-    createExploreMapEvents: async () => createEventSubscription([MAP_EXPLORED_EVENT], true, 1000, false),
+    createExploreMapEvents: async () => createEventSubscription([MAP_EXPLORED_EVENT], true, 1000),
     createExploreEntityMapEvents: async (entityId: bigint) =>
-      createEventSubscription([MAP_EXPLORED_EVENT, numberToHex(Number(entityId))], false),
-    createTravelHexEvents: async () => createEventSubscription([TRAVEL_EVENT], false),
+      createEventSubscription([MAP_EXPLORED_EVENT, numberToHex(Number(entityId))]),
+    createTravelHexEvents: async () => createEventSubscription([TRAVEL_EVENT]),
     createPillageHistoryEvents: async (structureId: bigint, attackerRealmEntityId: bigint) =>
       createEventSubscription(
         [PILLAGE_EVENT, numberToHex(Number(structureId)), numberToHex(Number(attackerRealmEntityId))],
         true,
         20,
-        false,
       ),
   };
 

@@ -10,10 +10,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { useExploredHexesStore } from "../../worldmap/hexagon/WorldHexagon";
 
-export interface OriginalModels {
-  [key: number | string]: THREE.Group;
-}
-
 export const StructurePreview = () => {
   const {
     setup: {
@@ -101,7 +97,7 @@ export const StructurePreview = () => {
   ) : null;
 };
 
-export const canPlaceStructure = (
+const canPlaceStructure = (
   col: number,
   row: number,
   structures: any[],
