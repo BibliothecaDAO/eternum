@@ -1,6 +1,3 @@
 {
-    "ignore": [
-        ".trunk/**",
-        "**/*.js"
-    ]
+  "ignore": [".trunk/**", "**/*.js"]
 }
