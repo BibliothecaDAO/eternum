@@ -138,7 +138,7 @@ export const getColRowFromUIPosition = (x: number, y: number, normalized?: boole
   };
 };
 
-export interface HexPositions {
+interface HexPositions {
   [key: string]: { col: number; row: number }[];
 }
 
