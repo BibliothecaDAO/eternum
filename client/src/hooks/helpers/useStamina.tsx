@@ -87,7 +87,7 @@ export const useStamina = () => {
         travelingEntityId: BigInt(entity.entity_id),
         currentArmiesTick,
       });
-      return stamina?.amount >= EternumGlobalConfig.stamina.travelCost;
+      return (stamina?.amount || 0) >= EternumGlobalConfig.stamina.travelCost;
     }).length;
   };
 

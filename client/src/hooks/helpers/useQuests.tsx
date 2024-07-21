@@ -321,7 +321,7 @@ const armyHasTroops = (entityArmies: ArmyInfo[]) => {
 
 const armyHasTraveled = (entityArmies: ArmyInfo[], realmPosition: { x: number; y: number }) => {
   if (entityArmies && entityArmies[0] && realmPosition) {
-    return entityArmies[0].x != realmPosition.x || entityArmies[0].y != realmPosition.y;
+    return entityArmies[0].position.x != realmPosition.x || entityArmies[0].position.y != realmPosition.y;
   }
   return false;
 };

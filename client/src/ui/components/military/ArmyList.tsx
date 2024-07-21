@@ -63,7 +63,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructures }) =
                 onClick={() => handleCreateArmy(false)}
                 disabled={isLoading}
                 className={clsx({
-                  "animate-pulse": selectedQuest?.id === QuestId.CreateArmy && !entityArmies.length,
+                  "animate-pulse": selectedQuest?.id === QuestId.CreateArmy && !structureArmies.length,
                 })}
               >
                 Create Army
