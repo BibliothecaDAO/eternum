@@ -26,8 +26,8 @@ export const useTravelPath = () => {
 
   const army = getArmy(selectedEntity?.id || 0n);
   const hasCapacity =
-    (army?.capacity * Number(army?.value)) / EternumGlobalConfig.resources.resourcePrecision - army?.weight >=
-    EternumGlobalConfig.exploration.reward;
+    ((army?.capacity?.weight_gram || 0n) * (army?.weight?.value || 0n)) / -(army?.weight?.value || 0n) >=
+    BigInt(EternumGlobalConfig.exploration.reward);
 
   useEffect(() => {
     if (!selectedEntity || !stamina) return;

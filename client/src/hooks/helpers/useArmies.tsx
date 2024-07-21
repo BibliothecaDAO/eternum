@@ -109,9 +109,14 @@ export const formatArmies = (
 
       const capacity = getComponentValue(Capacity, armyEntityId);
       let capacityClone = structuredClone(capacity);
-      capacityClone.weight_gram =
-        (Number(capacityClone.weight_gram) * Number(quantityClone.value || 0)) /
-        EternumGlobalConfig.resources.resourceMultiplier;
+      if (capacityClone) {
+        capacityClone.weight_gram = capacityClone.weight_gram * quantityClone.value;
+      } else {
+        capacityClone = {
+          entity_id: army.entity_id,
+          weight_gram: BigInt(EternumGlobalConfig.carryCapacity.army) * quantityClone.value,
+        };
+      }
 
       const weight = getComponentValue(Weight, armyEntityId);
       let weightClone = structuredClone(weight);

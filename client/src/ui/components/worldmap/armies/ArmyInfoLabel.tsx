@@ -105,7 +105,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             <div className="text-green text-xs self-center">{currencyFormat(troops.paladin_count, 0)}</div>
           </div>
         </div>
-        <ArmyCapacity army={updatedArmy} />
+        <ArmyCapacity army={army} />
         <div className="flex flex-row justify-between">
           <InventoryResources max={2} entityIds={[entity_id]} />
         </div>
