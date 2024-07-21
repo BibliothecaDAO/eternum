@@ -31,10 +31,10 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
   protectee: ComponentValue<ClientComponents["Protectee"]["schema"]> | undefined;
-  quantity: ComponentValue<ClientComponents["Quantity"]["schema"]> | undefined;
+  quantity: ComponentValue<ClientComponents["Quantity"]["schema"]>;
   movable: ComponentValue<ClientComponents["Movable"]["schema"]> | undefined;
-  capacity: ComponentValue<ClientComponents["Capacity"]["schema"]> | undefined;
-  weight: ComponentValue<ClientComponents["Weight"]["schema"]> | undefined;
+  capacity: ComponentValue<ClientComponents["Capacity"]["schema"]>;
+  weight: ComponentValue<ClientComponents["Weight"]["schema"]>;
   arrivalTime: ComponentValue<ClientComponents["ArrivalTime"]["schema"]> | undefined;
   stamina: ComponentValue<ClientComponents["Stamina"]["schema"]> | undefined;
   realm: ComponentValue<ClientComponents["Realm"]["schema"]> | undefined;
@@ -110,7 +110,8 @@ export const formatArmies = (
       const capacity = getComponentValue(Capacity, armyEntityId);
       let capacityClone = structuredClone(capacity);
       if (capacityClone) {
-        capacityClone.weight_gram = capacityClone.weight_gram * quantityClone.value;
+        capacityClone.weight_gram =
+          (capacityClone.weight_gram * quantityClone.value) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
       } else {
         capacityClone = {
           entity_id: army.entity_id,
@@ -148,8 +149,8 @@ export const formatArmies = (
         health: healthClone,
         quantity,
         movable,
-        capacity,
-        weight,
+        capacity: capacityClone,
+        weight: weightClone,
         arrivalTime,
         position,
         entityOwner,
