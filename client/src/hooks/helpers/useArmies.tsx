@@ -322,7 +322,7 @@ export const getArmiesByBattleId = () => {
   return armiesByBattleId;
 };
 
-export const useArmyByArmyEntityId = (entityId: bigint) => {
+const useArmyByArmyEntityId = (entityId: bigint) => {
   const {
     setup: {
       components: {

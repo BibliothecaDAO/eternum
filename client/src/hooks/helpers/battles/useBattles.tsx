@@ -49,7 +49,7 @@ export const getBattle = (
   return battleClone;
 };
 
-export const getExtraBattleInformation = (
+const getExtraBattleInformation = (
   battles: Entity[],
   Battle: Component<Components["Battle"]["schema"]>,
   Position: Component<Components["Position"]["schema"]>,
@@ -94,7 +94,7 @@ export const useAllBattles = () => {
   return allBattles;
 };
 
-export const usePlayerBattles = () => {
+const usePlayerBattles = () => {
   const {
     account: { account },
     setup: {
@@ -118,7 +118,7 @@ export const usePlayerBattles = () => {
   return { playerBattles };
 };
 
-export const getBattleInfoByOwnArmyEntityId = (ownArmyEntityId: bigint): ExtraBattleInfo | undefined => {
+const getBattleInfoByOwnArmyEntityId = (ownArmyEntityId: bigint): ExtraBattleInfo | undefined => {
   const {
     setup: {
       components: { Army, Battle, Position, EntityName, Health },

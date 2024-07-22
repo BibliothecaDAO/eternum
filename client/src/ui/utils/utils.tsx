@@ -164,7 +164,7 @@ export const pseudoRandom = (x: number, y: number) => {
   return n - Math.floor(n);
 };
 
-export function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
+function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
   console.log("packedNumber", packedNumber);
 
   if (packedNumber === 1000000000000000000000000000000000000000000000000000000000000001n) return [ResourcesIds.Lords];

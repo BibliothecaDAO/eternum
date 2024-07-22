@@ -9,7 +9,7 @@ jobs:
   prettier:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
       - uses: pnpm/action-setup@v3
         with:
@@ -20,3 +20,12 @@ jobs:
 
       - name: Run Prettier
         run: pnpm run prettier-check .
+  knip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - name: Install dependencies
+        run: pnpm i
+      - name: Run knip
+        run: pnpm run knip

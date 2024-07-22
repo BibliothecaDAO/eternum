@@ -1,3 +1,18 @@
 {
-  "ignore": [".trunk/**", "**/*.js"]
+  "ignore": [
+    ".trunk/**",
+    "**/*.js",
+    "bot/**",
+    "**/vitest**",
+    "eternum-docs/package.json",
+    "**/**__test__**/**",
+    "eternum-docs/vocs.config.ts",
+    "sdk/packages/eternum/global.d.ts",
+    
+    "client/src/dojo/events/bankEventQueries.ts",
+    "client/src/hooks/store/useBankStore.tsx",
+    "client/src/ui/components/bank/BankEntityList.tsx",
+    "client/src/ui/components/bank/BankStats.tsx",
+    "config/bank/index.ts"
+  ]
 }

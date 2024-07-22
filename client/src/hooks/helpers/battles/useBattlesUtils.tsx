@@ -12,7 +12,7 @@ export const battleIsFinished = (Army: Component, battle: BattleInfo) => {
   );
 };
 
-export const battleIsEmpty = (Army: Component, battle: BattleInfo) => {
+const battleIsEmpty = (Army: Component, battle: BattleInfo) => {
   const attackersEntityIds = getArmiesInBattleBySide(Army, battle, BattleSide.Attack);
   const defendersEntityIds = getArmiesInBattleBySide(Army, battle, BattleSide.Defence);
 

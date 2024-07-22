@@ -22,7 +22,7 @@ const loadRealms = async () => {
 
 loadRealms();
 
-export const getRealmIdByPosition = (position: { x: number; y: number }): bigint | undefined => {
+const getRealmIdByPosition = (position: { x: number; y: number }): bigint | undefined => {
   const realmPositions = realmsHexPositions as Record<number, { col: number; row: number }[]>;
 
   const realmId = Object.entries(realmPositions).find(
