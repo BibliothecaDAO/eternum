@@ -1356,6 +1356,15 @@ mod combat_systems {
 
                 battle_army_health.current = battle_army.troops.full_health(troop_config);
                 battle_army_health.lifetime = battle_army.troops.full_health(troop_config);
+                if unmodified_army.battle_side == BattleSide::Defence {
+                    battle.defence_army = battle_army;
+                    battle.defence_army_lifetime = battle_army_lifetime;
+                    battle.defence_army_health = battle_army_health;
+                } else {
+                    battle.attack_army = battle_army;
+                    battle.attack_army_lifetime = battle_army_lifetime;
+                    battle.attack_army_health = battle_army_health;
+                }
             }
 
             // reset the army leaving battle
@@ -1391,22 +1400,22 @@ mod combat_systems {
                             * battle_army.troops.crossbowman_count
                             / battle_army_lifetime.troops.crossbowman_count
                     };
-
-            // withdraw resources stuck in battle
-            battle.withdraw_balance_and_reward(world, army, army_protectee);
-
             let army_health = Health {
                 entity_id: army_id,
                 current: army.troops.full_health(troop_config),
                 lifetime: army.troops.full_health(troop_config)
             };
 
+            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
+            set!(world, (army_health, army_quantity));
+
+            // withdraw battle deposit and reward
+            battle.withdraw_balance_and_reward(world, army, army_protectee);
+
+            // remove army from battle
             army.battle_id = 0;
             army.battle_side = BattleSide::None;
-
-            let army_quantity = Quantity { entity_id: army_id, value: army.troops.count().into() };
-
-            set!(world, (army, army_health, army_quantity));
+            set!(world, (army));
 
             // update battle army count and health
             battle_army.troops.knight_count -= army.troops.knight_count;
