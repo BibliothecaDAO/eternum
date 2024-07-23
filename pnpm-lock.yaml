@@ -394,7 +394,7 @@ importers:
         version: 5.4.4
       vocs:
         specifier: latest
-        version: 1.0.0-alpha.55(@types/react@18.2.74)(react-dom@18.2.0)(react@18.2.0)(rollup@3.0.1)(typescript@5.4.4)
+        version: 1.0.0-alpha.55(@types/react@18.2.74)(react-dom@18.2.0)(react@18.2.0)(rollup@4.19.0)(typescript@5.4.4)
 
   sdk/packages/eternum:
     dependencies:
@@ -4362,14 +4362,14 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@mdx-js/rollup@3.0.1(rollup@3.0.1):
+  /@mdx-js/rollup@3.0.1(rollup@4.19.0):
     resolution: {integrity: sha512-j0II91OCm4ld+l5QVgXXMQGxVVcAWIQJakYWi1dv5pefDHASJyCYER2TsdH7Alf958GoFSM7ugukWyvDq/UY4A==}
     peerDependencies:
       rollup: '>=2'
     dependencies:
       '@mdx-js/mdx': 3.0.1
-      '@rollup/pluginutils': 5.1.0(rollup@3.0.1)
-      rollup: 3.0.1
+      '@rollup/pluginutils': 5.1.0(rollup@4.19.0)
+      rollup: 4.19.0
       source-map: 0.7.4
       vfile: 6.0.2
     transitivePeerDependencies:
@@ -5500,7 +5500,7 @@ packages:
         optional: true
     dev: true
 
-  /@rollup/pluginutils@5.1.0(rollup@3.0.1):
+  /@rollup/pluginutils@5.1.0(rollup@4.19.0):
     resolution: {integrity: sha512-XTIWOPPcpvyKI6L1NHo0lFlCyznUEyPmPY1mc3KpPVDYulHSTvyeLNVW00QTLIAFNhR3kYnJTQHeGqU4M3n09g==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
@@ -5512,7 +5512,7 @@ packages:
       '@types/estree': 1.0.5
       estree-walker: 2.0.2
       picomatch: 2.3.1
-      rollup: 3.0.1
+      rollup: 4.19.0
 
   /@rollup/rollup-android-arm-eabi@4.19.0:
     resolution: {integrity: sha512-JlPfZ/C7yn5S5p0yKk7uhHTTnFlvTgLetl2VxqE518QgyM7C9bSfFTYvB/Q/ftkq0RIPY4ySxTz+/wKJ/dXC0w==}
@@ -6053,7 +6053,7 @@ packages:
       '@babel/preset-env': 7.24.8(@babel/core@7.24.9)
       '@babel/preset-react': 7.24.7(@babel/core@7.24.9)
       '@babel/preset-typescript': 7.24.7(@babel/core@7.24.9)
-      '@rollup/pluginutils': 5.1.0(rollup@3.0.1)
+      '@rollup/pluginutils': 5.1.0(rollup@4.19.0)
       '@svgr/core': 8.1.0(typescript@5.4.4)
       '@svgr/plugin-jsx': 8.1.0(@svgr/core@8.1.0)
       '@svgr/plugin-svgo': 8.1.0(@svgr/core@8.1.0)(typescript@5.4.4)
@@ -13732,13 +13732,6 @@ packages:
       glob: 7.2.3
     dev: true
 
-  /rollup@3.0.1:
-    resolution: {integrity: sha512-n+MTMMbO9SIAsHmqD9lPO2pYNXznQnVR8FqKR9xVyagfEoT2OhbFfR9nZLNfsjXZhp92v3OlinZno2aIlM/UtA==}
-    engines: {node: '>=14.18.0', npm: '>=8.0.0'}
-    hasBin: true
-    optionalDependencies:
-      fsevents: 2.3.3
-
   /rollup@4.19.0:
     resolution: {integrity: sha512-5r7EYSQIowHsK4eTZ0Y81qpZuJz+MUuYeqmmYmRMl1nwhdmbiYqt5jwzf6u7wyOzJgYqtCRMtVRKOtHANBz7rA==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
@@ -15278,7 +15271,7 @@ packages:
     peerDependencies:
       vite: ^2.6.0 || 3 || 4 || 5
     dependencies:
-      '@rollup/pluginutils': 5.1.0(rollup@3.0.1)
+      '@rollup/pluginutils': 5.1.0(rollup@4.19.0)
       '@svgr/core': 8.1.0(typescript@5.4.4)
       '@svgr/plugin-jsx': 8.1.0(@svgr/core@8.1.0)
       vite: 5.3.4(@types/node@20.14.11)
@@ -15459,7 +15452,7 @@ packages:
       - supports-color
       - terser
 
-  /vocs@1.0.0-alpha.55(@types/react@18.2.74)(react-dom@18.2.0)(react@18.2.0)(rollup@3.0.1)(typescript@5.4.4):
+  /vocs@1.0.0-alpha.55(@types/react@18.2.74)(react-dom@18.2.0)(react@18.2.0)(rollup@4.19.0)(typescript@5.4.4):
     resolution: {integrity: sha512-RT456+7uG4qNz7CwIb7xxhQAt/wJwjUzoi3fNgzfR62v4j/1gTdgn+yqD5vqv7RzJh7j4Iw3R9GF6jriAfiwng==}
     hasBin: true
     peerDependencies:
@@ -15469,7 +15462,7 @@ packages:
       '@floating-ui/react': 0.26.20(react-dom@18.2.0)(react@18.2.0)
       '@hono/node-server': 1.12.0
       '@mdx-js/react': 3.0.1(@types/react@18.2.74)(react@18.2.0)
-      '@mdx-js/rollup': 3.0.1(rollup@3.0.1)
+      '@mdx-js/rollup': 3.0.1(rollup@4.19.0)
       '@noble/hashes': 1.4.0
       '@radix-ui/colors': 3.0.0
       '@radix-ui/react-accordion': 1.2.0(@types/react@18.2.74)(react-dom@18.2.0)(react@18.2.0)
