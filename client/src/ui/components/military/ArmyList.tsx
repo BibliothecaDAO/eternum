@@ -1,6 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
+import { getBattleByPosition } from "@/hooks/helpers/battles/useBattles";
 import { useArmiesByEntityOwner, usePositionArmies } from "@/hooks/helpers/useArmies";
-import { getBattleByPosition } from "@/hooks/helpers/useBattles";
+import { PlayerStructures } from "@/hooks/helpers/useEntities";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
 import { Position } from "@bibliothecadao/eternum";
@@ -12,8 +13,10 @@ import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { ArmyViewCard } from "./ArmyViewCard";
 
-export const EntityArmyList = ({ structure }: any) => {
-  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structure?.entity_id });
+export const EntityArmyList = ({ structure }: { structure: PlayerStructures }) => {
+  const { entityArmies: structureArmies } = useArmiesByEntityOwner({
+    entity_owner_entity_id: structure?.entity_id || 0n,
+  });
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
@@ -24,11 +27,16 @@ export const EntityArmyList = ({ structure }: any) => {
     },
   } = useDojo();
 
+  const getBattle = getBattleByPosition();
   const [isLoading, setIsLoading] = useState(false);
 
-  const canCreateProtector = useMemo(() => !entityArmies.find((army) => army.protectee_id), [entityArmies]);
-
+  const canCreateProtector = useMemo(
+    () => !structureArmies.find((army) => army.protectee?.protectee_id),
+    [structureArmies],
+  );
+  console.log(structureArmies);
   const handleCreateArmy = (is_defensive_army: boolean) => {
+    if (!structure.entity_id) throw new Error("Structure's entity id is undefined");
     setIsLoading(true);
     create_army({
       signer: account,
@@ -36,11 +44,11 @@ export const EntityArmyList = ({ structure }: any) => {
       is_defensive_army,
     }).finally(() => setIsLoading(false));
   };
-
+  console.log("11");
   return (
     <>
       <EntityList
-        list={entityArmies}
+        list={structureArmies}
         headerPanel={
           <>
             {" "}
@@ -74,12 +82,11 @@ export const EntityArmyList = ({ structure }: any) => {
         title="armies"
         panel={({ entity }) => (
           <React.Fragment key={entity.entity_id}>
-            {/* <StaminaResource entityId={entity.entity_id} className="mb-3" /> */}
-            <ArmyManagementCard owner_entity={structure?.entity_id} entity={entity} />
+            <ArmyManagementCard owner_entity={structure?.entity_id || 0n} army={entity} />
             <InventoryResources entityId={entity.entity_id} />
             <DepositResources
               entityId={entity.entity_id}
-              battleInProgress={getBattleByPosition({ x: entity.x, y: entity.y }) !== undefined}
+              battleInProgress={getBattle({ x: entity.position.x, y: entity.position.y }) !== undefined}
             />
           </React.Fragment>
         )}

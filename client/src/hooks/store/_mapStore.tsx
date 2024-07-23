@@ -149,8 +149,8 @@ export const useSetExistingStructures = () => {
         if (!position || !structure || !owner) return null;
         const isMine = owner?.address === BigInt(account.address);
         return {
-          col: position.x,
-          row: position.y,
+          col: Number(position.x),
+          row: Number(position.y),
           type: type as StructureType,
           entity: entity,
           entityId: structure.entity_id,

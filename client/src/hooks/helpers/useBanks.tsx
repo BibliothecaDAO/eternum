@@ -1,7 +1,7 @@
-import { useEntityQuery } from "@dojoengine/react";
-import { useDojo } from "../context/DojoContext";
-import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { Position } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { useDojo } from "../context/DojoContext";
 
 export const useGetBanks = (onlyMine?: boolean) => {
   const {
@@ -21,7 +21,7 @@ export const useGetBanks = (onlyMine?: boolean) => {
 
       return {
         entityId: position.entity_id,
-        position,
+        position: { x: position.x, y: position.y },
       };
     })
     .filter(Boolean) as { entityId: bigint; position: Position }[];

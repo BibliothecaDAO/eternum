@@ -1,18 +1,19 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
-import { Component, ComponentValue, Entity, Has, HasValue, Type, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { toInteger } from "lodash";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { ResourceMultipliers, TOTAL_CONTRIBUTABLE_AMOUNT } from "../store/useLeaderBoardStore";
 
-export type Hyperstructure = ClientComponents["Structure"]["schema"] &
-  ClientComponents["Progress"]["schema"][] &
-  ClientComponents["Contribution"]["schema"][] &
-  ClientComponents["Position"]["schema"] & {
-    entityIdPoseidon: Entity;
-  } & { name: string };
+export type Hyperstructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
+  entityIdPoseidon: Entity;
+  name: string;
+  progress: ComponentValue<ClientComponents["Progress"]["schema"]>;
+  contribution: ComponentValue<ClientComponents["Contribution"]["schema"]>;
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+};
 
 export type ProgressWithPercentage = {
   percentage: number;
@@ -95,10 +96,7 @@ const getContributions = (hyperstructureEntityId: bigint, Contribution: Componen
 };
 
 const getAllProgressesAndTotalPercentage = (
-  progresses: (
-    | ComponentValue<{ hyperstructure_entity_id: Type.BigInt; resource_type: Type.Number; amount: Type.Number }>
-    | undefined
-  )[],
+  progresses: (ComponentValue<ClientComponents["Progress"]["schema"]> | undefined)[],
 
   hyperstructureEntityId: bigint,
 ) => {

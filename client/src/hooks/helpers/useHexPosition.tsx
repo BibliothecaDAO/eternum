@@ -1,12 +1,12 @@
-import { useEffect, useMemo } from "react";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getNeighborHexes } from "@bibliothecadao/eternum";
-import { useSearch } from "wouter/use-location";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
+import { useEffect, useMemo } from "react";
+import { useSearch } from "wouter/use-location";
 import { useDojo } from "../context/DojoContext";
-import useRealmStore from "../store/useRealmStore";
 import useLeaderBoardStore from "../store/useLeaderBoardStore";
+import useRealmStore from "../store/useRealmStore";
 
 export enum HexType {
   BANK = "bank",
@@ -22,7 +22,6 @@ export const useHexPosition = () => {
   const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
 
   const {
-    account,
     setup: {
       components: { Structure, Position, Owner },
     },
@@ -47,6 +46,7 @@ export const useHexPosition = () => {
 
   const hexType: HexType = useMemo(() => {
     if (!structure) return HexType.EMPTY;
+
     let category = structure.category.toUpperCase();
     if (structure.category === HexType.HYPERSTRUCTURE) {
       category = finishedHyperstructures.some((evt) => {

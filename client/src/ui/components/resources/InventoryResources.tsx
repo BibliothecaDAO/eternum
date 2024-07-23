@@ -2,20 +2,22 @@ import { useResourceBalance, useResources } from "@/hooks/helpers/useResources";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
+import { useMemo, useState } from "react";
 
 export const InventoryResources = ({
   entityId,
   max = Infinity,
   className = "flex flex-wrap gap-1",
-  setShowAll,
   dynamic = [],
+  resourcesIconSize = "sm",
 }: {
   entityId: bigint;
   max?: number;
   className?: string;
-  setShowAll?: (showAll: boolean) => void;
   dynamic?: ResourcesIds[];
+  resourcesIconSize?: "xs" | "sm" | "md" | "lg";
 }) => {
+  const [showAll, setShowAll] = useState(false);
   const { getResourcesFromBalance } = useResources();
   const { getBalance } = useResourceBalance();
 
@@ -25,17 +27,22 @@ export const InventoryResources = ({
     getBalance(entityId, resourceId),
   );
 
+  const updatedMax = useMemo(() => {
+    if (showAll) return Infinity;
+    return max;
+  }, [showAll, max]);
+
   return (inventoryResources && inventoryResources.length > 0) || (dynamicResources && dynamicResources.length > 0) ? (
     <div className={`p-2 bg-gold/10 clip-angled ${className}`}>
       {dynamicResources &&
         dynamicResources.length > 0 &&
         dynamicResources
-          .slice(0, max - dynamicResources.length)
+          .slice(0, updatedMax - dynamicResources.length)
           .map(
             (resource) =>
               resource && (
                 <ResourceCost
-                  size="sm"
+                  size={resourcesIconSize}
                   textSize="xs"
                   key={resource.resourceId}
                   type="vertical"
@@ -46,12 +53,12 @@ export const InventoryResources = ({
               ),
           )}
       {inventoryResources
-        .slice(0, max - dynamicResources.length)
+        .slice(0, updatedMax - dynamicResources.length)
         .map(
           (resource) =>
             resource && (
               <ResourceCost
-                size="sm"
+                size={resourcesIconSize}
                 textSize="xs"
                 key={resource.resourceId}
                 type="vertical"
@@ -62,10 +69,10 @@ export const InventoryResources = ({
             ),
         )}
       <div className="ml-1 font-bold hover:opacity-70">
-        {max < inventoryResources.length && (
-          <div onClick={() => setShowAll && setShowAll(true)}>+{inventoryResources.length - max}</div>
+        {updatedMax < inventoryResources.length && !showAll && (
+          <div onClick={() => setShowAll(true)}>+{inventoryResources.length - updatedMax}</div>
         )}
-        {max === Infinity && Boolean(setShowAll) && <div onClick={() => setShowAll!(false)}>hide</div>}
+        {showAll && <div onClick={() => setShowAll(false)}>hide</div>}
       </div>
     </div>
   ) : (

@@ -1,5 +1,5 @@
+import { useBattleManagerByPosition } from "@/hooks/helpers/battles/useBattles";
 import { getArmiesAtPosition, getArmyByEntityId, useArmiesByBattleId } from "@/hooks/helpers/useArmies";
-import { useBattleManagerByPosition } from "@/hooks/helpers/useBattles";
 import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -24,7 +24,6 @@ export const BattleView = () => {
   const battlePosition = battleView?.battle || { x: selectedEntity!.position.x, y: selectedEntity!.position.y };
 
   const battleManager = useBattleManagerByPosition(battlePosition);
-
   const structure = getStructureAtPosition(battlePosition);
 
   let armiesInBattle = useArmiesByBattleId(battleManager?.battleId || 0n);
@@ -67,19 +66,22 @@ export const BattleView = () => {
 
   const attackerHealth = battleAdjusted
     ? {
-        current: Number(battleAdjusted!.attack_army_health.current),
-        lifetime: Number(battleAdjusted!.attack_army_health.lifetime),
+        current: battleAdjusted!.attack_army_health.current,
+        lifetime: battleAdjusted!.attack_army_health.lifetime,
       }
-    : { current: Number(ownArmyBattleStarter?.current || 0), lifetime: Number(ownArmyBattleStarter?.lifetime || 0) };
+    : {
+        current: ownArmyBattleStarter?.health.current || 0n,
+        lifetime: ownArmyBattleStarter?.health.lifetime || 0n,
+      };
   const defenderHealth = battleAdjusted
     ? {
-        current: Number(battleAdjusted!.defence_army_health.current),
-        lifetime: Number(battleAdjusted!.defence_army_health.lifetime),
+        current: battleAdjusted!.defence_army_health.current,
+        lifetime: battleAdjusted!.defence_army_health.lifetime,
       }
     : defenderArmyBattleStarter
       ? {
-          current: Number(defenderArmyBattleStarter.current || 0),
-          lifetime: Number(defenderArmyBattleStarter.lifetime || 0),
+          current: defenderArmyBattleStarter.health.current || 0n,
+          lifetime: defenderArmyBattleStarter.health.lifetime || 0n,
         }
       : undefined;
 

@@ -1,14 +1,17 @@
+import { useDojo } from "@/hooks/context/DojoContext";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { Billboard, useGLTF, Image, useTexture } from "@react-three/drei";
-import { useMemo } from "react";
+import { StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue, getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "@/hooks/context/DojoContext";
+import { Billboard, Image, useGLTF, useTexture } from "@react-three/drei";
+import { useMemo } from "react";
 import * as THREE from "three";
 
 export const ShardsMines = () => {
   const { setup } = useDojo();
-  const mines = useEntityQuery([HasValue(setup.components.Structure, { category: "FragmentMine" })]);
+  const mines = useEntityQuery([
+    HasValue(setup.components.Structure, { category: StructureType[StructureType.FragmentMine] }),
+  ]);
 
   const minesPositions = useMemo(() => {
     return Array.from(mines).map((mine) => {
@@ -16,7 +19,7 @@ export const ShardsMines = () => {
       return {
         position: position!,
         entityId: position?.entity_id,
-        uiPos: getUIPositionFromColRow(position?.x || 0, position?.y || 0, false),
+        uiPos: getUIPositionFromColRow(Number(position?.x || 0), Number(position?.y || 0), false),
       };
     });
   }, [mines]);

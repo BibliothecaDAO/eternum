@@ -1,0 +1,36 @@
+name: client
+
+on:
+  push:
+    branches:
+      - main
+  pull_request: {}
+
+jobs:
+  test-client:
+    runs-on: ubuntu-latest
+    env:
+      VITE_PUBLIC_MASTER_ADDRESS: "0x0"
+      VITE_PUBLIC_MASTER_PRIVATE_KEY: "0x0"
+      VITE_PUBLIC_ACCOUNT_CLASS_HASH: "0x0"
+
+    strategy:
+      matrix:
+        node-version: [21.x]
+
+    steps:
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.2.0
+
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: pnpm i
+      - name: Build packages
+        run: pnpm run build-packages
+      - name: Execute Unit tests
+        run: cd client && pnpm run test

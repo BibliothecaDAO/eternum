@@ -33,8 +33,10 @@ export const ArmyViewCard = ({
     >
       <div className="flex">
         <div className="flex items-center p-1  border-t-0 border-l-0  border pr-3 h5">
-          {army.realm.order && <OrderIcon order={orderNameDict[army.realm.order]} size="xs" className="mr-1" />}
-          {getRealmNameById(BigInt(army.realm.realm_id))}
+          {army.realm && army.realm.order && (
+            <OrderIcon order={orderNameDict[army.realm.order]} size="xs" className="mr-1" />
+          )}
+          {getRealmNameById(BigInt(army.realm?.realm_id || 0n))}
         </div>
       </div>
 
@@ -51,7 +53,7 @@ export const ArmyViewCard = ({
         </Headline>
         <div className="my-2">
           <span>HP: </span>
-          {Number(army.current?.toString()) / 1000}
+          {Number(army.health.current.toString()) / 1000}
         </div>
         {/* <div className="flex justify-between w-full">
           <span>{army.battle_id ? army.battle_id : "No battle"}</span>

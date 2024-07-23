@@ -1,4 +1,4 @@
-import { useBattles } from "@/hooks/helpers/useBattles";
+import { useAllBattles } from "@/hooks/helpers/battles/useBattles";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BattleLabel } from "@/ui/components/worldmap/armies/BattleLabel";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
@@ -10,8 +10,7 @@ import * as THREE from "three";
 
 export const Battles = () => {
   const setSelectedBattle = useUIStore((state) => state.setSelectedBattle);
-  const { allBattles } = useBattles();
-  const battles = allBattles();
+  const battles = useAllBattles();
 
   const onRightClick = useCallback((battle_id: any, position: Position) => {
     setSelectedBattle({ id: BigInt(battle_id), position });
@@ -21,7 +20,7 @@ export const Battles = () => {
     <group>
       {battles.map((battle, index) => {
         if (!battle?.x || !battle?.y) return null;
-        const { x, y } = getUIPositionFromColRow(battle.x, battle.y, false);
+        const { x, y } = getUIPositionFromColRow(Number(battle.x), Number(battle.y), false);
         return (
           <BattleModel
             key={index}
@@ -35,7 +34,7 @@ export const Battles = () => {
   );
 };
 
-const BattleModel = ({ battle_id, position, onClick }: { battle_id: any; position: any; onClick: () => void }) => {
+const BattleModel = ({ battle_id, position, onClick }: { battle_id: bigint; position: any; onClick: () => void }) => {
   const selectedBattle = useUIStore((state) => state.selectedBattle);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
 

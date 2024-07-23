@@ -1,7 +1,6 @@
 import { getComponentValue } from "@dojoengine/recs";
-import { useDojo } from "../context/DojoContext";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
-import { Position } from "@bibliothecadao/eternum";
+import { useDojo } from "../context/DojoContext";
 
 export function useCaravan() {
   const {
