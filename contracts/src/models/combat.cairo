@@ -527,7 +527,13 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         let to_army_protectee_is_self: bool = !get!(world, to_army_protectee_id, Structure).is_structure();
 
         let winner_side: BattleSide = self.winner();
-        let to_army_lost = (winner_side != to_army.battle_side && winner_side != BattleSide::None);
+        let to_army_dead = to_army.troops.count().is_zero();
+
+        // the reason for checking if `to_army_dead` is `true` is that 
+        // it's possible for the battle be a draw and both sides die in the process.
+        // if this edge case occurs, we assume they both lost for the purpose of this
+        // function. They both forfeit their balances.
+        let to_army_lost = to_army_dead || (winner_side != to_army.battle_side && winner_side != BattleSide::None);
         let to_army_won = (winner_side == to_army.battle_side && winner_side != BattleSide::None);
         let to_army_lost_or_battle_not_ended = !self.has_ended() || (self.has_ended() && to_army_lost);
         let to_army_owned_resources: OwnedResourcesTracker = get!(world, to_army_protectee_id, OwnedResourcesTracker);
