@@ -4,37 +4,29 @@ use eternum::systems::{
     realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait},
     combat::contracts::{combat_systems, ICombatContractDispatcher, ICombatContractDispatcherTrait},
     hyperstructure::contracts::{
-        hyperstructure_systems, IHyperstructureSystemsDispatcher,
-        IHyperstructureSystemsDispatcherTrait
+        hyperstructure_systems, IHyperstructureSystemsDispatcher, IHyperstructureSystemsDispatcherTrait
     },
     map::contracts::{map_systems, IMapSystemsDispatcher, IMapSystemsDispatcherTrait},
-    dev::contracts::resource::{
-        dev_resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait
-    },
+    dev::contracts::resource::{dev_resource_systems, IResourceSystemsDispatcher, IResourceSystemsDispatcherTrait},
 };
 use starknet::{ContractAddress};
 
 
 fn deploy_system(world: IWorldDispatcher, class_hash_felt: felt252) -> ContractAddress {
-    let contract_address = world
-        .deploy_contract(class_hash_felt, class_hash_felt.try_into().unwrap(), array![].span());
+    let contract_address = world.deploy_contract(class_hash_felt, class_hash_felt.try_into().unwrap(), array![].span());
 
     contract_address
 }
 
 fn deploy_realm_systems(world: IWorldDispatcher) -> IRealmSystemsDispatcher {
     let realm_systems_address = deploy_system(world, realm_systems::TEST_CLASS_HASH);
-    let realm_systems_dispatcher = IRealmSystemsDispatcher {
-        contract_address: realm_systems_address
-    };
+    let realm_systems_dispatcher = IRealmSystemsDispatcher { contract_address: realm_systems_address };
 
     realm_systems_dispatcher
 }
 
 fn deploy_hyperstructure_systems(world: IWorldDispatcher) -> IHyperstructureSystemsDispatcher {
-    let hyperstructure_systems_address = deploy_system(
-        world, hyperstructure_systems::TEST_CLASS_HASH
-    );
+    let hyperstructure_systems_address = deploy_system(world, hyperstructure_systems::TEST_CLASS_HASH);
     let hyperstructure_systems_dispatcher = IHyperstructureSystemsDispatcher {
         contract_address: hyperstructure_systems_address
     };
@@ -44,9 +36,7 @@ fn deploy_hyperstructure_systems(world: IWorldDispatcher) -> IHyperstructureSyst
 
 fn deploy_combat_systems(world: IWorldDispatcher) -> ICombatContractDispatcher {
     let combat_systems_address = deploy_system(world, combat_systems::TEST_CLASS_HASH);
-    let combat_systems_dispatcher = ICombatContractDispatcher {
-        contract_address: combat_systems_address
-    };
+    let combat_systems_dispatcher = ICombatContractDispatcher { contract_address: combat_systems_address };
     combat_systems_dispatcher
 }
 
@@ -58,8 +48,6 @@ fn deploy_map_systems(world: IWorldDispatcher) -> IMapSystemsDispatcher {
 
 fn deploy_dev_resource_systems(world: IWorldDispatcher) -> IResourceSystemsDispatcher {
     let dev_resource_systems_address = deploy_system(world, dev_resource_systems::TEST_CLASS_HASH);
-    let dev_resource_systems_dispatcher = IResourceSystemsDispatcher {
-        contract_address: dev_resource_systems_address
-    };
+    let dev_resource_systems_dispatcher = IResourceSystemsDispatcher { contract_address: dev_resource_systems_address };
     dev_resource_systems_dispatcher
 }

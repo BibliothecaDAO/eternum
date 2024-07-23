@@ -9,7 +9,7 @@ use eternum::models::config::RoadConfig;
 use eternum::models::owner::Owner;
 use eternum::models::position::{Coord};
 use eternum::models::resources::{Resource, ResourceCost};
-use eternum::models::road::{Road, RoadImpl};
+use eternum::models::road::{Road, RoadCustomImpl};
 use eternum::systems::transport::contracts::road_systems::{
     road_systems, IRoadSystemsDispatcher, IRoadSystemsDispatcherTrait
 };
@@ -41,15 +41,8 @@ fn test_create() {
         (
             Owner { entity_id: entity_id, address: contract_address_const::<'entity'>() },
             Resource { entity_id: entity_id, resource_type: ResourceTypes::STONE, balance: 400 },
-            ResourceCost {
-                entity_id: 1, index: 0, resource_type: ResourceTypes::STONE, amount: 10,
-            },
-            RoadConfig {
-                config_id: ROAD_CONFIG_ID,
-                resource_cost_id: 1,
-                resource_cost_count: 1,
-                speed_up_by: 2
-            }
+            ResourceCost { entity_id: 1, index: 0, resource_type: ResourceTypes::STONE, amount: 10, },
+            RoadConfig { config_id: ROAD_CONFIG_ID, resource_cost_id: 1, resource_cost_count: 1, speed_up_by: 2 }
         )
     );
 
@@ -58,12 +51,10 @@ fn test_create() {
 
     starknet::testing::set_contract_address(contract_address_const::<'entity'>());
     road_systems_dispatcher
-        .create(
-            entity_id, *end_coord, // end first because order should not matter
-             *start_coord, 33
-        );
+        .create(entity_id, *end_coord, // end first because order should not matter
+         *start_coord, 33);
 
-    let road = RoadImpl::get(world, *start_coord, *end_coord);
+    let road = RoadCustomImpl::get(world, *start_coord, *end_coord);
     assert(road.usage_count == 33, 'usage count should be 33');
 
     let entity_fee_resource = get!(world, (entity_id, ResourceTypes::STONE), Resource);
@@ -96,9 +87,8 @@ fn test_not_entity() {
 
     // call as unknown address
     starknet::testing::set_contract_address(contract_address_const::<'some_unknown'>());
-    road_systems_dispatcher
-        .create(entity_id, end_coord, // end first because order should not matter
-         start_coord, 1);
+    road_systems_dispatcher.create(entity_id, end_coord, // end first because order should not matter
+     start_coord, 1);
 }
 
 
@@ -120,15 +110,8 @@ fn test_insufficient_balance() {
         (
             Owner { entity_id: entity_id, address: contract_address_const::<'entity'>() },
             Resource { entity_id: entity_id, resource_type: ResourceTypes::STONE, balance: 400 },
-            ResourceCost {
-                entity_id: 1, index: 0, resource_type: ResourceTypes::STONE, amount: 10,
-            },
-            RoadConfig {
-                config_id: ROAD_CONFIG_ID,
-                resource_cost_id: 1,
-                resource_cost_count: 1,
-                speed_up_by: 2
-            }
+            ResourceCost { entity_id: 1, index: 0, resource_type: ResourceTypes::STONE, amount: 10, },
+            RoadConfig { config_id: ROAD_CONFIG_ID, resource_cost_id: 1, resource_cost_count: 1, speed_up_by: 2 }
         )
     );
 

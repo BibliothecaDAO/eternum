@@ -24,16 +24,14 @@ struct Realm {
 }
 
 
-trait RealmTrait {
+trait RealmCustomTrait {
     fn has_resource(self: Realm, resource_type: u8) -> bool;
     fn assert_is_set(self: Realm);
 }
 
-impl RealmImpl of RealmTrait {
+impl RealmCustomImpl of RealmCustomTrait {
     fn has_resource(self: Realm, resource_type: u8) -> bool {
-        let mut resource_types: Span<u8> = unpack_resource_types(
-            self.resource_types_packed, self.resource_types_count
-        );
+        let mut resource_types: Span<u8> = unpack_resource_types(self.resource_types_packed, self.resource_types_count);
         let mut has_resource = false;
         loop {
             match resource_types.pop_front() {

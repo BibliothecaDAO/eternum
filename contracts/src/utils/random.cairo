@@ -20,9 +20,7 @@ fn random(salt: u128, upper_bound: u128) -> u128 {
 
 
 fn make_seed_from_transaction_hash(salt: u128) -> u256 {
-    return poseidon_hash_span(
-        array![starknet::get_tx_info().unbox().transaction_hash.into(), salt.into()].span()
-    )
+    return poseidon_hash_span(array![starknet::get_tx_info().unbox().transaction_hash.into(), salt.into()].span())
         .into();
 }
 
@@ -65,10 +63,7 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
                 if index == k {
                     break;
                 }
-                result
-                    .append(
-                        *population.at(random(salt + index.into(), n.into()).try_into().unwrap())
-                    );
+                result.append(*population.at(random(salt + index.into(), n.into()).try_into().unwrap()));
                 index += 1;
             };
             return result.span();
@@ -106,9 +101,7 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
         // just to make it different
         salt += 18;
 
-        let chosen_index = bisect_right(
-            cum_weights.clone(), random(salt, total), 0, Option::Some(hi)
-        );
+        let chosen_index = bisect_right(cum_weights.clone(), random(salt, total), 0, Option::Some(hi));
 
         if r == false {
             if chosen_index_map.get(chosen_index.into()) == 0 {

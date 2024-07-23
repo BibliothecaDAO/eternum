@@ -15,8 +15,8 @@ mod road_systems {
     use eternum::models::config::RoadConfig;
     use eternum::models::owner::Owner;
     use eternum::models::position::{Coord};
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-    use eternum::models::road::{Road, RoadImpl};
+    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
+    use eternum::models::road::{Road, RoadCustomImpl};
 
     #[abi(embed_v0)]
     impl RoadSystemsImpl of super::IRoadSystems<ContractState> {
@@ -32,20 +32,13 @@ mod road_systems {
         /// * `end_coord` - The ending coordinate of the road.
         /// * `usage_count` - The number of times the road can be used.
         fn create(
-            ref world: IWorldDispatcher,
-            entity_id: u128,
-            start_coord: Coord,
-            end_coord: Coord,
-            usage_count: usize
+            ref world: IWorldDispatcher, entity_id: u128, start_coord: Coord, end_coord: Coord, usage_count: usize
         ) {
             // assert that entity is owned by caller
             let entity_owner = get!(world, entity_id, Owner);
-            assert(
-                entity_owner.address == starknet::get_caller_address(),
-                'entity id not owned by caller'
-            );
+            assert(entity_owner.address == starknet::get_caller_address(), 'entity id not owned by caller');
 
-            let road = RoadImpl::get(world, start_coord, end_coord);
+            let road = RoadCustomImpl::get(world, start_coord, end_coord);
             assert(road.usage_count == 0, 'road already exists');
 
             let road_config = get!(world, ROAD_CONFIG_ID, RoadConfig);
@@ -55,12 +48,8 @@ mod road_systems {
                     break;
                 }
 
-                let resource_cost = get!(
-                    world, (road_config.resource_cost_id, index), ResourceCost
-                );
-                let mut realm_resource = ResourceImpl::get(
-                    world, (entity_id, resource_cost.resource_type)
-                );
+                let resource_cost = get!(world, (road_config.resource_cost_id, index), ResourceCost);
+                let mut realm_resource = ResourceCustomImpl::get(world, (entity_id, resource_cost.resource_type));
 
                 realm_resource.burn(resource_cost.amount * usage_count.into());
                 realm_resource.save(world);

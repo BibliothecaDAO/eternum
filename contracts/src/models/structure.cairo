@@ -15,7 +15,7 @@ struct Structure {
 
 
 #[generate_trait]
-impl StructureImpl of StructureTrait {
+impl StructureCustomImpl of StructureCustomTrait {
     fn assert_is_structure(self: Structure) {
         assert!(self.is_structure(), "entity {} is not a structure", self.entity_id)
     }
@@ -25,7 +25,7 @@ impl StructureImpl of StructureTrait {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, PrintTrait, Introspect)]
+#[derive(PartialEq, Copy, Drop, Serde, Introspect)]
 enum StructureCategory {
     None,
     Realm,
@@ -56,7 +56,7 @@ struct StructureCount {
 }
 
 #[generate_trait]
-impl StructureCountImpl of StructureCountTrait {
+impl StructureCountCustomImpl of StructureCountCustomTrait {
     fn assert_none(self: StructureCount) {
         assert!(self.count == 0, "structure exists at this location");
     }

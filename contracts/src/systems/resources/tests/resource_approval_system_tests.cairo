@@ -27,62 +27,33 @@ mod resource_approval_system_tests {
 
         let resource_systems_address = deploy_system(world, resource_systems::TEST_CLASS_HASH);
 
-        let resource_systems_dispatcher = IResourceSystemsDispatcher {
-            contract_address: resource_systems_address
-        };
+        let resource_systems_dispatcher = IResourceSystemsDispatcher { contract_address: resource_systems_address };
 
         (world, resource_systems_dispatcher)
     }
 
 
-    fn make_owner_and_receiver(
-        world: IWorldDispatcher, owner_entity_id: u64, receiver_entity_id: u64
-    ) {
-        let owner_entity_position = Position {
-            x: 100_000, y: 200_000, entity_id: owner_entity_id.into()
-        };
+    fn make_owner_and_receiver(world: IWorldDispatcher, owner_entity_id: u64, receiver_entity_id: u64) {
+        let owner_entity_position = Position { x: 100_000, y: 200_000, entity_id: owner_entity_id.into() };
 
         set!(world, (owner_entity_position));
         set!(
             world,
             (
-                Owner {
-                    address: contract_address_const::<'owner_entity'>(),
-                    entity_id: owner_entity_id.into()
-                },
-                EntityOwner {
-                    entity_id: owner_entity_id.into(), entity_owner_id: owner_entity_id.into()
-                },
-                Resource {
-                    entity_id: owner_entity_id.into(),
-                    resource_type: ResourceTypes::STONE,
-                    balance: 1000
-                },
-                Resource {
-                    entity_id: owner_entity_id.into(),
-                    resource_type: ResourceTypes::WOOD,
-                    balance: 1000
-                }
+                Owner { address: contract_address_const::<'owner_entity'>(), entity_id: owner_entity_id.into() },
+                EntityOwner { entity_id: owner_entity_id.into(), entity_owner_id: owner_entity_id.into() },
+                Resource { entity_id: owner_entity_id.into(), resource_type: ResourceTypes::STONE, balance: 1000 },
+                Resource { entity_id: owner_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000 }
             )
         );
 
-        let receiver_entity_position = Position {
-            x: 100_000, y: 200_000, entity_id: receiver_entity_id.into()
-        };
+        let receiver_entity_position = Position { x: 100_000, y: 200_000, entity_id: receiver_entity_id.into() };
         set!(world, (receiver_entity_position));
         set!(
             world,
             (
-                Resource {
-                    entity_id: receiver_entity_id.into(),
-                    resource_type: ResourceTypes::STONE,
-                    balance: 1000
-                },
-                Resource {
-                    entity_id: receiver_entity_id.into(),
-                    resource_type: ResourceTypes::WOOD,
-                    balance: 1000
-                }
+                Resource { entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::STONE, balance: 1000 },
+                Resource { entity_id: receiver_entity_id.into(), resource_type: ResourceTypes::WOOD, balance: 1000 }
             )
         );
     }
@@ -102,13 +73,8 @@ mod resource_approval_system_tests {
         set!(
             world,
             (
-                Owner {
-                    address: contract_address_const::<'approved_entity'>(),
-                    entity_id: approved_entity_id.into()
-                },
-                EntityOwner {
-                    entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into()
-                }
+                Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() },
+                EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() }
             )
         );
 
@@ -147,13 +113,8 @@ mod resource_approval_system_tests {
         set!(
             world,
             (
-                Owner {
-                    address: contract_address_const::<'approved_entity'>(),
-                    entity_id: approved_entity_id.into()
-                },
-                EntityOwner {
-                    entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into()
-                }
+                Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() },
+                EntityOwner { entity_id: approved_entity_id.into(), entity_owner_id: approved_entity_id.into() }
             )
         );
 
@@ -163,11 +124,7 @@ mod resource_approval_system_tests {
             .approve(
                 owner_entity_id.into(),
                 approved_entity_id.into(),
-                array![
-                    (ResourceTypes::STONE, BoundedInt::max()),
-                    (ResourceTypes::WOOD, BoundedInt::max()),
-                ]
-                    .span()
+                array![(ResourceTypes::STONE, BoundedInt::max()), (ResourceTypes::WOOD, BoundedInt::max()),].span()
             );
 
         // check approval balance
@@ -177,12 +134,8 @@ mod resource_approval_system_tests {
         let approved_entity_wood_allowance = get!(
             world, (owner_entity_id, approved_entity_id, ResourceTypes::WOOD), ResourceAllowance
         );
-        assert(
-            approved_entity_stone_allowance.amount == BoundedInt::max(), 'stone allowance mismatch'
-        );
-        assert(
-            approved_entity_wood_allowance.amount == BoundedInt::max(), 'wood allowance mismatch'
-        );
+        assert(approved_entity_stone_allowance.amount == BoundedInt::max(), 'stone allowance mismatch');
+        assert(approved_entity_wood_allowance.amount == BoundedInt::max(), 'wood allowance mismatch');
     }
 
 
@@ -200,10 +153,7 @@ mod resource_approval_system_tests {
 
         set!(
             world,
-            (Owner {
-                address: contract_address_const::<'approved_entity'>(),
-                entity_id: approved_entity_id.into()
-            })
+            (Owner { address: contract_address_const::<'approved_entity'>(), entity_id: approved_entity_id.into() })
         );
 
         // some unknown entity calls approve

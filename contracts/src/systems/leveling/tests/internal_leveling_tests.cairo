@@ -14,9 +14,7 @@ mod internal_leveling_systems {
         config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait
     };
 
-    use eternum::systems::leveling::contracts::leveling_systems::{
-        InternalLevelingSystemsImpl as leveling
-    };
+    use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
 
     use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 
@@ -40,21 +38,12 @@ mod internal_leveling_systems {
         let max_level = MAX_LEVEL;
 
         // 3 tier resources
-        let mut resource_1_costs = array![(ResourceTypes::WOOD, 1000), (ResourceTypes::STONE, 1000)]
-            .span();
-        let mut resource_2_costs = array![
-            (ResourceTypes::COAL, 1000), (ResourceTypes::COPPER, 1000)
-        ]
-            .span();
-        let mut resource_3_costs = array![
-            (ResourceTypes::OBSIDIAN, 1000), (ResourceTypes::SILVER, 1000)
-        ]
-            .span();
+        let mut resource_1_costs = array![(ResourceTypes::WOOD, 1000), (ResourceTypes::STONE, 1000)].span();
+        let mut resource_2_costs = array![(ResourceTypes::COAL, 1000), (ResourceTypes::COPPER, 1000)].span();
+        let mut resource_3_costs = array![(ResourceTypes::OBSIDIAN, 1000), (ResourceTypes::SILVER, 1000)].span();
 
         let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
-        let level_config_dispatcher = ILevelingConfigDispatcher {
-            contract_address: config_systems_address
-        };
+        let level_config_dispatcher = ILevelingConfigDispatcher { contract_address: config_systems_address };
 
         level_config_dispatcher
             .set_leveling_config(
@@ -88,9 +77,7 @@ mod internal_leveling_systems {
         loop {
             match resources.pop_front() {
                 Option::Some(resource_type) => {
-                    set!(
-                        world, (Resource { entity_id: entity_id, resource_type, balance: 100_000 })
-                    );
+                    set!(world, (Resource { entity_id: entity_id, resource_type, balance: 100_000 }));
                 },
                 Option::None => { break; },
             }

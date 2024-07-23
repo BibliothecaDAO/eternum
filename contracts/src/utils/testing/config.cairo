@@ -6,18 +6,16 @@ use eternum::constants::{ResourceTypes, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, Ti
 use eternum::models::{config::TroopConfig, combat::Troops};
 
 use eternum::systems::config::contracts::{
-    ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher,
-    IStaminaConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
-    ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IMercenariesConfigDispatcher,
-    IMercenariesConfigDispatcherTrait, IBankConfigDispatcher, IBankConfigDispatcherTrait,
-    ITickConfigDispatcher, ITickConfigDispatcherTrait, IMapConfigDispatcher,
-    IMapConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait
+    ITroopConfigDispatcher, ITroopConfigDispatcherTrait, IStaminaConfigDispatcher, IStaminaConfigDispatcherTrait,
+    ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait, ITransportConfigDispatcher,
+    ITransportConfigDispatcherTrait, IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait,
+    IBankConfigDispatcher, IBankConfigDispatcherTrait, ITickConfigDispatcher, ITickConfigDispatcherTrait,
+    IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
-    get_resource_weights, MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT,
-    MAP_EXPLORE_RANDOM_MINT_AMOUNT, SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM,
-    LP_FEE_DENOM
+    get_resource_weights, MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT, MAP_EXPLORE_RANDOM_MINT_AMOUNT,
+    SHARDS_MINE_FAIL_PROBABILITY_WEIGHT, LORDS_COST, LP_FEES_NUM, LP_FEE_DENOM
 };
 
 use starknet::{ContractAddress};
@@ -34,10 +32,8 @@ fn set_bank_config(config_systems_address: ContractAddress) {
 }
 
 fn set_tick_config(config_systems_address: ContractAddress) {
-    ITickConfigDispatcher { contract_address: config_systems_address }
-        .set_tick_config(TickIds::DEFAULT, 1);
-    ITickConfigDispatcher { contract_address: config_systems_address }
-        .set_tick_config(TickIds::ARMIES, 7200);
+    ITickConfigDispatcher { contract_address: config_systems_address }.set_tick_config(TickIds::DEFAULT, 1);
+    ITickConfigDispatcher { contract_address: config_systems_address }.set_tick_config(TickIds::ARMIES, 7200);
 }
 
 fn set_exploration_config(config_systems_address: ContractAddress) {
@@ -60,16 +56,16 @@ fn set_combat_config(config_systems_address: ContractAddress) {
         advantage_percent: 1000,
         disadvantage_percent: 1000,
         pillage_health_divisor: 8,
+        army_free_per_structure: 100,
+        army_extra_per_building: 100,
     };
-    ITroopConfigDispatcher { contract_address: config_systems_address }
-        .set_troop_config(troop_config);
+    ITroopConfigDispatcher { contract_address: config_systems_address }.set_troop_config(troop_config);
 }
 
 fn set_stamina_config(config_systems_address: ContractAddress) {
     IStaminaConfigDispatcher { contract_address: config_systems_address }
         .set_stamina_config(ResourceTypes::PALADIN, 100);
-    IStaminaConfigDispatcher { contract_address: config_systems_address }
-        .set_stamina_config(ResourceTypes::KNIGHT, 80);
+    IStaminaConfigDispatcher { contract_address: config_systems_address }.set_stamina_config(ResourceTypes::KNIGHT, 80);
     IStaminaConfigDispatcher { contract_address: config_systems_address }
         .set_stamina_config(ResourceTypes::CROSSBOWMAN, 80);
 }
@@ -83,19 +79,14 @@ fn set_capacity_config(config_systems_address: ContractAddress) {
 }
 
 fn set_speed_config(config_systems_address: ContractAddress) {
-    ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_speed_config(ARMY_ENTITY_TYPE, 1);
-    ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_speed_config(DONKEY_ENTITY_TYPE, 60);
+    ITransportConfigDispatcher { contract_address: config_systems_address }.set_speed_config(ARMY_ENTITY_TYPE, 1);
+    ITransportConfigDispatcher { contract_address: config_systems_address }.set_speed_config(DONKEY_ENTITY_TYPE, 60);
 }
 
 fn set_mercenaries_config(config_systems_address: ContractAddress) {
-    let mercenaries_troops = Troops {
-        knight_count: 4_000_000, paladin_count: 4_000_000, crossbowman_count: 4_000_000
-    };
+    let mercenaries_troops = Troops { knight_count: 4_000_000, paladin_count: 4_000_000, crossbowman_count: 4_000_000 };
 
-    let mercenaries_rewards = array![(ResourceTypes::WHEAT, 10_000), (ResourceTypes::FISH, 20_000)]
-        .span();
+    let mercenaries_rewards = array![(ResourceTypes::WHEAT, 10_000), (ResourceTypes::FISH, 20_000)].span();
 
     IMercenariesConfigDispatcher { contract_address: config_systems_address }
         .set_mercenaries_config(mercenaries_troops, mercenaries_rewards);
@@ -107,8 +98,7 @@ fn set_weight_config(config_systems_address: ContractAddress) {
     while i < resource_weights
         .len() {
             let (resource_id, weight) = *resource_weights.at(i);
-            IWeightConfigDispatcher { contract_address: config_systems_address }
-                .set_weight_config(resource_id, weight);
+            IWeightConfigDispatcher { contract_address: config_systems_address }.set_weight_config(resource_id, weight);
             i += 1;
         }
 }

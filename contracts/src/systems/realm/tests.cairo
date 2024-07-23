@@ -13,15 +13,12 @@ use eternum::systems::config::contracts::{
     config_systems, IRealmFreeMintConfigDispatcher, IRealmFreeMintConfigDispatcherTrait
 };
 
-use eternum::systems::realm::contracts::{
-    realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait
-};
+use eternum::systems::realm::contracts::{realm_systems, IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait};
 
 use eternum::utils::map::biomes::Biome;
 
 use eternum::utils::testing::{
-    world::spawn_eternum,
-    systems::{deploy_system, deploy_realm_systems, deploy_hyperstructure_systems},
+    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_hyperstructure_systems},
     general::{
         spawn_realm, get_default_realm_pos, generate_realm_positions, spawn_hyperstructure,
         get_default_hyperstructure_coord
@@ -50,13 +47,10 @@ fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
 
     // set initially minted resources
     let initial_resources = array![
-        (INITIAL_RESOURCE_1_TYPE, INITIAL_RESOURCE_1_AMOUNT),
-        (INITIAL_RESOURCE_2_TYPE, INITIAL_RESOURCE_2_AMOUNT)
+        (INITIAL_RESOURCE_1_TYPE, INITIAL_RESOURCE_1_AMOUNT), (INITIAL_RESOURCE_2_TYPE, INITIAL_RESOURCE_2_AMOUNT)
     ];
 
-    let realm_free_mint_config_dispatcher = IRealmFreeMintConfigDispatcher {
-        contract_address: config_systems_address
-    };
+    let realm_free_mint_config_dispatcher = IRealmFreeMintConfigDispatcher { contract_address: config_systems_address };
 
     let REALM_FREE_MINT_CONFIG_ID = 0;
 
@@ -176,15 +170,11 @@ fn test_mint_starting_resources() {
 
     realm_systems_dispatcher.mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, realm_entity_id);
 
-    let realm_initial_resource_1 = get!(
-        world, (realm_entity_id, INITIAL_RESOURCE_1_TYPE), Resource
-    );
+    let realm_initial_resource_1 = get!(world, (realm_entity_id, INITIAL_RESOURCE_1_TYPE), Resource);
 
     assert(realm_initial_resource_1.balance == INITIAL_RESOURCE_1_AMOUNT, 'wrong mint 1 amount');
 
-    let realm_initial_resource_2 = get!(
-        world, (realm_entity_id, INITIAL_RESOURCE_2_TYPE), Resource
-    );
+    let realm_initial_resource_2 = get!(world, (realm_entity_id, INITIAL_RESOURCE_2_TYPE), Resource);
     assert(realm_initial_resource_2.balance == INITIAL_RESOURCE_2_AMOUNT, 'wrong mint 2 amount');
 }
 
@@ -216,12 +206,8 @@ fn test_mint_starting_resources_as_not_realm() {
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
     let hyperstructure_entity_id = spawn_hyperstructure(
-        world,
-        hyperstructure_systems_dispatcher,
-        realm_entity_id,
-        get_default_hyperstructure_coord()
+        world, hyperstructure_systems_dispatcher, realm_entity_id, get_default_hyperstructure_coord()
     );
 
-    realm_systems_dispatcher
-        .mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, hyperstructure_entity_id);
+    realm_systems_dispatcher.mint_starting_resources(REALM_FREE_MINT_CONFIG_ID, hyperstructure_entity_id);
 }

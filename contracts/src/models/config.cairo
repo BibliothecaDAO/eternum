@@ -2,8 +2,7 @@ use core::debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{
-    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION,
-    HYPERSTRUCTURE_CONFIG_ID, TickIds
+    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds
 };
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
@@ -69,7 +68,7 @@ struct CapacityConfig {
 }
 
 #[generate_trait]
-impl CapacityConfigImpl of CapacityConfigTrait {
+impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
     fn get(world: IWorldDispatcher, entity_type: u128) -> CapacityConfig {
         get!(world, (WORLD_CONFIG_ID, entity_type), CapacityConfig)
     }
@@ -181,7 +180,7 @@ struct WeightConfig {
 }
 
 #[generate_trait]
-impl WeightConfigImpl of WeightConfigTrait {
+impl WeightConfigCustomImpl of WeightConfigCustomTrait {
     fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
         let resource_weight_config = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
 
@@ -250,10 +249,8 @@ struct BuildingConfig {
 }
 
 #[generate_trait]
-impl BuildingConfigImpl of BuildingConfigTrait {
-    fn get(
-        world: IWorldDispatcher, category: BuildingCategory, resource_type: u8
-    ) -> BuildingConfig {
+impl BuildingConfigCustomImpl of BuildingConfigCustomTrait {
+    fn get(world: IWorldDispatcher, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
         return get!(
             world,
             (
@@ -284,12 +281,18 @@ struct TroopConfig {
     // get to losing 12.5% each. If an army is far stronger than the order, 
     // they lose a small precentage (it goes closer to 0% health loss) while the
     // weak army's loss is closer to 12.5% 
-    pillage_health_divisor: u8
+    pillage_health_divisor: u8,
+    // the number of armies that can be created per structure
+    // before military buildings are required to create more
+    army_free_per_structure: u8,
+    // the number of additional  armies that can be create with 
+    // each new military building
+    army_extra_per_building: u8,
 }
 
 
 #[generate_trait]
-impl TroopConfigImpl of TroopConfigTrait {
+impl TroopConfigCustomImpl of TroopConfigCustomTrait {
     fn get(world: IWorldDispatcher) -> TroopConfig {
         return get!(world, WORLD_CONFIG_ID, TroopConfig);
     }
@@ -305,7 +308,7 @@ struct BattleConfig {
 }
 
 #[generate_trait]
-impl BattleConfigImpl of BattleConfigTrait {
+impl BattleConfigCustomImpl of BattleConfigCustomTrait {
     fn get(world: IWorldDispatcher) -> BattleConfig {
         get!(world, WORLD_CONFIG_ID, BattleConfig)
     }
@@ -332,16 +335,14 @@ struct PopulationConfig {
 }
 
 #[generate_trait]
-impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
+impl BuildingCategoryPopulationConfigCustomImpl of BuildingCategoryPopConfigCustomTrait {
     fn get(world: IWorldDispatcher, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
-        get!(
-            world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig
-        )
+        get!(world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig)
     }
 }
 
 #[generate_trait]
-impl HyperstructureConfigImpl of HyperstructureConfigTrait {
+impl HyperstructureConfigCustomImpl of HyperstructureConfigCustomTrait {
     fn get(world: IWorldDispatcher, resource_id: u8) -> HyperstructureResourceConfig {
         get!(world, (HYPERSTRUCTURE_CONFIG_ID, resource_id), HyperstructureResourceConfig)
     }

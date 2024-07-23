@@ -3,20 +3,8 @@ use eternum::alias::ID;
 
 #[dojo::interface]
 trait ISwapSystems {
-    fn buy(
-        ref world: IWorldDispatcher,
-        bank_entity_id: u128,
-        entity_id: u128,
-        resource_type: u8,
-        amount: u128
-    ) -> ID;
-    fn sell(
-        ref world: IWorldDispatcher,
-        bank_entity_id: u128,
-        entity_id: u128,
-        resource_type: u8,
-        amount: u128
-    ) -> ID;
+    fn buy(ref world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128) -> ID;
+    fn sell(ref world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128) -> ID;
 }
 
 #[dojo::contract]
@@ -27,10 +15,10 @@ mod swap_systems {
     use eternum::alias::ID;
     use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID};
     use eternum::models::bank::bank::{Bank};
-    use eternum::models::bank::market::{Market, MarketTrait};
+    use eternum::models::bank::market::{Market, MarketCustomTrait};
     use eternum::models::config::{BankConfig};
     use eternum::models::config::{TickImpl, TickTrait};
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceTrait};
+    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
     use eternum::systems::bank::contracts::bank::bank_systems::{InternalBankSystemsImpl};
 
     use option::OptionTrait;
@@ -57,31 +45,25 @@ mod swap_systems {
     #[abi(embed_v0)]
     impl SwapSystemsImpl of super::ISwapSystems<ContractState> {
         fn buy(
-            ref world: IWorldDispatcher,
-            bank_entity_id: u128,
-            entity_id: u128,
-            resource_type: u8,
-            amount: u128
+            ref world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128
         ) -> ID {
             let bank = get!(world, bank_entity_id, Bank);
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
 
             // get lords price of resource expressed to be bought from amm
             let mut market = get!(world, (bank_entity_id, resource_type), Market);
-            let lords_cost_from_amm = market
-                .buy(bank_config.lp_fee_num, bank_config.lp_fee_denom, amount);
+            let lords_cost_from_amm = market.buy(bank_config.lp_fee_num, bank_config.lp_fee_denom, amount);
             let lps_fee = lords_cost_from_amm - market.buy(0, 1, amount);
-            let bank_lords_fee_amount = (lords_cost_from_amm * bank.owner_fee_num)
-                / bank.owner_fee_denom;
+            let bank_lords_fee_amount = (lords_cost_from_amm * bank.owner_fee_num) / bank.owner_fee_denom;
             let total_lords_cost = lords_cost_from_amm + bank_lords_fee_amount;
 
             // udpate player lords
-            let mut player_lords = ResourceImpl::get(world, (entity_id, ResourceTypes::LORDS));
+            let mut player_lords = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::LORDS));
             player_lords.burn(total_lords_cost);
             player_lords.save(world);
 
             // add bank fees to bank
-            let mut bank_lords = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
+            let mut bank_lords = ResourceCustomImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
             bank_lords.add(bank_lords_fee_amount);
             bank_lords.save(world);
 
@@ -115,32 +97,26 @@ mod swap_systems {
 
 
         fn sell(
-            ref world: IWorldDispatcher,
-            bank_entity_id: u128,
-            entity_id: u128,
-            resource_type: u8,
-            amount: u128
+            ref world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128
         ) -> ID {
             let bank = get!(world, bank_entity_id, Bank);
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
 
             // get lords received from amm after resource amount is sold
             let mut market = get!(world, (bank_entity_id, resource_type), Market);
-            let lords_received_from_amm = market
-                .sell(bank_config.lp_fee_num, bank_config.lp_fee_denom, amount);
+            let lords_received_from_amm = market.sell(bank_config.lp_fee_num, bank_config.lp_fee_denom, amount);
             let lps_fee = market.sell(0, 1, amount) - lords_received_from_amm;
 
-            let bank_lords_fee_amount = (lords_received_from_amm * bank.owner_fee_num)
-                / bank.owner_fee_denom;
+            let bank_lords_fee_amount = (lords_received_from_amm * bank.owner_fee_num) / bank.owner_fee_denom;
             let total_lords_received = lords_received_from_amm - bank_lords_fee_amount;
 
             // burn the resource the player is exchanging for lords
-            let mut player_resource = ResourceImpl::get(world, (entity_id, resource_type));
+            let mut player_resource = ResourceCustomImpl::get(world, (entity_id, resource_type));
             player_resource.burn(amount);
             player_resource.save(world);
 
             // add bank fees to bank
-            let mut bank_lords = ResourceImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
+            let mut bank_lords = ResourceCustomImpl::get(world, (bank_entity_id, ResourceTypes::LORDS));
             bank_lords.add(bank_lords_fee_amount);
             bank_lords.save(world);
 

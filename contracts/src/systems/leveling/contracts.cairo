@@ -15,15 +15,13 @@ mod leveling_systems {
         HYPERSTRUCTURE_LEVELING_START_TIER
     };
     use eternum::models::config::{LevelingConfig};
-    use eternum::models::level::{Level, LevelTrait};
+    use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::owner::{Owner};
     use eternum::models::realm::{Realm};
-    use eternum::models::resources::ResourceTrait;
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
+    use eternum::models::resources::ResourceCustomTrait;
+    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
 
-    use eternum::systems::leveling::contracts::leveling_systems::{
-        InternalLevelingSystemsImpl as leveling
-    };
+    use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
 
     #[abi(embed_v0)]
     impl LevelingSystemsImpl of super::ILevelingSystems<ContractState> {
@@ -44,13 +42,9 @@ mod leveling_systems {
 
     #[generate_trait]
     impl InternalLevelingSystemsImpl of InternalLevelingSystemsTrait {
-        fn get_realm_level_bonus(
-            world: IWorldDispatcher, realm_entity_id: ID, leveling_index: u8
-        ) -> u128 {
+        fn get_realm_level_bonus(world: IWorldDispatcher, realm_entity_id: ID, leveling_index: u8) -> u128 {
             let level = get!(world, (realm_entity_id), Level);
-            let leveling_config: LevelingConfig = get!(
-                world, REALM_LEVELING_CONFIG_ID, LevelingConfig
-            );
+            let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
             level.get_index_multiplier(leveling_config, leveling_index, REALM_LEVELING_START_TIER)
         }
 
@@ -70,12 +64,12 @@ mod leveling_systems {
 
             if (next_index == LevelIndex::FOOD) {
                 let wheat_cost = (cost_multiplier * leveling_config.wheat_base_amount) / 100;
-                let mut wheat = ResourceImpl::get(world, (entity_id, ResourceTypes::WHEAT));
+                let mut wheat = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::WHEAT));
                 wheat.burn(wheat_cost);
                 wheat.save(world);
 
                 let fish_cost = (cost_multiplier * leveling_config.fish_base_amount) / 100;
-                let mut fish = ResourceImpl::get(world, (entity_id, ResourceTypes::FISH));
+                let mut fish = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::FISH));
                 fish.burn(fish_cost);
                 fish.save(world);
             } else {
@@ -103,9 +97,7 @@ mod leveling_systems {
 
                     let total_cost = (cost_multiplier * resource_cost.amount) / 100;
 
-                    let mut resource = ResourceImpl::get(
-                        world, (entity_id, resource_cost.resource_type)
-                    );
+                    let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_cost.resource_type));
                     assert(resource.balance >= total_cost, 'not enough resource');
                     resource.burn(total_cost);
                     resource.save(world);

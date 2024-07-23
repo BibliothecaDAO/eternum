@@ -19,7 +19,7 @@ struct Movable {
 }
 
 #[generate_trait]
-impl MovableImpl of MovableTrait {
+impl MovableCustomImpl of MovableCustomTrait {
     fn sec_per_km(world: IWorldDispatcher, entity_type: u128) -> u16 {
         get!(world, (WORLD_CONFIG_ID, entity_type), SpeedConfig).sec_per_km
     }
@@ -45,7 +45,7 @@ struct ArrivalTime {
 }
 
 #[generate_trait]
-impl ArrivalTimeImpl of ArrivalTimeTrait {
+impl ArrivalTimeCustomImpl of ArrivalTimeCustomTrait {
     fn assert_not_travelling(self: ArrivalTime) {
         assert(self.arrives_at <= starknet::get_block_timestamp(), 'entity is in transit')
     }

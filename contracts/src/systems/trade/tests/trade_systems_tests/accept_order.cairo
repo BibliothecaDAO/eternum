@@ -9,7 +9,7 @@ use eternum::models::config::{LevelingConfig};
 use eternum::models::level::{Level};
 use eternum::models::metadata::ForeignKey;
 use eternum::models::movable::{Movable, ArrivalTime};
-use eternum::models::order::{Orders, OrdersTrait};
+use eternum::models::order::{Orders, OrdersCustomTrait};
 use eternum::models::owner::Owner;
 use eternum::models::position::{Position, Coord};
 use eternum::models::realm::Realm;
@@ -21,8 +21,8 @@ use eternum::models::weight::Weight;
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::contracts::{
-    ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher,
-    IWeightConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
+    ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait,
+    ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
 };
 
 use eternum::systems::trade::contracts::trade_systems::{
@@ -47,11 +47,8 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, ITradeSyste
 
     // set road config
     ITransportConfigDispatcher { contract_address: config_systems_address }
-        .set_road_config(
-            array![ // pay for each soldier with the following
-            (ResourceTypes::STONE, 9000),].span(),
-            2
-        );
+        .set_road_config(array![ // pay for each soldier with the following
+        (ResourceTypes::STONE, 9000),].span(), 2);
 
     // set donkey capacity weight_gram
     ICapacityConfigDispatcher { contract_address: config_systems_address }
@@ -86,34 +83,17 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, ITradeSyste
     set!(world, (Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }));
     set!(world, (Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() }));
 
-    set!(
-        world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::STONE, balance: 100 })
-    );
-    set!(
-        world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 })
-    );
-    set!(
-        world,
-        (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
-    );
+    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::STONE, balance: 100 }));
+    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 }));
+    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
 
-    set!(
-        world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 })
-    );
-    set!(
-        world,
-        (Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 })
-    );
-    set!(
-        world,
-        (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
-    );
+    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 }));
+    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 }));
+    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
     let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
-    let trade_systems_dispatcher = ITradeSystemsDispatcher {
-        contract_address: trade_systems_address
-    };
+    let trade_systems_dispatcher = ITradeSystemsDispatcher { contract_address: trade_systems_address };
 
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
@@ -207,10 +187,7 @@ fn test_not_trade_taker_id() {
     // who wants to accept is the intended recepient
 
     let taker_id = 9999; // set arbitrarily
-    set!(
-        world,
-        (Owner { entity_id: taker_id, address: contract_address_const::<'takers_other_realm'>() })
-    );
+    set!(world, (Owner { entity_id: taker_id, address: contract_address_const::<'takers_other_realm'>() }));
 
     // create order with a caller that isnt the owner of maker_id
     starknet::testing::set_contract_address(contract_address_const::<'takers_other_realm'>());
@@ -255,9 +232,7 @@ fn test_caller_not_taker() {
 fn test_transport_not_enough_donkey_capacity() {
     let (world, trade_id, _, taker_id, trade_systems_dispatcher) = setup(true);
 
-    set!(
-        world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 0 })
-    );
+    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 0 }));
 
     starknet::testing::set_contract_address(contract_address_const::<'taker'>());
 

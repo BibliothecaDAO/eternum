@@ -1,7 +1,8 @@
 use core::fmt::{Display, Formatter, Error};
+use core::zeroable::Zeroable;
 use debug::PrintTrait;
 
-use eternum::utils::number::{NumberTrait, i128Div};
+use eternum::utils::number::{NumberTrait};
 use option::OptionTrait;
 use traits::Into;
 use traits::TryInto;
@@ -115,7 +116,7 @@ impl DirectionDisplay of Display<Direction> {
 }
 
 
-#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect, Debug, Zeroable)]
+#[derive(Copy, Drop, PartialEq, Serde, Introspect, Debug)]
 struct Coord {
     x: u128,
     y: u128
@@ -209,7 +210,7 @@ impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, PrintTrait, Default)]
+#[derive(PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]
 struct Position {
     #[key]
@@ -234,7 +235,7 @@ impl PositionIntoCube of Into<Position, Cube> {
 
 
 #[generate_trait]
-impl PositionImpl of PositionTrait {
+impl PositionCustomImpl of PositionCustomTrait {
     // world is divided into 10 timezones
     fn get_zone(self: Position) -> u128 {
         // use highest and lowest x to divide map into 10 timezones
@@ -254,7 +255,7 @@ impl PositionImpl of PositionTrait {
 #[cfg(test)]
 mod tests {
     use debug::PrintTrait;
-    use super::{Position, PositionTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
+    use super::{Position, PositionCustomTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
     use traits::Into;
     use traits::TryInto;
 
@@ -367,9 +368,7 @@ mod tests {
         fn test_neighbor_even_row_north_east() {
             let start = even_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::NorthEast), Coord { x: start.x + 1, y: start.y + 1 }
-            );
+            assert_eq!(start.neighbor(Direction::NorthEast), Coord { x: start.x + 1, y: start.y + 1 });
         }
 
         #[test]
@@ -399,9 +398,7 @@ mod tests {
         fn test_neighbor_even_row_south_east() {
             let start = even_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::SouthEast), Coord { x: start.x + 1, y: start.y - 1 }
-            );
+            assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x + 1, y: start.y - 1 });
         }
 
 
@@ -425,9 +422,7 @@ mod tests {
         fn test_neighbor_odd_row_north_west() {
             let start = odd_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::NorthWest), Coord { x: start.x - 1, y: start.y + 1 }
-            );
+            assert_eq!(start.neighbor(Direction::NorthWest), Coord { x: start.x - 1, y: start.y + 1 });
         }
 
         #[test]
@@ -442,9 +437,7 @@ mod tests {
         fn test_neighbor_odd_row_south_west() {
             let start = odd_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::SouthWest), Coord { x: start.x - 1, y: start.y - 1 }
-            );
+            assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x - 1, y: start.y - 1 });
         }
 
 
