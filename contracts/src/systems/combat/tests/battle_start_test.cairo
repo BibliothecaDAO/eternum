@@ -2,15 +2,18 @@ use core::array::SpanTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use eternum::models::capacity::Capacity;
-use eternum::models::combat::{Army, Health, HealthCustomTrait, Troops, TroopsTrait, BattleSide, Protectee, Protector, Battle};
+use eternum::models::combat::{
+    Army, Health, HealthCustomTrait, Troops, TroopsTrait, BattleSide, Protectee, Protector, Battle
+};
 use eternum::models::config::{TroopConfig, TickConfig, CapacityConfig, SpeedConfig};
 use eternum::models::movable::{Movable};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
 
 use eternum::models::resources::{
-    Resource, ResourceCustomImpl, ResourceCustomTrait, 
-    ResourceTypes, ResourceTransferLock, ResourceTransferLockCustomTrait, RESOURCE_PRECISION};
+    Resource, ResourceCustomImpl, ResourceCustomTrait, ResourceTypes, ResourceTransferLock,
+    ResourceTransferLockCustomTrait, RESOURCE_PRECISION
+};
 use eternum::models::stamina::Stamina;
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::{
@@ -235,10 +238,10 @@ fn test_battle_start() {
     let battle: Battle = get!(world, battle_id, Battle);
     assert_ne!(battle.duration_left, 0);
 
-    let player_1_army: Army  = get!(world, player_1_army_id, Army);
-    let player_1_army_health: Health  = get!(world, player_1_army_id, Health);
-    let player_2_army: Army  = get!(world, player_2_army_id, Army);
-    let player_2_army_health: Health  = get!(world, player_2_army_id, Health);
+    let player_1_army: Army = get!(world, player_1_army_id, Army);
+    let player_1_army_health: Health = get!(world, player_1_army_id, Health);
+    let player_2_army: Army = get!(world, player_2_army_id, Army);
+    let player_2_army_health: Health = get!(world, player_2_army_id, Health);
 
     assert_eq!(battle.attack_army.troops.count(), player_1_army.troops.count());
     assert_eq!(battle.attack_army_lifetime.troops.count(), player_1_army.troops.count());
@@ -251,7 +254,6 @@ fn test_battle_start() {
     assert_eq!(battle.defence_army_health.current, player_2_army_health.current);
     assert_eq!(player_2_army.battle_id, battle_id);
     assert_eq!(player_2_army.battle_side, BattleSide::Defence);
-
 
     // ensure player 1 gold resource still exists but it is locked
     let player_1_gold_resource: Resource = ResourceCustomImpl::get(world, (player_1_army_id, ResourceTypes::GOLD));

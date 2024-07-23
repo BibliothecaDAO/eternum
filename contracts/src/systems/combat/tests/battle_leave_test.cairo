@@ -271,7 +271,6 @@ fn test_battle_leave_by_winner() {
 }
 
 
-
 #[test]
 fn test_battle_leave_by_loser() {
     let (
