@@ -4,16 +4,15 @@ import { currencyFormat } from "../../../utils/utils";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
+import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
-import { OrderIcon } from "../../../elements/OrderIcon";
-import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
+import { getRealmNameById } from "../../../utils/realms";
 import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
 import { InventoryResources } from "../../resources/InventoryResources";
-import { Headline } from "@/ui/elements/Headline";
 
 interface ArmyInfoLabelProps {
   army: ArmyInfo;
@@ -38,22 +37,19 @@ interface ArmyInfoLabelProps {
 }
 
 const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
-  const {
-    account: { account },
-  } = useDojo();
-
   const { getRealmAddressName } = useRealm();
   const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp as number;
-  const { entity_id, entity_owner_id, address, arrives_at, realm, troops, battle_id } = army;
+  const { realm, entity_id, entityOwner, troops, arrivalTime } = army;
 
   const isPassiveTravel = useMemo(
-    () => (army.arrives_at && nextBlockTimestamp ? army.arrives_at > nextBlockTimestamp : false),
-    [army.arrives_at, nextBlockTimestamp],
+    () =>
+      arrivalTime && arrivalTime.arrives_at && nextBlockTimestamp ? arrivalTime.arrives_at > nextBlockTimestamp : false,
+    [arrivalTime?.arrives_at, nextBlockTimestamp],
   );
 
   const realmId = BigInt(realm?.realm_id || 0);
 
-  const attackerAddressName = entity_owner_id ? getRealmAddressName(BigInt(entity_owner_id)) : "";
+  const attackerAddressName = entityOwner ? getRealmAddressName(BigInt(entityOwner.entity_owner_id)) : "";
 
   const originRealmName = getRealmNameById(BigInt(realmId));
 
@@ -63,7 +59,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
     <div
       className={clsx(
         "w-auto flex flex-col p-2 mb-1 clip-angled-sm text-xs text-gold shadow-2xl border-2 border-gradient",
-        account.address ? (BigInt(account.address) === BigInt(address) ? "bg-crimson" : "bg-brown") : undefined,
+        army.isMine ? "bg-crimson" : "bg-brown",
       )}
     >
       <div className="flex items-center w-full mt-1 justify-between text-xs">
@@ -82,10 +78,12 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
 
           <div className="self-center flex justify-between w-full">
             {!isTraveling && <div className="flex   italic text-gold self-center">Idle</div>}
-            {army.arrives_at && isTraveling && nextBlockTimestamp && (
+            {arrivalTime && arrivalTime.arrives_at !== undefined && isTraveling && nextBlockTimestamp && (
               <div className="flex italic text-light-pink">
-                {isPassiveTravel ? formatSecondsLeftInDaysHours(arrives_at - nextBlockTimestamp) : "Arrives Next Tick"}
-                {battle_id && `In Battle`}
+                {isPassiveTravel
+                  ? formatSecondsLeftInDaysHours(Number(arrivalTime.arrives_at) - nextBlockTimestamp)
+                  : "Arrives Next Tick"}
+                {army.battle_id ? `In Battle` : ""}
               </div>
             )}
             <StaminaResource entityId={BigInt(entity_id)} />

@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useRef } from "react";
-import { useHelper, useTexture } from "@react-three/drei";
-import BuildArea from "../../components/construction/BuildArea";
-import { getUIPositionFromColRow } from "../../utils/utils";
-import BigHexBiome from "../../components/construction/BigHexBiome";
-import { useControls } from "leva";
-import * as THREE from "three";
 import { HexType, useHexPosition } from "@/hooks/helpers/useHexPosition";
+import { useQuery } from "@/hooks/helpers/useQuery";
 import useUIStore from "@/hooks/store/useUIStore";
 import { MiddleBuilding } from "@/ui/components/construction/ExistingBuildings";
-import { useQuery } from "@/hooks/helpers/useQuery";
+import { useTexture } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
+import { useControls } from "leva";
+import { useEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
+import BigHexBiome from "../../components/construction/BigHexBiome";
+import BuildArea from "../../components/construction/BuildArea";
+import { getUIPositionFromColRow } from "../../utils/utils";
 
 const positions = {
   main: getUIPositionFromColRow(0, 0, true),

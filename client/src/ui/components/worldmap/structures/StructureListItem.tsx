@@ -32,7 +32,7 @@ export const StructureListItem = ({ structure, extraButton }: StructureListItemP
           {structure.name}
         </div>
         <div className=" h-30 text-center p-1 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
-          <div className="font-bold">Owner:</div> {addressName}
+          <div className="font-bold">Owner:</div> {addressName === "" ? "Bandits" : addressName}
         </div>
         <div className=" h-30 text-center p-1 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse flex flex-row justify-center items-center">
           {String(structure.category) === "FragmentMine" ? (

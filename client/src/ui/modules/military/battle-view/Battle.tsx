@@ -1,7 +1,8 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
-import { BattleType } from "@/dojo/modelManager/types";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
+import { HintSection } from "@/ui/components/hints/HintModal";
 import Button from "@/ui/elements/Button";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { BattleSide, Troops } from "@bibliothecadao/eternum";
@@ -13,11 +14,10 @@ import { BattleProgressBar } from "./BattleProgressBar";
 import { BattleSideView } from "./BattleSideView";
 import { LockedResources } from "./LockedResources";
 import { TopScreenView } from "./TopScreenView";
-import { HintSection } from "@/ui/components/hints/HintModal";
 
 export interface Health {
-  current: number;
-  lifetime: number;
+  current: bigint;
+  lifetime: bigint;
 }
 
 export const Battle = ({
@@ -40,7 +40,7 @@ export const Battle = ({
   ownArmySide: string;
   ownArmyEntityId: bigint;
   battleManager: BattleManager | undefined;
-  battleAdjusted: ComponentValue<BattleType> | undefined;
+  battleAdjusted: ComponentValue<ClientComponents["Battle"]["schema"]> | undefined;
   attackerArmies: ArmyInfo[];
   attackerHealth: Health;
   attackerTroops: Troops;
@@ -100,12 +100,13 @@ export const Battle = ({
             />
             {showBattleDetails && battleAdjusted ? (
               <LockedResources
-                attackersResourcesEscrowEntityId={battleAdjusted!.attackers_resources_escrow_id}
-                defendersResourcesEscrowEntityId={battleAdjusted!.defenders_resources_escrow_id}
+                attackersResourcesEscrowEntityId={BigInt(battleAdjusted!.attackers_resources_escrow_id)}
+                defendersResourcesEscrowEntityId={BigInt(battleAdjusted!.defenders_resources_escrow_id)}
               />
             ) : (
               <BattleActions
                 userArmiesInBattle={userArmiesInBattle}
+                userArmiesAtPosition={userArmiesAtPosition}
                 ownArmyEntityId={ownArmyEntityId}
                 defender={defenderArmies?.[0]}
                 structure={structure}

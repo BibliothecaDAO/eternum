@@ -46,9 +46,9 @@ export const BattleDetails = ({ battleId, armies }: { battleId: bigint; armies: 
                 {army.name}
               </div>
               <div key={`${index}_player_address`} className="tile h-[2vh] text-left mb-2">
-                {army.address ? getAddressName(String(army.address)) : "Mercenaries"}
+                {army.entityOwner ? getAddressName(String(army.owner.address)) : "Bandits"}
               </div>
-              {army.isMine && BigInt(army.protectee_id || 0) === 0n ? (
+              {army.isMine && BigInt(army.protectee?.protectee_id || 0) === 0n ? (
                 <Button
                   key={`${index}_button`}
                   isLoading={loading}

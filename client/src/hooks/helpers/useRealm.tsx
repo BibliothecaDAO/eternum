@@ -74,7 +74,7 @@ export function useRealm() {
       const position = getPosition(BigInt(nextRealmIdFromOrder));
 
       // check if there is a structure on position, if no structure we can keep this realm Id
-      if (Array.from(runQuery([HasValue(Position, position), Has(Structure)])).length === 0) {
+      if (Array.from(runQuery([HasValue(Position, { x: position.x, y: position.y }), Has(Structure)])).length === 0) {
         return BigInt(nextRealmIdFromOrder);
       } else {
         latestRealmIdFromOrder = nextRealmIdFromOrder;

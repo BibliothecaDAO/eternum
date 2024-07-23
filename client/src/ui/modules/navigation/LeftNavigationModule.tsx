@@ -1,5 +1,5 @@
 import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useStamina } from "@/hooks/helpers/useStamina";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
@@ -76,8 +76,8 @@ export const LeftNavigationModule = () => {
 
   const armiesWithStaminaLeft = entityArmies?.filter((entity) => {
     return (
-      getStamina({ travelingEntityId: BigInt(entity.entity_id), currentArmiesTick })?.amount >=
-      EternumGlobalConfig.stamina.travelCost
+      getStamina({ travelingEntityId: BigInt(entity.entity_id), currentArmiesTick })?.amount ||
+      0 >= EternumGlobalConfig.stamina.travelCost
     );
   });
 
@@ -90,7 +90,7 @@ export const LeftNavigationModule = () => {
       (selectedQuest?.name === QuestName.Hyperstructure && isWorldView)
     );
   }, [selectedQuest, isWorldView]);
-  const { getEntityInfo } = useEntities();
+  const { getEntityInfo } = useEntitiesUtils();
   const realmIsMine = getEntityInfo(realmEntityId).isMine;
 
   const navigation = useMemo(() => {

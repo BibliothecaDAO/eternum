@@ -1,17 +1,17 @@
-import { HasValue, getComponentValue, runQuery, Entity, NotValue } from "@dojoengine/recs";
-import { useDojo } from "../context/DojoContext";
+import { getRealmNameById } from "@/ui/utils/realms";
 import { MarketInterface, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { useEntityQuery } from "@dojoengine/react";
+import { Entity, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
-import useRealmStore from "../store/useRealmStore";
-import { getEntityIdFromKeys } from "../../ui/utils/utils";
+import { shortString } from "starknet";
 import { calculateRatio } from "../../ui/components/cityview/realm/trade/Market/MarketOffer";
 import { SortInterface } from "../../ui/elements/SortButton";
+import { getEntityIdFromKeys } from "../../ui/utils/utils";
+import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
-import useMarketStore, { isLordsMarket } from "../store/useMarketStore";
-import { useEntityQuery } from "@dojoengine/react";
+import useMarketStore from "../store/useMarketStore";
+import useRealmStore from "../store/useRealmStore";
 import { useEntities } from "./useEntities";
-import { shortString } from "starknet";
-import { getRealmNameById } from "@/ui/utils/realms";
 
 type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -91,7 +91,7 @@ export function useTrade() {
               makerId: trade.maker_id,
               takerId: trade.taker_id,
               makerOrder: makerRealm?.order,
-              expiresAt: trade.expires_at,
+              expiresAt: Number(trade.expires_at),
               takerGets,
               makerGets,
               ratio: calculateRatio(makerGets, takerGets),

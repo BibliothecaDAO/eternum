@@ -5,7 +5,7 @@ import {
   getBattleInfoByOwnArmyEntityId,
   useBattleManager,
   usePlayerBattles,
-} from "@/hooks/helpers/useBattles";
+} from "@/hooks/helpers/battles/useBattles";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";

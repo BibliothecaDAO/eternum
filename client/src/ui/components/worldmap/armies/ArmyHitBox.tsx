@@ -27,10 +27,22 @@ export const ArmyHitBox = ({ army, hovered, isAnimating, setHovered }: ArmyHitBo
   const onRightClick = useCallback(() => {
     playClick();
     if ((selectedEntity?.id || 0n) !== BigInt(army.entity_id) && army.isMine && !isAnimating) {
-      setSelectedEntity({ id: BigInt(army.entity_id), position: { x: army.x, y: army.y } });
+      setSelectedEntity({
+        id: BigInt(army.entity_id),
+        position: { x: Number(army.position.x), y: Number(army.position.y) },
+      });
       playSelectedArmy();
     }
-  }, [isAnimating, army.entity_id, army.x, army.y, selectedEntity, setSelectedEntity, playSelectedArmy, playClick]);
+  }, [
+    isAnimating,
+    army.entity_id,
+    army.position.x,
+    army.position.y,
+    selectedEntity,
+    setSelectedEntity,
+    playSelectedArmy,
+    playClick,
+  ]);
 
   const onPointerEnter = useCallback(
     (e: any) => {

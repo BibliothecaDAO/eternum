@@ -24,7 +24,7 @@ export const BattleLabel = ({ selectedBattle, visible = true }: BattleLabelProps
     const position = getComponentValue(Position, getEntityIdFromKeys([selectedBattle]));
     setSelectedBattle(undefined);
     setBattleView({
-      battle: { x: position!.x, y: position!.y },
+      battle: { x: Number(position!.x), y: Number(position!.y) },
       target: undefined,
     });
   };

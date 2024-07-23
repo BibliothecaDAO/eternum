@@ -1,8 +1,7 @@
-import { useGLTF } from "@react-three/drei";
-import { getUIPositionFromColRow, pseudoRandom } from "../../../utils/utils";
-import * as THREE from "three";
 import { useMemo } from "react";
+import * as THREE from "three";
 import { Hexagon } from "../../../../types";
+import { getUIPositionFromColRow } from "../../../utils/utils";
 
 const hexagonGeometry = new THREE.RingGeometry(3, 2.94, 6, 1);
 const defaultTransform = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(Math.PI, 0, Math.PI / 2));
