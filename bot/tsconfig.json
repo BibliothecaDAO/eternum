@@ -6,7 +6,6 @@
     "moduleResolution": "bundler",
     "moduleDetection": "force",
     "strict": true,
-    "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
     "esModuleInterop": true
   }

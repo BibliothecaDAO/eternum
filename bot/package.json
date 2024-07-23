@@ -9,9 +9,14 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@dojoengine/core": "^0.7.9-alpha.0",
+    "@dojoengine/core": "^0.7.9",
+    "@dojoengine/recs": "^2.0.13",
     "@hono/zod-validator": "^0.2.2",
     "@neondatabase/serverless": "^0.9.3",
+    "@dojoengine/state": "^0.7.9",
+    "@dojoengine/torii-client": "^0.7.9",
+    "@dojoengine/utils": "^0.7.9",
+    "@dojoengine/torii-wasm": "^0.7.9",
     "@pinecone-database/pinecone": "^1.1.2",
     "@reservoir0x/reservoir-sdk": "^2.2.12",
     "@sapphire/decorators": "^6.1.0",

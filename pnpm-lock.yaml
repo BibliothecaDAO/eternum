@@ -15,8 +15,23 @@ importers:
   bot:
     dependencies:
       '@dojoengine/core':
-        specifier: ^0.7.9-alpha.0
+        specifier: ^0.7.9
         version: 0.7.9(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)
+      '@dojoengine/recs':
+        specifier: ^2.0.13
+        version: 2.0.13(typescript@5.4.4)(zod@3.23.8)
+      '@dojoengine/state':
+        specifier: ^0.7.9
+        version: 0.7.9(@types/node@20.14.9)(@types/react@18.2.74)(react@18.2.0)(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
+      '@dojoengine/torii-client':
+        specifier: ^0.7.9
+        version: 0.7.9
+      '@dojoengine/torii-wasm':
+        specifier: ^0.7.9
+        version: 0.7.9
+      '@dojoengine/utils':
+        specifier: ^0.7.9
+        version: 0.7.9(starknet@6.7.0(encoding@0.1.13))(typescript@5.4.4)(zod@3.23.8)
       '@hono/zod-validator':
         specifier: ^0.2.2
         version: 0.2.2(hono@4.4.11)(zod@3.23.8)
