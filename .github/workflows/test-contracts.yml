@@ -1,12 +1,6 @@
 name: test-contracts
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - '*'
+on: [pull_request]
 
 jobs:
   setup-environment:
