@@ -119,7 +119,6 @@ export class MouseHandler {
     const travelPath = this.travelPaths?.get(TravelPaths.posKey(hexCoords, true));
     if (travelPath) {
       const hexPosition = this.worldmapScene!.getWorldPositionForHex(hexCoords);
-      console.log({ hexPosition, hexCoords });
       this.actionInfo.showTooltip(hexPosition, travelPath.isExplored, travelPath.path.length - 1, 10000, 10000);
     } else {
       this.actionInfo.hideTooltip();

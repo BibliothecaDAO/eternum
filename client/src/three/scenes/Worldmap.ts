@@ -365,6 +365,25 @@ export default class WorldmapScene {
     return { chunkX, chunkZ };
   }
 
+  private getHexFromWorldPosition(position: THREE.Vector3): { row: number; col: number } {
+    const horizontalSpacing = this.hexSize * Math.sqrt(3);
+    const verticalSpacing = (this.hexSize * 3) / 2;
+
+    // Calculate col first
+    const col = Math.round(position.x / horizontalSpacing);
+
+    // Then use col to calculate row
+    const row = Math.round(-position.z / verticalSpacing);
+
+    // Adjust x position based on row parity
+    const adjustedX = position.x - (row % 2) * (horizontalSpacing / 2);
+
+    // Recalculate col using adjusted x
+    const adjustedCol = Math.round(adjustedX / horizontalSpacing);
+
+    return { row, col: adjustedCol };
+  }
+
   getHexagonCoordinates(
     instancedMesh: THREE.InstancedMesh,
     instanceId: number,
@@ -374,11 +393,7 @@ export default class WorldmapScene {
     const position = new THREE.Vector3();
     matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
 
-    const horizontalSpacing = this.hexSize * Math.sqrt(3);
-    const verticalSpacing = (this.hexSize * 3) / 2;
-
-    const col = Math.round(position.x / horizontalSpacing);
-    const row = Math.round(-position.z / verticalSpacing);
+    const { row, col } = this.getHexFromWorldPosition(position);
 
     return { row, col, x: position.x, z: position.z };
   }
