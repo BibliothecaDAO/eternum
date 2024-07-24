@@ -119,7 +119,8 @@ export class MouseHandler {
     const travelPath = this.travelPaths?.get(TravelPaths.posKey(hexCoords, true));
     if (travelPath) {
       const hexPosition = this.worldmapScene!.getWorldPositionForHex(hexCoords);
-      this.actionInfo.showTooltip(hexPosition, travelPath.isExplored, travelPath.path.length - 1, 10000, 10000);
+      this.state.setHoveredHex({ col: hexCoords.col, row: hexCoords.row, x: hexPosition.x, z: hexPosition.z });
+      // this.actionInfo.showTooltip(hexPosition, travelPath.isExplored, travelPath.path.length - 1, 10000, 10000);
     } else {
       this.actionInfo.hideTooltip();
     }
@@ -137,6 +138,7 @@ export class MouseHandler {
     if (armyMovementManager.isMine()) {
       this._setSelectedEntityId(entityId);
       this.travelPaths = armyMovementManager.findPaths(this.worldmapScene!.systemManager.tileSystem.getExplored());
+      this.state.setTravelPaths(this.travelPaths.getPaths());
       this.worldmapScene!.highlightHexManager.highlightHexes(this.travelPaths.getHighlightedHexes());
     }
   }

@@ -1,13 +1,19 @@
 import { HexPosition } from "@/types";
-import { BuildingType } from "@bibliothecadao/eternum";
+import { BuildingType, Position } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 import { useEffect } from "react";
 
 export interface ThreeStore {
+  // hex
+  hoveredHex: { col: number; row: number; x: number; z: number };
+  setHoveredHex: (hex: { col: number; row: number; x: number; z: number }) => void;
+
   selectedHex: HexPosition;
-  selectedUnit: HexPosition;
   setSelectedHex: (hex: HexPosition) => void;
-  setSelectedUnit: (unit: HexPosition) => void;
+
+  // moving armies
+  travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
+  setTravelPaths: (travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>) => void;
 
   // entities on the map
   selectedEntityId: number | null;
@@ -19,12 +25,14 @@ export interface ThreeStore {
 }
 
 export const useThreeStore = create<ThreeStore>((set, get) => ({
-  selectedHex: { col: 0, row: 0 },
-  selectedUnit: { col: 0, row: 0 },
+  hoveredHex: { col: 0, row: 0, x: 0, z: 0 },
+  setHoveredHex: (hex) => set({ hoveredHex: hex }),
+  travelPaths: new Map(),
+  setTravelPaths: (travelPaths) => set({ travelPaths }),
   selectedEntityId: null,
   setSelectedEntityId: (entityId) => set({ selectedEntityId: entityId }),
+  selectedHex: { col: 0, row: 0 },
   setSelectedHex: (hex) => set({ selectedHex: hex }),
-  setSelectedUnit: (unit) => set({ selectedUnit: unit }),
   selectedBuilding: BuildingType.Farm,
   setSelectedBuilding: (building) => set({ selectedBuilding: building }),
 }));
