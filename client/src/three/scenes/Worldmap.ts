@@ -18,7 +18,7 @@ import { Biome, BiomeType } from "../components/Biome";
 import InstancedModel from "../components/InstancedModel";
 import { SystemManager } from "../systems/SystemManager";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { BorderHexManager } from "../components/BorderHexManager";
+import { InteractiveHexManager } from "../components/InteractiveHexManager";
 import { HighlightHexManager } from "../components/HighlightHexManager";
 
 const BASE_PATH = "/models/bevel-biomes/";
@@ -73,7 +73,7 @@ export default class WorldmapScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
-  private borderHexManager: BorderHexManager;
+  private interactiveHexManager: InteractiveHexManager;
   public highlightHexManager: HighlightHexManager;
 
   constructor(
@@ -149,7 +149,7 @@ export default class WorldmapScene {
 
     this.systemManager = new SystemManager(this.dojoConfig, this);
 
-    this.borderHexManager = new BorderHexManager(this, this.hexSize, borderHexMaterial);
+    this.interactiveHexManager = new InteractiveHexManager(this, this.hexSize, borderHexMaterial);
     this.highlightHexManager = new HighlightHexManager(this, this.hexSize, highlightHexMaterial);
   }
 
@@ -263,8 +263,10 @@ export default class WorldmapScene {
           });
 
           if (isBorder) {
-            this.borderHexManager.addBorderHex({ col: globalCol, row: globalRow });
+            this.interactiveHexManager.addBorderHex({ col: globalCol, row: globalRow });
           }
+        } else {
+          this.interactiveHexManager.addExploredHex({ col: globalCol, row: globalRow });
         }
 
         const rotationSeed = this.hashCoordinates(startCol + col, startRow + row);
@@ -293,7 +295,7 @@ export default class WorldmapScene {
           hexMesh.setCount(matrices.length);
         }
         this.cacheMatricesForChunk(startRow, startCol);
-        this.borderHexManager.renderBorderHexes();
+        this.interactiveHexManager.renderHexes();
       }
     };
 
