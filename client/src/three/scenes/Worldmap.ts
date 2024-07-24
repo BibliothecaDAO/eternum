@@ -327,6 +327,8 @@ export default class WorldmapScene {
     mesh.rotation.set(Math.PI / 2, 0, 0);
     mesh.position.set(1334.1, 0.05, -695.175);
     mesh.receiveShadow = true;
+    // disable raycast
+    mesh.raycast = () => {};
 
     this.scene.add(mesh);
   }

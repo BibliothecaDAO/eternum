@@ -4,7 +4,7 @@ export default class InstancedModel {
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
 
-  constructor(model: THREE.Group, count: number) {
+  constructor(model: THREE.Group, count: number, enableRaycast: boolean = false) {
     this.group = new THREE.Group();
 
     model.traverse((child) => {
@@ -14,6 +14,13 @@ export default class InstancedModel {
 
         tmp.castShadow = true;
         tmp.receiveShadow = true;
+
+        tmp.userData.isInstanceModel = true;
+
+        if (!enableRaycast) {
+          tmp.raycast = () => {};
+        }
+
         // we can set lower count later if we have less hexes with that biome and change it at any time
         tmp.count = 0;
         this.group.add(tmp);

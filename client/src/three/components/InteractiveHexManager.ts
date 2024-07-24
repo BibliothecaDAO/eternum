@@ -30,7 +30,6 @@ export class InteractiveHexManager {
     this.borderHexes.clear();
     this.exploredHexes.clear();
   }
-
   renderHexes() {
     // Remove existing instanced mesh if it exists
     if (this.borderInstanceMesh) {
@@ -50,6 +49,10 @@ export class InteractiveHexManager {
     const exploredInstanceCount = this.exploredHexes.size;
     this.borderInstanceMesh = new THREE.InstancedMesh(hexagonGeometry, borderHexMaterial, borderInstanceCount);
     this.exploredInstanceMesh = new THREE.InstancedMesh(hexagonGeometry, transparentHexMaterial, exploredInstanceCount);
+
+    // Add user data to specify the type of hex
+    this.borderInstanceMesh.userData = { type: "border" };
+    this.exploredInstanceMesh.userData = { type: "explored" };
 
     const dummy = new THREE.Object3D();
     let index = 0;
@@ -73,10 +76,6 @@ export class InteractiveHexManager {
       this.exploredInstanceMesh!.setMatrixAt(index, dummy.matrix);
       index++;
     });
-
-    // Disable raycasting for these meshes
-    this.borderInstanceMesh.raycast = () => {};
-    this.exploredInstanceMesh.raycast = () => {};
 
     this.worldMap.scene.add(this.borderInstanceMesh);
     this.worldMap.scene.add(this.exploredInstanceMesh);

@@ -33,6 +33,10 @@ export class LabelManager {
 
     const label = new THREE.Points(geometry, this.labelMaterial);
     label.userData.isLabel = true;
+
+    // Disable raycasting for this label
+    label.raycast = () => {};
+
     return label;
   }
 }
