@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { Raycaster } from "three";
-import { FogManager } from "../components/Fog";
+import { FogManager } from "../components/FogManager";
 
 import { Entity } from "@dojoengine/recs";
 import { ContextMenuManager } from "../components/ContextMenuManager";
@@ -255,7 +255,7 @@ export default class WorldmapScene {
         }
 
         if (!isExplored) {
-          const neighborOffsets = globalRow % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+          const neighborOffsets = globalRow % 2 === 0 ? neighborOffsetsOdd : neighborOffsetsEven;
           const isBorder = neighborOffsets.some(({ i, j }) => {
             const neighborCol = globalCol + i;
             const neighborRow = globalRow + j;
