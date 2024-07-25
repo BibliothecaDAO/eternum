@@ -1,6 +1,6 @@
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { EternumGlobalConfig, ResourcesIds, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
+import { ConfigManager, ResourcesIds } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
 
 export const Combat = () => {
@@ -88,7 +88,8 @@ const Battles = () => {
 };
 
 const Troops = () => {
-  const troopHealth = EternumGlobalConfig.troop.health;
+  const configManager = ConfigManager.instance();
+  const troopConfig = configManager.getConfig().troop;
 
   return (
     <table className="not-prose w-full p-2 border-gold/10">
@@ -105,37 +106,25 @@ const Troops = () => {
           type="Knight"
           resourceId={ResourcesIds.Knight}
           strength={
-            <Strength
-              strength={EternumGlobalConfig.troop.knightStrength}
-              strongAgainst="Paladin"
-              weakAgainst="Crossbowman"
-            />
+            <Strength strength={troopConfig.knightStrength} strongAgainst="Paladin" weakAgainst="Crossbowman" />
           }
-          health={troopHealth}
+          health={troopConfig.health}
         />
         <TroopRow
           type="Crossbowman"
           resourceId={ResourcesIds.Crossbowman}
           strength={
-            <Strength
-              strength={EternumGlobalConfig.troop.crossbowmanStrength}
-              strongAgainst="Knight"
-              weakAgainst="Paladin"
-            />
+            <Strength strength={troopConfig.crossbowmanStrength} strongAgainst="Knight" weakAgainst="Paladin" />
           }
-          health={troopHealth}
+          health={troopConfig.health}
         />
         <TroopRow
           type="Paladin"
           resourceId={ResourcesIds.Paladin}
           strength={
-            <Strength
-              strength={EternumGlobalConfig.troop.paladinStrength}
-              strongAgainst="Crossbowman"
-              weakAgainst="Knight"
-            />
+            <Strength strength={troopConfig.paladinStrength} strongAgainst="Crossbowman" weakAgainst="Knight" />
           }
-          health={troopHealth}
+          health={troopConfig.health}
         />
       </tbody>
     </table>
@@ -153,14 +142,15 @@ const TroopRow = ({
   strength: JSX.Element;
   health: number;
 }) => {
+  const configManager = ConfigManager.instance();
+  const troopsStaminas = configManager.getConfig().TROOPS_STAMINAS;
+
   return (
     <tr>
       <td className="border border-gold/10 p-2">
         <ResourceIcon resource={type} size="xxl" />
       </td>
-      <td className="border border-gold/10 p-2 text-center">
-        {TROOPS_STAMINAS[resourceId as keyof typeof TROOPS_STAMINAS]}
-      </td>
+      <td className="border border-gold/10 p-2 text-center">{troopsStaminas[resourceId]}</td>
       <td className="border border-gold/10 p-2 text-center">{strength}</td>
       <td className="border border-gold/10 p-2 text-center">{health}</td>
     </tr>
@@ -176,8 +166,9 @@ const Strength = ({
   strongAgainst: string;
   weakAgainst: string;
 }) => {
-  const advantagePercent = (EternumGlobalConfig.troop.advantagePercent / 10000) * 100;
-  const disadvantagePercent = (EternumGlobalConfig.troop.disadvantagePercent / 10000) * 100;
+  const troopConfig = ConfigManager.instance().getConfig().troop;
+  const advantagePercent = (troopConfig.advantagePercent / 10000) * 100;
+  const disadvantagePercent = (troopConfig.disadvantagePercent / 10000) * 100;
 
   return (
     <div className="flex flex-col">

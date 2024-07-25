@@ -6,9 +6,8 @@ import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import {
-  BASE_POPULATION_CAPACITY,
   BuildingType,
-  EternumGlobalConfig,
+  ConfigManager,
   ID,
   STOREHOUSE_CAPACITY,
   StructureType,
@@ -42,6 +41,9 @@ const structureIcons: Record<string, JSX.Element> = {
 };
 
 export const TopMiddleNavigation = () => {
+  const configManager = ConfigManager.instance();
+  const basePopulationCapacity = configManager.getConfig().basePopulationCapacity;
+
   const [location, setLocation] = useLocation();
 
   const { setup } = useDojo();
@@ -172,7 +174,7 @@ export const TopMiddleNavigation = () => {
                 content: (
                   <span className="whitespace-nowrap pointer-events-none text-sm capitalize">
                     <span>
-                      {population.population} population / {population.capacity + BASE_POPULATION_CAPACITY} capacity
+                      {population.population} population / {population.capacity + basePopulationCapacity} capacity
                     </span>
                     <br />
                     <span>Build Workers huts to expand population</span>
@@ -184,7 +186,7 @@ export const TopMiddleNavigation = () => {
             className=" px-3 flex gap-2"
           >
             <div className="uppercase font-bold">population</div>
-            {population.population} / {population.capacity + BASE_POPULATION_CAPACITY}
+            {population.population} / {population.capacity + basePopulationCapacity}
           </div>
         )}
         {storehouses && (
@@ -215,13 +217,14 @@ export const TopMiddleNavigation = () => {
 };
 
 const TickProgress = () => {
+  const armiesTickIntervalInSeconds = ConfigManager.instance().getConfig().tick.armiesTickIntervalInSeconds;
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) as number;
 
   const { timeLeftBeforeNextTick, progress } = useMemo(() => {
-    const timeLeft = nextBlockTimestamp % EternumGlobalConfig.tick.armiesTickIntervalInSeconds;
-    const progressValue = (timeLeft / EternumGlobalConfig.tick.armiesTickIntervalInSeconds) * 100;
+    const timeLeft = nextBlockTimestamp % armiesTickIntervalInSeconds;
+    const progressValue = (timeLeft / armiesTickIntervalInSeconds) * 100;
     return { timeLeftBeforeNextTick: timeLeft, progress: progressValue };
   }, [nextBlockTimestamp]);
 
@@ -232,7 +235,7 @@ const TickProgress = () => {
           position: "bottom",
           content: (
             <span className="whitespace-nowrap pointer-events-none">
-              <span>A day in Eternum is {EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60}m</span>
+              <span>A day in Eternum is {armiesTickIntervalInSeconds / 60}m</span>
             </span>
           ),
         });

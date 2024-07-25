@@ -1,12 +1,5 @@
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import {
-  BuildingType,
-  EternumGlobalConfig,
-  ID,
-  RESOURCE_INPUTS_SCALED,
-  ResourcesIds,
-  STOREHOUSE_CAPACITY,
-} from "@bibliothecadao/eternum";
+import { BuildingType, ConfigManager, EternumGlobalConfig, STOREHOUSE_CAPACITY, ResourcesIds, ID } from "@bibliothecadao/eternum";
 import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { ClientComponents } from "../createClientComponents";
 
@@ -199,7 +192,8 @@ export class ProductionManager {
   }
 
   private _inputs_available(currentTick: number, resourceId: ResourcesIds): boolean {
-    const inputs = RESOURCE_INPUTS_SCALED[resourceId];
+    const resource_inputs_scaled = ConfigManager.instance().getResourceInputsScaled();
+    const inputs = resource_inputs_scaled[resourceId];
 
     // Ensure inputs is an array before proceeding
     if (inputs.length == 0) {

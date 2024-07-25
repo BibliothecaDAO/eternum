@@ -1,5 +1,5 @@
 import {
-  BASE_POPULATION_CAPACITY,
+  ConfigManager,
   ContractAddress,
   ID,
   RealmInterface,
@@ -30,11 +30,13 @@ export function useRealm() {
     },
   } = useDojo();
 
+  const configManager = ConfigManager.instance();
+
   const getQuestResources = () => {
     const realmEntityId = useRealmStore.getState().realmEntityId;
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
     const resourcesProduced = realm ? unpackResources(realm.resource_types_packed, realm.resource_types_count) : [];
-    return getStartingResources(resourcesProduced);
+    return configManager.getStartingResources(resourcesProduced);
   };
 
   const getEntityOwner = (entityId: ID) => {
@@ -178,6 +180,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
     },
   } = useDojo();
 
+  const configManager = ConfigManager.instance();
   const query = useEntityQuery([HasValue(Realm, { entity_id: realmEntityId })]);
 
   const realm = useMemo((): any => {
@@ -204,6 +207,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
         const name = getRealmNameById(realm_id);
 
         const { address } = owner;
+        const basePopulationCapacity = configManager.getConfig().basePopulationCapacity;
 
         return {
           realmId: realm_id,
@@ -218,7 +222,7 @@ export function useGetRealm(realmEntityId: ID | undefined) {
           order,
           position,
           ...population,
-          hasCapacity: !population || population.capacity + BASE_POPULATION_CAPACITY > population.population,
+          hasCapacity: !population || population.capacity + basePopulationCapacity > population.population,
           owner: address,
         };
       }

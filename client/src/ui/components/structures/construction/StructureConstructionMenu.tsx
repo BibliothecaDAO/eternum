@@ -1,18 +1,5 @@
 import useUIStore from "@/hooks/store/useUIStore";
-import {
-  BUILDING_CAPACITY,
-  BUILDING_POPULATION,
-  BuildingType,
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  ID,
-  RESOURCE_INFORMATION,
-  RESOURCE_INPUTS_SCALED,
-  STRUCTURE_COSTS_SCALED,
-  StructureType,
-  findResourceById,
-} from "@bibliothecadao/eternum";
-
+import { BuildingType, ConfigManager, StructureType, findResourceById , ID} from "@bibliothecadao/eternum";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
@@ -35,6 +22,8 @@ export const STRUCTURE_IMAGE_PATHS = {
 };
 
 export const StructureConstructionMenu = () => {
+  const resourcePrecision = ConfigManager.instance().getResourcePrecision();
+
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const clearSelection = useUIStore((state) => state.clearSelection);
@@ -54,14 +43,17 @@ export const StructureConstructionMenu = () => {
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(realmEntityId, resourceCost.resource);
-      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
+      return balance.balance >= resourceCost.amount * resourcePrecision;
     });
 
   return (
     <div className="grid grid-cols-4 gap-2 p-2">
       {buildingTypes.map((structureType, index) => {
+        const configManager = ConfigManager.instance();
+        const structureCostsScaled = configManager.getStructureCostsScaled();
+
         const building = StructureType[structureType as keyof typeof StructureType];
-        const cost = STRUCTURE_COSTS_SCALED[building];
+        const cost = structureCostsScaled[building];
         const hasBalance = checkBalance(cost);
 
         const isHyperstructure = building === StructureType["Hyperstructure"];
@@ -102,9 +94,13 @@ const StructureInfo = ({
   entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
-  const cost = STRUCTURE_COSTS_SCALED[structureId];
+  const configManager = ConfigManager.instance();
+  const hyperstructurePointsPerCycle = configManager.getConfig().hyperstructurePointsPerCycle;
+  const structureCostsScaled = configManager.getStructureCostsScaled();
 
-  const perTick = structureId == StructureType.Hyperstructure ? `+${HYPERSTRUCTURE_POINTS_PER_CYCLE} points` : "";
+  const cost = structureCostsScaled[structureId];
+
+  const perTick = structureId == StructureType.Hyperstructure ? `+${hyperstructurePointsPerCycle} points` : "";
 
   const { getBalance } = getResourceBalance();
 

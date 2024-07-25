@@ -1,12 +1,6 @@
 import { Headline } from "@/ui/elements/Headline";
 import { tableOfContents } from "./utils";
-import {
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  StructureType,
-  STRUCTURE_COSTS_SCALED,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  ResourcesIds,
-} from "@bibliothecadao/eternum";
+import { StructureType, ResourcesIds, ConfigManager } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { STRUCTURE_IMAGE_PATHS } from "../structures/construction/StructureConstructionMenu";
 import { useMemo } from "react";
@@ -54,9 +48,13 @@ export const WorldStructures = () => {
 };
 
 const HyperstructureCreationTable = () => {
+  const configManager = ConfigManager.instance();
+  const hyperstructurePointsPerCycle = configManager.getConfig().hyperstructurePointsPerCycle;
+  const structureCostsScaled = configManager.getStructureCostsScaled();
+
   const structureId = StructureType["Hyperstructure"];
 
-  const creationCost = STRUCTURE_COSTS_SCALED[structureId].map((cost) => ({
+  const creationCost = structureCostsScaled[structureId].map((cost) => ({
     ...cost,
   }));
 
@@ -87,8 +85,8 @@ const HyperstructureCreationTable = () => {
           <tr>
             <td colSpan={2} className="p-2">
               Hyperstructures are key to victory and can be constructed collaboratively. Once built, Hyperstructures
-              generate {HYPERSTRUCTURE_POINTS_PER_CYCLE} points per Eternum Day. Your share of these points is
-              proportional to your contribution to its construction
+              generate {hyperstructurePointsPerCycle} points per Eternum Day. Your share of these points is proportional
+              to your contribution to its construction
             </td>
           </tr>
         </tfoot>
@@ -98,9 +96,12 @@ const HyperstructureCreationTable = () => {
 };
 
 const HyperstructureConstructionTable = () => {
-  const constructionCost = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.filter(
-    (cost) => cost.resource !== ResourcesIds["Earthenshard"],
-  ).map((cost) => ({ ...cost }));
+  const configManager = ConfigManager.instance();
+  const hyperstructureTotalCostsScaled = configManager.getHyperstructureTotalCostsScaled();
+
+  const constructionCost = hyperstructureTotalCostsScaled
+    .filter((cost) => cost.resource !== ResourcesIds["Earthenshard"])
+    .map((cost) => ({ ...cost }));
 
   return (
     <table className="not-prose w-full p-2 border-gold/10 mt-5">

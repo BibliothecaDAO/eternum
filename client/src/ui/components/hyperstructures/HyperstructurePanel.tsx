@@ -12,12 +12,7 @@ import { SortButton, SortInterface } from "@/ui/elements/SortButton";
 import { SortPanel } from "@/ui/elements/SortPanel";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
-import {
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  MAX_NAME_LENGTH,
-} from "@bibliothecadao/eternum";
+import { ConfigManager, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { HyperstructureResourceChip } from "./HyperstructureResourceChip";
 
@@ -36,6 +31,11 @@ export const HyperstructurePanel = ({ entity }: any) => {
     },
   } = useDojo();
 
+  const configManager = ConfigManager.instance();
+  const resourcePrecision = configManager.getResourcePrecision();
+  const hyperstructurePointsPerCycle = configManager.getConfig().HYPERSTRUCTURE_POINTS_PER_CYCLE;
+  const hyperstructureTotalCostsScaled = configManager.getHyperstructureTotalCostsScaled();
+
   const [isLoading, setIsLoading] = useState<Loading>(Loading.None);
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");
@@ -53,7 +53,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
   const contributeToConstruction = async () => {
     const formattedContributions = Object.entries(newContributions).map(([resourceId, amount]) => ({
       resource: Number(resourceId),
-      amount: amount * EternumGlobalConfig.resources.resourcePrecision,
+      amount: amount * resourcePrecision,
     }));
 
     setIsLoading(Loading.Contribute);
@@ -74,7 +74,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const resourceElements = useMemo(() => {
     if (progresses.percentage === 100) return;
-    return HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource }) => {
+    return hyperstructureTotalCostsScaled.map(({ resource }) => {
       const progress = progresses.progresses.find(
         (progress: ProgressWithPercentage) => progress.resource_type === resource,
       );
@@ -155,7 +155,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
         </div>
         <div className="flex flex-col  p-3 bg-gold/10 clip-angled-sm gap-1 hover:bg-crimson/40 hover:animate-pulse">
           <div className="uppercase text-xs">points/cycle</div>
-          <div className="font-bold text-xl ">{currencyIntlFormat(shares * HYPERSTRUCTURE_POINTS_PER_CYCLE)}</div>
+          <div className="font-bold text-xl ">{currencyIntlFormat(shares * hyperstructurePointsPerCycle)}</div>
         </div>
       </div>
       <div className="overflow-y-scroll h-[40vh] bg-gold/10 clip-angled-sm p-2">

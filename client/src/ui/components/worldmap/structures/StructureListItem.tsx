@@ -7,6 +7,9 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getUserArmyInBattle } from "@/hooks/helpers/useArmies";
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { Structure } from "@/hooks/helpers/useStructures";
+import { currencyIntlFormat } from "@/ui/utils/utils";
+import { ConfigManager, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import clsx from "clsx";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ResourcesIds, StructureType } from "@bibliothecadao/eternum";
@@ -22,6 +25,11 @@ type StructureListItemProps = {
 };
 
 export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmySelected }: StructureListItemProps) => {
+  const configManager = ConfigManager.instance();
+  const hyperstructurePointsPerCycle = configManager.getConfig().hyperstructurePointsPerCycle;
+  const resourceOutputsScaled = configManager.getResourceOutputsScaled();
+  const resourcePrecision = configManager.getResourcePrecision();
+
   const dojo = useDojo();
 
   const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
