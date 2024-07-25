@@ -150,7 +150,12 @@ export default class WorldmapScene {
     this.systemManager = new SystemManager(this.dojoConfig, this);
     this.systemManager.tileSystem.addListener(this.updateExploredHex.bind(this));
 
-    this.interactiveHexManager = new InteractiveHexManager(this);
+    this.interactiveHexManager = new InteractiveHexManager(
+      this,
+      this.raycaster,
+      this.mouse,
+      controls.object as THREE.PerspectiveCamera,
+    );
     this.highlightHexManager = new HighlightHexManager(this);
   }
 
@@ -489,6 +494,7 @@ export default class WorldmapScene {
 
   update(deltaTime: number) {
     this.systemManager.update(deltaTime);
+    this.interactiveHexManager.update();
 
     if (this.mainDirectionalLight) {
       this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();

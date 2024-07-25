@@ -10,9 +10,68 @@ export class InteractiveHexManager {
   private exploredHexes: Set<string> = new Set();
   private borderInstanceMesh: THREE.InstancedMesh | null = null;
   private exploredInstanceMesh: THREE.InstancedMesh | null = null;
+  private auraMesh: THREE.Mesh | null = null;
+  private raycaster: THREE.Raycaster;
+  private mouse: THREE.Vector2;
+  private camera: THREE.Camera;
 
-  constructor(worldMap: WorldmapScene) {
+  constructor(worldMap: WorldmapScene, raycaster: THREE.Raycaster, mouse: THREE.Vector2, camera: THREE.Camera) {
     this.worldMap = worldMap;
+    this.raycaster = raycaster;
+    this.mouse = mouse;
+    this.camera = camera;
+    this.createAuraMesh();
+  }
+
+  private createAuraMesh() {
+    const textureLoader = new THREE.TextureLoader();
+    const auraTexture = textureLoader.load("/textures/aura.png");
+    const auraMaterial = new THREE.MeshBasicMaterial({
+      map: auraTexture,
+      transparent: true,
+      opacity: 0.8,
+    });
+    const auraGeometry = new THREE.PlaneGeometry(1.8, 1.8);
+    this.auraMesh = new THREE.Mesh(auraGeometry, auraMaterial);
+    this.auraMesh.rotation.x = -Math.PI / 2;
+    this.auraMesh.renderOrder = 1;
+  }
+
+  private updateAuraPosition() {
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.worldMap.scene.children, true);
+
+    if (intersects.length > 0) {
+      const intersect = intersects[0];
+      const intersectedObject = intersect.object;
+
+      if (intersectedObject instanceof THREE.InstancedMesh) {
+        const instanceId = intersect.instanceId;
+        if (instanceId !== undefined) {
+          const matrix = new THREE.Matrix4();
+          intersectedObject.getMatrixAt(instanceId, matrix);
+          const position = new THREE.Vector3();
+          position.setFromMatrixPosition(matrix);
+
+          if (this.auraMesh) {
+            this.auraMesh.position.set(position.x, 0.2, position.z);
+            if (!this.worldMap.scene.children.includes(this.auraMesh)) {
+              this.worldMap.scene.add(this.auraMesh);
+            }
+          }
+        }
+      }
+    } else {
+      if (this.auraMesh && this.worldMap.scene.children.includes(this.auraMesh)) {
+        this.worldMap.scene.remove(this.auraMesh);
+      }
+    }
+  }
+
+  private rotateAura() {
+    if (this.auraMesh) {
+      this.auraMesh.rotation.z += 0.01;
+    }
   }
 
   addBorderHex(hex: { col: number; row: number }) {
@@ -28,6 +87,7 @@ export class InteractiveHexManager {
     this.borderHexes.clear();
     this.exploredHexes.clear();
   }
+
   renderHexes() {
     // Remove existing instanced mesh if it exists
     if (this.borderInstanceMesh) {
@@ -77,5 +137,10 @@ export class InteractiveHexManager {
 
     this.worldMap.scene.add(this.borderInstanceMesh);
     this.worldMap.scene.add(this.exploredInstanceMesh);
+  }
+
+  update() {
+    this.rotateAura();
+    this.updateAuraPosition();
   }
 }
