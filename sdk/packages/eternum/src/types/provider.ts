@@ -366,6 +366,11 @@ export interface SetExplorationConfigProps extends SystemSigner {
   shards_mines_fail_probability: num.BigNumberish;
 }
 
+export interface SetTravelStaminaCostConfigProps extends SystemSigner {
+  travel_type: num.BigNumberish;
+  cost: num.BigNumberish;
+}
+
 export interface SetCapacityConfigProps extends SystemSigner {
   entity_type: num.BigNumberish;
   weight_gram: num.BigNumberish;

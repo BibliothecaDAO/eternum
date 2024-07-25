@@ -36,23 +36,6 @@ const BASE_STOREHOUSE_CAPACITY: u128 = 100_000_000;
 // TODO: Move to Onchain config
 const MAX_PILLAGE_TRIAL_COUNT: u8 = 7;
 
-// stamina config
-#[derive(Drop)]
-enum TravelTypes {
-    Explore,
-    Travel: u8,
-}
-
-#[generate_trait]
-impl TravelTypesImpl of TravelTypesTrait {
-    fn get_stamina_costs(self: TravelTypes) -> u16 {
-        match self {
-            TravelTypes::Travel(moves) => moves.into() * 5,
-            TravelTypes::Explore => 15,
-        }
-    }
-}
-
 // Note: Please update this list whenever ResourceTypes are updated
 fn all_resource_ids() -> Array<u8> {
     array![
@@ -305,19 +288,6 @@ const REALM_ENTITY_TYPE: u32 = 257;
 const ARMY_ENTITY_TYPE: u32 = 258;
 
 
-// TODO: change to consts
-enum BuildingTypes {
-    HOUSE: u8,
-    STORE_HOUSE: u8,
-    GRANARY: u8,
-    FARM: u8,
-    FISHING_VILLAGE: u8,
-    BARACKS: u8,
-    MAGE_TOWER: u8,
-    ARCHER_TOWER: u8,
-    CASTLE: u8,
-}
-
 mod LevelIndex {
     const FOOD: u8 = 1;
     const RESOURCE: u8 = 2;
@@ -332,4 +302,9 @@ mod ErrorMessages {
 mod TickIds {
     const DEFAULT: u8 = 0;
     const ARMIES: u8 = 1;
+}
+
+mod TravelTypes {
+    const EXPLORE: u8 = 0;
+    const TRAVEL: u8 = 1;
 }

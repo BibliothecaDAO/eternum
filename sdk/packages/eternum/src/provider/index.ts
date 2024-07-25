@@ -691,6 +691,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
+  public async set_travel_stamina_cost_config(props: SystemProps.SetTravelStaminaCostConfigProps) {
+    const { travel_type, cost, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, "config_systems"),
+      entrypoint: "set_travel_stamina_cost_config",
+      calldata: [travel_type, cost],
+    });
+  }
+
   public async set_capacity_config(props: SystemProps.SetCapacityConfigProps) {
     const { entity_type, weight_gram, signer } = props;
 
