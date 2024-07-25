@@ -1,5 +1,5 @@
 import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useStamina } from "@/hooks/helpers/useStamina";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
@@ -90,7 +90,7 @@ export const LeftNavigationModule = () => {
       (selectedQuest?.name === QuestName.Hyperstructure && isWorldView)
     );
   }, [selectedQuest, isWorldView]);
-  const { getEntityInfo } = useEntitiesUtils();
+  const { getEntityInfo } = getEntitiesUtils();
   const realmIsMine = getEntityInfo(realmEntityId).isMine;
 
   const navigation = useMemo(() => {

@@ -2,10 +2,11 @@ import { ClientComponents } from "@/dojo/createClientComponents";
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
+import { Health } from "@/types";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import Button from "@/ui/elements/Button";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { BattleSide, Troops } from "@bibliothecadao/eternum";
+import { BattleSide } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -15,15 +16,10 @@ import { BattleSideView } from "./BattleSideView";
 import { LockedResources } from "./LockedResources";
 import { TopScreenView } from "./TopScreenView";
 
-export interface Health {
-  current: bigint;
-  lifetime: bigint;
-}
-
 export const Battle = ({
+  battleManager,
   ownArmySide,
   ownArmyEntityId,
-  battleManager,
   battleAdjusted,
   attackerArmies,
   attackerHealth,
@@ -32,26 +28,22 @@ export const Battle = ({
   defenderHealth,
   defenderTroops,
   userArmiesInBattle,
-  userArmiesAtPosition,
   structure,
   isActive,
-  durationLeft,
 }: {
+  battleManager: BattleManager;
   ownArmySide: string;
-  ownArmyEntityId: bigint;
-  battleManager: BattleManager | undefined;
+  ownArmyEntityId: bigint | undefined;
   battleAdjusted: ComponentValue<ClientComponents["Battle"]["schema"]> | undefined;
   attackerArmies: ArmyInfo[];
   attackerHealth: Health;
-  attackerTroops: Troops;
-  defenderArmies: ArmyInfo[];
+  attackerTroops: ComponentValue<ClientComponents["Army"]["schema"]>["troops"];
+  defenderArmies: (ArmyInfo | undefined)[];
   defenderHealth: Health | undefined;
-  defenderTroops: Troops | undefined;
-  userArmiesInBattle: ArmyInfo[] | undefined;
-  userArmiesAtPosition: ArmyInfo[] | undefined;
+  defenderTroops: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
+  userArmiesInBattle: (ArmyInfo | undefined)[];
   structure: Structure | undefined;
   isActive: boolean;
-  durationLeft: Date | undefined;
 }) => {
   const [showBattleDetails, setShowBattleDetails] = useState<boolean>(false);
 
@@ -78,13 +70,13 @@ export const Battle = ({
           <HintModalButton className={`relative ${battleAdjusted ? "left-3" : ""}`} section={HintSection.Combat} />
         </div>
         <BattleProgressBar
+          battleManager={battleManager}
           ownArmySide={ownArmySide}
           attackingHealth={attackerHealth}
           attackerArmies={attackerArmies}
           defendingHealth={defenderHealth}
           defenderArmies={defenderArmies}
           structure={structure}
-          durationLeft={durationLeft}
         />
         <div className="w-screen bg-brown/80 backdrop-blur-lg -top bg-map h-[35vh]">
           <div className="grid grid-cols-12 justify-between gap-4 h-full">
@@ -94,23 +86,23 @@ export const Battle = ({
               showBattleDetails={showBattleDetails}
               ownSideArmies={attackerArmies}
               ownSideTroopsUpdated={attackerTroops}
-              userArmiesAtPosition={userArmiesAtPosition}
-              opposingSideArmies={defenderArmies}
+              ownArmyEntityId={ownArmyEntityId}
               structure={undefined}
+              isActive={isActive}
             />
             {showBattleDetails && battleAdjusted ? (
               <LockedResources
-                attackersResourcesEscrowEntityId={BigInt(battleAdjusted!.attackers_resources_escrow_id)}
-                defendersResourcesEscrowEntityId={BigInt(battleAdjusted!.defenders_resources_escrow_id)}
+                attackersResourcesEscrowEntityId={battleAdjusted!.attackers_resources_escrow_id}
+                defendersResourcesEscrowEntityId={battleAdjusted!.defenders_resources_escrow_id}
               />
             ) : (
               <BattleActions
+                battleManager={battleManager}
                 userArmiesInBattle={userArmiesInBattle}
-                userArmiesAtPosition={userArmiesAtPosition}
                 ownArmyEntityId={ownArmyEntityId}
-                defender={defenderArmies?.[0]}
+                defenderArmies={defenderArmies}
                 structure={structure}
-                battle={battleAdjusted}
+                battleAdjusted={battleAdjusted}
                 isActive={isActive}
               />
             )}
@@ -120,9 +112,9 @@ export const Battle = ({
               showBattleDetails={showBattleDetails}
               ownSideArmies={defenderArmies}
               ownSideTroopsUpdated={defenderTroops}
-              userArmiesAtPosition={userArmiesAtPosition}
-              opposingSideArmies={attackerArmies}
+              ownArmyEntityId={ownArmyEntityId}
               structure={structure}
+              isActive={isActive}
             />
           </div>
         </div>

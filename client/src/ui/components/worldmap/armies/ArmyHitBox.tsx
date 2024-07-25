@@ -1,10 +1,9 @@
-import useUIStore from "@/hooks/store/useUIStore";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArmyInfoLabel } from "./ArmyInfoLabel";
-import { Box } from "@react-three/drei";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { useSelectedArmySound } from "@/hooks/useUISound";
-import { soundSelector, useUiSounds } from "@/hooks/useUISound";
+import useUIStore from "@/hooks/store/useUIStore";
+import { soundSelector, useSelectedArmySound, useUiSounds } from "@/hooks/useUISound";
+import { Box } from "@react-three/drei";
+import { useCallback, useEffect } from "react";
+import { ArmyInfoLabel } from "./ArmyInfoLabel";
 
 type ArmyHitBoxProps = {
   army: ArmyInfo;
@@ -26,10 +25,10 @@ export const ArmyHitBox = ({ army, hovered, isAnimating, setHovered }: ArmyHitBo
 
   const onRightClick = useCallback(() => {
     playClick();
-    if ((selectedEntity?.id || 0n) !== BigInt(army.entity_id) && army.isMine && !isAnimating) {
+    if ((selectedEntity?.id || 0n) !== army.entity_id && army.isMine && !isAnimating) {
       setSelectedEntity({
-        id: BigInt(army.entity_id),
-        position: { x: Number(army.position.x), y: Number(army.position.y) },
+        id: army.entity_id,
+        position: { x: army.position.x, y: army.position.y },
       });
       playSelectedArmy();
     }

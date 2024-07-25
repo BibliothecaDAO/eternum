@@ -55,11 +55,6 @@ export const ArmyViewCard = ({
           <span>HP: </span>
           {Number(army.health.current.toString()) / 1000}
         </div>
-        {/* <div className="flex justify-between w-full">
-          <span>{army.battle_id ? army.battle_id : "No battle"}</span>
-          <span> {army.battle_side ? army.battle_side : "idle"}</span>
-        </div> */}
-        {/* <div>{army.battle_side ? army.battle_side : "idle"}</div> */}
         <div className="flex flex-col space-y-2 ">
           <div className="flex border">
             <div className="w-8 h-8 border flex self-center justify-center bg-gold text-brown">
@@ -80,7 +75,7 @@ export const ArmyViewCard = ({
             <div className="self-center px-2">Paladins</div>
           </div>
         </div>
-        <InventoryResources entityId={BigInt(army.entity_id)} />
+        <InventoryResources entityIds={[army.entity_id]} />
       </div>
     </div>
   );
