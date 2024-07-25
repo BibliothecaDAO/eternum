@@ -1001,7 +1001,7 @@
     ],
     "address": "0x161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824",
     "transaction_hash": "0x612de8b84ba9c5454887b576a17af10b7be97dab5f01bf79d1ec2d3cca3e6c5",
-    "block_number": 28,
+    "block_number": null,
     "seed": "eternum",
     "metadata": {
       "profile_name": "dev",
@@ -2330,8 +2330,8 @@
     {
       "kind": "DojoContract",
       "address": "0x73f0efc06b135109b40f185f2a04a3a30e317f189642958f4f6848c1bb95a8e",
-      "class_hash": "0x6ac03a6cf52309eb6eb3e0e2feaf789e5b5de19b106af0c8839f7ce904b9bf4",
-      "original_class_hash": "0x6ac03a6cf52309eb6eb3e0e2feaf789e5b5de19b106af0c8839f7ce904b9bf4",
+      "class_hash": "0x7311f04e539292ece621b98f591f22a962f231949588f0af9fb66601282307a",
+      "original_class_hash": "0x7311f04e539292ece621b98f591f22a962f231949588f0af9fb66601282307a",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -2480,6 +2480,33 @@
                 {
                   "name": "shards_mines_fail_probability",
                   "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "TravelStaminaCostConfigImpl",
+          "interface_name": "eternum::systems::config::contracts::ITravelStaminaCostConfig"
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::config::contracts::ITravelStaminaCostConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_travel_stamina_cost_config",
+              "inputs": [
+                {
+                  "name": "travel_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "cost",
+                  "type": "core::integer::u16"
                 }
               ],
               "outputs": [],
@@ -4159,8 +4186,8 @@
     {
       "kind": "DojoContract",
       "address": "0x1723599f44e8b02ac7893a4bcc993a9aa55729f0a91ee94bc5d57589a5276b5",
-      "class_hash": "0x360daf3f7d29d723464755db2f4044d556c121feb3dce34507d4b2bb5eef5d5",
-      "original_class_hash": "0x360daf3f7d29d723464755db2f4044d556c121feb3dce34507d4b2bb5eef5d5",
+      "class_hash": "0x7f70befe95e8c19126f590090ec103d0a2834bfd2a4a544d766867ec08f794d",
+      "original_class_hash": "0x7f70befe95e8c19126f590090ec103d0a2834bfd2a4a544d766867ec08f794d",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -5594,8 +5621,8 @@
     {
       "kind": "DojoContract",
       "address": "0x62b01fcba32ddefd5cf422b0fd79e39d394419e58bf80059d906d6bc5dff90c",
-      "class_hash": "0x1770ef3ecc9bb543dd60bbfab30c2841bd05fc5e3176da5f8d724e10db25292",
-      "original_class_hash": "0x1770ef3ecc9bb543dd60bbfab30c2841bd05fc5e3176da5f8d724e10db25292",
+      "class_hash": "0x414be17134284cd187fb165da5b19f5762df44750ab455c7d6a4276c814e15d",
+      "original_class_hash": "0x414be17134284cd187fb165da5b19f5762df44750ab455c7d6a4276c814e15d",
       "base_class_hash": "0x22f3e55b61d86c2ac5239fa3b3b8761f26b9a5c0b5f61ddbd5d756ced498b46",
       "abi": [
         {
@@ -17551,6 +17578,396 @@
         }
       ],
       "name": "eternum::models::config::tick_config"
+    },
+    {
+      "kind": "DojoModel",
+      "members": [
+        {
+          "name": "config_id",
+          "type": "u128",
+          "key": true
+        },
+        {
+          "name": "travel_type",
+          "type": "u8",
+          "key": true
+        },
+        {
+          "name": "cost",
+          "type": "u16",
+          "key": false
+        }
+      ],
+      "class_hash": "0x7d96c3d03e3845dc49d0dc855a8b3810c83456c22ed849200e25dc2dbedc6e8",
+      "original_class_hash": "0x7d96c3d03e3845dc49d0dc855a8b3810c83456c22ed849200e25dc2dbedc6e8",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoModelImpl",
+          "interface_name": "dojo::model::IModel"
+        },
+        {
+          "type": "struct",
+          "name": "core::byte_array::ByteArray",
+          "members": [
+            {
+              "name": "data",
+              "type": "core::array::Array::<core::bytes_31::bytes31>"
+            },
+            {
+              "name": "pending_word",
+              "type": "core::felt252"
+            },
+            {
+              "name": "pending_word_len",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "core::option::Option::<core::integer::u32>",
+          "variants": [
+            {
+              "name": "Some",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "None",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::FieldLayout",
+          "members": [
+            {
+              "name": "selector",
+              "type": "core::felt252"
+            },
+            {
+              "name": "layout",
+              "type": "dojo::database::introspect::Layout"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<dojo::database::introspect::FieldLayout>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<dojo::database::introspect::FieldLayout>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<dojo::database::introspect::Layout>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<dojo::database::introspect::Layout>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::introspect::Layout",
+          "variants": [
+            {
+              "name": "Fixed",
+              "type": "core::array::Span::<core::integer::u8>"
+            },
+            {
+              "name": "Struct",
+              "type": "core::array::Span::<dojo::database::introspect::FieldLayout>"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<dojo::database::introspect::Layout>"
+            },
+            {
+              "name": "Array",
+              "type": "core::array::Span::<dojo::database::introspect::Layout>"
+            },
+            {
+              "name": "ByteArray",
+              "type": "()"
+            },
+            {
+              "name": "Enum",
+              "type": "core::array::Span::<dojo::database::introspect::FieldLayout>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Member",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "ty",
+              "type": "dojo::database::introspect::Ty"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<dojo::database::introspect::Member>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<dojo::database::introspect::Member>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<dojo::database::introspect::Member>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, dojo::database::introspect::Ty)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, dojo::database::introspect::Ty)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, dojo::database::introspect::Ty)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<dojo::database::introspect::Ty>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<dojo::database::introspect::Ty>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::introspect::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::introspect::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::introspect::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<dojo::database::introspect::Ty>"
+            },
+            {
+              "name": "Array",
+              "type": "core::array::Span::<dojo::database::introspect::Ty>"
+            },
+            {
+              "name": "ByteArray",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::model::IModel",
+          "items": [
+            {
+              "type": "function",
+              "name": "selector",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::byte_array::ByteArray"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "version",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u8"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "unpacked_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::option::Option::<core::integer::u32>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "packed_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::option::Option::<core::integer::u32>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "layout",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::database::introspect::Layout"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "schema",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::database::introspect::Ty"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "travel_stamina_cost_configImpl",
+          "interface_name": "eternum::models::config::Itravel_stamina_cost_config"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::config::TravelStaminaCostConfig",
+          "members": [
+            {
+              "name": "config_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "travel_type",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "cost",
+              "type": "core::integer::u16"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::models::config::Itravel_stamina_cost_config",
+          "items": [
+            {
+              "type": "function",
+              "name": "ensure_abi",
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "eternum::models::config::TravelStaminaCostConfig"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::config::travel_stamina_cost_config::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "name": "eternum::models::config::travel_stamina_cost_config"
     },
     {
       "kind": "DojoModel",
