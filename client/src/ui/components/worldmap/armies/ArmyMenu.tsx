@@ -2,7 +2,7 @@ import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
 import { ArmyMode } from "@/hooks/store/_mapStore";
 import Button from "@/ui/elements/Button";
 import { DojoHtml } from "@/ui/elements/DojoHtml";
-import { EXPLORATION_COSTS, type Resource } from "@bibliothecadao/eternum";
+import { ConfigManager, type Resource } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
@@ -60,6 +60,7 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
       components: { ArrivalTime, EntityOwner, Owner },
     },
   } = useDojo();
+  const configExplorationCosts = ConfigManager.instance().getConfig().exploration.costs;
 
   const [appeared, setAppeared] = useState(false);
 
@@ -96,9 +97,10 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
 
   const explorationCosts = useMemo(() => {
     const foodBalance = entityOwner ? getFoodResources(entityOwner.entity_owner_id) : [];
-    return EXPLORATION_COSTS.map((res) => ({
-      ...res,
-      hasEnough: (foodBalance.find((food) => food.resourceId === res.resourceId)?.amount || 0) >= res.amount,
+    return Object.entries(configExplorationCosts).map(([resourceId, amount]) => ({
+      resourceId: Number(resourceId),
+      amount,
+      hasEnough: (foodBalance.find((food) => food.resourceId === Number(resourceId))?.amount || 0) >= amount,
     }));
   }, [entityOwner, getFoodResources]);
 

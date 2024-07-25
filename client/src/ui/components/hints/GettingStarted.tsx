@@ -1,13 +1,16 @@
 import { Headline } from "@/ui/elements/Headline";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { tableOfContents } from "./utils";
+import { ConfigManager } from "@bibliothecadao/eternum";
 
 export const GettingStarted = () => {
+  const configManager = ConfigManager.instance();
+  const armiesTickIntervalInSeconds = configManager.getConfig().tick.armiesTickIntervalInSeconds;
+
   const chapters = [
     {
       title: "The Time Cycle",
       content: `Everything in this world revolves around an Eternum Day. A day in Eternum is ${
-        EternumGlobalConfig.tick.armiesTickIntervalInSeconds / 60
+        armiesTickIntervalInSeconds / 60
       } minutes.`,
     },
     {

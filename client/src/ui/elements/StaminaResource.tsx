@@ -1,13 +1,14 @@
 import { useStamina } from "@/hooks/helpers/useStamina";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { ConfigManager } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 
 export const StaminaResource = ({ entityId, className }: { entityId: bigint | undefined; className?: string }) => {
+  const travelCost = ConfigManager.instance().getConfig().staminaCost.travel;
+
   const { useStaminaByEntityId, getMaxStaminaByEntityId } = useStamina();
   const stamina = useStaminaByEntityId({ travelingEntityId: entityId || 0n });
 
-  const staminaColor =
-    (stamina?.amount || 0n) < EternumGlobalConfig.stamina.travelCost ? "text-red/90" : "text-yellow/90";
+  const staminaColor = (stamina?.amount || 0n) < travelCost ? "text-red/90" : "text-yellow/90";
 
   return (
     <div className={`flex flex-row text-xs font-bold text-right uppercase ${className}`}>

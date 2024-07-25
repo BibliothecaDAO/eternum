@@ -1,6 +1,6 @@
 import { Headline } from "@/ui/elements/Headline";
 import { tableOfContents } from "./utils";
-import { EXPLORATION_COSTS, EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { ConfigManager } from "@bibliothecadao/eternum";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 
 export const TheMap = () => {
@@ -41,12 +41,9 @@ export const TheMap = () => {
 };
 
 const ExplorationTable = () => {
-  const explorationCosts = EXPLORATION_COSTS.map((cost) => ({
-    ...cost,
-  }));
-
-  const exploreCost = EternumGlobalConfig.stamina.exploreCost;
-  const travelCost = EternumGlobalConfig.stamina.travelCost;
+  const configManager = ConfigManager.instance();
+  const explorationResourceCosts = configManager.getConfig().exploration.costs;
+  const staminaCost = configManager.getConfig().staminaCost;
 
   return (
     <table className="not-prose w-full p-2 border-gold/10">
@@ -60,16 +57,16 @@ const ExplorationTable = () => {
       <tbody>
         <tr>
           <td className="border border-gold/10 p-2 font-bold">Exploration</td>
-          <td className="border border-gold/10 p-2">{exploreCost}</td>
+          <td className="border border-gold/10 p-2">{staminaCost.explore}</td>
           <td className="border border-gold/10 p-2 gap-1 flex flex-col">
-            {explorationCosts.map((cost, index) => (
-              <ResourceCost key={index} resourceId={cost.resourceId} amount={cost.amount} size="lg" />
+            {Object.entries(explorationResourceCosts).map(([resourceId, amount]) => (
+              <ResourceCost key={resourceId} resourceId={Number(resourceId)} amount={amount} size="lg" />
             ))}
           </td>
         </tr>
         <tr>
           <td className="border border-gold/10 p-2 font-bold">Travel</td>
-          <td className="border border-gold/10 p-2">{travelCost}</td>
+          <td className="border border-gold/10 p-2">{staminaCost.travel}</td>
           <td className="border border-gold/10 p-2">None</td>
         </tr>
       </tbody>
