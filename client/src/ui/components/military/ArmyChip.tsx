@@ -20,11 +20,7 @@ export const ArmyChip = ({
   className?: string;
   showButtons?: boolean;
 }) => {
-  const {
-    setup: {
-      components: { Battle },
-    },
-  } = useDojo();
+  const dojo = useDojo();
 
   const [showInventory, setShowInventory] = useState(false);
 
@@ -32,12 +28,12 @@ export const ArmyChip = ({
 
   const [editMode, setEditMode] = useState(false);
 
-  const battleManager = useMemo(() => new BattleManager(BigInt(army.battle_id), Battle), [army.battle_id]);
+  const battleManager = useMemo(() => new BattleManager(army.battle_id, dojo), [army.battle_id]);
 
-  const { updatedArmy, updatedBattle } = useMemo(() => {
+  const updatedArmy = useMemo(() => {
     const updatedBattle = battleManager.getUpdatedBattle(currentTimestamp!);
     const updatedArmy = battleManager.getUpdatedArmy(army, updatedBattle);
-    return { updatedArmy, updatedBattle };
+    return updatedArmy;
   }, [currentTimestamp]);
 
   return (
@@ -60,7 +56,7 @@ export const ArmyChip = ({
                   <div className="mr-2">{updatedArmy!.name}</div>
                   {showButtons && (
                     <div className="flex flex-row gap-1 grid grid-cols-3">
-                      {updatedArmy.isMine && (
+                      {updatedArmy?.isMine && (
                         <React.Fragment>
                           <Pen
                             className={
@@ -84,14 +80,14 @@ export const ArmyChip = ({
                   )}
                 </div>
                 <div className="font-bold text-xs">
-                  <StaminaResource entityId={BigInt(updatedArmy!.entity_id)} />
+                  <StaminaResource entityId={updatedArmy!.entity_id} />
                 </div>
               </div>
-              <div className="flex flex-row content-center w-[55%]">
-                <TroopMenuRow army={updatedArmy!} />
+              <div className="flex flex-col content-center w-[55%]">
+                <TroopMenuRow troops={updatedArmy!.troops} />
                 {showInventory && (
                   <InventoryResources
-                    entityId={BigInt(updatedArmy!.entity_id)}
+                    entityIds={[updatedArmy!.entity_id]}
                     className="flex gap-1 h-14 mt-2 overflow-x-auto no-scrollbar"
                     resourcesIconSize="xs"
                   />

@@ -4,7 +4,7 @@ import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery
 import { useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
 import useLeaderBoardStore, { GuildPointsLeaderboardInterface } from "../store/useLeaderBoardStore";
-import { useEntitiesUtils } from "./useEntities";
+import { getEntitiesUtils } from "./useEntities";
 import { useRealm } from "./useRealm";
 
 export type GuildAndName = ClientComponents["Guild"]["schema"] & { name: string } & { rank: number | string };
@@ -24,7 +24,7 @@ export const useGuilds = () => {
     account: { account },
   } = useDojo();
 
-  const { getEntityName } = useEntitiesUtils();
+  const { getEntityName } = getEntitiesUtils();
   const { getAddressName } = useRealm();
 
   const guildPointsLeaderboard = useLeaderBoardStore((state) => state.guildPointsLeaderboard);

@@ -66,7 +66,6 @@ export const getQuestResources = (resourcesOnRealm: number[]): ResourceInputs =>
     QUEST_RESOURCES,
     EternumGlobalConfig.resources.resourceMultiplier,
   );
-  console.log({ QUEST_RESOURCES_SCALED });
   return applyInputProductionFactor(QUEST_RESOURCES_SCALED, resourcesOnRealm);
 };
 

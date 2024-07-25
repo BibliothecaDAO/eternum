@@ -21,6 +21,7 @@ import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
+import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -30,7 +31,6 @@ import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
-import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { HintSection } from "../hints/HintModal";
 import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { QuestId } from "@/ui/components/quest/questDetails";
@@ -131,7 +131,8 @@ export const SelectPreviewBuildingMenu = () => {
                   active={previewBuilding?.resource === resourceId}
                   name={resource?.trait}
                   toolTip={<ResourceInfo resourceId={resourceId} entityId={realmEntityId} />}
-                  canBuild={canBuild}
+                  hasFunds={hasBalance}
+                  hasPopulation={hasEnoughPopulation}
                 />
               );
             })}
@@ -194,7 +195,8 @@ export const SelectPreviewBuildingMenu = () => {
                     active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
-                    canBuild={canBuild}
+                    hasFunds={hasBalance}
+                    hasPopulation={hasEnoughPopulation}
                   />
                 );
               })}
@@ -242,7 +244,8 @@ export const SelectPreviewBuildingMenu = () => {
                     active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
-                    canBuild={canBuild}
+                    hasFunds={hasBalance}
+                    hasPopulation={hasEnoughPopulation}
                   />
                 );
               })}
@@ -285,7 +288,8 @@ export const BuildingCard = ({
   active,
   name,
   toolTip,
-  canBuild,
+  hasFunds,
+  hasPopulation,
   resourceId,
   className,
 }: {
@@ -294,7 +298,8 @@ export const BuildingCard = ({
   active: boolean;
   name: string;
   toolTip: React.ReactElement;
-  canBuild?: boolean;
+  hasFunds?: boolean;
+  hasPopulation?: boolean;
   resourceId?: ResourcesIds;
   className?: string;
 }) => {
@@ -312,16 +317,18 @@ export const BuildingCard = ({
       }}
       onClick={onClick}
       className={clsx(
-        "hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm ",
+        "hover:opacity-90 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm ",
         {
           "!border-lightest": active,
         },
         className,
       )}
     >
-      {!canBuild && (
+      {(!hasFunds || !hasPopulation) && (
         <div className="absolute w-full h-full bg-black/50 text-white/60 p-4 text-xs  flex justify-center ">
-          <div className="self-center">insufficient funds or population</div>
+          <div className="self-center">{`${!hasFunds ? "Insufficient funds. " : ""} ${
+            !hasPopulation ? "Insufficient population. " : ""
+          }`}</div>
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50 ">

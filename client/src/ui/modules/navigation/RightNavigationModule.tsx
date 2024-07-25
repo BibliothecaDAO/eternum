@@ -11,7 +11,7 @@ import CircleButton from "@/ui/elements/CircleButton";
 import { useMemo, useState } from "react";
 import { BaseContainer } from "../../containers/BaseContainer";
 
-import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { Headline } from "@/ui/elements/Headline";
@@ -44,7 +44,7 @@ export const RightNavigationModule = () => {
   const { realmEntityId } = useRealmStore();
   const { questClaimStatus } = useQuestClaimStatus();
 
-  const { getEntityInfo } = useEntitiesUtils();
+  const { getEntityInfo } = getEntitiesUtils();
   const realmIsMine = getEntityInfo(realmEntityId).isMine;
 
   const { getAllArrivalsWithResources } = useResources();

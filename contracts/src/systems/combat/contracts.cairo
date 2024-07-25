@@ -3,23 +3,24 @@ use eternum::models::{combat::{Troops, Battle, BattleSide}};
 #[dojo::interface]
 trait ICombatContract<TContractState> {
     /// Creates an army entity.
-    /// 
+    ///
     /// This function allows the creation of two types of armies:
-    /// 
+    ///
     /// 1. **Defensive Army**:
     ///     - Assigned to protect a specific structure.
     ///     - Cannot move or hold resources.
     ///     - Ensures the safety of the structure and any resources it holds.
-    ///     - Only one defensive army is allowed per structure. Attempting to create more than one for
+    ///     - Only one defensive army is allowed per structure. Attempting to create more than one
+    ///     for
     ///       the same structure will result in an error.
     ///     - Specify `is_defensive_army` as `true` to create this type of army.
-    /// 
+    ///
     /// 2. **Roaming Army**:
     ///     - Can move freely across the map.
     ///     - Engages in exploring hexes, joining battles, and pillaging structures.
     ///     - There is no limit to the number of roaming armies you can create.
     ///     - Specify `is_defensive_army` as `false` to create this type of army.
-    /// 
+    ///
     /// # Preconditions:
     /// - The caller must own the entity identified by `army_owner_id`.
     ///
@@ -33,7 +34,8 @@ trait ICombatContract<TContractState> {
     ///
     /// # Implementation Details:
     /// - The function checks if the caller owns the entity specified by `army_owner_id`.
-    /// - It generates a unique ID for the new army and sets common properties such as entity ownership,
+    /// - It generates a unique ID for the new army and sets common properties such as entity
+    /// ownership,
     ///   initial position, and default battle settings.
     /// - For a defensive army:
     ///     - Validates that the owning entity is a structure.
@@ -41,7 +43,8 @@ trait ICombatContract<TContractState> {
     ///     - Assigns the new army to protect the structure.
     ///     - Locks the army from resource transfer operations.
     /// - For a roaming army:
-    ///     - Configures the army's movement speed and carrying capacity based on game world settings.
+    ///     - Configures the army's movement speed and carrying capacity based on game world
+    ///     settings.
     ///     - Initializes the army's stamina for map exploration.
     fn army_create(
         ref world: IWorldDispatcher, army_owner_id: u128, is_defensive_army: bool
@@ -52,7 +55,7 @@ trait ICombatContract<TContractState> {
     /// # Preconditions:
     /// - The caller must own the entity identified by `payer_id`.
     /// - The payer and the army must be at the same position. E.g
-    ///   if the payer is a structure (a realm for example), the army 
+    ///   if the payer is a structure (a realm for example), the army
     ///   must be at the realm in order to add troops to its army.
     ///
     /// # Arguments:
@@ -94,12 +97,12 @@ trait ICombatContract<TContractState> {
     /// 2. **Troop Transfer**:
     ///     - Decreases the number of troops, health, and quantity in the `from_army_id`.
     ///     - Increases the number of troops, health, and quantity in the `to_army_id`.
-    /// 
+    ///
     /// # Note:
-    ///     It is important to know that you can only transfer troops with full health from 
-    ///     one army to another. e.g if the first army has 
+    ///     It is important to know that you can only transfer troops with full health from
+    ///     one army to another. e.g if the first army has
     ///     `FirstArmy(100 knights, 100 paladins,100 crossbowman)` but it went to battle and now
-    ///     it only has half it's initial `Health`` left, you'll only be able to transfer half, i.e 
+    ///     it only has half it's initial `Health`` left, you'll only be able to transfer half, i.e
     ///     `(100 knights, 100 paladins,100 crossbowman)``, to the SecondArmy.
     ///
     /// # Returns:
@@ -113,7 +116,7 @@ trait ICombatContract<TContractState> {
     /// # Preconditions:
     /// - The caller must own the `attacking_army_id`.
     /// - Both `attacking_army_id` and `defending_army_id` must not already be in battle.
-    ///   If the attacked army is in a battle that has ended, it is automatically forced 
+    ///   If the attacked army is in a battle that has ended, it is automatically forced
     ///   to leave the battle.
     /// - Both armies must be at the same location.
     ///
@@ -139,39 +142,42 @@ trait ICombatContract<TContractState> {
     ///     - Sets the battle position and resets the battle delta.
     ///
     /// # Note:
-    ///     This is how the deposited resources are escrowed. Whenever any army joins a 
-    ///     battle, the items which they are securing are locked from being transferred 
-    ///     and they will also not be able to receive resources. 
-    /// 
+    ///     This is how the deposited resources are escrowed. Whenever any army joins a
+    ///     battle, the items which they are securing are locked from being transferred
+    ///     and they will also not be able to receive resources.
+    ///
     ///     For example;
-    ///     - If an army is not a defensive army, the items they are securing are the items they hold. 
+    ///     - If an army is not a defensive army, the items they are securing are the items they
+    ///     hold.
     ///       So we lock these items. We also transfer the items into the battle escrow pool
-    ///      
-    ///     - If an army is a defensive army, the items they are securing are the items owned 
+    ///
+    ///     - If an army is a defensive army, the items they are securing are the items owned
     ///       by the structure they are protecting and so these items are lock. The structures can't
     ///       receive or send any resources.
-    /// 
-    ///       However, for a couple of reasons, we do not transfer resources owned by structures into the
-    ///       escrow pool because if a structure is producing resources, it would be impossible to 
-    ///       continously donate resources into the battle escrow. Even if it was possible, it would take
-    ///       too much gas.
-    /// 
-    ///       Instead, what we do is that we just lock up the structure's resources and if you win the battle
-    ///       against the structure, you can continuously pillage it without being sent back to your base.
-    ///             
+    ///
+    ///       However, for a couple of reasons, we do not transfer resources owned by structures
+    ///       into the escrow pool because if a structure is producing resources, it would be
+    ///       impossible to continously donate resources into the battle escrow. Even if it was
+    ///       possible, it would take too much gas.
+    ///
+    ///       Instead, what we do is that we just lock up the structure's resources and if you win
+    ///       the battle against the structure, you can continuously pillage it without being sent
+    ///       back to your base.
+    ///
     /// # Returns:
     /// * None
     fn battle_start(
         ref world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128
     ) -> u128;
 
-    /// Join an existing battle with the specified army, assigning it to a specific side in the battle.
+    /// Join an existing battle with the specified army, assigning it to a specific side in the
+    /// battle.
     ///
     /// # Preconditions:
     /// - The specified `battle_side` must be either `BattleSide::Attack` or `BattleSide::Defence`.
     /// - The caller must own the `army_id`.
     /// - The battle must be ongoing.
-    /// - The army must not already be in a battle. 
+    /// - The army must not already be in a battle.
     /// - The army must be at the same location as the battle.
     ///
     /// # Arguments:
@@ -195,7 +201,8 @@ trait ICombatContract<TContractState> {
     ///     - Assigns the battle ID and side to the army.
     ///     - Blocks the army's movement if it is not protecting any entity.
     /// 5. **Resource Locking**:
-    ///     - Locks the resources protected by the army, transferring them to the battle escrow if necessary.
+    ///     - Locks the resources protected by the army, transferring them to the battle escrow if
+    ///     necessary.
     /// 6. **Troop and Health Addition**:
     ///     - Adds the army's troops and health to the respective side in the battle.
     ///     - Updates the battle state with the new army's contributions.
@@ -203,11 +210,11 @@ trait ICombatContract<TContractState> {
     ///     - Resets the battle delta with the troop configuration.
     ///
     /// # Note:
-    ///     When an army joins a battle, its protected resources are locked and transferred 
-    ///     to the battle escrow. This ensures that resources cannot be transferred in or out 
-    ///     of the army while it is engaged in the battle. 
-    ///     
-    ///     For defensive armies, the resources owned by the structures they protect are locked 
+    ///     When an army joins a battle, its protected resources are locked and transferred
+    ///     to the battle escrow. This ensures that resources cannot be transferred in or out
+    ///     of the army while it is engaged in the battle.
+    ///
+    ///     For defensive armies, the resources owned by the structures they protect are locked
     ///     but not transferred into the escrow to avoid continuous donation issues.
     ///     see. the `battle_start` function for more info on this
     ///
@@ -217,8 +224,8 @@ trait ICombatContract<TContractState> {
         ref world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128
     );
 
-    /// Allows an army to leave an ongoing battle, releasing its resources and restoring its mobility 
-    /// (if it was previously mobile).
+    /// Allows an army to leave an ongoing battle, releasing its resources and restoring its
+    /// mobility (if it was previously mobile).
     ///
     /// # Preconditions:
     /// - The caller must own the `army_id`.
@@ -251,25 +258,25 @@ trait ICombatContract<TContractState> {
     ///
     /// # Notes on Reward:
     ///     -   If you leave in the middle of a battle that doesn't yet have a decided outcome,
-    ///         you lose all the resources deposited in the battle escrow. 
-    ///     
+    ///         you lose all the resources deposited in the battle escrow.
+    ///
     ///         Because Structures` rescources are not deposited into escrow, and so we can't make
-    ///         them lose all their resources, structure defensive armies CAN NOT leave a battle until
-    ///         it is done. There must be a winner, loser or it must have been a draw
-    /// 
+    ///         them lose all their resources, structure defensive armies CAN NOT leave a battle
+    ///         until it is done. There must be a winner, loser or it must have been a draw
+    ///
     ///     -   If you leave after a battle has ended;
-    ///             a. if you won, you leave with your initial resources and you also take a portion 
-    ///                 of the resources deposited in escrow by the opposing team based on the number
-    ///                 of troops you contributed to the battle.
-    ///                 
-    ///                 This method has the downside that a big army can just swoop in, close to the 
+    ///             a. if you won, you leave with your initial resources and you also take a portion
+    ///                 of the resources deposited in escrow by the opposing team based on the
+    ///                 number of troops you contributed to the battle.
+    ///
+    ///                 This method has the downside that a big army can just swoop in, close to the
     ///                 end of the battle, and take the giant share of the loot. But such is life.
-    /// 
+    ///
     ///                 If you won against a structure, you can pillage them to infinity.
-    /// 
+    ///
     ///             b. if you lost, you lose all the resources deposited in escrow
     ///             c. if the battle was drawn, you can leave with your deposited resources
-    /// 
+    ///
     /// # Returns:
     /// * None
     fn battle_leave(ref world: IWorldDispatcher, battle_id: u128, army_id: u128);
@@ -281,7 +288,7 @@ trait ICombatContract<TContractState> {
     /// - The entity being pillaged (`structure_id`) must be a valid structure.
     /// - The attacking army (`army_id`) must not be currently in battle.
     /// - The attacking army must be at the same location as the structure.
-    /// - If the structure has a protecting army in battle, the attacking army must join the battle 
+    /// - If the structure has a protecting army in battle, the attacking army must join the battle
     ///   or wait till the structure's defensive army is done with the battle.
     ///
     /// # Arguments:
@@ -299,17 +306,21 @@ trait ICombatContract<TContractState> {
     ///     - Determines if the structure is protected by another army (`structure_army_id`).
     ///     - If the protecting army is in battle, ensure that outcome is finalized.
     /// 3. **Pillage Calculation**:
-    ///     - Calculates the strength of the attacking and defending armies based on their troops and health.
+    ///     - Calculates the strength of the attacking and defending armies based on their troops
+    ///     and health.
     ///     - Uses a probabilistic model to determine if the pillaging attempt is successful.
-    ///     - Randomly selects resources from the structure to pillage, considering army capacity and resource availability.
+    ///     - Randomly selects resources from the structure to pillage, considering army capacity
+    ///     and resource availability.
     /// 4. **Outcome Effects**:
-    ///     - If the pillage attempt is successful, transfers resources from the structure to the attacking army.
+    ///     - If the pillage attempt is successful, transfers resources from the structure to the
+    ///     attacking army.
     ///     - Optionally destroys a building within the structure based on specific conditions.
-    ///     - Deducts health from both armies involved in the battle. 
+    ///     - Deducts health from both armies involved in the battle.
     ///         If any army is dead, no health is deducted.
-    /// 
+    ///
     /// 5. **Final Actions**:
-    ///     - Handles the movement of the attacking army back to its owner after a successful pillage, 
+    ///     - Handles the movement of the attacking army back to its owner after a successful
+    ///     pillage,
     ///       if continuous pillaging is not possible.
     ///     - Emits a `PillageEvent` to signify the outcome of the pillage action.
     ///
@@ -473,7 +484,7 @@ mod combat_systems {
 
             let mut army: Army = get!(world, army_id, Army);
             if army.is_in_battle() {
-                // update army health and troop count 
+                // update army health and troop count
                 let mut battle: Battle = get!(world, army.battle_id, Battle);
                 InternalCombatImpl::update_battle_and_army(world, ref battle, ref army);
 
@@ -494,7 +505,7 @@ mod combat_systems {
                     battle_army.troops.add(troops);
                     battle_army_lifetime.troops.add(troops);
 
-                    // add troop health to battle army health 
+                    // add troop health to battle army health
                     let troop_config = TroopConfigImpl::get(world);
                     battle_army_health.increase_by(troops.full_health(troop_config));
 
@@ -582,7 +593,7 @@ mod combat_systems {
             if defending_army.battle_id.is_non_zero() {
                 // defending army appears to be in battle
                 // so we want to update the defending army's battle status
-                // to see if the battle has ended. if it has ended, then the 
+                // to see if the battle has ended. if it has ended, then the
                 // army will be removed from the battle
                 let mut defending_army_battle: Battle = get!(
                     world, defending_army.battle_id, Battle
@@ -642,7 +653,7 @@ mod combat_systems {
                 set!(world, (defending_army_movable));
             }
 
-            // create battle 
+            // create battle
             let mut battle: Battle = Default::default();
             battle.entity_id = battle_id;
             battle.attack_army = attacking_army.into();
@@ -659,7 +670,7 @@ mod combat_systems {
             battle.deposit_balance(world, attacking_army, attacking_army_protectee);
             battle.deposit_balance(world, defending_army, defending_army_protectee);
 
-            // set battle position 
+            // set battle position
             let mut battle_position: Position = Default::default();
             battle_position.entity_id = battle_id;
             battle_position.x = attacking_army_position.x;
@@ -698,7 +709,7 @@ mod combat_systems {
             let mut caller_army_health: Health = get!(world, army_id, Health);
             caller_army_health.assert_alive("Your army");
 
-            // caller army health sanity check 
+            // caller army health sanity check
             assert!(
                 caller_army_health.current == caller_army.troops.full_health(troop_config),
                 "caller health sanity check fail"
@@ -737,7 +748,7 @@ mod combat_systems {
             battle_army.troops.add(caller_army.troops);
             battle_army_lifetime.troops.add(caller_army.troops);
 
-            // add caller army heath to battle army health 
+            // add caller army heath to battle army health
             battle_army_health.increase_by(caller_army_health.current);
 
             // update battle
@@ -791,7 +802,7 @@ mod combat_systems {
             let structure_position: Position = get!(world, structure_id, Position);
             claimer_army_position.assert_same_location(structure_position.into());
 
-            // ensure structure has no army protecting it 
+            // ensure structure has no army protecting it
             let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
                 let mut structure_army: Army = get!(world, structure_army_id, Army);
@@ -964,7 +975,7 @@ mod combat_systems {
 
             if structure.category == StructureCategory::Realm {
                 // all buildings are at most 4 directions from the center
-                // so first we pick a random between within 1 and 4 
+                // so first we pick a random between within 1 and 4
                 // with higher probability of high numbers
 
                 let mut chosen_direction_count: u8 = *random::choices(
@@ -1185,7 +1196,7 @@ mod combat_systems {
             // Defensive armies can only be assigned as structure protectors
             get!(world, army_owner_id, Structure).assert_is_structure();
 
-            // ensure the structure does not have a defensive army 
+            // ensure the structure does not have a defensive army
             let mut structure_protector: Protector = get!(world, army_owner_id, Protector);
             structure_protector.assert_has_no_defensive_army();
 
