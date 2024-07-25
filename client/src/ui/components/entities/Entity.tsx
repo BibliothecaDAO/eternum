@@ -1,7 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getBattleByPosition } from "@/hooks/helpers/battles/useBattles";
-import { getArmyByEntityId, isArmyAlive } from "@/hooks/helpers/useArmies";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useOwnedEntitiesOnPosition, useResources } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
@@ -38,7 +38,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     },
   } = useDojo();
   const [showTravel, setShowTravel] = useState(false);
-  const { getEntityInfo } = useEntitiesUtils();
+  const { getEntityInfo } = getEntitiesUtils();
   const { getResourcesFromBalance } = useResources();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
   const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
@@ -64,7 +64,6 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   }, [entity?.position?.x, entity?.position?.y]);
 
   const army = getArmy(entityId);
-  if (army && !isArmyAlive(army, Battle, Army)) return;
 
   if (entityState === EntityState.NotApplicable) return null;
 

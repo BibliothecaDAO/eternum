@@ -1,7 +1,6 @@
 import { BattleSide } from "@bibliothecadao/eternum";
 import { Component, Entity, runQuery } from "@dojoengine/recs";
 import { describe, expect, it, vi } from "vitest";
-import { BattleInfo, filterBattles } from "../useBattles";
 import * as testedModule from "../useBattlesUtils";
 import { generateMockArmy, generateMockBattle } from "./__mock__";
 
@@ -110,52 +109,5 @@ describe("battleIsEmpty test", () => {
 
     const isEmpty = testedModule.battleIsEmpty(Army, battle);
     expect(isEmpty).toBe(false);
-  });
-});
-
-describe("filterBattles", () => {
-  const mockArmy = {} as Component;
-  const mockProtectee = {} as Component;
-
-  it("should return true when battle is not finished", () => {
-    const mockBattle = {} as BattleInfo;
-    const spy = vi.spyOn(testedModule, "battleIsFinished");
-    spy.mockReturnValue(false);
-
-    const result = filterBattles(mockBattle, mockArmy, mockProtectee);
-    expect(result).toBe(true);
-    expect(spy).toHaveBeenCalledWith(mockArmy, mockBattle);
-  });
-
-  it("should return true when battle is finished but structure battle and protector is still inside", () => {
-    const mockBattle = { isStructureBattle: true } as BattleInfo;
-    const spyBattleIsFinished = vi.spyOn(testedModule, "battleIsFinished");
-    spyBattleIsFinished.mockReturnValue(true);
-
-    const spyProtectorStillInBattle = vi.spyOn(testedModule, "protectorStillInBattle");
-    spyProtectorStillInBattle.mockReturnValue(true);
-
-    const result = filterBattles(mockBattle, mockArmy, mockProtectee);
-    expect(result).toBe(true);
-
-    expect(spyBattleIsFinished).toHaveBeenCalledWith(mockArmy, mockBattle);
-  });
-
-  it("should return false when battle is finished and it's not a structure battle", () => {
-    const mockBattle = { isStructureBattle: false } as BattleInfo;
-    vi.spyOn(testedModule, "battleIsFinished").mockReturnValue(true);
-    vi.spyOn(testedModule, "protectorStillInBattle").mockReturnValue(true);
-
-    const result = filterBattles(mockBattle, mockArmy, mockProtectee);
-    expect(result).toBe(false);
-  });
-
-  it("should return false when battle is finished, it's a structure battle and protector is not in battle", () => {
-    const mockBattle = { isStructureBattle: true } as BattleInfo;
-    vi.spyOn(testedModule, "battleIsFinished").mockReturnValue(true);
-    vi.spyOn(testedModule, "protectorStillInBattle").mockReturnValue(false);
-
-    const result = filterBattles(mockBattle, mockArmy, mockProtectee);
-    expect(result).toBe(false);
   });
 });

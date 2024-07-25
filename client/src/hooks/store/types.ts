@@ -1,8 +1,13 @@
-import { CombatTarget } from "@/types";
-import { Realm, Structure } from "../helpers/useStructures";
-import { Position } from "@bibliothecadao/eternum";
+export enum Action {
+  Engage,
+  Interact,
+  Join,
+  View,
+}
 
 export type BattleViewInfo = {
-  battle: Position | undefined;
-  target: { type: CombatTarget; entity: bigint | Realm | Structure } | undefined;
+  battle: bigint | undefined;
+  engage?: boolean;
+  ownArmyEntityId: bigint | undefined;
+  targetArmy: bigint | undefined;
 };

@@ -18,18 +18,20 @@ import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../../context/DojoContext";
 import * as module from "./useBattles";
-import { battleIsFinished, protectorStillInBattle } from "./useBattlesUtils";
 
-export type FullArmyType = ClientComponents["Army"]["schema"] & ClientComponents["Health"]["schema"];
+export type FullArmyType = ComponentValue<ClientComponents["Army"]["schema"]> &
+  ComponentValue<ClientComponents["Health"]["schema"]>;
 
-export type ExtraBattleInfo = ClientComponents["Position"]["schema"] & {
+export type ExtraBattleInfo = ComponentValue<ClientComponents["Position"]["schema"]> & {
   opponentArmy: FullArmyType;
   ownArmyEntityName: string;
   opponentArmyEntityName: string;
 };
 
-export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> &
-  ComponentValue<ClientComponents["Position"]["schema"]> & { isStructureBattle: boolean };
+export type BattleInfo = ComponentValue<ClientComponents["Battle"]["schema"]> & {
+  isStructureBattle: boolean;
+  position: ComponentValue<ClientComponents["Position"]["schema"]>;
+};
 
 export const getBattle = (
   battleId: Entity,
@@ -60,45 +62,19 @@ export const getExtraBattleInformation = (
       const position = getComponentValue(Position, battleEntityId);
       if (!position) return;
       const structure = runQuery([Has(Structure), HasValue(Position, { x: position.x, y: position.y })]);
-      return { ...battle, ...position, isStructureBattle: structure.size > 0 };
+      return { ...battle, position, isStructureBattle: structure.size > 0 };
     })
     .filter((item): item is BattleInfo => Boolean(item));
 };
 
 export const useBattleManager = (battleId: bigint) => {
-  const {
-    setup: {
-      components: { Battle },
-    },
-  } = useDojo();
+  const dojo = useDojo();
 
-  const battle = useComponentValue(Battle, getEntityIdFromKeys([BigInt(battleId)])) as ComponentValue<
-    ClientComponents["Battle"]["schema"]
-  >;
-
-  const updatedBattle = useMemo(() => {
-    return new BattleManager(battleId, Battle);
-  }, [battleId, battle]);
-
-  return { updatedBattle };
-};
-
-export const useBattleManagerByPosition = (position: Position) => {
-  const {
-    setup: {
-      components: { Battle, Position, Army, Structure, Protectee },
-    },
-  } = useDojo();
-
-  const battleEntityIds = useEntityQuery([Has(Battle), HasValue(Position, { x: position.x, y: position.y })]);
-  const battle = getExtraBattleInformation(battleEntityIds, Battle, Position, Structure).filter((battle) =>
-    module.filterBattles(battle, Army, Protectee),
-  )[0];
+  const battle = useComponentValue(dojo.setup.components.Battle, getEntityIdFromKeys([battleId]));
 
   const battleManager = useMemo(() => {
-    if (!battle) return;
-    return new BattleManager(BigInt(battle.entity_id), Battle);
-  }, [position, battle]);
+    return new BattleManager(battleId, dojo);
+  }, [battleId, battle]);
 
   return battleManager;
 };
@@ -106,14 +82,14 @@ export const useBattleManagerByPosition = (position: Position) => {
 export const useAllBattles = () => {
   const {
     setup: {
-      components: { Battle, Army, Position, Structure, Protectee },
+      components: { Battle, Position, Structure },
     },
   } = useDojo();
 
   const battlesEntityIds = useEntityQuery([Has(Battle)]);
   const allBattles = useMemo(() => {
     const extraBattleInfo = getExtraBattleInformation(battlesEntityIds, Battle, Position, Structure);
-    return extraBattleInfo.filter((battle) => module.filterBattles(battle, Army, Protectee));
+    return extraBattleInfo;
   }, [battlesEntityIds]);
   return allBattles;
 };
@@ -122,12 +98,12 @@ export const usePlayerBattles = () => {
   const {
     account: { account },
     setup: {
-      components: { Battle, Army, Owner, Position, Structure, Protectee },
+      components: { Battle, Army, Owner, Position, Structure },
     },
   } = useDojo();
 
   const armiesEntityIds = useEntityQuery([Has(Army), HasValue(Owner, { address: BigInt(account.address) })]);
-  const playerBattles = (): any[] => {
+  const playerBattles = (): ComponentValue<Components["Battle"]["schema"]>[] => {
     const battleEntityIds = armiesEntityIds
       .map((armyEntityId: Entity) => {
         const ownArmy = getComponentValue(Army, armyEntityId);
@@ -137,9 +113,7 @@ export const usePlayerBattles = () => {
         return getEntityIdFromKeys([battle.entity_id]);
       })
       .filter((entityId): entityId is Entity => entityId !== null);
-    return getExtraBattleInformation(battleEntityIds, Battle, Position, Structure).filter((battle) =>
-      module.filterBattles(battle, Army, Protectee),
-    );
+    return getExtraBattleInformation(battleEntityIds, Battle, Position, Structure);
   };
   return { playerBattles };
 };
@@ -147,7 +121,7 @@ export const usePlayerBattles = () => {
 export const getBattleInfoByOwnArmyEntityId = (ownArmyEntityId: bigint): ExtraBattleInfo | undefined => {
   const {
     setup: {
-      components: { Army, Battle, Position, EntityName },
+      components: { Army, Battle, Position, EntityName, Health },
     },
   } = useDojo();
   const ownArmy = getComponentValue(Army, getEntityIdFromKeys([ownArmyEntityId]));
@@ -164,51 +138,44 @@ export const getBattleInfoByOwnArmyEntityId = (ownArmyEntityId: bigint): ExtraBa
     .values()
     .next().value;
 
-  const opponentArmy = getComponentValue(Army, opponentArmyEntityId);
+  const opponentArmy = getComponentValue(Army, opponentArmyEntityId!);
   if (!opponentArmy) return;
-  const opponentArmyEntityName = getComponentValue(EntityName, opponentArmyEntityId);
+  const opponentArmyHealth = getComponentValue(Health, opponentArmyEntityId!);
+  if (!opponentArmyHealth) return;
+
+  const opponentArmyEntityName = getComponentValue(EntityName, opponentArmyEntityId!);
   return {
     ...position,
-    opponentArmy,
+    opponentArmy: { ...opponentArmy, ...opponentArmyHealth },
     ownArmyEntityName: ownArmyEntityName
       ? shortString.decodeShortString(String(ownArmyEntityName?.name))
       : `Army ${ownArmy!.entity_id}`,
     opponentArmyEntityName: opponentArmyEntityName
       ? shortString.decodeShortString(String(opponentArmyEntityName?.name))
       : `Army ${opponentArmy!.entity_id}`,
-  } as unknown as ExtraBattleInfo;
+  };
 };
 
 export const useBattlesByPosition = ({ x, y }: Position) => {
   const {
     setup: {
-      components: { Battle, Position, Army, Structure, Protectee },
+      components: { Battle, Position, Structure },
     },
   } = useDojo();
   const battleEntityIds = useEntityQuery([Has(Battle), HasValue(Position, { x, y })]);
-  return getExtraBattleInformation(battleEntityIds, Battle, Position, Structure).filter((battle) =>
-    module.filterBattles(battle, Army, Protectee),
-  )[0];
+  return getExtraBattleInformation(battleEntityIds, Battle, Position, Structure);
 };
 
 export const getBattleByPosition = () => {
   const {
     setup: {
-      components: { Battle, Position, Army, Structure, Protectee },
+      components: { Battle, Position, Structure },
     },
   } = useDojo();
 
   const getBattle = ({ x, y }: Position) => {
     const battleEntityIds = runQuery([Has(Battle), HasValue(Position, { x, y })]);
-    return getExtraBattleInformation(Array.from(battleEntityIds), Battle, Position, Structure).filter((battle) =>
-      module.filterBattles(battle, Army, Protectee),
-    )[0];
+    return getExtraBattleInformation(Array.from(battleEntityIds), Battle, Position, Structure)[0];
   };
   return getBattle;
-};
-
-export const filterBattles = (battle: BattleInfo, Army: Component, Protectee: Component) => {
-  return (
-    !battleIsFinished(Army, battle) || (battle.isStructureBattle && protectorStillInBattle(Army, Protectee, battle))
-  );
 };

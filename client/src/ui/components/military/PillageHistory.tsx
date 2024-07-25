@@ -1,63 +1,12 @@
-import { ReactComponent as Swords } from "@/assets/icons/common/cross-swords.svg";
 import { Event } from "@/dojo/events/graphqlClient";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
-import { CombatTarget } from "@/types";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { BattleSide, BuildingType, Resource } from "@bibliothecadao/eternum";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Subscription } from "rxjs";
-import { ArmyChip } from "./ArmyChip";
-
-export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; ownArmySelected: ArmyInfo }) => {
-  const setBattleView = useUIStore((state) => state.setBattleView);
-
-  const structureAtPosition = getStructureAtPosition({ x: ownArmySelected.position.x, y: ownArmySelected.position.y });
-
-  const getArmyChip = (army: ArmyInfo, index: number) => {
-    const { defender } =
-      army.battle_side === BattleSide[BattleSide.Attack] ? { defender: army } : { defender: ownArmySelected };
-    const button = ownArmySelected && (
-      <Swords
-        className={`fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125`}
-        onClick={() =>
-          setBattleView({
-            battle: undefined,
-            target: { type: CombatTarget.Army, entity: defender.entity_id },
-          })
-        }
-      />
-    );
-    const armyClone = army.protectee ? structuredClone(army) : army;
-    armyClone.name = army.protectee ? `${structureAtPosition?.name}` : army.name;
-    return (
-      army.battle_id === 0n && (
-        <div className="flex justify-between" key={index}>
-          <ArmyChip className="text-xs w-[27rem] bg-red/20" key={index} army={armyClone} />
-          {button}
-        </div>
-      )
-    );
-  };
-
-  return (
-    <div className="flex flex-col mt-2 w-[31rem]">
-      {armies.length !== 0 && (
-        <React.Fragment>
-          <div className="grid grid-cols-1 gap-2 p-2">
-            Ennemy armies
-            {armies.map((army: ArmyInfo, index) => getArmyChip(army, index))}
-          </div>
-        </React.Fragment>
-      )}
-    </div>
-  );
-};
 
 export const PillageHistory = ({
   structureId,

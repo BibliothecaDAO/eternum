@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from "react";
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import Button from "@/ui/elements/Button";
 import clsx from "clsx";
+import React, { useEffect, useState } from "react";
 
 interface EntityListProps {
   title: string;
   headerPanel?: React.ReactElement;
-  panel: (props: { entity: any; previous?: undefined | any[] }) => React.ReactElement;
+  panel: (props: {
+    entity: any;
+    previous?: undefined | any[];
+    setSelectedEntity?: (entity: any) => void;
+  }) => React.ReactElement;
   list: any[];
   previous?: any[];
   current?: bigint;
@@ -40,7 +44,7 @@ export const EntityList = ({
             &lt; Back to {title}
           </Button>
 
-          {panel({ entity: list.find((entity) => entity.entity_id === selectedEntity.entity_id) })}
+          {panel({ entity: list.find((entity) => entity.entity_id === selectedEntity.entity_id), setSelectedEntity })}
         </div>
       ) : (
         <div className={clsx("p-2", className)}>

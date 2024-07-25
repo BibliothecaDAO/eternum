@@ -36,7 +36,7 @@ type BattleChipProps = {
 const BattleChip = ({ battle, ownArmy }: BattleChipProps) => {
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
 
-  const { updatedBattle } = useBattleManager(BigInt(battle.entity_id));
+  const updatedBattle = useBattleManager(BigInt(battle.entity_id));
 
   const extraInfo = useMemo(() => {
     const extraInfo = getBattleInfoByOwnArmyEntityId(BigInt(ownArmy.entity_id));
@@ -79,7 +79,7 @@ const ArmyCard = ({ army, position, armyName }: any) => {
         <span>{Number((army.current || 0).toString()) / 1000}</span>
       </div>
       <TroopsCard army={army} />
-      <InventoryResources entityId={BigInt(army.entity_id)} max={3} className="flex text-xs" />
+      <InventoryResources entityIds={[army.entity_id]} max={3} className="flex text-xs" />
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { currencyFormat } from "../../../utils/utils";
 
-import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
@@ -38,7 +37,7 @@ interface ArmyInfoLabelProps {
 
 const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
   const { getRealmAddressName } = useRealm();
-  const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp as number;
+  const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
   const { realm, entity_id, entityOwner, troops, arrivalTime } = army;
 
   const isPassiveTravel = useMemo(
@@ -47,11 +46,11 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
     [arrivalTime?.arrives_at, nextBlockTimestamp],
   );
 
-  const realmId = BigInt(realm?.realm_id || 0);
+  const realmId = realm?.realm_id || 0n;
 
-  const attackerAddressName = entityOwner ? getRealmAddressName(BigInt(entityOwner.entity_owner_id)) : "";
+  const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id) : "";
 
-  const originRealmName = getRealmNameById(BigInt(realmId));
+  const originRealmName = getRealmNameById(realmId);
 
   const isTraveling = isPassiveTravel;
 
@@ -81,12 +80,12 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             {arrivalTime && arrivalTime.arrives_at !== undefined && isTraveling && nextBlockTimestamp && (
               <div className="flex italic text-light-pink">
                 {isPassiveTravel
-                  ? formatSecondsLeftInDaysHours(Number(arrivalTime.arrives_at) - nextBlockTimestamp)
+                  ? formatSecondsLeftInDaysHours(arrivalTime.arrives_at - nextBlockTimestamp)
                   : "Arrives Next Tick"}
                 {army.battle_id ? `In Battle` : ""}
               </div>
             )}
-            <StaminaResource entityId={BigInt(entity_id)} />
+            <StaminaResource entityId={entity_id} />
           </div>
         </div>
       </div>
@@ -107,7 +106,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
         </div>
 
         <div className="flex flex-row justify-between">
-          <InventoryResources max={2} entityId={BigInt(entity_id)} />
+          <InventoryResources max={2} entityIds={[entity_id]} />
         </div>
       </div>
     </div>

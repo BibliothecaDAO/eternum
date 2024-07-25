@@ -41,7 +41,7 @@ export const RealmListItem = ({ realm, extraButton }: RealmListItemProps) => {
         </div>
       </div>
       <div className="grid grid-cols-10 uppercase w-full font-bold my-3">Inventory</div>
-      <InventoryResources max={10} className="grid grid-cols-10 gap-1 mb-2" entityId={BigInt(realm.entity_id)} />
+      <InventoryResources max={10} className="grid grid-cols-10 gap-1 mb-2" entityIds={[realm.entity_id]} />
       {extraButton || ""}
     </div>
   );
