@@ -3,9 +3,11 @@ import * as THREE from "three";
 export default class InstancedModel {
   public group: THREE.Group;
   public instancedMeshes: THREE.InstancedMesh[] = [];
+  private count: number = 0; // Add a private count property
 
   constructor(model: THREE.Group, count: number, enableRaycast: boolean = false) {
     this.group = new THREE.Group();
+    this.count = count; // Initialize the count
 
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -27,6 +29,10 @@ export default class InstancedModel {
         this.instancedMeshes.push(tmp);
       }
     });
+  }
+
+  getCount(): number {
+    return this.count;
   }
 
   getLandColor() {
@@ -71,6 +77,7 @@ export default class InstancedModel {
   }
 
   setCount(count: number) {
+    this.count = count; // Update the private count property
     this.group.children.forEach((child) => {
       if (child instanceof THREE.InstancedMesh) {
         child.count = count;
