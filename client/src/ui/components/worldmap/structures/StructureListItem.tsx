@@ -1,13 +1,7 @@
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { currencyIntlFormat } from "@/ui/utils/utils";
-import {
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  RESOURCE_OUTPUTS_SCALED,
-  ResourcesIds,
-  resources,
-} from "@bibliothecadao/eternum";
+import { ConfigManager, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
@@ -19,6 +13,11 @@ type StructureListItemProps = {
 };
 
 export const StructureListItem = ({ structure, extraButton }: StructureListItemProps) => {
+  const configManager = ConfigManager.instance();
+  const hyperstructurePointsPerCycle = configManager.getConfig().hyperstructurePointsPerCycle;
+  const resourceOutputsScaled = configManager.getResourceOutputsScaled();
+  const resourcePrecision = configManager.getResourcePrecision();
+
   const { getRealmAddressName } = useRealm();
   const addressName = getRealmAddressName(BigInt(structure.entity_id));
 
@@ -42,13 +41,11 @@ export const StructureListItem = ({ structure, extraButton }: StructureListItemP
                 className="inline mr-0.5"
                 size="xs"
               />
-              {currencyIntlFormat(
-                RESOURCE_OUTPUTS_SCALED[ResourcesIds.Earthenshard] / EternumGlobalConfig.resources.resourcePrecision,
-              )}
+              {currencyIntlFormat(resourceOutputsScaled[ResourcesIds.Earthenshard] / resourcePrecision)}
               /tick
             </div>
           ) : (
-            <div className="font-bold">{HYPERSTRUCTURE_POINTS_PER_CYCLE} points/tick</div>
+            <div className="font-bold">{hyperstructurePointsPerCycle} points/tick</div>
           )}
         </div>
         {String(structure.category) === "FragmentMine" && (

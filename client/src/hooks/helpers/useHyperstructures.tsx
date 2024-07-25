@@ -1,11 +1,10 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { EternumGlobalConfig, HYPERSTRUCTURE_TOTAL_COSTS_SCALED } from "@bibliothecadao/eternum";
+import { ConfigManager, EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, ComponentValue, Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { toInteger } from "lodash";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import { ResourceMultipliers, TOTAL_CONTRIBUTABLE_AMOUNT } from "../store/useLeaderBoardStore";
 
 export type Hyperstructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   entityIdPoseidon: Entity;
@@ -100,8 +99,13 @@ const getAllProgressesAndTotalPercentage = (
 
   hyperstructureEntityId: bigint,
 ) => {
+  const configManager = ConfigManager.instance();
+  const hyperstructure_total_costs_scaled = configManager.getHyperstructureTotalCostsScaled();
+  const resourceMultipliers = configManager.getConfig().ResourceMultipliers;
+  const totalContributableAmount = configManager.getTotalContributableAmount();
   let percentage = 0;
-  const allProgresses = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.map(({ resource, amount: resourceCost }) => {
+
+  const allProgresses = hyperstructure_total_costs_scaled.map(({ resource, amount: resourceCost }) => {
     let foundProgress = progresses.find((progress) => progress!.resource_type === resource);
     let progress = {
       hyperstructure_entity_id: hyperstructureEntityId,
@@ -112,9 +116,7 @@ const getAllProgressesAndTotalPercentage = (
         : Math.floor((foundProgress.amount / EternumGlobalConfig.resources.resourcePrecision / resourceCost!) * 100),
       costNeeded: resourceCost,
     };
-    percentage +=
-      (progress.amount * ResourceMultipliers[progress.resource_type as keyof typeof ResourceMultipliers]!) /
-      TOTAL_CONTRIBUTABLE_AMOUNT;
+    percentage += (progress.amount * resourceMultipliers[progress.resource_type]) / totalContributableAmount;
     return progress;
   });
   return { allProgresses, percentage };

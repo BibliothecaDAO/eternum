@@ -1,4 +1,4 @@
-import { BASE_POPULATION_CAPACITY, RealmInterface, getOrderName } from "@bibliothecadao/eternum";
+import { ConfigManager, RealmInterface, getOrderName } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
@@ -8,7 +8,6 @@ import { unpackResources } from "../../ui/utils/packedData";
 import { getRealm, getRealmNameById } from "../../ui/utils/realms";
 import { getEntityIdFromKeys, getPosition } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
-import { getQuestResources as getStartingResources } from "@bibliothecadao/eternum";
 import useRealmStore from "../store/useRealmStore";
 
 export type RealmExtended = RealmInterface & {
@@ -23,11 +22,13 @@ export function useRealm() {
     },
   } = useDojo();
 
+  const configManager = ConfigManager.instance();
+
   const getQuestResources = () => {
     const realmEntityId = useRealmStore.getState().realmEntityId;
     const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
     const resourcesProduced = realm ? unpackResources(realm.resource_types_packed, realm.resource_types_count) : [];
-    return getStartingResources(resourcesProduced);
+    return configManager.getStartingResources(resourcesProduced);
   };
 
   const getEntityOwner = (entityId: bigint) => {
@@ -173,6 +174,7 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
     },
   } = useDojo();
 
+  const configManager = ConfigManager.instance();
   const query = useEntityQuery([HasValue(Realm, { entity_id: realmEntityId })]);
 
   const realm = useMemo((): any => {
@@ -199,6 +201,7 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
         const name = getRealmNameById(realm_id);
 
         const { address } = owner;
+        const basePopulationCapacity = configManager.getConfig().basePopulationCapacity;
 
         return {
           realmId: realm_id,
@@ -213,7 +216,7 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
           order,
           position,
           ...population,
-          hasCapacity: !population || population.capacity + BASE_POPULATION_CAPACITY > population.population,
+          hasCapacity: !population || population.capacity + basePopulationCapacity > population.population,
           owner: address,
         };
       }

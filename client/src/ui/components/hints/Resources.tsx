@@ -2,13 +2,7 @@ import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyFormat } from "@/ui/utils/utils";
-import {
-  RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS_SCALED,
-  ResourcesIds,
-  STOREHOUSE_CAPACITY,
-  findResourceById,
-} from "@bibliothecadao/eternum";
+import { ConfigManager, ResourcesIds, STOREHOUSE_CAPACITY, findResourceById } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { tableOfContents } from "./utils";
 
@@ -58,14 +52,18 @@ export const Resources = () => {
 };
 
 const ResourceTable = () => {
+  const configManager = ConfigManager.instance();
+  const resourceInputsScaled = configManager.getResourceInputsScaled();
+  const resourceOutputsScaled = configManager.getResourceOutputsScaled();
+
   const resourceTable = useMemo(() => {
     const resources = [];
-    for (const resourceId of Object.keys(RESOURCE_INPUTS_SCALED) as unknown as ResourcesIds[]) {
+    for (const resourceId of Object.keys(resourceInputsScaled) as unknown as ResourcesIds[]) {
       const calldata = {
         resource: findResourceById(Number(resourceId)),
-        amount: RESOURCE_OUTPUTS_SCALED[resourceId],
+        amount: resourceOutputsScaled[resourceId],
         resource_type: resourceId,
-        cost: RESOURCE_INPUTS_SCALED[resourceId].map((cost: any) => ({
+        cost: resourceInputsScaled[resourceId].map((cost: any) => ({
           ...cost,
         })),
       };

@@ -3,14 +3,9 @@ import clsx from "clsx";
 import useUIStore from "@/hooks/store/useUIStore";
 import { Tabs } from "@/ui/elements/tab";
 import {
-  BUILDING_CAPACITY,
-  BUILDING_POPULATION,
-  BUILDING_RESOURCE_PRODUCED,
   BuildingEnumToString,
   BuildingType,
-  EternumGlobalConfig,
-  RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS_SCALED,
+  ConfigManager,
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
@@ -28,7 +23,6 @@ import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { unpackResources } from "@/ui/utils/packedData";
 import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
-import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { HintSection } from "../hints/HintModal";
@@ -36,6 +30,12 @@ import { HintSection } from "../hints/HintModal";
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
 export const SelectPreviewBuildingMenu = () => {
+  const configManager = ConfigManager.instance();
+  const buildingCostsScaled = configManager.getBuildingCostsScaled();
+  const resourceInputsScaled = configManager.getResourceInputsScaled();
+  const resourcePrecision = configManager.getResourcePrecision();
+  const buildingPopulation = configManager.getConfig().BUILDING_POPULATION;
+
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
 
@@ -75,7 +75,7 @@ export const SelectPreviewBuildingMenu = () => {
     Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
       const balance = getBalance(realmEntityId, resourceCost.resource);
-      return balance.balance >= resourceCost.amount * EternumGlobalConfig.resources.resourcePrecision;
+      return balance.balance >= resourceCost.amount * resourcePrecision;
     });
 
   const [selectedTab, setSelectedTab] = useState(1);
@@ -106,12 +106,12 @@ export const SelectPreviewBuildingMenu = () => {
             {realmResourceIds.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
 
-              const cost = [...BUILDING_COSTS_SCALED[BuildingType.Resource], ...RESOURCE_INPUTS_SCALED[resourceId]];
+              const cost = [...buildingCostsScaled[BuildingType.Resource], ...resourceInputsScaled[resourceId]];
               const hasBalance = checkBalance(cost);
 
               const hasEnoughPopulation = hasEnoughPopulationForBuilding(
                 realm,
-                BUILDING_POPULATION[BuildingType.Resource],
+                buildingPopulation[BuildingType.Resource],
               );
 
               const canBuild = hasBalance && realm?.hasCapacity && hasEnoughPopulation;
@@ -157,7 +157,7 @@ export const SelectPreviewBuildingMenu = () => {
               .filter((a) => a !== "Barracks" && a !== "ArcheryRange" && a !== "Stable")
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
-                const cost = BUILDING_COSTS_SCALED[building];
+                const cost = buildingCostsScaled[building];
                 const hasBalance = checkBalance(cost);
 
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
@@ -222,7 +222,7 @@ export const SelectPreviewBuildingMenu = () => {
               .map((buildingType, index) => {
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
 
-                const cost = BUILDING_COSTS_SCALED[building];
+                const cost = buildingCostsScaled[building];
                 const hasBalance = checkBalance(cost);
 
                 const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
@@ -362,13 +362,16 @@ export const ResourceInfo = ({
   entityId: bigint | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
-  const cost = RESOURCE_INPUTS_SCALED[resourceId];
+  const configManager = ConfigManager.instance();
+  const buildingCostsScaled = configManager.getBuildingCostsScaled();
+  const resourceInputsScaled = configManager.getResourceInputsScaled();
+  const buildingPopulation = configManager.getConfig().BUILDING_POPULATION;
+  const buildingCapacity = configManager.getConfig().BUILDING_CAPACITY;
 
-  const buildingCost = BUILDING_COSTS_SCALED[BuildingType.Resource];
-
-  const population = BUILDING_POPULATION[BuildingType.Resource];
-
-  const capacity = BUILDING_CAPACITY[BuildingType.Resource];
+  const cost = resourceInputsScaled[resourceId];
+  const buildingCost = buildingCostsScaled[BuildingType.Resource];
+  const population = buildingPopulation[BuildingType.Resource];
+  const capacity = buildingCapacity[BuildingType.Resource];
 
   const { getBalance } = useResourceBalance();
 
@@ -435,13 +438,21 @@ export const BuildingInfo = ({
   extraButtons?: React.ReactNode[];
   name?: string;
 }) => {
-  const cost = BUILDING_COSTS_SCALED[buildingId] || [];
+  const configManager = ConfigManager.instance();
+  const buildingCostsScaled = configManager.getBuildingCostsScaled();
+  const resourceInputsScaled = configManager.getResourceInputsScaled();
+  const resourceOutputsScaled = configManager.getResourceOutputsScaled();
+  const buildingPopulation = configManager.getConfig().BUILDING_POPULATION;
+  const buildingCapacity = configManager.getConfig().BUILDING_CAPACITY;
+  const buildingResourceProduced = configManager.getConfig().BUILDING_RESOURCE_PRODUCED;
 
-  const population = BUILDING_POPULATION[buildingId] || 0;
-  const capacity = BUILDING_CAPACITY[buildingId] || 0;
-  const perTick = RESOURCE_OUTPUTS_SCALED[buildingId] || 0;
-  const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
-  const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced] || 0;
+  const cost = buildingCostsScaled[buildingId] || [];
+
+  const population = buildingPopulation[buildingId] || 0;
+  const capacity = buildingCapacity[buildingId] || 0;
+  const perTick = resourceOutputsScaled[buildingId] || 0;
+  const resourceProduced = buildingResourceProduced[buildingId];
+  const ongoingCost = resourceInputsScaled[resourceProduced] || 0;
 
   const { getBalance } = useResourceBalance();
 

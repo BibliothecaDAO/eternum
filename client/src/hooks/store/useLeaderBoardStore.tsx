@@ -1,12 +1,6 @@
 import { HyperstructureEventInterface, getHyperstructureEvents } from "@/dojo/events/hyperstructureEventQueries";
 import { displayAddress, sortItems } from "@/ui/utils/utils";
-import {
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_POINTS_PER_CYCLE,
-  HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
-  ResourcesIds,
-  getOrderName,
-} from "@bibliothecadao/eternum";
+import { ConfigManager, ResourcesIds, getOrderName } from "@bibliothecadao/eternum";
 import { useCallback, useEffect } from "react";
 import { create } from "zustand";
 import { useDojo } from "../context/DojoContext";
@@ -15,48 +9,20 @@ import { useGuilds } from "../helpers/useGuilds";
 import { useRealm } from "../helpers/useRealm";
 import useBlockchainStore from "../store/useBlockchainStore";
 
-export const ResourceMultipliers: { [key in ResourcesIds]?: number } = {
-  [ResourcesIds.Wood]: 1.0,
-  [ResourcesIds.Stone]: 1.27,
-  [ResourcesIds.Coal]: 1.31,
-  [ResourcesIds.Copper]: 1.9,
-  [ResourcesIds.Obsidian]: 2.26,
-  [ResourcesIds.Silver]: 2.88,
-  [ResourcesIds.Ironwood]: 4.25,
-  [ResourcesIds.ColdIron]: 5.24,
-  [ResourcesIds.Gold]: 5.49,
-  [ResourcesIds.Hartwood]: 8.44,
-  [ResourcesIds.Diamonds]: 16.72,
-  [ResourcesIds.Sapphire]: 20.3,
-  [ResourcesIds.Ruby]: 20.98,
-  [ResourcesIds.DeepCrystal]: 20.98,
-  [ResourcesIds.Ignium]: 29.15,
-  [ResourcesIds.EtherealSilica]: 30.95,
-  [ResourcesIds.TrueIce]: 36.06,
-  [ResourcesIds.TwilightQuartz]: 45.18,
-  [ResourcesIds.AlchemicalSilver]: 53.92,
-  [ResourcesIds.Adamantine]: 91.2,
-  [ResourcesIds.Mithral]: 135.53,
-  [ResourcesIds.Dragonhide]: 217.92,
-  [ResourcesIds.Earthenshard]: 20.98,
-};
-
-export const TOTAL_CONTRIBUTABLE_AMOUNT: number = HYPERSTRUCTURE_TOTAL_COSTS_SCALED.reduce(
-  (total, { resource, amount }) => {
-    return total + (ResourceMultipliers[resource as keyof typeof ResourceMultipliers] ?? 0) * amount;
-  },
-  0,
-);
-
 function getResourceMultiplier(resourceType: BigInt): number {
   const resourceTypeNumber: ResourcesIds = Number(resourceType);
-  return ResourceMultipliers[resourceTypeNumber] ?? 0;
+  const configManager = ConfigManager.instance();
+
+  return configManager.getConfig().ResourceMultipliers[resourceTypeNumber];
 }
 
 export function computeContributionPoints(totalPoints: number, qty: number, resourceType: BigInt): number {
-  const effectiveContribution =
-    (qty / EternumGlobalConfig.resources.resourcePrecision) * getResourceMultiplier(resourceType);
-  const points = (effectiveContribution / TOTAL_CONTRIBUTABLE_AMOUNT) * totalPoints;
+  const configManager = ConfigManager.instance();
+  const totalContributableAmount = configManager.getTotalContributableAmount();
+  const resourcePrecision = configManager.getResourcePrecision();
+
+  const effectiveContribution = (qty / resourcePrecision) * getResourceMultiplier(resourceType);
+  const points = (effectiveContribution / totalContributableAmount) * totalPoints;
   return points;
 }
 
@@ -116,6 +82,10 @@ const useLeaderBoardStore = create<LeaderboardStore>((set) => {
 });
 
 export const useComputePointsLeaderboards = () => {
+  const configManager = ConfigManager.instance();
+  const defaultTickIntervalInSeconds = configManager.getConfig().tick.defaultTickIntervalInSeconds;
+  const hyperstructurePointsPerCycle = configManager.getConfig().hyperstructurePointsPerCycle;
+
   const setPlayerPointsLeaderboards = useLeaderBoardStore((state) => state.setPlayerPointsLeaderboards);
   const setGuildPointsLeaderboards = useLeaderBoardStore((state) => state.setGuildPointsLeaderboards);
 
@@ -136,10 +106,8 @@ export const useComputePointsLeaderboards = () => {
       currentTimestamp: number,
     ): PlayerPointsLeaderboardInterface[] => {
       const contributions = getContributions(hyperstructureEntityId);
-      const nbOfCycles = Math.floor(
-        (currentTimestamp - finishedTimestamp) / EternumGlobalConfig.tick.defaultTickIntervalInSeconds,
-      );
-      const totalHyperstructurePoints = HYPERSTRUCTURE_POINTS_PER_CYCLE * nbOfCycles;
+      const nbOfCycles = Math.floor((currentTimestamp - finishedTimestamp) / defaultTickIntervalInSeconds);
+      const totalHyperstructurePoints = hyperstructurePointsPerCycle * nbOfCycles;
 
       return computeHyperstructureLeaderboard(
         contributions,

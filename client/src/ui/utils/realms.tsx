@@ -1,9 +1,8 @@
 import realmsJson from "../../data/geodata/realms.json";
 import realmsOrdersJson from "../../data/geodata/realms_raw.json";
 import realmsHexPositions from "../../data/geodata/hex/realmHexPositions.json";
-import { BASE_POPULATION_CAPACITY, BUILDING_POPULATION, findResourceIdByTrait, orders } from "@bibliothecadao/eternum";
+import { ConfigManager, findResourceIdByTrait, orders, RealmInterface } from "@bibliothecadao/eternum";
 import { packResources } from "./packedData";
-import { RealmInterface } from "@bibliothecadao/eternum";
 import { getPosition } from "./utils";
 
 interface Attribute {
@@ -89,5 +88,9 @@ export function getRealm(realmId: bigint): RealmInterface | undefined {
 }
 
 export const hasEnoughPopulationForBuilding = (realm: any, building: number) => {
-  return (realm?.population || 0) + BUILDING_POPULATION[building] <= BASE_POPULATION_CAPACITY + (realm?.capacity || 0);
+  const configManager = ConfigManager.instance();
+  const basePopulationCapacity = configManager.getConfig().basePopulationCapacity;
+  const buildingPopulation = configManager.getConfig().BUILDING_POPULATION;
+
+  return (realm?.population || 0) + buildingPopulation[building] <= basePopulationCapacity + (realm?.capacity || 0);
 };
