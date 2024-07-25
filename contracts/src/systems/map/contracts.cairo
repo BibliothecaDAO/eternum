@@ -77,7 +77,10 @@ mod map_systems {
             // ensure unit is not in transit
             get!(world, unit_id, ArrivalTime).assert_not_travelling();
 
-            let stamina_cost = get!(world, (WORLD_CONFIG_ID, TravelTypes::EXPLORE), TravelStaminaCostConfig).cost;
+            let stamina_cost = get!(
+                world, (WORLD_CONFIG_ID, TravelTypes::EXPLORE), TravelStaminaCostConfig
+            )
+                .cost;
             StaminaCustomImpl::handle_stamina_costs(unit_id, stamina_cost, world);
 
             // explore coordinate, pay food and mint reward
