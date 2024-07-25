@@ -1,13 +1,6 @@
 import { useExploredHexesStore } from "@/ui/components/worldmap/hexagon/WorldHexagon";
 import { FELT_CENTER } from "@/ui/config";
-import {
-  EternumGlobalConfig,
-  ID,
-  Position,
-  Resource,
-  neighborOffsetsEven,
-  neighborOffsetsOdd,
-} from "@bibliothecadao/eternum";
+import { ConfigManager, Position, Resource, neighborOffsetsEven, neighborOffsetsOdd,ID, } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
@@ -122,11 +115,12 @@ export function useExplore() {
   };
 
   const optimisticExplore = (entityId: ID, col: number, row: number, currentArmiesTick: number) => {
+    const exploreCost = ConfigManager.instance().getConfig().staminaCost.explore;
     let overrideId = uuid();
 
     const entity = getEntityIdFromKeys([BigInt(entityId)]);
 
-    optimisticStaminaUpdate(overrideId, entityId, EternumGlobalConfig.stamina.exploreCost, currentArmiesTick);
+    optimisticStaminaUpdate(overrideId, entityId, exploreCost, currentArmiesTick);
 
     Position.addOverride(overrideId, {
       entity,

@@ -4,12 +4,16 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { ConfigManager, ResourcesIds } from "@bibliothecadao/eternum";
+import { useResourceBalance } from "@/hooks/helpers/useResources";
+import useRealmStore from "@/hooks/store/useRealmStore";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 
 export const ActionInfo = () => {
+  const explorationCosts = ConfigManager.instance().getConfig().exploration.costs;
   const travelPaths = useUIStore((state) => state.travelPaths);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const hoveredHex = useUIStore((state) => state.hoveredHex);
@@ -38,12 +42,12 @@ export const ActionInfo = () => {
             {!isExplored && (
               <div>
                 <ResourceCost
-                  amount={-EternumGlobalConfig.exploration.wheatBurn}
+                  amount={-explorationCosts[ResourcesIds.Wheat]}
                   resourceId={ResourcesIds.Wheat}
                   balance={getBalance(realmEntityId, ResourcesIds.Wheat).balance}
                 />
                 <ResourceCost
-                  amount={-EternumGlobalConfig.exploration.fishBurn}
+                  amount={-explorationCosts[ResourcesIds.Fish]}
                   resourceId={ResourcesIds.Fish}
                   balance={getBalance(realmEntityId, ResourcesIds.Fish).balance}
                 />

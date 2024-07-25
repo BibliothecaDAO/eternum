@@ -33,7 +33,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
   const configManager = ConfigManager.instance();
   const resourcePrecision = configManager.getResourcePrecision();
-  const hyperstructurePointsPerCycle = configManager.getConfig().HYPERSTRUCTURE_POINTS_PER_CYCLE;
+  const hyperstructurePointsPerCycle = configManager.getConfig().hyperstructurePointsPerCycle;
   const hyperstructureTotalCostsScaled = configManager.getHyperstructureTotalCostsScaled();
 
   const [isLoading, setIsLoading] = useState<Loading>(Loading.None);

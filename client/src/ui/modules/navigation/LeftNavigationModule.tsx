@@ -11,6 +11,7 @@ import { BaseContainer } from "@/ui/containers/BaseContainer";
 import Button from "@/ui/elements/Button";
 import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
 import { Military } from "@/ui/modules/military/Military";
+import { ConfigManager } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { debounce } from "lodash";
@@ -49,6 +50,7 @@ export enum View {
 }
 
 export const LeftNavigationModule = () => {
+  const staminaCost = ConfigManager.instance().getConfig().staminaCost;
   const [lastView, setLastView] = useState<View>(View.None);
 
   const view = useUIStore((state) => state.leftNavigationView);
