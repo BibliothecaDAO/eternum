@@ -1,4 +1,4 @@
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { ConfigManager } from "@bibliothecadao/eternum";
 import { canExplore, findAccessiblePositionsAndPaths } from "./utils.js";
 import { useStamina } from "@/hooks/helpers/useStamina";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -11,6 +11,7 @@ import { useResourceBalance } from "@/hooks/helpers/useResources.js";
 import { useRealm } from "@/hooks/helpers/useRealm.js";
 
 export const useTravelPath = () => {
+  const staminaCosts = ConfigManager.instance().getConfig().staminaCost;
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
   const setTravelPaths = useUIStore((state) => state.setTravelPaths);
@@ -25,7 +26,7 @@ export const useTravelPath = () => {
   useEffect(() => {
     if (!selectedEntity || !stamina) return;
 
-    const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
+    const maxTravelPossible = Math.floor((stamina.amount || 0) / staminaCosts.travel);
     const entityOwner = getEntityOwner(selectedEntity.id);
     const food = getFoodResources(entityOwner!);
 

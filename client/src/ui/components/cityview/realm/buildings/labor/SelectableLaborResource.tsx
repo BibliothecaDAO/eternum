@@ -1,5 +1,5 @@
 import React from "react";
-import { Guilds, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
+import { ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { soundSelector, useUiSounds } from "../../../../../../hooks/useUISound";
@@ -138,7 +138,7 @@ export const SelectableLaborResource = ({
           content: (
             <>
               <div className="relative z-50 flex flex-col items-center justify-center mb-1 text-xs text-center text-lightest">
-                {`${resource?.trait} ${Guilds[guild - 1]}`}
+                {/* {`${resource?.trait} ${Guilds[guild - 1]}`} */}
                 <div className="mt-0.5 font-bold">{amount || 0}</div>
               </div>
             </>

@@ -1,10 +1,9 @@
 import { Color } from "three";
 import {
-  EternumGlobalConfig,
+  ConfigManager,
   Position,
   Resource,
   ResourcesIds,
-  TROOPS_STAMINAS,
   getNeighborHexes,
   neighborOffsetsEven,
   neighborOffsetsOdd,
@@ -44,15 +43,19 @@ export const getPositionsAtIndex = (mesh: InstancedMesh<any, any>, index: number
 };
 
 export const canExplore = (stamina: number | undefined, food: Resource[]) => {
-  if (stamina && stamina < EternumGlobalConfig.stamina.exploreCost) {
+  const config = ConfigManager.instance().getConfig();
+  const exploreCost = config.staminaCost.explore;
+  const explorationCosts = config.exploration.costs;
+
+  if (stamina && stamina < exploreCost) {
     return false;
   }
   const fish = food.find((resource) => resource.resourceId === ResourcesIds.Fish);
-  if ((fish?.amount || 0) < EternumGlobalConfig.exploration.fishBurn) {
+  if ((fish?.amount || 0) < explorationCosts[ResourcesIds.Fish]) {
     return false;
   }
   const wheat = food.find((resource) => resource.resourceId === ResourcesIds.Wheat);
-  if ((wheat?.amount || 0) < EternumGlobalConfig.exploration.wheatBurn) {
+  if ((wheat?.amount || 0) < explorationCosts[ResourcesIds.Wheat]) {
     return false;
   }
 
@@ -60,10 +63,13 @@ export const canExplore = (stamina: number | undefined, food: Resource[]) => {
 };
 
 const getMaxSteps = () => {
-  const staminaCosts = Object.values(EternumGlobalConfig.stamina);
-  const minCost = Math.min(...staminaCosts);
+  const config = ConfigManager.instance().getConfig();
 
-  const staminaValues = Object.values(TROOPS_STAMINAS);
+  const staminaCosts = config.staminaCost;
+  const minCost = Math.min(...Object.values(staminaCosts));
+
+  const troopStaminaCosts = config.TROOPS_STAMINAS;
+  const staminaValues = Object.values(troopStaminaCosts);
   const maxStamina = Math.max(...staminaValues);
 
   return Math.floor(maxStamina / minCost);

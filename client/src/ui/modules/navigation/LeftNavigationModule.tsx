@@ -10,7 +10,7 @@ import { BaseContainer } from "@/ui/containers/BaseContainer";
 import Button from "@/ui/elements/Button";
 import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
 import { Military } from "@/ui/modules/military/Military";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { ConfigManager } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { debounce } from "lodash";
@@ -54,6 +54,7 @@ export enum View {
 }
 
 export const LeftNavigationModule = () => {
+  const staminaCost = ConfigManager.instance().getConfig().staminaCost;
   const [lastView, setLastView] = useState<View>(View.None);
 
   const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
@@ -76,8 +77,7 @@ export const LeftNavigationModule = () => {
 
   const armiesWithStaminaLeft = entityArmies?.filter((entity) => {
     return (
-      getStamina({ travelingEntityId: BigInt(entity.entity_id), currentArmiesTick })?.amount ||
-      0 >= EternumGlobalConfig.stamina.travelCost
+      getStamina({ travelingEntityId: BigInt(entity.entity_id), currentArmiesTick })?.amount || 0 >= staminaCost.travel
     );
   });
 
