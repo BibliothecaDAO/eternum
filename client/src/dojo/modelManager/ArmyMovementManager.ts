@@ -61,6 +61,7 @@ export class TravelPaths {
 }
 
 export class ArmyMovementManager {
+  private tileModel: OverridableComponent<ClientComponents["Tile"]["schema"]>;
   private staminaModel: OverridableComponent<ClientComponents["Stamina"]["schema"]>;
   private positionModel: OverridableComponent<ClientComponents["Position"]["schema"]>;
   private armyModel: Component<ClientComponents["Army"]["schema"]>;
@@ -73,6 +74,7 @@ export class ArmyMovementManager {
   private address: bigint;
 
   constructor(private dojo: SetupResult, entityId: number) {
+    this.tileModel = dojo.components.Tile;
     this.staminaModel = dojo.components.Stamina;
     this.positionModel = dojo.components.Position;
     this.armyModel = dojo.components.Army;
@@ -229,11 +231,22 @@ export class ArmyMovementManager {
     });
   };
 
-  private _optimisticExplore = (col: number, row: number) => {
-    let overrideId = uuid();
+  private _optimisticTileUpdate = (overrideId: string, col: number, row: number) => {
+    const entity = getEntityIdFromKeys([BigInt(col), BigInt(row)]);
 
-    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.exploreCost);
+    this.tileModel.addOverride(overrideId, {
+      entity,
+      value: {
+        col: BigInt(col),
+        row: BigInt(row),
+        explored_by_id: this.entityId,
+        explored_at: Date.now() / 1000,
+        biome: 0,
+      },
+    });
+  };
 
+  private _optimisticPositionUpdate = (overrideId: string, col: number, row: number) => {
     this.positionModel.addOverride(overrideId, {
       entity: this.entity,
       value: {
@@ -242,6 +255,15 @@ export class ArmyMovementManager {
         y: row,
       },
     });
+  };
+
+  private _optimisticExplore = (col: number, row: number) => {
+    let overrideId = uuid();
+
+    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.exploreCost);
+    this._optimisticTileUpdate(overrideId, col, row);
+    this._optimisticPositionUpdate(overrideId, col, row);
+
     return overrideId;
   };
 
