@@ -1,3 +1,5 @@
+import { ResourcesIds } from "../constants";
+
 export enum Winner {
   Attacker = "Attacker",
   Target = "Target",
@@ -222,4 +224,12 @@ export interface IOrder {
   orderId: number;
   orderName: string;
   fullOrderName: string;
+}
+
+export interface ResourceInputs {
+  [key: number]: { resource: ResourcesIds; amount: number }[];
+}
+
+export interface ResourceOutputs {
+  [key: number]: number;
 }

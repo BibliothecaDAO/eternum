@@ -1,7 +1,6 @@
 import { DojoProvider } from "@dojoengine/core";
 import EventEmitter from "eventemitter3";
 import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet";
-// import { EternumGlobalConfig } from "../constants";
 import * as SystemProps from "../types/provider";
 
 export const getContractByName = (manifest: any, name: string) => {
@@ -67,15 +66,6 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   public async create_order(props: SystemProps.CreateOrderProps) {
     const { maker_id, maker_gives_resources, taker_id, taker_gives_resources, signer, expires_at } = props;
-
-    // implement that in ui instead
-    // let maker_gives_resource = maker_gives_resource_amounts.flatMap((amount, i) => {
-    //   return [maker_gives_resource_types[i], amount];
-    // });
-
-    // let taker_gives_resource = taker_gives_resource_amounts.flatMap((amount, i) => {
-    //   return [taker_gives_resource_types[i], amount];
-    // });
 
     return await this.executeAndCheckTransaction(signer, [
       {
@@ -226,21 +216,6 @@ export class EternumProvider extends EnhancedDojoProvider {
             position.y,
           ],
         },
-        // {
-        //   // mint food
-        //   contractAddress: getContractByName(this.manifest, "dev_resource_systems"),
-        //   entrypoint: "mint",
-        //   calldata: [
-        //     uuid,
-        //     EternumGlobalConfig.resources.startingResources.length,
-        //     ...EternumGlobalConfig.resources.startingResources.flatMap(({ resourceId, amount }) => [
-        //       resourceId,
-        //       amount *
-        //         EternumGlobalConfig.resources.resourcePrecision *
-        //         EternumGlobalConfig.resources.resourceMultiplier,
-        //     ]),
-        //   ],
-        // },
       ];
 
       return calldata;
