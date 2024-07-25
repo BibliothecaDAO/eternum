@@ -1,19 +1,29 @@
-import { ResourcesIds } from "./resources";
+import { BUILDING_CAPACITY, BUILDING_POPULATION, BUILDING_RESOURCE_PRODUCED } from "./buildings";
+import {
+  BUILDING_COSTS,
+  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
+  HYPERSTRUCTURE_CREATION_COSTS,
+  QUEST_RESOURCES,
+  RESOURCE_BUILDING_COSTS,
+  RESOURCE_INPUTS,
+  RESOURCE_OUTPUTS,
+  ResourceMultipliers,
+  ResourcesIds,
+  STRUCTURE_COSTS,
+  WEIGHTS,
+} from "./resources";
+import { TROOPS_STAMINAS } from "./troops";
 
 export const EternumGlobalConfig = {
-  stamina: {
-    travelCost: 5,
-    exploreCost: 15,
+  hyperstructurePointsPerCycle: 10,
+  basePopulationCapacity: 5,
+  staminaCost: {
+    travel: 5,
+    explore: 15,
   },
   resources: {
     resourcePrecision: 1000,
     resourceMultiplier: 1000,
-    resourceAmountPerTick: 10,
-    foodPerTick: 30,
-    donkeysPerTick: 3,
-    knightsPerTick: 2,
-    crossbowmanPerTick: 2,
-    paladinPerTick: 2,
     startingResourcesInputProductionFactor: 4,
     startingResources: [
       { resourceId: ResourcesIds.Wheat, amount: 1500 },
@@ -32,12 +42,11 @@ export const EternumGlobalConfig = {
     currency: 1,
     food: 100,
   },
-  populationCapacity: {
-    workerHuts: 5,
-  },
   exploration: {
-    wheatBurn: 100,
-    fishBurn: 100,
+    costs: {
+      [ResourcesIds.Wheat]: 100,
+      [ResourcesIds.Fish]: 100,
+    },
     reward: 750,
     shardsMinesFailProbability: 99000,
   },
@@ -83,10 +92,24 @@ export const EternumGlobalConfig = {
       crossbowman_count: 4000,
     },
     rewards: [
-      { resource: ResourcesIds.Wheat, amount: 10 },
-      { resource: ResourcesIds.Fish, amount: 20 },
+      { resourceId: ResourcesIds.Wheat, amount: 10 },
+      { resourceId: ResourcesIds.Fish, amount: 20 },
     ],
   },
+  BUILDING_CAPACITY,
+  BUILDING_POPULATION,
+  BUILDING_RESOURCE_PRODUCED,
+  WEIGHTS,
+  RESOURCE_OUTPUTS,
+  RESOURCE_INPUTS,
+  BUILDING_COSTS,
+  STRUCTURE_COSTS,
+  RESOURCE_BUILDING_COSTS,
+  HYPERSTRUCTURE_CREATION_COSTS,
+  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
+  QUEST_RESOURCES,
+  TROOPS_STAMINAS,
+  ResourceMultipliers,
 };
 
 export const WORLD_CONFIG_ID = 999999999n;
@@ -95,11 +118,7 @@ export const MAX_NAME_LENGTH = 31;
 export const ONE_MONTH = 2628000;
 
 // Buildings
-export const BASE_POPULATION_CAPACITY = 5;
 export const STOREHOUSE_CAPACITY = 10000000;
-
-// Points
-export const HYPERSTRUCTURE_POINTS_PER_CYCLE = 10;
 
 // Entity Types
 export const DONKEY_ENTITY_TYPE = 256;

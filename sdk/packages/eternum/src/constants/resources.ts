@@ -1,6 +1,5 @@
-import { Resource, Resources } from "../types";
+import { ResourceInputs, ResourceOutputs, Resources } from "../types";
 import { BuildingType, StructureType } from "./structures";
-import { EternumGlobalConfig } from "./global";
 
 export const findResourceById = (value: number) => {
   return resources.find((e) => e.id === value);
@@ -339,76 +338,9 @@ export enum ResourcesIds {
   Fish = 255,
 }
 
-export const Guilds = ["Harvesters", "Miners", "Collectors", "Hunters"];
-
-export const resourcesByGuild = {
-  [Guilds[0]]: [
-    ResourcesIds.Wood,
-    ResourcesIds.Stone,
-    ResourcesIds.Coal,
-    ResourcesIds.Ironwood,
-    ResourcesIds.Hartwood,
-    ResourcesIds.TrueIce,
-  ],
-  [Guilds[1]]: [
-    ResourcesIds.Copper,
-    ResourcesIds.Silver,
-    ResourcesIds.Gold,
-    ResourcesIds.ColdIron,
-    ResourcesIds.AlchemicalSilver,
-    ResourcesIds.Adamantine,
-  ],
-  [Guilds[2]]: [
-    ResourcesIds.Diamonds,
-    ResourcesIds.Sapphire,
-    ResourcesIds.Ruby,
-    ResourcesIds.DeepCrystal,
-    ResourcesIds.TwilightQuartz,
-  ],
-  [Guilds[3]]: [
-    ResourcesIds.Obsidian,
-    ResourcesIds.Ignium,
-    ResourcesIds.EtherealSilica,
-    ResourcesIds.Mithral,
-    ResourcesIds.Dragonhide,
-  ],
-};
-
 // if it's labor, then remove 28 to get the icon resource id
 export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
   return isLabor ? resourceId - 28 : resourceId;
-};
-
-const LEVELING_COST_MULTIPLIER = 1.25;
-
-export const getLevelingCost = (newLevel: number): { resourceId: number; amount: number }[] => {
-  const costMultiplier = LEVELING_COST_MULTIPLIER ** Math.floor((newLevel - 1) / 4);
-
-  const rem = newLevel % 4;
-
-  const baseAmounts =
-    rem === 0
-      ? // level 4 (resource tier 3)
-        [16, 24421, 17, 20954, 18, 16733, 19, 14020, 20, 8291, 21, 5578, 22, 3467]
-      : rem === 1
-        ? // level 1 (food)
-          [254, 11340000, 255, 3780000]
-        : rem === 2
-          ? // level 2 (resource tier 1)
-            [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
-          : rem === 3
-            ? // level 3 (resource tier 2)
-              [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
-            : [];
-
-  const costResources = [];
-  for (let i = 0; i < baseAmounts.length; i = i + 2) {
-    costResources.push({
-      resourceId: baseAmounts[i],
-      amount: Math.floor(baseAmounts[i + 1] * costMultiplier),
-    });
-  }
-  return costResources;
 };
 
 // weight in kg
@@ -465,14 +397,6 @@ export const RESOURCE_TIERS = {
   ],
   mythic: [ResourcesIds.Adamantine, ResourcesIds.Mithral, ResourcesIds.Dragonhide],
 };
-
-export interface ResourceInputs {
-  [key: number]: { resource: ResourcesIds; amount: number }[];
-}
-
-export interface ResourceOutputs {
-  [key: number]: number;
-}
 
 export const RESOURCE_OUTPUTS: ResourceOutputs = {
   [ResourcesIds.Wood]: 10,
@@ -757,11 +681,6 @@ export const HYPERSTRUCTURE_CONSTRUCTION_COSTS: { resource: number; amount: numb
   { resource: ResourcesIds.Dragonhide, amount: 50 },
 ];
 
-export const HYPERSTRUCTURE_TOTAL_COSTS: { resource: number; amount: number }[] = [
-  ...HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-  ...HYPERSTRUCTURE_CREATION_COSTS,
-];
-
 export const STRUCTURE_COSTS: ResourceInputs = {
   [StructureType.Hyperstructure]: HYPERSTRUCTURE_CREATION_COSTS,
   [StructureType.Bank]: [{ resource: ResourcesIds.Gold, amount: 100_000 }],
@@ -819,14 +738,6 @@ export const RESOURCE_INFORMATION: {
   [ResourcesIds.Earthenshard]:
     "Earthenshard is a rare and powerful resource that can be used to create powerful items.",
 };
-
-export const EXPLORATION_COSTS: Resource[] = [
-  {
-    resourceId: ResourcesIds.Wheat,
-    amount: EternumGlobalConfig.exploration.wheatBurn,
-  },
-  { resourceId: ResourcesIds.Fish, amount: EternumGlobalConfig.exploration.fishBurn },
-];
 
 export enum QuestType {
   Food = 1,
@@ -904,4 +815,31 @@ export const QUEST_RESOURCES = {
   [QuestType.Pillage]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.Hyperstructure]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
   [QuestType.Contribution]: [{ resource: ResourcesIds.Earthenshard, amount: 5 }],
+};
+
+// export const ResourceMultipliers: { [key in ResourcesIds]?: number } = {
+export const ResourceMultipliers: ResourceOutputs = {
+  [ResourcesIds.Wood]: 1.0,
+  [ResourcesIds.Stone]: 1.27,
+  [ResourcesIds.Coal]: 1.31,
+  [ResourcesIds.Copper]: 1.9,
+  [ResourcesIds.Obsidian]: 2.26,
+  [ResourcesIds.Silver]: 2.88,
+  [ResourcesIds.Ironwood]: 4.25,
+  [ResourcesIds.ColdIron]: 5.24,
+  [ResourcesIds.Gold]: 5.49,
+  [ResourcesIds.Hartwood]: 8.44,
+  [ResourcesIds.Diamonds]: 16.72,
+  [ResourcesIds.Sapphire]: 20.3,
+  [ResourcesIds.Ruby]: 20.98,
+  [ResourcesIds.DeepCrystal]: 20.98,
+  [ResourcesIds.Ignium]: 29.15,
+  [ResourcesIds.EtherealSilica]: 30.95,
+  [ResourcesIds.TrueIce]: 36.06,
+  [ResourcesIds.TwilightQuartz]: 45.18,
+  [ResourcesIds.AlchemicalSilver]: 53.92,
+  [ResourcesIds.Adamantine]: 91.2,
+  [ResourcesIds.Mithral]: 135.53,
+  [ResourcesIds.Dragonhide]: 217.92,
+  [ResourcesIds.Earthenshard]: 20.98,
 };

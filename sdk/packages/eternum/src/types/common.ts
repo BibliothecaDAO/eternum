@@ -236,3 +236,11 @@ export function ID(id: number | string): ID {
 export function ContractAddress(address: string | bigint): ContractAddress {
   return BigInt(address);
 }
+
+export interface ResourceInputs {
+  [key: number]: { resource: ResourcesIds; amount: number }[];
+}
+
+export interface ResourceOutputs {
+  [key: number]: number;
+}

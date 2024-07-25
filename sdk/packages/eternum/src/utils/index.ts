@@ -1,20 +1,5 @@
-import {
-  BUILDING_COSTS,
-  EXPLORATION_COSTS,
-  EternumGlobalConfig,
-  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-  HYPERSTRUCTURE_CREATION_COSTS,
-  HYPERSTRUCTURE_TOTAL_COSTS,
-  QUEST_RESOURCES,
-  RESOURCE_BUILDING_COSTS,
-  RESOURCE_INPUTS,
-  RESOURCE_OUTPUTS,
-  ResourceInputs,
-  ResourceOutputs,
-  ResourcesIds,
-  STRUCTURE_COSTS,
-} from "../constants";
-import { Resource } from "../types";
+import { RESOURCE_INPUTS } from "../constants";
+import { ResourceInputs, ResourceOutputs } from "../types";
 
 export const scaleResourceOutputs = (resourceOutputs: ResourceOutputs, multiplier: number) => {
   let multipliedCosts: ResourceOutputs = {};
@@ -39,36 +24,6 @@ export const uniqueResourceInputs = (resourcesProduced: number[]): number[] => {
   return uniqueResourceInputs;
 };
 
-export const applyInputProductionFactor = (
-  questResources: ResourceInputs,
-  resourcesOnRealm: number[],
-): ResourceInputs => {
-  for (let resourceInput of uniqueResourceInputs(resourcesOnRealm).filter(
-    (id) => id != ResourcesIds.Wheat && id != ResourcesIds.Fish,
-  )) {
-    for (let questType in questResources) {
-      questResources[questType] = questResources[questType].map((questResource) => {
-        if (questResource.resource === resourceInput) {
-          return {
-            ...questResource,
-            amount: questResource.amount * EternumGlobalConfig.resources.startingResourcesInputProductionFactor,
-          };
-        }
-        return questResource;
-      });
-    }
-  }
-  return questResources;
-};
-
-export const getQuestResources = (resourcesOnRealm: number[]): ResourceInputs => {
-  let QUEST_RESOURCES_SCALED: ResourceInputs = scaleResourceInputs(
-    QUEST_RESOURCES,
-    EternumGlobalConfig.resources.resourceMultiplier,
-  );
-  return applyInputProductionFactor(QUEST_RESOURCES_SCALED, resourcesOnRealm);
-};
-
 export const scaleResourceInputs = (resourceInputs: ResourceInputs, multiplier: number) => {
   let multipliedCosts: ResourceInputs = {};
 
@@ -88,41 +43,3 @@ export const scaleResources = (resources: any[], multiplier: number): any[] => {
     amount: resource.amount * multiplier,
   }));
 };
-
-export const RESOURCE_BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
-  RESOURCE_BUILDING_COSTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-
-export const RESOURCE_OUTPUTS_SCALED: ResourceOutputs = scaleResourceOutputs(
-  RESOURCE_OUTPUTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-export const BUILDING_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
-  BUILDING_COSTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-export const RESOURCE_INPUTS_SCALED: ResourceInputs = scaleResourceInputs(
-  RESOURCE_INPUTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-export const EXPLORATION_COSTS_SCALED: Resource[] = scaleResources(
-  EXPLORATION_COSTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-export const STRUCTURE_COSTS_SCALED: ResourceInputs = scaleResourceInputs(
-  STRUCTURE_COSTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-export const HYPERSTRUCTURE_CONSTRUCTION_COSTS_SCALED: { resource: number; amount: number }[] = scaleResources(
-  HYPERSTRUCTURE_CONSTRUCTION_COSTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-export const HYPERSTRUCTURE_CREATION_COSTS_SCALED: { resource: number; amount: number }[] = scaleResources(
-  HYPERSTRUCTURE_CREATION_COSTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);
-export const HYPERSTRUCTURE_TOTAL_COSTS_SCALED: { resource: number; amount: number }[] = scaleResources(
-  HYPERSTRUCTURE_TOTAL_COSTS,
-  EternumGlobalConfig.resources.resourceMultiplier,
-);

@@ -1,0 +1,80 @@
+// EXAMPLE FILE, create an EternumConfig.json file to override values
+// You can redefine as many or as little values as you want.
+
+{
+  "stamina": {
+    "travelCost": 5,
+    "exploreCost": 15
+  },
+  "resources": {
+    "resourcePrecision": 1,
+    "resourceMultiplier": 1000,
+    "resourceAmountPerTick": 10,
+    "foodPerTick": 30,
+    "donkeysPerTick": 3,
+    "knightsPerTick": 2,
+    "crossbowmanPerTick": 2,
+    "paladinPerTick": 2,
+    "startingResourcesInputProductionFactor": 4,
+    "startingResources": [
+      {
+        "resourceId": "ResourcesIds.Wheat",
+        "amount": 1500
+      },
+      {
+        "resourceId": "ResourcesIds.Fish",
+        "amount": 1500
+      }
+    ]
+  },
+  "banks": {
+    "lordsCost": 1000,
+    "lpFeesNumerator": 15,
+    "lpFeesDenominator": 100,
+    "ownerFeesNumerator": 15,
+    "ownerFeesDenominator": 100
+  },
+  "weights": {
+    "resource": 1000,
+    "currency": 1,
+    "food": 100
+  },
+  "populationCapacity": {
+    "workerHuts": 5
+  },
+  "exploration": {
+    "wheatBurn": 100,
+    "fishBurn": 100,
+    "reward": 750,
+    "shardsMinesFailProbability": 99000
+  },
+  "tick": {
+    "defaultTickIntervalInSeconds": 1,
+    "armiesTickIntervalInSeconds": 7200
+  },
+  "carryCapacity": {
+    "donkey": 100,
+    "army": 10
+  },
+  "speed": {
+    "donkey": 60,
+    "army": 1
+  },
+  "troop": {
+    "health": 7200,
+    "knightStrength": 1,
+    "paladinStrength": 1,
+    "crossbowmanStrength": 1,
+    "advantagePercent": 1000,
+    "disadvantagePercent": 1000,
+    "pillageHealthDivisor": 8,
+    "healthPrecision": 1000
+  },
+  "WEIGHTS": {
+    "1": 1000,
+    "2": 1
+  },
+  "BUILDING_POPULATION": {
+    "1": 10
+  }
+}
