@@ -7,7 +7,6 @@ import _ from "lodash";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import Stats from "three/examples/jsm/libs/stats.module";
-import { ActionInfo } from "./components/ActionInfo";
 import { InputManager } from "./components/InputManager";
 import { TransitionManager } from "./components/TransitionManager";
 import { LocationManager } from "./helpers/LocationManager";
@@ -59,7 +58,6 @@ export default class GameRenderer {
   private gui: GUI = new GUI();
 
   private travelPaths: TravelPaths | undefined;
-  private actionInfo!: ActionInfo;
 
   private mouseHandler!: MouseHandler;
   private sceneManager!: SceneManager;
@@ -173,9 +171,6 @@ export default class GameRenderer {
 
     this.inputManager = new InputManager();
 
-    // travel/explore info
-    this.actionInfo = new ActionInfo(this.camera);
-
     this.mouseHandler = new MouseHandler(
       this.dojo,
       this.state,
@@ -183,7 +178,6 @@ export default class GameRenderer {
       this.mouse,
       this.camera,
       this.travelPaths,
-      this.actionInfo,
       this.sceneManager,
       this.locationManager,
     );

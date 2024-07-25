@@ -12,6 +12,7 @@ export class MouseHandler {
   private worldmapScene: WorldmapScene | undefined;
   private throttledHandleHexHover: (hexCoords: { row: number; col: number }) => void;
   public selectedEntityId: number | null = null;
+  private actionInfo: ActionInfo | null = null;
 
   constructor(
     private dojo: SetupResult,
@@ -20,7 +21,6 @@ export class MouseHandler {
     private mouse: THREE.Vector2,
     private camera: THREE.Camera,
     private travelPaths: TravelPaths | undefined,
-    private actionInfo: ActionInfo,
     public sceneManager: SceneManager,
     private locationManager: LocationManager,
   ) {
@@ -103,10 +103,10 @@ export class MouseHandler {
       if (hoveredHex) {
         this.throttledHandleHexHover(hoveredHex);
       } else {
-        this.actionInfo.hideTooltip();
+        this.actionInfo?.hideTooltip();
       }
     } else {
-      this.actionInfo.hideTooltip();
+      this.actionInfo?.hideTooltip();
     }
   }
 
@@ -117,11 +117,16 @@ export class MouseHandler {
 
   private handleHexHover(hexCoords: { row: number; col: number }) {
     const travelPath = this.travelPaths?.get(TravelPaths.posKey(hexCoords, true));
-    if (travelPath) {
+    if (travelPath && this.selectedEntityId) {
       const hexPosition = this.worldmapScene!.getWorldPositionForHex(hexCoords);
-      this.actionInfo.showTooltip(hexPosition, travelPath.isExplored, travelPath.path.length - 1, 10000, 10000);
+      this.actionInfo?.showTooltip(
+        hexPosition,
+        travelPath.isExplored,
+        travelPath.path.length - 1,
+        this.selectedEntityId,
+      );
     } else {
-      this.actionInfo.hideTooltip();
+      this.actionInfo?.hideTooltip();
     }
   }
 
@@ -134,6 +139,7 @@ export class MouseHandler {
   private handleEntitySelection(entityId: number) {
     this._checkIfSceneIsInitialized();
     const armyMovementManager = new ArmyMovementManager(this.dojo, entityId);
+    this.actionInfo = new ActionInfo(entityId, this.camera, this.dojo);
     if (armyMovementManager.isMine()) {
       this._setSelectedEntityId(entityId);
       this.travelPaths = armyMovementManager.findPaths(this.worldmapScene!.systemManager.tileSystem.getExplored());
@@ -146,7 +152,8 @@ export class MouseHandler {
     this._setSelectedEntityId(null);
     this.worldmapScene!.highlightHexManager.highlightHexes([]);
     this.travelPaths?.deleteAll();
-    this.actionInfo.hideTooltip();
+    this.actionInfo?.hideTooltip();
+    this.actionInfo = null;
   }
 
   private getHoveredHex(): { row: number; col: number } | null {

@@ -153,64 +153,6 @@ export class ArmyMovementManager {
     return true;
   }
 
-  //   private _maxSteps(): number {
-  //     const staminaCosts = Object.values(EternumGlobalConfig.stamina);
-  //     const minCost = Math.min(...staminaCosts);
-
-  //     const staminaValues = Object.values(TROOPS_STAMINAS);
-  //     const maxStamina = Math.max(...staminaValues);
-
-  //     return Math.floor(maxStamina / minCost);
-  //   }
-
-  //   public findShortestPathBFS(endPos: HexPosition, exploredHexes: Map<number, Set<number>>): HexPosition[] {
-  //     const startPos = this._getCurrentPosition();
-  //     const maxHex = this._maxSteps();
-
-  //     const queue: { position: HexPosition; distance: number }[] = [{ position: startPos, distance: 0 }];
-  //     const visited = new Set<string>();
-  //     const path = new Map<string, HexPosition>();
-
-  //     while (queue.length > 0) {
-  //       const { position: current, distance } = queue.shift()!;
-  //       if (current.col === endPos.col && current.row === endPos.row) {
-  //         // Reconstruct the path upon reaching the end position
-  //         let temp = current;
-  //         const result = [];
-  //         while (temp) {
-  //           result.unshift(temp); // Add to the beginning of the result array
-  //           //@ts-ignore:
-  //           temp = path.get(TravelPaths.posKey(temp)); // Move backwards through the path
-  //         }
-  //         return result;
-  //       }
-
-  //       if (distance > maxHex) {
-  //         break; // Stop processing if the current distance exceeds maxHex
-  //       }
-
-  //       const currentKey = TravelPaths.posKey(current);
-  //       if (!visited.has(currentKey)) {
-  //         visited.add(currentKey);
-  //         const neighbors = getNeighborHexes(current.col, current.row); // Assuming getNeighbors is defined elsewhere
-  //         for (const { col, row } of neighbors) {
-  //           const neighborKey = TravelPaths.posKey({ col, row });
-  //           const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER);
-  //           if (
-  //             !visited.has(neighborKey) &&
-  //             !queue.some((e) => TravelPaths.posKey(e.position) === neighborKey) &&
-  //             isExplored
-  //           ) {
-  //             path.set(neighborKey, current); // Map each neighbor back to the current position
-  //             queue.push({ position: { col, row }, distance: distance + 1 });
-  //           }
-  //         }
-  //       }
-  //     }
-
-  //     return []; // Return empty array if no path is found within maxHex distance
-  //   }
-
   private _calculateMaxTravelPossible = () => {
     const stamina = this.getStamina();
     return Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
