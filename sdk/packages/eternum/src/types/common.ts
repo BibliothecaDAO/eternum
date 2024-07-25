@@ -8,6 +8,11 @@ export enum TickIds {
   Armies,
 }
 
+export enum TravelTypes {
+  Explore,
+  Travel,
+}
+
 export enum DestinationType {
   Home,
   Hyperstructure,
