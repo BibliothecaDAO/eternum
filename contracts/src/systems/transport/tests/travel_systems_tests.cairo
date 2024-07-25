@@ -27,11 +27,16 @@ use eternum::systems::transport::contracts::travel_systems::{
     travel_systems, ITravelSystemsDispatcher, ITravelSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
+use eternum::utils::testing::{
+    world::spawn_eternum, systems::deploy_system, config::set_travel_stamina_cost_config
+};
 use starknet::contract_address_const;
 
 fn setup() -> (IWorldDispatcher, ID, ID, Position, Coord, ITravelSystemsDispatcher) {
     let world = spawn_eternum();
+
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    set_travel_stamina_cost_config(config_systems_address);
 
     // set as executor
 
@@ -406,6 +411,9 @@ const MAX_STAMINA: u16 = 30;
 
 fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatcher) {
     let world = spawn_eternum();
+
+    let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
+    set_travel_stamina_cost_config(config_systems_address);
 
     // set tick config
     let tick_config = TickConfig {

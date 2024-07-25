@@ -1,6 +1,6 @@
 use core::array::{SpanTrait, ArrayTrait, SpanIndex};
 use core::ops::index::IndexView;
-use eternum::constants::{ResourceTypes, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds};
+use eternum::constants::{ResourceTypes, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds, TravelTypes};
 
 use eternum::models::{config::TroopConfig, combat::Troops};
 
@@ -9,7 +9,8 @@ use eternum::systems::config::contracts::{
     ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait, ITransportConfigDispatcher,
     ITransportConfigDispatcherTrait, IMercenariesConfigDispatcher, IMercenariesConfigDispatcherTrait,
     IBankConfigDispatcher, IBankConfigDispatcherTrait, ITickConfigDispatcher, ITickConfigDispatcherTrait,
-    IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait
+    IMapConfigDispatcher, IMapConfigDispatcherTrait, IWeightConfigDispatcher, IWeightConfigDispatcherTrait,
+    ITravelStaminaCostConfigDispatcher, ITravelStaminaCostConfigDispatcherTrait
 };
 
 use eternum::utils::testing::constants::{
@@ -62,11 +63,19 @@ fn set_combat_config(config_systems_address: ContractAddress) {
 }
 
 fn set_stamina_config(config_systems_address: ContractAddress) {
-    IStaminaConfigDispatcher { contract_address: config_systems_address }
-        .set_stamina_config(ResourceTypes::PALADIN, 100);
-    IStaminaConfigDispatcher { contract_address: config_systems_address }.set_stamina_config(ResourceTypes::KNIGHT, 80);
-    IStaminaConfigDispatcher { contract_address: config_systems_address }
-        .set_stamina_config(ResourceTypes::CROSSBOWMAN, 80);
+    let stamina_dispatcher = IStaminaConfigDispatcher { contract_address: config_systems_address };
+
+    stamina_dispatcher.set_stamina_config(ResourceTypes::PALADIN, 100);
+    stamina_dispatcher.set_stamina_config(ResourceTypes::KNIGHT, 80);
+    stamina_dispatcher.set_stamina_config(ResourceTypes::CROSSBOWMAN, 80);
+}
+
+fn set_travel_stamina_cost_config(config_systems_address: ContractAddress) {
+    let travel_stamina_cost_dispatcher = ITravelStaminaCostConfigDispatcher {
+        contract_address: config_systems_address
+    };
+    travel_stamina_cost_dispatcher.set_travel_stamina_cost_config(TravelTypes::TRAVEL, 5);
+    travel_stamina_cost_dispatcher.set_travel_stamina_cost_config(TravelTypes::EXPLORE, 15);
 }
 
 
