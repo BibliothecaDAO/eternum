@@ -54,7 +54,8 @@ export default class HexceptionScene {
   private hexSize = 1;
   private originalColor: THREE.Color = new THREE.Color("white");
 
-  private buildingModels: Map<BuildingType, InstancedModel> = new Map();
+  private buildingModels: Map<BuildingType, InstancedBuilding> = new Map();
+
   private modelLoadPromises: Promise<void>[] = [];
 
   private biomeModels: Map<BiomeType, InstancedModel> = new Map();
