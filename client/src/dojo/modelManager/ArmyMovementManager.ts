@@ -182,7 +182,9 @@ export class ArmyMovementManager {
       if (!shortestDistances.has(currentKey) || distance < shortestDistances.get(currentKey)!) {
         shortestDistances.set(currentKey, distance);
         const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-        travelPaths.set(currentKey, { path: path, isExplored });
+        if (path.length >= 2) {
+          travelPaths.set(currentKey, { path: path, isExplored });
+        }
         if (!isExplored) continue;
 
         const neighbors = getNeighborHexes(current.col, current.row); // This function needs to be defined

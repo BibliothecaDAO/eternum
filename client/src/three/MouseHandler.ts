@@ -9,7 +9,7 @@ import { LocationManager } from "./helpers/LocationManager";
 import { throttle } from "lodash";
 
 export class MouseHandler {
-  private worldmapScene: WorldmapScene | undefined;
+  private worldmapScene?: WorldmapScene;
   private throttledHandleHexHover: (hexCoords: { row: number; col: number }) => void;
   public selectedEntityId: number | null = null;
   private actionInfo: ActionInfo | null = null;
@@ -31,11 +31,11 @@ export class MouseHandler {
     this.worldmapScene = worldmapScene;
   }
 
-  private _checkIfSceneIsInitialized() {
+  private checkIfSceneIsInitialized() {
     if (!this.worldmapScene) throw new Error("Scene not initialized");
   }
 
-  private _setSelectedEntityId(entityId: number | null) {
+  private setSelectedEntityId(entityId: number | null) {
     this.selectedEntityId = entityId;
     this.state.setSelectedEntityId(entityId);
   }
@@ -45,7 +45,10 @@ export class MouseHandler {
     if (this.sceneManager.currentScene !== "worldmap") return;
 
     const intersects = this.getIntersects();
-    if (intersects.length === 0) return;
+    if (intersects.length === 0) {
+      this.clearEntitySelection();
+      return;
+    }
 
     const clickedObject = intersects[0].object;
     if (!(clickedObject instanceof THREE.InstancedMesh)) return;
@@ -79,7 +82,7 @@ export class MouseHandler {
 
   onDoubleClick() {
     if (this.sceneManager.currentScene !== "worldmap") return;
-    this._checkIfSceneIsInitialized();
+    this.checkIfSceneIsInitialized();
 
     const intersects = this.getIntersects();
     if (intersects.length === 0) return;
@@ -131,25 +134,26 @@ export class MouseHandler {
   }
 
   private getIntersects() {
-    this._checkIfSceneIsInitialized();
+    this.checkIfSceneIsInitialized();
     this.raycaster.setFromCamera(this.mouse, this.camera);
     return this.raycaster.intersectObjects(this.worldmapScene!.scene.children, true);
   }
 
   private handleEntitySelection(entityId: number) {
-    this._checkIfSceneIsInitialized();
+    this.checkIfSceneIsInitialized();
+    this.clearEntitySelection();
     const armyMovementManager = new ArmyMovementManager(this.dojo, entityId);
     this.actionInfo = new ActionInfo(entityId, this.camera, this.dojo);
     if (armyMovementManager.isMine()) {
-      this._setSelectedEntityId(entityId);
+      this.setSelectedEntityId(entityId);
       this.travelPaths = armyMovementManager.findPaths(this.worldmapScene!.systemManager.tileSystem.getExplored());
       this.worldmapScene!.highlightHexManager.highlightHexes(this.travelPaths.getHighlightedHexes());
     }
   }
 
   private clearEntitySelection() {
-    this._checkIfSceneIsInitialized();
-    this._setSelectedEntityId(null);
+    this.checkIfSceneIsInitialized();
+    this.setSelectedEntityId(null);
     this.worldmapScene!.highlightHexManager.highlightHexes([]);
     this.travelPaths?.deleteAll();
     this.actionInfo?.hideTooltip();
@@ -157,7 +161,7 @@ export class MouseHandler {
   }
 
   private getHoveredHex(): { row: number; col: number } | null {
-    this._checkIfSceneIsInitialized();
+    this.checkIfSceneIsInitialized();
     const intersects = this.getIntersects();
 
     if (intersects.length > 0) {
