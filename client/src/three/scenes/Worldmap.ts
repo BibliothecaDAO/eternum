@@ -149,8 +149,12 @@ export default class WorldmapScene {
 
     this.systemManager = new SystemManager(this.dojoConfig, this);
 
-    this.interactiveHexManager = new InteractiveHexManager(this, this.hexSize, borderHexMaterial);
-    this.highlightHexManager = new HighlightHexManager(this, this.hexSize, highlightHexMaterial);
+    this.interactiveHexManager = new InteractiveHexManager(this);
+    this.highlightHexManager = new HighlightHexManager(this);
+  }
+
+  getHexSize() {
+    return this.hexSize;
   }
 
   private loadBiomeModels() {

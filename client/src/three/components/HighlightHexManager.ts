@@ -1,11 +1,15 @@
 import * as THREE from "three";
 import WorldmapScene from "../scenes/Worldmap";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
+import { highlightHexMaterial } from "@/shaders/highlightHexMaterial";
 
 export class HighlightHexManager {
   private highlightedHexes: THREE.Mesh[] = [];
+  private material: THREE.ShaderMaterial;
 
-  constructor(private worldMap: WorldmapScene, private hexSize: number, private material: THREE.ShaderMaterial) {}
+  constructor(private worldMap: WorldmapScene) {
+    this.material = highlightHexMaterial;
+  }
 
   highlightHexes(hexes: { row: number; col: number }[]) {
     // Remove existing highlights
@@ -13,7 +17,7 @@ export class HighlightHexManager {
     this.highlightedHexes = [];
 
     // Create new highlight meshes
-    const bigHexagonShape = createHexagonShape(this.hexSize);
+    const bigHexagonShape = createHexagonShape(this.worldMap.getHexSize());
     const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
 
     hexes.forEach((hex) => {

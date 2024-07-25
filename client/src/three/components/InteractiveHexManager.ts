@@ -6,15 +6,13 @@ import { transparentHexMaterial } from "@/shaders/transparentHexMaterial";
 
 export class InteractiveHexManager {
   private worldMap: WorldmapScene;
-  private hexSize: number;
   private borderHexes: Set<string> = new Set();
   private exploredHexes: Set<string> = new Set();
   private borderInstanceMesh: THREE.InstancedMesh | null = null;
   private exploredInstanceMesh: THREE.InstancedMesh | null = null;
 
-  constructor(worldMap: WorldmapScene, hexSize: number) {
+  constructor(worldMap: WorldmapScene) {
     this.worldMap = worldMap;
-    this.hexSize = hexSize;
   }
 
   addBorderHex(hex: { col: number; row: number }) {
@@ -43,7 +41,7 @@ export class InteractiveHexManager {
     }
 
     // Create new highlight meshes using InstancedMesh
-    const bigHexagonShape = createHexagonShape(this.hexSize);
+    const bigHexagonShape = createHexagonShape(this.worldMap.getHexSize());
     const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
     const borderInstanceCount = this.borderHexes.size;
     const exploredInstanceCount = this.exploredHexes.size;
