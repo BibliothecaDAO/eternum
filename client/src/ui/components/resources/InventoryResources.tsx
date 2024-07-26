@@ -1,4 +1,4 @@
-import { useResourceBalance, useResources } from "@/hooks/helpers/useResources";
+import { getResourceBalance, getResourcesUtils } from "@/hooks/helpers/useResources";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { ResourcesIds } from "@bibliothecadao/eternum";
@@ -20,8 +20,8 @@ export const InventoryResources = ({
   textSize?: "xxs" | "xs" | "sm" | "md" | "lg";
 }) => {
   const [showAll, setShowAll] = useState(false);
-  const { getResourcesFromBalance } = useResources();
-  const { getBalance } = useResourceBalance();
+  const { getResourcesFromBalance } = getResourcesUtils();
+  const { getBalance } = getResourceBalance();
 
   const inventoriesResources = entityIds.map(getResourcesFromBalance);
 

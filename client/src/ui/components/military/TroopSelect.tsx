@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import TextInput from "@/ui/elements/TextInput";
 import { currencyFormat } from "@/ui/utils/utils";
@@ -47,7 +47,7 @@ export const TroopSelect = ({ entity }: any) => {
     }).finally(() => setIsLoading(false));
   };
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   useEffect(() => {
     let canCreate = true;

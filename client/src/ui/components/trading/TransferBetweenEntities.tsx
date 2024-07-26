@@ -1,21 +1,21 @@
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useTravel } from "@/hooks/helpers/useTravel";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
+import { Headline } from "@/ui/elements/Headline";
 import ListSelect from "@/ui/elements/ListSelect";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
+import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
-import { useDojo } from "@/hooks/context/DojoContext";
-import { Headline } from "@/ui/elements/Headline";
-import { useTravel } from "@/hooks/helpers/useTravel";
 import { ToggleComponent } from "../toggle/ToggleComponent";
-import { ArrowRight, LucideArrowRight } from "lucide-react";
-import TextInput from "@/ui/elements/TextInput";
-import { useRealm } from "@/hooks/helpers/useRealm";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -337,7 +337,7 @@ const SelectResources = ({
   setSelectedResourceAmounts: any;
   entity_id: bigint;
 }) => {
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
 
   const unselectedResources = useMemo(

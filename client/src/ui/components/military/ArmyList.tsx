@@ -7,7 +7,6 @@ import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
-import { BuildingType, EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { EntityList } from "../list/EntityList";
@@ -33,16 +32,18 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const [isLoading, setIsLoading] = useState(false);
 
   const maxAmountOfArmies = useMemo(() => {
-    return (
-      3 +
-      existingBuildings.filter(
-        (building) =>
-          building.type === BuildingType.ArcheryRange ||
-          building.type === BuildingType.Barracks ||
-          building.type === BuildingType.Stable,
-      ).length *
-        EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding
-    );
+    // console.log(EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding);
+    return 3;
+    // return (
+    //   3 +
+    //   existingBuildings.filter(
+    //     (building) =>
+    //       building.type === BuildingType.ArcheryRange ||
+    //       building.type === BuildingType.Barracks ||
+    //       building.type === BuildingType.Stable,
+    //   ).length *
+    //     EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding
+    // );
   }, [existingBuildings]);
 
   const canCreateProtector = useMemo(
@@ -131,7 +132,7 @@ const ArmyItem = ({
     const updatedBattle = battleManager.getUpdatedBattle(currentTimestamp!);
     const updatedArmy = battleManager.getUpdatedArmy(entity, updatedBattle);
     return updatedArmy;
-  }, [currentTimestamp]);
+  }, [currentTimestamp, entity]);
 
   return (
     <React.Fragment key={entity?.entity_id || 0}>

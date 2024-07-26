@@ -1,6 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
-import { Headline } from "../../../../../elements/Headline";
+import { getResourcesUtils } from "@/hooks/helpers/useResources";
 import {
   EternumGlobalConfig,
   RealmInterface,
@@ -9,26 +7,28 @@ import {
   getOrderName,
   resources,
 } from "@bibliothecadao/eternum";
-import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { SortButton, SortInterface } from "../../../../../elements/SortButton";
-import { FiltersPanel } from "../../../../../elements/FiltersPanel";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import useRealmStore from "../../../../../../hooks/store/useRealmStore";
+import useUIStore from "../../../../../../hooks/store/useUIStore";
 import Button from "../../../../../elements/Button";
 import { FilterButton } from "../../../../../elements/FilterButton";
+import { FiltersPanel } from "../../../../../elements/FiltersPanel";
+import { Headline } from "../../../../../elements/Headline";
+import { OnlineStatus } from "../../../../../elements/OnlineStatus";
+import { OrderIcon } from "../../../../../elements/OrderIcon";
+import { ResourceIcon } from "../../../../../elements/ResourceIcon";
+import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
+import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { SortPanel } from "../../../../../elements/SortPanel";
+import TextInput from "../../../../../elements/TextInput";
+import { getRealm } from "../../../../../utils/realms";
 import {
   calculateDistance,
   currencyIntlFormat,
   formatTimeLeft,
   formatTimeLeftDaysHoursMinutes,
 } from "../../../../../utils/utils";
-import { OrderIcon } from "../../../../../elements/OrderIcon";
-import { OnlineStatus } from "../../../../../elements/OnlineStatus";
-import { useResources } from "../../../../../../hooks/helpers/useResources";
-import { getRealm } from "../../../../../utils/realms";
-import useUIStore from "../../../../../../hooks/store/useUIStore";
-import useRealmStore from "../../../../../../hooks/store/useRealmStore";
 import { FastCreateOfferPopup } from "../FastCreateOffer";
-import TextInput from "../../../../../elements/TextInput";
 
 type DirectOffersExplorerPopupProps = {
   onClose: () => void;
@@ -127,7 +127,7 @@ const RealmResourceExplorerPanel = ({
   const realmId = useRealmStore((state) => state.realmId);
 
   // get realms that have that resource
-  const { getRealmsWithSpecificResource } = useResources();
+  const { getRealmsWithSpecificResource } = getResourcesUtils();
   const realms = getRealmsWithSpecificResource(resourceId, 1000).map((realm) => {
     const realmData = getRealm(realm.realmId);
     // counterparty
@@ -233,10 +233,10 @@ const RealmResourceRow = ({
     latestActivity === undefined
       ? "offline"
       : latestActivity < 86400
-        ? "online"
-        : latestActivity < 259200
-          ? "recently"
-          : "offline";
+      ? "online"
+      : latestActivity < 259200
+      ? "recently"
+      : "offline";
 
   return (
     <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black grid-cols-[250px,1fr,1fr] text-lightest text-xxs">

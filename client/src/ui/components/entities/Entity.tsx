@@ -2,7 +2,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { getBattleByPosition } from "@/hooks/helpers/battles/useBattles";
 import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useOwnedEntitiesOnPosition, useResources } from "@/hooks/helpers/useResources";
+import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -39,7 +39,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   } = useDojo();
   const [showTravel, setShowTravel] = useState(false);
   const { getEntityInfo } = getEntitiesUtils();
-  const { getResourcesFromBalance } = useResources();
+  const { getResourcesFromBalance } = getResourcesUtils();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
   const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
   const { getArmy } = getArmyByEntityId();

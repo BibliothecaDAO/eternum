@@ -10,7 +10,6 @@ import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getComponentValue, HasValue, runQuery } from "@dojoengine/recs";
 import React, { useMemo, useState } from "react";
-import { Tooltip } from "react-tooltip";
 import { MergeTroopsPanel } from "../hyperstructures/StructureCard";
 import { TroopMenuRow } from "../military/TroopChip";
 import { InventoryResources } from "../resources/InventoryResources";
@@ -31,6 +30,7 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
   const [showInventory, setShowInventory] = useState(false);
 
   const setBattleView = useUIStore((state) => state.setBattleView);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const userArmyInBattle = getUserArmyInBattle(battle.entity_id);
   const battleManager = useMemo(() => new BattleManager(battle.entity_id, dojo), [battle]);
@@ -108,7 +108,19 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
                 <TroopMenuRow troops={updatedBattle?.attack_army?.troops} />
               </div>
               <div className="flex flex-col font-bold m-auto relative top-2">
-                <div className="font-bold m-auto animate-pulse" data-tooltip-id={`battle-${battle.entity_id}-tooltip`}>
+                <div
+                  className="font-bold m-auto animate-pulse"
+                  onMouseEnter={() =>
+                    setTooltip({
+                      content: armiesInBattle.map((armyEntityId) => {
+                        const name = getAddressNameFromEntity(armyEntityId);
+                        return <div key={armyEntityId}>{name ? name : "Bandit"}</div>;
+                      }),
+                      position: "top",
+                    })
+                  }
+                  onMouseLeave={() => setTooltip(null)}
+                >
                   VS
                 </div>
                 <Inventory
@@ -129,12 +141,6 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
             )}{" "}
           </div>
           {buttons}
-          <Tooltip id={`battle-${battle.entity_id}-tooltip`} className="">
-            {armiesInBattle.map((armyEntityId) => {
-              const name = getAddressNameFromEntity(armyEntityId);
-              return <div key={armyEntityId}>{name ? name : "Bandit"}</div>;
-            })}
-          </Tooltip>
         </div>
         {showMergeTroopsPopup && (
           <div className="flex flex-col w-[100%]">

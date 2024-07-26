@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useOwnedEntitiesOnPosition, useResources } from "@/hooks/helpers/useResources";
+import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -16,7 +16,7 @@ export const DepositResources = ({ entityId, battleInProgress }: DepositResource
   const { account, setup } = useDojo();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getResourcesFromBalance } = useResources();
+  const { getResourcesFromBalance } = getResourcesUtils();
 
   const inventoryResources = getResourcesFromBalance(entityId);
 

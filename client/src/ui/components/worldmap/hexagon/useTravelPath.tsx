@@ -1,5 +1,5 @@
 import { useRealm } from "@/hooks/helpers/useRealm.js";
-import { useResourceBalance } from "@/hooks/helpers/useResources.js";
+import { getResourceBalance } from "@/hooks/helpers/useResources.js";
 import { useStamina } from "@/hooks/helpers/useStamina";
 import useUIStore from "@/hooks/store/useUIStore";
 import { HighlightPositions } from "@/types/index.js";
@@ -16,7 +16,7 @@ export const useTravelPath = () => {
   const setTravelPaths = useUIStore((state) => state.setTravelPaths);
   const exploredHexes = useExploredHexesStore((state) => state.exploredHexes);
 
-  const { getFoodResources } = useResourceBalance();
+  const { getFoodResources } = getResourceBalance();
   const { useStaminaByEntityId } = useStamina();
   const { getEntityOwner } = useRealm();
 

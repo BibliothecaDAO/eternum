@@ -6,7 +6,7 @@ import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import { useResources } from "./useResources";
+import { getResourcesUtils } from "./useResources";
 
 export interface PlayerStructure {
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
@@ -54,8 +54,8 @@ export const useEntities = () => {
           const name = realm
             ? getRealmNameById(realm.realm_id)
             : structureName
-              ? `${structure?.category} ${structureName}`
-              : structure?.category;
+            ? `${structure?.category} ${structureName}`
+            : structure?.category;
           return { ...structure, position: position!, name };
         })
         .sort((a, b) => (b.category || "").localeCompare(a.category || ""));
@@ -71,7 +71,7 @@ export const getEntitiesUtils = () => {
     },
   } = useDojo();
 
-  const { getResourcesFromBalance } = useResources();
+  const { getResourcesFromBalance } = getResourcesUtils();
 
   const getEntityInfo = (entityId: bigint) => {
     const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([entityId]));

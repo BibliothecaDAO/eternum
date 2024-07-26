@@ -1,21 +1,21 @@
+import { useDojo } from "@/hooks/context/DojoContext";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { createOffer } from "@/ui/components/navigation/Config";
+import { OSWindow } from "@/ui/components/navigation/OSWindow";
+import { TravelInfo } from "@/ui/components/resources/ResourceWeight";
+import { ONE_MONTH, resources, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
+import { useRealm } from "../../../../../hooks/helpers/useRealm";
+import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { usePlayResourceSound } from "../../../../../hooks/useUISound";
 import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
-import { ResourceCost } from "../../../../elements/ResourceCost";
-import { NumberInput } from "../../../../elements/NumberInput";
-import { ResourcesIds, ONE_MONTH, resources } from "@bibliothecadao/eternum";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
-import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
-import { useRealm } from "../../../../../hooks/helpers/useRealm";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
 import ListSelect from "../../../../elements/ListSelect";
+import { NumberInput } from "../../../../elements/NumberInput";
+import { ResourceCost } from "../../../../elements/ResourceCost";
+import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 import { TradeRealmSelector } from "./TradeRealmSelector";
-import { usePlayResourceSound } from "../../../../../hooks/useUISound";
-import { OSWindow } from "@/ui/components/navigation/OSWindow";
-import { createOffer } from "@/ui/components/navigation/Config";
-import { TravelInfo } from "@/ui/components/resources/ResourceWeight";
-import { useDojo } from "@/hooks/context/DojoContext";
 
 interface FastCreateOfferPopupProps {
   resourceId?: number;
@@ -166,7 +166,7 @@ const SelectResourcesAmountPanel = ({
 }) => {
   const { realmEntityId } = useRealmStore();
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
 
   const swapResources = () => {

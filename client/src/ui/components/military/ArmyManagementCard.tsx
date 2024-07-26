@@ -3,7 +3,7 @@ import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
 import { ReactComponent as Map } from "@/assets/icons/common/world.svg";
 
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
@@ -40,7 +40,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   } = useDojo();
 
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const [travelWindow, setSetTravelWindow] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

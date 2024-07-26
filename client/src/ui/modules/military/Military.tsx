@@ -18,7 +18,9 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
 
   return (
     <div className="relative">
-      <HintModalButton className="absolute top-1 right-1" section={HintSection.Combat} />
+      <div className="flex justify-end">
+        <HintModalButton className="relative top-1 right-1" section={HintSection.Combat} />
+      </div>
       {isMap ? (
         <EntitiesArmyTable />
       ) : (
@@ -27,7 +29,7 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
           list={playerStructures()}
           title="armies"
           panel={({ entity }) => <ArmyPanel structure={entity} />}
-          className="pt-10"
+          className=""
         />
       )}
     </div>

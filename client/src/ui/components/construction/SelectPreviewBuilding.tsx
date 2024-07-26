@@ -16,11 +16,13 @@ import {
 } from "@bibliothecadao/eternum";
 
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
+import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
@@ -32,8 +34,6 @@ import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 import { HintSection } from "../hints/HintModal";
-import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { QuestId } from "@/ui/components/quest/questDetails";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
@@ -44,7 +44,8 @@ export const SelectPreviewBuildingMenu = () => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { realm } = useGetRealm(realmEntityId);
-  const { getBalance } = useResourceBalance();
+
+  const { getBalance } = getResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
   const { questClaimStatus } = useQuestClaimStatus();
 
@@ -371,7 +372,7 @@ export const ResourceInfo = ({
 
   const capacity = BUILDING_CAPACITY[BuildingType.Resource];
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   return (
     <div className="flex flex-col text-gold text-sm p-1 space-y-1">
@@ -444,7 +445,7 @@ export const BuildingInfo = ({
   const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
   const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced] || 0;
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   return (
     <div className="p-2 text-sm text-gold">

@@ -9,6 +9,5 @@ const filterArmies = (army: ArmyInfo) => {
 export const Armies = ({}: {}) => {
   const { getArmies } = useMovableArmies();
   const armies = getArmies();
-
   return armies.filter(filterArmies).map((army: ArmyInfo) => <Army key={army.entity_id} army={army} />);
 };
