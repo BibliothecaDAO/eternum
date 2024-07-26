@@ -60,6 +60,8 @@ fn set_combat_config(config_systems_address: ContractAddress) {
         advantage_percent: 1000,
         disadvantage_percent: 1000,
         pillage_health_divisor: 8,
+        army_free_per_structure: 100,
+        army_extra_per_building: 100,
     };
     ITroopConfigDispatcher { contract_address: config_systems_address }
         .set_troop_config(troop_config);

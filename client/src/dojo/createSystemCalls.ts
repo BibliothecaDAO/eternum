@@ -168,6 +168,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.create_army(props);
   };
 
+  const delete_army = async (props: SystemProps.ArmyDeleteProps) => {
+    await provider.delete_army(props);
+  };
+
   const army_buy_troops = async (props: SystemProps.ArmyBuyTroopsProps) => {
     await provider.army_buy_troops(props);
   };
@@ -288,6 +292,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     destroy_building,
     create_building,
     create_army,
+    delete_army,
     uuid,
     create_hyperstructure,
     contribute_to_construction,

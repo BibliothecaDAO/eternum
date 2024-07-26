@@ -1,4 +1,4 @@
-use core::poseidon::poseidon_hash_span as hash;
+use core::poseidon::poseidon_hash_span;
 use core::zeroable::Zeroable;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID};
@@ -86,19 +86,6 @@ impl BuildingCategoryIntoFelt252 of Into<BuildingCategory, felt252> {
     }
 }
 
-
-#[generate_trait]
-impl BuildingQuantityv2TrackerImpl of BuildingQuantityv2TrackerTrait {
-    fn salt() -> felt252 {
-        'building_quantity'
-    }
-    fn key(entity_id: u128, category: felt252, resource_type: u8) -> felt252 {
-        let q: Array<felt252> = array![
-            entity_id.into(), Self::salt(), category, resource_type.into()
-        ];
-        hash(q.span())
-    }
-}
 
 #[generate_trait]
 impl BonusPercentageImpl of BonusPercentageTrait {
