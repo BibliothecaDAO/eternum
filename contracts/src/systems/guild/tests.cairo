@@ -14,7 +14,7 @@ use eternum::systems::name::contracts::{
     name_systems, INameSystems, INameSystemsDispatcher, INameSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system};
+use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 use starknet::contract_address_const;
 
 const PUBLIC: felt252 = 1;

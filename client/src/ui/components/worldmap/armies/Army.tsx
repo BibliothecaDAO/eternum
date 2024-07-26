@@ -1,6 +1,5 @@
-import { ArmyInfo, getArmiesAtPosition } from "@/hooks/helpers/useArmies";
-import { getBattleByPosition } from "@/hooks/helpers/useBattles";
-import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
+import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { Position } from "@bibliothecadao/eternum";
 import { Billboard, Image, useTexture } from "@react-three/drei";
 import React, { useMemo } from "react";
 import * as THREE from "three";
@@ -9,12 +8,10 @@ import useUIStore from "../../../../hooks/store/useUIStore";
 import { WarriorModel } from "../../models/armies/WarriorModel";
 import { UnitHighlight } from "../hexagon/UnitHighlight";
 import { ArmyFlag } from "./ArmyFlag";
-import { BattleLabel } from "./BattleLabel";
-import { CombatLabel } from "./CombatLabel";
 import { useArmyAnimation } from "./useArmyAnimation";
 import { arePropsEqual } from "./utils";
 
-type ArmyProps = {
+export type ArmyProps = {
   army: ArmyInfo;
 };
 
@@ -25,10 +22,12 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
     texture.minFilter = THREE.LinearFilter;
   });
 
-  const armyPosition = { x: army.x, y: army.y };
-
   // animation path for the army
-  const { groupRef, isAnimating } = useArmyAnimation(armyPosition, army.offset, army.isMine);
+  const { groupRef, isAnimating } = useArmyAnimation(
+    { x: army.position.x, y: army.position.y },
+    army.offset,
+    army.isMine,
+  );
 
   // Deterministic rotation based on the id
   const deterministicRotation = useMemo(() => {
@@ -62,37 +61,13 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
 }, arePropsEqual);
 
 export const ArmySelectionOverlay = ({ army }: ArmyProps) => {
-  const armyPosition = { x: army.x, y: army.y };
-
   const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const battleAtPosition = getBattleByPosition(armyPosition);
-  const { getArmies } = getArmiesAtPosition();
 
-  const structure = getStructureAtPosition(armyPosition);
+  const armyPosition: Position = { x: army.position.x, y: army.position.y };
 
   const isSelected = useMemo(() => {
     return (selectedEntity?.id || 0n) === BigInt(army.entity_id);
   }, [selectedEntity, army.entity_id]);
 
-  const showCombatLabel = useMemo(() => {
-    if (battleAtPosition) return false;
-    const { opponentArmiesAtPosition } = getArmies(armyPosition);
-    return (
-      selectedEntity !== undefined &&
-      selectedEntity.id === BigInt(army.entity_id) &&
-      ((opponentArmiesAtPosition?.length || 0) > 0 || Boolean(structure))
-    );
-  }, [selectedEntity]);
-
-  const showBattleLabel = useMemo(() => {
-    return selectedEntity !== undefined && selectedEntity.id === BigInt(army.entity_id) && Boolean(battleAtPosition);
-  }, [selectedEntity, battleAtPosition]);
-
-  return (
-    <>
-      {showCombatLabel && <CombatLabel visible={isSelected} structureIsMine={structure?.isMine} />}
-      {showBattleLabel && <BattleLabel selectedBattle={BigInt(battleAtPosition!.entity_id)} />}
-      {isSelected && <UnitHighlight position={{ x: army.x, y: army.y }} />}
-    </>
-  );
+  return isSelected && <UnitHighlight position={armyPosition} />;
 };

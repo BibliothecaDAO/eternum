@@ -1,98 +1,116 @@
-import { getArmiesAtPosition, getArmyByEntityId, useArmiesByBattleId } from "@/hooks/helpers/useArmies";
-import { useBattleManagerByPosition } from "@/hooks/helpers/useBattles";
-import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useBattleManager } from "@/hooks/helpers/battles/useBattles";
+import {
+  getArmiesAtPosition,
+  getArmiesByBattleId,
+  getArmyByEntityId,
+  useArmyByArmyEntityId,
+} from "@/hooks/helpers/useArmies";
+import { getStructureByEntityId, getStructureByPosition } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { BattleSide } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { Battle } from "./Battle";
-import { getDefenderAndStructureFromTarget } from "./utils";
 
 export const BattleView = () => {
+  const dojo = useDojo();
+  const getStructure = getStructureByPosition();
+  const armiesByBattleId = getArmiesByBattleId();
+  const { getAliveArmy } = getArmyByEntityId();
+
   const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const battleView = useUIStore((state) => state.battleView);
-  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const clickedHex = useUIStore((state) => state.clickedHex);
 
-  const defenderAndStructureBattleStarter = useMemo(() => {
-    if (!battleView || !battleView!.target) {
-      return undefined;
-    } else {
-      return getDefenderAndStructureFromTarget(battleView!.target!);
+  const battlePosition = { x: clickedHex?.contractPos.col || 0, y: clickedHex?.contractPos.row || 0 };
+
+  // get updated army for when a battle starts: we need to have the updated component to have the correct battle_id
+  const updatedTarget = useArmyByArmyEntityId(battleView?.targetArmy || 0n);
+
+  const targetArmy = useMemo(() => {
+    const tempBattleManager = new BattleManager(updatedTarget?.battle_id || 0n, dojo);
+    const updatedBattle = tempBattleManager.getUpdatedBattle(currentTimestamp!);
+    return tempBattleManager.getUpdatedArmy(updatedTarget, updatedBattle);
+  }, [updatedTarget, battleView?.targetArmy]);
+
+  const battleManager = useBattleManager(
+    battleView?.battle ? battleView?.battle : battleView?.engage ? 0n : targetArmy?.battle_id || 0n,
+  );
+
+  const armies = useMemo(() => {
+    if (!battleManager.isBattle()) {
+      return { armiesInBattle: [], userArmiesInBattle: [] };
     }
-  }, [battleView]);
+    const armiesInBattle = armiesByBattleId(battleManager?.battleId || 0n);
+    const userArmiesInBattle = armiesInBattle.filter((army) => army.isMine);
+    return { armiesInBattle, userArmiesInBattle };
+  }, [battleManager]);
 
-  const battlePosition = battleView?.battle || { x: selectedEntity!.position.x, y: selectedEntity!.position.y };
+  const ownArmySide = battleManager.isBattle()
+    ? armies.userArmiesInBattle?.[0]?.battle_side || ""
+    : BattleSide[BattleSide.Attack];
 
-  const battleManager = useBattleManagerByPosition(battlePosition);
-
-  const structure = getStructureAtPosition(battlePosition);
-
-  let armiesInBattle = useArmiesByBattleId(battleManager?.battleId || 0n);
-  if (!battleManager) {
-    armiesInBattle = [];
-  }
-  const userArmiesInBattle = armiesInBattle.filter((army) => army.isMine);
-
-  const ownArmySide = battleManager ? String(userArmiesInBattle[0]?.battle_side || "") : "Attack";
-
-  const { getAliveArmy } = getArmyByEntityId();
-  const ownArmyEntityId = selectedEntity?.id || BigInt(userArmiesInBattle.find((army) => army.isMine)?.entity_id || 0);
-  const ownArmyBattleStarter = getAliveArmy(BigInt(ownArmyEntityId || 0n));
-  const defenderArmyBattleStarter = getAliveArmy(BigInt(defenderAndStructureBattleStarter?.defender || 0n));
+  const ownArmyBattleStarter = useMemo(
+    () => getAliveArmy(battleView!.ownArmyEntityId || 0n),
+    [battleView!.ownArmyEntityId],
+  );
 
   const attackerArmies =
-    armiesInBattle.length > 0
-      ? armiesInBattle.filter((army) => String(army.battle_side) === "Attack")
+    armies.armiesInBattle.length > 0
+      ? armies.armiesInBattle.filter((army) => army.battle_side === BattleSide[BattleSide.Attack])
       : [ownArmyBattleStarter!];
 
   const defenderArmies =
-    armiesInBattle.length > 0
-      ? armiesInBattle.filter((army) => String(army.battle_side) === "Defence")
-      : [defenderArmyBattleStarter!];
+    armies.armiesInBattle.length > 0
+      ? armies.armiesInBattle.filter((army) => army.battle_side === BattleSide[BattleSide.Defence])
+      : [targetArmy];
 
   const battleAdjusted = useMemo(() => {
     if (!battleManager) return undefined;
     return battleManager!.getUpdatedBattle(currentTimestamp!);
-  }, [currentTimestamp, battleManager, battleManager?.battleId, armiesInBattle, battleView]);
+  }, [currentTimestamp, battleManager, battleManager?.battleId, armies.armiesInBattle, battleView]);
 
-  const durationLeft = useMemo(() => {
-    if (!battleManager) return undefined;
-    return battleManager!.getTimeLeft(currentTimestamp!);
-  }, [battleAdjusted?.duration_left, battleManager, currentTimestamp, battleView]);
-
-  const { getArmies } = getArmiesAtPosition();
-  const userArmiesAtPosition = useMemo(() => {
-    return getArmies(battlePosition).userArmiesAtPosition;
-  }, [battlePosition, battleAdjusted]);
+  const armiesAtPosition = getArmiesAtPosition();
 
   const attackerHealth = battleAdjusted
     ? {
-        current: Number(battleAdjusted!.attack_army_health.current),
-        lifetime: Number(battleAdjusted!.attack_army_health.lifetime),
+        current: battleAdjusted!.attack_army_health.current,
+        lifetime: battleAdjusted!.attack_army_health.lifetime,
       }
-    : { current: Number(ownArmyBattleStarter?.current || 0), lifetime: Number(ownArmyBattleStarter?.lifetime || 0) };
+    : {
+        current: ownArmyBattleStarter?.health.current || 0n,
+        lifetime: ownArmyBattleStarter?.health.lifetime || 0n,
+      };
   const defenderHealth = battleAdjusted
     ? {
-        current: Number(battleAdjusted!.defence_army_health.current),
-        lifetime: Number(battleAdjusted!.defence_army_health.lifetime),
+        current: battleAdjusted!.defence_army_health.current,
+        lifetime: battleAdjusted!.defence_army_health.lifetime,
       }
-    : defenderArmyBattleStarter
+    : targetArmy
       ? {
-          current: Number(defenderArmyBattleStarter.current || 0),
-          lifetime: Number(defenderArmyBattleStarter.lifetime || 0),
+          current: targetArmy.health.current || 0n,
+          lifetime: targetArmy.health.lifetime || 0n,
         }
       : undefined;
 
   const attackerTroops = battleAdjusted ? battleAdjusted!.attack_army.troops : ownArmyBattleStarter?.troops;
-  const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : defenderArmyBattleStarter?.troops;
+  const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : targetArmy?.troops;
 
-  const isActive = Boolean(battleManager?.isBattleActive(currentTimestamp!));
+  const structure =
+    battleView?.engage && !battleView?.battle && !battleView.targetArmy
+      ? getStructure({ x: battlePosition.x, y: battlePosition.y })
+      : getStructureByEntityId(defenderArmies.find((army) => army?.protectee)?.protectee?.protectee_id || 0n);
+
+  const isActive = battleManager?.isBattleOngoing(currentTimestamp!);
 
   return (
     <Battle
-      ownArmySide={ownArmySide}
-      ownArmyEntityId={ownArmyEntityId}
       battleManager={battleManager}
+      ownArmySide={ownArmySide}
+      ownArmyEntityId={battleView?.ownArmyEntityId}
       battleAdjusted={battleAdjusted}
       attackerArmies={attackerArmies}
       attackerHealth={attackerHealth}
@@ -100,11 +118,9 @@ export const BattleView = () => {
       defenderArmies={defenderArmies}
       defenderHealth={defenderHealth}
       defenderTroops={defenderTroops}
-      userArmiesInBattle={userArmiesInBattle}
-      userArmiesAtPosition={userArmiesAtPosition}
+      userArmiesInBattle={armies.userArmiesInBattle}
       structure={structure}
       isActive={isActive}
-      durationLeft={durationLeft}
     />
   );
 };

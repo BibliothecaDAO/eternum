@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -52,7 +52,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   } = useDojo();
   const { nextBlockTimestamp } = useBlockchainStore();
 
-  const { getAddressNameFromEntity } = useEntities();
+  const { getAddressNameFromEntity } = getEntitiesUtils();
   const tradeComponent = getComponentValue(Trade, getEntityIdFromKeys([trade.event.tradeId]));
   const eventType =
     trade.type === EventType.ORDER_CREATED && nextBlockTimestamp! > tradeComponent!.expires_at

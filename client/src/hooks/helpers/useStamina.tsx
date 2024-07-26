@@ -1,4 +1,3 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
 import { ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -29,7 +28,7 @@ export const useStamina = () => {
         amount: getMaxStamina(armyEntity.troops, StaminaConfig),
       };
     }
-    return staminaEntity as unknown as ClientComponents["Stamina"]["schema"];
+    return staminaEntity;
   };
 
   const getStamina = ({
@@ -52,7 +51,7 @@ export const useStamina = () => {
         amount: getMaxStamina(armyEntity!.troops, StaminaConfig),
       };
     }
-    return staminaEntity as unknown as ClientComponents["Stamina"]["schema"];
+    return staminaEntity;
   };
 
   const getMaxStaminaByEntityId = (travelingEntityId: bigint): number => {
@@ -69,13 +68,12 @@ export const useStamina = () => {
 
     const stamina = getStamina({ travelingEntityId: entityId, currentArmiesTick });
 
-    // substract the costs
     Stamina.addOverride(overrideId, {
       entity,
       value: {
         entity_id: entityId,
-        last_refill_tick: stamina.last_refill_tick,
-        amount: stamina.amount - cost,
+        last_refill_tick: stamina?.last_refill_tick || 0,
+        amount: stamina?.amount ? stamina.amount - cost : 0,
       },
     });
   };

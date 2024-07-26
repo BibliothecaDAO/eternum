@@ -13,7 +13,7 @@ use eternum::systems::config::contracts::{
     ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait,
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system};
+use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 
 use starknet::contract_address::contract_address_const;
 

@@ -1,9 +1,9 @@
 import { BuildingType } from "@bibliothecadao/eternum";
-import { useDojo } from "../context/DojoContext";
-import { CairoOption, CairoOptionVariant } from "starknet";
-import { uuid } from "@latticexyz/utils";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { uuid } from "@latticexyz/utils";
+import { CairoOption, CairoOptionVariant } from "starknet";
+import { useDojo } from "../context/DojoContext";
 
 export function useBuildings() {
   const {
@@ -54,7 +54,7 @@ export function useBuildings() {
         outer_row: BigInt(outerrow),
         inner_col: BigInt(col),
         inner_row: BigInt(row),
-        category: "None",
+        category: "",
         produced_resource_type: 0,
         bonus_percent: 0n,
         entity_id: 0n,

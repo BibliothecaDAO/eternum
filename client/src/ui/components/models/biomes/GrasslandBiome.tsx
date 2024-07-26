@@ -1,8 +1,7 @@
 import { useGLTF } from "@react-three/drei";
-import { getUIPositionFromColRow, pseudoRandom } from "../../../utils/utils";
-import * as THREE from "three";
 import { useMemo } from "react";
-import { Hexagon } from "../../../../types";
+import * as THREE from "three";
+import { pseudoRandom } from "../../../utils/utils";
 
 export function GrasslandBiome({ hexes, zOffsets }: { hexes: any[]; zOffsets?: boolean }) {
   const { nodes, materials } = useGLTF("/models/biomes/grassland.glb") as any;

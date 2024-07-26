@@ -1,11 +1,11 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { useEntityQuery } from "@dojoengine/react";
+import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useMemo } from "react";
 import { useDojo } from "../context/DojoContext";
-import { Component, Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { useRealm } from "./useRealm";
-import { useEntities } from "./useEntities";
 import useLeaderBoardStore, { GuildPointsLeaderboardInterface } from "../store/useLeaderBoardStore";
+import { getEntitiesUtils } from "./useEntities";
+import { useRealm } from "./useRealm";
 
 export type GuildAndName = ClientComponents["Guild"]["schema"] & { name: string } & { rank: number | string };
 export type GuildMemberAndName = ClientComponents["GuildMember"]["schema"] & { name: string } & {
@@ -24,7 +24,7 @@ export const useGuilds = () => {
     account: { account },
   } = useDojo();
 
-  const { getEntityName } = useEntities();
+  const { getEntityName } = getEntitiesUtils();
   const { getAddressName } = useRealm();
 
   const guildPointsLeaderboard = useLeaderBoardStore((state) => state.guildPointsLeaderboard);
@@ -66,7 +66,7 @@ export const useGuilds = () => {
   const getAddressWhitelist = useMemo(
     () => (address: bigint) => {
       // TODO : CONSTANT 1n
-      const addressWhitelist = useEntityQuery([HasValue(GuildWhitelist, { address: address, is_whitelisted: 1n })]);
+      const addressWhitelist = useEntityQuery([HasValue(GuildWhitelist, { address, is_whitelisted: 1n })]);
       return {
         addressWhitelist: formatAddressWhitelist(addressWhitelist, GuildWhitelist, getEntityName),
       };

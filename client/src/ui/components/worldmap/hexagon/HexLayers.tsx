@@ -2,7 +2,7 @@ import { DEPTH, FELT_CENTER, HEX_RADIUS } from "@/ui/config";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { Bvh } from "@react-three/drei";
 import { throttle } from "lodash";
-import { useCallback, useMemo, useState, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Color, InstancedMesh, Matrix4 } from "three";
 import { useLocation } from "wouter";

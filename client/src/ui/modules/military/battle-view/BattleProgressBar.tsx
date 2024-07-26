@@ -1,47 +1,59 @@
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { Health } from "@/types";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 
 export const BattleProgressBar = ({
+  battleManager,
   ownArmySide,
   attackingHealth,
   attackerArmies,
   defendingHealth,
   defenderArmies,
   structure,
-  durationLeft,
 }: {
+  battleManager: BattleManager | undefined;
   ownArmySide: string;
-  attackingHealth: { current: number; lifetime: number } | undefined;
+  attackingHealth: Health | undefined;
   attackerArmies: ArmyInfo[];
-  defendingHealth: { current: number; lifetime: number } | undefined;
-  defenderArmies: ArmyInfo[];
+  defendingHealth: Health | undefined;
+  defenderArmies: (ArmyInfo | undefined)[];
   structure: Structure | undefined;
-  durationLeft?: Date;
 }) => {
+  const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
+  const durationLeft = useMemo(() => {
+    if (!battleManager) return undefined;
+    return battleManager!.getTimeLeft(currentTimestamp!);
+  }, [attackingHealth, currentTimestamp, defendingHealth]);
+
   const [time, setTime] = useState<Date | undefined>(durationLeft);
 
   const attackerName = `${attackerArmies.length > 0 ? "Attackers" : "Empty"} ${ownArmySide === "Attack" ? "(⚔️)" : ""}`;
   const defenderName = structure
     ? structure.isMercenary
-      ? "Mercenaries"
+      ? "Bandits"
       : `${structure!.name} ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
     : defenderArmies?.length > 0
       ? `Defenders ${ownArmySide === "Defence" ? "(⚔️)" : ""}`
       : "Empty";
 
   const totalHealth = useMemo(
-    () => (attackingHealth?.current || 0) + (defendingHealth?.current || 0),
+    () => (attackingHealth?.current || 0n) + (defendingHealth?.current || 0n),
     [attackingHealth, defendingHealth],
   );
 
   const attackingHealthPercentage = useMemo(
-    () => (((attackingHealth?.current || 0) / totalHealth) * 100).toFixed(2),
+    () =>
+      totalHealth !== 0n ? ((Number(attackingHealth?.current || 0n) / Number(totalHealth)) * 100).toFixed(2) : "0",
     [attackingHealth, totalHealth],
   );
   const defendingHealthPercentage = useMemo(
-    () => (((defendingHealth?.current || 0) / totalHealth) * 100).toFixed(2),
+    () =>
+      totalHealth !== 0n ? ((Number(defendingHealth?.current || 0n) / Number(totalHealth)) * 100).toFixed(2) : "0",
     [defendingHealth, totalHealth],
   );
 
@@ -69,27 +81,8 @@ export const BattleProgressBar = ({
   }, [attackingHealthPercentage, defendingHealthPercentage]);
 
   const battleStatus = useMemo(() => {
-    if (
-      ownArmySide === "" ||
-      time ||
-      defenderArmies.length === 0 ||
-      defenderArmies[0] === undefined ||
-      attackerArmies.length === 0 ||
-      attackerArmies[0] === undefined ||
-      BigInt(defenderArmies[0].battle_id) === 0n
-    )
-      return;
-    return ownArmySide === "Attack"
-      ? Number(attackingHealthPercentage) === 100
-        ? "You Won"
-        : Number(attackingHealthPercentage) === 0
-          ? "You Lost"
-          : undefined
-      : Number(defendingHealthPercentage) === 100
-        ? "You Won"
-        : Number(defendingHealthPercentage) === 0
-          ? "You Lost"
-          : undefined;
+    if (time) return;
+    if (ownArmySide === "") return "Battle ended";
   }, [time]);
 
   return (
@@ -102,7 +95,7 @@ export const BattleProgressBar = ({
         visible: { y: "0%", transition: { duration: 0.5 } },
       }}
     >
-      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl text-gold backdrop-blur-lg bg-[#1b1a1a] px-8 py-2  ornate-borders-top-y">
+      <div className="mx-auto w-2/3 grid grid-cols-3 text-2xl text-gold backdrop-blur-lg bg-[#1b1a1a] px-8 py-2  -top-y">
         <div className="text-left">
           <p>{attackerName}</p>
         </div>
@@ -113,10 +106,9 @@ export const BattleProgressBar = ({
           <p>{defenderName}</p>
         </div>
       </div>
-      <div
-        className="relative h-8  mx-auto w-2/3 ornate-borders-y animate-slowPulse"
-        style={{ background: gradient }}
-      ></div>
+      {!isNaN(Number(attackingHealthPercentage)) && !isNaN(Number(defendingHealthPercentage)) && (
+        <div className="relative h-8  mx-auto w-2/3 -y animate-slowPulse" style={{ background: gradient }}></div>
+      )}
     </motion.div>
   );
 };

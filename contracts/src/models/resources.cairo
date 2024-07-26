@@ -326,7 +326,7 @@ mod tests_resource_traits {
     use eternum::systems::config::contracts::{
         IProductionConfigDispatcher, IProductionConfigDispatcherTrait
     };
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
     use super::{Production, ProductionOutputImpl, Resource, ResourceImpl};
     use traits::Into;
     use traits::TryInto;
@@ -473,7 +473,7 @@ mod owned_resources_tracker_tests {
     use eternum::constants::ResourceTypes;
     use eternum::models::resources::{Resource, ResourceImpl};
     use eternum::models::structure::{Structure, StructureCategory};
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
     use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
 
 

@@ -6,27 +6,14 @@ import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
-import { getArmyByEntityId, isArmyAlive } from "./useArmies";
 
 export function useResources() {
   const {
     account: { account },
     setup: {
-      components: {
-        Resource,
-        Position,
-        ResourceCost,
-        Realm,
-        EntityOwner,
-        ArrivalTime,
-        OwnedResourcesTracker,
-        Owner,
-        Battle,
-        Army,
-      },
+      components: { Resource, Position, ResourceCost, Realm, EntityOwner, ArrivalTime, OwnedResourcesTracker, Owner },
     },
   } = useDojo();
-  const { getArmy } = getArmyByEntityId();
 
   const getResourcesFromBalance = (entityId: bigint): Resource[] => {
     // todo: switch back to items_count when working
@@ -120,8 +107,6 @@ export function useResources() {
         const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || BigInt(0)]));
         const arrivalTime = getComponentValue(ArrivalTime, id);
         const position = getComponentValue(Position, id);
-        const army = getArmy(position?.entity_id || BigInt(0));
-        if (army && !isArmyAlive(army, Battle, Army, Position, Realm)) return undefined;
         return {
           id,
           entityId: position?.entity_id || BigInt(""),
@@ -279,7 +264,9 @@ export function useOwnedEntitiesOnPosition() {
 
   const getOwnedEntityOnPosition = (entityId: bigint) => {
     const position = getComponentValue(Position, getEntityIdFromKeys([entityId]));
-    const depositEntityIds = position ? getOwnedEntitiesOnPosition(BigInt(account.address), position) : [];
+    const depositEntityIds = position
+      ? getOwnedEntitiesOnPosition(BigInt(account.address), { x: Number(position.x), y: Number(position.y) })
+      : [];
     return depositEntityIds[0];
   };
 

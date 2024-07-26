@@ -39,11 +39,11 @@ export const EternumGlobalConfig = {
     wheatBurn: 100,
     fishBurn: 100,
     reward: 750,
-    shardsMinesFailProbability: 99000,
+    shardsMinesFailProbability: 1000,
   },
   tick: {
     defaultTickIntervalInSeconds: 1,
-    armiesTickIntervalInSeconds: 7200, // 2hrs
+    armiesTickIntervalInSeconds: 30, // 2hrs
   },
   carryCapacity: {
     donkey: 100,
@@ -74,7 +74,7 @@ export const EternumGlobalConfig = {
     // they lose a small precentage (it goes closer to 0% health loss) while the
     // weak army's loss is closer to 12.5%
     pillageHealthDivisor: 8,
-    healthPrecision: 1000000n,
+    healthPrecision: 1000n,
   },
   mercenaries: {
     troops: {

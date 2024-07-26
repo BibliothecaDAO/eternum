@@ -1,19 +1,24 @@
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useArmiesByEntityOwner, usePositionArmies } from "@/hooks/helpers/useArmies";
-import { getBattleByPosition } from "@/hooks/helpers/useBattles";
+import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
+import { PlayerStructure } from "@/hooks/helpers/useEntities";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
-import { Position } from "@bibliothecadao/eternum";
+import { BuildingType, EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { EntityList } from "../list/EntityList";
-import { DepositResources } from "../resources/DepositResources";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
-import { ArmyViewCard } from "./ArmyViewCard";
 
-export const EntityArmyList = ({ structure }: any) => {
-  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: structure?.entity_id });
+export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
+  const existingBuildings = useUIStore((state) => state.existingBuildings);
+
+  const { entityArmies: structureArmies } = useArmiesByEntityOwner({
+    entity_owner_entity_id: structure?.entity_id || 0n,
+  });
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
@@ -26,9 +31,30 @@ export const EntityArmyList = ({ structure }: any) => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const canCreateProtector = useMemo(() => !entityArmies.find((army) => army.protectee_id), [entityArmies]);
+  const maxAmountOfArmies = useMemo(() => {
+    return (
+      3 +
+      existingBuildings.filter(
+        (building) =>
+          building.type === BuildingType.ArcheryRange ||
+          building.type === BuildingType.Barracks ||
+          building.type === BuildingType.Stable,
+      ).length *
+        EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding
+    );
+  }, [existingBuildings]);
+
+  const canCreateProtector = useMemo(
+    () => !structureArmies.find((army) => army.protectee?.protectee_id),
+    [structureArmies],
+  );
+
+  const numberAttackingArmies = useMemo(() => {
+    return structureArmies.filter((army) => !army.protectee).length;
+  }, [structureArmies]);
 
   const handleCreateArmy = (is_defensive_army: boolean) => {
+    if (!structure.entity_id) throw new Error("Structure's entity id is undefined");
     setIsLoading(true);
     create_army({
       signer: account,
@@ -40,19 +66,22 @@ export const EntityArmyList = ({ structure }: any) => {
   return (
     <>
       <EntityList
-        list={entityArmies}
+        list={structureArmies}
         headerPanel={
           <>
             {" "}
-            <p className="px-3 py-2 bg-blueish/20 clip-angled-sm font-bold">
+            <div className="px-3 py-2 bg-blueish/20 clip-angled-sm font-bold">
               First you must create an Army then you can enlist troops to it. You can only have one defensive army.
-            </p>
+            </div>
+            <div className={`mt-2 font-bold ${numberAttackingArmies < maxAmountOfArmies ? "text-green" : "text-red"}`}>
+              {numberAttackingArmies} / {maxAmountOfArmies} armies
+            </div>
             <div className="w-full flex justify-between my-4">
               <Button
                 isLoading={isLoading}
                 variant="primary"
                 onClick={() => handleCreateArmy(false)}
-                disabled={isLoading}
+                disabled={isLoading || structureArmies.length >= maxAmountOfArmies}
                 className={clsx({
                   "animate-pulse": selectedQuest?.name === QuestName.CreateArmy && !selectedQuest.steps[0].completed,
                 })}
@@ -72,16 +101,8 @@ export const EntityArmyList = ({ structure }: any) => {
           </>
         }
         title="armies"
-        panel={({ entity }) => (
-          <React.Fragment key={entity.entity_id}>
-            {/* <StaminaResource entityId={entity.entity_id} className="mb-3" /> */}
-            <ArmyManagementCard owner_entity={structure?.entity_id} entity={entity} />
-            <InventoryResources entityId={entity.entity_id} />
-            <DepositResources
-              entityId={entity.entity_id}
-              battleInProgress={getBattleByPosition({ x: entity.x, y: entity.y }) !== undefined}
-            />
-          </React.Fragment>
+        panel={({ entity, setSelectedEntity }) => (
+          <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
         )}
         questing={
           selectedQuest?.name === QuestName.CreateArmy &&
@@ -93,23 +114,36 @@ export const EntityArmyList = ({ structure }: any) => {
   );
 };
 
-export const PositionArmyList = ({ position }: { position: Position }) => {
-  const { allArmies, userArmies } = usePositionArmies({ position });
+const ArmyItem = ({
+  entity,
+  setSelectedEntity,
+  structure,
+}: {
+  entity: ArmyInfo | undefined;
+  setSelectedEntity: ((entity: ArmyInfo | null) => void) | undefined;
+  structure: PlayerStructure;
+}) => {
+  const dojo = useDojo();
+
+  const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
+
+  const battleManager = useMemo(() => new BattleManager(entity?.battle_id || 0n, dojo), [entity?.battle_id, dojo]);
+
+  const updatedArmy = useMemo(() => {
+    if (!currentTimestamp) throw new Error("Current timestamp is undefined");
+    const updatedBattle = battleManager.getUpdatedBattle(currentTimestamp!);
+    const updatedArmy = battleManager.getUpdatedArmy(entity, updatedBattle);
+    return updatedArmy;
+  }, [currentTimestamp]);
 
   return (
-    <div>
-      <h4 className="uppercase">Your Armies</h4>
-      <div className="grid grid-cols-3">
-        {userArmies.map((entity, index) => (
-          <ArmyViewCard key={index} army={entity} />
-        ))}
-      </div>
-      <h4 className="uppercase">All Armies</h4>
-      <div className="grid grid-cols-3">
-        {allArmies.map((entity, index) => (
-          <ArmyViewCard key={index} army={entity} />
-        ))}
-      </div>
-    </div>
+    <React.Fragment key={entity?.entity_id || 0}>
+      <ArmyManagementCard
+        owner_entity={structure?.entity_id || 0n}
+        army={updatedArmy}
+        setSelectedEntity={setSelectedEntity}
+      />
+      <InventoryResources entityIds={[entity?.entity_id || 0n]} />
+    </React.Fragment>
   );
 };

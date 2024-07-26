@@ -1,20 +1,36 @@
-import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { BuildQuantityType, ProductionType, ResourceType } from "./types";
-import { BuildingType, RESOURCE_INPUTS_SCALED, STOREHOUSE_CAPACITY } from "@bibliothecadao/eternum";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  EternumGlobalConfig,
+  RESOURCE_INPUTS_SCALED,
+  STOREHOUSE_CAPACITY,
+} from "@bibliothecadao/eternum";
+import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
+import { ClientComponents } from "../createClientComponents";
 
 export class ProductionManager {
-  productionModel: Component<ProductionType> | OverridableComponent<ProductionType>;
-  resourceModel: Component<ResourceType> | OverridableComponent<ResourceType>;
-  buildingQuantity: Component<BuildQuantityType> | OverridableComponent<BuildQuantityType>;
+  productionModel:
+    | Component<ClientComponents["Production"]["schema"]>
+    | OverridableComponent<ClientComponents["Production"]["schema"]>;
+  resourceModel:
+    | Component<ClientComponents["Resource"]["schema"]>
+    | OverridableComponent<ClientComponents["Resource"]["schema"]>;
+  buildingQuantity:
+    | Component<ClientComponents["BuildingQuantityv2"]["schema"]>
+    | OverridableComponent<ClientComponents["BuildingQuantityv2"]["schema"]>;
   entityId: bigint;
   resourceId: bigint;
 
   constructor(
-    productionModel: Component<ProductionType> | OverridableComponent<ProductionType>,
-    resourceModel: Component<ResourceType> | OverridableComponent<ResourceType>,
-    buildingQuantity: Component<BuildQuantityType> | OverridableComponent<BuildQuantityType>,
+    productionModel:
+      | Component<ClientComponents["Production"]["schema"]>
+      | OverridableComponent<ClientComponents["Production"]["schema"]>,
+    resourceModel:
+      | Component<ClientComponents["Resource"]["schema"]>
+      | OverridableComponent<ClientComponents["Resource"]["schema"]>,
+    buildingQuantity:
+      | Component<ClientComponents["BuildingQuantityv2"]["schema"]>
+      | OverridableComponent<ClientComponents["BuildingQuantityv2"]["schema"]>,
     entityId: bigint,
     resourceId: bigint,
   ) {

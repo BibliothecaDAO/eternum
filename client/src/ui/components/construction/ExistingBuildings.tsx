@@ -40,7 +40,6 @@ export const ExistingBuildings = () => {
   const existingBuildings = useUIStore((state) => state.existingBuildings);
   const setExistingBuildings = useUIStore((state) => state.setExistingBuildings);
   const { hexType } = useHexPosition();
-  const sLightRef = useRef<any>();
 
   const {
     setup: {
