@@ -1,6 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import Button from "@/ui/elements/Button";
 import { BattleSide } from "@bibliothecadao/eternum";
@@ -38,6 +38,8 @@ export const BattleSideView = ({
 
   const [loading, setLoading] = useState<boolean>(false);
 
+  const ownArmy = useArmyByArmyEntityId(ownArmyEntityId || 0n);
+
   const joinBattle = async (side: BattleSide, armyId: bigint) => {
     if (ownArmyEntityId) {
       setLoading(true);
@@ -64,7 +66,7 @@ export const BattleSideView = ({
           show={ownSideArmies.length > 0}
         />
 
-        {Boolean(battleId) && Boolean(ownArmyEntityId) && isActive && (
+        {Boolean(battleId) && Boolean(ownArmyEntityId) && isActive && ownArmy.battle_id === 0n && (
           <div className="flex flex-col w-full">
             <Button
               onClick={() => joinBattle(battleSide, ownArmyEntityId!)}

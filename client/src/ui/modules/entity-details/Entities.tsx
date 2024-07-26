@@ -19,13 +19,8 @@ export const Entities = ({
     position: { x: position.x, y: position.y },
   });
 
-  const userArmies = useMemo(
-    () => ownArmiesAtPosition.filter((army) => army.health.current > 0),
-    [ownArmiesAtPosition],
-  );
-
   const [ownArmySelected, setOwnArmySelected] = useState<{ id: bigint; position: Position } | undefined>({
-    id: userArmies?.[0]?.entity_id || 0n,
+    id: ownArmiesAtPosition?.[0]?.entity_id || 0n,
     position: {
       x: clickedHex?.contractPos.col || 0,
       y: clickedHex?.contractPos.row || 0,
@@ -34,16 +29,18 @@ export const Entities = ({
 
   const ownArmy = useMemo(() => {
     if (!ownArmySelected) return;
-    return userArmies.find((army) => army.entity_id === ownArmySelected.id);
-  }, [userArmies, ownArmySelected, clickedHex?.contractPos.col, clickedHex?.contractPos.row]);
+    return ownArmiesAtPosition.find((army) => army.entity_id === ownArmySelected.id);
+  }, [ownArmiesAtPosition, ownArmySelected, clickedHex?.contractPos.col, clickedHex?.contractPos.row]);
 
   return (
     <React.Fragment>
-      <SelectActiveArmy
-        selectedEntity={ownArmySelected}
-        setOwnArmySelected={setOwnArmySelected}
-        userAttackingArmies={userArmies}
-      />
+      {ownArmiesAtPosition.length > 0 && (
+        <SelectActiveArmy
+          selectedEntity={ownArmySelected}
+          setOwnArmySelected={setOwnArmySelected}
+          userAttackingArmies={ownArmiesAtPosition}
+        />
+      )}
       <StructureCard position={position} ownArmySelected={ownArmy} />
       <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmy} position={position} />
     </React.Fragment>

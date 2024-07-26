@@ -213,6 +213,8 @@ export class BattleManager {
   ): boolean {
     if (!selectedArmy) return false;
 
+    if (!structure) return false;
+
     if (this.battleIsRaidable) return this.battleIsRaidable;
 
     if (this.isBattleOngoing(currentTimestamp) && selectedArmy.battle_id !== this.battleId) {
@@ -223,6 +225,8 @@ export class BattleManager {
       this.battleIsRaidable = false;
       return false;
     }
+
+    if (structure.isMine) return false;
 
     this.battleIsRaidable = true;
     return true;
@@ -236,10 +240,12 @@ export class BattleManager {
     return false;
   }
 
-  public isLeavable(selectedArmy: ArmyInfo | undefined): boolean {
+  public isLeavable(currentTimestamp: number, selectedArmy: ArmyInfo | undefined): boolean {
     if (!this.isBattle()) return false;
 
     if (!selectedArmy) return false;
+
+    if (selectedArmy.protectee && this.isBattleOngoing(currentTimestamp)) return false;
 
     return true;
   }

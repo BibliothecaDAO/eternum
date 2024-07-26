@@ -26,6 +26,11 @@ export const EntityDetails = () => {
     inBattle: false,
   });
 
+  const userArmies = useMemo(
+    () => ownArmiesAtPosition.filter((army) => army.health.current > 0),
+    [ownArmiesAtPosition],
+  );
+
   const tabs = useMemo(
     () => [
       {
@@ -35,7 +40,7 @@ export const EntityDetails = () => {
             <div>Entities</div>
           </div>
         ),
-        component: <Entities position={hexPosition!} ownArmiesAtPosition={ownArmiesAtPosition} />,
+        component: <Entities position={hexPosition!} ownArmiesAtPosition={userArmies} />,
       },
       {
         key: "battles",
@@ -44,7 +49,7 @@ export const EntityDetails = () => {
             <div>Battles</div>
           </div>
         ),
-        component: <Battles position={hexPosition!} ownArmiesAtPosition={ownArmiesAtPosition} />,
+        component: <Battles position={hexPosition!} ownArmiesAtPosition={userArmies} />,
       },
     ],
     [clickedHex, ownArmiesAtPosition],

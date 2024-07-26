@@ -150,7 +150,10 @@ export const BattleActions = ({
 
   const isAttackable = useMemo(() => battleManager.isAttackable(defenderArmy), [battleManager, defenderArmy]);
 
-  const isLeavable = useMemo(() => battleManager.isLeavable(selectedArmy), [battleManager, selectedArmy]);
+  const isLeavable = useMemo(
+    () => battleManager.isLeavable(currentTimestamp!, selectedArmy),
+    [battleManager, selectedArmy],
+  );
 
   return (
     <div className="col-span-2 flex justify-center flex-wrap -bottom-y p-2 bg-[#1b1a1a] bg-map">
