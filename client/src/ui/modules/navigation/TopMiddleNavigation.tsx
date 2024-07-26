@@ -75,6 +75,7 @@ export const TopMiddleNavigation = () => {
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
       setLocation(`/hex?col=${structure!.position.x}&row=${structure!.position.y}`);
+      window.dispatchEvent(new Event("urlChanged"));
       setRealmEntityId(BigInt(entityId));
     }, 300);
   };

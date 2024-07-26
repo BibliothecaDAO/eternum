@@ -27,6 +27,14 @@ export default class GameRenderer {
 
   private locationManager!: LocationManager;
 
+  private setupURLChangeListener() {
+    window.addEventListener("urlChanged", this.handleURLChange);
+  }
+
+  private handleURLChange = () => {
+    this.moveCameraToURLLocation();
+  };
+
   // Store
   private state: ThreeStore;
   private unsubscribe: () => void;
@@ -118,6 +126,8 @@ export default class GameRenderer {
   }
 
   initScene() {
+    this.setupURLChangeListener();
+
     document.body.style.background = "black";
     document.body.appendChild(this.renderer.domElement);
 
@@ -190,9 +200,7 @@ export default class GameRenderer {
   private moveCameraToURLLocation() {
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
-    console.log("debug 1", col, row);
     if (col && row) {
-      console.log("debug 2");
       this.moveCameraToColRow(col, row, 0);
     }
   }

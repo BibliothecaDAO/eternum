@@ -5,19 +5,23 @@ export class LocationManager {
     this.urlParams = new URLSearchParams(window.location.search);
   }
 
-  public getCol(): number | null {
+  private updateUrlParams(): void {
     this.urlParams = new URLSearchParams(window.location.search);
+  }
+
+  public getCol(): number | null {
+    this.updateUrlParams();
     return Number(this.urlParams.get("col"));
   }
 
   public getRow(): number | null {
-    this.urlParams = new URLSearchParams(window.location.search);
+    this.updateUrlParams();
     return Number(this.urlParams.get("row"));
   }
 
   // check row and col exist
   public checkRowColExist(): boolean {
-    this.urlParams = new URLSearchParams(window.location.search);
+    this.updateUrlParams();
     return this.urlParams.has("row") && this.urlParams.has("col");
   }
 

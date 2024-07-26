@@ -394,6 +394,7 @@ export const NavigateToRealm = ({ text }: { text: string }) => {
               playerRealms()[0]?.position.y - FELT_CENTER
             }`,
           );
+          window.dispatchEvent(new Event("urlChanged"));
         }, 300);
       }}
     >
