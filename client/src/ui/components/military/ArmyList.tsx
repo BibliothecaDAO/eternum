@@ -12,7 +12,7 @@ import React, { useMemo, useState } from "react";
 import { EntityList } from "../list/EntityList";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
-	
+
 export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
   const existingBuildings = useUIStore((state) => state.existingBuildings);
 
@@ -73,9 +73,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
             <div className="px-3 py-2 bg-blueish/20 clip-angled-sm font-bold">
               First you must create an Army then you can enlist troops to it. You can only have one defensive army.
             </div>
-            <div
-              className={`mt-2 font-bold ${numberAttackingArmies < maxAmountOfArmies ? "text-green" : "text-red"}`}
-            >
+            <div className={`mt-2 font-bold ${numberAttackingArmies < maxAmountOfArmies ? "text-green" : "text-red"}`}>
               {numberAttackingArmies} / {maxAmountOfArmies} armies
             </div>
             <div className="w-full flex justify-between my-4">
