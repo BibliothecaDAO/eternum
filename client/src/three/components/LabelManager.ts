@@ -32,6 +32,7 @@ export class LabelManager {
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
     const label = new THREE.Points(geometry, this.labelMaterial);
+    label.renderOrder = 2;
     label.userData.isLabel = true;
 
     // Disable raycasting for this label

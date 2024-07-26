@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { Raycaster } from "three";
 import HexagonMap from "../scenes/Worldmap";
 import { ThreeStore } from "@/hooks/store/useThreeStore";
+import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { HEX_SIZE } from "../GameRenderer";
 
 export class ContextMenuManager {
   private contextMenu: HTMLElement | null = null;
@@ -22,7 +24,6 @@ export class ContextMenuManager {
     private camera: THREE.PerspectiveCamera,
     private mouse: THREE.Vector2,
     private loadedChunks: Map<string, THREE.Group>,
-    private hexSize: number,
     private hexGrid: HexagonMap,
     private state: ThreeStore,
   ) {
@@ -137,7 +138,7 @@ export class ContextMenuManager {
   }
 
   private centerCameraOnHex(hexCoords: { row: number; col: number }) {
-    const worldPosition = this.hexGrid.getWorldPositionForHex(hexCoords);
+    const worldPosition = getWorldPositionForHex(hexCoords);
 
     // Set the camera's target to the hexagon's position
     this.camera.position.set(
@@ -192,7 +193,7 @@ export class ContextMenuManager {
   }
 
   private createHaloMesh(): THREE.Mesh {
-    const haloGeometry = new THREE.CylinderGeometry(this.hexSize * 1.1, this.hexSize * 1.1, 0.1, 6);
+    const haloGeometry = new THREE.CylinderGeometry(HEX_SIZE * 1.1, HEX_SIZE * 1.1, 0.1, 6);
     const haloMaterial = new THREE.MeshBasicMaterial({
       color: 0xffff00,
       transparent: true,

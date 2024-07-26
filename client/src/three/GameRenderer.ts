@@ -14,9 +14,11 @@ import { MouseHandler } from "./MouseHandler";
 import { SceneManager } from "./SceneManager";
 import HexceptionScene from "./scenes/Hexception";
 import WorldmapScene from "./scenes/Worldmap";
+import { GUIManager } from "./helpers/GUIManager";
 
-const horizontalSpacing = Math.sqrt(3);
-const verticalSpacing = 3 / 2;
+export const HEX_SIZE = 1;
+export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
+export const HEX_VERTICAL_SPACING = (HEX_SIZE * 3) / 2;
 
 export default class GameRenderer {
   private renderer!: THREE.WebGLRenderer;
@@ -63,8 +65,6 @@ export default class GameRenderer {
 
   private dojo: SetupResult;
 
-  private gui: GUI = new GUI();
-
   private travelPaths: TravelPaths | undefined;
 
   private mouseHandler!: MouseHandler;
@@ -73,6 +73,7 @@ export default class GameRenderer {
   constructor(dojoContext: SetupResult, initialState: ThreeStore) {
     this.renderer = new THREE.WebGLRenderer({
       powerPreference: "high-performance",
+      antialias: true,
     });
     this.renderer.setPixelRatio(1);
     this.renderer.shadowMap.enabled = false;
@@ -100,13 +101,13 @@ export default class GameRenderer {
     this.camera.lookAt(0, 0, 0);
     this.camera.up.set(0, 1, 0);
 
-    const buttonsFolder = this.gui.addFolder("Buttons");
+    const buttonsFolder = GUIManager.addFolder("Buttons");
     buttonsFolder.add(this, "goToRandomColRow");
     buttonsFolder.add(this, "moveCameraToURLLocation");
     buttonsFolder.add(this, "switchScene");
 
     // Add new button for moving camera to specific col and row
-    const moveCameraFolder = this.gui.addFolder("Move Camera");
+    const moveCameraFolder = GUIManager.addFolder("Move Camera");
     const moveCameraParams = { col: 0, row: 0 };
     moveCameraFolder.add(moveCameraParams, "col").name("Column");
     moveCameraFolder.add(moveCameraParams, "row").name("Row");
@@ -161,7 +162,7 @@ export default class GameRenderer {
     );
 
     // Add grid
-    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.state, this.gui);
+    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.state);
     this.worldmapScene.updateVisibleChunks();
 
     this.worldmapScene.createGroundMesh();
@@ -208,8 +209,8 @@ export default class GameRenderer {
   private moveCameraToColRow(col: number, row: number, duration: number = 2) {
     const colOffset = col;
     const rowOffset = row;
-    const newTargetX = colOffset * horizontalSpacing + (rowOffset % 2) * (horizontalSpacing / 2);
-    const newTargetZ = -rowOffset * verticalSpacing;
+    const newTargetX = colOffset * HEX_HORIZONTAL_SPACING + (rowOffset % 2) * (HEX_HORIZONTAL_SPACING / 2);
+    const newTargetZ = -rowOffset * HEX_VERTICAL_SPACING;
     const newTargetY = 0;
 
     const newTarget = new THREE.Vector3(newTargetX, newTargetY, newTargetZ);
@@ -262,8 +263,8 @@ export default class GameRenderer {
   getLocationCoordinates() {
     const col = this.locationManager.getCol()!;
     const row = this.locationManager.getRow()!;
-    const x = col * horizontalSpacing + (row % 2) * (horizontalSpacing / 2);
-    const z = -row * verticalSpacing;
+    const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
+    const z = -row * HEX_VERTICAL_SPACING;
     return { col, row, x, z };
   }
 
