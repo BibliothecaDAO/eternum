@@ -471,7 +471,7 @@ export const useOwnArmiesByPosition = ({ position, inBattle }: { position: Posit
   }
 };
 
-export const useEnnemyArmiesByPosition = ({ position }: { position: Position }) => {
+export const useEnemyArmiesByPosition = ({ position }: { position: Position }) => {
   {
     const {
       account: { account },

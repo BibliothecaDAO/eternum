@@ -244,8 +244,8 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.battle_claim_and_leave(props);
   };
 
-  const battle_leave_and_raid = async (props: SystemProps.BattleLeaveAndRaidProps) => {
-    await provider.battle_leave_and_raid(props);
+  const battle_leave_and_pillage = async (props: SystemProps.BattleLeaveAndRaidProps) => {
+    await provider.battle_leave_and_pillage(props);
   };
 
   const battle_claim = async (props: SystemProps.BattleClaimProps) => {
@@ -318,7 +318,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     battle_claim,
     battle_pillage,
     battle_leave_and_claim,
-    battle_leave_and_raid,
+    battle_leave_and_pillage,
   };
 
   // TODO: Fix Type

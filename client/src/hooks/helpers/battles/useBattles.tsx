@@ -138,7 +138,7 @@ export const getBattleInfoByOwnArmyEntityId = (ownArmyEntityId: bigint): ExtraBa
     .values()
     .next().value;
 
-  const opponentArmy = getComponentValue(Army, opponentArmyEntityId!);
+  const opponentArmy = getComponentValue(Army, opponentArmyEntityId || ("" as Entity));
   if (!opponentArmy) return;
   const opponentArmyHealth = getComponentValue(Health, opponentArmyEntityId!);
   if (!opponentArmyHealth) return;

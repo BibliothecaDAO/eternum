@@ -40,7 +40,7 @@ export const StructureCard = ({
               <MergeTroopsPanel
                 giverArmy={ownArmySelected}
                 setShowMergeTroopsPopup={setShowMergeTroopsPopup}
-                structureEntityId={BigInt(structure!.entity_id)}
+                structureEntityId={structure!.entity_id}
               />
             )}
           </div>

@@ -1,4 +1,4 @@
-import { ArmyInfo, useEnnemyArmiesByPosition } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, useEnemyArmiesByPosition } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
 import { StructureCard } from "@/ui/components/hyperstructures/StructureCard";
 import { Position } from "@bibliothecadao/eternum";
@@ -15,7 +15,7 @@ export const Entities = ({
 }) => {
   const clickedHex = useUIStore((state) => state.clickedHex);
 
-  const ennemyArmies = useEnnemyArmiesByPosition({
+  const ennemyArmies = useEnemyArmiesByPosition({
     position: { x: position.x, y: position.y },
   });
 

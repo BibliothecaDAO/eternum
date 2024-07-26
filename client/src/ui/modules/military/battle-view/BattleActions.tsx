@@ -73,7 +73,7 @@ export const BattleActions = ({
 
   const handleRaid = async () => {
     setLoading(Loading.Raid);
-    await battleManager.raidStructure(selectedArmy!, structure!.entity_id);
+    await battleManager.pillageStructure(selectedArmy!, structure!.entity_id);
     setLoading(Loading.None);
     setBattleView(null);
     setView(View.None);

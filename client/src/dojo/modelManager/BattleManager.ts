@@ -183,8 +183,8 @@ export class BattleManager {
       return true;
     }
 
-    const udpatedBattle = this.getUpdatedBattle(currentTimestamp);
-    if (udpatedBattle && udpatedBattle.defence_army_health.current > 0n) {
+    const updatedBattle = this.getUpdatedBattle(currentTimestamp);
+    if (updatedBattle && updatedBattle.defence_army_health.current > 0n) {
       this.battleIsClaimable = false;
       return false;
     }
@@ -253,9 +253,9 @@ export class BattleManager {
     );
   }
 
-  public async raidStructure(raider: ArmyInfo, structureEntityId: bigint) {
+  public async pillageStructure(raider: ArmyInfo, structureEntityId: bigint) {
     if (this.battleId !== 0n && this.battleId === raider.battle_id) {
-      await this.dojo.setup.systemCalls.battle_leave_and_raid({
+      await this.dojo.setup.systemCalls.battle_leave_and_pillage({
         signer: this.dojo.account.account,
         army_id: raider.entity_id,
         battle_id: this.battleId,
