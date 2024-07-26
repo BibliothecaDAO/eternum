@@ -78,10 +78,10 @@ export const formatArmies = (
       let healthClone = structuredClone(health);
       if (healthClone) {
         healthClone.current =
-          BigInt(healthClone.current) /
+          healthClone.current /
           (BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision);
         healthClone.lifetime =
-          BigInt(healthClone.lifetime) /
+          healthClone.lifetime /
           (BigInt(EternumGlobalConfig.resources.resourcePrecision) * EternumGlobalConfig.troop.healthPrecision);
       } else {
         healthClone = {

@@ -231,8 +231,7 @@ const ArmySelector = ({
           <SelectTrigger className="text-gold h-10">
             <SelectValue
               placeholder={
-                userArmiesInBattle.find((army) => localSelectedUnit === BigInt(army?.entity_id || 0))?.name ||
-                "Select army"
+                userArmiesInBattle.find((army) => localSelectedUnit === army?.entity_id || 0n)?.name || "Select army"
               }
             />
           </SelectTrigger>

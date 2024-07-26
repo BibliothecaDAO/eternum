@@ -29,7 +29,6 @@ export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
           list={playerStructures()}
           title="armies"
           panel={({ entity }) => <ArmyPanel structure={entity} />}
-          className=""
         />
       )}
     </div>
