@@ -65,6 +65,7 @@ export default class GameRenderer {
   constructor(dojoContext: SetupResult, initialState: ThreeStore) {
     this.renderer = new THREE.WebGLRenderer({
       powerPreference: "high-performance",
+      antialias: true,
     });
     this.renderer.setPixelRatio(1);
     this.renderer.shadowMap.enabled = false;
