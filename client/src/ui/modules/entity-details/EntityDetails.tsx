@@ -1,6 +1,8 @@
 import { ArmyInfo, useOwnArmiesByPosition } from "@/hooks/helpers/useArmies";
 import useUIStore from "@/hooks/store/useUIStore";
+import { HintSection } from "@/ui/components/hints/HintModal";
 import { ArmyChip } from "@/ui/components/military/ArmyChip";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
 import { Position } from "@bibliothecadao/eternum";
@@ -51,7 +53,7 @@ export const EntityDetails = () => {
   return (
     hexPosition && (
       <div className="px-2 h-full">
-        <CoordinatesAndBiome position={hexPosition} biome={biome} />
+        <CoordinatesAndBiome position={hexPosition} />
 
         <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
           <Tabs.List>
@@ -115,14 +117,14 @@ export const SelectActiveArmy = ({
   );
 };
 
-const CoordinatesAndBiome = ({ position, biome }: { position: Position; biome: string }) => {
+const CoordinatesAndBiome = ({ position }: { position: Position }) => {
   return (
     <div className="p-2 flex justify-between text-xs">
-      <div className="font-bold">Biome: {biome.charAt(0).toUpperCase() + biome.slice(1)}</div>
       <div className="font-bold flex space-x-2 justify-between self-center ">
         <div>{`x: ${position.x?.toLocaleString()}`}</div>
         <div>{`y: ${position.y?.toLocaleString()}`}</div>
       </div>
+      <HintModalButton className="top-1 right-1" section={HintSection.Combat} />
     </div>
   );
 };

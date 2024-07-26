@@ -3,7 +3,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { StructureCard } from "@/ui/components/hyperstructures/StructureCard";
 import { Position } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
-import { EnemyArmies } from "./enemyArmies";
+import { EnemyArmies } from "./EnemyArmies";
 import { SelectActiveArmy } from "./EntityDetails";
 
 export const Entities = ({

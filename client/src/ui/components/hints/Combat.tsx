@@ -1,7 +1,7 @@
 import { Headline } from "@/ui/elements/Headline";
-import { tableOfContents } from "./utils";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { EternumGlobalConfig, ResourcesIds, TROOPS_STAMINAS } from "@bibliothecadao/eternum";
+import { tableOfContents } from "./utils";
 
 export const Combat = () => {
   const chapter = [
@@ -12,8 +12,7 @@ export const Combat = () => {
     },
     {
       title: "Exploration",
-      content:
-        "An offensive army is crucial for exploration, engaging foes, and discovering treasures in Eternum. Your army's stamina fuels these expeditions.",
+      content: `An offensive army is crucial for exploration, engaging foes, and discovering treasures in Eternum. Your army's stamina fuels these expeditions. You can only have a certain number of attacking armies per Realm. You start at ${EternumGlobalConfig.troop.armyFreePerStructure} and get ${EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding} per military building.`,
     },
     {
       title: "Battles",
@@ -67,7 +66,6 @@ const Battles = () => {
       <div className="flex flex-row items-center gap-2">
         <img className="w-20" src="/images/icons/raid.png" alt="coin" />
         <p>
-          {/* <p>{EternumGlobalConfig.troop.pillageHealthDivisor}</p> */}
           Pillaging enemy structures becomes easier as their defensive forces weaken. Successful raids yield a portion
           of the structure's resources.
         </p>
