@@ -34,7 +34,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
     account: { account },
     network: { provider },
     setup: {
-      systemCalls: { army_buy_troops },
+      systemCalls: { army_buy_troops, delete_army },
       components: { Position },
     },
   } = useDojo();
@@ -86,11 +86,10 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
   const handleDeleteArmy = async () => {
     setIsLoading(true);
     try {
-      //   await delete_army({
-      //     signer: account,
-      //     army_id: army?.entity_id || 0n,
-      //   });
-      console.log("delete army here");
+      await delete_army({
+        signer: account,
+        army_id: army?.entity_id || 0n,
+      });
       setSelectedEntity && setSelectedEntity(null);
     } catch (e) {
       console.error(e);

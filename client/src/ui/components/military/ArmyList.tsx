@@ -7,6 +7,7 @@ import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import Button from "@/ui/elements/Button";
+import { BuildingType, EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { EntityList } from "../list/EntityList";
@@ -32,18 +33,16 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const [isLoading, setIsLoading] = useState(false);
 
   const maxAmountOfArmies = useMemo(() => {
-    // console.log(EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding);
-    return 3;
-    // return (
-    //   3 +
-    //   existingBuildings.filter(
-    //     (building) =>
-    //       building.type === BuildingType.ArcheryRange ||
-    //       building.type === BuildingType.Barracks ||
-    //       building.type === BuildingType.Stable,
-    //   ).length *
-    //     EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding
-    // );
+    return (
+      3 +
+      existingBuildings.filter(
+        (building) =>
+          building.type === BuildingType.ArcheryRange ||
+          building.type === BuildingType.Barracks ||
+          building.type === BuildingType.Stable,
+      ).length *
+        EternumGlobalConfig.troop.armyExtraPerMilitaryBuilding
+    );
   }, [existingBuildings]);
 
   const canCreateProtector = useMemo(
@@ -76,7 +75,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
               First you must create an Army then you can enlist troops to it. You can only have one defensive army.
             </div>
             <div className={`mt-2 font-bold ${numberAttackingArmies < maxAmountOfArmies ? "text-green" : "text-red"}`}>
-              {numberAttackingArmies} / {maxAmountOfArmies} armies
+              {numberAttackingArmies} / {maxAmountOfArmies} attacking armies
             </div>
             <div className="w-full flex justify-between my-4">
               <Button
