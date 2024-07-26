@@ -20,6 +20,7 @@ import { SystemManager } from "../systems/SystemManager";
 import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { InteractiveHexManager } from "../components/InteractiveHexManager";
 import { HighlightHexManager } from "../components/HighlightHexManager";
+import { GUIManager } from "../helpers/GUIManager";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -82,7 +83,6 @@ export default class WorldmapScene {
     private controls: MapControls,
     private mouse: THREE.Vector2,
     private state: ThreeStore,
-    private gui: GUI,
   ) {
     this.scene = new THREE.Scene();
 
@@ -102,13 +102,14 @@ export default class WorldmapScene {
     );
 
     this.scene.background = new THREE.Color(0x8790a1);
-    this.gui.addColor(this.scene, "background");
+    GUIManager.addColor(this.scene, "background");
 
     const hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
-    const hemisphereLightFolder = this.gui.addFolder("Hemisphere Light");
+    const hemisphereLightFolder = GUIManager.addFolder("Hemisphere Light");
     hemisphereLightFolder.addColor(hemisphereLight, "color");
     hemisphereLightFolder.addColor(hemisphereLight, "groundColor");
     hemisphereLightFolder.add(hemisphereLight, "intensity", 0, 3, 0.1);
+    hemisphereLightFolder.close();
     this.scene.add(hemisphereLight);
 
     this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 3);
@@ -123,14 +124,15 @@ export default class WorldmapScene {
     this.mainDirectionalLight.shadow.camera.near = 8;
     this.mainDirectionalLight.position.set(0, 9, 0);
     this.mainDirectionalLight.target.position.set(0, 0, 5.2);
-    const shadowFolder = this.gui.addFolder("Shadow");
+    const shadowFolder = GUIManager.addFolder("Shadow");
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "left", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "right", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "top", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
-    const directionalLightFolder = this.gui.addFolder("Directional Light");
+    shadowFolder.close();
+    const directionalLightFolder = GUIManager.addFolder("Directional Light");
     directionalLightFolder.addColor(this.mainDirectionalLight, "color");
     directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.position, "y", -20, 20, 0.1);
@@ -139,6 +141,7 @@ export default class WorldmapScene {
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
+    directionalLightFolder.close();
     this.scene.add(this.mainDirectionalLight);
     this.scene.add(this.mainDirectionalLight.target);
 
