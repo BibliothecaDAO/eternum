@@ -1,4 +1,5 @@
-import { ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { EternumGlobalConfig, ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -78,11 +79,24 @@ export const useStamina = () => {
     });
   };
 
+  const useArmiesCanMoveCount = (entityArmies: any) => {
+    if (!entityArmies) return 0;
+
+    return entityArmies.filter((entity: any) => {
+      const stamina = getStamina({
+        travelingEntityId: BigInt(entity.entity_id),
+        currentArmiesTick,
+      });
+      return (stamina?.amount || 0) >= EternumGlobalConfig.stamina.travelCost;
+    }).length;
+  };
+
   return {
     optimisticStaminaUpdate,
     useStaminaByEntityId,
     getStamina,
     getMaxStaminaByEntityId,
+    useArmiesCanMoveCount,
   };
 };
 

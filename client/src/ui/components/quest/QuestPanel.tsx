@@ -1,18 +1,22 @@
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { QuestInfo } from "./QuestInfo";
 import { QuestList } from "./QuestList";
+import { useQuests } from "@/hooks/helpers/useQuests";
+import { useMemo } from "react";
 
 export const QuestPanel = ({ entityId }: { entityId: bigint | undefined }) => {
-  const { quests, selectedQuest } = useQuestStore((state) => ({
-    quests: state.quests,
+  const { selectedQuest } = useQuestStore((state) => ({
     selectedQuest: state.selectedQuest,
   }));
 
+  const { quests } = useQuests();
+  const updatedSelectedQuest = quests.find((quest) => quest.id === selectedQuest?.id);
+
   return selectedQuest ? (
     <div className="p-3 flex flex-col gap-2">
-      <QuestInfo quest={selectedQuest} entityId={entityId || BigInt(0)} />
+      <QuestInfo quest={updatedSelectedQuest!} entityId={entityId || BigInt(0)} />
     </div>
   ) : (
-    <QuestList quests={quests!} entityId={entityId} />
+    <QuestList quests={quests || []} entityId={entityId} />
   );
 };

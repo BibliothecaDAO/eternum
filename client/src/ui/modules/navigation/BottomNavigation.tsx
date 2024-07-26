@@ -1,5 +1,5 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import CircleButton from "@/ui/elements/CircleButton";
@@ -11,6 +11,8 @@ import { useMemo } from "react";
 import { useLocation } from "wouter";
 import { guilds, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
+import { QuestStatus, useUnclaimedQuestsCount, useQuests, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 export enum MenuEnum {
   realm = "realm",
@@ -27,22 +29,23 @@ export enum MenuEnum {
 }
 
 export const BottomNavigation = () => {
-  const [location, setLocation] = useLocation();
+  const [location, _] = useLocation();
 
   const { realmEntityId } = useRealmStore();
+  const { quests } = useQuests();
+  const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
+  const { questClaimStatus } = useQuestClaimStatus();
+
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const isWorldView = useMemo(() => location === "/map", [location]);
-
-  const quests = useQuestStore((state) => state.quests);
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
-  const claimableQuestsLength = useQuestStore((state) => state.claimableQuestsLength);
 
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
 
-  const questToClaim = quests?.find((quest) => quest.completed && !quest.claimed);
+  const questToClaim = quests?.find((quest: any) => quest.status === QuestStatus.Completed);
 
   const secondaryNavigation = useMemo(() => {
     return [
@@ -56,7 +59,7 @@ export const BottomNavigation = () => {
               active={isPopupOpen(questsWindow)}
               size="lg"
               onClick={() => togglePopup(questsWindow)}
-              notification={isRealmSelected(realmEntityId, structures) ? claimableQuestsLength : undefined}
+              notification={isRealmSelected(realmEntityId, structures) ? unclaimedQuestsCount : undefined}
               notificationLocation={"topleft"}
               disabled={!isRealmSelected(realmEntityId, structures)}
             />
@@ -79,7 +82,7 @@ export const BottomNavigation = () => {
             active={isPopupOpen(leaderboard)}
             size="lg"
             onClick={() => togglePopup(leaderboard)}
-            className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.Travel)?.claimed })}
+            className={clsx({ hidden: !questClaimStatus[QuestId.Travel] })}
           />
         ),
       },
@@ -92,12 +95,14 @@ export const BottomNavigation = () => {
             active={isPopupOpen(guilds)}
             size="lg"
             onClick={() => togglePopup(guilds)}
-            className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.Travel)?.claimed })}
+            className={clsx({
+              hidden: !questClaimStatus[QuestId.Travel],
+            })}
           />
         ),
       },
     ];
-  }, [claimableQuestsLength, selectedQuest, quests]);
+  }, [unclaimedQuestsCount, selectedQuest, quests, realmEntityId]);
 
   const slideUp = {
     hidden: { y: "100%", transition: { duration: 0.3 } },

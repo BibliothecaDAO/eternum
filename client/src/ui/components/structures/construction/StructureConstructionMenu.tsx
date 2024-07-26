@@ -20,8 +20,9 @@ import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { Headline } from "@/ui/elements/Headline";
 import { StructureCard } from "./StructureCard";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import clsx from "clsx";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {
@@ -66,7 +67,7 @@ export const StructureConstructionMenu = () => {
 
         return (
           <StructureCard
-            className={clsx({ "animate-pulse": isHyperstructure && selectedQuest?.name === QuestName.Hyperstructure })}
+            className={clsx({ "animate-pulse": isHyperstructure && selectedQuest?.id === QuestId.Hyperstructure })}
             key={index}
             structureId={building}
             onClick={() => {

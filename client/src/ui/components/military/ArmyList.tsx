@@ -2,7 +2,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { getBattleByPosition } from "@/hooks/helpers/battles/useBattles";
 import { useArmiesByEntityOwner, usePositionArmies } from "@/hooks/helpers/useArmies";
 import { PlayerStructures } from "@/hooks/helpers/useEntities";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
 import { Position } from "@bibliothecadao/eternum";
 import clsx from "clsx";
@@ -12,6 +12,7 @@ import { DepositResources } from "../resources/DepositResources";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 import { ArmyViewCard } from "./ArmyViewCard";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 export const EntityArmyList = ({ structure }: { structure: PlayerStructures }) => {
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({
@@ -62,7 +63,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructures }) =
                 onClick={() => handleCreateArmy(false)}
                 disabled={isLoading}
                 className={clsx({
-                  "animate-pulse": selectedQuest?.name === QuestName.CreateArmy && !selectedQuest.steps[0].completed,
+                  "animate-pulse": selectedQuest?.id === QuestId.CreateArmy && !structureArmies.length,
                 })}
               >
                 Create Army
@@ -90,11 +91,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructures }) =
             />
           </React.Fragment>
         )}
-        questing={
-          selectedQuest?.name === QuestName.CreateArmy &&
-          selectedQuest.steps[0].completed &&
-          !selectedQuest.steps[1].completed
-        }
+        questing={selectedQuest?.id === QuestId.CreateArmy}
       />
     </>
   );

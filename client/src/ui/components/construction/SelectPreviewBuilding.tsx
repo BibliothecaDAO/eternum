@@ -18,7 +18,7 @@ import {
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
 import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import { Headline } from "@/ui/elements/Headline";
@@ -32,21 +32,21 @@ import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { HintSection } from "../hints/HintModal";
+import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
 
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const quests = useQuestStore((state) => state.quests);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { realm } = useGetRealm(realmEntityId);
-
   const { getBalance } = useResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
+  const { questClaimStatus } = useQuestClaimStatus();
 
   const buildingTypes = Object.keys(BuildingType).filter(
     (key) =>
@@ -80,11 +80,6 @@ export const SelectPreviewBuildingMenu = () => {
 
   const [selectedTab, setSelectedTab] = useState(1);
 
-  const isQuestClaimedByName = (questName: QuestName) => {
-    const quest = quests?.find((q) => q.name === questName);
-    return quest?.claimed ?? false;
-  };
-
   const tabs = useMemo(
     () => [
       {
@@ -93,8 +88,7 @@ export const SelectPreviewBuildingMenu = () => {
           <div className="flex relative group flex-col items-center">
             <div
               className={clsx({
-                "animate-pulse  border-b border-gold":
-                  selectedTab !== 0 && selectedQuest?.name === QuestName.BuildResource,
+                "animate-pulse  border-b border-gold": selectedTab !== 0 && selectedQuest?.id === QuestId.BuildResource,
               })}
             >
               Resources
@@ -118,7 +112,7 @@ export const SelectPreviewBuildingMenu = () => {
               return (
                 <BuildingCard
                   className={clsx({
-                    hidden: !isQuestClaimedByName(QuestName.BuildFarm),
+                    hidden: !questClaimStatus[QuestId.BuildFarm],
                   })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
@@ -173,11 +167,11 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isFarm && !isQuestClaimedByName(QuestName.BuildResource),
+                      hidden: !isFarm && !questClaimStatus[QuestId.BuildResource],
                       "animate-pulse":
-                        (isFarm && selectedQuest?.name === QuestName.BuildFarm) ||
-                        (isWorkersHut && selectedQuest?.name === QuestName.BuildWorkersHut) ||
-                        (isMarket && selectedQuest?.name === QuestName.Market),
+                        (isFarm && selectedQuest?.id === QuestId.BuildFarm) ||
+                        (isWorkersHut && selectedQuest?.id === QuestId.BuildWorkersHut) ||
+                        (isMarket && selectedQuest?.id === QuestId.Market),
                     })}
                     key={index}
                     buildingId={building}
@@ -231,7 +225,7 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isQuestClaimedByName(QuestName.BuildResource),
+                      hidden: !questClaimStatus[QuestId.BuildResource],
                     })}
                     key={index}
                     buildingId={building}
