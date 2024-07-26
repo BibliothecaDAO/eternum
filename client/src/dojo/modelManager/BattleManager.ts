@@ -117,10 +117,11 @@ export class BattleManager {
         ? 0n
         : BigInt(
             Math.floor(
-              Number(
-                (cloneArmy.troops.knight_count * battle_army.troops.knight_count) /
+              Number(cloneArmy.troops.knight_count) *
+                this.getRemainingPercentageOfTroops(
+                  battle_army.troops.knight_count,
                   battle_army_lifetime.troops.knight_count,
-              ),
+                ),
             ),
           );
 
@@ -129,10 +130,11 @@ export class BattleManager {
         ? 0n
         : BigInt(
             Math.floor(
-              Number(
-                (cloneArmy.troops.paladin_count * battle_army.troops.paladin_count) /
+              Number(cloneArmy.troops.paladin_count) *
+                this.getRemainingPercentageOfTroops(
+                  battle_army.troops.paladin_count,
                   battle_army_lifetime.troops.paladin_count,
-              ),
+                ),
             ),
           );
 
@@ -141,10 +143,11 @@ export class BattleManager {
         ? 0n
         : BigInt(
             Math.floor(
-              Number(
-                (cloneArmy.troops.crossbowman_count * battle_army.troops.crossbowman_count) /
+              Number(cloneArmy.troops.crossbowman_count) *
+                this.getRemainingPercentageOfTroops(
+                  battle_army.troops.crossbowman_count,
                   battle_army_lifetime.troops.crossbowman_count,
-              ),
+                ),
             ),
           );
 
@@ -359,5 +362,9 @@ export class BattleManager {
 
   private getCurrentHealthAfterDamage(health: ComponentValue<Components["Health"]["schema"]>, damages: bigint) {
     return damages > health.current ? 0n : health.current - damages;
+  }
+
+  private getRemainingPercentageOfTroops(current_troops: bigint, lifetime_troops: bigint) {
+    return Number(current_troops) / Number(lifetime_troops);
   }
 }
