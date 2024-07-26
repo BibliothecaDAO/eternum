@@ -76,28 +76,41 @@ export class ArmyMovementManager {
   private wheatManager: ProductionManager;
 
   constructor(private dojo: SetupResult, entityId: number) {
-    this.tileModel = dojo.components.Tile;
-    this.staminaModel = dojo.components.Stamina;
-    this.positionModel = dojo.components.Position;
-    this.armyModel = dojo.components.Army;
-    this.ownerModel = dojo.components.Owner;
-    this.entityOwnerModel = dojo.components.EntityOwner;
-    this.staminaConfigModel = dojo.components.StaminaConfig;
+    const {
+      Tile,
+      Stamina,
+      Position,
+      Army,
+      Owner,
+      EntityOwner,
+      StaminaConfig,
+      Production,
+      Resource,
+      BuildingQuantityv2,
+    } = dojo.components;
+    this.tileModel = Tile;
+    this.staminaModel = Stamina;
+    this.positionModel = Position;
+    this.armyModel = Army;
+    this.ownerModel = Owner;
+    this.entityOwnerModel = EntityOwner;
+    this.staminaConfigModel = StaminaConfig;
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = BigInt(entityId);
     this.address = BigInt(this.dojo.network.burnerManager.account?.address || 0n);
+    const entityOwnerId = getComponentValue(EntityOwner, this.entity);
     this.wheatManager = new ProductionManager(
-      this.dojo.components.Production,
-      this.dojo.components.Resource,
-      this.dojo.components.BuildingQuantityv2,
-      BigInt(entityId),
+      Production,
+      Resource,
+      BuildingQuantityv2,
+      entityOwnerId!.entity_owner_id,
       254n,
     );
     this.fishManager = new ProductionManager(
-      this.dojo.components.Production,
-      this.dojo.components.Resource,
-      this.dojo.components.BuildingQuantityv2,
-      BigInt(entityId),
+      Production,
+      Resource,
+      BuildingQuantityv2,
+      entityOwnerId!.entity_owner_id,
       253n,
     );
   }
@@ -301,8 +314,6 @@ export class ArmyMovementManager {
 
     const overrideId = this._optimisticExplore(path[1].col, path[1].row);
 
-    // console.log({ direction });
-
     this.dojo.systemCalls
       .explore({
         unit_id: this.entityId,
@@ -358,7 +369,6 @@ export class ArmyMovementManager {
   };
 
   public moveArmy = (path: HexPosition[], isExplored: boolean) => {
-    console.log({ path, isExplored });
     if (!isExplored) {
       this._exploreHex(path);
     } else {
