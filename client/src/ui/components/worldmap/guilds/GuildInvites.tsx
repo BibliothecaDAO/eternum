@@ -101,7 +101,10 @@ export const GuildInvites = () => {
             <div className="flex flex-col p-3 space-y-2 overflow-y-auto">
               {sortItems(addressWhitelist, activeSort)?.map((addressWhitelist: AddressWhitelistAndName, index) => {
                 return (
-                  <div key={addressWhitelist.addressWhitelist.guild_entity_id} className="grid grid-cols-3 gap-4 text-xs">
+                  <div
+                    key={addressWhitelist.addressWhitelist.guild_entity_id}
+                    className="grid grid-cols-3 gap-4 text-xs"
+                  >
                     <p
                       className="col-span-1  hover:text-white  truncate"
                       onClick={() =>
@@ -117,7 +120,9 @@ export const GuildInvites = () => {
                       <Button
                         size="xs"
                         isLoading={isLoading}
-                        onClick={() => removePlayerFromWhitelist(BigInt(addressWhitelist.addressWhitelist.guild_entity_id))}
+                        onClick={() =>
+                          removePlayerFromWhitelist(BigInt(addressWhitelist.addressWhitelist.guild_entity_id))
+                        }
                       >
                         Refuse
                       </Button>
