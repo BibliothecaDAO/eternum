@@ -25,7 +25,9 @@ export default class InstancedModel {
 
         // we can set lower count later if we have less hexes with that biome and change it at any time
         tmp.count = 0;
-        this.group.add(tmp);
+        if (!child.name.includes("small_details") && !child.parent?.name.includes("small_details")) {
+          this.group.add(tmp);
+        }
         this.instancedMeshes.push(tmp);
       }
     });
