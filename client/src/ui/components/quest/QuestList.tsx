@@ -96,7 +96,7 @@ const SkipTutorial = ({ entityId }: { entityId: bigint }) => {
 
   const questResources = getQuestResources();
 
-  const unclaimedQuests = quests?.filter((quest) => quest.status === QuestStatus.InProgress);
+  const unclaimedQuests = quests?.filter((quest) => quest.status !== QuestStatus.Claimed);
 
   const resourcesToMint =
     unclaimedQuests?.flatMap((quest: Quest) =>
