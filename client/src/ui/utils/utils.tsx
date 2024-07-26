@@ -146,7 +146,7 @@ export const getWorldPositionForHex = (hexCoords: {
   // y coordinate is half of the hexagon height
   const y = 0;
 
-  return { x, y, z };
+  return new THREE.Vector3(x, y, z);
 };
 
 export const getUIPositionFromColRow = (col: number, row: number, normalized?: boolean): UIPosition => {

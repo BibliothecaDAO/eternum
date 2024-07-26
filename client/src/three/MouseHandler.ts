@@ -7,6 +7,7 @@ import { SceneManager } from "./SceneManager";
 import { SetupResult } from "@/dojo/setup";
 import { LocationManager } from "./helpers/LocationManager";
 import { throttle } from "lodash";
+import { getWorldPositionForHex } from "@/ui/utils/utils";
 
 export class MouseHandler {
   private worldmapScene?: WorldmapScene;
@@ -121,7 +122,7 @@ export class MouseHandler {
   private handleHexHover(hexCoords: { row: number; col: number }) {
     const travelPath = this.travelPaths?.get(TravelPaths.posKey(hexCoords, true));
     if (travelPath && this.selectedEntityId) {
-      const hexPosition = this.worldmapScene!.getWorldPositionForHex(hexCoords);
+      const hexPosition = getWorldPositionForHex(hexCoords);
       this.actionInfo?.showTooltip(
         hexPosition,
         travelPath.isExplored,
@@ -147,6 +148,7 @@ export class MouseHandler {
     if (armyMovementManager.isMine()) {
       this.setSelectedEntityId(entityId);
       this.travelPaths = armyMovementManager.findPaths(this.worldmapScene!.systemManager.tileSystem.getExplored());
+      console.log("travel", this.travelPaths);
       this.worldmapScene!.highlightHexManager.highlightHexes(this.travelPaths.getHighlightedHexes());
     }
   }
