@@ -12,8 +12,8 @@ export class ArmySystem {
   private modelPrinted: boolean = false;
 
   constructor(private dojo: SetupResult, private worldMapScene: WorldmapScene) {
-    // this.armyManager = new ArmyManager(this.worldMapScene, "models/dark_knight.glb", 1000);
-    this.armyManager = new ArmyManager(this.worldMapScene, "models/biomes/Horse.glb", 1000);
+    this.armyManager = new ArmyManager(this.worldMapScene, "models/dark_knight.glb", 1000);
+    //this.armyManager = new ArmyManager(this.worldMapScene, "models/biomes/Horse.glb", 1000);
   }
 
   setupSystem() {
