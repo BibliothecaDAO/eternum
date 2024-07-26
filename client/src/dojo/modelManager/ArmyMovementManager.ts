@@ -167,7 +167,7 @@ export class ArmyMovementManager {
 
     const currentTick = getCurrentTick();
 
-    if (stamina && stamina < EternumGlobalConfig.stamina.exploreCost) {
+    if (stamina < EternumGlobalConfig.stamina.exploreCost) {
       return false;
     }
     if (this.fishManager.balance(currentTick) < EternumGlobalConfig.exploration.fishBurn) {
