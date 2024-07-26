@@ -69,7 +69,7 @@ export const EnemyArmies = ({
       {armies.length !== 0 && (
         <React.Fragment>
           <div className="grid grid-cols-1 gap-2 p-2">
-            {armiesToDisplay.length > 0 && <>Ennemy armies {armiesToDisplay}</>}
+            {armiesToDisplay.length > 0 && <>Enemy armies {armiesToDisplay}</>}
           </div>
         </React.Fragment>
       )}

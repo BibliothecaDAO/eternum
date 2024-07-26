@@ -494,16 +494,16 @@ export const useEnemyArmiesByPosition = ({ position }: { position: Position }) =
       },
     } = useDojo();
 
-    const ennemyArmiesAtPosition = useEntityQuery([
+    const enemyArmiesAtPosition = useEntityQuery([
       Has(Army),
       HasValue(Position, { x: position.x, y: position.y }),
       Not(Protectee),
       NotValue(Owner, { address: BigInt(account.address) }),
     ]);
 
-    const ennemyArmies = useMemo(() => {
+    const enemyArmies = useMemo(() => {
       return formatArmies(
-        ennemyArmiesAtPosition,
+        enemyArmiesAtPosition,
         account.address,
         Army,
         Protectee,
@@ -519,9 +519,9 @@ export const useEnemyArmiesByPosition = ({ position }: { position: Position }) =
         Realm,
         Stamina,
       );
-    }, [ennemyArmiesAtPosition]);
+    }, [enemyArmiesAtPosition]);
 
-    return ennemyArmies;
+    return enemyArmies;
   }
 };
 

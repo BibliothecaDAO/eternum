@@ -3,7 +3,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { StructureCard } from "@/ui/components/hyperstructures/StructureCard";
 import { Position } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
-import { EnemyArmies } from "./EnnemyArmies";
+import { EnemyArmies } from "./enemyArmies";
 import { SelectActiveArmy } from "./EntityDetails";
 
 export const Entities = ({
@@ -15,7 +15,7 @@ export const Entities = ({
 }) => {
   const clickedHex = useUIStore((state) => state.clickedHex);
 
-  const ennemyArmies = useEnemyArmiesByPosition({
+  const enemyArmies = useEnemyArmiesByPosition({
     position: { x: position.x, y: position.y },
   });
 
@@ -45,7 +45,7 @@ export const Entities = ({
         userAttackingArmies={userArmies}
       />
       <StructureCard position={position} ownArmySelected={ownArmy} />
-      <EnemyArmies armies={ennemyArmies} ownArmySelected={ownArmy} position={position} />
+      <EnemyArmies armies={enemyArmies} ownArmySelected={ownArmy} position={position} />
     </React.Fragment>
   );
 };
