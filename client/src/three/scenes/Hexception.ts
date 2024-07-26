@@ -16,6 +16,7 @@ import { pseudoRandom } from "@/ui/utils/utils";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
 import { FELT_CENTER } from "@/ui/config";
 import InstancedBuilding from "../components/InstancedBuilding";
+import { HEX_HORIZONTAL_SPACING, HEX_SIZE } from "../GameRenderer";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -51,7 +52,6 @@ export default class HexceptionScene {
 
   private locationManager!: LocationManager;
 
-  private hexSize = 1;
   private originalColor: THREE.Color = new THREE.Color("white");
 
   private buildingModels: Map<BuildingType, InstancedBuilding> = new Map();
@@ -191,9 +191,6 @@ export default class HexceptionScene {
   }
 
   updateHexceptionGrid(radius: number) {
-    const horizontalSpacing = this.hexSize * Math.sqrt(3);
-    const verticalSpacing = (this.hexSize * 3) / 2;
-
     const dummy = new THREE.Object3D();
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
       Ocean: [],
@@ -257,10 +254,10 @@ export default class HexceptionScene {
               q === -radius ||
               r === Math.max(-radius, -q - radius) ||
               r === Math.min(radius, -q + radius);
-            dummy.position.x = (q + r / 2) * horizontalSpacing + centers[center][0] * horizontalSpacing;
-            dummy.position.z = ((r * 3) / 2) * this.hexSize + centers[center][1] * this.hexSize;
+            dummy.position.x = (q + r / 2) * HEX_HORIZONTAL_SPACING + centers[center][0] * HEX_HORIZONTAL_SPACING;
+            dummy.position.z = ((r * 3) / 2) * HEX_SIZE + centers[center][1] * HEX_SIZE;
             dummy.position.y = isBorderHex || isMainHex ? 0 : pseudoRandom(q, r);
-            dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
+            dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
             dummy.updateMatrix();
 
             if (isMainHex) {
@@ -318,12 +315,13 @@ export default class HexceptionScene {
       }
 
       let i = 0;
+      const tmpCol = new THREE.Color(0xffce31);
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         matrices.forEach((matrix, index) => {
           hexMesh.setMatrixAt(index, matrix);
           this.pillars!.setMatrixAt(index + i, matrix);
-          this.pillars!.setColorAt(index + i, hexMesh.getLandColor());
+          this.pillars!.setColorAt(index + i, tmpCol);
         });
         this.pillars!.count = i + matrices.length;
         this.pillars!.instanceMatrix.needsUpdate = true;

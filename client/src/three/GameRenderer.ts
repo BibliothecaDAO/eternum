@@ -16,8 +16,9 @@ import HexceptionScene from "./scenes/Hexception";
 import WorldmapScene from "./scenes/Worldmap";
 import { GUIManager } from "./helpers/GUIManager";
 
-const horizontalSpacing = Math.sqrt(3);
-const verticalSpacing = 3 / 2;
+export const HEX_SIZE = 1;
+export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
+export const HEX_VERTICAL_SPACING = (HEX_SIZE * 3) / 2;
 
 export default class GameRenderer {
   private renderer!: THREE.WebGLRenderer;
@@ -200,8 +201,8 @@ export default class GameRenderer {
   private moveCameraToColRow(col: number, row: number, duration: number = 2) {
     const colOffset = col;
     const rowOffset = row;
-    const newTargetX = colOffset * horizontalSpacing + (rowOffset % 2) * (horizontalSpacing / 2);
-    const newTargetZ = -rowOffset * verticalSpacing;
+    const newTargetX = colOffset * HEX_HORIZONTAL_SPACING + (rowOffset % 2) * (HEX_HORIZONTAL_SPACING / 2);
+    const newTargetZ = -rowOffset * HEX_VERTICAL_SPACING;
     const newTargetY = 0;
 
     const newTarget = new THREE.Vector3(newTargetX, newTargetY, newTargetZ);
@@ -254,8 +255,8 @@ export default class GameRenderer {
   getLocationCoordinates() {
     const col = this.locationManager.getCol()!;
     const row = this.locationManager.getRow()!;
-    const x = col * horizontalSpacing + (row % 2) * (horizontalSpacing / 2);
-    const z = -row * verticalSpacing;
+    const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
+    const z = -row * HEX_VERTICAL_SPACING;
     return { col, row, x, z };
   }
 

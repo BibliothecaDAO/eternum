@@ -21,6 +21,8 @@ import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum
 import { InteractiveHexManager } from "../components/InteractiveHexManager";
 import { HighlightHexManager } from "../components/HighlightHexManager";
 import { GUIManager } from "../helpers/GUIManager";
+import { HEX_SIZE } from "../GameRenderer";
+import { getWorldPositionForHex } from "@/ui/utils/utils";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -62,7 +64,6 @@ export default class WorldmapScene {
     height: 30,
   };
   private loadedChunks: Map<string, THREE.Group> = new Map();
-  private hexSize = 1;
 
   private biomeModels: Map<BiomeType, InstancedModel> = new Map();
   private modelLoadPromises: Promise<void>[] = [];
@@ -91,12 +92,11 @@ export default class WorldmapScene {
     this.fogManager = new FogManager(this.scene, controls.object as THREE.PerspectiveCamera);
 
     this.contextMenuManager = new ContextMenuManager(
-      this.scene,
+      this,
       this.raycaster,
       controls.object as THREE.PerspectiveCamera,
       mouse,
       this.loadedChunks,
-      this.hexSize,
       this,
       state,
     );
@@ -124,6 +124,7 @@ export default class WorldmapScene {
     this.mainDirectionalLight.shadow.camera.near = 8;
     this.mainDirectionalLight.position.set(0, 9, 0);
     this.mainDirectionalLight.target.position.set(0, 0, 5.2);
+
     const shadowFolder = GUIManager.addFolder("Shadow");
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "left", -50, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "right", -50, 50, 0.1);
@@ -132,6 +133,7 @@ export default class WorldmapScene {
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
     shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
     shadowFolder.close();
+
     const directionalLightFolder = GUIManager.addFolder("Directional Light");
     directionalLightFolder.addColor(this.mainDirectionalLight, "color");
     directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
@@ -154,16 +156,12 @@ export default class WorldmapScene {
     this.systemManager.tileSystem.addListener(this.updateExploredHex.bind(this));
 
     this.interactiveHexManager = new InteractiveHexManager(
-      this,
+      this.scene,
       this.raycaster,
       this.mouse,
       controls.object as THREE.PerspectiveCamera,
     );
     this.highlightHexManager = new HighlightHexManager(this);
-  }
-
-  getHexSize() {
-    return this.hexSize;
   }
 
   private loadBiomeModels() {
@@ -200,23 +198,9 @@ export default class WorldmapScene {
     });
   }
 
-  getWorldPositionForHex(hexCoords: { row: number; col: number }): THREE.Vector3 {
-    const { row, col } = hexCoords;
-    const horizontalSpacing = this.hexSize * Math.sqrt(3);
-    const verticalSpacing = (this.hexSize * 3) / 2;
-    // Calculate the x and z coordinates
-    const x = col * horizontalSpacing + (row % 2) * (horizontalSpacing / 2);
-    const z = -row * verticalSpacing;
-
-    // y coordinate is half of the hexagon height
-    const y = 0;
-
-    return new THREE.Vector3(x, y, z);
-  }
-
   public updateExploredHex(col: number, row: number) {
     const dummy = new THREE.Object3D();
-    const pos = this.getWorldPositionForHex({ row, col });
+    const pos = getWorldPositionForHex({ row, col });
     dummy.position.copy(pos);
 
     const structures = this.systemManager.structureSystem.getStructures();
@@ -227,7 +211,7 @@ export default class WorldmapScene {
     if (isStructure) {
       dummy.scale.set(0, 0, 0);
     } else {
-      dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
+      dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
     }
 
     this.interactiveHexManager.addExploredHex({ col, row });
@@ -308,7 +292,7 @@ export default class WorldmapScene {
         const globalCol = startCol + col;
 
         hexPositions.push(new THREE.Vector3(dummy.position.x, dummy.position.y, dummy.position.z));
-        const pos = this.getWorldPositionForHex({ row: globalRow, col: globalCol });
+        const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
         dummy.position.copy(pos);
 
         const isStructure = structuresMap.has(`${globalCol},${globalRow}`);
@@ -316,7 +300,7 @@ export default class WorldmapScene {
         if (isStructure || !isExplored) {
           dummy.scale.set(0, 0, 0);
         } else {
-          dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
+          dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
         }
 
         if (!isExplored) {
@@ -427,14 +411,14 @@ export default class WorldmapScene {
   }
 
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
-    const chunkX = Math.floor(x / (this.chunkSize * this.hexSize * Math.sqrt(3)));
-    const chunkZ = Math.floor(-z / (this.chunkSize * this.hexSize * 1.5));
+    const chunkX = Math.floor(x / (this.chunkSize * HEX_SIZE * Math.sqrt(3)));
+    const chunkZ = Math.floor(-z / (this.chunkSize * HEX_SIZE * 1.5));
     return { chunkX, chunkZ };
   }
 
   private getHexFromWorldPosition(position: THREE.Vector3): { row: number; col: number } {
-    const horizontalSpacing = this.hexSize * Math.sqrt(3);
-    const verticalSpacing = (this.hexSize * 3) / 2;
+    const horizontalSpacing = HEX_SIZE * Math.sqrt(3);
+    const verticalSpacing = (HEX_SIZE * 3) / 2;
 
     // Calculate col first
     const col = Math.round(position.x / horizontalSpacing);
@@ -470,8 +454,8 @@ export default class WorldmapScene {
     cameraPosition.copy(this.controls.target);
 
     // Adjust the camera position to load chunks earlier in both directions
-    const adjustedX = cameraPosition.x + (this.chunkSize * this.hexSize * Math.sqrt(3)) / 2;
-    const adjustedZ = cameraPosition.z - (this.chunkSize * this.hexSize * 1.5) / 3;
+    const adjustedX = cameraPosition.x + (this.chunkSize * HEX_SIZE * Math.sqrt(3)) / 2;
+    const adjustedZ = cameraPosition.z - (this.chunkSize * HEX_SIZE * 1.5) / 3;
 
     const { chunkX, chunkZ } = this.worldToChunkCoordinates(adjustedX, adjustedZ);
 
