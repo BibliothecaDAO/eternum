@@ -39,15 +39,13 @@ export class InteractiveHexManager {
     // Add these lines to remove pointer events
     this.auraMesh.receiveShadow = false;
     this.auraMesh.castShadow = false;
-    this.auraMesh.userData = { ignoreRaycast: true }; // Add custom property
+
+    this.auraMesh.raycast = () => {};
   }
 
   private updateAuraPosition() {
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects(
-      this.worldMap.scene.children.filter((obj) => !obj.userData?.ignoreRaycast),
-      true,
-    );
+    const intersects = this.raycaster.intersectObjects(this.worldMap.scene.children, true);
 
     if (intersects.length > 0) {
       const intersect = intersects[0];
