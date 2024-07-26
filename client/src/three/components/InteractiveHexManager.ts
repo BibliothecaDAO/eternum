@@ -35,11 +35,19 @@ export class InteractiveHexManager {
     this.auraMesh = new THREE.Mesh(auraGeometry, auraMaterial);
     this.auraMesh.rotation.x = -Math.PI / 2;
     this.auraMesh.renderOrder = 1;
+
+    // Add these lines to remove pointer events
+    this.auraMesh.receiveShadow = false;
+    this.auraMesh.castShadow = false;
+    this.auraMesh.userData = { ignoreRaycast: true }; // Add custom property
   }
 
   private updateAuraPosition() {
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.worldMap.scene.children, true);
+    const intersects = this.raycaster.intersectObjects(
+      this.worldMap.scene.children.filter((obj) => !obj.userData?.ignoreRaycast),
+      true,
+    );
 
     if (intersects.length > 0) {
       const intersect = intersects[0];
