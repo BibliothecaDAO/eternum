@@ -1185,6 +1185,39 @@ mod combat_systems {
         ) -> u128 {
             let army_id = Self::create_base_army(world, army_owner_id, owner_address);
 
+            // ensure owner has enough military buildings to create army
+            let owner_armies_key: felt252 = ArmyQuantityTracker::key(army_owner_id);
+            let mut owner_armies_quantity: QuantityTracker = get!(
+                world, owner_armies_key, QuantityTracker
+            );
+            let troop_config = TroopConfigImpl::get(world);
+            if owner_armies_quantity.count >= troop_config.army_free_per_structure.into() {
+                let archery_range_building_count = get!(
+                    world, (army_owner_id, BuildingCategory::ArcheryRange), BuildingQuantityv2
+                )
+                    .value;
+                let barracks_building_count = get!(
+                    world, (army_owner_id, BuildingCategory::Barracks), BuildingQuantityv2
+                )
+                    .value;
+                let stables_building_count = get!(
+                    world, (army_owner_id, BuildingCategory::Stable), BuildingQuantityv2
+                )
+                    .value;
+                let total_military_building_count = stables_building_count
+                    + archery_range_building_count
+                    + barracks_building_count;
+                let total_allowed_armies = troop_config.army_free_per_structure.into()
+                    + (troop_config.army_extra_per_building.into() * total_military_building_count);
+                assert!(
+                    owner_armies_quantity.count < total_allowed_armies.into(),
+                    "not enough military buildings to support new army"
+                );
+            }
+            // increment army count
+            owner_armies_quantity.count += 1;
+            set!(world, (owner_armies_quantity));
+
             // set the army's speed and capacity
             let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
                 .sec_per_km;
@@ -1252,39 +1285,6 @@ mod combat_systems {
         ) -> u128 {
             // ensure army owner is a structure 
             get!(world, army_owner_id, Structure).assert_is_structure();
-
-            // ensure owner has enough military buildings to create army
-            let owner_armies_key: felt252 = ArmyQuantityTracker::key(army_owner_id);
-            let mut owner_armies_quantity: QuantityTracker = get!(
-                world, owner_armies_key, QuantityTracker
-            );
-            let troop_config = TroopConfigImpl::get(world);
-            if owner_armies_quantity.count >= troop_config.army_free_per_structure.into() {
-                let archery_range_building_count = get!(
-                    world, (army_owner_id, BuildingCategory::ArcheryRange), BuildingQuantityv2
-                )
-                    .value;
-                let barracks_building_count = get!(
-                    world, (army_owner_id, BuildingCategory::Barracks), BuildingQuantityv2
-                )
-                    .value;
-                let stables_building_count = get!(
-                    world, (army_owner_id, BuildingCategory::Stable), BuildingQuantityv2
-                )
-                    .value;
-                let total_military_building_count = stables_building_count
-                    + archery_range_building_count
-                    + barracks_building_count;
-                let total_allowed_armies = troop_config.army_free_per_structure.into()
-                    + (troop_config.army_extra_per_building.into() * total_military_building_count);
-                assert!(
-                    owner_armies_quantity.count < total_allowed_armies.into(),
-                    "not enough military buildings to support new army"
-                );
-            }
-            // increment army count
-            owner_armies_quantity.count += 1;
-            set!(world, (owner_armies_quantity));
 
             // create army
             let mut army_id: u128 = world.uuid().into();

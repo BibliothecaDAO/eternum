@@ -12,9 +12,6 @@ import { Entities } from "./Entities";
 
 export const EntityDetails = () => {
   const clickedHex = useUIStore((state) => state.clickedHex);
-
-  const hexData = useUIStore((state) => state.hexData);
-  const biome = hexData?.[clickedHex?.hexIndex || 0].biome || "undefined";
   const [selectedTab, setSelectedTab] = useState(0);
 
   const hexPosition = useMemo(() => {
@@ -31,6 +28,19 @@ export const EntityDetails = () => {
     [ownArmiesAtPosition],
   );
 
+  const [ownArmySelected, setOwnArmySelected] = useState<{ id: bigint; position: Position } | undefined>({
+    id: userArmies?.[0]?.entity_id || 0n,
+    position: {
+      x: clickedHex?.contractPos.col || 0,
+      y: clickedHex?.contractPos.row || 0,
+    },
+  });
+
+  const ownArmy = useMemo(() => {
+    if (!ownArmySelected) return;
+    return userArmies.find((army) => army.entity_id === ownArmySelected.id);
+  }, [userArmies, ownArmySelected, clickedHex?.contractPos.col, clickedHex?.contractPos.row]);
+
   const tabs = useMemo(
     () => [
       {
@@ -40,7 +50,7 @@ export const EntityDetails = () => {
             <div>Entities</div>
           </div>
         ),
-        component: <Entities position={hexPosition!} ownArmiesAtPosition={userArmies} />,
+        component: <Entities position={hexPosition!} ownArmy={ownArmy} />,
       },
       {
         key: "battles",
@@ -49,16 +59,23 @@ export const EntityDetails = () => {
             <div>Battles</div>
           </div>
         ),
-        component: <Battles position={hexPosition!} ownArmiesAtPosition={userArmies} />,
+        component: <Battles position={hexPosition!} ownArmy={ownArmy} />,
       },
     ],
-    [clickedHex, ownArmiesAtPosition],
+    [clickedHex, userArmies, ownArmy],
   );
 
   return (
     hexPosition && (
       <div className="px-2 h-full">
         <CoordinatesAndBiome position={hexPosition} />
+        {userArmies.length > 0 && (
+          <SelectActiveArmy
+            selectedEntity={ownArmySelected}
+            setOwnArmySelected={setOwnArmySelected}
+            userAttackingArmies={userArmies}
+          />
+        )}
 
         <Tabs selectedIndex={selectedTab} onChange={(index: any) => setSelectedTab(index)} className="h-full">
           <Tabs.List>

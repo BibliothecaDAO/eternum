@@ -14,6 +14,14 @@ import { EntityList } from "../list/EntityList";
 import { InventoryResources } from "../resources/InventoryResources";
 import { ArmyManagementCard } from "./ArmyManagementCard";
 
+const MAX_AMOUNT_OF_DEFENSIVE_ARMIES = 1;
+
+enum Loading {
+  None,
+  CreateDefensive,
+  CreateAttacking,
+}
+
 export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) => {
   const existingBuildings = useUIStore((state) => state.existingBuildings);
 
@@ -30,11 +38,11 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
     },
   } = useDojo();
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState<Loading>(Loading.None);
 
-  const maxAmountOfArmies = useMemo(() => {
+  const maxAmountOfAttackingArmies = useMemo(() => {
     return (
-      3 +
+      EternumGlobalConfig.troop.baseArmyNumberForStructure +
       existingBuildings.filter(
         (building) =>
           building.type === BuildingType.ArcheryRange ||
@@ -45,23 +53,27 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
     );
   }, [existingBuildings]);
 
-  const canCreateProtector = useMemo(
-    () => !structureArmies.find((army) => army.protectee?.protectee_id),
-    [structureArmies],
-  );
-
   const numberAttackingArmies = useMemo(() => {
     return structureArmies.filter((army) => !army.protectee).length;
   }, [structureArmies]);
 
+  const numberDefensiveArmies = useMemo(() => {
+    return structureArmies.filter((army) => army.protectee).length;
+  }, [structureArmies]);
+
+  const canCreateProtector = useMemo(
+    () => numberDefensiveArmies < MAX_AMOUNT_OF_DEFENSIVE_ARMIES,
+    [numberDefensiveArmies],
+  );
+
   const handleCreateArmy = (is_defensive_army: boolean) => {
     if (!structure.entity_id) throw new Error("Structure's entity id is undefined");
-    setIsLoading(true);
+    setLoading(is_defensive_army ? Loading.CreateDefensive : Loading.CreateAttacking);
     create_army({
       signer: account,
       army_owner_id: structure.entity_id,
       is_defensive_army,
-    }).finally(() => setIsLoading(false));
+    }).finally(() => setLoading(Loading.None));
   };
 
   return (
@@ -74,27 +86,40 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
             <div className="px-3 py-2 bg-blueish/20 clip-angled-sm font-bold">
               First you must create an Army then you can enlist troops to it. You can only have one defensive army.
             </div>
-            <div className={`mt-2 font-bold ${numberAttackingArmies < maxAmountOfArmies ? "text-green" : "text-red"}`}>
-              {numberAttackingArmies} / {maxAmountOfArmies} attacking armies
+            <div className="flex justify-between">
+              <div
+                className={`mt-2 font-bold ${
+                  numberAttackingArmies < maxAmountOfAttackingArmies ? "text-green" : "text-red"
+                }`}
+              >
+                {numberAttackingArmies} / {maxAmountOfAttackingArmies} attacking armies
+              </div>
+              <div
+                className={`mt-2 font-bold ${
+                  numberDefensiveArmies < MAX_AMOUNT_OF_DEFENSIVE_ARMIES ? "text-green" : "text-red"
+                }`}
+              >
+                {numberDefensiveArmies} / {MAX_AMOUNT_OF_DEFENSIVE_ARMIES} defending army
+              </div>
             </div>
             <div className="w-full flex justify-between my-4">
               <Button
-                isLoading={isLoading}
+                isLoading={loading === Loading.CreateAttacking}
                 variant="primary"
                 onClick={() => handleCreateArmy(false)}
-                disabled={isLoading || structureArmies.length >= maxAmountOfArmies}
+                disabled={loading !== Loading.None || numberAttackingArmies >= maxAmountOfAttackingArmies}
                 className={clsx({
-                  "animate-pulse": selectedQuest?.id === QuestId.CreateArmy && !structureArmies.length,
+                  "animate-pulse": selectedQuest?.id === QuestId.CreateArmy,
                 })}
               >
                 Create Army
               </Button>
 
               <Button
-                isLoading={isLoading}
+                isLoading={loading === Loading.CreateDefensive}
                 variant="primary"
                 onClick={() => handleCreateArmy(true)}
-                disabled={isLoading || !canCreateProtector}
+                disabled={loading !== Loading.None || !canCreateProtector}
               >
                 Create Defense Army
               </Button>

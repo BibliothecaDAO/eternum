@@ -1,36 +1,19 @@
+import { useBattlesByPosition } from "@/hooks/helpers/battles/useBattles";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import useUIStore from "@/hooks/store/useUIStore";
-import { BattleCard } from "@/ui/components/battles/BattleCard";
+import { BattleListItem } from "@/ui/components/battles/BattleListItem";
 import { Position } from "@bibliothecadao/eternum";
-import React, { useMemo, useState } from "react";
-import { SelectActiveArmy } from "./EntityDetails";
 
-export const Battles = ({ position, ownArmiesAtPosition }: { position: Position; ownArmiesAtPosition: ArmyInfo[] }) => {
-  const clickedHex = useUIStore((state) => state.clickedHex);
-
-  const [ownArmySelected, setOwnArmySelected] = useState<{ id: bigint; position: Position } | undefined>({
-    id: ownArmiesAtPosition?.[0]?.entity_id || 0n,
-    position: {
-      x: clickedHex?.contractPos.col || 0,
-      y: clickedHex?.contractPos.row || 0,
-    },
-  });
-
-  const ownArmy = useMemo(() => {
-    if (!ownArmySelected) return;
-    return ownArmiesAtPosition.find((army) => army.entity_id === ownArmySelected.id);
-  }, [ownArmiesAtPosition, ownArmySelected, clickedHex?.contractPos.col, clickedHex?.contractPos.row]);
+export const Battles = ({ position, ownArmy }: { position: Position; ownArmy: ArmyInfo | undefined }) => {
+  const battles = useBattlesByPosition(position);
 
   return (
-    <React.Fragment>
-      {ownArmiesAtPosition.length > 0 && (
-        <SelectActiveArmy
-          selectedEntity={ownArmySelected}
-          setOwnArmySelected={setOwnArmySelected}
-          userAttackingArmies={ownArmiesAtPosition}
-        />
-      )}
-      <BattleCard position={position} ownArmySelected={ownArmy} />
-    </React.Fragment>
+    battles.length > 0 && (
+      <div className="px-2 w-[31rem] py-2">
+        Battles
+        {battles.map((battle) => (
+          <BattleListItem key={battle.entity_id} battle={battle} ownArmySelected={ownArmy} />
+        ))}
+      </div>
+    )
   );
 };
