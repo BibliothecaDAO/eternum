@@ -39,11 +39,11 @@ export const EternumGlobalConfig = {
     wheatBurn: 100,
     fishBurn: 100,
     reward: 750,
-    shardsMinesFailProbability: 1000,
+    shardsMinesFailProbability: 99000,
   },
   tick: {
     defaultTickIntervalInSeconds: 1,
-    armiesTickIntervalInSeconds: 30, // 2hrs
+    armiesTickIntervalInSeconds: 7200, // 2hrs
   },
   carryCapacity: {
     donkey: 100,
