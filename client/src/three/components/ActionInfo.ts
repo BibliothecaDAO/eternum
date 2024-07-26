@@ -4,6 +4,7 @@ import { SetupResult } from "@/dojo/setup";
 import { ProductionManager } from "@/dojo/modelManager/ProductionManager";
 import { ArmyMovementManager } from "@/dojo/modelManager/ArmyMovementManager";
 import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
+import { getCurrentArmiesTick } from "../helpers/ticks";
 
 export class ActionInfo {
   private tooltipElement: HTMLElement;
@@ -11,13 +12,11 @@ export class ActionInfo {
   private camera: Camera;
   private lastPosition: Vector3 | null = null;
   private dojo: SetupResult;
-  private currentTick: number;
   private armyMovementManager: ArmyMovementManager;
   private wheatManager: ProductionManager;
   private fishManager: ProductionManager;
 
   constructor(entityId: number, camera: Camera, dojo: SetupResult) {
-    this.currentTick = Date.now() / 1000;
     this.dojo = dojo;
     this.camera = camera;
     this.tooltipElement = this.createTooltipElement();
@@ -44,16 +43,18 @@ export class ActionInfo {
 
     const stamina = this.armyMovementManager.getStamina();
 
+    const currentTick = getCurrentArmiesTick();
+
     if (!isExplored) {
       content += this.createResourceCostElement(
         ResourcesIds.Wheat,
         -EternumGlobalConfig.exploration.wheatBurn,
-        this.wheatManager.balance(this.currentTick),
+        this.wheatManager.balance(currentTick),
       );
       content += this.createResourceCostElement(
         ResourcesIds.Fish,
         -EternumGlobalConfig.exploration.fishBurn,
-        this.fishManager.balance(this.currentTick),
+        this.fishManager.balance(currentTick),
       );
     }
 

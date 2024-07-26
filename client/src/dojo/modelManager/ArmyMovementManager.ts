@@ -1,7 +1,6 @@
 import {
   EternumGlobalConfig,
   ResourcesIds,
-  TROOPS_STAMINAS,
   WORLD_CONFIG_ID,
   getNeighborHexes,
   neighborOffsetsEven,
@@ -14,6 +13,8 @@ import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
 import { HexPosition } from "@/types";
 import { uuid } from "@latticexyz/utils";
+import { getCurrentArmiesTick, getCurrentTick } from "@/three/helpers/ticks";
+import { ProductionManager } from "./ProductionManager";
 
 export class TravelPaths {
   private paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
@@ -68,10 +69,11 @@ export class ArmyMovementManager {
   private ownerModel: Component<ClientComponents["Owner"]["schema"]>;
   private entityOwnerModel: Component<ClientComponents["EntityOwner"]["schema"]>;
   private staminaConfigModel: Component<ClientComponents["StaminaConfig"]["schema"]>;
-  private currentArmiesTick: number;
   private entity: Entity;
   private entityId: bigint;
   private address: bigint;
+  private fishManager: ProductionManager;
+  private wheatManager: ProductionManager;
 
   constructor(private dojo: SetupResult, entityId: number) {
     this.tileModel = dojo.components.Tile;
@@ -81,10 +83,23 @@ export class ArmyMovementManager {
     this.ownerModel = dojo.components.Owner;
     this.entityOwnerModel = dojo.components.EntityOwner;
     this.staminaConfigModel = dojo.components.StaminaConfig;
-    this.currentArmiesTick = Date.now() / 1000;
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = BigInt(entityId);
     this.address = BigInt(this.dojo.network.burnerManager.account?.address || 0n);
+    this.wheatManager = new ProductionManager(
+      this.dojo.components.Production,
+      this.dojo.components.Resource,
+      this.dojo.components.BuildingQuantityv2,
+      BigInt(entityId),
+      254n,
+    );
+    this.fishManager = new ProductionManager(
+      this.dojo.components.Production,
+      this.dojo.components.Resource,
+      this.dojo.components.BuildingQuantityv2,
+      BigInt(entityId),
+      253n,
+    );
   }
 
   private _maxStamina = (troops: any): number => {
@@ -122,10 +137,12 @@ export class ArmyMovementManager {
     let staminaEntity = getComponentValue(this.staminaModel, this.entity);
     const armyEntity = getComponentValue(this.armyModel, this.entity);
 
-    if (this.currentArmiesTick !== staminaEntity?.last_refill_tick) {
+    const currentArmiesTick = getCurrentArmiesTick();
+
+    if (currentArmiesTick !== staminaEntity?.last_refill_tick) {
       staminaEntity = {
         ...staminaEntity!,
-        last_refill_tick: this.currentArmiesTick,
+        last_refill_tick: currentArmiesTick,
         amount: this._maxStamina(armyEntity!.troops),
       };
     }
@@ -135,20 +152,15 @@ export class ArmyMovementManager {
   private _canExplore(): boolean {
     const stamina = this.getStamina().amount;
 
-    const food = [
-      { resourceId: 254, amount: 10000000 },
-      { resourceId: 255, amount: 10000000 },
-    ];
+    const currentTick = getCurrentTick();
 
     if (stamina && stamina < EternumGlobalConfig.stamina.exploreCost) {
       return false;
     }
-    const fish = food.find((resource) => resource.resourceId === ResourcesIds.Fish);
-    if ((fish?.amount || 0) < EternumGlobalConfig.exploration.fishBurn) {
+    if (this.fishManager.balance(currentTick) < EternumGlobalConfig.exploration.fishBurn) {
       return false;
     }
-    const wheat = food.find((resource) => resource.resourceId === ResourcesIds.Wheat);
-    if ((wheat?.amount || 0) < EternumGlobalConfig.exploration.wheatBurn) {
+    if (this.wheatManager.balance(currentTick) < EternumGlobalConfig.exploration.wheatBurn) {
       return false;
     }
 
