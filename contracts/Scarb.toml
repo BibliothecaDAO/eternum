@@ -1,6 +1,6 @@
 [package]
 name = "eternum"
-version = "0.6.8"
+version = "1.0.0"
 
 [cairo]
 sierra-replace-ids = true
@@ -25,7 +25,7 @@ default = "eternum"
 rpc_url = "https://api.cartridge.gg/x/eternum-24/katana"
 account_address = "0x7d7d5498052763f3358e429f8044f1f80ef0bbe790f7c7dcb98ef35d83ed6a8"
 private_key = "0x57556ee557df0571d59c05e767f65ec8c9378b7768f77ca1c1246f7c1c68cd1"
-world_address = "0x161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824"
+world_address = "0x72bea8ba4bc0f95fb3313cc6b8b4228bbd38c329f53e972df7fe38fa055f357"
 
 [[target.dojo]]
 
