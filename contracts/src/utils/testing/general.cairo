@@ -1,6 +1,7 @@
 use core::array::{ArrayTrait, SpanTrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 
 use eternum::constants::{MAX_REALMS_PER_ADDRESS};
 use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCustomTrait};
@@ -12,7 +13,7 @@ use eternum::systems::{
 };
 use eternum::utils::map::biomes::Biome;
 
-fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsDispatcher, position: Position) -> u128 {
+fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsDispatcher, position: Position) -> ID {
     let realm_entity_id = realm_systems_dispatcher
         .create(
             1, // realm id
@@ -35,7 +36,7 @@ fn spawn_hyperstructure(
     hyperstructure_systems_dispatcher: IHyperstructureSystemsDispatcher,
     realm_entity_id: ID,
     coord: Coord
-) -> u128 {
+) -> ID {
     explore_tile(world, realm_entity_id, coord);
 
     let hyperstructure_entity_id = hyperstructure_systems_dispatcher.create(realm_entity_id, coord);
@@ -49,7 +50,7 @@ fn create_army_with_troops(
     realm_entity_id: ID,
     troops: Troops,
     is_defender: bool
-) -> u128 {
+) -> ID {
     let realm_army_unit_id: ID = combat_systems_dispatcher.army_create(realm_entity_id, false);
 
     combat_systems_dispatcher.army_buy_troops(realm_army_unit_id, realm_entity_id, troops);
@@ -86,21 +87,12 @@ fn get_default_hyperstructure_coord() -> Coord {
 
 fn explore_tile(world: IWorldDispatcher, explorer_id: ID, coords: Coord) {
     set!(
-        world,
-        Tile {
-            _col: coords.x,
-            _row: coords.y,
-            col: coords.x,
-            row: coords.y,
-            explored_by_id: explorer_id,
-            explored_at: 0,
-            biome: Biome::Beach
-        }
+        world, Tile { col: coords.x, row: coords.y, explored_by_id: explorer_id, explored_at: 0, biome: Biome::Beach }
     );
 }
 
 
-fn mint(world: IWorldDispatcher, entity: u128, mut resources: Span<(u8, u128)>) {
+fn mint(world: IWorldDispatcher, entity: ID, mut resources: Span<(u8, u128)>) {
     loop {
         match resources.pop_back() {
             Option::Some((

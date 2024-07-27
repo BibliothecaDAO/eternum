@@ -3,6 +3,7 @@ use core::serde::Serde;
 use core::traits::Into;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::LevelIndex;
 use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, WORLD_CONFIG_ID};
 
@@ -29,13 +30,13 @@ use eternum::systems::transport::contracts::travel_systems::{
 use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 use starknet::contract_address_const;
 
-fn setup() -> (IWorldDispatcher, u128, u64, Position, Coord, ITravelSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, ID, ID, Position, Coord, ITravelSystemsDispatcher) {
     let world = spawn_eternum();
 
     // set as executor
 
-    let travelling_entity_id = 11_u64;
-    let realm_entity_id = 99;
+    let travelling_entity_id: ID = 11;
+    let realm_entity_id: ID = 99;
     let travelling_entity_position = Position { x: 100_000, y: 200_000, entity_id: travelling_entity_id.into() };
 
     set!(world, (travelling_entity_position));
@@ -403,7 +404,7 @@ fn test_in_transit() {
 const TICK_INTERVAL_IN_SECONDS: u64 = 200;
 const MAX_STAMINA: u16 = 30;
 
-fn setup_hex_travel() -> (IWorldDispatcher, u128, Position, ITravelSystemsDispatcher) {
+fn setup_hex_travel() -> (IWorldDispatcher, ID, Position, ITravelSystemsDispatcher) {
     let world = spawn_eternum();
 
     // set tick config
@@ -430,8 +431,8 @@ fn setup_hex_travel() -> (IWorldDispatcher, u128, Position, ITravelSystemsDispat
     // change time such that we will be in the third tick
     starknet::testing::set_block_timestamp(tick_config.next_tick_timestamp());
 
-    let travelling_entity_id = 11_u128;
-    let owner_entity_id = 12_u128;
+    let travelling_entity_id: ID = 11;
+    let owner_entity_id: ID = 12;
     let travelling_entity_position = Position { x: 100_000, y: 200_000, entity_id: travelling_entity_id };
 
     set!(world, (travelling_entity_position));

@@ -54,6 +54,7 @@ mod tests {
     use core::serde::Serde;
 
     use dojo::world::IWorldDispatcherTrait;
+    use eternum::alias::ID;
     use eternum::models::position::{Coord};
     use eternum::models::road::{Road, RoadCustomImpl, RoadCustomTrait};
 

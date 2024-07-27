@@ -2,6 +2,7 @@ use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 
 use eternum::constants::ResourceTypes;
 use eternum::constants::{DONKEY_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID};
@@ -28,7 +29,6 @@ use eternum::systems::config::contracts::{
 use eternum::systems::trade::contracts::trade_systems::{
     trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
-
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm}
 };
@@ -36,7 +36,7 @@ use eternum::utils::testing::{
 use starknet::contract_address_const;
 
 
-fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
+fn setup(direct_trade: bool) -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
@@ -70,8 +70,8 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, ITradeSyste
     IWeightConfigDispatcher { contract_address: config_systems_address }
         .set_weight_config(ResourceTypes::SILVER.into(), 200);
 
-    let maker_position = Position { x: 100000, y: 200000, entity_id: 1_u128 };
-    let taker_position = Position { x: 200000, y: 1000000, entity_id: 1_u128 };
+    let maker_position = Position { x: 100000, y: 200000, entity_id: 1 };
+    let taker_position = Position { x: 200000, y: 1000000, entity_id: 1 };
 
     let realm_systems_dispatcher = deploy_realm_systems(world);
     let maker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, maker_position);

@@ -48,6 +48,7 @@ impl EntityOwnerCustomImpl of EntityOwnerCustomTrait {
 #[cfg(test)]
 mod tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::alias::ID;
     use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::realm::Realm;
     use eternum::utils::testing::world::spawn_eternum;

@@ -67,7 +67,7 @@ fn test_realm_create() {
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
-    let position = Position { x: 20, y: 30, entity_id: 1_u128 };
+    let position = Position { x: 20, y: 30, entity_id: 1 };
 
     let realm_id = 1;
     let resource_types_packed = 1;

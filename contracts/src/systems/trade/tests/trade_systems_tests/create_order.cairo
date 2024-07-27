@@ -1,6 +1,7 @@
 use core::array::{ArrayTrait, SpanTrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 
 use eternum::constants::{ResourceTypes, DONKEY_ENTITY_TYPE};
 
@@ -25,11 +26,10 @@ use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems, deploy_dev_resource_systems},
     general::{spawn_realm, get_default_realm_pos}
 };
-
 use starknet::contract_address_const;
 
 
-fn setup() -> (IWorldDispatcher, u128, u128, ITradeSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, ID, ID, ITradeSystemsDispatcher) {
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
@@ -51,7 +51,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, ITradeSystemsDispatcher) {
     let realm_entity_id = spawn_realm(world, realm_systems_dispatcher, get_default_realm_pos());
 
     let maker_id = realm_entity_id;
-    let taker_id = 12_u128;
+    let taker_id = 12;
 
     dev_resource_systems
         .mint(

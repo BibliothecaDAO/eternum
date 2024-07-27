@@ -1,6 +1,7 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
 use eternum::models::bank::liquidity::{Liquidity};
 use eternum::models::bank::market::{Market, MarketCustomImpl};
@@ -33,16 +34,16 @@ const INITIAL_RESOURCE_BALANCE: u128 = 10_000;
 const LIQUIDITY_AMOUNT: u128 = 1000;
 const SWAP_AMOUNT: u128 = 500;
 const MARKET_TOTAL_SHARES: u128 = 18446744073709551616000;
-const PLAYER_2_ID: u128 = 420;
-const PLAYER_3_ID: u128 = 69;
-const BANK_COORD_X: u128 = 30;
-const BANK_COORD_Y: u128 = 800;
-const BANK_ID: u128 = 1;
+const PLAYER_2_ID: ID = 420;
+const PLAYER_3_ID: ID = 69;
+const BANK_COORD_X: u32 = 30;
+const BANK_COORD_Y: u32 = 800;
+const BANK_ID: ID = 1;
 const DONKEY_CAPACITY: u128 = 1000;
 
 fn setup() -> (
     IWorldDispatcher,
-    u128,
+    ID,
     ILiquiditySystemsDispatcher,
     ISwapSystemsDispatcher,
     IBankSystemsDispatcher,

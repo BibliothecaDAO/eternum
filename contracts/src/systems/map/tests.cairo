@@ -1,6 +1,7 @@
 use core::traits::TryInto;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 
@@ -130,7 +131,7 @@ fn test_mercenaries_protector() {
     assert_eq!(mine_entity_owner.entity_owner_id, realm_entity_id, "wrong final owner");
 }
 
-fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher, ICombatContractDispatcher) {
+fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractDispatcher) {
     let world = spawn_eternum();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);

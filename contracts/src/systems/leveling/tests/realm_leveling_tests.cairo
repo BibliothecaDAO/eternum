@@ -3,6 +3,7 @@ use core::option::OptionTrait;
 use core::traits::Into;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, REALM_LEVELING_CONFIG_ID};
 use eternum::models::level::Level;
 use eternum::models::position::Position;
@@ -22,7 +23,7 @@ use eternum::utils::testing::{
 
 use starknet::contract_address_const;
 
-fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, ID, ILevelingSystemsDispatcher) {
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);

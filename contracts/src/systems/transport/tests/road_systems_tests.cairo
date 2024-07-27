@@ -3,6 +3,7 @@ use core::clone::Clone;
 
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 
 use eternum::constants::{ROAD_CONFIG_ID, ResourceTypes};
 use eternum::models::config::RoadConfig;

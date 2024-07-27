@@ -1,6 +1,7 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, DONKEY_ENTITY_TYPE};
 
 use eternum::models::bank::liquidity::{Liquidity};
@@ -28,17 +29,17 @@ use traits::Into;
 const INITIAL_RESOURCE_BALANCE: u128 = 100_000;
 const LIQUIDITY_AMOUNT: u128 = 10_000;
 const SWAP_AMOUNT: u128 = 1_000;
-const PLAYER_2_ID: u128 = 420;
-const BANK_COORD_X: u128 = 30;
-const BANK_COORD_Y: u128 = 800;
-const BANK_ID: u128 = 1;
+const PLAYER_2_ID: ID = 420;
+const BANK_COORD_X: u32 = 30;
+const BANK_COORD_Y: u32 = 800;
+const BANK_ID: ID = 1;
 const DONKEY_CAPACITY: u128 = 10_000;
 
 fn setup(
     owner_fee_num: u128, owner_fee_denom: u128, lp_fee_num: u128, lp_fee_denom: u128
 ) -> (
     IWorldDispatcher,
-    u128,
+    ID,
     ILiquiditySystemsDispatcher,
     ISwapSystemsDispatcher,
     IBankSystemsDispatcher,

@@ -309,6 +309,7 @@ mod tests_resource_traits {
     use core::option::OptionTrait;
     use debug::PrintTrait;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::alias::ID;
     use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
     use eternum::models::config::{TickConfig, TickImpl, TickTrait};
     use eternum::models::production::ProductionRateTrait;
@@ -321,7 +322,7 @@ mod tests_resource_traits {
     use traits::Into;
     use traits::TryInto;
 
-    fn setup() -> (IWorldDispatcher, u128, u128, Span<(u8, u128)>) {
+    fn setup() -> (IWorldDispatcher, ID, u128, Span<(u8, u128)>) {
         // SCENERIO
         // There are two buildings in the structure. One producing
         // something which consumes `2` wood per tick. The only important

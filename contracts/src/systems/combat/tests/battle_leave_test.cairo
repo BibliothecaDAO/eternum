@@ -1,5 +1,6 @@
 use core::array::SpanTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use eternum::models::capacity::Capacity;
 use eternum::models::combat::{Army, Troops, TroopsTrait, BattleSide, Protectee, Protector, Battle};
@@ -43,17 +44,17 @@ const PLAYER_3_STARTING_CROSSBOWMAN_COUNT: u128 = 100 * RESOURCE_PRECISION;
 
 const ARMY_GOLD_RESOURCE_AMOUNT: u128 = 5_000 * RESOURCE_PRECISION;
 
-const PLAYER_1_REALM_COORD_X: u128 = 2;
-const PLAYER_1_REALM_COORD_Y: u128 = 3;
+const PLAYER_1_REALM_COORD_X: u32 = 2;
+const PLAYER_1_REALM_COORD_Y: u32 = 3;
 
-const PLAYER_2_REALM_COORD_X: u128 = 4;
-const PLAYER_2_REALM_COORD_Y: u128 = 5;
+const PLAYER_2_REALM_COORD_X: u32 = 4;
+const PLAYER_2_REALM_COORD_Y: u32 = 5;
 
-const PLAYER_3_REALM_COORD_X: u128 = 6;
-const PLAYER_3_REALM_COORD_Y: u128 = 7;
+const PLAYER_3_REALM_COORD_X: u32 = 6;
+const PLAYER_3_REALM_COORD_Y: u32 = 7;
 
-const BATTLE_COORD_X: u128 = 8;
-const BATTLE_COORD_Y: u128 = 9;
+const BATTLE_COORD_X: u32 = 8;
+const BATTLE_COORD_Y: u32 = 9;
 
 fn battle_coord() -> Coord {
     Coord { x: BATTLE_COORD_X, y: BATTLE_COORD_Y, }
@@ -97,7 +98,7 @@ fn set_configurations(world: IWorldDispatcher) {
     )
 }
 
-fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, u128, u128, u128, u128, u128, u128) {
+fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID, ID, ID, ID, ID, ID) {
     let world = spawn_eternum();
     set_configurations(world);
     let realm_system_dispatcher = deploy_realm_systems(world);

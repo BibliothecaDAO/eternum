@@ -256,6 +256,7 @@ impl PositionCustomImpl of PositionCustomTrait {
 #[cfg(test)]
 mod tests {
     use debug::PrintTrait;
+    use eternum::alias::ID;
     use super::{Position, PositionCustomTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
     use traits::Into;
     use traits::TryInto;

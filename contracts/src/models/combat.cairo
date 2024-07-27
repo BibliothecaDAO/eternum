@@ -728,6 +728,7 @@ impl BattleCustomImpl of BattleCustomTrait {
 #[cfg(test)]
 mod tests {
     use dojo::world::IWorldDispatcherTrait;
+    use eternum::constants::ID;
     use eternum::constants::ResourceTypes;
     use eternum::models::combat::BattleCustomTrait;
     use eternum::models::combat::BattleEscrowTrait;

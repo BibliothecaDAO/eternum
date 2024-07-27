@@ -77,6 +77,7 @@ impl LevelCustomImpl of LevelCustomTrait {
 
 #[cfg(test)]
 mod tests {
+    use eternum::alias::ID;
     use eternum::constants::{LevelIndex, REALM_LEVELING_START_TIER, HYPERSTRUCTURE_LEVELING_START_TIER};
     use eternum::models::config::{LevelingConfig};
     use super::{Level, LevelCustomTrait};

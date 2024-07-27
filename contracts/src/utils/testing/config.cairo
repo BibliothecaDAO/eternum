@@ -1,6 +1,5 @@
 use core::array::{SpanTrait, ArrayTrait, SpanIndex};
-use core::traits::IndexView;
-
+use core::ops::index::IndexView;
 use eternum::constants::{ResourceTypes, ARMY_ENTITY_TYPE, DONKEY_ENTITY_TYPE, TickIds};
 
 use eternum::models::{config::TroopConfig, combat::Troops};
@@ -97,7 +96,8 @@ fn set_weight_config(config_systems_address: ContractAddress) {
     let mut i = 0;
     while i < resource_weights.len() {
         let (resource_id, weight) = *resource_weights.at(i);
-        IWeightConfigDispatcher { contract_address: config_systems_address }.set_weight_config(resource_id, weight);
+        IWeightConfigDispatcher { contract_address: config_systems_address }
+            .set_weight_config(resource_id.into(), weight);
         i += 1;
     }
 }
