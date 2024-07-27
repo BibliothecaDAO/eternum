@@ -3,7 +3,7 @@ use eternum::models::quantity::{Quantity, QuantityCustomTrait};
 use eternum::models::weight::{Weight};
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Capacity {
     #[key]

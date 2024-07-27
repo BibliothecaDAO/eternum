@@ -28,7 +28,7 @@ use eternum::utils::number::NumberTrait;
 const STRENGTH_PRECISION: u256 = 10_000;
 
 
-#[derive(Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Health {
     #[key]
@@ -290,7 +290,7 @@ impl ArmyQuantityTracker of ArmyQuantityTrackerTrait {
     }
 }
 
-#[derive(Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Army {
     #[key]
@@ -385,7 +385,7 @@ impl ArmyCustomImpl of ArmyCustomTrait {
 }
 
 
-#[derive(Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Protector {
     #[key]
@@ -400,7 +400,7 @@ impl ProtectorCustomImpl of ProtectorCustomTrait {
     }
 }
 
-#[derive(Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Protectee {
     #[key]
@@ -428,7 +428,7 @@ impl ProtecteeCustomImpl of ProtecteeCustomTrait {
 }
 
 
-#[derive(Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Battle {
     #[key]

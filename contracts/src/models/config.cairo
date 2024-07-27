@@ -13,7 +13,7 @@ use starknet::ContractAddress;
 // GLOBAL CONFIGS
 //
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct WorldConfig {
     #[key]
@@ -22,7 +22,7 @@ pub struct WorldConfig {
     realm_l2_contract: ContractAddress,
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct RealmFreeMintConfig {
     #[key]
@@ -32,7 +32,7 @@ pub struct RealmFreeMintConfig {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct RoadConfig {
     #[key]
@@ -42,7 +42,7 @@ pub struct RoadConfig {
     speed_up_by: u64
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct HyperstructureResourceConfig {
     #[key]
@@ -57,7 +57,7 @@ pub struct HyperstructureResourceConfig {
 // that it's a config for one specific entity type?
 // and not the same as world config
 // e.g. EntityTypeCapacityConfig?
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct CapacityConfig {
     #[key]
@@ -76,7 +76,7 @@ impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
 }
 
 // speed
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct SpeedConfig {
     #[key]
@@ -88,7 +88,7 @@ pub struct SpeedConfig {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct MapExploreConfig {
     #[key]
@@ -100,7 +100,7 @@ pub struct MapExploreConfig {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct TickConfig {
     #[key]
@@ -110,7 +110,7 @@ pub struct TickConfig {
     tick_interval_in_seconds: u64
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct StaminaConfig {
     #[key]
@@ -169,7 +169,7 @@ impl TickImpl of TickTrait {
 
 
 // weight
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct WeightConfig {
     #[key]
@@ -189,7 +189,7 @@ impl WeightConfigCustomImpl of WeightConfigCustomTrait {
     }
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct LevelingConfig {
     #[key]
@@ -212,7 +212,7 @@ pub struct LevelingConfig {
     resource_3_cost_count: u32
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ProductionConfig {
     #[key]
@@ -226,7 +226,7 @@ pub struct ProductionConfig {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BankConfig {
     #[key]
@@ -236,7 +236,7 @@ pub struct BankConfig {
     lp_fee_denom: u128,
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BuildingConfig {
     #[key]
@@ -264,7 +264,7 @@ impl BuildingConfigCustomImpl of BuildingConfigCustomTrait {
     }
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct TroopConfig {
     #[key]
@@ -300,7 +300,7 @@ impl TroopConfigCustomImpl of TroopConfigCustomTrait {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BattleConfig {
     #[key]
@@ -316,7 +316,7 @@ impl BattleConfigCustomImpl of BattleConfigCustomTrait {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BuildingCategoryPopConfig {
     #[key]
@@ -327,7 +327,7 @@ pub struct BuildingCategoryPopConfig {
     capacity: u32, // increase capacity by this amount
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct PopulationConfig {
     #[key]
@@ -349,7 +349,7 @@ impl HyperstructureConfigCustomImpl of HyperstructureConfigCustomTrait {
     }
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct HasClaimedStartingResources {
     #[key]

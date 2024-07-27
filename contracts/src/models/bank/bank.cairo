@@ -3,7 +3,7 @@ use eternum::alias::ID;
 use starknet::ContractAddress;
 
 // Used as helper struct throughout the world
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Bank {
     #[key]

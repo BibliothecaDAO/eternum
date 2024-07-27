@@ -1,6 +1,6 @@
 use eternum::alias::ID;
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct AddressName {
     #[key]
@@ -8,7 +8,7 @@ pub struct AddressName {
     name: felt252
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct EntityName {
     #[key]

@@ -211,7 +211,7 @@ impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Position {
     #[key]

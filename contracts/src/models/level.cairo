@@ -6,7 +6,7 @@ use eternum::constants::{LevelIndex};
 use eternum::models::config::{LevelingConfig};
 use eternum::models::resources::{ResourceCost};
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Level {
     #[key]

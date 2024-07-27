@@ -1,7 +1,7 @@
 use eternum::alias::ID;
 use starknet::ContractAddress;
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Guild {
     #[key]
@@ -10,7 +10,7 @@ pub struct Guild {
     member_count: u16
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct GuildMember {
     #[key]
@@ -18,7 +18,7 @@ pub struct GuildMember {
     guild_entity_id: ID
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct GuildWhitelist {
     #[key]

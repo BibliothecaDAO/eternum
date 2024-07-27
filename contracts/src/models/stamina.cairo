@@ -6,7 +6,7 @@ use eternum::{
     constants::{ResourceTypes, TravelTypes, TravelTypesImpl, WORLD_CONFIG_ID}
 };
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Stamina {
     #[key]

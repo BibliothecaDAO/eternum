@@ -35,7 +35,7 @@ impl IntrospectFixed of Introspect<Fixed> {
     }
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Market {
     #[key]

@@ -15,7 +15,7 @@ use eternum::models::structure::Structure;
 use eternum::models::structure::StructureCustomTrait;
 use eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Resource {
     #[key]
@@ -39,7 +39,7 @@ impl ResourceDisplay of Display<Resource> {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ResourceAllowance {
     #[key]
@@ -51,7 +51,7 @@ pub struct ResourceAllowance {
     amount: u128,
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ResourceCost {
     #[key]
@@ -63,7 +63,7 @@ pub struct ResourceCost {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct DetachedResource {
     #[key]
@@ -75,7 +75,7 @@ pub struct DetachedResource {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct OwnedResourcesTracker {
     #[key]
@@ -83,7 +83,7 @@ pub struct OwnedResourcesTracker {
     resource_types: u256
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ResourceTransferLock {
     #[key]

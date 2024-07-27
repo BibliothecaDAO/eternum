@@ -2,7 +2,7 @@ use eternum::alias::ID;
 use eternum::models::buildings::{BuildingCategory};
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Population {
     #[key]

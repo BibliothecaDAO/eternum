@@ -2,7 +2,7 @@ use eternum::alias::ID;
 
 // a way to store the type of the entity in addition
 // to the list of components which we already have
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct EntityMetadata {
     #[key]
@@ -16,7 +16,7 @@ pub struct EntityMetadata {
 // using an index and the foreign key
 // see CreateCaravan for an example
 // TODO: change ForeignKey to CaravanMember and stop using general purpose components
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ForeignKey {
     #[key]

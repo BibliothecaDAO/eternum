@@ -18,7 +18,7 @@ use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
 
 //todo we need to define border of innner hexes
 
-#[derive(PartialEq, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Building {
     #[key]
@@ -36,7 +36,7 @@ pub struct Building {
     outer_entity_id: ID,
 }
 
-#[derive(PartialEq, Copy, Drop, Serde)]
+#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BuildingQuantityv2 {
     #[key]
@@ -48,7 +48,6 @@ pub struct BuildingQuantityv2 {
 
 
 #[derive(PartialEq, Copy, Drop, Serde, Introspect)]
-#[dojo::model]
 enum BuildingCategory {
     None,
     Castle,

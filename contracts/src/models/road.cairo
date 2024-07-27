@@ -6,7 +6,7 @@ use eternum::models::config::{RoadConfig};
 use eternum::models::position::Coord;
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Road {
     #[key]

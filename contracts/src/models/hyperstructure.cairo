@@ -1,7 +1,7 @@
 use eternum::alias::ID;
 use starknet::ContractAddress;
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Progress {
     #[key]
@@ -11,7 +11,7 @@ pub struct Progress {
     amount: u128,
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Contribution {
     #[key]
