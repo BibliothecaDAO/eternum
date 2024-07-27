@@ -10,7 +10,7 @@ use starknet::get_block_timestamp;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Production {
+pub struct Production {
     #[key]
     entity_id: u128,
     #[key]
@@ -148,7 +148,7 @@ impl ProductionRateImpl of ProductionRateTrait {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct ProductionInput {
+pub struct ProductionInput {
     #[key]
     output_resource_type: u8,
     #[key]
@@ -159,9 +159,9 @@ struct ProductionInput {
 
 #[generate_trait]
 impl ProductionInputCustomImpl of ProductionInputCustomTrait {
-    /// Production ends when any input material runs out of balance so what this 
-    /// function does is that it finds the first input resource to run out of balance that 
-    /// returns the tick it runs out 
+    /// Production ends when any input material runs out of balance so what this
+    /// function does is that it finds the first input resource to run out of balance that
+    /// returns the tick it runs out
     fn first_input_finish_tick(production: @Production, world: IWorldDispatcher) -> u64 {
         let production_config = get!(world, *production.resource_type, ProductionConfig);
         let tick_config = TickImpl::get_default_tick_config(world);
@@ -197,7 +197,7 @@ impl ProductionInputCustomImpl of ProductionInputCustomTrait {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct ProductionOutput {
+pub struct ProductionOutput {
     #[key]
     input_resource_type: u8,
     #[key]
@@ -207,7 +207,7 @@ struct ProductionOutput {
 
 #[generate_trait]
 impl ProductionOutputCustomImpl of ProductionOutputCustomTrait {
-    /// Updates end ticks for dependent resources based 
+    /// Updates end ticks for dependent resources based
     /// on changes in this resource's balance.
     fn sync_all_inputs_exhaustion_ticks_for(resource: @Resource, world: IWorldDispatcher) {
         let resource = *resource;

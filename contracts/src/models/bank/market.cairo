@@ -2,7 +2,7 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 // Dojo imports
-use dojo::database::introspect::{Struct, Ty, Introspect, Member};
+use dojo::model::introspect::{Struct, Ty, Introspect, Member};
 
 // Starknet imports
 use starknet::ContractAddress;
@@ -14,8 +14,8 @@ impl IntrospectFixed of Introspect<Fixed> {
     }
 
     #[inline(always)]
-    fn layout() -> dojo::database::introspect::Layout {
-        dojo::database::introspect::Layout::Fixed(array![128, 1].span())
+    fn layout() -> dojo::model::Layout {
+        dojo::model::Layout::Fixed(array![128, 1].span())
     }
 
     #[inline(always)]
@@ -36,7 +36,7 @@ impl IntrospectFixed of Introspect<Fixed> {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Market {
+pub struct Market {
     #[key]
     bank_entity_id: u128,
     #[key]
@@ -68,7 +68,7 @@ impl MarketCustomImpl of MarketCustomTrait {
         numerator / denominator
     }
 
-    // Here the user gets the requested output but pays more in price to 
+    // Here the user gets the requested output but pays more in price to
     // account for lp fees. i.e fees are paid in input token
     fn get_output_price(
         fee_rate_num: u128, fee_rate_denom: u128, output_amount: u128, input_reserve: u128, output_reserve: u128
@@ -467,7 +467,7 @@ mod tests {
         let (amount, quantity) = (2, 20); // pool 1:10
         let (amount_add, quantity_add, liquidity_add, _) = market.add_liquidity(amount, quantity);
 
-        // Assert 
+        // Assert
         assert(amount_add == amount, 'wrong cash amount');
         assert(quantity_add == quantity, 'wrong item quantity');
 

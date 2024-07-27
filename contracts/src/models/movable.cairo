@@ -6,7 +6,7 @@ use eternum::models::position::Coord;
 // speed seconds per km
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Movable {
+pub struct Movable {
     #[key]
     entity_id: u128,
     sec_per_km: u16,
@@ -38,7 +38,7 @@ impl MovableCustomImpl of MovableCustomTrait {
 // without having to attach a Movable component to the order
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct ArrivalTime {
+pub struct ArrivalTime {
     #[key]
     entity_id: u128,
     arrives_at: u64,

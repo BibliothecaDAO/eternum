@@ -132,7 +132,7 @@ mod liquidity_systems {
     }
 
     #[generate_trait]
-    impl InternalLiquiditySystemsImpl of InternalLiquiditySystemsTrait {
+    pub impl InternalLiquiditySystemsImpl of InternalLiquiditySystemsTrait {
         fn emit_event(
             world: IWorldDispatcher,
             market: Market,

@@ -87,7 +87,7 @@ fn test_level_up_realm() {
     let level = get!(world, (realm_entity_id), Level);
     assert(level.level == 0, 'wrong level');
 
-    // level up 
+    // level up
     leveling_systems_dispatcher.level_up_realm(realm_entity_id,);
 
     let realm_wheat = get!(world, (realm_entity_id, ResourceTypes::WHEAT), Resource);
@@ -110,7 +110,7 @@ fn test_level_up_not_realm_owner() {
     // set unknown caller
     starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
-    // level up 
+    // level up
     leveling_systems_dispatcher.level_up_realm(realm_entity_id,);
 }
 
@@ -124,6 +124,6 @@ fn test_level_up_not_realm() {
     // set abritrary realm entity id
     let realm_entity_id = 8888888;
 
-    // level up 
+    // level up
     leveling_systems_dispatcher.level_up_realm(realm_entity_id,);
 }

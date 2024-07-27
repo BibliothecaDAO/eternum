@@ -17,7 +17,7 @@ use eternum::utils::math::{is_u256_bit_set, set_u256_bit, min};
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Resource {
+pub struct Resource {
     #[key]
     entity_id: u128,
     #[key]
@@ -41,7 +41,7 @@ impl ResourceDisplay of Display<Resource> {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct ResourceAllowance {
+pub struct ResourceAllowance {
     #[key]
     owner_entity_id: u128,
     #[key]
@@ -53,7 +53,7 @@ struct ResourceAllowance {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct ResourceCost {
+pub struct ResourceCost {
     #[key]
     entity_id: u128,
     #[key]
@@ -65,7 +65,7 @@ struct ResourceCost {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct DetachedResource {
+pub struct DetachedResource {
     #[key]
     entity_id: u128,
     #[key]
@@ -77,7 +77,7 @@ struct DetachedResource {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct OwnedResourcesTracker {
+pub struct OwnedResourcesTracker {
     #[key]
     entity_id: u128,
     resource_types: u256
@@ -85,7 +85,7 @@ struct OwnedResourcesTracker {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct ResourceTransferLock {
+pub struct ResourceTransferLock {
     #[key]
     entity_id: u128,
     release_at: u64,
@@ -323,11 +323,11 @@ mod tests_resource_traits {
 
     fn setup() -> (IWorldDispatcher, u128, u128, Span<(u8, u128)>) {
         // SCENERIO
-        // There are two buildings in the structure. One producing 
+        // There are two buildings in the structure. One producing
         // something which consumes `2` wood per tick. The only important
         // thing about the first building is that it consumes wood.
         //
-        // Then the other building is a wood building which produces 
+        // Then the other building is a wood building which produces
         // `50` wood per tick. The cost of producing wood is `3` gold per tick.
         //
         // The entity has 100 gold initially.
@@ -336,7 +336,7 @@ mod tests_resource_traits {
         let world = spawn_eternum();
         let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
-        // set tick config 
+        // set tick config
         let tick_config = TickConfig {
             config_id: WORLD_CONFIG_ID, tick_id: TickIds::DEFAULT, tick_interval_in_seconds: 5
         };
@@ -375,7 +375,7 @@ mod tests_resource_traits {
             input_finish_tick: 0
         };
 
-        // set gold resource balance 
+        // set gold resource balance
 
         let initial_gold_balance = 100;
         let mut gold_resource = Resource {
@@ -407,7 +407,7 @@ mod tests_resource_traits {
 
         // check wood balance after 3 ticks
         let wood_resource = ResourceCustomImpl::get(world, (entity_id, ResourceTypes::WOOD));
-        // wood production = 50 
+        // wood production = 50
         // wood consumption = 3
         assert_eq!(wood_resource.balance, (50 - 2) * tick_passed.into());
 
@@ -449,9 +449,9 @@ mod tests_resource_traits {
 
         // check that wood production end tick was computed correctly
         // wood production should end when gold balance finishes.
-        // 
+        //
         // now we have 104 gold, so wood production should end at tick 34
-        // the calculation being, 104 / 3 = 34.66 // 34 
+        // the calculation being, 104 / 3 = 34.66 // 34
         let wood_production: Production = get!(world, (entity_id, ResourceTypes::WOOD), Production);
         assert_eq!(wood_production.input_finish_tick, 34);
     }

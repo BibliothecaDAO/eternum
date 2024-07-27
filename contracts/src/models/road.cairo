@@ -8,7 +8,7 @@ use eternum::models::position::Coord;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Road {
+pub struct Road {
     #[key]
     start_coord_x: u128,
     #[key]

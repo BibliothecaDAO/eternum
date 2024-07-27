@@ -35,7 +35,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
-    // set speed configuration 
+    // set speed configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }
         .set_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
 
@@ -109,7 +109,7 @@ fn test_cancel() {
 
     let _trade = get!(world, trade_id, Trade);
 
-    // cancel order 
+    // cancel order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     trade_systems_dispatcher
         .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span());
@@ -133,11 +133,11 @@ fn test_cancel() {
 fn test_cancel_after_acceptance() {
     let (world, trade_id, _, _, trade_systems_dispatcher) = setup();
 
-    // accept order 
+    // accept order
 
     set!(world, (Status { trade_id, value: TradeStatus::ACCEPTED, }),);
 
-    // cancel order 
+    // cancel order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     trade_systems_dispatcher
         .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span());
@@ -153,7 +153,7 @@ fn test_cancel_caller_not_maker() {
     // set caller to an unknown address
     starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
-    // cancel order 
+    // cancel order
     trade_systems_dispatcher
         .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span());
 }

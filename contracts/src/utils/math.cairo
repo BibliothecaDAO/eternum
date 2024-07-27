@@ -6,7 +6,7 @@ use alexandria_math::U32BitShift;
 /// * `exp` - The exponent.
 /// # Returns
 /// * `felt252` - The result of base raised to the power of exp.
-fn pow(base: felt252, exp: felt252) -> felt252 {
+pub fn pow(base: felt252, exp: felt252) -> felt252 {
     match exp {
         0 => 1,
         _ => base * pow(base, exp - 1),
@@ -14,7 +14,7 @@ fn pow(base: felt252, exp: felt252) -> felt252 {
 }
 
 
-fn min<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(a: T, b: T) -> T {
+pub fn min<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(a: T, b: T) -> T {
     return if (a < b) {
         return a;
     } else {
@@ -22,7 +22,7 @@ fn min<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop
     };
 }
 
-fn max<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(a: T, b: T) -> T {
+pub fn max<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(a: T, b: T) -> T {
     return if (a > b) {
         return a;
     } else {
@@ -34,7 +34,7 @@ fn max<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop
 ///////// U32 Bit Manipulation /////////
 
 /// Check whether a bit is set in a u32 number
-fn is_u32_bit_set(number: u32, position: u8) -> bool {
+pub fn is_u32_bit_set(number: u32, position: u8) -> bool {
     assert!(position <= 31, "position must be within the values of 0 and 31 (inclusive)");
 
     if (number & U32BitShift::shl(1, position.into())) > 0 {
@@ -44,7 +44,7 @@ fn is_u32_bit_set(number: u32, position: u8) -> bool {
 }
 
 /// Set a bit to a value in a u32 number
-fn set_u32_bit(number: u32, position: u8, value: bool) -> u32 {
+pub fn set_u32_bit(number: u32, position: u8, value: bool) -> u32 {
     assert!(position <= 31, "position must be within the values of 0 and 31 (inclusive)");
 
     let value = if (value == true) {
@@ -60,7 +60,7 @@ fn set_u32_bit(number: u32, position: u8, value: bool) -> u32 {
 ///////// U256 Bit Manipulation /////////
 
 /// Check whether a bit is set in a u256 number
-fn is_u256_bit_set(number: u256, position: u8) -> bool {
+pub fn is_u256_bit_set(number: u256, position: u8) -> bool {
     if (number & U256BitShift::shl(1, position.into())) > 0 {
         return true;
     }
@@ -68,7 +68,7 @@ fn is_u256_bit_set(number: u256, position: u8) -> bool {
 }
 
 /// Set a bit to a value in a u256 number
-fn set_u256_bit(number: u256, position: u8, value: bool) -> u256 {
+pub fn set_u256_bit(number: u256, position: u8, value: bool) -> u256 {
     let value = if (value == true) {
         1
     } else {
@@ -78,18 +78,18 @@ fn set_u256_bit(number: u256, position: u8, value: bool) -> u256 {
     return (number & ~mask) | ((U256BitShift::shl(value, position.into())) & mask);
 }
 
-trait PercentageTrait<T> {
+pub trait PercentageTrait<T> {
     fn get(value: T, numerator: u64) -> T;
 }
 
-impl PercentageImpl<T, +Mul<T>, +Div<T>, +Into<u64, T>, +Copy<T>, +Drop<T>> of PercentageTrait<T> {
+pub impl PercentageImpl<T, +Mul<T>, +Div<T>, +Into<u64, T>, +Copy<T>, +Drop<T>> of PercentageTrait<T> {
     fn get(value: T, numerator: u64) -> T {
         return (value * numerator.into()) / PercentageValueImpl::_100().into();
     }
 }
 
 #[generate_trait]
-impl PercentageValueImpl of PercentageValueTrait {
+pub impl PercentageValueImpl of PercentageValueTrait {
     fn _1() -> u64 {
         100
     }

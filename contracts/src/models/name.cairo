@@ -1,6 +1,6 @@
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct AddressName {
+pub struct AddressName {
     #[key]
     address: felt252,
     name: felt252
@@ -8,7 +8,7 @@ struct AddressName {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct EntityName {
+pub struct EntityName {
     #[key]
     entity_id: u128,
     name: felt252

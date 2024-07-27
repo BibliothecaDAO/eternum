@@ -131,7 +131,7 @@ mod ResourceTypes {
     const LORDS: u8 = 253;
     const WHEAT: u8 = 254;
     const FISH: u8 = 255;
-// note: update _resource_type_to_position 
+    // note: update _resource_type_to_position
 //  function is any new resources are added
 }
 
@@ -241,7 +241,7 @@ fn get_resources_without_earthenshards() -> Span<u8> {
 }
 
 fn get_resources_without_earthenshards_probs() -> Span<u128> {
-    // 35 
+    // 35
     return array![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1].span();
 }
 

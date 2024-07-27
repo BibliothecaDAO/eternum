@@ -117,7 +117,7 @@ mod hyperstructure_systems {
 
 
     #[generate_trait]
-    impl InternalHyperstructureSystemsImpl of InternalHyperstructureSystemsTrait {
+    pub impl InternalHyperstructureSystemsImpl of InternalHyperstructureSystemsTrait {
         fn handle_contribution(
             world: IWorldDispatcher,
             hyperstructure_entity_id: u128,

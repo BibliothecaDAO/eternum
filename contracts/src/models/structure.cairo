@@ -7,7 +7,7 @@ use traits::Into;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Structure {
+pub struct Structure {
     #[key]
     entity_id: u128,
     category: StructureCategory
@@ -49,7 +49,7 @@ impl StructureCategoryIntoFelt252 of Into<StructureCategory, felt252> {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct StructureCount {
+pub struct StructureCount {
     #[key]
     coord: Coord,
     count: u8

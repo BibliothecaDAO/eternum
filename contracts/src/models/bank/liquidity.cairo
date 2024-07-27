@@ -1,11 +1,5 @@
-// External imports
-
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-
-// Dojo imports
-
-use dojo::database::introspect::{Struct, Ty, Introspect, Member};
-// Starknet imports
+use dojo::model::introspect::{Struct, Ty, Introspect, Member};
 
 use starknet::ContractAddress;
 
@@ -16,8 +10,8 @@ impl IntrospectFixed of Introspect<Fixed> {
     }
 
     #[inline(always)]
-    fn layout() -> dojo::database::introspect::Layout {
-        dojo::database::introspect::Layout::Fixed(array![128, 1].span())
+    fn layout() -> dojo::model::Layout {
+        dojo::model::Layout::Fixed(array![128, 1].span())
     }
 
     #[inline(always)]
@@ -38,7 +32,7 @@ impl IntrospectFixed of Introspect<Fixed> {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Liquidity {
+pub struct Liquidity {
     #[key]
     bank_entity_id: u128,
     #[key]

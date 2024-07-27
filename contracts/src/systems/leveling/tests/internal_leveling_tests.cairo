@@ -24,7 +24,7 @@ mod internal_leveling_systems {
     fn setup() -> (IWorldDispatcher, u128) {
         let world = spawn_eternum();
 
-        // define leveling config 
+        // define leveling config
 
         let decay_scaled: u128 = 1844674407370955161;
         let base_multiplier: u128 = 25;
@@ -95,7 +95,7 @@ mod internal_leveling_systems {
         let level = get!(world, (entity_id), Level);
         assert(level.level == 0, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         // assert resources are the right amount
@@ -111,7 +111,7 @@ mod internal_leveling_systems {
         let level = get!(world, entity_id, Level);
         assert(level.level == 1, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         // assert resources are the right amount
@@ -130,7 +130,7 @@ mod internal_leveling_systems {
         let level = get!(world, entity_id, Level);
         assert(level.level == 2, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let coal_resource = get!(world, (entity_id, ResourceTypes::COAL), Resource);
@@ -142,7 +142,7 @@ mod internal_leveling_systems {
         let level = get!(world, entity_id, Level);
         assert(level.level == 3, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let obsidian_resource = get!(world, (entity_id, ResourceTypes::OBSIDIAN), Resource);
@@ -154,7 +154,7 @@ mod internal_leveling_systems {
         let level = get!(world, entity_id, Level);
         assert(level.level == 4, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let wheat_resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
@@ -163,25 +163,25 @@ mod internal_leveling_systems {
         let level = get!(world, entity_id, Level);
         assert(level.level == 5, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let level = get!(world, entity_id, Level);
         assert(level.level == 6, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let level = get!(world, entity_id, Level);
         assert(level.level == 7, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let level = get!(world, entity_id, Level);
         assert(level.level == 8, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let level = get!(world, entity_id, Level);

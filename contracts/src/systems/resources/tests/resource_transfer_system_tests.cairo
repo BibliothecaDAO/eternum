@@ -143,7 +143,7 @@ mod resource_transfer_system_tests {
             world, (Resource { entity_id: sender_entity_id.into(), resource_type: ResourceTypes::DONKEY, balance: 0 },)
         );
 
-        // set receiving entity capacity, and weight config 
+        // set receiving entity capacity, and weight config
         set!(
             world,
             (
@@ -169,11 +169,11 @@ mod resource_transfer_system_tests {
             )
         );
 
-        // transfer resources 
+        // transfer resources
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
 
-        // should fail because total capacity 
-        // is 10,000 and total weight is 11,000 
+        // should fail because total capacity
+        // is 10,000 and total weight is 11,000
         resource_systems_dispatcher
             .send(
                 sender_entity_id.into(),
@@ -189,7 +189,7 @@ mod resource_transfer_system_tests {
     fn test_transfer__not_owner() {
         let (_, resource_systems_dispatcher) = setup();
 
-        // transfer resources 
+        // transfer resources
         starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
         resource_systems_dispatcher.send(1, 2, array![(ResourceTypes::STONE, 400), (ResourceTypes::WOOD, 700),].span());
@@ -211,7 +211,7 @@ mod resource_transfer_system_tests {
         let receiver_entity_id = 12_u64;
         make_owner_and_receiver(world, sender_entity_id, receiver_entity_id);
 
-        // transfer resources 
+        // transfer resources
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
 
         resource_systems_dispatcher

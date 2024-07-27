@@ -77,7 +77,7 @@ mod bank_systems {
     }
 
     #[generate_trait]
-    impl InternalBankSystemsImpl of BankSystemsTrait {
+    pub impl InternalBankSystemsImpl of BankSystemsTrait {
         fn pickup_resources_from_bank(
             world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resources: Span<(u8, u128)>,
         ) -> ID {

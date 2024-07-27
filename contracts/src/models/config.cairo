@@ -14,7 +14,7 @@ use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct WorldConfig {
+pub struct WorldConfig {
     #[key]
     config_id: u128,
     admin_address: ContractAddress,
@@ -23,7 +23,7 @@ struct WorldConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct RealmFreeMintConfig {
+pub struct RealmFreeMintConfig {
     #[key]
     config_id: u128,
     detached_resource_id: u128,
@@ -33,7 +33,7 @@ struct RealmFreeMintConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct RoadConfig {
+pub struct RoadConfig {
     #[key]
     config_id: u128,
     resource_cost_id: u128,
@@ -43,7 +43,7 @@ struct RoadConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct HyperstructureResourceConfig {
+pub struct HyperstructureResourceConfig {
     #[key]
     config_id: u128,
     #[key]
@@ -54,11 +54,11 @@ struct HyperstructureResourceConfig {
 // capacity
 // TODO: should rename into something that shows
 // that it's a config for one specific entity type?
-// and not the same as world config 
+// and not the same as world config
 // e.g. EntityTypeCapacityConfig?
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct CapacityConfig {
+pub struct CapacityConfig {
     #[key]
     config_id: u128,
     #[key]
@@ -77,7 +77,7 @@ impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
 // speed
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct SpeedConfig {
+pub struct SpeedConfig {
     #[key]
     config_id: u128,
     #[key]
@@ -89,7 +89,7 @@ struct SpeedConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct MapExploreConfig {
+pub struct MapExploreConfig {
     #[key]
     config_id: u128,
     wheat_burn_amount: u128,
@@ -101,7 +101,7 @@ struct MapExploreConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct TickConfig {
+pub struct TickConfig {
     #[key]
     config_id: u128,
     #[key]
@@ -111,7 +111,7 @@ struct TickConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct StaminaConfig {
+pub struct StaminaConfig {
     #[key]
     config_id: u128,
     #[key]
@@ -121,7 +121,7 @@ struct StaminaConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct MercenariesConfig {
+pub struct MercenariesConfig {
     #[key]
     config_id: u128,
     troops: Troops,
@@ -170,7 +170,7 @@ impl TickImpl of TickTrait {
 // weight
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct WeightConfig {
+pub struct WeightConfig {
     #[key]
     config_id: u128,
     #[key]
@@ -190,7 +190,7 @@ impl WeightConfigCustomImpl of WeightConfigCustomTrait {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct LevelingConfig {
+pub struct LevelingConfig {
     #[key]
     config_id: u128,
     decay_interval: u64,
@@ -213,7 +213,7 @@ struct LevelingConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct ProductionConfig {
+pub struct ProductionConfig {
     #[key]
     resource_type: u8,
     // production amount per tick
@@ -227,7 +227,7 @@ struct ProductionConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct BankConfig {
+pub struct BankConfig {
     #[key]
     config_id: u128,
     lords_cost: u128,
@@ -237,7 +237,7 @@ struct BankConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct BuildingConfig {
+pub struct BuildingConfig {
     #[key]
     config_id: u128,
     #[key]
@@ -265,7 +265,7 @@ impl BuildingConfigCustomImpl of BuildingConfigCustomTrait {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct TroopConfig {
+pub struct TroopConfig {
     #[key]
     config_id: u128,
     health: u32,
@@ -277,15 +277,15 @@ struct TroopConfig {
     // By setting the divisor to 8, the max health that can be taken from the weaker army
     // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
     //
-    // The closer the armies are in strength and health, the closer they both 
-    // get to losing 12.5% each. If an army is far stronger than the order, 
+    // The closer the armies are in strength and health, the closer they both
+    // get to losing 12.5% each. If an army is far stronger than the order,
     // they lose a small precentage (it goes closer to 0% health loss) while the
-    // weak army's loss is closer to 12.5% 
+    // weak army's loss is closer to 12.5%
     pillage_health_divisor: u8,
     // the number of armies that can be created per structure
     // before military buildings are required to create more
     army_free_per_structure: u8,
-    // the number of additional  armies that can be create with 
+    // the number of additional  armies that can be create with
     // each new military building
     army_extra_per_building: u8,
 }
@@ -301,7 +301,7 @@ impl TroopConfigCustomImpl of TroopConfigCustomTrait {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct BattleConfig {
+pub struct BattleConfig {
     #[key]
     entity_id: u128,
     max_tick_duration: u64,
@@ -317,7 +317,7 @@ impl BattleConfigCustomImpl of BattleConfigCustomTrait {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct BuildingCategoryPopConfig {
+pub struct BuildingCategoryPopConfig {
     #[key]
     config_id: u128,
     #[key]
@@ -328,7 +328,7 @@ struct BuildingCategoryPopConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct PopulationConfig {
+pub struct PopulationConfig {
     #[key]
     config_id: u128,
     base_population: u32,
@@ -350,7 +350,7 @@ impl HyperstructureConfigCustomImpl of HyperstructureConfigCustomTrait {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct HasClaimedStartingResources {
+pub struct HasClaimedStartingResources {
     #[key]
     entity_id: u128,
     #[key]

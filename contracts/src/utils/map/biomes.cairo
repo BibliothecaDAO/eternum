@@ -4,7 +4,7 @@ use cubit::f128::types::vec3::{Vec3, Vec3Trait};
 
 use eternum::utils::map::constants::fixed_constants as fc;
 #[derive(Copy, Drop, Serde, Introspect)]
-enum Biome {
+pub enum Biome {
     DeepOcean,
     Ocean,
     Beach,

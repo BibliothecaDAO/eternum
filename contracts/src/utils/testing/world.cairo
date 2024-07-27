@@ -1,5 +1,5 @@
 use core::array::{ArrayTrait, SpanTrait};
-use dojo::test_utils::spawn_test_world;
+use dojo::utils::test::spawn_test_world;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::bank::bank::bank;
 use eternum::models::bank::liquidity::liquidity;
