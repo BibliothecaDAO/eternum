@@ -45,7 +45,7 @@ jobs:
           cd contracts && sozo build
       - name: Run Dojo Test for ${{ matrix.test }}
         run: |
-          cd contracts && sozo test -f ${{ matrix.test }}
+          cd contracts && sozo test -f ${{ matrix.test }} --print-resource-usage
 
   test-scarb-fmt:
     needs: [setup-environment]
