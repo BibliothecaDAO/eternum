@@ -59,8 +59,8 @@ mod resource_systems {
         ///
         /// * `entity_id` - The id of the entity approving the resources.
         /// * `recipient_entity_id` - The id of the entity being approved.
-        /// * `resources` - The resources to approve.  
-        ///      
+        /// * `resources` - The resources to approve.
+        ///
         fn approve(ref world: IWorldDispatcher, entity_id: ID, recipient_entity_id: ID, resources: Span<(u8, u128)>) {
             assert(entity_id != recipient_entity_id, 'self approval');
             assert(resources.len() != 0, 'no resource to approve');
@@ -90,15 +90,15 @@ mod resource_systems {
         }
 
         /// Send a resource from an entity to another. This involves
-        /// one way transportation of resources from one entity's location 
-        /// to another. This would be useful to gift out resources or for other 
+        /// one way transportation of resources from one entity's location
+        /// to another. This would be useful to gift out resources or for other
         /// similar purposes
         ///
         /// # Arguments
         ///
         /// * `sender_entity_id` - The id of the entity sending the resources.
         /// * `recipient_entity_id` - The id of the entity receiving the resources.
-        /// * `resources` - The resources to transfer.  
+        /// * `resources` - The resources to transfer.
         ///
         /// # Returns
         ///     the resource chest id
@@ -124,8 +124,8 @@ mod resource_systems {
         ///
         /// * `owner_entity_id` - The id of the entity resource owner
         /// * `recipient_entity_id` - The id of the entity receiving resources.
-        /// * `resources` - The resources to transfer.  
-        ///      
+        /// * `resources` - The resources to transfer.
+        ///
         /// # Returns
         ///    the resource chest id
         ///
@@ -169,7 +169,7 @@ mod resource_systems {
     }
 
     #[generate_trait]
-    impl InternalResourceSystemsImpl of InternalResourceSystemsTrait {
+    pub impl InternalResourceSystemsImpl of InternalResourceSystemsTrait {
         fn transfer(
             world: IWorldDispatcher,
             owner_id: ID,
@@ -195,11 +195,11 @@ mod resource_systems {
             let mut resources_felt_arr: Array<felt252> = array![];
             let mut resources_clone = resources.clone();
 
-            // ensure resource spending is not locked 
+            // ensure resource spending is not locked
             let owner_resource_lock: ResourceTransferLock = get!(world, owner_id, ResourceTransferLock);
             owner_resource_lock.assert_not_locked();
 
-            // ensure resource receipt is not locked 
+            // ensure resource receipt is not locked
             let recipient_resource_lock: ResourceTransferLock = get!(world, actual_recipient_id, ResourceTransferLock);
             recipient_resource_lock.assert_not_locked();
             loop {

@@ -150,7 +150,7 @@ mod swap_systems {
     }
 
     #[generate_trait]
-    impl InternalSwapSystemsImpl of InternalSwapSystemsTrait {
+    pub impl InternalSwapSystemsImpl of InternalSwapSystemsTrait {
         fn emit_event(
             world: IWorldDispatcher,
             market: Market,

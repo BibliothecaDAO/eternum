@@ -17,7 +17,7 @@ mod donkey_systems {
 
 
     #[generate_trait]
-    impl InternalDonkeySystemsImpl of InternalDonkeySystemsTrait {
+    pub impl InternalDonkeySystemsImpl of InternalDonkeySystemsTrait {
         fn burn_donkey(world: IWorldDispatcher, payer_id: ID, weight: u128) {
             // get number of donkeys needed
             let donkey_amount = Self::get_donkey_needed(world, weight);

@@ -138,7 +138,7 @@ impl CoordImpl of CoordTrait {
         // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
 
         if self.y & 1 == 0 {
-            // where self.y (row) is even 
+            // where self.y (row) is even
             match direction {
                 Direction::East(()) => Coord { x: self.x + 1, y: self.y },
                 Direction::NorthEast(()) => Coord { x: self.x + 1, y: self.y + 1 },
@@ -185,7 +185,7 @@ impl CoordIntoCube of Into<Coord, Cube> {
         let col: i128 = self.x.try_into().unwrap();
         let row: i128 = self.y.try_into().unwrap();
         let q = col - ((row - (self.y % 2).try_into().unwrap()) / 2);
-        // (self.y % 2) and not (col % 2) because col is i128 
+        // (self.y % 2) and not (col % 2) because col is i128
         // and modulo for negative numbers is different if it
         // was col, it would be (col & 1) where `&` is bitwise AND
         let r = row;
@@ -212,7 +212,7 @@ impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 
 #[derive(PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Position {
+pub struct Position {
     #[key]
     entity_id: u128,
     x: u128,
@@ -336,7 +336,7 @@ mod tests {
 
 
     // #[test]
-    // fn test_get_zone() { 
+    // fn test_get_zone() {
     //     let a = Position { entity_id: 0, x: 1333333, y: 200000 };
     //     let zone = a.get_zone();
     //     assert(zone == 4, 'zone should be 4');
@@ -355,7 +355,7 @@ mod tests {
         }
 
 
-        //- Even row 
+        //- Even row
 
         #[test]
         fn test_neighbor_even_row_east() {
@@ -402,7 +402,7 @@ mod tests {
         }
 
 
-        //- Odd row 
+        //- Odd row
 
         #[test]
         fn test_neighbor_odd_row_east() {

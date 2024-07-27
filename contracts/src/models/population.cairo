@@ -3,7 +3,7 @@ use eternum::models::buildings::{BuildingCategory};
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Population {
+pub struct Population {
     #[key]
     entity_id: u128,
     population: u32, // current population

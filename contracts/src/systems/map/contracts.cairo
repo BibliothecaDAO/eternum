@@ -89,14 +89,14 @@ mod map_systems {
             InternalMapSystemsImpl::explore(world, unit_id, next_coord, exploration_reward);
             InternalMapSystemsImpl::discover_shards_mine(world, next_coord);
 
-            // travel to explored tile location 
+            // travel to explored tile location
             InternalTravelSystemsImpl::travel_hex(world, unit_id, current_coord, array![direction].span());
         }
     }
 
 
     #[generate_trait]
-    impl InternalMapSystemsImpl of InternalMapSystemsTrait {
+    pub impl InternalMapSystemsImpl of InternalMapSystemsTrait {
         fn explore(world: IWorldDispatcher, entity_id: u128, coord: Coord, reward: Span<(u8, u128)>) -> Tile {
             let mut tile: Tile = get!(world, (coord.x, coord.y), Tile);
             assert(tile.explored_at == 0, 'already explored');

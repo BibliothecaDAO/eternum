@@ -41,7 +41,7 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, ITradeSyste
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
-    // set speed configuration 
+    // set speed configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }
         .set_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
 
@@ -153,7 +153,7 @@ fn test_accept_order_free_trade() {
 fn test_accept_order_direct_trade() {
     let (world, trade_id, _, taker_id, trade_systems_dispatcher) = setup(true);
 
-    // accept order 
+    // accept order
     trade_systems_dispatcher
         .accept_order(
             taker_id,
@@ -183,7 +183,7 @@ fn test_not_trade_taker_id() {
     let (world, trade_id, _, _, trade_systems_dispatcher) = setup(true);
 
     // the setup states the trade is a direct offer
-    // so here we are checking to see that the person 
+    // so here we are checking to see that the person
     // who wants to accept is the intended recepient
 
     let taker_id = 9999; // set arbitrarily
@@ -192,7 +192,7 @@ fn test_not_trade_taker_id() {
     // create order with a caller that isnt the owner of maker_id
     starknet::testing::set_contract_address(contract_address_const::<'takers_other_realm'>());
 
-    // accept order 
+    // accept order
     trade_systems_dispatcher
         .accept_order(
             taker_id,
@@ -211,7 +211,7 @@ fn test_caller_not_taker() {
     // create order with a caller that isnt the owner of taker_id
     starknet::testing::set_contract_address(contract_address_const::<'some_unknown'>());
 
-    // accept order 
+    // accept order
     trade_systems_dispatcher
         .accept_order(
             taker_id,
@@ -236,7 +236,7 @@ fn test_transport_not_enough_donkey_capacity() {
 
     starknet::testing::set_contract_address(contract_address_const::<'taker'>());
 
-    // accept order 
+    // accept order
     trade_systems_dispatcher
         .accept_order(
             taker_id,

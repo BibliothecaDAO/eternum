@@ -7,7 +7,7 @@ use eternum::{
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Stamina {
+pub struct Stamina {
     #[key]
     entity_id: u128,
     amount: u16,

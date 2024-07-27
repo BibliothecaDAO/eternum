@@ -19,7 +19,7 @@ use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
 
 #[derive(PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
-struct Building {
+pub struct Building {
     #[key]
     outer_col: u128,
     #[key]
@@ -37,7 +37,7 @@ struct Building {
 
 #[derive(PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
-struct BuildingQuantityv2 {
+pub struct BuildingQuantityv2 {
     #[key]
     entity_id: u128,
     #[key]
@@ -429,7 +429,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
 
         assert!(!building.is_active(), "space is occupied");
 
-        // set building 
+        // set building
         building.entity_id = world.uuid().into();
         building.category = category;
         building.outer_entity_id = outer_entity_id;

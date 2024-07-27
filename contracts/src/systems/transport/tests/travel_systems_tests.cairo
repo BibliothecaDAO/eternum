@@ -93,7 +93,7 @@ fn test_travel() {
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
 
-    // verify arrival time and position of travelling_entity 
+    // verify arrival time and position of travelling_entity
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
 
@@ -166,7 +166,7 @@ fn test_travel_with_realm_bonus() {
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
 
-    // verify arrival time and position of travelling_entity 
+    // verify arrival time and position of travelling_entity
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
     assert(travelling_entity_arrival_time.arrives_at == 6800000, 'arrival time not correct');
@@ -252,7 +252,7 @@ fn test_travel_with_realm_and_order_bonus() {
     starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
 
-    // verify arrival time and position of travelling_entity 
+    // verify arrival time and position of travelling_entity
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
 
@@ -306,7 +306,7 @@ fn test_travel_with_road() {
 
     travel_systems_dispatcher.travel(travelling_entity_id.into(), destination_coord);
 
-    // verify arrival time and position of travelling_entity 
+    // verify arrival time and position of travelling_entity
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
 

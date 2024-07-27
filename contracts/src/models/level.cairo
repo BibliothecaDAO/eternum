@@ -7,7 +7,7 @@ use eternum::models::resources::{ResourceCost};
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Level {
+pub struct Level {
     #[key]
     entity_id: u128,
     level: u64,
@@ -163,7 +163,7 @@ mod tests {
             cost_percentage_scaled: 4611686018427387904
         };
 
-        // set level 
+        // set level
         // tier 1
         let level = Level { entity_id: 1, level: 1, valid_until: 1000 };
         let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD, REALM_LEVELING_START_TIER);

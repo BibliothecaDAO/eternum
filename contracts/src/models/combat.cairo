@@ -30,7 +30,7 @@ const STRENGTH_PRECISION: u256 = 10_000;
 
 #[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Health {
+pub struct Health {
     #[key]
     entity_id: u128,
     current: u128,
@@ -76,8 +76,8 @@ impl HealthCustomImpl of HealthCustomTrait {
         }
 
         // this condition is here in case
-        // self.current < deduction which would make 
-        // num_steps = 0 but that would cause the 
+        // self.current < deduction which would make
+        // num_steps = 0 but that would cause the
         // "inaccurate winner invariant" error so we make it
         // at least 1.
         max(num_steps, 1)
@@ -292,7 +292,7 @@ impl ArmyQuantityTracker of ArmyQuantityTrackerTrait {
 
 #[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Army {
+pub struct Army {
     #[key]
     entity_id: u128,
     troops: Troops,
@@ -387,7 +387,7 @@ impl ArmyCustomImpl of ArmyCustomTrait {
 
 #[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Protector {
+pub struct Protector {
     #[key]
     entity_id: u128,
     army_id: u128,
@@ -402,7 +402,7 @@ impl ProtectorCustomImpl of ProtectorCustomTrait {
 
 #[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Protectee {
+pub struct Protectee {
     #[key]
     army_id: u128,
     protectee_id: u128
@@ -430,7 +430,7 @@ impl ProtecteeCustomImpl of ProtecteeCustomTrait {
 
 #[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Battle {
+pub struct Battle {
     #[key]
     entity_id: u128,
     attack_army: BattleArmy,
@@ -529,7 +529,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         let winner_side: BattleSide = self.winner();
         let to_army_dead = to_army.troops.count().is_zero();
 
-        // the reason for checking if `to_army_dead` is `true` is that 
+        // the reason for checking if `to_army_dead` is `true` is that
         // it's possible for the battle be a draw and both sides die in the process.
         // if this edge case occurs, we assume they both lost for the purpose of this
         // function. They both forfeit their balances.
@@ -1209,7 +1209,7 @@ mod tests {
         let attack_army_stone: Resource = get!(world, (attack_army.entity_id, ResourceTypes::STONE), Resource);
         assert_eq!(attack_army_stone.balance, defence_army_stone_resource.balance);
     }
-// #[test]
+    // #[test]
 // fn test_show_battle() {
 //     let attack_troop_each = 240_000;
 //     let defence_troop_each = 10_000;
@@ -1221,10 +1221,10 @@ mod tests {
 //     print!("\n\n Attack Army health: {} \n\n", battle.attack_army_health.current);
 //     print!("\n\n Defence delta: {} \n\n", battle.defence_delta);
 
-//     print!("\n\n Defence Army health: {} \n\n", battle.defence_army_health.current);
+    //     print!("\n\n Defence Army health: {} \n\n", battle.defence_army_health.current);
 //     print!("\n\n Attack delta: {} \n\n", battle.attack_delta);
 
-//     print!("\n\n Scale A: {} \n\n",battle.attack_army.troops.count() /
+    //     print!("\n\n Scale A: {} \n\n",battle.attack_army.troops.count() /
 //     battle.defence_army.troops.count());
 //     print!("\n\n Scale B: {} \n\n", battle.defence_army.troops.count()
 //     /battle.attack_army.troops.count());
@@ -1232,7 +1232,7 @@ mod tests {
 //     print!("\n\n Duration in Minutes: {} \n\n", battle.duration_left / 60);
 //     print!("\n\n Duration in Hours: {} \n\n", battle.duration_left / (60 * 60));
 
-//     let divisior = 8;
+    //     let divisior = 8;
 //     let attacker_h_left = battle.attack_army_health.current - (battle.defence_delta.into() *
 //     (battle.duration_left.into() / divisior ));
 //     let attacker_ratio = (battle.attack_army_health.current - attacker_h_left) * 100 /
@@ -1242,8 +1242,8 @@ mod tests {
 //     let defence_ratio = (battle.defence_army_health.current - defence_h_left) * 100 /
 //     battle.defence_army_health.current;
 
-//     print!("\n\n Pillage Attacker Loss: {}, Ratio is {}% \n\n", attacker_h_left, attacker_ratio);
+    //     print!("\n\n Pillage Attacker Loss: {}, Ratio is {}% \n\n", attacker_h_left, attacker_ratio);
 //     print!("\n\n Pillage Defender Loss: {}, Ratio is {}% \n\n", defence_h_left, defence_ratio);
 
-// }
+    // }
 }

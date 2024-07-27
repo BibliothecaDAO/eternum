@@ -6,7 +6,7 @@ use traits::Into;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Realm {
+pub struct Realm {
     #[key]
     entity_id: u128,
     realm_id: u128,

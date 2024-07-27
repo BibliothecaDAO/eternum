@@ -3,7 +3,7 @@ use eternum::utils::map::biomes::Biome;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Tile {
+pub struct Tile {
     #[key]
     _col: u128,
     #[key]

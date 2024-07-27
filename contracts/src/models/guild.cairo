@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Guild {
+pub struct Guild {
     #[key]
     entity_id: u128,
     is_public: bool,
@@ -11,7 +11,7 @@ struct Guild {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct GuildMember {
+pub struct GuildMember {
     #[key]
     address: ContractAddress,
     guild_entity_id: u128
@@ -19,7 +19,7 @@ struct GuildMember {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct GuildWhitelist {
+pub struct GuildWhitelist {
     #[key]
     address: ContractAddress,
     #[key]

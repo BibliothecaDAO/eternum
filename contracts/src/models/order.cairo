@@ -1,6 +1,6 @@
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Orders {
+pub struct Orders {
     #[key]
     order_id: u128,
     hyperstructure_count: u128

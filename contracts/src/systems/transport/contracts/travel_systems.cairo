@@ -54,8 +54,8 @@ mod travel_systems {
         /// Travel to a destination
         ///
         /// This system can be called to move an entity from
-        /// its current location to another coordinate on the map. It 
-        //  is however crucial that the entity has all the necessary 
+        /// its current location to another coordinate on the map. It
+        //  is however crucial that the entity has all the necessary
         //  models or components allowing it to move (i.e it must be movable)
         ///
         /// # Arguments
@@ -107,7 +107,7 @@ mod travel_systems {
     }
 
     #[generate_trait]
-    impl InternalTravelSystemsImpl of InternalTravelSystemsTrait {
+    pub impl InternalTravelSystemsImpl of InternalTravelSystemsTrait {
         fn assert_tile_explored(world: IWorldDispatcher, coord: Coord) {
             let mut tile: Tile = get!(world, (coord.x, coord.y), Tile);
             assert(tile.explored_by_id != 0, 'tile not explored');
@@ -153,7 +153,7 @@ mod travel_systems {
                 // ensure tile is explored
                 Self::assert_tile_explored(world, to_coord);
 
-                // add coord to travel path 
+                // add coord to travel path
                 travel_path.append(to_coord);
 
                 index += 1;
@@ -174,7 +174,7 @@ mod travel_systems {
                 )
             );
 
-            // emit travel event 
+            // emit travel event
             let entityOwner = get!(world, transport_id, EntityOwner);
             emit!(
                 world,
@@ -231,7 +231,7 @@ mod travel_systems {
                 )
             );
 
-            // emit travel event 
+            // emit travel event
             let owner = get!(world, transport_id, Owner);
             emit!(
                 world,

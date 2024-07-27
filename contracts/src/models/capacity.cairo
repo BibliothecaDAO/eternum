@@ -4,7 +4,7 @@ use eternum::models::weight::{Weight};
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Capacity {
+pub struct Capacity {
     #[key]
     entity_id: u128,
     weight_gram: u128,

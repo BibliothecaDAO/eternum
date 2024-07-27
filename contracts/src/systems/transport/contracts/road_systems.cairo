@@ -22,8 +22,8 @@ mod road_systems {
     impl RoadSystemsImpl of super::IRoadSystems<ContractState> {
         /// Create a road between two coordinates on the map.
         ///
-        /// Note: when you creat a road from A -> B, 
-        ///       you also automatically create a road from B -> A. 
+        /// Note: when you creat a road from A -> B,
+        ///       you also automatically create a road from B -> A.
         ///
         /// # Arguments
         ///

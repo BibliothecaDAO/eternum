@@ -86,7 +86,7 @@ fn test_map_explore() {
     assert_eq!(explored_tile.explored_by_id, realm_army_unit_id, "wrong realm owner");
     assert_eq!(explored_tile.explored_at, TIMESTAMP, "wrong exploration time");
 
-    // ensure that the right amount of food was burnt 
+    // ensure that the right amount of food was burnt
     let expected_wheat_balance = INITIAL_WHEAT_BALANCE - MAP_EXPLORE_WHEAT_BURN_AMOUNT;
     let expected_fish_balance = INITIAL_FISH_BALANCE - MAP_EXPLORE_FISH_BURN_AMOUNT;
     let (realm_wheat, realm_fish) = ResourceFoodImpl::get(world, realm_entity_id);

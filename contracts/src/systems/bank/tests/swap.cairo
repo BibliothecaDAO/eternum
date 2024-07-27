@@ -190,7 +190,7 @@ fn test_swap_buy_with_fees() {
     let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
     let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
 
-    // 10_000 (reserve) + 11_235 (lords cost) 
+    // 10_000 (reserve) + 11_235 (lords cost)
     assert(market.lords_amount == 11_235, 'market.lords_amount');
     // 10000 (reserve) - 1000 (result)
     assert(market.resource_amount == 9000, 'market.resource_amount');

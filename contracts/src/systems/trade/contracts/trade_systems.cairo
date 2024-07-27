@@ -223,12 +223,12 @@ mod trade_systems {
             let ts = starknet::get_block_timestamp();
             assert(trade.expires_at > ts, 'trade expired');
 
-            // verify taker if it's a direct offer 
+            // verify taker if it's a direct offer
             if trade.taker_id != 0 {
                 assert(trade.taker_id == taker_id, 'not the taker');
             }
 
-            // update trade   
+            // update trade
             trade.taker_id = taker_id;
             set!(world, (trade));
 

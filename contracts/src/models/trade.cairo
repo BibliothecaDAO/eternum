@@ -2,7 +2,7 @@ use eternum::alias::ID;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Trade {
+pub struct Trade {
     #[key]
     trade_id: u128,
     maker_id: u128,
@@ -19,7 +19,7 @@ struct Trade {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Status {
+pub struct Status {
     #[key]
     trade_id: u128,
     value: u128,

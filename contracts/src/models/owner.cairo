@@ -6,7 +6,7 @@ use starknet::ContractAddress;
 // contract address owning an entity
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct Owner {
+pub struct Owner {
     #[key]
     entity_id: u128,
     address: ContractAddress,
@@ -15,7 +15,7 @@ struct Owner {
 // entity owning an entity
 #[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct EntityOwner {
+pub struct EntityOwner {
     #[key]
     entity_id: u128,
     entity_owner_id: u128,
