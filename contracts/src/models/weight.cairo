@@ -1,10 +1,12 @@
+use eternum::alias::ID;
 use eternum::models::capacity::{Capacity, CapacityCustomTrait};
 use eternum::models::quantity::{Quantity};
+
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Weight {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     value: u128,
 }
 

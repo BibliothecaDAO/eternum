@@ -1,3 +1,4 @@
+use eternum::alias::ID;
 use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
 #[dojo::interface]
@@ -43,13 +44,13 @@ trait ICombatContract<TContractState> {
     /// - For a roaming army:
     ///     - Configures the army's movement speed and carrying capacity based on game world settings.
     ///     - Initializes the army's stamina for map exploration.
-    fn army_create(ref world: IWorldDispatcher, army_owner_id: u128, is_defensive_army: bool) -> u128;
+    fn army_create(ref world: IWorldDispatcher, army_owner_id: ID, is_defensive_army: bool) -> ID;
 
     /// Delete an army
     /// - army must not be a defensive army
     /// - army must be dead (in battle or otherwise)
     ///
-    fn army_delete(ref world: IWorldDispatcher, army_id: u128);
+    fn army_delete(ref world: IWorldDispatcher, army_id: ID);
     /// Purchases and adds troops to an existing army entity.
     ///
     /// # Preconditions:
@@ -76,7 +77,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn army_buy_troops(ref world: IWorldDispatcher, army_id: u128, payer_id: u128, troops: Troops);
+    fn army_buy_troops(ref world: IWorldDispatcher, army_id: ID, payer_id: ID, troops: Troops);
 
     /// Transfer of troops from one army to another.
     ///
@@ -107,7 +108,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn army_merge_troops(ref world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops);
+    fn army_merge_troops(ref world: IWorldDispatcher, from_army_id: ID, to_army_id: ID, troops: Troops);
 
     /// Initiates a battle between an attacking and defending army within the game world.
     ///
@@ -162,7 +163,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_start(ref world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128) -> u128;
+    fn battle_start(ref world: IWorldDispatcher, attacking_army_id: ID, defending_army_id: ID) -> ID;
 
     /// Join an existing battle with the specified army, assigning it to a specific side in the battle.
     ///
@@ -212,7 +213,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_join(ref world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128);
+    fn battle_join(ref world: IWorldDispatcher, battle_id: ID, battle_side: BattleSide, army_id: ID);
 
     /// Allows an army to leave an ongoing battle, releasing its resources and restoring its mobility
     /// (if it was previously mobile).
@@ -269,7 +270,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_leave(ref world: IWorldDispatcher, battle_id: u128, army_id: u128);
+    fn battle_leave(ref world: IWorldDispatcher, battle_id: ID, army_id: ID);
 
     /// Pillage a structure.
     ///
@@ -317,7 +318,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_pillage(ref world: IWorldDispatcher, army_id: u128, structure_id: u128);
+    fn battle_pillage(ref world: IWorldDispatcher, army_id: ID, structure_id: ID);
 
     /// Claims ownership of a non realm structure by an army after meeting all necessary conditions.
     ///
@@ -353,7 +354,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_claim(ref world: IWorldDispatcher, army_id: u128, structure_id: u128);
+    fn battle_claim(ref world: IWorldDispatcher, army_id: ID, structure_id: ID);
 }
 
 
@@ -414,7 +415,7 @@ mod combat_systems {
         #[key]
         attacker_realm_entity_id: ID,
         #[key]
-        army_id: u128,
+        army_id: ID,
         winner: BattleSide,
         pillaged_resources: Span<(u8, u128)>,
         destroyed_building_category: BuildingCategory
@@ -423,7 +424,7 @@ mod combat_systems {
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
-        fn army_create(ref world: IWorldDispatcher, army_owner_id: u128, is_defensive_army: bool) -> u128 {
+        fn army_create(ref world: IWorldDispatcher, army_owner_id: ID, is_defensive_army: bool) -> ID {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
@@ -436,7 +437,7 @@ mod combat_systems {
             army_id
         }
 
-        fn army_delete(ref world: IWorldDispatcher, army_id: u128) {
+        fn army_delete(ref world: IWorldDispatcher, army_id: ID) {
             // ensure caller owns the entity paying
             let mut entity_owner: EntityOwner = get!(world, army_id, EntityOwner);
             entity_owner.assert_caller_owner(world);
@@ -461,7 +462,7 @@ mod combat_systems {
         }
 
 
-        fn army_buy_troops(ref world: IWorldDispatcher, army_id: u128, payer_id: u128, mut troops: Troops) {
+        fn army_buy_troops(ref world: IWorldDispatcher, army_id: ID, payer_id: ID, mut troops: Troops) {
             // ensure caller owns the entity paying
             get!(world, payer_id, EntityOwner).assert_caller_owner(world);
 
@@ -523,7 +524,7 @@ mod combat_systems {
         }
 
 
-        fn army_merge_troops(ref world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops,) {
+        fn army_merge_troops(ref world: IWorldDispatcher, from_army_id: ID, to_army_id: ID, troops: Troops,) {
             // ensure caller owns from and to armies
             let mut from_army_owner: EntityOwner = get!(world, from_army_id, EntityOwner);
             from_army_owner.assert_caller_owner(world);
@@ -579,7 +580,7 @@ mod combat_systems {
         }
 
 
-        fn battle_start(ref world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128) -> u128 {
+        fn battle_start(ref world: IWorldDispatcher, attacking_army_id: ID, defending_army_id: ID) -> ID {
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             attacking_army.assert_not_in_battle();
 
@@ -620,7 +621,7 @@ mod combat_systems {
             let defending_army_position: Position = get!(world, defending_army_id, Position);
             attacking_army_position.assert_same_location(defending_army_position.into());
 
-            let battle_id: u128 = world.uuid().into();
+            let battle_id: ID = world.uuid().into();
             attacking_army.battle_id = battle_id;
             attacking_army.battle_side = BattleSide::Attack;
             set!(world, (attacking_army));
@@ -677,7 +678,7 @@ mod combat_systems {
         }
 
 
-        fn battle_join(ref world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128) {
+        fn battle_join(ref world: IWorldDispatcher, battle_id: ID, battle_side: BattleSide, army_id: ID) {
             assert!(battle_side != BattleSide::None, "choose correct battle side");
 
             // ensure caller owns army
@@ -757,7 +758,7 @@ mod combat_systems {
         }
 
 
-        fn battle_leave(ref world: IWorldDispatcher, battle_id: u128, army_id: u128) {
+        fn battle_leave(ref world: IWorldDispatcher, battle_id: ID, army_id: ID) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -772,7 +773,7 @@ mod combat_systems {
         }
 
 
-        fn battle_claim(ref world: IWorldDispatcher, army_id: u128, structure_id: u128) {
+        fn battle_claim(ref world: IWorldDispatcher, army_id: ID, structure_id: ID) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -793,7 +794,7 @@ mod combat_systems {
             claimer_army_position.assert_same_location(structure_position.into());
 
             // ensure structure has no army protecting it
-            let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
+            let structure_army_id: ID = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
                 let mut structure_army: Army = get!(world, structure_army_id, Army);
                 if structure_army.is_in_battle() {
@@ -812,7 +813,7 @@ mod combat_systems {
 
             // pass ownership of structure to claimer
             let mut structure_owner_entity: EntityOwner = get!(world, structure_id, EntityOwner);
-            let claimer_army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
+            let claimer_army_owner_entity_id: ID = get!(world, army_id, EntityOwner).entity_owner_id;
             structure_owner_entity.entity_owner_id = claimer_army_owner_entity_id;
             set!(world, (structure_owner_entity));
 
@@ -822,7 +823,7 @@ mod combat_systems {
         }
 
 
-        fn battle_pillage(ref world: IWorldDispatcher, army_id: u128, structure_id: u128,) {
+        fn battle_pillage(ref world: IWorldDispatcher, army_id: ID, structure_id: ID,) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -843,7 +844,7 @@ mod combat_systems {
 
             // get structure army and health
 
-            let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
+            let structure_army_id: ID = get!(world, structure_id, Protector).army_id;
             assert!(structure_army_id != army_id, "self attack");
 
             let mut structure_army: Army = Default::default();
@@ -1085,7 +1086,7 @@ mod combat_systems {
             }
 
             // emit pillage event
-            let army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
+            let army_owner_entity_id: ID = get!(world, army_id, EntityOwner).entity_owner_id;
             emit!(
                 world,
                 (PillageEvent {
@@ -1108,8 +1109,8 @@ mod combat_systems {
     #[generate_trait]
     pub impl InternalCombatImpl of InternalCombatTrait {
         fn create_attacking_army(
-            world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
-        ) -> u128 {
+            world: IWorldDispatcher, army_owner_id: ID, owner_address: starknet::ContractAddress
+        ) -> ID {
             let army_id = Self::create_base_army(world, army_owner_id, owner_address);
 
             // set the army's speed and capacity
@@ -1144,8 +1145,8 @@ mod combat_systems {
         }
 
         fn create_defensive_army(
-            world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
-        ) -> u128 {
+            world: IWorldDispatcher, army_owner_id: ID, owner_address: starknet::ContractAddress
+        ) -> ID {
             let army_id = Self::create_base_army(world, army_owner_id, owner_address);
 
             // Defensive armies can only be assigned as structure protectors
@@ -1165,8 +1166,8 @@ mod combat_systems {
         }
 
         fn create_base_army(
-            world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
-        ) -> u128 {
+            world: IWorldDispatcher, army_owner_id: ID, owner_address: starknet::ContractAddress
+        ) -> ID {
             // ensure army owner is a structure
             get!(world, army_owner_id, Structure).assert_is_structure();
 
@@ -1200,7 +1201,7 @@ mod combat_systems {
             set!(world, (owner_armies_quantity));
 
             // create army
-            let mut army_id: u128 = world.uuid().into();
+            let mut army_id: ID = world.uuid().into();
             let army_owner_position: Position = get!(world, army_owner_id, Position);
             set!(
                 world,
@@ -1216,7 +1217,7 @@ mod combat_systems {
             army_id
         }
 
-        fn add_troops_to_army(world: IWorldDispatcher, troops: Troops, army_id: u128) {
+        fn add_troops_to_army(world: IWorldDispatcher, troops: Troops, army_id: ID) {
             // increase troops number
             let mut army: Army = get!(world, army_id, Army);
             army.troops.add(troops);

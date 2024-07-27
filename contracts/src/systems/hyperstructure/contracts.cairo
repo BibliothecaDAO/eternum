@@ -1,12 +1,13 @@
+use eternum::alias::ID;
 use eternum::models::position::Coord;
 
 #[dojo::interface]
 trait IHyperstructureSystems {
-    fn create(ref world: IWorldDispatcher, creator_entity_id: u128, coord: Coord) -> u128;
+    fn create(ref world: IWorldDispatcher, creator_entity_id: ID, coord: Coord) -> ID;
     fn contribute_to_construction(
         ref world: IWorldDispatcher,
-        hyperstructure_entity_id: u128,
-        contributor_entity_id: u128,
+        hyperstructure_entity_id: ID,
+        contributor_entity_id: ID,
         contributions: Span<(u8, u128)>
     );
 }
@@ -30,14 +31,14 @@ mod hyperstructure_systems {
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
     struct HyperstructureFinished {
-        hyperstructure_entity_id: u128,
+        hyperstructure_entity_id: ID,
         timestamp: u64,
     }
 
 
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
-        fn create(ref world: IWorldDispatcher, creator_entity_id: u128, coord: Coord) -> u128 {
+        fn create(ref world: IWorldDispatcher, creator_entity_id: ID, coord: Coord) -> ID {
             get!(world, creator_entity_id, Owner).assert_caller_owner();
 
             InternalTravelSystemsImpl::assert_tile_explored(world, coord);
@@ -57,7 +58,7 @@ mod hyperstructure_systems {
             creator_resources.burn(hyperstructure_shards_config.amount_for_completion);
             creator_resources.save(world);
 
-            let new_uuid: u128 = world.uuid().into();
+            let new_uuid: ID = world.uuid().into();
 
             set!(
                 world,
@@ -86,8 +87,8 @@ mod hyperstructure_systems {
 
         fn contribute_to_construction(
             ref world: IWorldDispatcher,
-            hyperstructure_entity_id: u128,
-            contributor_entity_id: u128,
+            hyperstructure_entity_id: ID,
+            contributor_entity_id: ID,
             contributions: Span<(u8, u128)>
         ) {
             get!(world, contributor_entity_id, Owner).assert_caller_owner();
@@ -119,10 +120,7 @@ mod hyperstructure_systems {
     #[generate_trait]
     pub impl InternalHyperstructureSystemsImpl of InternalHyperstructureSystemsTrait {
         fn handle_contribution(
-            world: IWorldDispatcher,
-            hyperstructure_entity_id: u128,
-            contribution: (u8, u128),
-            contributor_entity_id: u128
+            world: IWorldDispatcher, hyperstructure_entity_id: ID, contribution: (u8, u128), contributor_entity_id: ID
         ) -> bool {
             let (resource_type, contribution_amount) = contribution;
 
@@ -143,7 +141,7 @@ mod hyperstructure_systems {
         }
 
         fn burn_player_resources(
-            world: IWorldDispatcher, resource_type: u8, resource_amount: u128, contributor_entity_id: u128
+            world: IWorldDispatcher, resource_type: u8, resource_amount: u128, contributor_entity_id: ID
         ) {
             let mut creator_resources = ResourceCustomImpl::get(world, (contributor_entity_id, resource_type));
 
@@ -152,7 +150,7 @@ mod hyperstructure_systems {
         }
 
         fn get_max_contribution_size(
-            world: IWorldDispatcher, hyperstructure_entity_id: u128, resource_type: u8, resource_amount: u128
+            world: IWorldDispatcher, hyperstructure_entity_id: ID, resource_type: u8, resource_amount: u128
         ) -> (u128, bool) {
             let resource_progress = get!(world, (hyperstructure_entity_id, resource_type), Progress);
             let hyperstructure_resource_config = HyperstructureConfigCustomTrait::get(world, resource_type);
@@ -167,7 +165,7 @@ mod hyperstructure_systems {
         }
 
         fn add_contribution(
-            world: IWorldDispatcher, hyperstructure_entity_id: u128, resource_type: u8, resource_amount: u128,
+            world: IWorldDispatcher, hyperstructure_entity_id: ID, resource_type: u8, resource_amount: u128,
         ) {
             let player_address = starknet::get_caller_address();
             let mut contribution = get!(world, (hyperstructure_entity_id, player_address, resource_type), Contribution);
@@ -177,14 +175,14 @@ mod hyperstructure_systems {
         }
 
         fn update_progress(
-            world: IWorldDispatcher, hyperstructure_entity_id: u128, resource_type: u8, resource_amount: u128,
+            world: IWorldDispatcher, hyperstructure_entity_id: ID, resource_type: u8, resource_amount: u128,
         ) {
             let mut resource_progress = get!(world, (hyperstructure_entity_id, resource_type), Progress);
             resource_progress.amount += resource_amount;
             set!(world, (resource_progress,));
         }
 
-        fn check_if_construction_done(world: IWorldDispatcher, hyperstructure_entity_id: u128) -> bool {
+        fn check_if_construction_done(world: IWorldDispatcher, hyperstructure_entity_id: ID) -> bool {
             let mut done = true;
             let all_resources = get_resources_without_earthenshards();
 
@@ -201,7 +199,7 @@ mod hyperstructure_systems {
         }
 
         fn check_if_resource_completed(
-            world: IWorldDispatcher, hyperstructure_entity_id: u128, resource_type: u8
+            world: IWorldDispatcher, hyperstructure_entity_id: ID, resource_type: u8
         ) -> bool {
             let mut resource_progress = get!(world, (hyperstructure_entity_id, resource_type), Progress);
 

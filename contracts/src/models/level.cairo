@@ -1,6 +1,7 @@
 use cubit::f128::math::ops::{pow as fixed_pow};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{LevelIndex};
 use eternum::models::config::{LevelingConfig};
 use eternum::models::resources::{ResourceCost};
@@ -9,7 +10,7 @@ use eternum::models::resources::{ResourceCost};
 #[dojo::model]
 pub struct Level {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     level: u64,
     valid_until: u64,
 }

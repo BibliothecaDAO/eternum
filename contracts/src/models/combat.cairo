@@ -32,7 +32,7 @@ const STRENGTH_PRECISION: u256 = 10_000;
 #[dojo::model]
 pub struct Health {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     current: u128,
     lifetime: u128
 }
@@ -143,7 +143,7 @@ impl TroopsImpl of TroopsTrait {
 
 
     fn purchase(
-        self: Troops, purchaser_id: u128, troops_resources: (Resource, Resource, Resource),
+        self: Troops, purchaser_id: ID, troops_resources: (Resource, Resource, Resource),
     ) -> (Resource, Resource, Resource) {
         let (mut knight_resource, mut paladin_resoure, mut crossbowman_resoure) = troops_resources;
 
@@ -294,16 +294,16 @@ impl ArmyQuantityTracker of ArmyQuantityTrackerTrait {
 #[dojo::model]
 pub struct Army {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     troops: Troops,
-    battle_id: u128,
+    battle_id: ID,
     battle_side: BattleSide
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Default)]
 struct BattleArmy {
     troops: Troops,
-    battle_id: u128,
+    battle_id: ID,
     battle_side: BattleSide
 }
 
@@ -389,8 +389,8 @@ impl ArmyCustomImpl of ArmyCustomTrait {
 #[dojo::model]
 pub struct Protector {
     #[key]
-    entity_id: u128,
-    army_id: u128,
+    entity_id: ID,
+    army_id: ID,
 }
 
 #[generate_trait]
@@ -404,8 +404,8 @@ impl ProtectorCustomImpl of ProtectorCustomTrait {
 #[dojo::model]
 pub struct Protectee {
     #[key]
-    army_id: u128,
-    protectee_id: u128
+    army_id: ID,
+    protectee_id: ID
 }
 
 #[generate_trait]
@@ -418,7 +418,7 @@ impl ProtecteeCustomImpl of ProtecteeCustomTrait {
         self.protectee_id != 0
     }
 
-    fn protected_resources_holder(self: Protectee) -> u128 {
+    fn protected_resources_holder(self: Protectee) -> ID {
         if self.is_other() {
             self.protectee_id
         } else {
@@ -432,13 +432,13 @@ impl ProtecteeCustomImpl of ProtecteeCustomTrait {
 #[dojo::model]
 pub struct Battle {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     attack_army: BattleArmy,
     attack_army_lifetime: BattleArmy,
     defence_army: BattleArmy,
     defence_army_lifetime: BattleArmy,
-    attackers_resources_escrow_id: u128,
-    defenders_resources_escrow_id: u128,
+    attackers_resources_escrow_id: ID,
+    defenders_resources_escrow_id: ID,
     attack_army_health: BattleHealth,
     defence_army_health: BattleHealth,
     attack_delta: u64,

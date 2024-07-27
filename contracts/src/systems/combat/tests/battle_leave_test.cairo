@@ -59,7 +59,7 @@ fn battle_coord() -> Coord {
     Coord { x: BATTLE_COORD_X, y: BATTLE_COORD_Y, }
 }
 
-fn teleport(world: IWorldDispatcher, entity_id: u128, coord: Coord) {
+fn teleport(world: IWorldDispatcher, entity_id: ID, coord: Coord) {
     set!(world, (Position { entity_id, x: coord.x, y: coord.y, }));
 }
 

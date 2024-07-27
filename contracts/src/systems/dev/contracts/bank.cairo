@@ -21,8 +21,8 @@ mod dev_bank_systems {
 
     use traits::Into;
 
-    const ADMIN_BANK_ACCOUNT_ENTITY_ID: ID = 999999999999999999_u128;
-    const ADMIN_BANK_ENTITY_ID: ID = 999999999999999998_u128;
+    const ADMIN_BANK_ACCOUNT_ENTITY_ID: ID = 999999999;
+    const ADMIN_BANK_ENTITY_ID: ID = 999999998;
 
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
@@ -30,7 +30,7 @@ mod dev_bank_systems {
             ref world: IWorldDispatcher, coord: Coord, owner_fee_num: u128, owner_fee_denom: u128
         ) -> ID {
             // explore the tile
-            InternalMapSystemsImpl::explore(world, 0_u128, coord, array![].span());
+            InternalMapSystemsImpl::explore(world, 0, coord, array![].span());
 
             assert_caller_is_admin(world);
             let admin = starknet::get_caller_address();

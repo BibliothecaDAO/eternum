@@ -114,8 +114,8 @@ fn test_realm_create() {
 
     // ensure realm Tile is explored
     let tile: Tile = get!(world, (position.x, position.y), Tile);
-    assert_eq!(tile.col, tile._col, "wrong col");
-    assert_eq!(tile.row, tile._row, "wrong row");
+    assert_eq!(tile.col, tile.col, "wrong col");
+    assert_eq!(tile.row, tile.row, "wrong row");
     assert_eq!(tile.explored_by_id, realm_entity_id, "wrong realm owner");
     assert_eq!(tile.explored_at, TIMESTAMP, "wrong exploration time");
 }

@@ -5,20 +5,20 @@ use eternum::alias::ID;
 trait ITradeSystems {
     fn create_order(
         ref world: IWorldDispatcher,
-        maker_id: u128,
+        maker_id: ID,
         maker_gives_resources: Span<(u8, u128)>,
-        taker_id: u128,
+        taker_id: ID,
         taker_gives_resources: Span<(u8, u128)>,
         expires_at: u64
     ) -> ID;
     fn accept_order(
         ref world: IWorldDispatcher,
-        taker_id: u128,
-        trade_id: u128,
+        taker_id: ID,
+        trade_id: ID,
         maker_gives_resources: Span<(u8, u128)>,
         taker_gives_resources: Span<(u8, u128)>
     );
-    fn cancel_order(ref world: IWorldDispatcher, trade_id: u128, return_resources: Span<(u8, u128)>);
+    fn cancel_order(ref world: IWorldDispatcher, trade_id: ID, return_resources: Span<(u8, u128)>);
 }
 
 #[dojo::contract]
@@ -50,10 +50,10 @@ mod trade_systems {
     #[dojo::event]
     struct CreateOrder {
         #[key]
-        taker_id: u128,
+        taker_id: ID,
         #[key]
-        maker_id: u128,
-        trade_id: u128,
+        maker_id: ID,
+        trade_id: ID,
         timestamp: u64
     }
 
@@ -61,10 +61,10 @@ mod trade_systems {
     #[dojo::event]
     struct AcceptOrder {
         #[key]
-        taker_id: u128,
+        taker_id: ID,
         #[key]
-        maker_id: u128,
-        trade_id: u128,
+        maker_id: ID,
+        trade_id: ID,
         timestamp: u64
     }
 
@@ -72,10 +72,10 @@ mod trade_systems {
     #[dojo::event]
     struct CancelOrder {
         #[key]
-        taker_id: u128,
+        taker_id: ID,
         #[key]
-        maker_id: u128,
-        trade_id: u128,
+        maker_id: ID,
+        trade_id: ID,
         timestamp: u64
     }
 
@@ -84,9 +84,9 @@ mod trade_systems {
     impl TradeSystemsImpl of super::ITradeSystems<ContractState> {
         fn create_order(
             ref world: IWorldDispatcher,
-            maker_id: u128,
+            maker_id: ID,
             mut maker_gives_resources: Span<(u8, u128)>,
-            taker_id: u128,
+            taker_id: ID,
             mut taker_gives_resources: Span<(u8, u128)>,
             expires_at: u64
         ) -> ID {
@@ -206,8 +206,8 @@ mod trade_systems {
 
         fn accept_order(
             ref world: IWorldDispatcher,
-            taker_id: u128,
-            trade_id: u128,
+            taker_id: ID,
+            trade_id: ID,
             mut maker_gives_resources: Span<(u8, u128)>,
             mut taker_gives_resources: Span<(u8, u128)>
         ) {
@@ -262,7 +262,7 @@ mod trade_systems {
         }
 
 
-        fn cancel_order(ref world: IWorldDispatcher, trade_id: u128, mut return_resources: Span<(u8, u128)>,) {
+        fn cancel_order(ref world: IWorldDispatcher, trade_id: ID, mut return_resources: Span<(u8, u128)>,) {
             let (trade, trade_status) = get!(world, trade_id, (Trade, Status));
             let owner = get!(world, trade.maker_id, Owner);
 

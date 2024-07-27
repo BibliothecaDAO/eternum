@@ -33,7 +33,7 @@ mod resource_approval_system_tests {
     }
 
 
-    fn make_owner_and_receiver(world: IWorldDispatcher, owner_entity_id: u64, receiver_entity_id: u64) {
+    fn make_owner_and_receiver(world: IWorldDispatcher, owner_entity_id: ID, receiver_entity_id: ID) {
         let owner_entity_position = Position { x: 100_000, y: 200_000, entity_id: owner_entity_id.into() };
 
         set!(world, (owner_entity_position));

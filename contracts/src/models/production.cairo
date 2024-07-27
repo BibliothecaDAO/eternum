@@ -3,6 +3,7 @@ use core::debug::PrintTrait;
 use core::integer::BoundedInt;
 use core::option::OptionTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::models::config::{ProductionConfig};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
 use eternum::models::resources::{Resource, ResourceCustomImpl};
@@ -12,7 +13,7 @@ use starknet::get_block_timestamp;
 #[dojo::model]
 pub struct Production {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     #[key]
     resource_type: u8,
     building_count: u128,

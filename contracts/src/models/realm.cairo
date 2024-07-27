@@ -8,8 +8,8 @@ use traits::Into;
 #[dojo::model]
 pub struct Realm {
     #[key]
-    entity_id: u128,
-    realm_id: u128,
+    entity_id: ID,
+    realm_id: ID,
     // OG Realm Id
     // TODO: no need for owner ? since we use Owner component
     // packed resource ids of realm

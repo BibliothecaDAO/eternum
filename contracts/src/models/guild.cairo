@@ -1,10 +1,11 @@
+use eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Guild {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     is_public: bool,
     member_count: u16
 }
@@ -14,7 +15,7 @@ pub struct Guild {
 pub struct GuildMember {
     #[key]
     address: ContractAddress,
-    guild_entity_id: u128
+    guild_entity_id: ID
 }
 
 #[derive(Copy, Drop, Serde)]
@@ -23,7 +24,7 @@ pub struct GuildWhitelist {
     #[key]
     address: ContractAddress,
     #[key]
-    guild_entity_id: u128,
+    guild_entity_id: ID,
     is_whitelisted: bool
 }
 

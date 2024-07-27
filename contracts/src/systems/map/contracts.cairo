@@ -1,6 +1,8 @@
+use eternum::alias::ID;
+
 #[dojo::interface]
 trait IMapSystems {
-    fn explore(ref world: IWorldDispatcher, unit_id: u128, direction: eternum::models::position::Direction);
+    fn explore(ref world: IWorldDispatcher, unit_id: ID, direction: eternum::models::position::Direction);
 }
 
 #[dojo::contract]
@@ -44,12 +46,12 @@ mod map_systems {
     #[dojo::event]
     struct MapExplored {
         #[key]
-        entity_id: u128,
-        entity_owner_id: u128,
+        entity_id: ID,
+        entity_owner_id: ID,
         #[key]
-        col: u128,
+        col: u32,
         #[key]
-        row: u128,
+        row: u32,
         biome: Biome,
         reward: Span<(u8, u128)>
     }
@@ -58,7 +60,7 @@ mod map_systems {
     // @DEV TODO: We can generalise this more...
     #[abi(embed_v0)]
     impl MapSystemsImpl of super::IMapSystems<ContractState> {
-        fn explore(ref world: IWorldDispatcher, unit_id: u128, direction: Direction) {
+        fn explore(ref world: IWorldDispatcher, unit_id: ID, direction: Direction) {
             // check that caller owns unit
             get!(world, unit_id, EntityOwner).assert_caller_owner(world);
 
@@ -97,17 +99,14 @@ mod map_systems {
 
     #[generate_trait]
     pub impl InternalMapSystemsImpl of InternalMapSystemsTrait {
-        fn explore(world: IWorldDispatcher, entity_id: u128, coord: Coord, reward: Span<(u8, u128)>) -> Tile {
+        fn explore(world: IWorldDispatcher, entity_id: ID, coord: Coord, reward: Span<(u8, u128)>) -> Tile {
             let mut tile: Tile = get!(world, (coord.x, coord.y), Tile);
             assert(tile.explored_at == 0, 'already explored');
 
             // set tile as explored
             tile.explored_by_id = entity_id;
             tile.explored_at = starknet::get_block_timestamp();
-            tile.biome = get_biome(coord.x, coord.y);
-            tile.col = coord.x;
-            tile.row = coord.y;
-
+            tile.biome = get_biome(coord.x.into(), coord.y.into());
             set!(world, (tile));
 
             // emit explored event
@@ -128,7 +127,7 @@ mod map_systems {
             tile
         }
 
-        fn pay_food_and_get_explore_reward(world: IWorldDispatcher, realm_entity_id: u128) -> Span<(u8, u128)> {
+        fn pay_food_and_get_explore_reward(world: IWorldDispatcher, realm_entity_id: ID) -> Span<(u8, u128)> {
             let explore_config: MapExploreConfig = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
             let mut wheat_pay_amount = explore_config.wheat_burn_amount;
             let mut fish_pay_amount = explore_config.fish_burn_amount;
@@ -169,8 +168,8 @@ mod map_systems {
             is_shards_mine
         }
 
-        fn create_shard_mine_structure(world: IWorldDispatcher, coord: Coord) -> u128 {
-            let entity_id: u128 = world.uuid().into();
+        fn create_shard_mine_structure(world: IWorldDispatcher, coord: Coord) -> ID {
+            let entity_id: ID = world.uuid().into();
             set!(
                 world,
                 (
@@ -183,7 +182,7 @@ mod map_systems {
             entity_id
         }
 
-        fn add_mercenaries_to_shard_mine(world: IWorldDispatcher, mine_entity_id: u128, mine_coords: Coord) -> u128 {
+        fn add_mercenaries_to_shard_mine(world: IWorldDispatcher, mine_entity_id: ID, mine_coords: Coord) -> ID {
             let mercenaries_config = get!(world, WORLD_CONFIG_ID, MercenariesConfig);
 
             let troops = mercenaries_config.troops;

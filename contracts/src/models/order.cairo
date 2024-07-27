@@ -1,8 +1,10 @@
+use eternum::alias::ID;
+
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Orders {
     #[key]
-    order_id: u128,
+    order_id: ID,
     hyperstructure_count: u128
 }
 

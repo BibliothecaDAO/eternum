@@ -81,8 +81,8 @@ fn test_map_explore() {
 
     // ensure that Tile model is correct
     let explored_tile: Tile = get!(world, (expected_explored_coord.x, expected_explored_coord.y), Tile);
-    assert_eq!(explored_tile.col, explored_tile._col, "wrong col");
-    assert_eq!(explored_tile.row, explored_tile._row, "wrong row");
+    assert_eq!(explored_tile.col, explored_tile.col, "wrong col");
+    assert_eq!(explored_tile.row, explored_tile.row, "wrong row");
     assert_eq!(explored_tile.explored_by_id, realm_army_unit_id, "wrong realm owner");
     assert_eq!(explored_tile.explored_at, TIMESTAMP, "wrong exploration time");
 
@@ -169,7 +169,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher, ICombatContr
     let troops = Troops {
         knight_count: INITIAL_KNIGHT_BALANCE.try_into().unwrap(), paladin_count: 0, crossbowman_count: 0
     };
-    let realm_army_unit_id: u128 = create_army_with_troops(
+    let realm_army_unit_id: ID = create_army_with_troops(
         world, combat_systems_dispatcher, realm_entity_id, troops, false
     );
 

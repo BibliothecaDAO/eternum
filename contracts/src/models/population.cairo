@@ -1,3 +1,4 @@
+use eternum::alias::ID;
 use eternum::models::buildings::{BuildingCategory};
 
 
@@ -5,7 +6,7 @@ use eternum::models::buildings::{BuildingCategory};
 #[dojo::model]
 pub struct Population {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     population: u32, // current population
     capacity: u32, // total population capacity
 }

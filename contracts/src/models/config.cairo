@@ -1,6 +1,7 @@
 use core::debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{
     WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds
 };
@@ -16,7 +17,7 @@ use starknet::ContractAddress;
 #[dojo::model]
 pub struct WorldConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     admin_address: ContractAddress,
     realm_l2_contract: ContractAddress,
 }
@@ -25,8 +26,8 @@ pub struct WorldConfig {
 #[dojo::model]
 pub struct RealmFreeMintConfig {
     #[key]
-    config_id: u128,
-    detached_resource_id: u128,
+    config_id: ID,
+    detached_resource_id: ID,
     detached_resource_count: u32
 }
 
@@ -35,8 +36,8 @@ pub struct RealmFreeMintConfig {
 #[dojo::model]
 pub struct RoadConfig {
     #[key]
-    config_id: u128,
-    resource_cost_id: u128,
+    config_id: ID,
+    resource_cost_id: ID,
     resource_cost_count: u32,
     speed_up_by: u64
 }
@@ -45,7 +46,7 @@ pub struct RoadConfig {
 #[dojo::model]
 pub struct HyperstructureResourceConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
     resource_type: u8,
     amount_for_completion: u128,
@@ -60,16 +61,16 @@ pub struct HyperstructureResourceConfig {
 #[dojo::model]
 pub struct CapacityConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
-    carry_capacity_config_id: u128,
-    entity_type: u128,
+    carry_capacity_config_id: ID,
+    entity_type: ID,
     weight_gram: u128,
 }
 
 #[generate_trait]
 impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
-    fn get(world: IWorldDispatcher, entity_type: u128) -> CapacityConfig {
+    fn get(world: IWorldDispatcher, entity_type: ID) -> CapacityConfig {
         get!(world, (WORLD_CONFIG_ID, entity_type), CapacityConfig)
     }
 }
@@ -79,10 +80,10 @@ impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
 #[dojo::model]
 pub struct SpeedConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
-    speed_config_id: u128,
-    entity_type: u128,
+    speed_config_id: ID,
+    entity_type: ID,
     sec_per_km: u16,
 }
 
@@ -91,7 +92,7 @@ pub struct SpeedConfig {
 #[dojo::model]
 pub struct MapExploreConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     wheat_burn_amount: u128,
     fish_burn_amount: u128,
     reward_resource_amount: u128,
@@ -103,7 +104,7 @@ pub struct MapExploreConfig {
 #[dojo::model]
 pub struct TickConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
     tick_id: u8,
     tick_interval_in_seconds: u64
@@ -113,7 +114,7 @@ pub struct TickConfig {
 #[dojo::model]
 pub struct StaminaConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
     unit_type: u8,
     max_stamina: u16,
@@ -123,7 +124,7 @@ pub struct StaminaConfig {
 #[dojo::model]
 pub struct MercenariesConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     troops: Troops,
     rewards: Span<(u8, u128)>
 }
@@ -172,10 +173,10 @@ impl TickImpl of TickTrait {
 #[dojo::model]
 pub struct WeightConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
-    weight_config_id: u128,
-    entity_type: u128,
+    weight_config_id: ID,
+    entity_type: ID,
     weight_gram: u128,
 }
 
@@ -192,7 +193,7 @@ impl WeightConfigCustomImpl of WeightConfigCustomTrait {
 #[dojo::model]
 pub struct LevelingConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     decay_interval: u64,
     max_level: u64,
     decay_scaled: u128,
@@ -201,13 +202,13 @@ pub struct LevelingConfig {
     wheat_base_amount: u128,
     fish_base_amount: u128,
     // low tier resources
-    resource_1_cost_id: u128,
+    resource_1_cost_id: ID,
     resource_1_cost_count: u32,
     // mid tier resources
-    resource_2_cost_id: u128,
+    resource_2_cost_id: ID,
     resource_2_cost_count: u32,
     // high tier resources
-    resource_3_cost_id: u128,
+    resource_3_cost_id: ID,
     resource_3_cost_count: u32
 }
 
@@ -229,7 +230,7 @@ pub struct ProductionConfig {
 #[dojo::model]
 pub struct BankConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     lords_cost: u128,
     lp_fee_num: u128,
     lp_fee_denom: u128,
@@ -239,12 +240,12 @@ pub struct BankConfig {
 #[dojo::model]
 pub struct BuildingConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
     category: BuildingCategory,
     #[key]
     resource_type: u8,
-    resource_cost_id: u128,
+    resource_cost_id: ID,
     resource_cost_count: u32,
 }
 
@@ -267,7 +268,7 @@ impl BuildingConfigCustomImpl of BuildingConfigCustomTrait {
 #[dojo::model]
 pub struct TroopConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     health: u32,
     knight_strength: u8,
     paladin_strength: u8,
@@ -303,7 +304,7 @@ impl TroopConfigCustomImpl of TroopConfigCustomTrait {
 #[dojo::model]
 pub struct BattleConfig {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     max_tick_duration: u64,
 }
 
@@ -319,7 +320,7 @@ impl BattleConfigCustomImpl of BattleConfigCustomTrait {
 #[dojo::model]
 pub struct BuildingCategoryPopConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
     building_category: BuildingCategory,
     population: u32, // adds to population
@@ -330,7 +331,7 @@ pub struct BuildingCategoryPopConfig {
 #[dojo::model]
 pub struct PopulationConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     base_population: u32,
 }
 
@@ -352,7 +353,7 @@ impl HyperstructureConfigCustomImpl of HyperstructureConfigCustomTrait {
 #[dojo::model]
 pub struct HasClaimedStartingResources {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     #[key]
     config_id: u32,
     claimed: bool,

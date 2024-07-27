@@ -3,6 +3,7 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 // Dojo imports
 use dojo::model::introspect::{Struct, Ty, Introspect, Member};
+use eternum::alias::ID;
 
 // Starknet imports
 use starknet::ContractAddress;
@@ -38,7 +39,7 @@ impl IntrospectFixed of Introspect<Fixed> {
 #[dojo::model]
 pub struct Market {
     #[key]
-    bank_entity_id: u128,
+    bank_entity_id: ID,
     #[key]
     resource_type: u8,
     lords_amount: u128,

@@ -33,7 +33,7 @@ fn spawn_realm(world: IWorldDispatcher, realm_systems_dispatcher: IRealmSystemsD
 fn spawn_hyperstructure(
     world: IWorldDispatcher,
     hyperstructure_systems_dispatcher: IHyperstructureSystemsDispatcher,
-    realm_entity_id: u128,
+    realm_entity_id: ID,
     coord: Coord
 ) -> u128 {
     explore_tile(world, realm_entity_id, coord);
@@ -46,11 +46,11 @@ fn spawn_hyperstructure(
 fn create_army_with_troops(
     world: IWorldDispatcher,
     combat_systems_dispatcher: ICombatContractDispatcher,
-    realm_entity_id: u128,
+    realm_entity_id: ID,
     troops: Troops,
     is_defender: bool
 ) -> u128 {
-    let realm_army_unit_id: u128 = combat_systems_dispatcher.army_create(realm_entity_id, false);
+    let realm_army_unit_id: ID = combat_systems_dispatcher.army_create(realm_entity_id, false);
 
     combat_systems_dispatcher.army_buy_troops(realm_army_unit_id, realm_entity_id, troops);
     realm_army_unit_id
@@ -84,7 +84,7 @@ fn get_default_hyperstructure_coord() -> Coord {
     Coord { x: 0, y: 0 }
 }
 
-fn explore_tile(world: IWorldDispatcher, explorer_id: u128, coords: Coord) {
+fn explore_tile(world: IWorldDispatcher, explorer_id: ID, coords: Coord) {
     set!(
         world,
         Tile {

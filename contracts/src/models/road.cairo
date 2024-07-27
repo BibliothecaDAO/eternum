@@ -10,13 +10,13 @@ use eternum::models::position::Coord;
 #[dojo::model]
 pub struct Road {
     #[key]
-    start_coord_x: u128,
+    start_coord_x: u32,
     #[key]
-    start_coord_y: u128,
+    start_coord_y: u32,
     #[key]
-    end_coord_x: u128,
+    end_coord_x: u32,
     #[key]
-    end_coord_y: u128,
+    end_coord_y: u32,
     usage_count: u32
 }
 

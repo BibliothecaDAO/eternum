@@ -3,8 +3,8 @@ use eternum::alias::ID;
 
 #[dojo::interface]
 trait ISwapSystems {
-    fn buy(ref world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128) -> ID;
-    fn sell(ref world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128) -> ID;
+    fn buy(ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID;
+    fn sell(ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID;
 }
 
 #[dojo::contract]
@@ -28,9 +28,9 @@ mod swap_systems {
     #[dojo::event]
     struct SwapEvent {
         #[key]
-        bank_entity_id: u128,
+        bank_entity_id: ID,
         #[key]
-        entity_id: u128,
+        entity_id: ID,
         resource_type: u8,
         lords_amount: u128,
         resource_amount: u128,
@@ -44,9 +44,7 @@ mod swap_systems {
 
     #[abi(embed_v0)]
     impl SwapSystemsImpl of super::ISwapSystems<ContractState> {
-        fn buy(
-            ref world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128
-        ) -> ID {
+        fn buy(ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID {
             let bank = get!(world, bank_entity_id, Bank);
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
 
@@ -96,9 +94,7 @@ mod swap_systems {
         }
 
 
-        fn sell(
-            ref world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resource_type: u8, amount: u128
-        ) -> ID {
+        fn sell(ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, amount: u128) -> ID {
             let bank = get!(world, bank_entity_id, Bank);
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
 
@@ -154,7 +150,7 @@ mod swap_systems {
         fn emit_event(
             world: IWorldDispatcher,
             market: Market,
-            entity_id: u128,
+            entity_id: ID,
             lords_amount: u128,
             resource_amount: u128,
             bank_owner_fees: u128,

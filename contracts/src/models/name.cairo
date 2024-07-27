@@ -1,3 +1,5 @@
+use eternum::alias::ID;
+
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct AddressName {
@@ -10,6 +12,6 @@ pub struct AddressName {
 #[dojo::model]
 pub struct EntityName {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     name: felt252
 }

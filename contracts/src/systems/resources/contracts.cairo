@@ -43,10 +43,10 @@ mod resource_systems {
     #[dojo::event]
     struct Transfer {
         #[key]
-        recipient_entity_id: u128,
+        recipient_entity_id: ID,
         #[key]
-        sending_realm_id: u128,
-        sender_entity_id: u128,
+        sending_realm_id: ID,
+        sender_entity_id: ID,
         resources: Span<(u8, u128)>
     }
 

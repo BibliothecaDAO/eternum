@@ -1,6 +1,7 @@
 use core::fmt::{Display, Formatter, Error};
 use core::zeroable::Zeroable;
 use debug::PrintTrait;
+use eternum::alias::ID;
 
 use eternum::utils::number::{NumberTrait};
 use option::OptionTrait;
@@ -11,11 +12,11 @@ use traits::TryInto;
 
 // start col and row for eternum = 2147483647
 // nb of cols = 500
-const HIGHEST_COL: u128 = 2147484147;
-const LOWEST_COL: u128 = 2147483647;
+const HIGHEST_COL: u32 = 2147484147;
+const LOWEST_COL: u32 = 2147483647;
 // nb of rows = 300
-const HIGHEST_ROW: u128 = 2147483947;
-const LOWEST_ROW: u128 = 2147483647;
+const HIGHEST_ROW: u32 = 2147483947;
+const LOWEST_ROW: u32 = 2147483647;
 
 
 // multiplier to convert hex distance to km
@@ -118,8 +119,8 @@ impl DirectionDisplay of Display<Direction> {
 
 #[derive(Copy, Drop, PartialEq, Serde, Introspect, Debug)]
 struct Coord {
-    x: u128,
-    y: u128
+    x: u32,
+    y: u32
 }
 
 
@@ -214,9 +215,9 @@ impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 #[dojo::model]
 pub struct Position {
     #[key]
-    entity_id: u128,
-    x: u128,
-    y: u128,
+    entity_id: ID,
+    x: u32,
+    y: u32,
 }
 
 
@@ -237,7 +238,7 @@ impl PositionIntoCube of Into<Position, Cube> {
 #[generate_trait]
 impl PositionCustomImpl of PositionCustomTrait {
     // world is divided into 10 timezones
-    fn get_zone(self: Position) -> u128 {
+    fn get_zone(self: Position) -> u32 {
         // use highest and lowest x to divide map into 10 timezones
         1 + (self.x - LOWEST_COL) * 10 / (HIGHEST_COL - LOWEST_COL)
     }

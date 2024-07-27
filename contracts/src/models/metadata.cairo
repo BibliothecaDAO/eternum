@@ -6,8 +6,8 @@ use eternum::alias::ID;
 #[dojo::model]
 pub struct EntityMetadata {
     #[key]
-    entity_id: u128,
-    entity_type: u128,
+    entity_id: ID,
+    entity_type: u32,
 }
 
 
@@ -21,6 +21,6 @@ pub struct EntityMetadata {
 pub struct ForeignKey {
     #[key]
     foreign_key: felt252,
-    entity_id: u128,
+    entity_id: ID,
 }
 

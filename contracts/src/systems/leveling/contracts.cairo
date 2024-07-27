@@ -73,7 +73,7 @@ mod leveling_systems {
                 fish.burn(fish_cost);
                 fish.save(world);
             } else {
-                let mut resource_cost_id: u128 = 0;
+                let mut resource_cost_id: ID = 0;
                 let mut resource_cost_len: u32 = 0;
 
                 if (next_index == LevelIndex::RESOURCE) {

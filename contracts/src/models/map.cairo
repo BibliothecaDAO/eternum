@@ -1,3 +1,4 @@
+use eternum::alias::ID;
 use eternum::models::position::Coord;
 use eternum::utils::map::biomes::Biome;
 
@@ -5,12 +6,10 @@ use eternum::utils::map::biomes::Biome;
 #[dojo::model]
 pub struct Tile {
     #[key]
-    _col: u128,
+    col: u32,
     #[key]
-    _row: u128,
-    col: u128,
-    row: u128,
-    explored_by_id: u128,
+    row: u32,
+    explored_by_id: ID,
     explored_at: u64,
     biome: Biome,
 }

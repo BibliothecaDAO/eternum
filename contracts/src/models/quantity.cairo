@@ -7,7 +7,7 @@ use eternum::alias::ID;
 #[dojo::model]
 pub struct Quantity {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     value: u128,
 }
 

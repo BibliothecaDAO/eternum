@@ -34,7 +34,7 @@ fn setup() -> (IWorldDispatcher, IRoadSystemsDispatcher) {
 fn test_create() {
     let (world, road_systems_dispatcher) = setup();
 
-    let entity_id: u128 = 44;
+    let entity_id: ID = 44;
 
     set!(
         world,
@@ -68,7 +68,7 @@ fn test_create() {
 fn test_not_entity() {
     let (world, road_systems_dispatcher) = setup();
 
-    let entity_id: u128 = 44;
+    let entity_id: ID = 44;
     let start_coord = Coord { x: 20, y: 30 };
     let end_coord = Coord { x: 40, y: 50 };
     set!(
@@ -103,7 +103,7 @@ fn test_not_entity() {
 fn test_insufficient_balance() {
     let (world, road_systems_dispatcher) = setup();
 
-    let entity_id: u128 = 44;
+    let entity_id: ID = 44;
 
     set!(
         world,
@@ -130,7 +130,7 @@ fn test_insufficient_balance() {
 fn test_already_exists() {
     let (world, road_systems_dispatcher) = setup();
 
-    let entity_id: u128 = 44;
+    let entity_id: ID = 44;
     let start_coord = Coord { x: 20, y: 30 };
     let end_coord = Coord { x: 40, y: 50 };
     set!(
