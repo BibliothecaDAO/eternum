@@ -26,13 +26,17 @@ export const ActionInfo = () => {
     return travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
   }, [hoveredHex, travelPaths]);
 
-  console.log({ selectedEntityId, hoveredHex, path: travelPath?.path, travelPaths });
+  const showTooltip = useMemo(() => {
+    return hoveredHex && travelPath?.path && selectedEntityId;
+  }, [hoveredHex, travelPath, selectedEntityId]);
+
+  console.log({ showTooltip, selectedEntityId, hoveredHex, path: travelPath?.path, travelPaths });
 
   const isExplored = travelPath?.isExplored || false;
 
   return (
     <>
-      {hoveredHex && travelPath?.path && selectedEntityId && (
+      {showTooltip && (
         <BaseThreeTooltip position={Position.CENTER} className="-mt-[230px]" distanceFactor={44}>
           <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
 
