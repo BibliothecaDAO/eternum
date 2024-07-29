@@ -37,7 +37,7 @@ export const ActionInfo = () => {
   return (
     <>
       {showTooltip && (
-        <BaseThreeTooltip position={Position.CENTER} className="-mt-[230px]" distanceFactor={44}>
+        <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" distanceFactor={44}>
           <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
 
           {!isExplored && (

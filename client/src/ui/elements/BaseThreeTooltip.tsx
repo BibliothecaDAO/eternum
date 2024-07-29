@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { DojoHtml } from "./DojoHtml";
 import clsx from "clsx";
+import { throttle } from "lodash";
 
 type BaseThreeTooltipProps = {
   children?: React.ReactNode;
@@ -11,6 +12,7 @@ type BaseThreeTooltipProps = {
 };
 
 export enum Position {
+  CLEAN = "",
   CENTER = "-left-1/2 -mt-[150px]",
   TOP_CENTER = "-left-1/2 -mt-[300px]",
   BOTTOM_RIGHT = "rounded-bl-xl rounded-br-xl rounded-tr-xl -left-1",
@@ -26,8 +28,26 @@ export const BaseThreeTooltip = ({
   className,
   visible = true,
 }: BaseThreeTooltipProps) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mouseMoveHandler = throttle((e: MouseEvent) => {
+      if (ref.current) {
+        ref.current.style.left = `${e.clientX}px`;
+        ref.current.style.top = `${e.clientY}px`;
+      }
+    }, 10); // Throttling the event handler to execute once every 100ms
+    document.addEventListener("mousemove", mouseMoveHandler);
+    return () => {
+      document.removeEventListener("mousemove", mouseMoveHandler);
+      mouseMoveHandler.cancel(); // Cancel any trailing invocation of the throttled function
+    };
+  }, []);
   return (
-    <div className={clsx("min-w-[215px] clip-angled relative p-2 bg-brown/90 text-gold", position, className)}>
+    <div
+      ref={ref}
+      className={clsx("min-w-[215px] clip-angled relative p-2 bg-brown/90 text-gold", position, className)}
+    >
       {children}
       <svg
         className="absolute bottom-[1px] translate-y-full left-1/2 -translate-x-1/2"
