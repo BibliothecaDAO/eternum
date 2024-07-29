@@ -6,9 +6,9 @@ import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import { useResources } from "./useResources";
+import { getResourcesUtils } from "./useResources";
 
-export interface PlayerStructures {
+export interface PlayerStructure {
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
   name: string | undefined;
   entity_id?: bigint | undefined;
@@ -23,7 +23,7 @@ export const useEntities = () => {
     },
   } = useDojo();
 
-  const { getEntityName } = useEntitiesUtils();
+  const { getEntityName } = getEntitiesUtils();
 
   const playerRealms = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
   const otherRealms = useEntityQuery([Has(Realm), NotValue(Owner, { address: BigInt(account.address) })]);
@@ -42,7 +42,7 @@ export const useEntities = () => {
         return { ...realm, position: getPosition(realm!.realm_id), name: getRealmNameById(realm!.realm_id) };
       });
     },
-    playerStructures: (): PlayerStructures[] => {
+    playerStructures: (): PlayerStructure[] => {
       return playerStructures
         .map((id) => {
           const structure = getComponentValue(Structure, id);
@@ -58,12 +58,12 @@ export const useEntities = () => {
               : structure?.category;
           return { ...structure, position: position!, name };
         })
-        .sort((a, b) => (a.category || "").localeCompare(b.category || ""));
+        .sort((a, b) => (b.category || "").localeCompare(a.category || ""));
     },
   };
 };
 
-export const useEntitiesUtils = () => {
+export const getEntitiesUtils = () => {
   const {
     account: { account },
     setup: {
@@ -71,7 +71,7 @@ export const useEntitiesUtils = () => {
     },
   } = useDojo();
 
-  const { getResourcesFromBalance } = useResources();
+  const { getResourcesFromBalance } = getResourcesUtils();
 
   const getEntityInfo = (entityId: bigint) => {
     const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([entityId]));

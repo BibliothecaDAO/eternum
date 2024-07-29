@@ -268,6 +268,10 @@ export interface ArmyCreateProps extends SystemSigner {
   is_defensive_army: boolean;
 }
 
+export interface ArmyDeleteProps extends SystemSigner {
+  army_id: num.BigNumberish;
+}
+
 export interface ArmyBuyTroopsProps extends SystemSigner {
   army_id: num.BigNumberish;
   payer_id: num.BigNumberish;
@@ -402,6 +406,8 @@ export interface SetTroopConfigProps extends SystemSigner {
   advantage_percent: num.BigNumberish;
   disadvantage_percent: num.BigNumberish;
   pillage_health_divisor: num.BigNumberish;
+  army_free_per_structure: num.BigNumberish;
+  army_extra_per_military_building: num.BigNumberish;
 }
 
 export interface SetBuildingCategoryPopConfigProps extends SystemSigner {

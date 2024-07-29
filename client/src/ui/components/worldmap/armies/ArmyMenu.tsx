@@ -7,7 +7,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
-import { useResourceBalance } from "../../../../hooks/helpers/useResources";
+import { getResourceBalance } from "../../../../hooks/helpers/useResources";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { ResourceCost } from "../../../elements/ResourceCost";
@@ -25,7 +25,7 @@ const ArmyActionInfo = ({
   costs: Resource[];
   description?: string;
 }) => {
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   return (
     <div className="text-sm p-3 shadow rounded-md">
@@ -92,7 +92,7 @@ export const ArmyMenu = ({ selectedEntityId }: { selectedEntityId: bigint }) => 
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { getFoodResources } = useResourceBalance();
+  const { getFoodResources } = getResourceBalance();
 
   const explorationCosts = useMemo(() => {
     const foodBalance = entityOwner ? getFoodResources(entityOwner.entity_owner_id) : [];

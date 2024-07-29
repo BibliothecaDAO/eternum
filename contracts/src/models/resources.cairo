@@ -5,9 +5,7 @@ use debug::PrintTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, resource_type_name};
 use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION, BASE_STOREHOUSE_CAPACITY};
-use eternum::models::buildings::{
-    Building, BuildingTrait, BuildingQuantityv2TrackerImpl, BuildingCategory, BuildingQuantityv2
-};
+use eternum::models::buildings::{Building, BuildingTrait, BuildingCategory, BuildingQuantityv2};
 use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
 
 use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};

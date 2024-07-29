@@ -1,8 +1,9 @@
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { getBattleByPosition } from "@/hooks/helpers/battles/useBattles";
-import { getArmyByEntityId, isArmyAlive } from "@/hooks/helpers/useArmies";
-import { useEntitiesUtils } from "@/hooks/helpers/useEntities";
-import { useOwnedEntitiesOnPosition, useResources } from "@/hooks/helpers/useResources";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
+import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -32,14 +33,11 @@ type EntityProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Entity = ({ entityId, ...props }: EntityProps) => {
-  const {
-    setup: {
-      components: { Battle, Army },
-    },
-  } = useDojo();
+  const dojo = useDojo();
+
   const [showTravel, setShowTravel] = useState(false);
-  const { getEntityInfo } = useEntitiesUtils();
-  const { getResourcesFromBalance } = useResources();
+  const { getEntityInfo } = getEntitiesUtils();
+  const { getResourcesFromBalance } = getResourcesUtils();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
   const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
   const { getArmy } = getArmyByEntityId();
@@ -54,17 +52,19 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     hasResources,
   );
   const depositEntityId = getOwnedEntityOnPosition(entityId);
-  const getBattle = getBattleByPosition();
+
+  const structureAtPosition = getStructureByEntityId(depositEntityId || 0n);
 
   const battleInProgress = useMemo(() => {
-    const battleAtPosition = entity?.position
-      ? getBattle({ x: Number(entity.position.x), y: Number(entity.position.y) })
-      : undefined;
-    return battleAtPosition && battleAtPosition.duration_left > 0;
+    if (!structureAtPosition || !structureAtPosition.protector || structureAtPosition.protector.battle_id === 0n) {
+      return false;
+    }
+    const currentTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
+    const battleManager = new BattleManager(structureAtPosition.protector.battle_id, dojo);
+    return battleManager.isBattleOngoing(currentTimestamp!);
   }, [entity?.position?.x, entity?.position?.y]);
 
-  const army = getArmy(entityId);
-  if (army && !isArmyAlive(army, Battle, Army)) return;
+  const army = useMemo(() => getArmy(entityId), [entityId]);
 
   if (entityState === EntityState.NotApplicable) return null;
 
@@ -125,15 +125,16 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
             <span>{name}</span>
           </div>
 
-          <div className="flex items-center gap-1 self-center">
-            {renderEntityStatus()}
-            {/* <span>{entityState === EntityState.Traveling ? "Traveling" : "Resting"}</span> */}
-          </div>
+          <div className="flex items-center gap-1 self-center">{renderEntityStatus()}</div>
         </div>
       </div>
       <div className="flex items-center gap-2 flex-wrap my-2">{renderResources()}</div>
       {entityState !== EntityState.Traveling && (
-        <DepositResources entityId={entityId} battleInProgress={battleInProgress} />
+        <DepositResources
+          entityId={entityId}
+          battleInProgress={battleInProgress}
+          armyInBattle={Boolean(army.battle_id)}
+        />
       )}
     </div>
   );

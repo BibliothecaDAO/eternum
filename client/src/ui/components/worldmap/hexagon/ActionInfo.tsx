@@ -1,19 +1,19 @@
+import { getResourceBalance } from "@/hooks/helpers/useResources";
+import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
-import { useMemo } from "react";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import useRealmStore from "@/hooks/store/useRealmStore";
 import { StaminaResourceCost } from "@/ui/elements/StaminaResourceCost";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
+import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
+import { useMemo } from "react";
 
 export const ActionInfo = () => {
   const travelPaths = useUIStore((state) => state.travelPaths);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const hoveredHex = useUIStore((state) => state.hoveredHex);
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
   const { realmEntityId } = useRealmStore();
 
   const hoveredHexPosition = useMemo(() => {

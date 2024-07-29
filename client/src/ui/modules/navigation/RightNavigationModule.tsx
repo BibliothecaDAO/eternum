@@ -1,4 +1,3 @@
-import { useResources } from "@/hooks/helpers/useResources";
 import { useModal } from "@/hooks/store/useModal";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -11,9 +10,11 @@ import CircleButton from "@/ui/elements/CircleButton";
 import { useMemo, useState } from "react";
 import { BaseContainer } from "../../containers/BaseContainer";
 
-import { useEntities, useEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { HintSection } from "@/ui/components/hints/HintModal";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import clsx from "clsx";
@@ -21,8 +22,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { quests as questsPopup } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
-import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { QuestId } from "@/ui/components/quest/questDetails";
+import { useArrivalsWithResources } from "@/hooks/helpers/useResources";
 
 export enum View {
   None,
@@ -44,10 +44,10 @@ export const RightNavigationModule = () => {
   const { realmEntityId } = useRealmStore();
   const { questClaimStatus } = useQuestClaimStatus();
 
-  const { getEntityInfo } = useEntitiesUtils();
+  const { getEntityInfo } = getEntitiesUtils();
   const realmIsMine = getEntityInfo(realmEntityId).isMine;
 
-  const { getAllArrivalsWithResources } = useResources();
+  const { getAllArrivalsWithResources } = useArrivalsWithResources();
 
   const { toggleModal } = useModal();
 

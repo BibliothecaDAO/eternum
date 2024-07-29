@@ -150,6 +150,8 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     advantagePercent: advantage_percent,
     disadvantagePercent: disadvantage_percent,
     pillageHealthDivisor: pillage_health_divisor,
+    baseArmyNumberForStructure: army_free_per_structure,
+    armyExtraPerMilitaryBuilding: army_extra_per_military_building,
   } = EternumGlobalConfig.troop;
 
   const tx = await provider.set_troop_config({
@@ -162,6 +164,8 @@ export const setCombatConfig = async (account: Account, provider: EternumProvide
     advantage_percent,
     disadvantage_percent,
     pillage_health_divisor: pillage_health_divisor,
+    army_free_per_structure: army_free_per_structure,
+    army_extra_per_military_building: army_extra_per_military_building,
   });
 
   console.log(`Configuring combat config ${tx.statusReceipt}...`);

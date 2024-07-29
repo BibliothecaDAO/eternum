@@ -1,22 +1,22 @@
-import { useMemo, useState } from "react";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { Tabs } from "../../elements/tab";
 import { EntityList } from "@/ui/components/list/EntityList";
 import { ViewOnMapButton } from "@/ui/components/military/ArmyManagementCard";
 import { currencyIntlFormat } from "@/ui/utils/utils";
+import { useMemo, useState } from "react";
+import { Tabs } from "../../elements/tab";
 
 import { HyperstructurePanel } from "@/ui/components/hyperstructures/HyperstructurePanel";
 import { ShardMinePanel } from "@/ui/components/shardMines/ShardMinePanel";
 
+import { useContributions } from "@/hooks/helpers/useContributions";
 import { useHyperstructures } from "@/hooks/helpers/useHyperstructures";
 import { useShardMines } from "@/hooks/helpers/useShardMines";
-import { useContributions } from "@/hooks/helpers/useContributions";
 
 import { calculateShares } from "@/hooks/store/useLeaderBoardStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import { QuestId } from "@/ui/components/quest/questDetails";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
 
 export const WorldStructuresMenu = ({}: any) => {
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
@@ -30,8 +30,8 @@ export const WorldStructuresMenu = ({}: any) => {
     return (
       <HyperStructureExtraContent
         hyperstructureEntityId={hyperstructure.entity_id!}
-        x={Number(hyperstructure.x!)}
-        y={Number(hyperstructure.y!)}
+        x={hyperstructure.x!}
+        y={hyperstructure.y!}
       />
     );
   };

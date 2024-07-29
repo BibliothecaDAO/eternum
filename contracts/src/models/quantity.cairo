@@ -38,3 +38,6 @@ struct QuantityTracker {
     count: u128,
 }
 
+mod QuantityTrackerType {
+    const ARMY_COUNT: felt252 = 'army_quantity';
+}

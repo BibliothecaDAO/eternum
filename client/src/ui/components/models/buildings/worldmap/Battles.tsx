@@ -1,52 +1,42 @@
+import { useDojo } from "@/hooks/context/DojoContext";
 import { useAllBattles } from "@/hooks/helpers/battles/useBattles";
-import useUIStore from "@/hooks/store/useUIStore";
-import { BattleLabel } from "@/ui/components/worldmap/armies/BattleLabel";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { Position } from "@bibliothecadao/eternum";
+import { HasValue, runQuery } from "@dojoengine/recs";
 import { Billboard, Image, useGLTF, useTexture } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useCallback, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
 export const Battles = () => {
-  const setSelectedBattle = useUIStore((state) => state.setSelectedBattle);
+  const {
+    setup: {
+      components: { Army },
+    },
+  } = useDojo();
+
   const battles = useAllBattles();
 
-  const onRightClick = useCallback((battle_id: any, position: Position) => {
-    setSelectedBattle({ id: BigInt(battle_id), position });
-  }, []);
+  const nonEmptyBattles = useMemo(() => {
+    return battles.filter((battle) => runQuery([HasValue(Army, { battle_id: battle.entity_id })]).size > 0);
+  }, [battles]);
 
   return (
     <group>
-      {battles.map((battle, index) => {
-        if (!battle?.x || !battle?.y) return null;
-        const { x, y } = getUIPositionFromColRow(Number(battle.x), Number(battle.y), false);
-        return (
-          <BattleModel
-            key={index}
-            battle_id={battle.entity_id}
-            position={[x, 0.31, -y]}
-            onClick={() => onRightClick(battle.entity_id, { x, y })}
-          />
-        );
+      {nonEmptyBattles.map((battle, index) => {
+        if (!battle?.position.x || !battle?.position.y) return null;
+        const { x, y } = getUIPositionFromColRow(battle.position.x, battle.position.y, false);
+        return <BattleModel key={index} position={[x, 0.31, -y]} />;
       })}
     </group>
   );
 };
 
-const BattleModel = ({ battle_id, position, onClick }: { battle_id: bigint; position: any; onClick: () => void }) => {
-  const selectedBattle = useUIStore((state) => state.selectedBattle);
-  const selectedEntity = useUIStore((state) => state.selectedEntity);
-
+const BattleModel = ({ position }: { position: any }) => {
   const armyLabel = useTexture("/textures/army_label.png", (texture) => {
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.magFilter = THREE.LinearFilter;
     texture.minFilter = THREE.LinearFilter;
   });
-
-  const showBattleLabel = useMemo(() => {
-    return selectedEntity === undefined && selectedBattle !== undefined && selectedBattle.id === BigInt(battle_id);
-  }, [selectedBattle, battle_id]);
 
   const model = useGLTF("/models/buildings/barracks.glb");
   const clone = useMemo(() => {
@@ -66,8 +56,7 @@ const BattleModel = ({ battle_id, position, onClick }: { battle_id: bigint; posi
 
   return (
     <group position={position}>
-      {showBattleLabel && <BattleLabel selectedBattle={selectedBattle!.id} />}
-      <primitive scale={3} object={clone} onContextMenu={onClick} />
+      <primitive scale={3} object={clone} />
       <Billboard>
         <Image
           ref={testRef}

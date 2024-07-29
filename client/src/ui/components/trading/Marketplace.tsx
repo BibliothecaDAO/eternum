@@ -1,4 +1,4 @@
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import {
   EternumGlobalConfig,
@@ -344,7 +344,7 @@ const OverviewResourceRow = ({
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   const realmResource = useMemo(() => {
     return getBalance(realmEntityId!, askSummary?.resourceId || 0);

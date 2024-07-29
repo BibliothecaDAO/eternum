@@ -1,15 +1,17 @@
 use core::array::ArrayTrait;
 use core::integer::BoundedInt;
 use core::option::OptionTrait;
+use core::poseidon::poseidon_hash_span;
 use core::traits::Into;
 use core::traits::TryInto;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::all_resource_ids;
 use eternum::models::capacity::{Capacity, CapacityTrait};
 use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
 use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
 use eternum::models::config::{WeightConfig, WeightConfigImpl};
-use eternum::models::quantity::{Quantity, QuantityTrait};
+use eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrackerType, QuantityTrait};
 use eternum::models::resources::OwnedResourcesTrackerTrait;
 use eternum::models::resources::ResourceTrait;
 use eternum::models::resources::ResourceTransferLockTrait;
@@ -20,9 +22,8 @@ use eternum::models::resources::{
 use eternum::models::structure::{Structure, StructureImpl};
 use eternum::models::weight::Weight;
 use eternum::models::weight::WeightTrait;
-use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min};
+use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, max};
 use eternum::utils::number::NumberTrait;
-
 
 const STRENGTH_PRECISION: u256 = 10_000;
 
@@ -74,7 +75,12 @@ impl HealthImpl of HealthTrait {
             num_steps += 1;
         }
 
-        num_steps
+        // this condition is here in case
+        // self.current < deduction which would make
+        // num_steps = 0 but that would cause the
+        // "inaccurate winner invariant" error so we make it
+        // at least 1.
+        max(num_steps, 1)
     }
 
     fn percentage_left(self: Health) -> u128 {
@@ -86,7 +92,7 @@ impl HealthImpl of HealthTrait {
 }
 
 
-#[derive(Copy, Drop, Serde, Introspect, Default)]
+#[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq, Default)]
 struct Troops {
     knight_count: u64,
     paladin_count: u64,
@@ -312,6 +318,12 @@ impl TroopsImpl of TroopsTrait {
     }
 }
 
+#[generate_trait]
+impl AttackingArmyQuantityTracker of ArmyQuantityTrackerTrait {
+    fn key(entity_id: ID) -> felt252 {
+        poseidon_hash_span(array![entity_id.into(), QuantityTrackerType::ARMY_COUNT.into()].span())
+    }
+}
 
 #[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
@@ -476,7 +488,7 @@ struct Battle {
 }
 
 
-#[derive(Copy, Drop, Serde, PartialEq, Introspect)]
+#[derive(Copy, Drop, Serde, PartialEq, Debug, Introspect)]
 enum BattleSide {
     None,
     Attack,
@@ -565,7 +577,14 @@ impl BattleEscrowImpl of BattleEscrowTrait {
             .is_structure();
 
         let winner_side: BattleSide = self.winner();
-        let to_army_lost = (winner_side != to_army.battle_side && winner_side != BattleSide::None);
+        let to_army_dead = to_army.troops.count().is_zero();
+
+        // the reason for checking if `to_army_dead` is `true` is that
+        // it's possible for the battle be a draw and both sides die in the process.
+        // if this edge case occurs, we assume they both lost for the purpose of this
+        // function. They both forfeit their balances.
+        let to_army_lost = to_army_dead
+            || (winner_side != to_army.battle_side && winner_side != BattleSide::None);
         let to_army_won = (winner_side == to_army.battle_side && winner_side != BattleSide::None);
         let to_army_lost_or_battle_not_ended = !self.has_ended()
             || (self.has_ended() && to_army_lost);
@@ -804,7 +823,9 @@ mod tests {
             crossbowman_strength: 1,
             advantage_percent: 1000,
             disadvantage_percent: 1000,
-            pillage_health_divisor: 8
+            pillage_health_divisor: 8,
+            army_free_per_structure: 100,
+            army_extra_per_building: 100,
         }
     }
 

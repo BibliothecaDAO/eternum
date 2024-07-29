@@ -1,21 +1,21 @@
+import { ReactComponent as ArrowSeparator } from "@/assets/icons/common/arrow-separator.svg";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { TravelInfo } from "@/ui/components/resources/ResourceWeight";
+import { ONE_MONTH, resources } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
+import { useDojo } from "../../../../../hooks/context/DojoContext";
+import { useRealm } from "../../../../../hooks/helpers/useRealm";
+import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
-import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
+import { ResourceCost } from "../../../../elements/ResourceCost";
+import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
 import { SelectableResource } from "../../../../elements/SelectableResource";
-import { ONE_MONTH, resources } from "@bibliothecadao/eternum";
-import { ReactComponent as ArrowSeparator } from "@/assets/icons/common/arrow-separator.svg";
 import { Steps } from "../../../../elements/Steps";
-import { useDojo } from "../../../../../hooks/context/DojoContext";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
-import { useRealm } from "../../../../../hooks/helpers/useRealm";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
 import { TradeRealmSelector } from "./TradeRealmSelector";
-import { TravelInfo } from "@/ui/components/resources/ResourceWeight";
 
 interface CreateOfferPopupProps {
   onClose: () => void;
@@ -176,7 +176,7 @@ const SelectResourcesPanel = ({
   selectedResourceIdsGet: number[];
   setSelectedResourceIdsGet: (selectedResourceIds: number[]) => void;
 }) => {
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   const { realmEntityId } = useRealmStore();
 
@@ -260,7 +260,7 @@ const SelectResourcesAmountPanel = ({
 }) => {
   const { realmEntityId } = useRealmStore();
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   return (
     <>
