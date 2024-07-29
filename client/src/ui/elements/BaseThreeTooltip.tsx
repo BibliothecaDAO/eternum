@@ -33,6 +33,7 @@ export const BaseThreeTooltip = ({
       if (ref.current) {
         ref.current.style.left = `${e.clientX}px`;
         ref.current.style.top = `${e.clientY}px`;
+      }
     }, 10); // Throttling the event handler to execute once every 10ms
     document.addEventListener("mousemove", mouseMoveHandler);
     return () => {
