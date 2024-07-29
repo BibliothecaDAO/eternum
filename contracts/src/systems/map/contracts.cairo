@@ -169,7 +169,7 @@ mod map_systems {
         }
 
         fn create_shard_mine_structure(world: IWorldDispatcher, coord: Coord) -> ID {
-            let entity_id: ID = world.uuid().into();
+            let entity_id: ID = world.uuid();
             set!(
                 world,
                 (

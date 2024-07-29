@@ -236,7 +236,7 @@ pub struct BankConfig {
     lp_fee_denom: u128,
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BuildingConfig {
     #[key]
@@ -316,7 +316,7 @@ impl BattleConfigCustomImpl of BattleConfigCustomTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BuildingCategoryPopConfig {
     #[key]
@@ -355,6 +355,6 @@ pub struct HasClaimedStartingResources {
     #[key]
     entity_id: ID,
     #[key]
-    config_id: u32,
+    config_id: ID,
     claimed: bool,
 }

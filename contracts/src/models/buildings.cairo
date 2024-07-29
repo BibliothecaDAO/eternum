@@ -18,7 +18,7 @@ use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
 
 //todo we need to define border of innner hexes
 
-#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde)]
+#[derive(PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Building {
     #[key]
@@ -36,7 +36,7 @@ pub struct Building {
     outer_entity_id: ID,
 }
 
-#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde)]
+#[derive(PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BuildingQuantityv2 {
     #[key]
@@ -430,7 +430,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         assert!(!building.is_active(), "space is occupied");
 
         // set building
-        building.entity_id = world.uuid().into();
+        building.entity_id = world.uuid();
         building.category = category;
         building.outer_entity_id = outer_entity_id;
         match produce_resource_type {

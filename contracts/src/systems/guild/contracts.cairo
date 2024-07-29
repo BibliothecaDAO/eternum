@@ -34,7 +34,7 @@ mod guild_systems {
             // Add min name length
             assert(guild_name != 0, 'Guild name cannot be empty');
 
-            let guild_uuid: ID = world.uuid().into();
+            let guild_uuid: ID = world.uuid();
 
             set!(
                 world,

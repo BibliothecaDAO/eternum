@@ -187,7 +187,7 @@ mod resource_systems {
             let mut actual_recipient_id: ID = recipient_id;
             let transport_is_needed: bool = owner_coord.is_non_zero() && owner_coord != recipient_coord;
             if transport_is_needed {
-                actual_recipient_id = world.uuid().into()
+                actual_recipient_id = world.uuid()
             };
 
             // transfer resources from sender to recipient

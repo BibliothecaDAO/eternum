@@ -94,7 +94,8 @@ fn test_map_explore() {
     assert_eq!(realm_wheat.balance, expected_wheat_balance, "wrong wheat balance");
     assert_eq!(realm_fish.balance, expected_fish_balance, "wrong wheat balance");
 
-    army_coord = expected_explored_coord;
+    let mut new_army_coord: Coord = get!(world, realm_army_unit_id, Position).into();
+    assert_eq!(new_army_coord, expected_explored_coord);
 }
 
 #[test]

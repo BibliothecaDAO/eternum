@@ -95,7 +95,7 @@ mod trade_systems {
             let maker_owner = get!(world, maker_id, Owner);
             assert(maker_owner.address == caller, 'caller not maker');
 
-            let maker_gives_resources_id: ID = world.uuid().into();
+            let maker_gives_resources_id: ID = world.uuid();
             let mut maker_gives_resources_count: u32 = 0;
             let mut maker_gives_resources_felt_arr: Array<felt252> = array![];
             let mut maker_gives_resources_weight = 0;
@@ -140,7 +140,7 @@ mod trade_systems {
             maker_weight.deduct(maker_capacity, maker_gives_resources_weight);
             set!(world, (maker_weight));
 
-            let taker_gives_resources_id: ID = world.uuid().into();
+            let taker_gives_resources_id: ID = world.uuid();
             let mut taker_gives_resources_count: u32 = 0;
             let mut taker_gives_resources_felt_arr: Array<felt252> = array![];
             let mut taker_gives_resources_weight = 0;
@@ -178,7 +178,7 @@ mod trade_systems {
             donkey::burn_donkey(world, maker_id, taker_gives_resources_weight);
 
             // create trade entity
-            let trade_id = world.uuid().into();
+            let trade_id = world.uuid();
             set!(
                 world,
                 (

@@ -290,7 +290,7 @@ impl ArmyQuantityTracker of ArmyQuantityTrackerTrait {
     }
 }
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
+#[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Army {
     #[key]
@@ -428,7 +428,7 @@ impl ProtecteeCustomImpl of ProtecteeCustomTrait {
 }
 
 
-#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
+#[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct Battle {
     #[key]
@@ -866,7 +866,7 @@ mod tests {
 
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -914,7 +914,7 @@ mod tests {
 
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -969,7 +969,7 @@ mod tests {
         ///
         // recreate defense army for testing
         let defence_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(defence_troop_each, defence_troop_each, defence_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Defence
@@ -989,7 +989,7 @@ mod tests {
         ///
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each), // has no effect on outcome
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -1051,7 +1051,7 @@ mod tests {
         ///
         // recreate defense army for testing
         let defence_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(defence_troop_each, defence_troop_each, defence_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Defence
@@ -1071,7 +1071,7 @@ mod tests {
         ///
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -1140,7 +1140,7 @@ mod tests {
         ///
         // recreate defense army for testing
         let defence_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(defence_troop_each, defence_troop_each, defence_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Defence
@@ -1160,7 +1160,7 @@ mod tests {
         ///
         // recreate attack army for testing
         let attack_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack

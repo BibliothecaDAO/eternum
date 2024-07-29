@@ -58,7 +58,7 @@ mod hyperstructure_systems {
             creator_resources.burn(hyperstructure_shards_config.amount_for_completion);
             creator_resources.save(world);
 
-            let new_uuid: ID = world.uuid().into();
+            let new_uuid: ID = world.uuid();
 
             set!(
                 world,

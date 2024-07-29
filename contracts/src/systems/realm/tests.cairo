@@ -1,4 +1,5 @@
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::MAX_REALMS_PER_ADDRESS;
 
 use eternum::constants::ResourceTypes;
@@ -25,7 +26,6 @@ use eternum::utils::testing::{
     },
     config::{set_combat_config}
 };
-
 use starknet::contract_address_const;
 
 const TIMESTAMP: u64 = 1000;
@@ -36,7 +36,7 @@ const INITIAL_RESOURCE_1_AMOUNT: u128 = 800;
 const INITIAL_RESOURCE_2_TYPE: u8 = 2;
 const INITIAL_RESOURCE_2_AMOUNT: u128 = 700;
 
-const REALM_FREE_MINT_CONFIG_ID: u32 = 0;
+const REALM_FREE_MINT_CONFIG_ID: ID = 0;
 
 fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
     let world = spawn_eternum();

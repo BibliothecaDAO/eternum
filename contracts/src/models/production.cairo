@@ -16,7 +16,7 @@ pub struct Production {
     entity_id: ID,
     #[key]
     resource_type: u8,
-    building_count: u128,
+    building_count: u8,
     production_rate: u128,
     consumption_rate: u128,
     last_updated_tick: u64,

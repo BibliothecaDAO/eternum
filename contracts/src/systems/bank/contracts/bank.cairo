@@ -31,7 +31,7 @@ mod bank_systems {
         fn create_bank(
             ref world: IWorldDispatcher, realm_entity_id: ID, coord: Coord, owner_fee_num: u128, owner_fee_denom: u128,
         ) -> ID {
-            let bank_entity_id: ID = world.uuid().into();
+            let bank_entity_id: ID = world.uuid();
 
             //todo: check that tile is explored
 

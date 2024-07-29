@@ -621,7 +621,7 @@ mod combat_systems {
             let defending_army_position: Position = get!(world, defending_army_id, Position);
             attacking_army_position.assert_same_location(defending_army_position.into());
 
-            let battle_id: ID = world.uuid().into();
+            let battle_id: ID = world.uuid();
             attacking_army.battle_id = battle_id;
             attacking_army.battle_side = BattleSide::Attack;
             set!(world, (attacking_army));
@@ -653,8 +653,8 @@ mod combat_systems {
             battle.attack_army_lifetime = attacking_army.into();
             battle.defence_army = defending_army.into();
             battle.defence_army_lifetime = defending_army.into();
-            battle.attackers_resources_escrow_id = world.uuid().into();
-            battle.defenders_resources_escrow_id = world.uuid().into();
+            battle.attackers_resources_escrow_id = world.uuid();
+            battle.defenders_resources_escrow_id = world.uuid();
             battle.attack_army_health = attacking_army_health.into();
             battle.defence_army_health = defending_army_health.into();
             battle.last_updated = starknet::get_block_timestamp();
@@ -1201,7 +1201,7 @@ mod combat_systems {
             set!(world, (owner_armies_quantity));
 
             // create army
-            let mut army_id: ID = world.uuid().into();
+            let mut army_id: ID = world.uuid();
             let army_owner_position: Position = get!(world, army_owner_id, Position);
             set!(
                 world,

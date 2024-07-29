@@ -2,7 +2,7 @@ use eternum::alias::ID;
 use eternum::models::position::Coord;
 use eternum::utils::map::biomes::Biome;
 
-#[derive(IntrospectPacked, Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Tile {
     #[key]

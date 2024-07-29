@@ -15,7 +15,7 @@ trait IRealmSystems {
         order: u8,
         position: eternum::models::position::Position
     ) -> ID;
-    fn mint_starting_resources(ref world: IWorldDispatcher, config_id: u32, entity_id: ID) -> ID;
+    fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID;
 }
 
 
@@ -47,7 +47,7 @@ mod realm_systems {
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
-        fn mint_starting_resources(ref world: IWorldDispatcher, config_id: u32, entity_id: ID) -> ID {
+        fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID {
             get!(world, (entity_id), Realm).assert_is_set();
 
             let mut claimed_resources = get!(world, (entity_id, config_id), HasClaimedStartingResources);
