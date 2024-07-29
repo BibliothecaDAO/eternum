@@ -15,12 +15,14 @@ import { SceneManager } from "./SceneManager";
 import HexceptionScene from "./scenes/Hexception";
 import WorldmapScene from "./scenes/Worldmap";
 import { GUIManager } from "./helpers/GUIManager";
+import { CSS2DRenderer } from "three-stdlib";
 
 export const HEX_SIZE = 1;
 export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
 export const HEX_VERTICAL_SPACING = (HEX_SIZE * 3) / 2;
 
 export default class GameRenderer {
+  private labelRenderer!: CSS2DRenderer;
   private renderer!: THREE.WebGLRenderer;
   private camera!: THREE.PerspectiveCamera;
   private raycaster!: THREE.Raycaster;
@@ -119,6 +121,14 @@ export default class GameRenderer {
         "move",
       )
       .name("Move Camera");
+
+    // Create an instance of CSS2DRenderer
+    this.labelRenderer = new CSS2DRenderer();
+    this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    this.labelRenderer.domElement.style.position = "absolute";
+    this.labelRenderer.domElement.style.top = "0px";
+    this.labelRenderer.domElement.style.pointerEvents = "none";
+    document.body.appendChild(this.labelRenderer.domElement);
   }
 
   initStats() {
@@ -351,10 +361,12 @@ export default class GameRenderer {
       // this.hexGrid.updateVisibleChunks();
       this.worldmapScene.contextMenuManager.checkHexagonHover();
       this.renderer.render(this.worldmapScene.scene, this.camera);
+      this.labelRenderer.render(this.worldmapScene.scene, this.camera);
     } else {
       // this.detailedScene.update(deltaTime);
       this.hexceptionScene.update(deltaTime);
       this.renderer.render(this.hexceptionScene.scene, this.camera);
+      this.labelRenderer.render(this.hexceptionScene.scene, this.camera);
     }
 
     requestAnimationFrame(() => {

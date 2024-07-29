@@ -17,7 +17,7 @@ import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeom
 import { FELT_CENTER } from "@/ui/config";
 import InstancedBuilding from "../components/InstancedBuilding";
 import { HEX_HORIZONTAL_SPACING, HEX_SIZE } from "../GameRenderer";
-import { CSS2DRenderer, CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GUIManager } from "../helpers/GUIManager";
 import { InteractiveHexManager } from "../components/InteractiveHexManager";
@@ -76,8 +76,6 @@ export default class HexceptionScene {
 
   private biome!: Biome;
 
-  private labelRenderer: CSS2DRenderer | null = null;
-
   private mainDirectionalLight!: THREE.DirectionalLight;
   private hemisphereLight!: THREE.HemisphereLight;
   private lightHelper!: THREE.DirectionalLightHelper;
@@ -91,12 +89,6 @@ export default class HexceptionScene {
     private raycaster: THREE.Raycaster,
   ) {
     this.renderer = renderer;
-    this.labelRenderer = new CSS2DRenderer();
-    this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
-    this.labelRenderer.domElement.style.position = "absolute";
-    this.labelRenderer.domElement.style.top = "0px";
-    this.labelRenderer.domElement.style.pointerEvents = "none";
-    document.body.appendChild(this.labelRenderer.domElement);
     this.camera = controls.object as THREE.PerspectiveCamera;
     this.dojo = dojoContext;
     this.biome = new Biome();
@@ -414,7 +406,6 @@ export default class HexceptionScene {
   }
 
   update(deltaTime: number) {
-    if (this.camera) this.labelRenderer?.render(this.scene, this.camera);
     if (this.interactiveHexManager) this.interactiveHexManager.update();
   }
   onMouseMove(event: MouseEvent) {
