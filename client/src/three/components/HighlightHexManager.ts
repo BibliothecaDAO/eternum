@@ -25,8 +25,9 @@ export class HighlightHexManager {
     hexes.forEach((hex) => {
       const position = getWorldPositionForHex(hex);
       const highlightMesh = new THREE.Mesh(hexagonGeometry, this.material.clone());
-      highlightMesh.position.set(position.x, 0.32, position.z);
+      highlightMesh.position.set(position.x, 0.3, position.z);
       highlightMesh.rotation.x = -Math.PI / 2;
+      highlightMesh.renderOrder = 2;
 
       // Disable raycasting for this mesh
       highlightMesh.raycast = () => {};
