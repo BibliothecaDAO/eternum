@@ -10,29 +10,24 @@ import { useThreeStore } from "@/hooks/store/useThreeStore";
 import { FELT_CENTER } from "@/ui/config";
 
 export const ActionInfo = () => {
-  const hoveredHex = useThreeStore((state) => state.hoveredHex);
-  const selectedEntityId = useThreeStore((state) => state.selectedEntityId);
-  const travelPaths = useThreeStore((state) => state.travelPaths);
+  const { hoveredHex, selectedEntityId, travelPaths } = useThreeStore((state) => state.armyActions);
   const { getBalance } = useResourceBalance();
   const { realmEntityId } = useRealmStore();
 
   const travelPath = useMemo(() => {
-    if (!hoveredHex) return null;
-    return travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
+    if (hoveredHex) return travelPaths.get(`${hoveredHex.col + FELT_CENTER},${hoveredHex.row + FELT_CENTER}`);
   }, [hoveredHex, travelPaths]);
 
   const showTooltip = useMemo(() => {
-    return hoveredHex !== undefined && travelPath?.path !== undefined && selectedEntityId !== null;
+    return travelPath && travelPath.path.length >= 2 && selectedEntityId !== null;
   }, [hoveredHex, travelPath, selectedEntityId]);
-
-  console.log({ showTooltip, selectedEntityId, hoveredHex, path: travelPath?.path, travelPaths });
 
   const isExplored = travelPath?.isExplored || false;
 
   return (
     <>
       {showTooltip && (
-        <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" distanceFactor={44}>
+        <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]">
           <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
 
           {!isExplored && (

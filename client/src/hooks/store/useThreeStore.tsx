@@ -3,34 +3,37 @@ import { BuildingType, Position } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 import { useEffect } from "react";
 
+interface ArmyActions {
+  hoveredHex: { col: number; row: number; x: number; z: number } | null;
+  travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
+  selectedEntityId: number | null;
+}
+
 export interface ThreeStore {
-  // hex
-  hoveredHex: { col: number; row: number; x: number; z: number };
-  setHoveredHex: (hex: { col: number; row: number; x: number; z: number }) => void;
+  armyActions: ArmyActions;
+  setArmyActions: (armyActions: ArmyActions) => void;
+  updateHoveredHex: (hoveredHex: { col: number; row: number; x: number; z: number } | null) => void;
+  updateTravelPaths: (travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>) => void;
+  updateSelectedEntityId: (selectedEntityId: number | null) => void;
 
   selectedHex: HexPosition;
   setSelectedHex: (hex: HexPosition) => void;
 
-  // moving armies
-  travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
-  setTravelPaths: (travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>) => void;
-
-  // entities on the map
-  selectedEntityId: number | null;
-  setSelectedEntityId: (entityId: number | null) => void;
-
-  // Hexception
   setSelectedBuilding: (building: BuildingType) => void;
   selectedBuilding: BuildingType;
 }
 
 export const useThreeStore = create<ThreeStore>((set, get) => ({
-  hoveredHex: { col: 0, row: 0, x: 0, z: 0 },
-  setHoveredHex: (hex) => set({ hoveredHex: hex }),
-  travelPaths: new Map(),
-  setTravelPaths: (travelPaths) => set({ travelPaths }),
-  selectedEntityId: null,
-  setSelectedEntityId: (entityId) => set({ selectedEntityId: entityId }),
+  armyActions: {
+    hoveredHex: null,
+    travelPaths: new Map(),
+    selectedEntityId: null,
+  },
+  setArmyActions: (armyActions) => set({ armyActions }),
+  updateHoveredHex: (hoveredHex) => set((state) => ({ armyActions: { ...state.armyActions, hoveredHex } })),
+  updateTravelPaths: (travelPaths) => set((state) => ({ armyActions: { ...state.armyActions, travelPaths } })),
+  updateSelectedEntityId: (selectedEntityId) =>
+    set((state) => ({ armyActions: { ...state.armyActions, selectedEntityId } })),
   selectedHex: { col: 0, row: 0 },
   setSelectedHex: (hex) => set({ selectedHex: hex }),
   selectedBuilding: BuildingType.Farm,
@@ -39,7 +42,7 @@ export const useThreeStore = create<ThreeStore>((set, get) => ({
 
 // Custom hook to log selectedEntityId changes
 export const useLogSelectedEntityId = () => {
-  const selectedEntityId = useThreeStore((state) => state.selectedEntityId);
+  const selectedEntityId = useThreeStore((state) => state.armyActions.selectedEntityId);
 
   useEffect(() => {
     console.log("selectedEntityId changed:", selectedEntityId);

@@ -1,6 +1,5 @@
 import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
-import { ActionInfo } from "./components/ActionInfo";
 import WorldmapScene from "./scenes/Worldmap";
 import * as THREE from "three";
 import { SceneManager } from "./SceneManager";
@@ -13,7 +12,6 @@ export class MouseHandler {
   private worldmapScene?: WorldmapScene;
   private throttledHandleHexHover: (hexCoords: { row: number; col: number }) => void;
   public selectedEntityId: number | null = null;
-  private actionInfo: ActionInfo | null = null;
 
   constructor(
     private dojo: SetupResult,
@@ -38,7 +36,7 @@ export class MouseHandler {
 
   private setSelectedEntityId(entityId: number | null) {
     this.selectedEntityId = entityId;
-    this.state.setSelectedEntityId(entityId);
+    this.state.updateSelectedEntityId(entityId);
   }
 
   onRightClick(event: MouseEvent) {
@@ -106,12 +104,10 @@ export class MouseHandler {
       const hoveredHex = this.getHoveredHex();
       if (hoveredHex) {
         this.throttledHandleHexHover(hoveredHex);
-      } else {
-        this.actionInfo?.hideTooltip();
+        return;
       }
-    } else {
-      this.actionInfo?.hideTooltip();
     }
+    this.state.updateHoveredHex(null);
   }
 
   private updateMousePosition(event: MouseEvent) {
@@ -123,10 +119,10 @@ export class MouseHandler {
     const travelPath = this.travelPaths?.get(TravelPaths.posKey(hexCoords, true));
     if (travelPath) {
       const hexPosition = getWorldPositionForHex(hexCoords);
-      this.state.setHoveredHex({ col: hexCoords.col, row: hexCoords.row, x: hexPosition.x, z: hexPosition.z });
-    } else {
-      this.actionInfo?.hideTooltip();
+      this.state.updateHoveredHex({ col: hexCoords.col, row: hexCoords.row, x: hexPosition.x, z: hexPosition.z });
+      return;
     }
+    this.state.updateHoveredHex(null);
   }
 
   private getIntersects() {
@@ -139,11 +135,10 @@ export class MouseHandler {
     this.checkIfSceneIsInitialized();
     this.clearEntitySelection();
     const armyMovementManager = new ArmyMovementManager(this.dojo, entityId);
-    this.actionInfo = new ActionInfo(entityId, this.camera, this.dojo);
     if (armyMovementManager.isMine()) {
       this.setSelectedEntityId(entityId);
       this.travelPaths = armyMovementManager.findPaths(this.worldmapScene!.systemManager.tileSystem.getExplored());
-      this.state.setTravelPaths(this.travelPaths.getPaths());
+      this.state.updateTravelPaths(this.travelPaths.getPaths());
       this.worldmapScene!.highlightHexManager.highlightHexes(this.travelPaths.getHighlightedHexes());
     }
   }
@@ -153,8 +148,6 @@ export class MouseHandler {
     this.setSelectedEntityId(null);
     this.worldmapScene!.highlightHexManager.highlightHexes([]);
     this.travelPaths?.deleteAll();
-    this.actionInfo?.hideTooltip();
-    this.actionInfo = null;
   }
 
   private getHoveredHex(): { row: number; col: number } | null {
