@@ -6,7 +6,6 @@ import { throttle } from "lodash";
 type BaseThreeTooltipProps = {
   children?: React.ReactNode;
   position?: Position;
-  distanceFactor?: number;
   className?: string;
   visible?: boolean;
 };
@@ -23,7 +22,6 @@ export enum Position {
 
 export const BaseThreeTooltip = ({
   children,
-  distanceFactor,
   position = Position.CENTER,
   className,
   visible = true,
@@ -43,10 +41,13 @@ export const BaseThreeTooltip = ({
       mouseMoveHandler.cancel(); // Cancel any trailing invocation of the throttled function
     };
   }, []);
+
   return (
     <div
       ref={ref}
-      className={clsx("min-w-[215px] clip-angled relative p-2 bg-brown/90 text-gold", position, className)}
+      className={clsx("min-w-[215px] clip-angled relative p-2 bg-brown/90 text-gold", position, className, {
+        hidden: !visible,
+      })}
     >
       {children}
       <svg
