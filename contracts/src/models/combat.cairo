@@ -76,8 +76,8 @@ impl HealthImpl of HealthTrait {
         }
 
         // this condition is here in case
-        // self.current < deduction which would make 
-        // num_steps = 0 but that would cause the 
+        // self.current < deduction which would make
+        // num_steps = 0 but that would cause the
         // "inaccurate winner invariant" error so we make it
         // at least 1.
         max(num_steps, 1)
@@ -319,7 +319,7 @@ impl TroopsImpl of TroopsTrait {
 }
 
 #[generate_trait]
-impl ArmyQuantityTracker of ArmyQuantityTrackerTrait {
+impl AttackingArmyQuantityTracker of ArmyQuantityTrackerTrait {
     fn key(entity_id: ID) -> felt252 {
         poseidon_hash_span(array![entity_id.into(), QuantityTrackerType::ARMY_COUNT.into()].span())
     }
@@ -579,7 +579,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
         let winner_side: BattleSide = self.winner();
         let to_army_dead = to_army.troops.count().is_zero();
 
-        // the reason for checking if `to_army_dead` is `true` is that 
+        // the reason for checking if `to_army_dead` is `true` is that
         // it's possible for the battle be a draw and both sides die in the process.
         // if this edge case occurs, we assume they both lost for the purpose of this
         // function. They both forfeit their balances.

@@ -53,7 +53,7 @@ trait ICombatContract<TContractState> {
     /// Delete an army
     /// - army must not be a defensive army
     /// - army must be dead (in battle or otherwise)
-    /// 
+    ///
     fn army_delete(ref world: IWorldDispatcher, army_id: u128);
     /// Purchases and adds troops to an existing army entity.
     ///
@@ -415,7 +415,8 @@ mod combat_systems {
         combat::{
             Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait,
             Battle, BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait,
-            BattleHealthTrait, BattleEscrowImpl, ArmyQuantityTracker, ArmyQuantityTrackerTrait,
+            BattleHealthTrait, BattleEscrowImpl, AttackingArmyQuantityTracker,
+            ArmyQuantityTrackerTrait,
         },
     };
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
@@ -1186,7 +1187,7 @@ mod combat_systems {
             let army_id = Self::create_base_army(world, army_owner_id, owner_address);
 
             // ensure owner has enough military buildings to create army
-            let owner_armies_key: felt252 = ArmyQuantityTracker::key(army_owner_id);
+            let owner_armies_key: felt252 = AttackingArmyQuantityTracker::key(army_owner_id);
             let mut owner_armies_quantity: QuantityTracker = get!(
                 world, owner_armies_key, QuantityTracker
             );
@@ -1283,7 +1284,7 @@ mod combat_systems {
         fn create_base_army(
             world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
         ) -> u128 {
-            // ensure army owner is a structure 
+            // ensure army owner is a structure
             get!(world, army_owner_id, Structure).assert_is_structure();
 
             // create army
@@ -1327,7 +1328,9 @@ mod combat_systems {
 
         fn delete_army(world: IWorldDispatcher, ref entity_owner: EntityOwner, ref army: Army) {
             // decrement attack army count
-            let owner_armies_key: felt252 = ArmyQuantityTracker::key(entity_owner.entity_owner_id);
+            let owner_armies_key: felt252 = AttackingArmyQuantityTracker::key(
+                entity_owner.entity_owner_id
+            );
             let mut owner_armies_quantity: QuantityTracker = get!(
                 world, owner_armies_key, QuantityTracker
             );
@@ -1345,7 +1348,7 @@ mod combat_systems {
             position.x = 0;
             position.y = 0;
             set!(world, (position));
-        // reset components connected to army 
+        // reset components connected to army
         // let (
         //     owner,
         //     position,
