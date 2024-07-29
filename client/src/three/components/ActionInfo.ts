@@ -1,10 +1,8 @@
 import { Vector3, Camera } from "three";
 import { EternumGlobalConfig, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import { SetupResult } from "@/dojo/setup";
-import { ProductionManager } from "@/dojo/modelManager/ProductionManager";
 import { ArmyMovementManager } from "@/dojo/modelManager/ArmyMovementManager";
 import { divideByPrecision, formatNumber } from "@/ui/utils/utils";
-import { getCurrentArmiesTick } from "../helpers/ticks";
 
 export class ActionInfo {
   private tooltipElement: HTMLElement;
@@ -13,8 +11,6 @@ export class ActionInfo {
   private lastPosition: Vector3 | null = null;
   private dojo: SetupResult;
   private armyMovementManager: ArmyMovementManager;
-  private wheatManager: ProductionManager;
-  private fishManager: ProductionManager;
 
   constructor(entityId: number, camera: Camera, dojo: SetupResult) {
     this.dojo = dojo;
@@ -22,39 +18,26 @@ export class ActionInfo {
     this.tooltipElement = this.createTooltipElement();
     document.body.appendChild(this.tooltipElement);
 
-    this.wheatManager = this.createProductionManager(entityId, 254n);
-    this.fishManager = this.createProductionManager(entityId, 255n);
     this.armyMovementManager = new ArmyMovementManager(this.dojo, entityId);
   }
 
-  private createProductionManager(entityId: number, resourceId: bigint): ProductionManager {
-    return new ProductionManager(
-      this.dojo.components.Production,
-      this.dojo.components.Resource,
-      this.dojo.components.BuildingQuantityv2,
-      BigInt(entityId),
-      resourceId,
-    );
-  }
-
-  private generateTooltipContent(isExplored: boolean, travelLength: number, selectedEntity: number): string {
+  private generateTooltipContent(isExplored: boolean, travelLength: number): string {
     const title = isExplored ? "Travel" : "Explore";
     let content = `<div class="font-bold">${this.createHeadline(title)}</div>`;
 
     const stamina = this.armyMovementManager.getStamina();
-
-    const currentTick = getCurrentArmiesTick();
+    const food = this.armyMovementManager.getFood();
 
     if (!isExplored) {
       content += this.createResourceCostElement(
         ResourcesIds.Wheat,
         -EternumGlobalConfig.exploration.wheatBurn,
-        this.wheatManager.balance(currentTick),
+        food.wheat,
       );
       content += this.createResourceCostElement(
         ResourcesIds.Fish,
         -EternumGlobalConfig.exploration.fishBurn,
-        this.fishManager.balance(currentTick),
+        food.fish,
       );
     }
 
