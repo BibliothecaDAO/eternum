@@ -9,13 +9,13 @@ export class HighlightHexManager {
   private highlightedHexes: THREE.Mesh[] = [];
   private material: THREE.ShaderMaterial;
 
-  constructor(private worldMap: WorldmapScene) {
+  constructor(private scene: THREE.Scene) {
     this.material = highlightHexMaterial;
   }
 
   highlightHexes(hexes: { row: number; col: number }[]) {
     // Remove existing highlights
-    this.highlightedHexes.forEach((mesh) => this.worldMap.scene.remove(mesh));
+    this.highlightedHexes.forEach((mesh) => this.scene.remove(mesh));
     this.highlightedHexes = [];
 
     // Create new highlight meshes
@@ -32,7 +32,7 @@ export class HighlightHexManager {
       // Disable raycasting for this mesh
       highlightMesh.raycast = () => {};
 
-      this.worldMap.scene.add(highlightMesh);
+      this.scene.add(highlightMesh);
       this.highlightedHexes.push(highlightMesh);
     });
   }

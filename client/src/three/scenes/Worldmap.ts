@@ -161,7 +161,7 @@ export default class WorldmapScene {
       this.mouse,
       controls.object as THREE.PerspectiveCamera,
     );
-    this.highlightHexManager = new HighlightHexManager(this);
+    this.highlightHexManager = new HighlightHexManager(this.scene);
   }
 
   private loadBiomeModels() {

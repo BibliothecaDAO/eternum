@@ -157,7 +157,7 @@ export default class GameRenderer {
     this.hexceptionScene = new HexceptionScene(
       this.state,
       this.renderer,
-      this.camera,
+      this.controls,
       this.dojo,
       this.mouse,
       this.raycaster,

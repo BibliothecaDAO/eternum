@@ -12,7 +12,7 @@ import { biomeModelPaths } from "./Worldmap";
 import { Biome, BiomeType } from "../components/Biome";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { pseudoRandom } from "@/ui/utils/utils";
+import { getHexForWorldPosition, getWorldPositionForHex, pseudoRandom } from "@/ui/utils/utils";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
 import { FELT_CENTER } from "@/ui/config";
 import InstancedBuilding from "../components/InstancedBuilding";
@@ -20,6 +20,8 @@ import { HEX_HORIZONTAL_SPACING, HEX_SIZE } from "../GameRenderer";
 import { CSS2DRenderer, CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GUIManager } from "../helpers/GUIManager";
+import { InteractiveHexManager } from "../components/InteractiveHexManager";
+import { HighlightHexManager } from "../components/HighlightHexManager";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -55,6 +57,9 @@ export default class HexceptionScene {
 
   private locationManager!: LocationManager;
 
+  private interactiveHexManager: InteractiveHexManager;
+  private highlightHexManager: HighlightHexManager;
+
   private originalColor: THREE.Color = new THREE.Color("white");
 
   private buildingModels: Map<BuildingType, InstancedBuilding> = new Map();
@@ -80,7 +85,7 @@ export default class HexceptionScene {
   constructor(
     private state: ThreeStore,
     renderer: THREE.WebGLRenderer,
-    camera: THREE.PerspectiveCamera,
+    controls: MapControls,
     dojoContext: SetupResult,
     private mouse: THREE.Vector2,
     private raycaster: THREE.Raycaster,
@@ -92,13 +97,21 @@ export default class HexceptionScene {
     this.labelRenderer.domElement.style.top = "0px";
     this.labelRenderer.domElement.style.pointerEvents = "none";
     document.body.appendChild(this.labelRenderer.domElement);
-    this.camera = camera;
+    this.camera = controls.object as THREE.PerspectiveCamera;
     this.dojo = dojoContext;
     this.biome = new Biome();
     this.scene = new THREE.Scene();
     this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
     this.locationManager = new LocationManager();
+
+    this.interactiveHexManager = new InteractiveHexManager(
+      this.scene,
+      this.raycaster,
+      this.mouse,
+      this.camera as THREE.PerspectiveCamera,
+    );
+    this.highlightHexManager = new HighlightHexManager(this.scene);
 
     const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
@@ -311,6 +324,7 @@ export default class HexceptionScene {
 
             let withBuilding = false;
             if (isMainHex) {
+              this.interactiveHexManager.addExploredHex(getHexForWorldPosition(dummy.position));
               const isCenter = q === 0 && r === 0;
               const building = isCenter
                 ? { category: "Castle" }
@@ -394,12 +408,14 @@ export default class HexceptionScene {
       //       buildingMesh.setCount(matrices.length);
       //     }
       //   }
+      this.interactiveHexManager.renderHexes();
       console.log("Hexagon grid updated");
     });
   }
 
   update(deltaTime: number) {
-    this.labelRenderer?.render(this.scene, this.camera);
+    if (this.camera) this.labelRenderer?.render(this.scene, this.camera);
+    if (this.interactiveHexManager) this.interactiveHexManager.update();
   }
   onMouseMove(event: MouseEvent) {
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;

@@ -149,6 +149,18 @@ export const getWorldPositionForHex = (hexCoords: {
   return new THREE.Vector3(x, y, z);
 };
 
+export const getHexForWorldPosition = (worldPosition: {
+  x: number;
+  y: number;
+  z: number;
+}): { row: number; col: number } => {
+  const { x, y, z } = worldPosition;
+  const col = Math.round(x / HEX_HORIZONTAL_SPACING);
+  const row = -Math.round(z / HEX_VERTICAL_SPACING);
+
+  return { row, col };
+};
+
 export const getUIPositionFromColRow = (col: number, row: number, normalized?: boolean): UIPosition => {
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
