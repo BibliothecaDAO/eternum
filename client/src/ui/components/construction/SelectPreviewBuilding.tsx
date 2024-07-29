@@ -9,8 +9,9 @@ import {
   BuildingEnumToString,
   BuildingType,
   EternumGlobalConfig,
+  RESOURCE_INPUTS,
   RESOURCE_INPUTS_SCALED,
-  RESOURCE_OUTPUTS_SCALED,
+  RESOURCE_OUTPUTS,
   ResourcesIds,
   findResourceById,
 } from "@bibliothecadao/eternum";
@@ -441,9 +442,9 @@ export const BuildingInfo = ({
 
   const population = BUILDING_POPULATION[buildingId] || 0;
   const capacity = BUILDING_CAPACITY[buildingId] || 0;
-  const perTick = RESOURCE_OUTPUTS_SCALED[buildingId] || 0;
+  const perTick = RESOURCE_OUTPUTS[buildingId] || 0;
   const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
-  const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced] || 0;
+  const ongoingCost = RESOURCE_INPUTS[resourceProduced] || 0;
 
   const { getBalance } = getResourceBalance();
 
