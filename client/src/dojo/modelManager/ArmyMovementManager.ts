@@ -190,6 +190,17 @@ export class ArmyMovementManager {
     return { col: position!.x, row: position!.y };
   };
 
+  public getFood() {
+    const currentTick = getCurrentTick();
+    const wheatBalance = this.wheatManager.balance(currentTick);
+    const fishBalance = this.fishManager.balance(currentTick);
+
+    return {
+      wheat: wheatBalance,
+      fish: fishBalance,
+    };
+  }
+
   public findPaths(exploredHexes: Map<number, Set<number>>): TravelPaths {
     const startPos = this._getCurrentPosition();
     const maxHex = this._calculateMaxTravelPossible();
