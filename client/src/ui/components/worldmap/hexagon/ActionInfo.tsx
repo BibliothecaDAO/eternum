@@ -33,31 +33,29 @@ export const ActionInfo = () => {
   return (
     <>
       {hoveredHex && travelPath?.path && selectedEntityId && (
-        <group position={[hoveredHex.x, 0.32, -hoveredHex.z]}>
-          <BaseThreeTooltip position={Position.CENTER} className="-mt-[230px]" distanceFactor={44}>
-            <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
+        <BaseThreeTooltip position={Position.CENTER} className="-mt-[230px]" distanceFactor={44}>
+          <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
 
-            {!isExplored && (
-              <div>
-                <ResourceCost
-                  amount={-EternumGlobalConfig.exploration.wheatBurn}
-                  resourceId={ResourcesIds.Wheat}
-                  balance={getBalance(realmEntityId, ResourcesIds.Wheat).balance}
-                />
-                <ResourceCost
-                  amount={-EternumGlobalConfig.exploration.fishBurn}
-                  resourceId={ResourcesIds.Fish}
-                  balance={getBalance(realmEntityId, ResourcesIds.Fish).balance}
-                />
-              </div>
-            )}
-            <StaminaResourceCost
-              travelingEntityId={BigInt(selectedEntityId)}
-              isExplored={isExplored}
-              travelLength={travelPath.path.length - 1}
-            />
-          </BaseThreeTooltip>
-        </group>
+          {!isExplored && (
+            <div>
+              <ResourceCost
+                amount={-EternumGlobalConfig.exploration.wheatBurn}
+                resourceId={ResourcesIds.Wheat}
+                balance={getBalance(realmEntityId, ResourcesIds.Wheat).balance}
+              />
+              <ResourceCost
+                amount={-EternumGlobalConfig.exploration.fishBurn}
+                resourceId={ResourcesIds.Fish}
+                balance={getBalance(realmEntityId, ResourcesIds.Fish).balance}
+              />
+            </div>
+          )}
+          <StaminaResourceCost
+            travelingEntityId={BigInt(selectedEntityId)}
+            isExplored={isExplored}
+            travelLength={travelPath.path.length - 1}
+          />
+        </BaseThreeTooltip>
       )}
     </>
   );

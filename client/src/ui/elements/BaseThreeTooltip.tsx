@@ -27,20 +27,18 @@ export const BaseThreeTooltip = ({
   visible = true,
 }: BaseThreeTooltipProps) => {
   return (
-    <DojoHtml visible={visible} distanceFactor={distanceFactor}>
-      <div className={clsx("min-w-[215px] clip-angled relative p-2 bg-brown/90 text-gold", position, className)}>
-        {children}
-        <svg
-          className="absolute bottom-[1px] translate-y-full left-1/2 -translate-x-1/2"
-          width="30"
-          height="13"
-          viewBox="0 0 30 13"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path d="M15.0003 12.75L0.751603 -3.445e-06L29.249 9.53674e-07L15.0003 12.75Z" fill="fill-dark-brown" />
-        </svg>
-      </div>
-    </DojoHtml>
+    <div className={clsx("min-w-[215px] clip-angled relative p-2 bg-brown/90 text-gold", position, className)}>
+      {children}
+      <svg
+        className="absolute bottom-[1px] translate-y-full left-1/2 -translate-x-1/2"
+        width="30"
+        height="13"
+        viewBox="0 0 30 13"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d="M15.0003 12.75L0.751603 -3.445e-06L29.249 9.53674e-07L15.0003 12.75Z" fill="fill-dark-brown" />
+      </svg>
+    </div>
   );
 };
