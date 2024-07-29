@@ -146,8 +146,10 @@ export default class GameRenderer {
     this.controls.addEventListener(
       "change",
       _.throttle(() => {
-        this.worldmapScene.updateVisibleChunks();
-        this.worldmapScene.updateLights(this.controls.target);
+        if (this.sceneManager?.currentScene === "worldmap") {
+          this.worldmapScene.updateVisibleChunks();
+          this.worldmapScene.updateLights(this.controls.target);
+        }
       }, 30),
     );
 
@@ -271,8 +273,10 @@ export default class GameRenderer {
   switchScene() {
     if (this.sceneManager.currentScene === "worldmap") {
       const { row, col, x, z } = this.getLocationCoordinates();
+      this.inputManager.removeListeners();
       this.sceneManager.transitionToDetailedScene(row, col, x, z);
     } else {
+      this.initListeners();
       this.sceneManager.transitionToMainScene();
     }
   }
@@ -349,6 +353,7 @@ export default class GameRenderer {
       this.renderer.render(this.worldmapScene.scene, this.camera);
     } else {
       // this.detailedScene.update(deltaTime);
+      this.hexceptionScene.update(deltaTime);
       this.renderer.render(this.hexceptionScene.scene, this.camera);
     }
 

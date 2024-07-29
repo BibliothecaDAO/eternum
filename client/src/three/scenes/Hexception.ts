@@ -17,24 +17,26 @@ import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeom
 import { FELT_CENTER } from "@/ui/config";
 import InstancedBuilding from "../components/InstancedBuilding";
 import { HEX_HORIZONTAL_SPACING, HEX_SIZE } from "../GameRenderer";
+import { CSS2DRenderer, CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { MapControls } from "three/examples/jsm/controls/MapControls";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
   [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
-  [BuildingType.Castle]: "/models/buildings/castle.glb",
-  [BuildingType.DonkeyFarm]: "/models/buildings/castle.glb",
+  [BuildingType.Castle]: "/models/buildings/castle2.glb",
+  [BuildingType.DonkeyFarm]: "/models/buildings/stable.glb",
   [BuildingType.Farm]: "/models/buildings/farm.glb",
-  [BuildingType.FishingVillage]: "/models/buildings/fishery.glb",
+  [BuildingType.FishingVillage]: "/models/buildings/farm.glb",
   [BuildingType.FragmentMine]: "/models/buildings/mine.glb",
   [BuildingType.Market]: "/models/buildings/market.glb",
-  [BuildingType.Resource]: "/models/buildings/market.glb",
+  [BuildingType.Resource]: "/models/buildings/mine.glb",
   [BuildingType.Stable]: "/models/buildings/stable.glb",
   [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
   [BuildingType.TradingPost]: "/models/buildings/market.glb",
   [BuildingType.Walls]: "/models/buildings/market.glb",
   [BuildingType.WatchTower]: "/models/buildings/market.glb",
-  [BuildingType.WorkersHut]: "/models/buildings/workers_hut.glb",
+  [BuildingType.WorkersHut]: "/models/buildings/stable.glb",
 };
 
 const loader = new GLTFLoader();
@@ -68,6 +70,8 @@ export default class HexceptionScene {
 
   private biome!: Biome;
 
+  private labelRenderer: CSS2DRenderer | null = null;
+
   constructor(
     private state: ThreeStore,
     renderer: THREE.WebGLRenderer,
@@ -77,6 +81,12 @@ export default class HexceptionScene {
     private raycaster: THREE.Raycaster,
   ) {
     this.renderer = renderer;
+    this.labelRenderer = new CSS2DRenderer();
+    this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    this.labelRenderer.domElement.style.position = "absolute";
+    this.labelRenderer.domElement.style.top = "0px";
+    this.labelRenderer.domElement.style.pointerEvents = "none";
+    document.body.appendChild(this.labelRenderer.domElement);
     this.camera = camera;
     this.dojo = dojoContext;
     this.biome = new Biome();
@@ -108,14 +118,6 @@ export default class HexceptionScene {
             model.position.set(0, 0, 0);
             model.rotation.y = Math.PI;
 
-            model.scale.set(0.1, 0.1, 0.1);
-
-            model.traverse((child) => {
-              if (child instanceof THREE.Mesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            });
             const tmp = new InstancedBuilding(model, 50);
             this.buildingModels.set(building as any, tmp);
             this.scene.add(tmp.group);
@@ -244,6 +246,8 @@ export default class HexceptionScene {
       const BUILDINGS_CENTER = [10, 10];
       const buildings = [];
       const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
+      const label = new THREE.Group();
+      this.scene.add(label);
       for (const center in centers) {
         const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
         for (let q = -radius; q <= radius; q++) {
@@ -260,26 +264,35 @@ export default class HexceptionScene {
             dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
             dummy.updateMatrix();
 
+            // const posDiv = document.createElement("div");
+            // posDiv.className = "label";
+            // posDiv.textContent = `${BUILDINGS_CENTER[0] - q}, ${BUILDINGS_CENTER[1] - r}`;
+            // posDiv.style.backgroundColor = "transparent";
+
+            // const posLabel = new CSS2DObject(posDiv);
+            // moonLabel.position.set(dummy.position.x, dummy.position.y + 0.5, dummy.position.z);
+            // posLabel.center.set(0, 1);
+            // label.add(posLabel);
+
+            let withBuilding = false;
             if (isMainHex) {
-              const building = getComponentValue(
-                this.dojo.components.Building,
-                getEntityIdFromKeys([
-                  BigInt(this.centerColRow[0]),
-                  BigInt(this.centerColRow[1]),
-                  BigInt(BUILDINGS_CENTER[0] - q),
-                  BigInt(BUILDINGS_CENTER[1] - r),
-                ]),
-              );
+              const isCenter = q === 0 && r === 0;
+              const building = isCenter
+                ? { category: "Castle" }
+                : getComponentValue(
+                    this.dojo.components.Building,
+                    getEntityIdFromKeys([
+                      BigInt(this.centerColRow[0]),
+                      BigInt(this.centerColRow[1]),
+                      BigInt(BUILDINGS_CENTER[0] - q),
+                      BigInt(BUILDINGS_CENTER[1] - r),
+                    ]),
+                  );
               if (building) {
+                withBuilding = true;
                 const buildingObj = dummy.clone();
-                if (building.category === "Farm") {
-                  buildingObj.scale.set(0.5, 0.5, 0.5);
-                } else if (building.category === "FishingVillage") {
-                  buildingObj.scale.set(0.3, 0.3, 0.3);
-                } else {
-                  buildingObj.scale.set(0.05, 0.05, 0.05);
-                }
-                buildingObj.position.y += 0.2;
+                const randomRotation = (4 * Math.PI) / 3;
+                buildingObj.rotation.y = randomRotation;
                 buildingObj.updateMatrix();
                 buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
               }
@@ -288,8 +301,10 @@ export default class HexceptionScene {
             const targetHex = isMainHex
               ? [this.centerColRow[0], this.centerColRow[1]]
               : [neighbors[Number(center) - 1].col, neighbors[Number(center) - 1].row];
-            const biome = this.biome.getBiome(targetHex[0], targetHex[1]);
-            biomeHexes[biome].push(dummy.matrix.clone());
+            const biome = isMainHex ? "Grassland" : this.biome.getBiome(targetHex[0], targetHex[1]);
+            if (!withBuilding) {
+              biomeHexes[biome].push(dummy.matrix.clone());
+            }
 
             //   const buildingDummy = dummy.clone();
             //   buildingDummy.scale.set(0.05, 0.05, 0.05); // Adjust these values as needed
@@ -299,6 +314,7 @@ export default class HexceptionScene {
           }
         }
       }
+
       this.buildings = buildings;
       console.log(this.buildings);
       let counts: Record<string, number> = {};
@@ -343,6 +359,9 @@ export default class HexceptionScene {
     });
   }
 
+  update(deltaTime: number) {
+    this.labelRenderer?.render(this.scene, this.camera);
+  }
   onMouseMove(event: MouseEvent) {
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
