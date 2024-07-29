@@ -3,6 +3,7 @@ import { GLTFLoader } from "three-stdlib";
 import WorldmapScene from "../scenes/Worldmap";
 import InstancedModel from "./InstancedModel";
 import { LabelManager } from "./LabelManager";
+import { getWorldPositionForHex } from "@/ui/utils/utils";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
@@ -45,7 +46,7 @@ export class StructureManager {
     if (!this.isLoaded) {
       throw new Error("Model not loaded yet");
     }
-    const position = this.worldMapScene.getWorldPositionForHex(hexCoords);
+    const position = getWorldPositionForHex(hexCoords);
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
 

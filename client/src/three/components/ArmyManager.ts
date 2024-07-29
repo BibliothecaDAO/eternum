@@ -3,6 +3,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import InstancedModel from "./InstancedModel";
 import WorldmapScene from "../scenes/Worldmap";
 import { LabelManager } from "./LabelManager";
+import { getWorldPositionForHex } from "@/ui/utils/utils";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -82,7 +83,7 @@ export class ArmyManager {
     const index = this.mesh.count;
     this.mesh.count++;
     this.armies.set(entityId, index);
-    const position = this.worldMapScene.getWorldPositionForHex(hexCoords);
+    const position = getWorldPositionForHex(hexCoords);
     this.dummy.position.copy(position);
     this.dummy.scale.copy(this.scale);
     this.dummy.updateMatrix();
@@ -108,7 +109,7 @@ export class ArmyManager {
       console.error(`No army found with entityId: ${entityId}`);
       return;
     }
-    const newPosition = this.worldMapScene.getWorldPositionForHex(hexCoords);
+    const newPosition = getWorldPositionForHex(hexCoords);
     const currentPosition = new THREE.Vector3();
     this.mesh.getMatrixAt(index, this.dummy.matrix);
     currentPosition.setFromMatrixPosition(this.dummy.matrix);

@@ -12,28 +12,34 @@ import { biomeModelPaths } from "./Worldmap";
 import { Biome, BiomeType } from "../components/Biome";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { pseudoRandom } from "@/ui/utils/utils";
+import { getHexForWorldPosition, getWorldPositionForHex, pseudoRandom } from "@/ui/utils/utils";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
 import { FELT_CENTER } from "@/ui/config";
 import InstancedBuilding from "../components/InstancedBuilding";
+import { HEX_HORIZONTAL_SPACING, HEX_SIZE } from "../GameRenderer";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { GUIManager } from "../helpers/GUIManager";
+import { InteractiveHexManager } from "../components/InteractiveHexManager";
+import { HighlightHexManager } from "../components/HighlightHexManager";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
   [BuildingType.ArcheryRange]: "/models/buildings/archer_range.glb",
   [BuildingType.Barracks]: "/models/buildings/barracks.glb",
-  [BuildingType.Castle]: "/models/buildings/castle.glb",
-  [BuildingType.DonkeyFarm]: "/models/buildings/castle.glb",
+  [BuildingType.Castle]: "/models/buildings/castle2.glb",
+  [BuildingType.DonkeyFarm]: "/models/buildings/stable.glb",
   [BuildingType.Farm]: "/models/buildings/farm.glb",
-  [BuildingType.FishingVillage]: "/models/buildings/fishery.glb",
+  [BuildingType.FishingVillage]: "/models/buildings/farm.glb",
   [BuildingType.FragmentMine]: "/models/buildings/mine.glb",
   [BuildingType.Market]: "/models/buildings/market.glb",
-  [BuildingType.Resource]: "/models/buildings/market.glb",
+  [BuildingType.Resource]: "/models/buildings/mine.glb",
   [BuildingType.Stable]: "/models/buildings/stable.glb",
   [BuildingType.Storehouse]: "/models/buildings/storehouse.glb",
   [BuildingType.TradingPost]: "/models/buildings/market.glb",
   [BuildingType.Walls]: "/models/buildings/market.glb",
   [BuildingType.WatchTower]: "/models/buildings/market.glb",
-  [BuildingType.WorkersHut]: "/models/buildings/workers_hut.glb",
+  [BuildingType.WorkersHut]: "/models/buildings/stable.glb",
 };
 
 const loader = new GLTFLoader();
@@ -51,10 +57,13 @@ export default class HexceptionScene {
 
   private locationManager!: LocationManager;
 
-  private hexSize = 1;
+  private interactiveHexManager: InteractiveHexManager;
+  private highlightHexManager: HighlightHexManager;
+
   private originalColor: THREE.Color = new THREE.Color("white");
 
-  private buildingModels: Map<BuildingType, InstancedModel> = new Map();
+  private buildingModels: Map<BuildingType, InstancedBuilding> = new Map();
+
   private modelLoadPromises: Promise<void>[] = [];
 
   private biomeModels: Map<BiomeType, InstancedModel> = new Map();
@@ -67,16 +76,20 @@ export default class HexceptionScene {
 
   private biome!: Biome;
 
+  private mainDirectionalLight!: THREE.DirectionalLight;
+  private hemisphereLight!: THREE.HemisphereLight;
+  private lightHelper!: THREE.DirectionalLightHelper;
+
   constructor(
     private state: ThreeStore,
     renderer: THREE.WebGLRenderer,
-    camera: THREE.PerspectiveCamera,
+    controls: MapControls,
     dojoContext: SetupResult,
     private mouse: THREE.Vector2,
     private raycaster: THREE.Raycaster,
   ) {
     this.renderer = renderer;
-    this.camera = camera;
+    this.camera = controls.object as THREE.PerspectiveCamera;
     this.dojo = dojoContext;
     this.biome = new Biome();
     this.scene = new THREE.Scene();
@@ -84,12 +97,58 @@ export default class HexceptionScene {
     this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
     this.locationManager = new LocationManager();
 
+    this.interactiveHexManager = new InteractiveHexManager(
+      this.scene,
+      this.raycaster,
+      this.mouse,
+      this.camera as THREE.PerspectiveCamera,
+    );
+    this.highlightHexManager = new HighlightHexManager(this.scene);
+
     const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
     this.pillars = new THREE.InstancedMesh(pillarGeometry, new THREE.MeshStandardMaterial({ color: 0xffce31 }), 1000);
     this.pillars.position.y = 0.05;
     this.pillars.count = 0;
     this.scene.add(this.pillars);
+
+    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 1);
+    const hemisphereLightFolder = GUIManager.addFolder("Hemisphere Light Hexception");
+    hemisphereLightFolder.addColor(this.hemisphereLight, "color");
+    hemisphereLightFolder.addColor(this.hemisphereLight, "groundColor");
+    hemisphereLightFolder.add(this.hemisphereLight, "intensity", 0, 3, 0.1);
+    hemisphereLightFolder.close();
+    this.scene.add(this.hemisphereLight);
+
+    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    this.mainDirectionalLight.castShadow = true;
+    this.mainDirectionalLight.shadow.mapSize.width = 2048;
+    this.mainDirectionalLight.shadow.mapSize.height = 2048;
+    this.mainDirectionalLight.shadow.camera.left = -22;
+    this.mainDirectionalLight.shadow.camera.right = 18;
+    this.mainDirectionalLight.shadow.camera.top = 14;
+    this.mainDirectionalLight.shadow.camera.bottom = -12;
+    this.mainDirectionalLight.shadow.camera.far = 38;
+    this.mainDirectionalLight.shadow.camera.near = 8;
+    this.mainDirectionalLight.position.set(0, 2.3, 0.5);
+    this.mainDirectionalLight.target.position.set(4, 4, 3);
+
+    const directionalLightFolder = GUIManager.addFolder("Directional Light Hexception");
+    directionalLightFolder.addColor(this.mainDirectionalLight, "color");
+    directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.position, "y", -20, 20, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.position, "z", -20, 20, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight, "intensity", 0, 3, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
+    directionalLightFolder.close();
+
+    this.scene.add(this.mainDirectionalLight);
+    this.scene.add(this.mainDirectionalLight.target);
+
+    this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
+    // this.scene.add(this.lightHelper);
 
     this.loadBuildingModels();
     this.loadBiomeModels();
@@ -107,14 +166,6 @@ export default class HexceptionScene {
             model.position.set(0, 0, 0);
             model.rotation.y = Math.PI;
 
-            model.scale.set(0.1, 0.1, 0.1);
-
-            model.traverse((child) => {
-              if (child instanceof THREE.Mesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            });
             const tmp = new InstancedBuilding(model, 50);
             this.buildingModels.set(building as any, tmp);
             this.scene.add(tmp.group);
@@ -149,14 +200,6 @@ export default class HexceptionScene {
             model.position.set(0, 0, 0);
             model.rotation.y = Math.PI;
 
-            model.scale.set(0.1, 0.1, 0.1);
-
-            model.traverse((child) => {
-              if (child instanceof THREE.Mesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            });
             const tmp = new InstancedModel(model, 900);
             this.biomeModels.set(biome as BiomeType, tmp);
             this.scene.add(tmp.group);
@@ -190,9 +233,6 @@ export default class HexceptionScene {
   }
 
   updateHexceptionGrid(radius: number) {
-    const horizontalSpacing = this.hexSize * Math.sqrt(3);
-    const verticalSpacing = (this.hexSize * 3) / 2;
-
     const dummy = new THREE.Object3D();
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
       Ocean: [],
@@ -246,6 +286,8 @@ export default class HexceptionScene {
       const BUILDINGS_CENTER = [10, 10];
       const buildings = [];
       const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
+      const label = new THREE.Group();
+      this.scene.add(label);
       for (const center in centers) {
         const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
         for (let q = -radius; q <= radius; q++) {
@@ -256,32 +298,46 @@ export default class HexceptionScene {
               q === -radius ||
               r === Math.max(-radius, -q - radius) ||
               r === Math.min(radius, -q + radius);
-            dummy.position.x = (q + r / 2) * horizontalSpacing + centers[center][0] * horizontalSpacing;
-            dummy.position.z = ((r * 3) / 2) * this.hexSize + centers[center][1] * this.hexSize;
+            dummy.position.x = (q + r / 2) * HEX_HORIZONTAL_SPACING + centers[center][0] * HEX_HORIZONTAL_SPACING;
+            dummy.position.z = ((r * 3) / 2) * HEX_SIZE + centers[center][1] * HEX_SIZE;
             dummy.position.y = isBorderHex || isMainHex ? 0 : pseudoRandom(q, r);
-            dummy.scale.set(this.hexSize, this.hexSize, this.hexSize);
+            dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
             dummy.updateMatrix();
 
+            // const posDiv = document.createElement("div");
+            // posDiv.className = "label";
+            // posDiv.textContent = `${BUILDINGS_CENTER[0] - q}, ${BUILDINGS_CENTER[1] - r}`;
+            // posDiv.style.backgroundColor = "transparent";
+
+            // const posLabel = new CSS2DObject(posDiv);
+            // moonLabel.position.set(dummy.position.x, dummy.position.y + 0.5, dummy.position.z);
+            // posLabel.center.set(0, 1);
+            // label.add(posLabel);
+
+            let withBuilding = false;
             if (isMainHex) {
-              const building = getComponentValue(
-                this.dojo.components.Building,
-                getEntityIdFromKeys([
-                  BigInt(this.centerColRow[0]),
-                  BigInt(this.centerColRow[1]),
-                  BigInt(BUILDINGS_CENTER[0] - q),
-                  BigInt(BUILDINGS_CENTER[1] - r),
-                ]),
-              );
+              this.interactiveHexManager.addExploredHex(getHexForWorldPosition(dummy.position));
+              const isCenter = q === 0 && r === 0;
+              const building = isCenter
+                ? { category: "Castle" }
+                : getComponentValue(
+                    this.dojo.components.Building,
+                    getEntityIdFromKeys([
+                      BigInt(this.centerColRow[0]),
+                      BigInt(this.centerColRow[1]),
+                      BigInt(BUILDINGS_CENTER[0] - q),
+                      BigInt(BUILDINGS_CENTER[1] - r),
+                    ]),
+                  );
               if (building) {
+                withBuilding = true;
                 const buildingObj = dummy.clone();
-                if (building.category === "Farm") {
-                  buildingObj.scale.set(0.5, 0.5, 0.5);
-                } else if (building.category === "FishingVillage") {
-                  buildingObj.scale.set(0.3, 0.3, 0.3);
+                const rotation = Math.PI / 3;
+                if (building.category === "Castle") {
+                  buildingObj.rotation.y = rotation * 3;
                 } else {
-                  buildingObj.scale.set(0.05, 0.05, 0.05);
+                  buildingObj.rotation.y = rotation * 4;
                 }
-                buildingObj.position.y += 0.2;
                 buildingObj.updateMatrix();
                 buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
               }
@@ -290,8 +346,10 @@ export default class HexceptionScene {
             const targetHex = isMainHex
               ? [this.centerColRow[0], this.centerColRow[1]]
               : [neighbors[Number(center) - 1].col, neighbors[Number(center) - 1].row];
-            const biome = this.biome.getBiome(targetHex[0], targetHex[1]);
-            biomeHexes[biome].push(dummy.matrix.clone());
+            const biome = isMainHex ? "Grassland" : this.biome.getBiome(targetHex[0], targetHex[1]);
+            if (!withBuilding) {
+              biomeHexes[biome].push(dummy.matrix.clone());
+            }
 
             //   const buildingDummy = dummy.clone();
             //   buildingDummy.scale.set(0.05, 0.05, 0.05); // Adjust these values as needed
@@ -301,6 +359,7 @@ export default class HexceptionScene {
           }
         }
       }
+
       this.buildings = buildings;
       console.log(this.buildings);
       let counts: Record<string, number> = {};
@@ -317,12 +376,13 @@ export default class HexceptionScene {
       }
 
       let i = 0;
+      const tmpCol = new THREE.Color(0xffce31);
       for (const [biome, matrices] of Object.entries(biomeHexes)) {
         const hexMesh = this.biomeModels.get(biome as BiomeType)!;
         matrices.forEach((matrix, index) => {
           hexMesh.setMatrixAt(index, matrix);
           this.pillars!.setMatrixAt(index + i, matrix);
-          this.pillars!.setColorAt(index + i, hexMesh.getLandColor());
+          this.pillars!.setColorAt(index + i, tmpCol);
         });
         this.pillars!.count = i + matrices.length;
         this.pillars!.instanceMatrix.needsUpdate = true;
@@ -340,10 +400,14 @@ export default class HexceptionScene {
       //       buildingMesh.setCount(matrices.length);
       //     }
       //   }
+      this.interactiveHexManager.renderHexes();
       console.log("Hexagon grid updated");
     });
   }
 
+  update(deltaTime: number) {
+    if (this.interactiveHexManager) this.interactiveHexManager.update();
+  }
   onMouseMove(event: MouseEvent) {
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;

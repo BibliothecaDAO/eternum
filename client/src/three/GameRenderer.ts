@@ -7,7 +7,6 @@ import _ from "lodash";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import Stats from "three/examples/jsm/libs/stats.module";
-import { ActionInfo } from "./components/ActionInfo";
 import { InputManager } from "./components/InputManager";
 import { TransitionManager } from "./components/TransitionManager";
 import { LocationManager } from "./helpers/LocationManager";
@@ -15,11 +14,15 @@ import { MouseHandler } from "./MouseHandler";
 import { SceneManager } from "./SceneManager";
 import HexceptionScene from "./scenes/Hexception";
 import WorldmapScene from "./scenes/Worldmap";
+import { GUIManager } from "./helpers/GUIManager";
+import { CSS2DRenderer } from "three-stdlib";
 
-const horizontalSpacing = Math.sqrt(3);
-const verticalSpacing = 3 / 2;
+export const HEX_SIZE = 1;
+export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
+export const HEX_VERTICAL_SPACING = (HEX_SIZE * 3) / 2;
 
 export default class GameRenderer {
+  private labelRenderer!: CSS2DRenderer;
   private renderer!: THREE.WebGLRenderer;
   private camera!: THREE.PerspectiveCamera;
   private raycaster!: THREE.Raycaster;
@@ -27,6 +30,14 @@ export default class GameRenderer {
   private controls!: MapControls;
 
   private locationManager!: LocationManager;
+
+  private setupURLChangeListener() {
+    window.addEventListener("urlChanged", this.handleURLChange);
+  }
+
+  private handleURLChange = () => {
+    this.moveCameraToURLLocation();
+  };
 
   // Store
   private state: ThreeStore;
@@ -56,10 +67,7 @@ export default class GameRenderer {
 
   private dojo: SetupResult;
 
-  private gui: GUI = new GUI();
-
   private travelPaths: TravelPaths | undefined;
-  private actionInfo!: ActionInfo;
 
   private mouseHandler!: MouseHandler;
   private sceneManager!: SceneManager;
@@ -67,6 +75,7 @@ export default class GameRenderer {
   constructor(dojoContext: SetupResult, initialState: ThreeStore) {
     this.renderer = new THREE.WebGLRenderer({
       powerPreference: "high-performance",
+      antialias: true,
     });
     this.renderer.setPixelRatio(1);
     this.renderer.shadowMap.enabled = false;
@@ -94,13 +103,13 @@ export default class GameRenderer {
     this.camera.lookAt(0, 0, 0);
     this.camera.up.set(0, 1, 0);
 
-    const buttonsFolder = this.gui.addFolder("Buttons");
+    const buttonsFolder = GUIManager.addFolder("Buttons");
     buttonsFolder.add(this, "goToRandomColRow");
     buttonsFolder.add(this, "moveCameraToURLLocation");
     buttonsFolder.add(this, "switchScene");
 
     // Add new button for moving camera to specific col and row
-    const moveCameraFolder = this.gui.addFolder("Move Camera");
+    const moveCameraFolder = GUIManager.addFolder("Move Camera");
     const moveCameraParams = { col: 0, row: 0 };
     moveCameraFolder.add(moveCameraParams, "col").name("Column");
     moveCameraFolder.add(moveCameraParams, "row").name("Row");
@@ -112,6 +121,14 @@ export default class GameRenderer {
         "move",
       )
       .name("Move Camera");
+
+    // Create an instance of CSS2DRenderer
+    this.labelRenderer = new CSS2DRenderer();
+    this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    this.labelRenderer.domElement.style.position = "absolute";
+    this.labelRenderer.domElement.style.top = "0px";
+    this.labelRenderer.domElement.style.pointerEvents = "none";
+    document.body.appendChild(this.labelRenderer.domElement);
   }
 
   initStats() {
@@ -120,6 +137,8 @@ export default class GameRenderer {
   }
 
   initScene() {
+    this.setupURLChangeListener();
+
     document.body.style.background = "black";
     document.body.appendChild(this.renderer.domElement);
 
@@ -137,8 +156,10 @@ export default class GameRenderer {
     this.controls.addEventListener(
       "change",
       _.throttle(() => {
-        this.worldmapScene.updateVisibleChunks();
-        this.worldmapScene.updateLights(this.controls.target);
+        if (this.sceneManager?.currentScene === "worldmap") {
+          this.worldmapScene.updateVisibleChunks();
+          this.worldmapScene.updateLights(this.controls.target);
+        }
       }, 30),
     );
 
@@ -146,14 +167,14 @@ export default class GameRenderer {
     this.hexceptionScene = new HexceptionScene(
       this.state,
       this.renderer,
-      this.camera,
+      this.controls,
       this.dojo,
       this.mouse,
       this.raycaster,
     );
 
     // Add grid
-    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.state, this.gui);
+    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.state);
     this.worldmapScene.updateVisibleChunks();
 
     this.worldmapScene.createGroundMesh();
@@ -173,9 +194,6 @@ export default class GameRenderer {
 
     this.inputManager = new InputManager();
 
-    // travel/explore info
-    this.actionInfo = new ActionInfo(this.camera);
-
     this.mouseHandler = new MouseHandler(
       this.dojo,
       this.state,
@@ -183,7 +201,6 @@ export default class GameRenderer {
       this.mouse,
       this.camera,
       this.travelPaths,
-      this.actionInfo,
       this.sceneManager,
       this.locationManager,
     );
@@ -196,9 +213,7 @@ export default class GameRenderer {
   private moveCameraToURLLocation() {
     const col = this.locationManager.getCol();
     const row = this.locationManager.getRow();
-    console.log("debug 1", col, row);
     if (col && row) {
-      console.log("debug 2");
       this.moveCameraToColRow(col, row, 0);
     }
   }
@@ -206,8 +221,8 @@ export default class GameRenderer {
   private moveCameraToColRow(col: number, row: number, duration: number = 2) {
     const colOffset = col;
     const rowOffset = row;
-    const newTargetX = colOffset * horizontalSpacing + (rowOffset % 2) * (horizontalSpacing / 2);
-    const newTargetZ = -rowOffset * verticalSpacing;
+    const newTargetX = colOffset * HEX_HORIZONTAL_SPACING + (rowOffset % 2) * (HEX_HORIZONTAL_SPACING / 2);
+    const newTargetZ = -rowOffset * HEX_VERTICAL_SPACING;
     const newTargetY = 0;
 
     const newTarget = new THREE.Vector3(newTargetX, newTargetY, newTargetZ);
@@ -260,16 +275,18 @@ export default class GameRenderer {
   getLocationCoordinates() {
     const col = this.locationManager.getCol()!;
     const row = this.locationManager.getRow()!;
-    const x = col * horizontalSpacing + (row % 2) * (horizontalSpacing / 2);
-    const z = -row * verticalSpacing;
+    const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
+    const z = -row * HEX_VERTICAL_SPACING;
     return { col, row, x, z };
   }
 
   switchScene() {
     if (this.sceneManager.currentScene === "worldmap") {
       const { row, col, x, z } = this.getLocationCoordinates();
+      this.inputManager.removeListeners();
       this.sceneManager.transitionToDetailedScene(row, col, x, z);
     } else {
+      this.initListeners();
       this.sceneManager.transitionToMainScene();
     }
   }
@@ -344,9 +361,12 @@ export default class GameRenderer {
       // this.hexGrid.updateVisibleChunks();
       this.worldmapScene.contextMenuManager.checkHexagonHover();
       this.renderer.render(this.worldmapScene.scene, this.camera);
+      this.labelRenderer.render(this.worldmapScene.scene, this.camera);
     } else {
       // this.detailedScene.update(deltaTime);
+      this.hexceptionScene.update(deltaTime);
       this.renderer.render(this.hexceptionScene.scene, this.camera);
+      this.labelRenderer.render(this.hexceptionScene.scene, this.camera);
     }
 
     requestAnimationFrame(() => {

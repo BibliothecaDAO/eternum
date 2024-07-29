@@ -6,6 +6,8 @@ import {
 } from "../../data/geodata/hex/realmHexPositions.json";
 import { FELT_CENTER } from "../config";
 import { SortInterface } from "../elements/SortButton";
+import * as THREE from "three";
+import { HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "@/three/GameRenderer";
 
 export { getEntityIdFromKeys };
 
@@ -131,6 +133,33 @@ export function calculateDistance(start: Position, destination: Position): numbe
     return distance;
   }
 }
+
+export const getWorldPositionForHex = (hexCoords: {
+  row: number;
+  col: number;
+}): { x: number; y: number; z: number } => {
+  const { row, col } = hexCoords;
+  // Calculate the x and z coordinates
+  const x = col * HEX_HORIZONTAL_SPACING + (row % 2) * (HEX_HORIZONTAL_SPACING / 2);
+  const z = -row * HEX_VERTICAL_SPACING;
+
+  // y coordinate is half of the hexagon height
+  const y = 0;
+
+  return new THREE.Vector3(x, y, z);
+};
+
+export const getHexForWorldPosition = (worldPosition: {
+  x: number;
+  y: number;
+  z: number;
+}): { row: number; col: number } => {
+  const { x, y, z } = worldPosition;
+  const col = Math.round(x / HEX_HORIZONTAL_SPACING);
+  const row = -Math.round(z / HEX_VERTICAL_SPACING);
+
+  return { row, col };
+};
 
 export const getUIPositionFromColRow = (col: number, row: number, normalized?: boolean): UIPosition => {
   const hexRadius = 3;

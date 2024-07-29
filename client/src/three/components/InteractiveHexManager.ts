@@ -3,18 +3,82 @@ import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeom
 import WorldmapScene from "../scenes/Worldmap";
 import { borderHexMaterial } from "@/shaders/borderHexMaterial";
 import { transparentHexMaterial } from "@/shaders/transparentHexMaterial";
+import { HEX_SIZE } from "../GameRenderer";
+import { getWorldPositionForHex } from "@/ui/utils/utils";
 
 export class InteractiveHexManager {
-  private worldMap: WorldmapScene;
-  private hexSize: number;
+  private scene: THREE.Scene;
   private borderHexes: Set<string> = new Set();
   private exploredHexes: Set<string> = new Set();
   private borderInstanceMesh: THREE.InstancedMesh | null = null;
   private exploredInstanceMesh: THREE.InstancedMesh | null = null;
+  private auraMesh: THREE.Mesh | null = null;
+  private raycaster: THREE.Raycaster;
+  private mouse: THREE.Vector2;
+  private camera: THREE.Camera;
 
-  constructor(worldMap: WorldmapScene, hexSize: number) {
-    this.worldMap = worldMap;
-    this.hexSize = hexSize;
+  constructor(scene: THREE.Scene, raycaster: THREE.Raycaster, mouse: THREE.Vector2, camera: THREE.Camera) {
+    this.scene = scene;
+    this.raycaster = raycaster;
+    this.mouse = mouse;
+    this.camera = camera;
+    this.createAuraMesh();
+  }
+
+  private createAuraMesh() {
+    const textureLoader = new THREE.TextureLoader();
+    const auraTexture = textureLoader.load("/textures/aura.png");
+    const auraMaterial = new THREE.MeshBasicMaterial({
+      map: auraTexture,
+      transparent: true,
+      opacity: 0.8,
+    });
+    const auraGeometry = new THREE.PlaneGeometry(1.8, 1.8);
+    this.auraMesh = new THREE.Mesh(auraGeometry, auraMaterial);
+    this.auraMesh.rotation.x = -Math.PI / 2;
+    this.auraMesh.renderOrder = 1;
+
+    // Add these lines to remove pointer events
+    this.auraMesh.receiveShadow = false;
+    this.auraMesh.castShadow = false;
+
+    this.auraMesh.raycast = () => {};
+  }
+
+  private updateAuraPosition() {
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    if (intersects.length > 0) {
+      const intersect = intersects[0];
+      const intersectedObject = intersect.object;
+
+      if (intersectedObject instanceof THREE.InstancedMesh) {
+        const instanceId = intersect.instanceId;
+        if (instanceId !== undefined) {
+          const matrix = new THREE.Matrix4();
+          intersectedObject.getMatrixAt(instanceId, matrix);
+          const position = new THREE.Vector3();
+          position.setFromMatrixPosition(matrix);
+
+          if (this.auraMesh) {
+            this.auraMesh.position.set(position.x, 0.2, position.z);
+            if (!this.scene.children.includes(this.auraMesh)) {
+              this.scene.add(this.auraMesh);
+            }
+          }
+        }
+      }
+    } else {
+      if (this.auraMesh && this.scene.children.includes(this.auraMesh)) {
+        this.scene.remove(this.auraMesh);
+      }
+    }
+  }
+
+  private rotateAura() {
+    if (this.auraMesh) {
+      this.auraMesh.rotation.z += 0.01;
+    }
   }
 
   addBorderHex(hex: { col: number; row: number }) {
@@ -30,20 +94,21 @@ export class InteractiveHexManager {
     this.borderHexes.clear();
     this.exploredHexes.clear();
   }
+
   renderHexes() {
     // Remove existing instanced mesh if it exists
     if (this.borderInstanceMesh) {
-      this.worldMap.scene.remove(this.borderInstanceMesh);
+      this.scene.remove(this.borderInstanceMesh);
       this.borderInstanceMesh.dispose();
     }
 
     if (this.exploredInstanceMesh) {
-      this.worldMap.scene.remove(this.exploredInstanceMesh);
+      this.scene.remove(this.exploredInstanceMesh);
       this.exploredInstanceMesh.dispose();
     }
 
     // Create new highlight meshes using InstancedMesh
-    const bigHexagonShape = createHexagonShape(this.hexSize);
+    const bigHexagonShape = createHexagonShape(HEX_SIZE);
     const hexagonGeometry = new THREE.ShapeGeometry(bigHexagonShape);
     const borderInstanceCount = this.borderHexes.size;
     const exploredInstanceCount = this.exploredHexes.size;
@@ -58,7 +123,7 @@ export class InteractiveHexManager {
     let index = 0;
     this.borderHexes.forEach((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
-      const position = this.worldMap.getWorldPositionForHex({ col, row });
+      const position = getWorldPositionForHex({ col, row });
       dummy.position.set(position.x, 0.1, position.z);
       dummy.rotation.x = -Math.PI / 2;
       dummy.updateMatrix();
@@ -69,7 +134,7 @@ export class InteractiveHexManager {
     index = 0; // Reset index for explored hexes
     this.exploredHexes.forEach((hexString) => {
       const [col, row] = hexString.split(",").map(Number);
-      const position = this.worldMap.getWorldPositionForHex({ col, row });
+      const position = getWorldPositionForHex({ col, row });
       dummy.position.set(position.x, 0.1, position.z);
       dummy.rotation.x = -Math.PI / 2;
       dummy.updateMatrix();
@@ -77,7 +142,12 @@ export class InteractiveHexManager {
       index++;
     });
 
-    this.worldMap.scene.add(this.borderInstanceMesh);
-    this.worldMap.scene.add(this.exploredInstanceMesh);
+    this.scene.add(this.borderInstanceMesh);
+    this.scene.add(this.exploredInstanceMesh);
+  }
+
+  update() {
+    this.rotateAura();
+    this.updateAuraPosition();
   }
 }

@@ -1,0 +1,209 @@
+import { BuildingStringToEnum, BuildingType } from "@bibliothecadao/eternum";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import {
+  Component,
+  Has,
+  HasValue,
+  NotValue,
+  OverridableComponent,
+  getComponentValue,
+  runQuery,
+} from "@dojoengine/recs";
+import { ClientComponents } from "../createClientComponents";
+import { SetupResult } from "../setup";
+import { HexPosition } from "@/types";
+import { uuid } from "@latticexyz/utils";
+import { HexType } from "@/hooks/helpers/useHexPosition";
+import { CairoOption, CairoOptionVariant } from "starknet";
+
+export class TileManager {
+  private models: {
+    tile: OverridableComponent<ClientComponents["Tile"]["schema"]>;
+    building: OverridableComponent<ClientComponents["Building"]["schema"]>;
+    structure: Component<ClientComponents["Structure"]["schema"]>;
+    stamina: OverridableComponent<ClientComponents["Stamina"]["schema"]>;
+    position: OverridableComponent<ClientComponents["Position"]["schema"]>;
+    army: Component<ClientComponents["Army"]["schema"]>;
+    owner: Component<ClientComponents["Owner"]["schema"]>;
+    entityOwner: Component<ClientComponents["EntityOwner"]["schema"]>;
+    staminaConfig: Component<ClientComponents["StaminaConfig"]["schema"]>;
+  };
+  private col: number;
+  private row: number;
+  private address: bigint;
+
+  constructor(private dojo: SetupResult, hexCoords: HexPosition) {
+    const { Tile, Building, Stamina, Position, Army, Owner, EntityOwner, StaminaConfig, Structure } = dojo.components;
+    this.models = {
+      tile: Tile,
+      building: Building,
+      structure: Structure,
+      stamina: Stamina,
+      position: Position,
+      army: Army,
+      owner: Owner,
+      entityOwner: EntityOwner,
+      staminaConfig: StaminaConfig,
+    };
+    this.col = hexCoords.col;
+    this.row = hexCoords.row;
+    this.address = BigInt(this.dojo.network.burnerManager.account?.address || 0n);
+  }
+
+  existingBuildings = () => {
+    const builtBuildings = Array.from(
+      runQuery([
+        Has(this.models.building),
+        HasValue(this.models.building, { outer_col: BigInt(this.col), outer_row: BigInt(this.row) }),
+        NotValue(this.models.building, { entity_id: 0n }),
+      ]),
+    );
+
+    return builtBuildings.map((entity) => {
+      const productionModelValue = getComponentValue(this.models.building, entity);
+      const type = BuildingStringToEnum[productionModelValue!.category as keyof typeof BuildingStringToEnum];
+
+      return {
+        col: Number(productionModelValue?.inner_col),
+        row: Number(productionModelValue?.inner_row),
+        type: type as BuildingType,
+        entity: entity,
+        resource: productionModelValue?.produced_resource_type,
+      };
+    });
+  };
+
+  isHexOccupied = (col: number, row: number) => {
+    const building = getComponentValue(
+      this.models.building,
+      getEntityIdFromKeys([BigInt(this.col), BigInt(this.row), BigInt(col), BigInt(row)]),
+    );
+    return building?.category !== undefined;
+  };
+
+  hexType = () => {
+    const structures = Array.from(
+      runQuery([Has(this.models.structure), HasValue(this.models.position, { x: this.col, y: this.row })]),
+    );
+    if (structures?.length === 1) {
+      const structure = getComponentValue(this.models.structure, structures[0])!;
+      let category = structure.category.toUpperCase();
+      return HexType[category as keyof typeof HexType];
+    } else {
+      return HexType.EMPTY;
+    }
+  };
+
+  private _getOwnerEntityId = () => {
+    const entities = Array.from(
+      runQuery([
+        Has(this.models.structure),
+        HasValue(this.models.owner, { address: this.address }),
+        HasValue(this.models.position, { x: this.col, y: this.row }),
+      ]),
+    );
+
+    if (entities.length === 1) {
+      return getComponentValue(this.models.owner, entities[0])!.entity_id;
+    }
+  };
+
+  private _optimisticBuilding = (
+    entityId: bigint,
+    col: number,
+    row: number,
+    buildingType: BuildingType,
+    resourceType?: number,
+  ) => {
+    let overrideId = uuid();
+    const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
+    this.models.building.addOverride(overrideId, {
+      entity,
+      value: {
+        outer_col: BigInt(this.col),
+        outer_row: BigInt(this.row),
+        inner_col: BigInt(col),
+        inner_row: BigInt(row),
+        category: BuildingType[buildingType],
+        produced_resource_type: resourceType ? resourceType : 0,
+        bonus_percent: 0n,
+        entity_id: entityId,
+        outer_entity_id: entityId,
+      },
+    });
+    return overrideId;
+  };
+
+  private _optimisticDestroy = (entityId: bigint, col: number, row: number) => {
+    const overrideId = uuid();
+    const realmPosition = getComponentValue(this.models.position, getEntityIdFromKeys([entityId]));
+    const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
+    const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
+    this.models.building.addOverride(overrideId, {
+      entity,
+      value: {
+        outer_col: BigInt(outercol),
+        outer_row: BigInt(outerrow),
+        inner_col: BigInt(col),
+        inner_row: BigInt(row),
+        category: "None",
+        produced_resource_type: 0,
+        bonus_percent: 0n,
+        entity_id: 0n,
+        outer_entity_id: 0n,
+      },
+    });
+    return overrideId;
+  };
+
+  placeBuilding = async (buildingType: BuildingType, col: number, row: number, resourceType?: number) => {
+    const entityId = this._getOwnerEntityId();
+    if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
+
+    // add optimistic rendering
+    let overrideId = this._optimisticBuilding(entityId, col, row, buildingType, resourceType);
+
+    await this.dojo.systemCalls
+      .create_building({
+        signer: this.dojo.network.burnerManager.account!,
+        entity_id: entityId,
+        building_coord: {
+          x: col.toString(),
+          y: row.toString(),
+        },
+        building_category: buildingType,
+        produce_resource_type:
+          buildingType == BuildingType.Resource && resourceType
+            ? new CairoOption<Number>(CairoOptionVariant.Some, resourceType)
+            : new CairoOption<Number>(CairoOptionVariant.None, 0),
+      })
+      .finally(() => {
+        setTimeout(() => {
+          this.models.building.removeOverride(overrideId);
+        }, 2000);
+      });
+  };
+
+  destroyBuilding = async (col: number, row: number) => {
+    const entityId = this._getOwnerEntityId();
+
+    if (!entityId) throw new Error("TileManager: Not Owner of the Tile");
+    // add optimistic rendering
+    let overrideId = this._optimisticDestroy(entityId, col, row);
+
+    await this.dojo.systemCalls
+      .destroy_building({
+        signer: this.dojo.network.burnerManager.account!,
+        entity_id: entityId,
+        building_coord: {
+          x: col.toString(),
+          y: row.toString(),
+        },
+      })
+      .finally(() => {
+        setTimeout(() => {
+          this.models.building.removeOverride(overrideId);
+        }, 2000);
+      });
+  };
+}

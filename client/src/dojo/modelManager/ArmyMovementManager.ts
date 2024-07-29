@@ -1,7 +1,6 @@
 import {
   EternumGlobalConfig,
   ResourcesIds,
-  TROOPS_STAMINAS,
   WORLD_CONFIG_ID,
   getNeighborHexes,
   neighborOffsetsEven,
@@ -14,6 +13,8 @@ import { ClientComponents } from "../createClientComponents";
 import { SetupResult } from "../setup";
 import { HexPosition } from "@/types";
 import { uuid } from "@latticexyz/utils";
+import { getCurrentArmiesTick, getCurrentTick } from "@/three/helpers/ticks";
+import { ProductionManager } from "./ProductionManager";
 
 export class TravelPaths {
   private paths: Map<string, { path: HexPosition[]; isExplored: boolean }>;
@@ -65,28 +66,57 @@ export class TravelPaths {
 }
 
 export class ArmyMovementManager {
+  private tileModel: OverridableComponent<ClientComponents["Tile"]["schema"]>;
   private staminaModel: OverridableComponent<ClientComponents["Stamina"]["schema"]>;
   private positionModel: OverridableComponent<ClientComponents["Position"]["schema"]>;
   private armyModel: Component<ClientComponents["Army"]["schema"]>;
   private ownerModel: Component<ClientComponents["Owner"]["schema"]>;
   private entityOwnerModel: Component<ClientComponents["EntityOwner"]["schema"]>;
   private staminaConfigModel: Component<ClientComponents["StaminaConfig"]["schema"]>;
-  private currentArmiesTick: number;
   private entity: Entity;
   private entityId: bigint;
   private address: bigint;
+  private fishManager: ProductionManager;
+  private wheatManager: ProductionManager;
 
   constructor(private dojo: SetupResult, entityId: number) {
-    this.staminaModel = dojo.components.Stamina;
-    this.positionModel = dojo.components.Position;
-    this.armyModel = dojo.components.Army;
-    this.ownerModel = dojo.components.Owner;
-    this.entityOwnerModel = dojo.components.EntityOwner;
-    this.staminaConfigModel = dojo.components.StaminaConfig;
-    this.currentArmiesTick = Date.now() / 1000;
+    const {
+      Tile,
+      Stamina,
+      Position,
+      Army,
+      Owner,
+      EntityOwner,
+      StaminaConfig,
+      Production,
+      Resource,
+      BuildingQuantityv2,
+    } = dojo.components;
+    this.tileModel = Tile;
+    this.staminaModel = Stamina;
+    this.positionModel = Position;
+    this.armyModel = Army;
+    this.ownerModel = Owner;
+    this.entityOwnerModel = EntityOwner;
+    this.staminaConfigModel = StaminaConfig;
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = BigInt(entityId);
     this.address = BigInt(this.dojo.network.burnerManager.account?.address || 0n);
+    const entityOwnerId = getComponentValue(EntityOwner, this.entity);
+    this.wheatManager = new ProductionManager(
+      Production,
+      Resource,
+      BuildingQuantityv2,
+      entityOwnerId!.entity_owner_id,
+      254n,
+    );
+    this.fishManager = new ProductionManager(
+      Production,
+      Resource,
+      BuildingQuantityv2,
+      entityOwnerId!.entity_owner_id,
+      253n,
+    );
   }
 
   private _maxStamina = (troops: any): number => {
@@ -124,10 +154,12 @@ export class ArmyMovementManager {
     let staminaEntity = getComponentValue(this.staminaModel, this.entity);
     const armyEntity = getComponentValue(this.armyModel, this.entity);
 
-    if (this.currentArmiesTick !== staminaEntity?.last_refill_tick) {
+    const currentArmiesTick = getCurrentArmiesTick();
+
+    if (currentArmiesTick !== staminaEntity?.last_refill_tick) {
       staminaEntity = {
         ...staminaEntity!,
-        last_refill_tick: this.currentArmiesTick,
+        last_refill_tick: currentArmiesTick,
         amount: this._maxStamina(armyEntity!.troops),
       };
     }
@@ -137,83 +169,20 @@ export class ArmyMovementManager {
   private _canExplore(): boolean {
     const stamina = this.getStamina().amount;
 
-    const food = [
-      { resourceId: 254, amount: 10000000 },
-      { resourceId: 255, amount: 10000000 },
-    ];
+    const currentTick = getCurrentTick();
 
-    if (stamina && stamina < EternumGlobalConfig.stamina.exploreCost) {
+    if (stamina < EternumGlobalConfig.stamina.exploreCost) {
       return false;
     }
-    const fish = food.find((resource) => resource.resourceId === ResourcesIds.Fish);
-    if ((fish?.amount || 0) < EternumGlobalConfig.exploration.fishBurn) {
+    if (this.fishManager.balance(currentTick) < EternumGlobalConfig.exploration.fishBurn) {
       return false;
     }
-    const wheat = food.find((resource) => resource.resourceId === ResourcesIds.Wheat);
-    if ((wheat?.amount || 0) < EternumGlobalConfig.exploration.wheatBurn) {
+    if (this.wheatManager.balance(currentTick) < EternumGlobalConfig.exploration.wheatBurn) {
       return false;
     }
 
     return true;
   }
-
-  //   private _maxSteps(): number {
-  //     const staminaCosts = Object.values(EternumGlobalConfig.stamina);
-  //     const minCost = Math.min(...staminaCosts);
-
-  //     const staminaValues = Object.values(TROOPS_STAMINAS);
-  //     const maxStamina = Math.max(...staminaValues);
-
-  //     return Math.floor(maxStamina / minCost);
-  //   }
-
-  //   public findShortestPathBFS(endPos: HexPosition, exploredHexes: Map<number, Set<number>>): HexPosition[] {
-  //     const startPos = this._getCurrentPosition();
-  //     const maxHex = this._maxSteps();
-
-  //     const queue: { position: HexPosition; distance: number }[] = [{ position: startPos, distance: 0 }];
-  //     const visited = new Set<string>();
-  //     const path = new Map<string, HexPosition>();
-
-  //     while (queue.length > 0) {
-  //       const { position: current, distance } = queue.shift()!;
-  //       if (current.col === endPos.col && current.row === endPos.row) {
-  //         // Reconstruct the path upon reaching the end position
-  //         let temp = current;
-  //         const result = [];
-  //         while (temp) {
-  //           result.unshift(temp); // Add to the beginning of the result array
-  //           //@ts-ignore:
-  //           temp = path.get(TravelPaths.posKey(temp)); // Move backwards through the path
-  //         }
-  //         return result;
-  //       }
-
-  //       if (distance > maxHex) {
-  //         break; // Stop processing if the current distance exceeds maxHex
-  //       }
-
-  //       const currentKey = TravelPaths.posKey(current);
-  //       if (!visited.has(currentKey)) {
-  //         visited.add(currentKey);
-  //         const neighbors = getNeighborHexes(current.col, current.row); // Assuming getNeighbors is defined elsewhere
-  //         for (const { col, row } of neighbors) {
-  //           const neighborKey = TravelPaths.posKey({ col, row });
-  //           const isExplored = exploredHexes.get(col - FELT_CENTER)?.has(row - FELT_CENTER);
-  //           if (
-  //             !visited.has(neighborKey) &&
-  //             !queue.some((e) => TravelPaths.posKey(e.position) === neighborKey) &&
-  //             isExplored
-  //           ) {
-  //             path.set(neighborKey, current); // Map each neighbor back to the current position
-  //             queue.push({ position: { col, row }, distance: distance + 1 });
-  //           }
-  //         }
-  //       }
-  //     }
-
-  //     return []; // Return empty array if no path is found within maxHex distance
-  //   }
 
   private _calculateMaxTravelPossible = () => {
     const stamina = this.getStamina();
@@ -224,6 +193,17 @@ export class ArmyMovementManager {
     const position = getComponentValue(this.positionModel, this.entity);
     return { col: position!.x, row: position!.y };
   };
+
+  public getFood() {
+    const currentTick = getCurrentTick();
+    const wheatBalance = this.wheatManager.balance(currentTick);
+    const fishBalance = this.fishManager.balance(currentTick);
+
+    return {
+      wheat: wheatBalance,
+      fish: fishBalance,
+    };
+  }
 
   public findPaths(exploredHexes: Map<number, Set<number>>): TravelPaths {
     const startPos = this._getCurrentPosition();
@@ -244,7 +224,9 @@ export class ArmyMovementManager {
       if (!shortestDistances.has(currentKey) || distance < shortestDistances.get(currentKey)!) {
         shortestDistances.set(currentKey, distance);
         const isExplored = exploredHexes.get(current.col - FELT_CENTER)?.has(current.row - FELT_CENTER) || false;
-        travelPaths.set(currentKey, { path: path, isExplored });
+        if (path.length >= 2) {
+          travelPaths.set(currentKey, { path: path, isExplored });
+        }
         if (!isExplored) continue;
 
         const neighbors = getNeighborHexes(current.col, current.row); // This function needs to be defined
@@ -289,11 +271,22 @@ export class ArmyMovementManager {
     });
   };
 
-  private _optimisticExplore = (col: number, row: number) => {
-    let overrideId = uuid();
+  private _optimisticTileUpdate = (overrideId: string, col: number, row: number) => {
+    const entity = getEntityIdFromKeys([BigInt(col), BigInt(row)]);
 
-    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.exploreCost);
+    this.tileModel.addOverride(overrideId, {
+      entity,
+      value: {
+        col: BigInt(col),
+        row: BigInt(row),
+        explored_by_id: this.entityId,
+        explored_at: Date.now() / 1000,
+        biome: 0,
+      },
+    });
+  };
 
+  private _optimisticPositionUpdate = (overrideId: string, col: number, row: number) => {
     this.positionModel.addOverride(overrideId, {
       entity: this.entity,
       value: {
@@ -302,6 +295,15 @@ export class ArmyMovementManager {
         y: row,
       },
     });
+  };
+
+  private _optimisticExplore = (col: number, row: number) => {
+    let overrideId = uuid();
+
+    this._optimisticStaminaUpdate(overrideId, EternumGlobalConfig.stamina.exploreCost);
+    this._optimisticTileUpdate(overrideId, col, row);
+    this._optimisticPositionUpdate(overrideId, col, row);
+
     return overrideId;
   };
 
@@ -326,8 +328,6 @@ export class ArmyMovementManager {
     if (direction === undefined) return;
 
     const overrideId = this._optimisticExplore(path[1].col, path[1].row);
-
-    // console.log({ direction });
 
     this.dojo.systemCalls
       .explore({
@@ -384,7 +384,6 @@ export class ArmyMovementManager {
   };
 
   public moveArmy = (path: HexPosition[], isExplored: boolean) => {
-    console.log({ path, isExplored });
     if (!isExplored) {
       this._exploreHex(path);
     } else {

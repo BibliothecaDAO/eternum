@@ -280,6 +280,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
       }, 1000);
       setTimeout(() => {
         setLocation(`/hex?col=${colRow.col}&row=${colRow.row}`);
+        window.dispatchEvent(new Event("urlChanged"));
       }, 1300);
     },
     [moveCameraToTarget],
