@@ -54,6 +54,10 @@ export class TravelPaths {
     return this.paths.has(TravelPaths.posKey({ col: col + FELT_CENTER, row: row + FELT_CENTER }));
   }
 
+  getPaths(): Map<string, { path: HexPosition[]; isExplored: boolean }> {
+    return this.paths;
+  }
+
   static posKey(pos: HexPosition, normalized = false): string {
     const col = normalized ? pos.col + FELT_CENTER : pos.col;
     const row = normalized ? pos.row + FELT_CENTER : pos.row;

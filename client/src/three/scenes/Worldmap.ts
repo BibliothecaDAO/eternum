@@ -92,7 +92,7 @@ export default class WorldmapScene {
     this.fogManager = new FogManager(this.scene, controls.object as THREE.PerspectiveCamera);
 
     this.contextMenuManager = new ContextMenuManager(
-      this,
+      this.scene,
       this.raycaster,
       controls.object as THREE.PerspectiveCamera,
       mouse,

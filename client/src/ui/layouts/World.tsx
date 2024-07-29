@@ -25,6 +25,8 @@ import { Redirect } from "wouter";
 import { BattleView } from "../modules/military/battle-view/BattleView";
 import TopLeftContainer from "../containers/TopLeftContainer";
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
+import { Canvas } from "@react-three/fiber";
+import { ActionInfo } from "../components/worldmap/hexagon/ActionInfo";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -57,6 +59,7 @@ export const World = () => {
           <MainScene />
         </div>
       </BackgroundContainer> */}
+      <ActionInfo />
 
       {/* <LoadingContainer /> */}
 
