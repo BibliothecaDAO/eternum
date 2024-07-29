@@ -1,11 +1,11 @@
 import { findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
 
-import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat, formatTime } from "../../utils/utils";
 import { useProductionManager } from "@/hooks/helpers/useResources";
-import { useEffect, useMemo, useState } from "react";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { useEffect, useMemo, useState } from "react";
+import { ResourceIcon } from "../../elements/ResourceIcon";
+import { currencyFormat, formatTime } from "../../utils/utils";
 
 export const ResourceChip = ({
   isLabor = false,
@@ -53,16 +53,14 @@ export const ResourceChip = ({
   useEffect(() => {
     const interval = setInterval(() => {
       setDisplayBalance((prevDisplayBalance) => {
-        const difference = balance - prevDisplayBalance;
-        if (Math.abs(difference) > 0) {
-          const stepSize = difference * 0.1;
-          return prevDisplayBalance + stepSize;
+        if (Math.abs(netRate) > 0) {
+          return prevDisplayBalance + netRate;
         }
         return prevDisplayBalance;
       });
-    }, 2);
+    }, 1000);
     return () => clearInterval(interval);
-  }, [balance]);
+  }, [balance, netRate]);
 
   return (
     <div
