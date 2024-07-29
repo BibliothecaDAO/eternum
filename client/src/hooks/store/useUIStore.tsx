@@ -9,6 +9,7 @@ import { createMapStoreSlice, MapStore } from "./_mapStore";
 import { createPopupsSlice, PopupsStore } from "./_popups";
 import { BattleViewInfo } from "./types";
 export type Background = "map" | "realmView" | "combat" | "bastion";
+import { subscribeWithSelector } from "zustand/middleware";
 
 interface UIStore {
   theme: string;
@@ -64,138 +65,140 @@ interface UIStore {
   setRightNavigationView: (view: RightView) => void;
 }
 
-const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((set, get) => ({
-  theme: "light",
-  setTheme: (theme) => set({ theme }),
-  showBlurOverlay: false,
-  setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
-  showBlankOverlay: true,
-  setShowBlankOverlay: (show) => set({ showBlankOverlay: show }),
-  isSideMenuOpened: true,
-  toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
-  isSoundOn: localStorage.getItem("soundEnabled") ? localStorage.getItem("soundEnabled") === "true" : true,
-  trackName: "Day Break",
-  setTrackName: (name) => set({ trackName: name }),
-  trackIndex: 1,
-  setTrackIndex: (index) => set({ trackIndex: index }),
-  toggleSound: () =>
-    set((state) => {
-      localStorage.setItem("soundEnabled", String(!state.isSoundOn));
-      return { isSoundOn: !state.isSoundOn };
-    }),
-  isPlaying: false,
-  setIsPlaying: (playing) => set({ isPlaying: playing }),
-  musicLevel: localStorage.getItem("musicLevel") ? parseInt(localStorage.getItem("musicLevel") as string) : 50,
-  setMusicLevel: (level) => {
-    set({ musicLevel: level });
-    localStorage.setItem("musicLevel", level.toString());
-  },
-  effectsLevel: localStorage.getItem("effectsLevel") ? parseInt(localStorage.getItem("effectsLevel") as string) : 50,
-  setEffectsLevel: (level) => {
-    set({ effectsLevel: level });
-    localStorage.setItem("effectsLevel", level.toString());
-  },
-  cameraPosition: {
-    x: -17.044911069418,
-    y: 118.38408187955699,
-    z: 204.31967964950695,
-  },
-  setCameraPosition: (position) => set({ cameraPosition: position }),
-  cameraTarget: { x: 0, y: 0, z: 0 },
-  setCameraTarget: (target) => set({ cameraTarget: target }),
-  compassDirection: 0,
-  setCompassDirection: (direction) => set({ compassDirection: direction }),
-  tooltip: null,
-  setTooltip: (tooltip) => set({ tooltip }),
-  mouseCoords: { x: 0, y: 0 },
-  setMouseCoords: (coords) => set({ mouseCoords: coords }),
-  moveCameraToRealm: (realmId, speed = undefined) => {
-    const pos = getRealmUIPosition(BigInt(realmId));
-    const x = pos.x;
-    const y = pos.y * -1;
-    const targetPos = new Vector3(x, 0, y);
-    const cameraPos = new Vector3(
-      x + 125 * (Math.random() < 0.5 ? 1 : -1),
-      100,
-      y + 75 * (Math.random() < 0.5 ? 1 : -1),
-    );
-    set({ cameraPosition: speed ? { ...cameraPos, transitionDuration: speed } : cameraPos });
-    set({ cameraTarget: speed ? { ...targetPos, transitionDuration: speed } : targetPos });
-  },
-  moveCameraToTarget: (target, speed = undefined) => {
-    const x = target.x;
-    const y = target.y * -1;
-    const targetPos = new Vector3(x, 0, y);
-    const cameraPos = new Vector3(
-      x + 125 * (Math.random() < 0.5 ? 1 : -1),
-      100,
-      y + 75 * (Math.random() < 0.5 ? 1 : -1),
-    );
-    set({ cameraPosition: speed ? { ...cameraPos, transitionDuration: speed } : cameraPos });
-    set({ cameraTarget: speed ? { ...targetPos, transitionDuration: speed } : targetPos });
-  },
-  showRealmsFlags: true,
-  setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
-  moveCameraToWorldMapView: () => {
-    const pos = {
-      x: 298.2009515928887,
-      y: 113.9047011776059,
-      z: -26.116329229297378,
-      transitionDuration: 0.01,
-    };
-    // does not work
-    const target = {
-      x: 302,
-      y: 20,
-      z: -209,
-      transitionDuration: 0.01,
-    };
-    set({ cameraPosition: pos, cameraTarget: target });
-  },
-  moveCameraToRealmView: () => {
-    const pos = {
-      x: 155.23467522775934,
-      y: 88.15219668432883,
-      z: 16.20047786526456,
-      transitionDuration: 0.01,
-    };
+const useUIStore = create(
+  subscribeWithSelector<UIStore & PopupsStore & MapStore & BuildModeStore>((set, get) => ({
+    theme: "light",
+    setTheme: (theme) => set({ theme }),
+    showBlurOverlay: false,
+    setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
+    showBlankOverlay: true,
+    setShowBlankOverlay: (show) => set({ showBlankOverlay: show }),
+    isSideMenuOpened: true,
+    toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
+    isSoundOn: localStorage.getItem("soundEnabled") ? localStorage.getItem("soundEnabled") === "true" : true,
+    trackName: "Day Break",
+    setTrackName: (name) => set({ trackName: name }),
+    trackIndex: 1,
+    setTrackIndex: (index) => set({ trackIndex: index }),
+    toggleSound: () =>
+      set((state) => {
+        localStorage.setItem("soundEnabled", String(!state.isSoundOn));
+        return { isSoundOn: !state.isSoundOn };
+      }),
+    isPlaying: false,
+    setIsPlaying: (playing) => set({ isPlaying: playing }),
+    musicLevel: localStorage.getItem("musicLevel") ? parseInt(localStorage.getItem("musicLevel") as string) : 50,
+    setMusicLevel: (level) => {
+      set({ musicLevel: level });
+      localStorage.setItem("musicLevel", level.toString());
+    },
+    effectsLevel: localStorage.getItem("effectsLevel") ? parseInt(localStorage.getItem("effectsLevel") as string) : 50,
+    setEffectsLevel: (level) => {
+      set({ effectsLevel: level });
+      localStorage.setItem("effectsLevel", level.toString());
+    },
+    cameraPosition: {
+      x: -17.044911069418,
+      y: 118.38408187955699,
+      z: 204.31967964950695,
+    },
+    setCameraPosition: (position) => set({ cameraPosition: position }),
+    cameraTarget: { x: 0, y: 0, z: 0 },
+    setCameraTarget: (target) => set({ cameraTarget: target }),
+    compassDirection: 0,
+    setCompassDirection: (direction) => set({ compassDirection: direction }),
+    tooltip: null,
+    setTooltip: (tooltip) => set({ tooltip }),
+    mouseCoords: { x: 0, y: 0 },
+    setMouseCoords: (coords) => set({ mouseCoords: coords }),
+    moveCameraToRealm: (realmId, speed = undefined) => {
+      const pos = getRealmUIPosition(BigInt(realmId));
+      const x = pos.x;
+      const y = pos.y * -1;
+      const targetPos = new Vector3(x, 0, y);
+      const cameraPos = new Vector3(
+        x + 125 * (Math.random() < 0.5 ? 1 : -1),
+        100,
+        y + 75 * (Math.random() < 0.5 ? 1 : -1),
+      );
+      set({ cameraPosition: speed ? { ...cameraPos, transitionDuration: speed } : cameraPos });
+      set({ cameraTarget: speed ? { ...targetPos, transitionDuration: speed } : targetPos });
+    },
+    moveCameraToTarget: (target, speed = undefined) => {
+      const x = target.x;
+      const y = target.y * -1;
+      const targetPos = new Vector3(x, 0, y);
+      const cameraPos = new Vector3(
+        x + 125 * (Math.random() < 0.5 ? 1 : -1),
+        100,
+        y + 75 * (Math.random() < 0.5 ? 1 : -1),
+      );
+      set({ cameraPosition: speed ? { ...cameraPos, transitionDuration: speed } : cameraPos });
+      set({ cameraTarget: speed ? { ...targetPos, transitionDuration: speed } : targetPos });
+    },
+    showRealmsFlags: true,
+    setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
+    moveCameraToWorldMapView: () => {
+      const pos = {
+        x: 298.2009515928887,
+        y: 113.9047011776059,
+        z: -26.116329229297378,
+        transitionDuration: 0.01,
+      };
+      // does not work
+      const target = {
+        x: 302,
+        y: 20,
+        z: -209,
+        transitionDuration: 0.01,
+      };
+      set({ cameraPosition: pos, cameraTarget: target });
+    },
+    moveCameraToRealmView: () => {
+      const pos = {
+        x: 155.23467522775934,
+        y: 88.15219668432883,
+        z: 16.20047786526456,
+        transitionDuration: 0.01,
+      };
 
-    const target = {
-      x: 51.295281133975934,
-      y: -0.042119342580460455,
-      z: -46.39636690298946,
-      transitionDuration: 0.01,
-    };
-    set({ cameraPosition: pos, cameraTarget: target });
-  },
-  moveCameraToColRow: (col: number, row: number, speed = undefined, transitionMode = false) => {
-    const pos = getUIPositionFromColRow(col, row);
-    const x = pos.x;
-    const y = pos.y * -1;
-    const targetPos = new Vector3(x, 0, y);
-    let cameraPos;
-    if (transitionMode) {
-      cameraPos = new Vector3(x + 25, 25, y + 25); // Camera dives into exactly target position
-    } else {
-      cameraPos = new Vector3(x + 125 * (Math.random() < 0.5 ? 1 : -1), 100, y + 75 * (Math.random() < 0.5 ? 1 : -1));
-    }
-    set({ cameraPosition: speed ? { ...cameraPos, transitionDuration: speed } : cameraPos });
-    set({ cameraTarget: speed ? { ...targetPos, transitionDuration: speed } : targetPos });
-  },
-  isLoadingScreenEnabled: true,
-  setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
-  modalContent: null,
-  toggleModal: (content) => set({ modalContent: content, showModal: !get().showModal }),
-  showModal: false,
-  battleView: null,
-  setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
-  leftNavigationView: LeftView.None,
-  setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view }),
-  rightNavigationView: RightView.None,
-  setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
-  ...createPopupsSlice(set, get),
-  ...createMapStoreSlice(set),
-  ...createBuildModeStoreSlice(set),
-}));
+      const target = {
+        x: 51.295281133975934,
+        y: -0.042119342580460455,
+        z: -46.39636690298946,
+        transitionDuration: 0.01,
+      };
+      set({ cameraPosition: pos, cameraTarget: target });
+    },
+    moveCameraToColRow: (col: number, row: number, speed = undefined, transitionMode = false) => {
+      const pos = getUIPositionFromColRow(col, row);
+      const x = pos.x;
+      const y = pos.y * -1;
+      const targetPos = new Vector3(x, 0, y);
+      let cameraPos;
+      if (transitionMode) {
+        cameraPos = new Vector3(x + 25, 25, y + 25); // Camera dives into exactly target position
+      } else {
+        cameraPos = new Vector3(x + 125 * (Math.random() < 0.5 ? 1 : -1), 100, y + 75 * (Math.random() < 0.5 ? 1 : -1));
+      }
+      set({ cameraPosition: speed ? { ...cameraPos, transitionDuration: speed } : cameraPos });
+      set({ cameraTarget: speed ? { ...targetPos, transitionDuration: speed } : targetPos });
+    },
+    isLoadingScreenEnabled: true,
+    setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
+    modalContent: null,
+    toggleModal: (content) => set({ modalContent: content, showModal: !get().showModal }),
+    showModal: false,
+    battleView: null,
+    setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
+    leftNavigationView: LeftView.None,
+    setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view }),
+    rightNavigationView: RightView.None,
+    setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
+    ...createPopupsSlice(set, get),
+    ...createMapStoreSlice(set),
+    ...createBuildModeStoreSlice(set),
+  })),
+);
 
 export default useUIStore;
