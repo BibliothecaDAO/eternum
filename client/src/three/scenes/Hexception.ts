@@ -12,11 +12,11 @@ import { biomeModelPaths } from "./Worldmap";
 import { Biome, BiomeType } from "../components/Biome";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { getHexForWorldPosition, getWorldPositionForHex, pseudoRandom } from "@/ui/utils/utils";
+import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
 import { FELT_CENTER } from "@/ui/config";
 import InstancedBuilding from "../components/InstancedBuilding";
-import { HEX_HORIZONTAL_SPACING, HEX_SIZE } from "../GameRenderer";
+import { HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "../GameRenderer";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GUIManager } from "../helpers/GUIManager";
@@ -294,6 +294,7 @@ export default class HexceptionScene {
       const buildings = [];
       const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
       const label = new THREE.Group();
+      const highlights = [];
       this.scene.add(label);
       for (const center in centers) {
         const isMainHex = centers[center][0] === 0 && centers[center][1] === 0;
@@ -306,24 +307,27 @@ export default class HexceptionScene {
               r === Math.max(-radius, -q - radius) ||
               r === Math.min(radius, -q + radius);
             dummy.position.x = (q + r / 2) * HEX_HORIZONTAL_SPACING + centers[center][0] * HEX_HORIZONTAL_SPACING;
-            dummy.position.z = ((r * 3) / 2) * HEX_SIZE + centers[center][1] * HEX_SIZE;
+            dummy.position.z = r * HEX_VERTICAL_SPACING + centers[center][1] * HEX_SIZE;
             dummy.position.y = isBorderHex || isMainHex ? 0 : pseudoRandom(q, r);
             dummy.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
             dummy.updateMatrix();
 
-            // const posDiv = document.createElement("div");
-            // posDiv.className = "label";
-            // posDiv.textContent = `${BUILDINGS_CENTER[0] - q}, ${BUILDINGS_CENTER[1] - r}`;
-            // posDiv.style.backgroundColor = "transparent";
+            const posDiv = document.createElement("div");
+            posDiv.className = "label";
+            posDiv.textContent = `${BUILDINGS_CENTER[0] - q}, ${BUILDINGS_CENTER[1] - r}`;
+            posDiv.style.backgroundColor = "transparent";
 
-            // const posLabel = new CSS2DObject(posDiv);
-            // moonLabel.position.set(dummy.position.x, dummy.position.y + 0.5, dummy.position.z);
-            // posLabel.center.set(0, 1);
-            // label.add(posLabel);
+            const posLabel = new CSS2DObject(posDiv);
+            posLabel.position.set(dummy.position.x, dummy.position.y, dummy.position.z);
+            posLabel.center.set(0, 1);
+            label.add(posLabel);
 
             let withBuilding = false;
             if (isMainHex) {
+              console.log("dummy", dummy.position.x, dummy.position.y, dummy.position.z);
               this.interactiveHexManager.addExploredHex(getHexForWorldPosition(dummy.position));
+              highlights.push(getHexForWorldPosition(dummy.position));
+              //highlights.push({ col: q + r / 2, row: r });
               const isCenter = q === 0 && r === 0;
               const building = isCenter
                 ? { category: "Castle" }
@@ -408,6 +412,7 @@ export default class HexceptionScene {
       //     }
       //   }
       this.interactiveHexManager.renderHexes();
+      this.highlightHexManager.highlightHexes(highlights);
       console.log("Hexagon grid updated");
     });
   }

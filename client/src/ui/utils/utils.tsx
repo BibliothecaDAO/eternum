@@ -155,8 +155,8 @@ export const getHexForWorldPosition = (worldPosition: {
   z: number;
 }): { row: number; col: number } => {
   const { x, y, z } = worldPosition;
-  const col = Math.round(x / HEX_HORIZONTAL_SPACING);
   const row = -Math.round(z / HEX_VERTICAL_SPACING);
+  const col = Math.round((x - ((row % 2) * HEX_HORIZONTAL_SPACING) / 2) / HEX_HORIZONTAL_SPACING);
 
   return { row, col };
 };

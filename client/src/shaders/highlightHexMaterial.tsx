@@ -25,7 +25,7 @@ varying vec3 vPosition;
 void main() {
   #include <logdepthbuf_fragment>
   float edgeDistance = length(vPosition.xy) * 0.35;
-  float gradient = smoothstep(1.5, 0.0, edgeDistance); 
+  float gradient = smoothstep(0.5, 0.0, edgeDistance); 
   float finalOpacity = mix(0.35, opacity, gradient);
   
   gl_FragColor = vec4(color, finalOpacity);
@@ -40,7 +40,7 @@ export const highlightHexMaterial = new ShaderMaterial({
   fragmentShader,
   uniforms: {
     color: { value: greenColor },
-    opacity: { value: 0 },
+    opacity: { value: 0.25 },
   },
   transparent: true,
 });
