@@ -7,6 +7,7 @@ import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../context/DojoContext";
 import useRealmStore from "../store/useRealmStore";
 import useLeaderBoardStore from "../store/useLeaderBoardStore";
+import { FELT_CENTER } from "@/ui/config";
 
 export enum HexType {
   BANK = "bank",
@@ -32,15 +33,20 @@ export const useHexPosition = () => {
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
 
   const hexPosition = useMemo(() => {
+    console.log("searchString", searchString);
     const params = new URLSearchParams(searchString);
     const x = params.get("col");
     const y = params.get("row");
     return { col: Number(x), row: Number(y) };
   }, [searchString]);
 
-  const structures = useEntityQuery([Has(Structure), HasValue(Position, { x: hexPosition.col, y: hexPosition.row })]);
+  const structures = useEntityQuery([
+    Has(Structure),
+    HasValue(Position, { x: hexPosition.col + FELT_CENTER, y: hexPosition.row + FELT_CENTER }),
+  ]);
 
   const structure = useMemo(() => {
+    console.log("structures", structures);
     if (structures?.length === 0) return null;
     return getComponentValue(Structure, structures[0]);
   }, [structures]);

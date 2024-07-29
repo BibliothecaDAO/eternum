@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { getEntityIdFromKeys, snoise } from "@dojoengine/utils";
 import { SetupResult } from "@/dojo/setup";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { ThreeStore } from "@/hooks/store/useThreeStore";
+import { ThreeStore, useThreeStore } from "@/hooks/store/useThreeStore";
 import { LocationManager } from "../helpers/LocationManager";
 import { BuildingType, getNeighborHexes } from "@bibliothecadao/eternum";
 import InstancedModel from "../components/InstancedModel";
@@ -22,6 +22,7 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { GUIManager } from "../helpers/GUIManager";
 import { InteractiveHexManager } from "../components/InteractiveHexManager";
 import { HighlightHexManager } from "../components/HighlightHexManager";
+import useRealmStore from "@/hooks/store/useRealmStore";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -223,7 +224,13 @@ export default class HexceptionScene {
   setup(row: number, col: number) {
     console.log("clickedHex", row, col);
     console.log(this.locationManager.getCol(), this.locationManager.getRow());
+    console.log("store", useRealmStore.getState());
+
+    //console.log("entityId", getEntityIdFromKeys([BigInt(row + FELT_CENTER), BigInt(col + FELT_CENTER)]));
     this.centerColRow = [col + FELT_CENTER, row + FELT_CENTER];
+    // useRealmStore.setState({
+    //   realmEntityId: getEntityIdFromKeys([BigInt(row + FELT_CENTER), BigInt(col + FELT_CENTER)]),
+    // });
     // this.updateHexagonGrid(3, 3);
     this.updateHexceptionGrid(4);
   }
