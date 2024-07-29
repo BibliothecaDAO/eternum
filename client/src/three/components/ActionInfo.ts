@@ -21,7 +21,7 @@ export class ActionInfo {
     this.armyMovementManager = new ArmyMovementManager(this.dojo, entityId);
   }
 
-  private generateTooltipContent(isExplored: boolean, travelLength: number, selectedEntity: number): string {
+  private generateTooltipContent(isExplored: boolean, travelLength: number): string {
     const title = isExplored ? "Travel" : "Explore";
     let content = `<div class="font-bold">${this.createHeadline(title)}</div>`;
 
