@@ -19,6 +19,7 @@ import InstancedBuilding from "../components/InstancedBuilding";
 import { HEX_HORIZONTAL_SPACING, HEX_SIZE } from "../GameRenderer";
 import { CSS2DRenderer, CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { GUIManager } from "../helpers/GUIManager";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -72,6 +73,10 @@ export default class HexceptionScene {
 
   private labelRenderer: CSS2DRenderer | null = null;
 
+  private mainDirectionalLight!: THREE.DirectionalLight;
+  private hemisphereLight!: THREE.HemisphereLight;
+  private lightHelper!: THREE.DirectionalLightHelper;
+
   constructor(
     private state: ThreeStore,
     renderer: THREE.WebGLRenderer,
@@ -101,6 +106,44 @@ export default class HexceptionScene {
     this.pillars.position.y = 0.05;
     this.pillars.count = 0;
     this.scene.add(this.pillars);
+
+    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 1);
+    const hemisphereLightFolder = GUIManager.addFolder("Hemisphere Light Hexception");
+    hemisphereLightFolder.addColor(this.hemisphereLight, "color");
+    hemisphereLightFolder.addColor(this.hemisphereLight, "groundColor");
+    hemisphereLightFolder.add(this.hemisphereLight, "intensity", 0, 3, 0.1);
+    hemisphereLightFolder.close();
+    this.scene.add(this.hemisphereLight);
+
+    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    this.mainDirectionalLight.castShadow = true;
+    this.mainDirectionalLight.shadow.mapSize.width = 2048;
+    this.mainDirectionalLight.shadow.mapSize.height = 2048;
+    this.mainDirectionalLight.shadow.camera.left = -22;
+    this.mainDirectionalLight.shadow.camera.right = 18;
+    this.mainDirectionalLight.shadow.camera.top = 14;
+    this.mainDirectionalLight.shadow.camera.bottom = -12;
+    this.mainDirectionalLight.shadow.camera.far = 38;
+    this.mainDirectionalLight.shadow.camera.near = 8;
+    this.mainDirectionalLight.position.set(0, 2.3, 0.5);
+    this.mainDirectionalLight.target.position.set(4, 4, 3);
+
+    const directionalLightFolder = GUIManager.addFolder("Directional Light Hexception");
+    directionalLightFolder.addColor(this.mainDirectionalLight, "color");
+    directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.position, "y", -20, 20, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.position, "z", -20, 20, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight, "intensity", 0, 3, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
+    directionalLightFolder.close();
+
+    this.scene.add(this.mainDirectionalLight);
+    this.scene.add(this.mainDirectionalLight.target);
+
+    this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
+    // this.scene.add(this.lightHelper);
 
     this.loadBuildingModels();
     this.loadBiomeModels();
@@ -152,14 +195,6 @@ export default class HexceptionScene {
             model.position.set(0, 0, 0);
             model.rotation.y = Math.PI;
 
-            model.scale.set(0.1, 0.1, 0.1);
-
-            model.traverse((child) => {
-              if (child instanceof THREE.Mesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            });
             const tmp = new InstancedModel(model, 900);
             this.biomeModels.set(biome as BiomeType, tmp);
             this.scene.add(tmp.group);
@@ -291,8 +326,12 @@ export default class HexceptionScene {
               if (building) {
                 withBuilding = true;
                 const buildingObj = dummy.clone();
-                const randomRotation = (4 * Math.PI) / 3;
-                buildingObj.rotation.y = randomRotation;
+                const rotation = Math.PI / 3;
+                if (building.category === "Castle") {
+                  buildingObj.rotation.y = rotation * 3;
+                } else {
+                  buildingObj.rotation.y = rotation * 4;
+                }
                 buildingObj.updateMatrix();
                 buildings.push({ ...building, matrix: buildingObj.matrix.clone() });
               }

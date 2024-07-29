@@ -14,8 +14,15 @@ export default class InstancedModel {
         // initial count set max number of instances
         const tmp = new THREE.InstancedMesh(child.geometry, child.material, count);
 
-        tmp.castShadow = true;
-        tmp.receiveShadow = true;
+        if (child.name.includes("big_details") || child.parent?.name.includes("big_details")) {
+          tmp.castShadow = true;
+          tmp.name = "big_details";
+        }
+
+        if (child.name.includes("land") || child.parent?.name.includes("land")) {
+          tmp.receiveShadow = true;
+          tmp.name = "land";
+        }
 
         tmp.userData.isInstanceModel = true;
 
