@@ -23,6 +23,7 @@ import { BattleView } from "../modules/military/battle-view/BattleView";
 import TopLeftContainer from "../containers/TopLeftContainer";
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
 import { ActionInfo } from "../components/worldmap/hexagon/ActionInfo";
+import { ArmyInfoLabel } from "../components/worldmap/armies/ArmyInfoLabel";
 
 export const World = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -50,6 +51,7 @@ export const World = () => {
       </BlankOverlayContainer>
       <HooksComponent />
       <ActionInfo />
+      <ArmyInfoLabel />
       {battleView ? (
         <BattleContainer>
           <BattleView />

@@ -14,13 +14,16 @@ export interface ThreeStore {
   setArmyActions: (armyActions: ArmyActions) => void;
   updateHoveredHex: (hoveredHex: { col: number; row: number; x: number; z: number } | null) => void;
   updateTravelPaths: (travelPaths: Map<string, { path: HexPosition[]; isExplored: boolean }>) => void;
-  updateSelectedEntityId: (selectedEntityId: number | null) => void;
+  updateSelectedEntityId: (id: number | null) => void;
 
   selectedHex: HexPosition;
   setSelectedHex: (hex: HexPosition) => void;
 
-  setSelectedBuilding: (building: BuildingType) => void;
+  hoveredArmyEntityId: number | null;
+  setHoveredArmyEntityId: (id: number | null) => void;
+
   selectedBuilding: BuildingType;
+  setSelectedBuilding: (building: BuildingType) => void;
 }
 
 export const useThreeStore = create<ThreeStore>((set, get) => ({
@@ -36,6 +39,13 @@ export const useThreeStore = create<ThreeStore>((set, get) => ({
     set((state) => ({ armyActions: { ...state.armyActions, selectedEntityId } })),
   selectedHex: { col: 0, row: 0 },
   setSelectedHex: (hex) => set({ selectedHex: hex }),
+
+  hoveredArmyEntityId: null,
+  setHoveredArmyEntityId: (hoveredArmyEntityId) =>
+    set({
+      hoveredArmyEntityId,
+    }),
+
   selectedBuilding: BuildingType.Farm,
   setSelectedBuilding: (building) => set({ selectedBuilding: building }),
 }));

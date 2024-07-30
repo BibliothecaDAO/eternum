@@ -29,16 +29,29 @@ export const BaseThreeTooltip = ({
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const mouseMoveHandler = throttle((e: MouseEvent) => {
+    const setTooltipPosition = (e: MouseEvent) => {
       if (ref.current) {
         ref.current.style.left = `${e.clientX}px`;
         ref.current.style.top = `${e.clientY}px`;
       }
-    }, 10); // Throttling the event handler to execute once every 10ms
-    document.addEventListener("mousemove", mouseMoveHandler);
+    };
+
+    const throttledSetTooltipPosition = throttle(setTooltipPosition, 10);
+
+    const initializeTooltipPosition = () => {
+      const initialMousePosition = {
+        clientX: window.innerWidth / 2,
+        clientY: window.innerHeight / 2,
+      };
+      setTooltipPosition(initialMousePosition as MouseEvent);
+      document.addEventListener("mousemove", throttledSetTooltipPosition);
+    };
+
+    initializeTooltipPosition();
+
     return () => {
-      document.removeEventListener("mousemove", mouseMoveHandler);
-      mouseMoveHandler.cancel(); // Cancel any trailing invocation of the throttled function
+      document.removeEventListener("mousemove", throttledSetTooltipPosition);
+      throttledSetTooltipPosition.cancel();
     };
   }, []);
 

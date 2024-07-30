@@ -164,6 +164,10 @@ export default class WorldmapScene {
     this.highlightHexManager = new HighlightHexManager(this.scene);
   }
 
+  public getCamera() {
+    return this.controls.object as THREE.PerspectiveCamera;
+  }
+
   private loadBiomeModels() {
     const loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();

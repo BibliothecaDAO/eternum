@@ -4,6 +4,7 @@ import InstancedModel from "./InstancedModel";
 import WorldmapScene from "../scenes/Worldmap";
 import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { useThreeStore } from "@/hooks/store/useThreeStore";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -63,6 +64,30 @@ export class ArmyManager {
           reject(error);
         },
       );
+    });
+
+    this.initMouseHoverEvent();
+  }
+
+  private initMouseHoverEvent() {
+    const mouse = new THREE.Vector2();
+    const raycaster = new THREE.Raycaster();
+
+    window.addEventListener("mousemove", (event) => {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, this.worldMapScene.getCamera());
+
+      const intersects = raycaster.intersectObject(this.mesh);
+      if (intersects.length > 0) {
+        const instanceId = intersects[0].instanceId;
+        if (instanceId !== undefined) {
+          const entityId = this.mesh.userData.entityIdMap[instanceId];
+          useThreeStore.getState().setHoveredArmyEntityId(entityId);
+          return;
+        }
+      }
+      useThreeStore.getState().setHoveredArmyEntityId(null);
     });
   }
 
