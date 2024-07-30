@@ -12,10 +12,10 @@ import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { getRealmNameById } from "../../../utils/realms";
 import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
 import { InventoryResources } from "../../resources/InventoryResources";
-import { useThreeStore } from "@/hooks/store/useThreeStore";
+import useUIStore from "@/hooks/store/useUIStore";
 
 export const ArmyInfoLabel = () => {
-  const hoveredArmyEntityId = useThreeStore((state) => state.hoveredArmyEntityId);
+  const hoveredArmyEntityId = useUIStore((state) => state.hoveredArmyEntityId);
   const { getArmy } = getArmyByEntityId();
 
   const army = useMemo(() => {

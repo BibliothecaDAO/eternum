@@ -19,9 +19,6 @@ export enum HexType {
 }
 
 export const useHexPosition = () => {
-  const hexData = useUIStore((state) => state.hexData);
-  const finishedHyperstructures = useLeaderBoardStore((state) => state.finishedHyperstructures);
-
   const {
     setup: {
       components: { Structure, Position, Owner },
@@ -50,44 +47,10 @@ export const useHexPosition = () => {
     return getComponentValue(Structure, structures[0]);
   }, [structures]);
 
-  const hexType: HexType = useMemo(() => {
-    if (!structure) return HexType.EMPTY;
-
-    let category = structure.category.toUpperCase();
-    if (structure.category === HexType.HYPERSTRUCTURE) {
-      category = finishedHyperstructures.some((evt) => {
-        return evt.hyperstructureEntityId == structure.entity_id;
-      })
-        ? category
-        : HexType.UNFINISHEDHYPERSTRUCTURE.toUpperCase();
-      finishedHyperstructures;
-    }
-    return HexType[category as keyof typeof HexType];
-  }, [structure]);
-
   useEffect(() => {
     const owner = getComponentValue(Owner, structures[0]);
     if (owner) {
       setRealmEntityId(owner.entity_id);
     }
   }, [structure]);
-
-  const { neighborHexes, mainHex } = useMemo(() => {
-    const mainHex = hexData?.find((hex) => hex.col === hexPosition.col && hex.row === hexPosition.row);
-
-    const neighborHexes = getNeighborHexes(hexPosition.col, hexPosition.row);
-    return { neighborHexes, mainHex };
-  }, [hexPosition]);
-
-  const neighborHexesInsideView = useMemo(() => {
-    return neighborHexes.map((neighborHex) => {
-      return hexData?.find((hex) => hex.col === neighborHex.col && hex.row === neighborHex.row);
-    });
-  }, [hexData, neighborHexes]);
-
-  return {
-    mainHex,
-    neighborHexesInsideView,
-    hexType,
-  };
 };

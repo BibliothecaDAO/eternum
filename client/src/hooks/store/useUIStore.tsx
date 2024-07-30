@@ -5,11 +5,11 @@ import { Vector3 } from "three";
 import { create } from "zustand";
 import { getRealmUIPosition, getUIPositionFromColRow } from "../../ui/utils/utils";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
-import { createMapStoreSlice, MapStore } from "./_mapStore";
 import { createPopupsSlice, PopupsStore } from "./_popups";
 import { BattleViewInfo } from "./types";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 import { subscribeWithSelector } from "zustand/middleware";
+import { createThreeStoreSlice, ThreeStore } from "./useThreeStore";
 
 interface UIStore {
   theme: string;
@@ -65,8 +65,10 @@ interface UIStore {
   setRightNavigationView: (view: RightView) => void;
 }
 
+export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore;
+
 const useUIStore = create(
-  subscribeWithSelector<UIStore & PopupsStore & MapStore & BuildModeStore>((set, get) => ({
+  subscribeWithSelector<AppStore>((set, get) => ({
     theme: "light",
     setTheme: (theme) => set({ theme }),
     showBlurOverlay: false,
@@ -196,7 +198,7 @@ const useUIStore = create(
     rightNavigationView: RightView.None,
     setRightNavigationView: (view: RightView) => set({ rightNavigationView: view }),
     ...createPopupsSlice(set, get),
-    ...createMapStoreSlice(set),
+    ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
   })),
 );

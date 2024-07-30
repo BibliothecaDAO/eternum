@@ -8,7 +8,6 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { BattleSide } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { Battle } from "./Battle";
-import { useThreeStore } from "@/hooks/store/useThreeStore";
 
 export const BattleView = () => {
   const dojo = useDojo();
@@ -19,7 +18,7 @@ export const BattleView = () => {
   const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const battleView = useUIStore((state) => state.battleView);
-  const selectedHex = useThreeStore((state) => state.selectedHex);
+  const selectedHex = useUIStore((state) => state.selectedHex);
 
   const battlePosition = { x: selectedHex.col, y: selectedHex.row };
 

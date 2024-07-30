@@ -8,10 +8,10 @@ import { Position } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { Battles } from "./Battles";
 import { Entities } from "./Entities";
-import { useThreeStore } from "@/hooks/store/useThreeStore";
+import useUIStore from "@/hooks/store/useUIStore";
 
 export const EntityDetails = () => {
-  const selectedHex = useThreeStore((state) => state.selectedHex);
+  const selectedHex = useUIStore((state) => state.selectedHex);
   const [selectedTab, setSelectedTab] = useState(0);
 
   const hexPosition = useMemo(() => {

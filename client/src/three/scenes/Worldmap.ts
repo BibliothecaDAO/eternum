@@ -6,7 +6,6 @@ import { Entity } from "@dojoengine/recs";
 import { ContextMenuManager } from "../components/ContextMenuManager";
 
 import { SetupResult } from "@/dojo/setup";
-import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { highlightHexMaterial } from "@/shaders/highlightHexMaterial";
 import { borderHexMaterial } from "@/shaders/borderHexMaterial";
 import { FELT_CENTER } from "@/ui/config";
@@ -83,7 +82,6 @@ export default class WorldmapScene {
     private raycaster: Raycaster,
     private controls: MapControls,
     private mouse: THREE.Vector2,
-    private state: ThreeStore,
   ) {
     this.scene = new THREE.Scene();
 
@@ -98,7 +96,6 @@ export default class WorldmapScene {
       mouse,
       this.loadedChunks,
       this,
-      state,
     );
 
     this.scene.background = new THREE.Color(0x8790a1);

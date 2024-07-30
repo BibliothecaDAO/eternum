@@ -4,8 +4,8 @@ import InstancedModel from "./InstancedModel";
 import WorldmapScene from "../scenes/Worldmap";
 import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { useThreeStore } from "@/hooks/store/useThreeStore";
 import { throttle } from "lodash";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -24,8 +24,10 @@ export class ArmyManager {
   private movingArmies: Map<number, { startPos: THREE.Vector3; endPos: THREE.Vector3; progress: number }> = new Map();
   private labelManager: LabelManager;
   private labels: Map<number, THREE.Points> = new Map<number, THREE.Points>();
+  private state: AppStore;
 
   constructor(private worldMapScene: WorldmapScene, modelPath: string, maxInstances: number) {
+    this.state = useUIStore.getState();
     this.dummy = new THREE.Mesh();
     this.mesh = new THREE.InstancedMesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial(), 0);
     this.scale = new THREE.Vector3(0.005, 0.005, 0.005);
@@ -84,11 +86,11 @@ export class ArmyManager {
         const instanceId = intersects[0].instanceId;
         if (instanceId !== undefined) {
           const entityId = this.mesh.userData.entityIdMap[instanceId];
-          useThreeStore.getState().setHoveredArmyEntityId(entityId);
+          this.state.setHoveredArmyEntityId(entityId);
           return;
         }
       }
-      useThreeStore.getState().setHoveredArmyEntityId(null);
+      this.state.setHoveredArmyEntityId(null);
     }, 100); // Adjust the throttle delay (in milliseconds) as needed
 
     window.addEventListener("mousemove", throttledMouseMove);

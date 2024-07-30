@@ -10,8 +10,6 @@ import { inject } from "@vercel/analytics";
 import { Buffer } from "buffer";
 import GameRenderer from "./three/GameRenderer";
 
-import { useThreeStore } from "./hooks/store/useThreeStore";
-
 declare global {
   interface Window {
     Buffer: typeof Buffer;
@@ -29,7 +27,7 @@ async function init() {
 
   const setupResult = await setup(dojoConfig);
 
-  const graphic = new GameRenderer(setupResult, useThreeStore.getState());
+  const graphic = new GameRenderer(setupResult);
 
   graphic.initScene();
   graphic.initStats();

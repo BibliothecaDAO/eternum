@@ -22,7 +22,6 @@ import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
-import { useThreeStore } from "@/hooks/store/useThreeStore";
 import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { QuestId } from "@/ui/components/quest/questDetails";
 import { motion } from "framer-motion";
@@ -55,7 +54,7 @@ export const TopMiddleNavigation = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const threeStore = useThreeStore((state) => state.selectedHex);
+  const selectedHex = useUIStore((state) => state.selectedHex);
 
   // realms always first
   const structures = useMemo(() => {
@@ -107,7 +106,7 @@ export const TopMiddleNavigation = () => {
     <div className=" bg-black/60 backdrop-blur-2xl bg-hex-bg rounded-b-2xl border border-gradient">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
         <div>
-          {threeStore.col},{threeStore.row}
+          {selectedHex.col},{selectedHex.row}
         </div>
         <div className="self-center px-3 flex space-x-2 ">
           <TickProgress />

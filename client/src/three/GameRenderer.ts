@@ -1,6 +1,5 @@
 import { TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 import { SetupResult } from "@/dojo/setup";
-import { ThreeStore, useThreeStore } from "@/hooks/store/useThreeStore";
 import gsap from "gsap";
 import GUI from "lil-gui";
 import _ from "lodash";
@@ -16,6 +15,7 @@ import HexceptionScene from "./scenes/Hexception";
 import WorldmapScene from "./scenes/Worldmap";
 import { GUIManager } from "./helpers/GUIManager";
 import { CSS2DRenderer } from "three-stdlib";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 
 export const HEX_SIZE = 1;
 export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
@@ -40,7 +40,7 @@ export default class GameRenderer {
   };
 
   // Store
-  private state: ThreeStore;
+  private state: AppStore;
   private unsubscribe: () => void;
 
   // Stats
@@ -72,7 +72,7 @@ export default class GameRenderer {
   private mouseHandler!: MouseHandler;
   private sceneManager!: SceneManager;
 
-  constructor(dojoContext: SetupResult, initialState: ThreeStore) {
+  constructor(dojoContext: SetupResult) {
     this.renderer = new THREE.WebGLRenderer({
       powerPreference: "high-performance",
       antialias: true,
@@ -88,8 +88,8 @@ export default class GameRenderer {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
-    this.state = initialState;
-    this.unsubscribe = useThreeStore.subscribe((state) => {
+    this.state = useUIStore.getState();
+    this.unsubscribe = useUIStore.subscribe((state) => {
       this.state = state;
     });
 
@@ -164,17 +164,10 @@ export default class GameRenderer {
     );
 
     // Change camera settings for 75-degree view
-    this.hexceptionScene = new HexceptionScene(
-      this.state,
-      this.renderer,
-      this.controls,
-      this.dojo,
-      this.mouse,
-      this.raycaster,
-    );
+    this.hexceptionScene = new HexceptionScene(this.renderer, this.controls, this.dojo, this.mouse, this.raycaster);
 
     // Add grid
-    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.state);
+    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse);
     this.worldmapScene.updateVisibleChunks();
 
     this.worldmapScene.createGroundMesh();
@@ -196,7 +189,6 @@ export default class GameRenderer {
 
     this.mouseHandler = new MouseHandler(
       this.dojo,
-      this.state,
       this.raycaster,
       this.mouse,
       this.camera,

@@ -1,9 +1,9 @@
 import * as THREE from "three";
 import { Raycaster } from "three";
 import HexagonMap from "../scenes/Worldmap";
-import { ThreeStore } from "@/hooks/store/useThreeStore";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { HEX_SIZE } from "../GameRenderer";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 
 export class ContextMenuManager {
   private contextMenu: HTMLElement | null = null;
@@ -17,6 +17,7 @@ export class ContextMenuManager {
   private pulseTime: number = 0;
 
   private hoveredHexagon: { instancedMesh: THREE.InstancedMesh; instanceId: number } | null = null;
+  private state: AppStore;
 
   constructor(
     private scene: THREE.Scene,
@@ -25,10 +26,10 @@ export class ContextMenuManager {
     private mouse: THREE.Vector2,
     private loadedChunks: Map<string, THREE.Group>,
     private hexGrid: HexagonMap,
-    private state: ThreeStore,
   ) {
     this.createContextMenu();
     this.addEventListeners();
+    this.state = useUIStore.getState();
   }
 
   private createContextMenu() {

@@ -3,7 +3,6 @@ import * as THREE from "three";
 import { getEntityIdFromKeys, snoise } from "@dojoengine/utils";
 import { SetupResult } from "@/dojo/setup";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { ThreeStore, useThreeStore } from "@/hooks/store/useThreeStore";
 import { LocationManager } from "../helpers/LocationManager";
 import { BuildingType, ResourcesIds, StructureType, getNeighborHexes } from "@bibliothecadao/eternum";
 import InstancedModel from "../components/InstancedModel";
@@ -84,7 +83,6 @@ export default class HexceptionScene {
   private previewBuilding: { type: BuildingType | StructureType; resource?: ResourcesIds } | null = null;
 
   constructor(
-    private state: ThreeStore,
     renderer: THREE.WebGLRenderer,
     controls: MapControls,
     dojoContext: SetupResult,

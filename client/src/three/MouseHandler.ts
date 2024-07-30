@@ -1,4 +1,3 @@
-import { ThreeStore, useThreeStore } from "@/hooks/store/useThreeStore";
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 import WorldmapScene from "./scenes/Worldmap";
 import * as THREE from "three";
@@ -7,7 +6,7 @@ import { SetupResult } from "@/dojo/setup";
 import { LocationManager } from "./helpers/LocationManager";
 import { throttle } from "lodash";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { FELT_CENTER } from "@/ui/config";
 
@@ -15,10 +14,10 @@ export class MouseHandler {
   private worldmapScene?: WorldmapScene;
   private throttledHandleHexHover: (hexCoords: { row: number; col: number }) => void;
   public selectedEntityId: number | null = null;
+  private state: AppStore;
 
   constructor(
     private dojo: SetupResult,
-    private state: ThreeStore,
     private raycaster: THREE.Raycaster,
     private mouse: THREE.Vector2,
     private camera: THREE.Camera,
@@ -27,6 +26,7 @@ export class MouseHandler {
     private locationManager: LocationManager,
   ) {
     this.throttledHandleHexHover = throttle(this.handleHexHover.bind(this), 100);
+    this.state = useUIStore.getState();
   }
 
   initScene(worldmapScene: WorldmapScene) {
@@ -82,8 +82,8 @@ export class MouseHandler {
     }
 
     if (hoveredHex && !this.travelPaths) {
-      useThreeStore.getState().setSelectedHex({ col: hoveredHex.col + FELT_CENTER, row: hoveredHex.row + FELT_CENTER });
-      useUIStore.getState().setLeftNavigationView(View.EntityView);
+      this.state.setSelectedHex({ col: hoveredHex.col + FELT_CENTER, row: hoveredHex.row + FELT_CENTER });
+      this.state.setLeftNavigationView(View.EntityView);
     }
   }
 
