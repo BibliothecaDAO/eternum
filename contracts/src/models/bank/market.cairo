@@ -48,19 +48,85 @@ struct Market {
 
 #[generate_trait]
 impl MarketImpl of MarketTrait {
-    fn buy(self: @Market, quantity: u128) -> u128 {
-        assert(quantity < *self.resource_amount, 'not enough liquidity');
-        let (quantity, available, cash) = normalize(quantity, self);
-        let k = cash * available;
-        let cost = (k / (available - quantity)) - cash;
-        cost
+    fn get_input_price(
+        fee_rate_num: u128,
+        fee_rate_denom: u128,
+        input_amount: u128,
+        input_reserve: u128,
+        output_reserve: u128
+    ) -> u128 {
+        // Ensure reserves are not zero
+        assert(input_reserve > 0 && output_reserve > 0, 'Reserves must be > zero');
+
+        // Apply the fee to the input amount
+        let input_amount_after_fee = (input_amount * (fee_rate_denom - fee_rate_num))
+            / fee_rate_denom;
+
+        // Calculate the output amount based on the constant product formula
+        // (x + Δx) * (y - Δy) = k, where k = x * y
+        // Solving for Δy:
+        // Δy = (y * Δx) / (x + Δx)
+        let numerator = input_amount_after_fee * output_reserve;
+        let denominator = input_reserve + input_amount_after_fee;
+
+        // Calculate and return the output amount
+        numerator / denominator
     }
 
-    fn sell(self: @Market, quantity: u128) -> u128 {
-        let (quantity, available, cash) = normalize(quantity, self);
-        let k = cash * available;
-        let payout = cash - (k / (available + quantity));
-        payout
+    // Here the user gets the requested output but pays more in price to 
+    // account for lp fees. i.e fees are paid in input token
+    fn get_output_price(
+        fee_rate_num: u128,
+        fee_rate_denom: u128,
+        output_amount: u128,
+        input_reserve: u128,
+        output_reserve: u128
+    ) -> u128 {
+        // Ensure reserves are not zero and output amount is valid
+        assert(input_reserve > 0 && output_reserve > 0, 'Reserves must be > zero');
+        assert!(
+            output_amount < output_reserve,
+            "Output amount exceeds reserve, amount: {}, reserve: {}",
+            output_amount,
+            output_reserve
+        );
+
+        // Calculate input amount based on the constant product formula with fee
+        // (x + Δx) * (y - Δy) = k, where k = x * y
+        // Solving for Δx and including the fee:
+        // Δx = (x * Δy) / ((y - Δy) * (1 - fee))
+        let numerator = input_reserve * output_amount * fee_rate_denom;
+        let denominator = (output_reserve - output_amount) * (fee_rate_denom - fee_rate_num);
+
+        // Add 1 to round up the result, ensuring sufficient input is provided
+        (numerator / denominator) + 1
+    }
+
+
+    fn buy(
+        self: @Market, lp_fee_num: u128, lp_fee_denom: u128, desired_resource_amount: u128
+    ) -> u128 {
+        let lords_cost = MarketImpl::get_output_price(
+            lp_fee_num,
+            lp_fee_denom,
+            desired_resource_amount,
+            *self.lords_amount,
+            *self.resource_amount
+        );
+        lords_cost
+    }
+
+    fn sell(
+        self: @Market, lp_fee_num: u128, lp_fee_denom: u128, sell_resource_amount: u128
+    ) -> u128 {
+        let lords_received = MarketImpl::get_input_price(
+            lp_fee_num,
+            lp_fee_denom,
+            sell_resource_amount,
+            *self.resource_amount,
+            *self.lords_amount
+        );
+        lords_received
     }
 
     // Get normalized reserve cash amount and item quantity
@@ -69,23 +135,10 @@ impl MarketImpl of MarketTrait {
         (*self.lords_amount, reserve_quantity)
     }
 
-    // Get the liquidity of the market
-    // Use cubit fixed point math library to compute the square root of the product of the reserves
-    fn liquidity(self: @Market) -> Fixed {
-        // Get normalized reserve cash amount and item quantity
-        let (reserve_amount, reserve_quantity) = self.get_reserves();
-
-        // Convert reserve amount to fixed point
-        let reserve_amount = FixedTrait::new_unscaled(reserve_amount, false);
-        let reserve_quantity = FixedTrait::new_unscaled(reserve_quantity, false);
-
-        // L = sqrt(X * Y)
-        (reserve_amount * reserve_quantity).sqrt()
-    }
 
     // Check if the market has liquidity
     fn has_liquidity(self: @Market) -> bool {
-        *self.lords_amount > 0 || *self.resource_amount > 0
+        *self.total_shares > FixedTrait::ZERO()
     }
 
     // Given some amount of cash, return the equivalent/optimal quantity of items
@@ -97,19 +150,8 @@ impl MarketImpl of MarketTrait {
         // Get normalized reserve cash amount and item quantity
         let (reserve_amount, reserve_quantity) = self.get_reserves();
 
-        // Convert amount to fixed point
-        let amount = FixedTrait::new_unscaled(amount, false);
-
-        // Convert reserve amount and quantity to fixed point
-        let reserve_amount = FixedTrait::new_unscaled(reserve_amount, false);
-        let reserve_quantity = FixedTrait::new_unscaled(reserve_quantity, false);
-
         // dy = Y * dx / X
-        let quantity_optimal = (reserve_quantity * amount) / reserve_amount;
-
-        // Convert from fixed point to u128
-        let res: u128 = quantity_optimal.try_into().unwrap();
-        res
+        (reserve_quantity * amount) / reserve_amount
     }
 
     // Given some quantity of items, return the equivalent/optimal amount of cash
@@ -121,21 +163,8 @@ impl MarketImpl of MarketTrait {
         // Get normalized reserve cash amount and item quantity
         let (reserve_amount, reserve_quantity) = self.get_reserves();
 
-        // Convert reserve amount and quantity to fixed point
-        let reserve_amount = FixedTrait::new_unscaled(reserve_amount, false);
-        let reserve_quantity = FixedTrait::new_unscaled(reserve_quantity, false);
-
-        // Normalize quantity
-        let quantity: u128 = quantity.into();
-
-        // Convert quantity to fixed point
-        let quantity = FixedTrait::new_unscaled(quantity, false);
-
         // dx = X * dy / Y
-        let amount_optimal = (reserve_amount * quantity) / reserve_quantity;
-
-        // Convert from fixed point to u128
-        amount_optimal.try_into().unwrap()
+        (reserve_amount * quantity) / reserve_quantity
     }
 
     // Inner function to add liquidity to the market, computes the optimal amount and quantity
@@ -156,7 +185,6 @@ impl MarketImpl of MarketTrait {
             assert(quantity > 0, 'insufficient quantity');
             (amount, quantity)
         } else {
-            assert(1 != 0, 'not implemented');
             // Given the amount, get optimal quantity to add to the market
             let quantity_optimal = self.quote_quantity(amount);
             if quantity_optimal <= quantity {
@@ -194,9 +222,7 @@ impl MarketImpl of MarketTrait {
     fn mint_shares(self: @Market, amount: u128, quantity: u128) -> Fixed {
         // If there is no liquidity, then mint total shares
         if !self.has_liquidity() {
-            let quantity: u128 = quantity.into();
-            (FixedTrait::new_unscaled(amount, false) * FixedTrait::new_unscaled(quantity, false))
-                .sqrt()
+            FixedTrait::new_unscaled(amount, false)
         } else {
             // Convert amount to fixed point
             let amount = FixedTrait::new_unscaled(amount, false);
@@ -207,12 +233,9 @@ impl MarketImpl of MarketTrait {
             // Convert reserve amount to fixed point
             let reserve_amount = FixedTrait::new_unscaled(reserve_amount, false);
 
-            // Get total liquidity
-            let liquidity = self.liquidity();
-
             // Compute the amount of shares to mint
             // S = dx * L/X = dy * L/Y
-            (amount * liquidity) / reserve_amount
+            (amount * *self.total_shares) / reserve_amount
         }
     }
 
@@ -268,7 +291,43 @@ mod tests {
 
     const TOLERANCE: u128 = 18446744073709550; // 0.001
 
-    // Helpers
+    const LP_FEE_NUM: u128 = 3;
+    const LP_FEE_DENOM: u128 = 1000; // 3/1000  = 0.3% lp fee
+
+
+    fn assert_constant_product_check(
+        initial_reserve_x: u128,
+        initial_reserve_y: u128,
+        final_reserve_x: u128,
+        final_reserve_y: u128,
+        fee_rate_num: u128,
+        fee_rate_denom: u128
+    ) {
+        let initial_product = initial_reserve_x * initial_reserve_y;
+        let final_product = final_reserve_x * final_reserve_y;
+
+        // The final product should be greater than or equal to the initial product
+        if final_product < initial_product {
+            panic!("failed constant product {} {}", final_product, initial_product);
+        }
+
+        // Calculate the maximum allowed increase due to fees
+        let max_input = if final_reserve_x > initial_reserve_x {
+            final_reserve_x - initial_reserve_x
+        } else {
+            final_reserve_y - initial_reserve_y
+        };
+
+        let max_fee = (max_input * fee_rate_num) / fee_rate_denom;
+        let max_product_increase = initial_product
+            + (max_fee * initial_product / initial_reserve_x);
+
+        // acceptable error margin (0.01% of the initial product)
+        let error_margin = initial_product / 10_000;
+
+        // Check if the final product is within the allowed range
+        assert_le!(final_product, max_product_increase + error_margin);
+    }
 
     fn assert_approx_equal(expected: Fixed, actual: Fixed, tolerance: u128) {
         let left_bound = expected - FixedTrait::new(tolerance, false);
@@ -277,7 +336,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected: ('not enough liquidity',))]
+    #[should_panic(expected: ("Output amount exceeds reserve, amount: 10, reserve: 1",))]
     fn test_market_not_enough_quantity() {
         let market = Market {
             bank_entity_id: 1,
@@ -286,33 +345,105 @@ mod tests {
             resource_amount: 1,
             total_shares: FixedTrait::new_unscaled(1, false),
         }; // pool 1:1
-        let _cost = market.buy(10);
+        let _cost = market.buy(LP_FEE_NUM, LP_FEE_DENOM, 10);
     }
 
     #[test]
-    fn test_market_buy() {
+    fn test_market_buy_no_fee() {
         let market = Market {
             bank_entity_id: 1,
             resource_type: 1,
-            lords_amount: 1,
-            resource_amount: 10,
+            lords_amount: 170_000,
+            resource_amount: 150_000,
             total_shares: FixedTrait::new_unscaled(1, false),
-        }; // pool 1:10
-        let cost = market.buy(5);
-        assert(cost == 1, 'wrong cost');
+        }; // pool 17: 15
+
+        let desired_resource_amount = 14_890;
+        let lords_cost = market.buy(0, 1, desired_resource_amount);
+        assert_eq!(lords_cost, 18_736);
+
+        assert_constant_product_check(
+            market.lords_amount,
+            market.resource_amount,
+            market.lords_amount + lords_cost,
+            market.resource_amount - desired_resource_amount,
+            0,
+            1
+        )
     }
 
     #[test]
-    fn test_market_sell() {
+    fn test_market_buy_with_lp_fee() {
         let market = Market {
             bank_entity_id: 1,
             resource_type: 1,
-            lords_amount: 10000,
-            resource_amount: 1000,
+            lords_amount: 170_000,
+            resource_amount: 150_000,
             total_shares: FixedTrait::new_unscaled(1, false),
-        }; // pool 10:1
-        let payout = market.sell(5);
-        assert(payout == 50, 'wrong payout');
+        }; // pool 17: 15
+
+        // 10% lp fee
+        let desired_resource_amount = 14_890;
+        let lords_cost = market.buy(LP_FEE_NUM, LP_FEE_DENOM, desired_resource_amount);
+        assert_eq!(lords_cost, 18_792);
+
+        assert_constant_product_check(
+            market.lords_amount,
+            market.resource_amount,
+            market.lords_amount + lords_cost,
+            market.resource_amount - desired_resource_amount,
+            LP_FEE_NUM,
+            LP_FEE_DENOM
+        )
+    }
+
+
+    #[test]
+    fn test_market_sell_no_fee() {
+        let market = Market {
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 170_000,
+            resource_amount: 150_000,
+            total_shares: FixedTrait::new_unscaled(1, false),
+        }; // pool 17: 15
+
+        let sell_resource_amount = 17_500;
+        let lords_payout = market.sell(0, 1, sell_resource_amount);
+        assert_eq!(lords_payout, 17_761);
+
+        assert_constant_product_check(
+            market.lords_amount,
+            market.resource_amount,
+            market.lords_amount - lords_payout,
+            market.resource_amount + sell_resource_amount,
+            0,
+            1
+        )
+    }
+
+    #[test]
+    fn test_market_sell_with_fee() {
+        let market = Market {
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: 170_000,
+            resource_amount: 150_000,
+            total_shares: FixedTrait::new_unscaled(1, false),
+        }; // pool 17: 15
+
+        let sell_resource_amount = 17_500;
+        let lords_payout = market.sell(LP_FEE_NUM, LP_FEE_DENOM, sell_resource_amount);
+        assert_eq!(lords_payout, 17_713);
+
+        assert_constant_product_check(
+            market.lords_amount,
+            market.resource_amount,
+            market.lords_amount - lords_payout,
+            market.resource_amount + sell_resource_amount,
+            LP_FEE_NUM,
+            LP_FEE_DENOM
+        )
     }
 
     #[test]
@@ -352,7 +483,7 @@ mod tests {
             resource_amount: 10,
             total_shares: FixedTrait::new_unscaled(1, false),
         }; // pool 1:10
-        let initial_liquidity = market.liquidity();
+        let initial_liquidity = market.total_shares;
 
         // Add liquidity with the same ratio
         let (amount, quantity) = (2, 20); // pool 1:10
@@ -363,12 +494,7 @@ mod tests {
         assert(quantity_add == quantity, 'wrong item quantity');
 
         // Get expected amount and convert to fixed point
-        let expected_amount = FixedTrait::new_unscaled(1 + amount, false);
-        let expected_quantity: u128 = (10 + quantity).into();
-        let expected_quantity = FixedTrait::new_unscaled(expected_quantity, false);
-
-        // Compute the expected liquidity shares
-        let expected_liquidity = FixedTrait::sqrt(expected_amount * expected_quantity);
+        let expected_liquidity = FixedTrait::new_unscaled(1 + amount, false);
         let final_liquidity = initial_liquidity + liquidity_add;
         assert_approx_equal(expected_liquidity, final_liquidity, TOLERANCE);
     }
@@ -383,7 +509,7 @@ mod tests {
             resource_amount: 10,
             total_shares: FixedTrait::new(58333726685869899776, false),
         }; // pool 1:10
-        let initial_liquidity = market.liquidity();
+        let initial_liquidity = market.total_shares;
 
         // Add liquidity without the same ratio
         let (amount, quantity) = (2, 10); // pool 1:5
@@ -410,7 +536,7 @@ mod tests {
             resource_amount: 20,
             total_shares: FixedTrait::new(116667453371739799552, false),
         }; // pool 1:10
-        let initial_liquidity = market.liquidity();
+        let initial_liquidity = market.total_shares;
 
         // Remove half of the liquidity
         let two = FixedTrait::new_unscaled(2, false);
@@ -464,7 +590,7 @@ mod tests {
             resource_amount: 20,
             total_shares: FixedTrait::new_unscaled(2, false),
         }; // pool 1:10
-        let initial_liquidity = market.liquidity();
+        let initial_liquidity = market.total_shares;
 
         // Remove twice of the liquidity
         let two = FixedTrait::new_unscaled(2, false);

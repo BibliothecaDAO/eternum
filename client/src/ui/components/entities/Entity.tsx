@@ -1,16 +1,18 @@
-import React from "react";
-import { ReactComponent as Pen } from "@/assets/icons/common/pen.svg";
-import clsx from "clsx";
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
+import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { useResources, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
-import { TravelEntityPopup } from "./TravelEntityPopup";
-import { useEntities } from "@/hooks/helpers/useEntities";
-import { EntityType, EntityState, determineEntityState } from "@bibliothecadao/eternum";
+import { EntityState, EntityType, determineEntityState } from "@bibliothecadao/eternum";
+import clsx from "clsx";
+import React, { useMemo, useState } from "react";
 import { DepositResources } from "../resources/DepositResources";
-import { useState } from "react";
+import { TravelEntityPopup } from "./TravelEntityPopup";
 
 const entityIcon: Record<EntityType, string> = {
   [EntityType.DONKEY]: "🫏",
@@ -31,17 +33,38 @@ type EntityProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Entity = ({ entityId, ...props }: EntityProps) => {
+  const dojo = useDojo();
+
   const [showTravel, setShowTravel] = useState(false);
-  const { getEntityInfo } = useEntities();
-  const { getResourcesFromBalance } = useResources();
+  const { getEntityInfo } = getEntitiesUtils();
+  const { getResourcesFromBalance } = getResourcesUtils();
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
   const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
+  const { getArmy } = getArmyByEntityId();
 
   const entity = getEntityInfo(entityId);
   const entityResources = getResourcesFromBalance(entityId);
   const hasResources = entityResources.length > 0;
-  const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
+  const entityState = determineEntityState(
+    nextBlockTimestamp,
+    entity.blocked,
+    Number(entity.arrivalTime),
+    hasResources,
+  );
   const depositEntityId = getOwnedEntityOnPosition(entityId);
+
+  const structureAtPosition = getStructureByEntityId(depositEntityId || 0n);
+
+  const battleInProgress = useMemo(() => {
+    if (!structureAtPosition || !structureAtPosition.protector || structureAtPosition.protector.battle_id === 0n) {
+      return false;
+    }
+    const currentTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
+    const battleManager = new BattleManager(structureAtPosition.protector.battle_id, dojo);
+    return battleManager.isBattleOngoing(currentTimestamp!);
+  }, [entity?.position?.x, entity?.position?.y]);
+
+  const army = useMemo(() => getArmy(entityId), [entityId]);
 
   if (entityState === EntityState.NotApplicable) return null;
 
@@ -59,7 +82,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
       case EntityState.Traveling:
         return entity.arrivalTime && nextBlockTimestamp ? (
           <div className="flex ml-auto -mt-2 italic self-center">
-            {formatSecondsLeftInDaysHours(entity.arrivalTime - nextBlockTimestamp)}
+            {formatSecondsLeftInDaysHours(Number(entity.arrivalTime) - nextBlockTimestamp)}
           </div>
         ) : null;
       default:
@@ -85,6 +108,8 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
     );
   };
 
+  const name = entity.entityType === EntityType.TROOP ? army.name : entityName[entity.entityType];
+
   const bgColour = entityState === EntityState.Traveling ? "bg-gold/10" : "bg-green/10 animate-pulse";
 
   return (
@@ -97,17 +122,20 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
         <div className="w-full flex justify-between">
           <div className="flex gap-3 font-bold">
             <span> {entityIcon[entity.entityType]}</span>
-            <span>{entityName[entity.entityType]}</span>
+            <span>{name}</span>
           </div>
 
-          <div className="flex items-center gap-1 self-center">
-            {renderEntityStatus()}
-            {/* <span>{entityState === EntityState.Traveling ? "Traveling" : "Resting"}</span> */}
-          </div>
+          <div className="flex items-center gap-1 self-center">{renderEntityStatus()}</div>
         </div>
       </div>
       <div className="flex items-center gap-2 flex-wrap my-2">{renderResources()}</div>
-      {entityState !== EntityState.Traveling && <DepositResources entityId={entityId} resources={entityResources} />}
+      {entityState !== EntityState.Traveling && (
+        <DepositResources
+          entityId={entityId}
+          battleInProgress={battleInProgress}
+          armyInBattle={Boolean(army.battle_id)}
+        />
+      )}
     </div>
   );
 };

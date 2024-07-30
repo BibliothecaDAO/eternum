@@ -19,7 +19,8 @@ use eternum::systems::leveling::contracts::{
 use eternum::systems::realm::contracts::{IRealmSystemsDispatcher};
 
 use eternum::utils::testing::{
-    spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos, deploy_realm_systems
+    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems},
+    general::{spawn_realm, get_default_realm_pos},
 };
 
 use starknet::contract_address_const;

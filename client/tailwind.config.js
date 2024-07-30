@@ -45,6 +45,7 @@ export default {
       }),
       backgroundImage: {
         map: "url(/map.svg)",
+        "hex-bg": "url(/hex-bg.png)",
         "battle-one": "url(/test-bg.png)",
         "old-map": "url(/textures/paper/worldmap-bg.png)",
       },
@@ -242,6 +243,18 @@ export default {
           outline: "2px solid transparent",
           outlineOffset: "2px",
           borderImage: "linear-gradient(to right, transparent, #F3C99F, transparent) 1",
+        },
+        ".no-scrollbar": {
+          /* IE and Edge */
+          "-ms-overflow-style": "none",
+
+          /* Firefox */
+          "scrollbar-width": "none",
+
+          /* Safari and Chrome */
+          "&::-webkit-scrollbar": {
+            display: "none",
+          },
         },
       };
       addUtilities(newUtilities, ["responsive", "hover"]);

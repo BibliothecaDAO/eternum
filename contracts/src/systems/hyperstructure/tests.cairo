@@ -24,8 +24,11 @@ use eternum::systems::hyperstructure::contracts::{
 };
 
 use eternum::utils::testing::{
-    spawn_eternum, deploy_system, spawn_realm, get_default_realm_pos, spawn_hyperstructure,
-    get_default_hyperstructure_coord, deploy_realm_systems, deploy_hyperstructure_systems
+    world::spawn_eternum,
+    systems::{deploy_system, deploy_realm_systems, deploy_hyperstructure_systems},
+    general::{
+        spawn_realm, get_default_realm_pos, spawn_hyperstructure, get_default_hyperstructure_coord
+    }
 };
 
 use starknet::contract_address_const;
@@ -140,7 +143,7 @@ fn test_create_hyperstructure() {
 #[available_gas(3000000000000)]
 #[should_panic(
     expected: (
-        "not enough resources, Resource (entity id: 1, resource type: EARTHEN SHARD, balance: 0). deduction: 1000000",
+        "not enough resources, Resource (entity id: 2, resource type: EARTHEN SHARD, balance: 0). deduction: 1000000",
         'ENTRYPOINT_FAILED'
     )
 )]

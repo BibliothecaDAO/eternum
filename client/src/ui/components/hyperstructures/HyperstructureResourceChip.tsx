@@ -1,37 +1,43 @@
 import { findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
 
-import { ResourceIcon } from "../../elements/ResourceIcon";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { useEffect, useState } from "react";
+import { ProgressWithPercentage } from "@/hooks/helpers/useHyperstructures";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import useUIStore from "@/hooks/store/useUIStore";
 import { NumberInput } from "@/ui/elements/NumberInput";
-import useRealmStore from "@/hooks/store/useRealmStore";
-import { ProgressWithPercentage } from "@/hooks/helpers/useHyperstructures";
-import { currencyIntlFormat } from "@/ui/utils/utils";
+import { currencyIntlFormat, divideByPrecision } from "@/ui/utils/utils";
+import { useEffect, useState } from "react";
+import { ResourceIcon } from "../../elements/ResourceIcon";
 
 type HyperstructureResourceChipProps = {
+  realmEntityId: bigint;
   resourceId: number;
   progress: ProgressWithPercentage;
   contributions: Record<number, number>;
   setContributions: (val: Record<number, number>) => void;
+  resetContributions: boolean;
 };
 
 export const HyperstructureResourceChip = ({
+  realmEntityId,
   resourceId,
   contributions,
   setContributions,
   progress,
+  resetContributions,
 }: HyperstructureResourceChipProps) => {
   const [inputValue, setInputValue] = useState<number>(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const { realmEntityId } = useRealmStore();
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance, getResourceProductionInfo } = getResourceBalance();
+  const balance = divideByPrecision(getBalance(realmEntityId, resourceId).balance);
+  const production = getResourceProductionInfo(realmEntityId, resourceId);
 
-  const maxContributableAmount = Math.min(
-    progress.costNeeded! - progress.amount,
-    getBalance(realmEntityId, resourceId).balance,
-  );
+  const safetyMargin = production !== undefined && production?.consumption_rate !== 0n ? 0.95 : 1;
+
+  let maxContributableAmount = Math.min(progress.costNeeded! - progress.amount, balance);
+  maxContributableAmount *= progress.costNeeded - progress.amount > balance ? safetyMargin : 1;
+  maxContributableAmount = Math.floor(maxContributableAmount);
+
   useEffect(() => {
     let contributionsCopy = Object.assign({}, contributions);
     if (inputValue === 0 || isNaN(inputValue)) {
@@ -42,10 +48,16 @@ export const HyperstructureResourceChip = ({
     setContributions(contributionsCopy);
   }, [inputValue]);
 
+  useEffect(() => {
+    if (resetContributions) {
+      setInputValue(0);
+    }
+  }, [resetContributions]);
+
   return (
-    <div className="flex mt-1">
+    <div className="flex mt-1 grid grid-cols-8 gap-2">
       <div
-        className={`flex relative items-center text-xs px-2 p-1  w-[80%]`}
+        className={`flex relative items-center text-xs px-2 p-1 col-span-4`}
         style={{
           backgroundImage:
             progress.percentage > 0
@@ -59,8 +71,8 @@ export const HyperstructureResourceChip = ({
             position: "top",
             content: (
               <>
-                {findResourceById(getIconResourceId(resourceId, false))?.trait as string} (
-                {getBalance(realmEntityId, resourceId).balance})
+                {findResourceById(getIconResourceId(resourceId, false))?.trait as string} ({currencyIntlFormat(balance)}
+                )
               </>
             ),
           });
@@ -84,8 +96,13 @@ export const HyperstructureResourceChip = ({
         </div>
       </div>
 
-      <NumberInput value={inputValue} className=" w-[20%]" onChange={setInputValue} max={maxContributableAmount} />
-      <div className="ml-2 pt-2" onClick={() => setInputValue(maxContributableAmount)}>
+      <NumberInput
+        value={inputValue}
+        className="w-full col-span-3"
+        onChange={setInputValue}
+        max={maxContributableAmount}
+      />
+      <div className="ml-2 flex items-center" onClick={() => setInputValue(maxContributableAmount)}>
         MAX
       </div>
     </div>

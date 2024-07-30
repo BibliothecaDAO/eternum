@@ -60,7 +60,7 @@ export const Buildings = () => {
                 <h5>{BuildingEnumToString[building.building_category]}</h5>
                 <img
                   className="w-24 h-24 border m-1 clip-angled"
-                  src={BUILDING_IMAGES_PATH[building.building_category]}
+                  src={BUILDING_IMAGES_PATH[building.building_category as keyof typeof BUILDING_IMAGES_PATH]}
                 />
               </td>
               <td className="text text-left">
@@ -78,11 +78,6 @@ export const Buildings = () => {
           ))}
         </tbody>
       </table>
-      <h4>Storage of Food</h4>
-      <p className="my-5">
-        You can only store a certain capacity of resources per your storehouses. Each storehouse grants you 10k per
-        resource. You can build more storehouses to increase your capacity.
-      </p>
     </div>
   );
 };

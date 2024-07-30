@@ -1,9 +1,9 @@
+import { calculateDistance } from "@/ui/utils/utils";
 import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
-import { useDojo } from "../context/DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { calculateDistance } from "@/ui/utils/utils";
 import { uuid } from "@latticexyz/utils";
+import { useDojo } from "../context/DojoContext";
 import { useStamina } from "./useStamina";
 interface TravelToHexProps {
   travelingEntityId: bigint | undefined;
@@ -22,12 +22,17 @@ export function useTravel() {
   } = useDojo();
   const { optimisticStaminaUpdate } = useStamina();
 
-  const computeTravelTime = (fromId: bigint, toId: bigint, speed: number) => {
+  const computeTravelTime = (fromId: bigint, toId: bigint, speed: number, pickup?: boolean) => {
     const fromPosition = getComponentValue(components.Position, getEntityIdFromKeys([fromId]));
     const toPosition = getComponentValue(components.Position, getEntityIdFromKeys([toId]));
     if (!fromPosition || !toPosition) return;
-    const distanceFromPosition = calculateDistance(fromPosition, toPosition) ?? 0;
-    return Math.floor(((distanceFromPosition / speed) * 3600) / 60 / 60);
+    const distanceFromPosition =
+      calculateDistance(
+        { x: Number(fromPosition.x), y: Number(fromPosition.y) },
+        { x: Number(toPosition.x), y: Number(toPosition.y) },
+      ) ?? 0;
+    const onewayTime = Math.floor(((distanceFromPosition / speed) * 3600) / 60);
+    return pickup ? onewayTime * 2 : onewayTime;
   };
 
   const optimisticTravelHex = (

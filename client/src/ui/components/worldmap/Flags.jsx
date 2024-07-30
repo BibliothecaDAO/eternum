@@ -240,7 +240,7 @@ export function Flags(props) {
     <>
       <Html position={tooltipPosition} distanceFactor={50}>
         <div className="p-2 bg-brown -translate-x-1/2 -mt-[50px] clip-angled-sm text-md text-gold shadow-2xl border-2 border-gradient whitespace-nowrap pointer-events-none">
-          {hoveredRealm && hoveredRealm.name}
+          {hoveredRealm && `${hoveredRealm.ownerName} (${hoveredRealm.name})`}
         </div>
       </Html>
       <group {...props} dispose={null} position={[-0.38, 0, -0.04]} rotation={[-Math.PI / 2, Math.PI, 0]}>

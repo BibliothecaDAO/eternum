@@ -6,7 +6,7 @@ use eternum::constants::{
     HYPERSTRUCTURE_CONFIG_ID, TickIds
 };
 use eternum::models::buildings::BuildingCategory;
-
+use eternum::models::combat::{Troops};
 use starknet::ContractAddress;
 
 //
@@ -120,6 +120,16 @@ struct StaminaConfig {
     max_stamina: u16,
 }
 
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+struct MercenariesConfig {
+    #[key]
+    config_id: u128,
+    troops: Troops,
+    rewards: Span<(u8, u128)>
+}
+
+
 #[generate_trait]
 impl TickImpl of TickTrait {
     fn get_default_tick_config(world: IWorldDispatcher) -> TickConfig {
@@ -222,7 +232,8 @@ struct BankConfig {
     #[key]
     config_id: u128,
     lords_cost: u128,
-    lp_fee_scaled: u128,
+    lp_fee_num: u128,
+    lp_fee_denom: u128,
 }
 
 #[derive(Copy, Drop, Serde)]
@@ -273,7 +284,13 @@ struct TroopConfig {
     // get to losing 12.5% each. If an army is far stronger than the order, 
     // they lose a small precentage (it goes closer to 0% health loss) while the
     // weak army's loss is closer to 12.5% 
-    pillage_health_divisor: u8
+    pillage_health_divisor: u8,
+    // the number of armies that can be created per structure
+    // before military buildings are required to create more
+    army_free_per_structure: u8,
+    // the number of additional  armies that can be create with 
+    // each new military building
+    army_extra_per_building: u8,
 }
 
 

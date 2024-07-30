@@ -1,7 +1,9 @@
 {
   "name": "my-app",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx migrate.ts"
   },
   "dependencies": {
     "hono": "^4.4.8",
@@ -15,7 +17,17 @@
     "node-cron": "^3.0.3",
     "openai": "^4.52.1",
     "twitter-api-v2": "^1.15.2",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "@hono/zod-validator": "^0.2.2",
+    "@neondatabase/serverless": "^0.9.3",
+    "@reservoir0x/reservoir-sdk": "^2.2.12",
+    "dotenv": "^16.4.5",
+    "drizzle-kit": "^0.22.7",
+    "drizzle-orm": "^0.31.2",
+    "ethers": "^6.13.0",
+    "postgres": "^3.4.4",
+    "tsx": "^4.15.5",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/bun": "latest",

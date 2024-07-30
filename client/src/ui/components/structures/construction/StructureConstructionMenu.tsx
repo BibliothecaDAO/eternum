@@ -12,16 +12,17 @@ import {
   findResourceById,
 } from "@bibliothecadao/eternum";
 
+import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
-import React from "react";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
-import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
-import { StructureCard } from "./StructureCard";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import clsx from "clsx";
+import React from "react";
+import { StructureCard } from "./StructureCard";
 
 const STRUCTURE_IMAGE_PREFIX = "/images/buildings/thumb/";
 export const STRUCTURE_IMAGE_PATHS = {
@@ -35,11 +36,12 @@ export const STRUCTURE_IMAGE_PATHS = {
 export const StructureConstructionMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
+  const clearSelection = useUIStore((state) => state.clearSelection);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   const buildingTypes = Object.keys(StructureType)
     .filter((key) => isNaN(Number(key)))
@@ -65,7 +67,7 @@ export const StructureConstructionMenu = () => {
 
         return (
           <StructureCard
-            className={clsx({ "animate-pulse": isHyperstructure && selectedQuest?.name === QuestName.Hyperstructure })}
+            className={clsx({ "animate-pulse": isHyperstructure && selectedQuest?.id === QuestId.Hyperstructure })}
             key={index}
             structureId={building}
             onClick={() => {
@@ -76,6 +78,7 @@ export const StructureConstructionMenu = () => {
                 setPreviewBuilding(null);
               } else {
                 setPreviewBuilding({ type: building });
+                clearSelection();
               }
             }}
             active={previewBuilding !== null && previewBuilding.type === building}
@@ -100,7 +103,7 @@ export const ResourceInfo = ({ resourceId, entityId }: { resourceId: number; ent
 
   const information = RESOURCE_INFORMATION[resourceId];
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   return (
     <div className="flex flex-col text-gold text-sm p-1 space-y-1">
@@ -166,7 +169,7 @@ export const StructureInfo = ({
 
   const perTick = structureId == StructureType.Hyperstructure ? `+${HYPERSTRUCTURE_POINTS_PER_CYCLE} points` : "";
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   return (
     <div className="p-2 text-sm text-gold">

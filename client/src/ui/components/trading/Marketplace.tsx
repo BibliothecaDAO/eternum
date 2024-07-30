@@ -1,4 +1,4 @@
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useTravel } from "@/hooks/helpers/useTravel";
 import {
   EternumGlobalConfig,
@@ -344,7 +344,7 @@ const OverviewResourceRow = ({
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   const realmResource = useMemo(() => {
     return getBalance(realmEntityId!, askSummary?.resourceId || 0);
@@ -664,7 +664,7 @@ const ResourceOfferRow = ({
   };
 
   const travelTime = useMemo(
-    () => computeTravelTime(realmEntityId, offer.makerId, EternumGlobalConfig.speed.donkey),
+    () => computeTravelTime(realmEntityId, offer.makerId, EternumGlobalConfig.speed.donkey, true) || 0,
     [realmEntityId, offer],
   );
 
@@ -701,7 +701,7 @@ const ResourceOfferRow = ({
       )}
       {offer.makerId !== realmEntityId && (
         <div className="flex item-center justify-end">
-          {`${travelTime} hrs`}
+          {`${Math.floor(travelTime / 60)} hrs ${travelTime % 60} mins`}
           <Button className="ml-2" onClick={onClick} disabled={!canAccept} size="xs" variant="success">
             Accept
           </Button>

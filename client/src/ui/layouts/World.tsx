@@ -1,5 +1,3 @@
-import { Background as BackgroundContainer } from "../containers/Background";
-import { MainScene } from "../modules/scenes/MainScene";
 import useUIStore from "../../hooks/store/useUIStore";
 import { Leva } from "leva";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
@@ -20,12 +18,10 @@ import useRealmStore from "@/hooks/store/useRealmStore";
 import RightMiddleContainer from "../containers/RightMiddleContainer";
 import { RightNavigationModule } from "../modules/navigation/RightNavigationModule";
 import { BattleContainer } from "../containers/BattleContainer";
-import { LoadingContainer } from "../containers/LoadingContainer";
 import { Redirect } from "wouter";
 import { BattleView } from "../modules/military/battle-view/BattleView";
 import TopLeftContainer from "../containers/TopLeftContainer";
 import { TopLeftNavigation } from "../modules/navigation/TopLeftNavigation";
-import { Canvas } from "@react-three/fiber";
 import { ActionInfo } from "../components/worldmap/hexagon/ActionInfo";
 
 export const World = () => {
@@ -53,16 +49,7 @@ export const World = () => {
         <Onboarding />
       </BlankOverlayContainer>
       <HooksComponent />
-
-      {/* <BackgroundContainer className=" clip-angled relative  ">
-        <div className="h-full w-full main-scene z-100 ornate-borders">
-          <MainScene />
-        </div>
-      </BackgroundContainer> */}
       <ActionInfo />
-
-      {/* <LoadingContainer /> */}
-
       {battleView ? (
         <BattleContainer>
           <BattleView />

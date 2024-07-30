@@ -1,5 +1,8 @@
-import { useEntityArmies } from "@/hooks/helpers/useArmies";
+import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useStamina } from "@/hooks/helpers/useStamina";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
 import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
@@ -8,13 +11,14 @@ import Button from "@/ui/elements/Button";
 import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
 import { Military } from "@/ui/modules/military/Military";
 import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import clsx from "clsx";
 import { motion } from "framer-motion";
 import { debounce } from "lodash";
 import { ArrowRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { construction, military, worldStructures } from "../../components/navigation/Config";
+import { construction, military, quests as questsPopup, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
 import { Assistant } from "../assistant/Assistant";
 import { Guilds } from "../guilds/Guilds";
@@ -22,11 +26,8 @@ import { Leaderboard } from "../leaderboard/LeaderBoard";
 import { Questing } from "../questing/Questing";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import clsx from "clsx";
-import { quests as questsPopup } from "../../components/navigation/Config";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -57,41 +58,36 @@ export enum View {
 export const LeftNavigationModule = () => {
   const [lastView, setLastView] = useState<View>(View.None);
 
-  const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const openedPopups = useUIStore((state) => state.openedPopups);
 
-  const quests = useQuestStore((state) => state.quests);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { realmEntityId, realmId } = useRealmStore();
-  const { getStamina } = useStamina();
-  const { entityArmies } = useEntityArmies({ entity_id: realmEntityId });
+  const { realmEntityId } = useRealmStore();
 
+  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: realmEntityId });
+
+  const { useArmiesCanMoveCount } = useStamina();
+  const armiesCanMoveCount = useArmiesCanMoveCount(entityArmies);
+
+  const { questClaimStatus } = useQuestClaimStatus();
   const [location, _] = useLocation();
 
   const isWorldView = useMemo(() => location === "/map", [location]);
 
-  const armiesWithStaminaLeft = entityArmies?.filter((entity) => {
-    return (
-      getStamina({ travelingEntityId: BigInt(entity.entity_id), currentArmiesTick })?.amount >=
-      EternumGlobalConfig.stamina.travelCost
-    );
-  });
-
   const isBuildQuest = useMemo(() => {
     return (
-      selectedQuest?.name === QuestName.BuildFarm ||
-      selectedQuest?.name === QuestName.BuildResource ||
-      selectedQuest?.name === QuestName.BuildWorkersHut ||
-      selectedQuest?.name === QuestName.Market ||
-      (selectedQuest?.name === QuestName.Hyperstructure && isWorldView)
+      selectedQuest?.id === QuestId.BuildFarm ||
+      selectedQuest?.id === QuestId.BuildResource ||
+      selectedQuest?.id === QuestId.BuildWorkersHut ||
+      selectedQuest?.id === QuestId.Market ||
+      (selectedQuest?.id === QuestId.Hyperstructure && isWorldView)
     );
   }, [selectedQuest, isWorldView]);
-  const { getEntityInfo } = useEntities();
+  const { getEntityInfo } = getEntitiesUtils();
   const realmIsMine = getEntityInfo(realmEntityId).isMine;
 
   const navigation = useMemo(() => {
@@ -100,7 +96,7 @@ export const LeftNavigationModule = () => {
         name: "entityDetails",
         button: (
           <CircleButton
-            className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.CreateArmy)?.claimed })}
+            className={clsx({ hidden: !questClaimStatus[QuestId.CreateArmy] })}
             image={BuildingThumbs.hex}
             tooltipLocation="top"
             label={"Details"}
@@ -119,10 +115,8 @@ export const LeftNavigationModule = () => {
           <CircleButton
             className={clsx({
               "animate-pulse":
-                view != View.ConstructionView &&
-                selectedQuest?.name === QuestName.CreateArmy &&
-                isPopupOpen(questsPopup),
-              hidden: !quests?.find((quest) => quest.name === QuestName.BuildResource)?.claimed,
+                view != View.ConstructionView && selectedQuest?.id === QuestId.CreateArmy && isPopupOpen(questsPopup),
+              hidden: !questClaimStatus[QuestId.CreateTrade],
             })}
             image={BuildingThumbs.military}
             tooltipLocation="top"
@@ -133,7 +127,7 @@ export const LeftNavigationModule = () => {
               setLastView(View.MilitaryView);
               setView(View.MilitaryView);
             }}
-            notification={armiesWithStaminaLeft.length}
+            notification={armiesCanMoveCount}
             notificationLocation="topright"
           />
         ),
@@ -163,11 +157,9 @@ export const LeftNavigationModule = () => {
         button: (
           <CircleButton
             className={clsx({
-              hidden: !quests?.find((quest) => quest.name === QuestName.CreateArmy)?.claimed,
+              hidden: !questClaimStatus[QuestId.CreateArmy],
               "animate-pulse":
-                view != View.ConstructionView &&
-                selectedQuest?.name === QuestName.Contribution &&
-                isPopupOpen(questsPopup),
+                view != View.ConstructionView && selectedQuest?.id === QuestId.Contribution && isPopupOpen(questsPopup),
             })}
             image={BuildingThumbs.worldStructures}
             tooltipLocation="top"
@@ -198,7 +190,7 @@ export const LeftNavigationModule = () => {
             item.name === MenuEnum.construction ||
             item.name === MenuEnum.worldStructures,
         );
-  }, [location, view, armiesWithStaminaLeft, quests, openedPopups]);
+  }, [location, view, openedPopups, selectedQuest, armiesCanMoveCount, questClaimStatus]);
 
   if (realmEntityId === undefined) {
     return null;
@@ -241,7 +233,7 @@ export const LeftNavigationModule = () => {
         }}
         onPointerLeave={debouncedSetIsOffscreen}
       >
-        <BaseContainer className={`w-full overflow-y-scroll ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}>
+        <BaseContainer className={`w-full overflow-y-auto ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}>
           {view === View.EntityView && <EntityDetails />}
           {view === View.MilitaryView && <Military entityId={realmEntityId} />}
           {!isWorldView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}

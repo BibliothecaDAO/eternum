@@ -5,9 +5,7 @@ use debug::PrintTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::constants::{ResourceTypes, resource_type_name};
 use eternum::constants::{get_resource_probabilities, RESOURCE_PRECISION, BASE_STOREHOUSE_CAPACITY};
-use eternum::models::buildings::{
-    Building, BuildingTrait, BuildingQuantityv2TrackerImpl, BuildingCategory, BuildingQuantityv2
-};
+use eternum::models::buildings::{Building, BuildingTrait, BuildingCategory, BuildingQuantityv2};
 use eternum::models::config::{ProductionConfig, TickConfig, TickImpl, TickTrait};
 
 use eternum::models::production::{Production, ProductionOutputImpl, ProductionRateTrait};
@@ -328,7 +326,7 @@ mod tests_resource_traits {
     use eternum::systems::config::contracts::{
         IProductionConfigDispatcher, IProductionConfigDispatcherTrait
     };
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
     use super::{Production, ProductionOutputImpl, Resource, ResourceImpl};
     use traits::Into;
     use traits::TryInto;
@@ -475,7 +473,7 @@ mod owned_resources_tracker_tests {
     use eternum::constants::ResourceTypes;
     use eternum::models::resources::{Resource, ResourceImpl};
     use eternum::models::structure::{Structure, StructureCategory};
-    use eternum::utils::testing::{spawn_eternum, deploy_system};
+    use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
     use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
 
 

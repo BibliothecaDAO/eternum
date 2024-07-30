@@ -1,19 +1,21 @@
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { useRealm } from "@/hooks/helpers/useRealm";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useTravel } from "@/hooks/helpers/useTravel";
 import { usePlayResourceSound } from "@/hooks/useUISound";
 import Button from "@/ui/elements/Button";
+import { Headline } from "@/ui/elements/Headline";
 import ListSelect from "@/ui/elements/ListSelect";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
+import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { TravelInfo } from "../resources/ResourceWeight";
-import { useDojo } from "@/hooks/context/DojoContext";
-import { Headline } from "@/ui/elements/Headline";
-import { useTravel } from "@/hooks/helpers/useTravel";
 import { ToggleComponent } from "../toggle/ToggleComponent";
-import { ArrowRight, LucideArrowRight } from "lucide-react";
 
 enum STEP_ID {
   SELECT_ENTITIES = 1,
@@ -41,6 +43,8 @@ interface SelectedEntity {
 }
 
 export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { entities: any[]; name: string }[] }) => {
+  const { getRealmAddressName } = useRealm();
+
   const [selectedEntityIdFrom, setSelectedEntityIdFrom] = useState<SelectedEntity | null>(null);
   const [selectedEntityIdTo, setSelectedEntityIdTo] = useState<SelectedEntity | null>(null);
   const [selectedResourceIds, setSelectedResourceIds] = useState([]);
@@ -50,8 +54,20 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
   const [canCarry, setCanCarry] = useState(true);
   const [isOriginDonkeys, setIsOriginDonkeys] = useState(true);
   const [travelTime, setTravelTime] = useState<number | undefined>(undefined);
+  const [fromSearchTerm, setFromSearchTerm] = useState("");
+  const [toSearchTerm, setToSearchTerm] = useState("");
 
   const currentStep = useMemo(() => STEPS.find((step) => step.id === selectedStepId), [selectedStepId]);
+
+  const entitiesListWithAccountNames = useMemo(() => {
+    return entitiesList.map(({ entities, name }) => ({
+      entities: entities.map((entity) => ({
+        ...entity,
+        accountName: getRealmAddressName(entity.entity_id),
+      })),
+      name,
+    }));
+  }, [entitiesList]);
 
   const {
     account: { account },
@@ -101,6 +117,19 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
     });
   };
 
+  const isEntitySelected = (entities: any[], selectedEntityId: bigint | undefined) => {
+    return entities.some((entity) => entity.entity_id === selectedEntityId);
+  };
+
+  const filterEntities = (entities: any[], searchTerm: string, selectedEntityId: bigint | undefined) => {
+    return entities.filter(
+      (entity) =>
+        entity.entity_id === selectedEntityId ||
+        entity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entity.accountName && entity.accountName.toLowerCase().includes(searchTerm.toLowerCase())),
+    );
+  };
+
   return (
     <div className="p-2 h-full">
       <h4 className="text-center capitalize my-5">{currentStep?.title}</h4>
@@ -123,30 +152,60 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
 
       {currentStep?.id === STEP_ID.SELECT_ENTITIES && (
         <>
-          <div className="w-full flex justify-center items-center">Travel Time: {travelTime || 0} hrs</div>
+          <div className="w-full flex justify-center items-center">
+            Travel Time: {Math.floor((travelTime || 0) / 60)} hrs {(travelTime || 0) % 60} mins
+          </div>
           <div className="grid grid-cols-2 gap-6 mt-3">
             <div className="justify-around">
               <Headline>From</Headline>
-              {entitiesList.map(({ entities, name: title }, index) => (
-                <ToggleComponent title={title} key={index}>
-                  <SelectEntityFromList
-                    onSelect={(name, entityId) => setSelectedEntityIdFrom({ name, entityId })}
-                    selectedCounterpartyId={selectedEntityIdTo?.entityId!}
-                    selectedEntityId={selectedEntityIdFrom?.entityId!}
-                    entities={entities}
-                  />
-                </ToggleComponent>
-              ))}
+              <TextInput
+                placeholder="Search entities..."
+                value={fromSearchTerm}
+                onChange={(fromSearchTerm) => setFromSearchTerm(fromSearchTerm)}
+                className="my-2"
+              />
+              {entitiesListWithAccountNames
+                .filter(({ name }) => name !== "Other Realms")
+                .map(({ entities, name: title }, index) => (
+                  <ToggleComponent
+                    title={title}
+                    key={index}
+                    props={{
+                      searchTerm: fromSearchTerm,
+                      open: fromSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdFrom?.entityId),
+                    }}
+                  >
+                    <SelectEntityFromList
+                      onSelect={(name, entityId) => setSelectedEntityIdFrom({ name, entityId })}
+                      selectedCounterpartyId={selectedEntityIdTo?.entityId!}
+                      selectedEntityId={selectedEntityIdFrom?.entityId!}
+                      entities={filterEntities(entities, fromSearchTerm, selectedEntityIdFrom?.entityId)}
+                    />
+                  </ToggleComponent>
+                ))}
             </div>
             <div className="justify-around overflow-auto">
               <Headline>To</Headline>
-              {entitiesList.map(({ entities, name: title }, index) => (
-                <ToggleComponent title={title} key={index}>
+              <TextInput
+                placeholder="Search entities..."
+                value={toSearchTerm}
+                onChange={(toSearchTerm) => setToSearchTerm(toSearchTerm)}
+                className="my-2"
+              />
+              {entitiesListWithAccountNames.map(({ entities, name: title }, index) => (
+                <ToggleComponent
+                  title={title}
+                  key={index}
+                  props={{
+                    searchTerm: toSearchTerm,
+                    open: toSearchTerm !== "" || isEntitySelected(entities, selectedEntityIdTo?.entityId),
+                  }}
+                >
                   <SelectEntityFromList
                     onSelect={(name, entityId) => setSelectedEntityIdTo({ name, entityId })}
                     selectedCounterpartyId={selectedEntityIdFrom?.entityId!}
                     selectedEntityId={selectedEntityIdTo?.entityId!}
-                    entities={entities}
+                    entities={filterEntities(entities, toSearchTerm, selectedEntityIdTo?.entityId)}
                   />
                 </ToggleComponent>
               ))}
@@ -233,27 +292,34 @@ const SelectEntityFromList = ({
   selectedCounterpartyId: bigint | null;
   entities: any[];
 }) => {
+  const { getRealmAddressName } = useRealm();
+
   return (
     <div className="overflow-y-scroll max-h-72 border border-gold/10">
-      {entities.map((entity, index) => (
-        <div
-          key={index}
-          className={clsx(
-            "flex w-full justify-between hover:bg-white/10 items-center  p-1  text-xs pl-2",
-            selectedEntityId === entity.entity_id && " border-gold/10 border",
-          )}
-        >
-          <h6 className="text-sm">{entity.name}</h6>
-          <Button
-            disabled={selectedEntityId === entity.entity_id || selectedCounterpartyId === entity.entity_id}
-            size="xs"
-            variant={"default"}
-            onClick={() => onSelect(entity.name, entity.entity_id!)}
+      {entities.map((entity, index) => {
+        const realmName = getRealmAddressName(entity.entity_id);
+        return (
+          <div
+            key={index}
+            className={clsx(
+              "flex w-full justify-between hover:bg-white/10 items-center p-1 text-xs pl-2",
+              selectedEntityId === entity.entity_id && "border-gold/10 border",
+            )}
           >
-            {selectedEntityId === entity.entity_id ? "Selected" : "Select"}
-          </Button>
-        </div>
-      ))}
+            <h6 className="text-sm">
+              {realmName} ({entity.name})
+            </h6>
+            <Button
+              disabled={selectedEntityId === entity.entity_id || selectedCounterpartyId === entity.entity_id}
+              size="xs"
+              variant="default"
+              onClick={() => onSelect(entity.name, entity.entity_id!)}
+            >
+              {selectedEntityId === entity.entity_id ? "Selected" : "Select"}
+            </Button>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -271,7 +337,7 @@ const SelectResources = ({
   setSelectedResourceAmounts: any;
   entity_id: bigint;
 }) => {
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
 
   const unselectedResources = useMemo(

@@ -18,14 +18,13 @@ export enum BuildingType {
   Market = 6,
   ArcheryRange = 7,
   Stable = 8,
-  DonkeyFarm = 9,
-  TradingPost = 10,
-  WorkersHut = 11,
-  WatchTower = 12,
-  Walls = 13,
-  Storehouse = 14,
-  Bank = 15,
-  FragmentMine = 16,
+  TradingPost = 9,
+  WorkersHut = 10,
+  WatchTower = 11,
+  Walls = 12,
+  Storehouse = 13,
+  Bank = 14,
+  FragmentMine = 15,
 }
 export const MAX_BUILDING_TYPE = 14;
 
@@ -69,14 +68,13 @@ export const BuildingEnumToString: { [index: number]: string } = {
   6: "Market",
   7: "Archery Range",
   8: "Stable",
-  9: "Donkey Farm",
-  10: "Trading Post",
-  11: "Workers Hut",
-  12: "Watch Tower",
-  13: "Walls",
-  14: "Storehouse",
-  15: "Bank",
-  16: "Shards Mine",
+  9: "Trading Post",
+  10: "Workers Hut",
+  11: "Watch Tower",
+  12: "Walls",
+  13: "Storehouse",
+  14: "Bank",
+  15: "Shards Mine",
 };
 
 export const BuildingStringToEnum = {
@@ -89,14 +87,13 @@ export const BuildingStringToEnum = {
   Market: 6,
   ArcheryRange: 7,
   Stable: 8,
-  DonkeyFarm: 9,
-  TradingPost: 10,
-  WorkersHut: 11,
-  WatchTower: 12,
-  Walls: 13,
-  Storehouse: 14,
-  Bank: 15,
-  FragmentMine: 16,
+  TradingPost: 9,
+  WorkersHut: 10,
+  WatchTower: 11,
+  Walls: 12,
+  Storehouse: 13,
+  Bank: 14,
+  FragmentMine: 15,
 };
 
 export function getBuildingType(name: BuildingType): CairoCustomEnum {
@@ -117,8 +114,6 @@ export function getBuildingType(name: BuildingType): CairoCustomEnum {
       return new CairoCustomEnum({ ArcheryRange: {} });
     case BuildingType.Stable:
       return new CairoCustomEnum({ Stable: {} });
-    case BuildingType.DonkeyFarm:
-      return new CairoCustomEnum({ DonkeyFarm: {} });
     case BuildingType.TradingPost:
       return new CairoCustomEnum({ TradingPost: {} });
     case BuildingType.WorkersHut:
@@ -151,11 +146,9 @@ export function getProducedResource(name: BuildingType): number {
     case BuildingType.Market:
       return 0;
     case BuildingType.ArcheryRange:
-      return ResourcesIds.Crossbowmen;
+      return ResourcesIds.Crossbowman;
     case BuildingType.Stable:
       return ResourcesIds.Paladin;
-    case BuildingType.DonkeyFarm:
-      return ResourcesIds.Donkey;
     case BuildingType.TradingPost:
       return 0;
     case BuildingType.WorkersHut:

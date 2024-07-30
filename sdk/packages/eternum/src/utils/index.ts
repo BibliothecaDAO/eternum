@@ -3,16 +3,16 @@ import {
   EXPLORATION_COSTS,
   EternumGlobalConfig,
   HYPERSTRUCTURE_CONSTRUCTION_COSTS,
+  HYPERSTRUCTURE_CREATION_COSTS,
+  HYPERSTRUCTURE_TOTAL_COSTS,
   QUEST_RESOURCES,
   RESOURCE_BUILDING_COSTS,
   RESOURCE_INPUTS,
   RESOURCE_OUTPUTS,
   ResourceInputs,
   ResourceOutputs,
-  STRUCTURE_COSTS,
-  HYPERSTRUCTURE_CREATION_COSTS,
-  HYPERSTRUCTURE_TOTAL_COSTS,
   ResourcesIds,
+  STRUCTURE_COSTS,
 } from "../constants";
 import { Resource } from "../types";
 
@@ -66,7 +66,6 @@ export const getQuestResources = (resourcesOnRealm: number[]): ResourceInputs =>
     QUEST_RESOURCES,
     EternumGlobalConfig.resources.resourceMultiplier,
   );
-  console.log({ QUEST_RESOURCES_SCALED });
   return applyInputProductionFactor(QUEST_RESOURCES_SCALED, resourcesOnRealm);
 };
 

@@ -23,7 +23,9 @@ use eternum::systems::trade::contracts::trade_systems::{
     trade_systems, ITradeSystemsDispatcher, ITradeSystemsDispatcherTrait
 };
 
-use eternum::utils::testing::{spawn_eternum, deploy_system, spawn_realm, deploy_realm_systems};
+use eternum::utils::testing::{
+    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm}
+};
 
 use starknet::contract_address_const;
 

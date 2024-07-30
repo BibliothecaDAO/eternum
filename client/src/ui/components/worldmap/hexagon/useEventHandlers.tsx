@@ -1,3 +1,5 @@
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useExplore } from "../../../../hooks/helpers/useExplore";
@@ -6,7 +8,6 @@ import { useNotificationsStore } from "../../../../hooks/store/useNotificationsS
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { findDirection, getColRowFromUIPosition } from "../../../utils/utils";
 import { getPositionsAtIndex } from "./utils";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
@@ -22,6 +23,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const clickedHex = useUIStore((state) => state.clickedHex);
   const travelPaths = useUIStore((state) => state.travelPaths);
   const clearSelection = useUIStore((state) => state.clearSelection);
+  const setView = useUIStore((state) => state.setLeftNavigationView);
 
   const setExploreNotification = useNotificationsStore((state) => state.setExploreNotification);
 
@@ -83,6 +85,10 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         ) {
           setClickedHex(undefined);
         } else {
+          if (e.button !== 2) {
+            setView(View.EntityView);
+          }
+          const clickedColRow = getColRowFromUIPosition(Math.abs(pos.x), Math.abs(pos.y), false);
           setClickedHex({
             contractPos: { col: clickedColRow.col, row: clickedColRow.row },
             uiPos: [pos.x, -pos.y, pos.z],
@@ -92,6 +98,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       };
 
       const handleArmyActionClick = (id: bigint) => {
+        if (e.button === 2) return;
         if (!hoveredHexRef.current) return;
         const travelPath = travelPathsRef.current.get(`${hoveredHexRef.current.col},${hoveredHexRef.current.row}`);
         if (!travelPath) return;

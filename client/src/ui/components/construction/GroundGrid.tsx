@@ -1,15 +1,15 @@
-import useUIStore from "../../../hooks/store/useUIStore";
-import * as THREE from "three";
-import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
-import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow, pseudoRandom } from "../../utils/utils";
-import { useEffect, useMemo, useState } from "react";
-import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
-import useRealmStore from "@/hooks/store/useRealmStore";
-import { BuildingType, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
 import { highlightHexMaterial } from "@/shaders/highlightHexMaterial";
-import { Text, useGLTF } from "@react-three/drei";
 import { useBuildings } from "@/hooks/helpers/useBuildings";
+import useRealmStore from "@/hooks/store/useRealmStore";
 import { HEX_RADIUS } from "@/ui/config";
+import { BuildingType, ResourcesIds, getNeighborHexes } from "@bibliothecadao/eternum";
+import { useGLTF } from "@react-three/drei";
+import { useEffect, useMemo, useState } from "react";
+import * as THREE from "three";
+import useUIStore from "../../../hooks/store/useUIStore";
+import { useBuildingSound, useShovelSound } from "../../../hooks/useUISound";
+import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow, pseudoRandom } from "../../utils/utils";
+import { createHexagonShape } from "../worldmap/hexagon/HexagonGeometry";
 
 const HEXCEPTION_CENTER = { col: 10, row: 10 };
 

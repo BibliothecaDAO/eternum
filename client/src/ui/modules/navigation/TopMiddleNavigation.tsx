@@ -9,8 +9,8 @@ import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
   EternumGlobalConfig,
-  Position,
   STOREHOUSE_CAPACITY,
+  StructureType,
 } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -19,12 +19,13 @@ import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
-import { motion } from "framer-motion";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { useComponentValue } from "@dojoengine/react";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
 import clsx from "clsx";
 import { useThreeStore } from "@/hooks/store/useThreeStore";
+import { QuestStatus } from "@/hooks/helpers/useQuests";
+import { QuestId } from "@/ui/components/quest/questDetails";
+import { motion } from "framer-motion";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -59,8 +60,8 @@ export const TopMiddleNavigation = () => {
   // realms always first
   const structures = useMemo(() => {
     return playerStructures().sort((a, b) => {
-      if (a.category === "Realm") return -1;
-      if (b.category === "Realm") return 1;
+      if (a.category === StructureType[StructureType.Realm]) return -1;
+      if (b.category === StructureType[StructureType.Realm]) return 1;
       return a.category!.localeCompare(b.category!);
     });
   }, [playerStructures().length, realmEntityId]);
@@ -81,8 +82,8 @@ export const TopMiddleNavigation = () => {
   };
 
   const goToMapView = (entityId: any) => {
-    const position = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)])) as Position;
-    moveCameraToColRow(position.x, position.y);
+    const contractPosition = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
+    moveCameraToColRow(Number(contractPosition?.x), Number(contractPosition?.y));
 
     setRealmEntityId(BigInt(entityId));
   };
@@ -103,7 +104,7 @@ export const TopMiddleNavigation = () => {
   }, []);
 
   return (
-    <div className="ornate-borders bg-brown">
+    <div className=" bg-black/60 backdrop-blur-2xl bg-hex-bg rounded-b-2xl border border-gradient">
       <motion.div className="flex flex-wrap " variants={slideDown} initial="hidden" animate="visible">
         <div>
           {threeStore.col},{threeStore.row}
@@ -123,7 +124,7 @@ export const TopMiddleNavigation = () => {
               <SelectTrigger className="">
                 <SelectValue placeholder="Select Realm" />
               </SelectTrigger>
-              <SelectContent className="bg-brown ">
+              <SelectContent className="bg-black ">
                 {structures.map((structure, index) => (
                   <SelectItem
                     className="flex justify-between text-sm"
@@ -143,8 +144,8 @@ export const TopMiddleNavigation = () => {
             variant="primary"
             className={clsx({
               "animate-pulse":
-                (selectedQuest?.name === QuestName.Travel || selectedQuest?.name === QuestName.Hyperstructure) &&
-                !selectedQuest.completed &&
+                (selectedQuest?.id === QuestId.Travel || selectedQuest?.id === QuestId.Hyperstructure) &&
+                selectedQuest.status !== QuestStatus.Completed &&
                 isHexView,
             })}
             onClick={() => {
@@ -171,7 +172,7 @@ export const TopMiddleNavigation = () => {
         </div>
       </motion.div>
 
-      <div className="flex justify-between w-full bg-brown text-gold p-1 text-xs">
+      <div className="flex justify-between w-full  text-gold p-1 text-xs">
         {population && (
           <div
             onMouseEnter={() => {

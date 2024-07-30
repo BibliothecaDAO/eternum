@@ -1,47 +1,89 @@
-import { useResources } from "@/hooks/helpers/useResources";
+import { getResourceBalance, getResourcesUtils } from "@/hooks/helpers/useResources";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
+import { ResourcesIds } from "@bibliothecadao/eternum";
+import { useMemo, useState } from "react";
 
 export const InventoryResources = ({
-  entityId,
+  entityIds,
   max = Infinity,
   className = "flex flex-wrap gap-1",
-  setShowAll,
+  dynamic = [],
+  resourcesIconSize = "sm",
+  textSize,
 }: {
-  entityId: bigint;
+  entityIds: bigint[];
   max?: number;
   className?: string;
-  setShowAll?: (showAll: boolean) => void;
+  dynamic?: ResourcesIds[];
+  resourcesIconSize?: "xs" | "sm" | "md" | "lg";
+  textSize?: "xxs" | "xs" | "sm" | "md" | "lg";
 }) => {
-  const { getResourcesFromBalance } = useResources();
+  const [showAll, setShowAll] = useState(false);
+  const { getResourcesFromBalance } = getResourcesUtils();
+  const { getBalance } = getResourceBalance();
 
-  const inventoryResources = getResourcesFromBalance(entityId);
+  const inventoriesResources = entityIds.map(getResourcesFromBalance);
 
-  return (
-    <div className={className}>
-      {inventoryResources &&
-        inventoryResources
-          .slice(0, max)
-          .map(
-            (resource) =>
-              resource && (
-                <ResourceCost
-                  size="sm"
-                  textSize="xs"
-                  key={resource.resourceId}
-                  type="vertical"
-                  color="text-green"
-                  resourceId={resource.resourceId}
-                  amount={divideByPrecision(Number(resource.amount))}
-                />
-              ),
-          )}
+  const dynamicResources = dynamic.map((resourceId): { resourceId: number; balance: number } =>
+    getBalance(entityIds[0], resourceId),
+  );
+
+  const updatedMax = useMemo(() => {
+    if (showAll) return Infinity;
+    return max;
+  }, [showAll, max]);
+
+  const maxResources = updatedMax - dynamicResources.length;
+  let currentCount = 0;
+
+  return (inventoriesResources && inventoriesResources.length > 0) ||
+    (dynamicResources && dynamicResources.length > 0) ? (
+    <div className={`p-2 bg-gold/10 clip-angled ${className}`}>
+      {dynamicResources &&
+        dynamicResources.length > 0 &&
+        dynamicResources.slice(0, updatedMax - dynamicResources.length).map((resource) => {
+          if (!resource || currentCount >= maxResources) return null;
+          currentCount++;
+          return (
+            <ResourceCost
+              size={resourcesIconSize}
+              textSize={textSize}
+              key={resource.resourceId}
+              type="vertical"
+              color="text-green"
+              resourceId={resource.resourceId}
+              amount={divideByPrecision(Number(resource.balance))}
+            />
+          );
+        })}
+      {inventoriesResources.map((inventoryResources) =>
+        inventoryResources.map((resource) => {
+          if (!resource || currentCount >= maxResources) return null;
+          currentCount++;
+          return (
+            resource && (
+              <ResourceCost
+                size={resourcesIconSize}
+                textSize={textSize}
+                key={resource.resourceId}
+                type="vertical"
+                color="text-green"
+                resourceId={resource.resourceId}
+                amount={divideByPrecision(Number(resource.amount))}
+              />
+            )
+          );
+        }),
+      )}
       <div className="ml-1 font-bold hover:opacity-70">
-        {max < inventoryResources.length && (
-          <div onClick={() => setShowAll && setShowAll(true)}>+{inventoryResources.length - max}</div>
+        {updatedMax < inventoriesResources.length && !showAll && (
+          <div onClick={() => setShowAll(true)}>+{inventoriesResources.length - updatedMax}</div>
         )}
-        {max === Infinity && Boolean(setShowAll) && <div onClick={() => setShowAll!(false)}>hide</div>}
+        {showAll && <div onClick={() => setShowAll(false)}>hide</div>}
       </div>
     </div>
+  ) : (
+    <></>
   );
 };

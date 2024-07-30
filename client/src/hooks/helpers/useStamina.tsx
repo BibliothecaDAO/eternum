@@ -1,5 +1,5 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
-import { ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -17,10 +17,10 @@ export const useStamina = () => {
 
   const useStaminaByEntityId = ({ travelingEntityId }: { travelingEntityId: bigint }) => {
     const staminasEntityIds = useEntityQuery([HasValue(Stamina, { entity_id: travelingEntityId })]);
-    let staminaEntity = getComponentValue(Stamina, staminasEntityIds.values().next().value);
+    let staminaEntity = getComponentValue(Stamina, staminasEntityIds[0]);
 
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: travelingEntityId })]);
-    const armyEntity = getComponentValue(Army, armiesEntityIds.values().next().value);
+    const armyEntity = getComponentValue(Army, Array.from(armiesEntityIds)[0]);
 
     if (staminaEntity && armyEntity && currentArmiesTick !== staminaEntity.last_refill_tick) {
       staminaEntity = {
@@ -29,7 +29,7 @@ export const useStamina = () => {
         amount: getMaxStamina(armyEntity.troops, StaminaConfig),
       };
     }
-    return staminaEntity as unknown as ClientComponents["Stamina"]["schema"];
+    return staminaEntity;
   };
 
   const getStamina = ({
@@ -40,10 +40,10 @@ export const useStamina = () => {
     currentArmiesTick: number;
   }) => {
     const staminasEntityIds = runQuery([HasValue(Stamina, { entity_id: travelingEntityId })]);
-    let staminaEntity = getComponentValue(Stamina, staminasEntityIds.values().next().value);
+    let staminaEntity = getComponentValue(Stamina, Array.from(staminasEntityIds)[0]);
 
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: travelingEntityId })]);
-    const armyEntity = getComponentValue(Army, armiesEntityIds.values().next().value);
+    const armyEntity = getComponentValue(Army, Array.from(armiesEntityIds)[0]);
 
     if (staminaEntity && currentArmiesTick !== staminaEntity?.last_refill_tick) {
       staminaEntity = {
@@ -52,12 +52,12 @@ export const useStamina = () => {
         amount: getMaxStamina(armyEntity!.troops, StaminaConfig),
       };
     }
-    return staminaEntity as unknown as ClientComponents["Stamina"]["schema"];
+    return staminaEntity;
   };
 
   const getMaxStaminaByEntityId = (travelingEntityId: bigint): number => {
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: travelingEntityId })]);
-    const armyEntity = getComponentValue(Army, armiesEntityIds.values().next().value);
+    const armyEntity = getComponentValue(Army, Array.from(armiesEntityIds)[0]);
     if (!armyEntity) return 0;
     const maxStamina = getMaxStamina(armyEntity.troops, StaminaConfig);
 
@@ -69,15 +69,26 @@ export const useStamina = () => {
 
     const stamina = getStamina({ travelingEntityId: entityId, currentArmiesTick });
 
-    // substract the costs
     Stamina.addOverride(overrideId, {
       entity,
       value: {
         entity_id: entityId,
-        last_refill_tick: stamina.last_refill_tick,
-        amount: stamina.amount - cost,
+        last_refill_tick: stamina?.last_refill_tick || 0,
+        amount: stamina?.amount ? stamina.amount - cost : 0,
       },
     });
+  };
+
+  const useArmiesCanMoveCount = (entityArmies: any) => {
+    if (!entityArmies) return 0;
+
+    return entityArmies.filter((entity: any) => {
+      const stamina = getStamina({
+        travelingEntityId: BigInt(entity.entity_id),
+        currentArmiesTick,
+      });
+      return (stamina?.amount || 0) >= EternumGlobalConfig.stamina.travelCost;
+    }).length;
   };
 
   return {
@@ -85,6 +96,7 @@ export const useStamina = () => {
     useStaminaByEntityId,
     getStamina,
     getMaxStaminaByEntityId,
+    useArmiesCanMoveCount,
   };
 };
 
@@ -98,11 +110,11 @@ const getMaxStamina = (troops: any, StaminaConfig: Component): number => {
     maxStaminas.push(knightConfig!.max_stamina);
   }
   if (troops.crossbowman_count > 0) {
-    const crossbowmenConfig = getComponentValue(
+    const crossbowmanConfig = getComponentValue(
       StaminaConfig,
-      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Crossbowmen)]),
+      getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Crossbowman)]),
     );
-    maxStaminas.push(crossbowmenConfig!.max_stamina);
+    maxStaminas.push(crossbowmanConfig!.max_stamina);
   }
   if (troops.paladin_count > 0) {
     const paladinConfig = getComponentValue(

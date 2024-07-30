@@ -14,7 +14,7 @@ export const EternumGlobalConfig = {
     foodPerTick: 30,
     donkeysPerTick: 3,
     knightsPerTick: 2,
-    crossbowmenPerTick: 2,
+    crossbowmanPerTick: 2,
     paladinPerTick: 2,
     startingResourcesInputProductionFactor: 4,
     startingResources: [
@@ -24,8 +24,10 @@ export const EternumGlobalConfig = {
   },
   banks: {
     lordsCost: 1000,
-    lpFees: 0,
-    ownerFees: 1844674407370955160,
+    lpFeesNumerator: 15,
+    lpFeesDenominator: 100, // %
+    ownerFeesNumerator: 15,
+    ownerFeesDenominator: 100, // %
   },
   weights: {
     resource: 1000,
@@ -64,6 +66,8 @@ export const EternumGlobalConfig = {
     crossbowmanStrength: 1,
     advantagePercent: 1000,
     disadvantagePercent: 1000,
+    baseArmyNumberForStructure: 3,
+    armyExtraPerMilitaryBuilding: 2,
     // By setting the divisor to 8, the max health that can be taken from the weaker army
     // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
     //
@@ -72,7 +76,18 @@ export const EternumGlobalConfig = {
     // they lose a small precentage (it goes closer to 0% health loss) while the
     // weak army's loss is closer to 12.5%
     pillageHealthDivisor: 8,
-    healthPrecision: 1000000n,
+    healthPrecision: 1000n,
+  },
+  mercenaries: {
+    troops: {
+      knight_count: 4000,
+      paladin_count: 4000,
+      crossbowman_count: 4000,
+    },
+    rewards: [
+      { resource: ResourcesIds.Wheat, amount: 10 },
+      { resource: ResourcesIds.Fish, amount: 20 },
+    ],
   },
 };
 

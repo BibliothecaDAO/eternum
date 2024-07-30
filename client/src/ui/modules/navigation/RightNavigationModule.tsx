@@ -1,7 +1,3 @@
-import { useMemo, useState } from "react";
-import { BaseContainer } from "../../containers/BaseContainer";
-import { useDojo } from "@/hooks/context/DojoContext";
-import { useResources } from "@/hooks/helpers/useResources";
 import { useModal } from "@/hooks/store/useModal";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
@@ -11,16 +7,22 @@ import { MarketModal } from "@/ui/components/trading/MarketModal";
 import { AllResourceArrivals } from "@/ui/components/trading/ResourceArrivals";
 import Button from "@/ui/elements/Button";
 import CircleButton from "@/ui/elements/CircleButton";
+import { useMemo, useState } from "react";
+import { BaseContainer } from "../../containers/BaseContainer";
 
-import { motion } from "framer-motion";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
-import clsx from "clsx";
-import { quests as questsPopup } from "../../components/navigation/Config";
-import { ArrowRight } from "lucide-react";
-import { BuildingThumbs } from "./LeftNavigationModule";
-import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { QuestStatus, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { HintSection } from "@/ui/components/hints/HintModal";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import { Headline } from "@/ui/elements/Headline";
-import { useEntities } from "@/hooks/helpers/useEntities";
+import { HintModalButton } from "@/ui/elements/HintModalButton";
+import clsx from "clsx";
+import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import { quests as questsPopup } from "../../components/navigation/Config";
+import { BuildingThumbs } from "./LeftNavigationModule";
+import { useArrivalsWithResources } from "@/hooks/helpers/useResources";
 
 export enum View {
   None,
@@ -34,19 +36,18 @@ export const RightNavigationModule = () => {
   const view = useUIStore((state) => state.rightNavigationView);
   const setView = useUIStore((state) => state.setRightNavigationView);
 
-  const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const openedPopups = useUIStore((state) => state.openedPopups);
 
-  const { realmEntityId } = useRealmStore();
-
-  const { getEntityInfo } = useEntities();
-  const realmIsMine = getEntityInfo(realmEntityId).isMine;
-
-  const quests = useQuestStore((state) => state.quests);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
-  const { getAllArrivalsWithResources } = useResources();
+  const { realmEntityId } = useRealmStore();
+  const { questClaimStatus } = useQuestClaimStatus();
+
+  const { getEntityInfo } = getEntitiesUtils();
+  const realmIsMine = getEntityInfo(realmEntityId).isMine;
+
+  const { getAllArrivalsWithResources } = useArrivalsWithResources();
 
   const { toggleModal } = useModal();
 
@@ -73,7 +74,7 @@ export const RightNavigationModule = () => {
         button: (
           <CircleButton
             disabled={!realmIsMine}
-            className={clsx({ hidden: !quests?.find((quest) => quest.name === QuestName.CreateTrade)?.claimed })}
+            className={clsx({ hidden: !questClaimStatus[QuestId.CreateTrade] })}
             image={BuildingThumbs.trade}
             tooltipLocation="top"
             label={"Resource Arrivals"}
@@ -96,8 +97,10 @@ export const RightNavigationModule = () => {
             disabled={!realmIsMine}
             className={clsx({
               "animate-pulse":
-                selectedQuest?.name === QuestName.CreateTrade && !selectedQuest.completed && isPopupOpen(questsPopup),
-              hidden: !quests?.find((quest) => quest.name === QuestName.BuildResource)?.claimed,
+                selectedQuest?.id === QuestId.CreateTrade &&
+                selectedQuest.status !== QuestStatus.Completed &&
+                isPopupOpen(questsPopup),
+              hidden: !questClaimStatus[QuestId.BuildResource],
             })}
             image={BuildingThumbs.scale}
             tooltipLocation="top"
@@ -111,7 +114,7 @@ export const RightNavigationModule = () => {
         ),
       },
     ];
-  }, [location, view, quests, openedPopups, selectedQuest, getAllArrivalsWithResources]);
+  }, [location, view, questClaimStatus, openedPopups, selectedQuest, getAllArrivalsWithResources]);
 
   const slideRight = {
     hidden: { x: "100%" },
@@ -121,7 +124,7 @@ export const RightNavigationModule = () => {
   return (
     <>
       <div
-        className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] text-gold right-4 self-center pointer-events-auto ${
+        className={`max-h-full transition-all duration-200 space-x-1  flex z-0 w-[400px] right-4 self-center pointer-events-auto ${
           isOffscreen(view) ? "translate-x-[79%]" : ""
         }`}
       >
@@ -143,13 +146,13 @@ export const RightNavigationModule = () => {
           </div>
         </motion.div>
 
-        <BaseContainer className={`w-full  overflow-y-scroll py-4 ${isOffscreen(view) ? "h-[20vh]" : "h-[80vh]"}`}>
+        <BaseContainer className={`w-full  overflow-y-scroll ${isOffscreen(view) ? "h-[20vh]" : "h-[80vh]"}`}>
           {view === View.ResourceTable ? (
             <div className="px-2 flex flex-col space-y-1 overflow-y-auto">
               <Headline>
                 <div className="flex gap-2">
                   <div className="self-center">Resources</div>
-                  <HintModalButton sectionName="Resources" />
+                  <HintModalButton section={HintSection.Resources} />
                 </div>
               </Headline>
 

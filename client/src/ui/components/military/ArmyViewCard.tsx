@@ -33,8 +33,10 @@ export const ArmyViewCard = ({
     >
       <div className="flex">
         <div className="flex items-center p-1  border-t-0 border-l-0  border pr-3 h5">
-          {army.realm.order && <OrderIcon order={orderNameDict[army.realm.order]} size="xs" className="mr-1" />}
-          {getRealmNameById(BigInt(army.realm.realm_id))}
+          {army.realm && army.realm.order && (
+            <OrderIcon order={orderNameDict[army.realm.order]} size="xs" className="mr-1" />
+          )}
+          {getRealmNameById(BigInt(army.realm?.realm_id || 0n))}
         </div>
       </div>
 
@@ -51,19 +53,14 @@ export const ArmyViewCard = ({
         </Headline>
         <div className="my-2">
           <span>HP: </span>
-          {Number(army.current?.toString()) / 1000}
+          {Number(army.health.current.toString()) / 1000}
         </div>
-        {/* <div className="flex justify-between w-full">
-          <span>{army.battle_id ? army.battle_id : "No battle"}</span>
-          <span> {army.battle_side ? army.battle_side : "idle"}</span>
-        </div> */}
-        {/* <div>{army.battle_side ? army.battle_side : "idle"}</div> */}
         <div className="flex flex-col space-y-2 ">
           <div className="flex border">
             <div className="w-8 h-8 border flex self-center justify-center bg-gold text-brown">
               <div>{currencyFormat(army.troops.crossbowman_count, 0)}</div>
             </div>
-            <div className="self-center px-2">Crossbowmen</div>
+            <div className="self-center px-2">Crossbowman</div>
           </div>
           <div className="flex border">
             <div className="w-8 h-8 border flex self-center justify-center bg-gold text-brown">
@@ -78,7 +75,7 @@ export const ArmyViewCard = ({
             <div className="self-center px-2">Paladins</div>
           </div>
         </div>
-        <InventoryResources entityId={BigInt(army.entity_id)} />
+        <InventoryResources entityIds={[army.entity_id]} />
       </div>
     </div>
   );

@@ -8,10 +8,24 @@ import { useState } from "react";
 import { Trading } from "./Trading";
 import { Combat } from "./Combat";
 import { Points } from "./Points";
-import { Hyperstructures } from "./Hyperstructures";
+import { WorldStructures } from "./WorldStructures";
 import { TheMap } from "./TheMap";
 import { Guilds } from "./Guilds";
-import { Transport } from "./Transport";
+import { Transfers } from "./Transfers";
+
+export enum HintSection {
+  TheWorld = "The World",
+  KeyConcepts = "Key Concepts",
+  Resources = "Resources",
+  Transfers = "Transfers",
+  TheMap = "The Map",
+  Buildings = "Buildings & Bases",
+  Trading = "Trading",
+  Combat = "Combat",
+  WorldStructures = "World Structures",
+  Points = "Points",
+  Guilds = "Guilds",
+}
 
 type HintModalProps = {
   initialActiveSection?: string;
@@ -20,48 +34,48 @@ type HintModalProps = {
 export const HintModal = ({ initialActiveSection }: HintModalProps) => {
   const sections = [
     {
-      name: "The World",
+      name: HintSection.TheWorld,
       content: <TheWorld />,
     },
     {
-      name: "Key Concepts",
+      name: HintSection.KeyConcepts,
       content: <GettingStarted />,
     },
 
     {
-      name: "Resources",
+      name: HintSection.Resources,
       content: <Resources />,
     },
     {
-      name: "Transfers",
-      content: <Transport />,
+      name: HintSection.Transfers,
+      content: <Transfers />,
     },
     {
-      name: "The Map",
+      name: HintSection.TheMap,
       content: <TheMap />,
     },
     {
-      name: "Buildings & Bases",
+      name: HintSection.Buildings,
       content: <Buildings />,
     },
     {
-      name: "Trading",
+      name: HintSection.Trading,
       content: <Trading />,
     },
     {
-      name: "Combat",
+      name: HintSection.Combat,
       content: <Combat />,
     },
     {
-      name: "Hyperstructures",
-      content: <Hyperstructures />,
+      name: HintSection.WorldStructures,
+      content: <WorldStructures />,
     },
     {
-      name: "Points",
+      name: HintSection.Points,
       content: <Points />,
     },
     {
-      name: "Guilds",
+      name: HintSection.Guilds,
       content: <Guilds />,
     },
   ];
@@ -72,7 +86,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
 
   return (
     <ModalContainer>
-      <div className="grid grid-cols-12 container mx-auto gap-4 bg-brown my-10 p-4 ornate-borders ">
+      <div className="grid grid-cols-12 container mx-auto gap-4 bg-black/90 bg-hex-bg my-10 p-4  ">
         <div className="col-span-12 text-center">
           <h3>The Lordpedia</h3>
         </div>

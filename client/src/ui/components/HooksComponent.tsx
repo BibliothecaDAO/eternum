@@ -1,12 +1,7 @@
-import { useEffect } from "react";
 import { useFetchBlockchainData } from "../../hooks/store/useBlockchainStore";
-
-import useUIStore from "@/hooks/store/useUIStore";
-import { Hexagon } from "@/types";
 import { useSetExistingStructures } from "@/hooks/store/_mapStore";
 import { useComputePointsLeaderboards } from "@/hooks/store/useLeaderBoardStore";
 import { useTravelPath } from "./worldmap/hexagon/useTravelPath";
-import { useQuests } from "@/hooks/store/useQuestStore";
 import { useHexPosition } from "@/hooks/helpers/useHexPosition";
 
 export const HooksComponent = () => {
@@ -14,16 +9,7 @@ export const HooksComponent = () => {
   useSetExistingStructures();
   useComputePointsLeaderboards();
   useTravelPath();
-  useQuests();
   useHexPosition();
-
-  // const setHexData = useUIStore((state) => state.setHexData);
-
-  // useEffect(() => {
-  //   fetch("/jsons/hexData.json")
-  //     .then((response) => response.json())
-  //     .then((data) => setHexData(data as Hexagon[]));
-  // }, []);
 
   return <></>;
 };

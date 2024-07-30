@@ -9,9 +9,10 @@ import { motion } from "framer-motion";
 import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
-import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { guilds, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
 import { BuildingThumbs } from "./LeftNavigationModule";
+import { QuestStatus, useUnclaimedQuestsCount, useQuests, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
+import { QuestId } from "@/ui/components/quest/questDetails";
 
 export enum MenuEnum {
   realm = "realm",
@@ -28,25 +29,23 @@ export enum MenuEnum {
 }
 
 export const BottomNavigation = () => {
-  const [location, setLocation] = useLocation();
+  const [location, _] = useLocation();
 
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const { realmEntityId } = useRealmStore();
+  const { quests } = useQuests();
+  const { unclaimedQuestsCount } = useUnclaimedQuestsCount();
+  const { questClaimStatus } = useQuestClaimStatus();
+
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const toggleShowAllArmies = useUIStore((state) => state.toggleShowAllArmies);
-  const showAllArmies = useUIStore((state) => state.showAllArmies);
+  const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const isWorldView = useMemo(() => location === "/map", [location]);
-
-  const quests = useQuestStore((state) => state.quests);
-  const selectedQuest = useQuestStore((state) => state.selectedQuest);
-  const claimableQuestsLength = useQuestStore((state) => state.claimableQuestsLength);
 
   const { playerStructures } = useEntities();
   const structures = useMemo(() => playerStructures(), [playerStructures]);
 
-  const questToClaim = quests?.find((quest) => quest.completed && !quest.claimed);
+  const questToClaim = quests?.find((quest: any) => quest.status === QuestStatus.Completed);
 
   const secondaryNavigation = useMemo(() => {
     return [
@@ -60,7 +59,7 @@ export const BottomNavigation = () => {
               active={isPopupOpen(questsWindow)}
               size="lg"
               onClick={() => togglePopup(questsWindow)}
-              notification={isRealmSelected(realmEntityId, structures) ? claimableQuestsLength : undefined}
+              notification={isRealmSelected(realmEntityId, structures) ? unclaimedQuestsCount : undefined}
               notificationLocation={"topleft"}
               disabled={!isRealmSelected(realmEntityId, structures)}
             />
@@ -83,20 +82,7 @@ export const BottomNavigation = () => {
             active={isPopupOpen(leaderboard)}
             size="lg"
             onClick={() => togglePopup(leaderboard)}
-            className={clsx({ hidden: claimableQuestsLength > 0 })}
-          />
-        ),
-      },
-      {
-        button: (
-          <CircleButton
-            tooltipLocation="top"
-            image={BuildingThumbs.military}
-            label={""}
-            active={showAllArmies}
-            size="lg"
-            onClick={toggleShowAllArmies}
-            className={clsx({ hidden: !isWorldView })}
+            className={clsx({ hidden: !questClaimStatus[QuestId.Travel] })}
           />
         ),
       },
@@ -109,21 +95,19 @@ export const BottomNavigation = () => {
             active={isPopupOpen(guilds)}
             size="lg"
             onClick={() => togglePopup(guilds)}
-            className={clsx({ hidden: claimableQuestsLength > 0 })}
+            className={clsx({
+              hidden: !questClaimStatus[QuestId.Travel],
+            })}
           />
         ),
       },
     ];
-  }, [claimableQuestsLength, selectedQuest, quests]);
+  }, [unclaimedQuestsCount, selectedQuest, quests, realmEntityId]);
 
   const slideUp = {
     hidden: { y: "100%", transition: { duration: 0.3 } },
     visible: { y: "0%", transition: { duration: 0.3 } },
   };
-
-  if (!nextBlockTimestamp) {
-    return null;
-  }
 
   return (
     <motion.div
