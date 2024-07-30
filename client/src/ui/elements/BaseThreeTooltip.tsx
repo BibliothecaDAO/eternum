@@ -39,9 +39,10 @@ export const BaseThreeTooltip = ({
     const throttledSetTooltipPosition = throttle(setTooltipPosition, 10);
 
     const initializeTooltipPosition = () => {
+      // todo: refactor when we have initial mouse position when componenent is rendered
       const initialMousePosition = {
-        clientX: window.innerWidth / 2,
-        clientY: window.innerHeight / 2,
+        clientX: -10000,
+        clientY: -10000,
       };
       setTooltipPosition(initialMousePosition as MouseEvent);
       document.addEventListener("mousemove", throttledSetTooltipPosition);

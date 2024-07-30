@@ -5,6 +5,7 @@ import WorldmapScene from "../scenes/Worldmap";
 import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { useThreeStore } from "@/hooks/store/useThreeStore";
+import { throttle } from "lodash";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -73,7 +74,7 @@ export class ArmyManager {
     const mouse = new THREE.Vector2();
     const raycaster = new THREE.Raycaster();
 
-    window.addEventListener("mousemove", (event) => {
+    const throttledMouseMove = throttle((event: MouseEvent) => {
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, this.worldMapScene.getCamera());
@@ -88,7 +89,9 @@ export class ArmyManager {
         }
       }
       useThreeStore.getState().setHoveredArmyEntityId(null);
-    });
+    }, 100); // Adjust the throttle delay (in milliseconds) as needed
+
+    window.addEventListener("mousemove", throttledMouseMove);
   }
 
   updateArmy(entityId: number, hexCoords: { col: number; row: number }, isMine: boolean) {
