@@ -1,11 +1,12 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
-import { Prize, Quest, useQuestStore } from "@/hooks/store/useQuestStore";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import Button from "@/ui/elements/Button";
 import { useState } from "react";
 import { Check, ShieldQuestion } from "lucide-react";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
 
 export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: bigint }) => {
   const {
@@ -42,36 +43,42 @@ export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: bigint 
 
   return (
     <>
-      <Button className={"w-6"} size={"xs"} variant={"default"} onClick={() => setSelectedQuest(undefined)}>
+      <Button className={"w-6"} size={"xs"} variant={"default"} onClick={() => setSelectedQuest(null)}>
         Back
       </Button>
 
-      <div className={` p-4  text-gold clip-angled-sm  ${quest.completed ? "bg-green/5" : " bg-green/30 "}`}>
+      <div
+        className={` p-4  text-gold clip-angled-sm  ${
+          quest.status === QuestStatus.Completed || quest.status === QuestStatus.Claimed
+            ? "bg-green/5"
+            : " bg-green/30 "
+        }`}
+      >
         <div className="flex justify-between">
           <h5 className="mb-3 font-bold">{quest.name}</h5>
-          {quest.completed ? <Check /> : <ShieldQuestion />}
+          {quest.status !== QuestStatus.InProgress ? <Check /> : <ShieldQuestion />}
         </div>
 
         <p className="text-xl mb-4">{quest.description}</p>
 
-        {quest.steps?.map(({ description, completed }, index) => (
+        {quest.steps?.map((step: any, index: any) => (
           <div className="flex" key={index}>
-            <div className="text-md mb-4 mr-4">- {description}</div>
-            {completed ? <Check /> : <ShieldQuestion />}
+            <div className="text-md mb-4 mr-4">- {step}</div>
           </div>
         ))}
 
         <QuestRewards prizes={quest?.prizes} />
 
         <div className="my-2 grid grid-cols-3 gap-2">
-          {quest.completed &&
-            (quest.claimed ? (
-              <div className="w-full text-brilliance">Rewards claimed</div>
-            ) : (
+          {quest.status !== QuestStatus.Claimed ? (
+            quest.status === QuestStatus.Completed && (
               <Button isLoading={isLoading} variant="primary" onClick={handleAllClaims}>
                 Claim Rewards
               </Button>
-            ))}
+            )
+          ) : (
+            <div className="w-full text-brilliance">Rewards claimed</div>
+          )}
         </div>
       </div>
     </>

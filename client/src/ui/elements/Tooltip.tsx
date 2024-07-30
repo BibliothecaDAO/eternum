@@ -1,7 +1,7 @@
 import clsx from "clsx";
-import useUIStore from "../../hooks/store/useUIStore";
-import { useEffect, useRef } from "react";
 import { throttle } from "lodash";
+import { useEffect, useRef } from "react";
+import useUIStore from "../../hooks/store/useUIStore";
 
 type TooltipProps = {
   className?: string;

@@ -3,11 +3,11 @@ import useLeaderBoardStore from "@/hooks/store/useLeaderBoardStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
 import { StructureType } from "@bibliothecadao/eternum";
-import { Billboard, useGLTF, useTexture, Image } from "@react-three/drei";
+import { Billboard, Image, useGLTF, useTexture } from "@react-three/drei";
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
-import { InstancedCastles } from "./InstancedCastles";
 import { InstancedBanks } from "./InstancedBanks";
+import { InstancedCastles } from "./InstancedCastles";
 import { ShardsMines } from "./ShardsMines";
 
 export type Structure = { col: number; row: number; type: StructureType; entityId: bigint };

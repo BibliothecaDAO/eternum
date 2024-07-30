@@ -1,8 +1,7 @@
 import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import { Realm, Structure, useStructuresPosition } from "@/hooks/helpers/useStructures";
+import { getStructureAtPosition } from "@/hooks/helpers/useStructures";
 import useUIStore from "@/hooks/store/useUIStore";
-import { CombatTarget } from "@/types";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
@@ -11,8 +10,7 @@ import { EternumGlobalConfig, Position, ResourcesIds } from "@bibliothecadao/ete
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ArrowRight } from "lucide-react";
-import { useMemo, useState } from "react";
-import { RealmListItem } from "../worldmap/realms/RealmListItem";
+import { useState } from "react";
 import { StructureListItem } from "../worldmap/structures/StructureListItem";
 
 export const StructureCard = ({
@@ -23,66 +21,26 @@ export const StructureCard = ({
   ownArmySelected: ArmyInfo | undefined;
 }) => {
   const [showMergeTroopsPopup, setShowMergeTroopsPopup] = useState<boolean>(false);
-  const { useFormattedRealmAtPosition, useFormattedStructureAtPosition } = useStructuresPosition({ position });
-
-  const formattedRealmAtPosition = useFormattedRealmAtPosition();
-  const formattedStructureAtPosition = useFormattedStructureAtPosition();
-
-  const setBattleView = useUIStore((state) => state.setBattleView);
-
-  const button = useMemo(() => {
-    if (
-      (formattedRealmAtPosition && formattedRealmAtPosition.self) ||
-      (formattedStructureAtPosition && formattedStructureAtPosition.isMine)
-    ) {
-      return (
-        ownArmySelected && (
-          <Button variant="primary" onClick={() => setShowMergeTroopsPopup(true)}>
-            Protect
-          </Button>
-        )
-      );
-    } else if (
-      (formattedRealmAtPosition && !formattedRealmAtPosition.self) ||
-      (formattedStructureAtPosition && !formattedStructureAtPosition.isMine)
-    ) {
-      const target = Boolean(formattedRealmAtPosition) ? formattedRealmAtPosition : formattedStructureAtPosition;
-      return (
-        ownArmySelected && (
-          <Button
-            variant="primary"
-            onClick={() =>
-              setBattleView({
-                battle: undefined,
-                target: { type: CombatTarget.Structure, entity: target as Realm | Structure },
-              })
-            }
-          >
-            Combat
-          </Button>
-        )
-      );
-    }
-  }, [formattedRealmAtPosition, formattedStructureAtPosition, ownArmySelected]);
-
-  const target = formattedStructureAtPosition || formattedRealmAtPosition;
+  const structure = getStructureAtPosition({ x: position.x, y: position.y });
 
   return (
-    Boolean(formattedStructureAtPosition) && (
-      <div className="h-full flex flex-col justify-center">
-        {!showMergeTroopsPopup && formattedRealmAtPosition && (
-          <RealmListItem realm={formattedRealmAtPosition} extraButton={button} />
-        )}
-        {!showMergeTroopsPopup && !formattedRealmAtPosition && formattedStructureAtPosition && (
-          <StructureListItem structure={formattedStructureAtPosition} extraButton={button} />
+    Boolean(structure) && (
+      <div className="px-2 w-[31rem] py-2">
+        Structure
+        {!showMergeTroopsPopup && (
+          <StructureListItem
+            structure={structure!}
+            ownArmySelected={ownArmySelected}
+            setShowMergeTroopsPopup={setShowMergeTroopsPopup}
+          />
         )}
         {showMergeTroopsPopup && (
-          <div className="flex flex-col w-[100%]">
+          <div className="flex flex-col w-[100%] mt-2">
             {ownArmySelected && (
               <MergeTroopsPanel
                 giverArmy={ownArmySelected}
                 setShowMergeTroopsPopup={setShowMergeTroopsPopup}
-                structureEntityId={BigInt(target!.entity_id)}
+                structureEntityId={structure!.entity_id}
               />
             )}
           </div>
@@ -94,11 +52,17 @@ export const StructureCard = ({
 
 type MergeTroopsPanelProps = {
   giverArmy: ArmyInfo;
+  takerArmy?: ArmyInfo;
   setShowMergeTroopsPopup: (val: boolean) => void;
-  structureEntityId: bigint;
+  structureEntityId?: bigint;
 };
 
-const MergeTroopsPanel = ({ giverArmy, setShowMergeTroopsPopup, structureEntityId }: MergeTroopsPanelProps) => {
+export const MergeTroopsPanel = ({
+  giverArmy,
+  setShowMergeTroopsPopup,
+  structureEntityId,
+  takerArmy,
+}: MergeTroopsPanelProps) => {
   return (
     <div className="flex flex-col clip-angled-sm bg-gold/20 p-3 max-h-[42vh] overflow-y-auto">
       <Button className="mb-3 w-[30%]" variant="default" size="xs" onClick={() => setShowMergeTroopsPopup(false)}>
@@ -106,6 +70,7 @@ const MergeTroopsPanel = ({ giverArmy, setShowMergeTroopsPopup, structureEntityI
       </Button>
       <TroopExchange
         giverArmy={giverArmy}
+        takerArmy={takerArmy}
         giverArmyEntityId={BigInt(giverArmy.entity_id)}
         structureEntityId={structureEntityId}
       />
@@ -115,8 +80,9 @@ const MergeTroopsPanel = ({ giverArmy, setShowMergeTroopsPopup, structureEntityI
 
 type TroopsProps = {
   giverArmy: ArmyInfo;
+  takerArmy?: ArmyInfo;
   giverArmyEntityId: bigint;
-  structureEntityId: bigint;
+  structureEntityId?: bigint;
 };
 
 const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; crossbowman_count: bigint }) => {
@@ -127,13 +93,7 @@ const troopsToFormat = (troops: { knight_count: bigint; paladin_count: bigint; c
   };
 };
 
-const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: TroopsProps) => {
-  const [troopsGiven, setTroopsGiven] = useState<Record<number, bigint>>({
-    [ResourcesIds.Crossbowman]: 0n,
-    [ResourcesIds.Knight]: 0n,
-    [ResourcesIds.Paladin]: 0n,
-  });
-
+const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId, takerArmy }: TroopsProps) => {
   const {
     setup: {
       account: { account },
@@ -142,17 +102,25 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: Troo
     },
   } = useDojo();
 
-  const protector = useComponentValue(Protector, getEntityIdFromKeys([structureEntityId]));
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const [troopsGiven, setTroopsGiven] = useState<Record<number, bigint>>({
+    [ResourcesIds.Crossbowman]: 0n,
+    [ResourcesIds.Knight]: 0n,
+    [ResourcesIds.Paladin]: 0n,
+  });
+
+  const protector = useComponentValue(Protector, getEntityIdFromKeys([structureEntityId || 0n]));
 
   const createProtector = async () => {
+    setLoading(true);
     await create_army({
       signer: account,
       is_defensive_army: true,
-      army_owner_id: structureEntityId,
+      army_owner_id: structureEntityId!,
     });
+    setLoading(false);
   };
-
-  const [loading, setLoading] = useState<boolean>(false);
 
   const [transferDirection, setTransferDirection] = useState<"to" | "from">("to");
 
@@ -160,8 +128,8 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: Troo
     setLoading(true);
     await army_merge_troops({
       signer: account,
-      from_army_id: transferDirection === "to" ? giverArmyEntityId : protector!.army_id,
-      to_army_id: transferDirection === "to" ? protector!.army_id : giverArmyEntityId,
+      from_army_id: transferDirection === "to" ? giverArmyEntityId : takerArmy?.entity_id || protector!.army_id,
+      to_army_id: transferDirection === "to" ? takerArmy?.entity_id || protector!.army_id : giverArmyEntityId,
       troops: {
         knight_count: troopsGiven[ResourcesIds.Knight] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
         paladin_count: troopsGiven[ResourcesIds.Paladin] * BigInt(EternumGlobalConfig.resources.resourceMultiplier),
@@ -182,7 +150,10 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: Troo
   };
 
   const giverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([giverArmyEntityId]))!.troops;
-  const receiverArmyTroops = useComponentValue(Army, getEntityIdFromKeys([protector?.army_id || 0n]))?.troops;
+  const receiverArmyTroops = useComponentValue(
+    Army,
+    getEntityIdFromKeys([takerArmy?.entity_id || protector?.army_id || 0n]),
+  )?.troops;
 
   return (
     <div className="flex flex-col">
@@ -231,8 +202,8 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: Troo
         </div>
 
         <div className="w-[60%] ml-1">
-          <p className="pt-2 pb-1 text-center">Transfer {transferDirection} Structure</p>
-          {!protector ? (
+          <p className="pt-2 pb-1 text-center">Transfer {transferDirection}</p>
+          {!protector && !takerArmy ? (
             <Button variant={"primary"} onClick={createProtector}>
               Create defending army
             </Button>
@@ -300,7 +271,7 @@ const TroopExchange = ({ giverArmy, giverArmyEntityId, structureEntityId }: Troo
         onClick={mergeTroops}
         isLoading={loading}
         variant="primary"
-        disabled={Object.values(troopsGiven).every((amount) => amount === 0n) || !protector}
+        disabled={Object.values(troopsGiven).every((amount) => amount === 0n) || (!protector && !takerArmy)}
       >
         Reinforce
       </Button>

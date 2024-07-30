@@ -1,15 +1,20 @@
+import { sortItems } from "@/ui/utils/utils";
 import { useCallback, useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import Button from "../../../elements/Button";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
-import { sortItems } from "@/ui/utils/utils";
 
-import { useGuilds, GuildAndName } from "../../../../hooks/helpers/useGuilds";
-import { hasGuild } from "./utils";
+import { ClientComponents } from "@/dojo/createClientComponents";
+import { ComponentValue } from "@dojoengine/recs";
+import { GuildAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
 import { GuildMembers } from "./GuildMembers";
+import { hasGuild } from "./utils";
 
-type GuildAndNameKeys = keyof GuildAndName;
+type GuildAndNameKeys = keyof (ComponentValue<ClientComponents["Guild"]["schema"]> & {
+  name: string;
+  rank: string | number;
+});
 interface SortingParamGuildAndName {
   label: string;
   sortKey: GuildAndNameKeys;
@@ -106,20 +111,20 @@ export const Guilds = () => {
             {sortItems(guilds, activeSort)?.map((guild: GuildAndName) => {
               return (
                 <div
-                  key={guild.entity_id}
+                  key={guild.guild.entity_id}
                   className={`grid grid-cols-4 gap-4 text-md clip-angled-sm p-1 ${
-                    userGuildEntityId === BigInt(guild.entity_id) ? "bg-green/20" : ""
+                    userGuildEntityId === guild.guild.entity_id ? "bg-green/20" : ""
                   } `}
                 >
                   <p className="col-span-1">{`#${guild.rank}`} </p>
                   <p
                     className="col-span-1 hover:text-white truncate"
-                    onClick={() => setSelectedGuild({ guildEntityId: BigInt(guild.entity_id), name: guild.name })}
+                    onClick={() => setSelectedGuild({ guildEntityId: guild.guild.entity_id, name: guild.name })}
                   >
                     {guild.name}
                   </p>
-                  <p className="col-span-1">{guild.is_public ? "Public" : "Private"}</p>
-                  <p className="col-span-1">{guild.member_count}</p>
+                  <p className="col-span-1">{guild.guild.is_public ? "Public" : "Private"}</p>
+                  <p className="col-span-1">{guild.guild.member_count}</p>
                 </div>
               );
             })}

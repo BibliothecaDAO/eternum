@@ -1,26 +1,35 @@
+import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
+import useBlockchainStore from "@/hooks/store/useBlockchainStore";
+import { Health } from "@/types";
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { Health } from "./Battle";
 
 export const BattleProgressBar = ({
+  battleManager,
   ownArmySide,
   attackingHealth,
   attackerArmies,
   defendingHealth,
   defenderArmies,
   structure,
-  durationLeft,
 }: {
+  battleManager: BattleManager | undefined;
   ownArmySide: string;
   attackingHealth: Health | undefined;
   attackerArmies: ArmyInfo[];
   defendingHealth: Health | undefined;
-  defenderArmies: ArmyInfo[];
+  defenderArmies: (ArmyInfo | undefined)[];
   structure: Structure | undefined;
-  durationLeft?: Date;
 }) => {
+  const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
+  const durationLeft = useMemo(() => {
+    if (!battleManager) return undefined;
+    return battleManager!.getTimeLeft(currentTimestamp!);
+  }, [attackingHealth, currentTimestamp, defendingHealth]);
+
   const [time, setTime] = useState<Date | undefined>(durationLeft);
 
   const attackerName = `${attackerArmies.length > 0 ? "Attackers" : "Empty"} ${ownArmySide === "Attack" ? "(⚔️)" : ""}`;
@@ -38,11 +47,13 @@ export const BattleProgressBar = ({
   );
 
   const attackingHealthPercentage = useMemo(
-    () => ((Number(attackingHealth?.current || 0) / Number(totalHealth)) * 100).toFixed(2),
+    () =>
+      totalHealth !== 0n ? ((Number(attackingHealth?.current || 0n) / Number(totalHealth)) * 100).toFixed(2) : "0",
     [attackingHealth, totalHealth],
   );
   const defendingHealthPercentage = useMemo(
-    () => ((Number(defendingHealth?.current || 0) / Number(totalHealth)) * 100).toFixed(2),
+    () =>
+      totalHealth !== 0n ? ((Number(defendingHealth?.current || 0n) / Number(totalHealth)) * 100).toFixed(2) : "0",
     [defendingHealth, totalHealth],
   );
 
@@ -70,27 +81,8 @@ export const BattleProgressBar = ({
   }, [attackingHealthPercentage, defendingHealthPercentage]);
 
   const battleStatus = useMemo(() => {
-    if (
-      ownArmySide === "" ||
-      time ||
-      defenderArmies.length === 0 ||
-      defenderArmies[0] === undefined ||
-      attackerArmies.length === 0 ||
-      attackerArmies[0] === undefined ||
-      BigInt(defenderArmies[0].battle_id) === 0n
-    )
-      return;
-    return ownArmySide === "Attack"
-      ? Number(attackingHealthPercentage) === 100
-        ? "You Won"
-        : Number(attackingHealthPercentage) === 0
-          ? "You Lost"
-          : undefined
-      : Number(defendingHealthPercentage) === 100
-        ? "You Won"
-        : Number(defendingHealthPercentage) === 0
-          ? "You Lost"
-          : undefined;
+    if (time) return;
+    if (ownArmySide === "") return "Battle ended";
   }, [time]);
 
   return (
@@ -114,7 +106,9 @@ export const BattleProgressBar = ({
           <p>{defenderName}</p>
         </div>
       </div>
-      <div className="relative h-8  mx-auto w-2/3 -y animate-slowPulse" style={{ background: gradient }}></div>
+      {!isNaN(Number(attackingHealthPercentage)) && !isNaN(Number(defendingHealthPercentage)) && (
+        <div className="relative h-8  mx-auto w-2/3 -y animate-slowPulse" style={{ background: gradient }}></div>
+      )}
     </motion.div>
   );
 };

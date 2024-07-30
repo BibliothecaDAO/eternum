@@ -1,4 +1,4 @@
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import TextInput from "@/ui/elements/TextInput";
@@ -28,7 +28,7 @@ export const ResourceBar = ({
   setAmount,
   disableInput = false,
 }: ResourceBarProps) => {
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
 

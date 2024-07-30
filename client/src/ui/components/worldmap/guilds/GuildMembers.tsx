@@ -1,11 +1,10 @@
-import { useMemo, useState, useCallback } from "react";
+import { copyPlayerAddressToClipboard, displayAddress, sortItems } from "@/ui/utils/utils";
+import { useCallback, useMemo, useState } from "react";
+import { useDojo } from "../../../../hooks/context/DojoContext";
+import { GuildMemberAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
+import Button from "../../../elements/Button";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
-import { GuildMemberAndName } from "../../../../hooks/helpers/useGuilds";
-import { displayAddress, sortItems, copyPlayerAddressToClipboard } from "@/ui/utils/utils";
-import Button from "../../../elements/Button";
-import { useDojo } from "../../../../hooks/context/DojoContext";
-import { useGuilds } from "../../../../hooks/helpers/useGuilds";
 import { SelectedGuildInterface } from "./Guilds";
 
 interface GuildMembersProps {
@@ -81,7 +80,7 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
         {sortItems(guildMembers, activeSort)?.map((member: GuildMemberAndName) => {
           return (
             <div
-              key={member.address}
+              key={member.guildMember.address}
               className={`grid grid-cols-3 gap-4 text-sm clip-angled-sm p-1 ${
                 member.playerAddress == account.address ? "bg-green/20" : ""
               } `}
@@ -89,13 +88,13 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
               <p className="col-span-1">{member.name}</p>
               <p
                 className="col-span-1 hover:text-white"
-                onClick={() => copyPlayerAddressToClipboard(BigInt(member.address), member.name)}
+                onClick={() => copyPlayerAddressToClipboard(BigInt(member.guildMember.address), member.name)}
               >
                 {displayAddress(member.playerAddress)}
               </p>
               {isOwner && member.playerAddress != account.address && guildOwner?.address == BigInt(account.address) && (
                 <div className="col-span-1">
-                  <Button size="xs" isLoading={isLoading} onClick={() => removeGuildMember(BigInt(member.address))}>
+                  <Button size="xs" isLoading={isLoading} onClick={() => removeGuildMember(member.guildMember.address)}>
                     Kick out
                   </Button>
                 </div>

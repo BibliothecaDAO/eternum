@@ -6,14 +6,12 @@ import { Hexagon } from "@/types";
 import { useSetExistingStructures } from "@/hooks/store/_mapStore";
 import { useComputePointsLeaderboards } from "@/hooks/store/useLeaderBoardStore";
 import { useTravelPath } from "./worldmap/hexagon/useTravelPath";
-import { useQuests } from "@/hooks/store/useQuestStore";
 
 export const HooksComponent = () => {
   useFetchBlockchainData();
   useSetExistingStructures();
   useComputePointsLeaderboards();
   useTravelPath();
-  useQuests();
 
   const setHexData = useUIStore((state) => state.setHexData);
 

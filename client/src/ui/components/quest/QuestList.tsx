@@ -1,16 +1,16 @@
-import { Prize, Quest, useQuestStore } from "@/hooks/store/useQuestStore";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import { useEffect, useMemo, useState } from "react";
 import { areAllQuestsClaimed, groupQuestsByDepth } from "./utils";
 import Button from "@/ui/elements/Button";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { multiplyByPrecision } from "@/ui/utils/utils";
+import { Prize, Quest, QuestStatus, useQuests } from "@/hooks/helpers/useQuests";
 
 export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: bigint | undefined }) => {
-  const showCompletedQuests = useQuestStore((state) => state.showCompletedQuests);
-  const setShowCompletedQuests = useQuestStore((state) => state.setShowCompletedQuests);
+  const [showCompletedQuests, setShowCompletedQuests] = useState(false);
   const [skipTutorial, setSkipTutorial] = useState(false);
-  const [maxDepthToShow, setMaxDepthToShow] = useState(1);
+  const [maxDepthToShow, setMaxDepthToShow] = useState(0);
 
   const groupedQuests = useMemo(() => groupQuestsByDepth(quests), [quests]);
 
@@ -22,8 +22,7 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: big
           return depth + 1;
         }
         return max;
-        // need to start from depth 1
-      }, 1);
+      }, 0);
     setMaxDepthToShow(newMaxDepth);
   }, [quests, groupedQuests]);
 
@@ -51,9 +50,11 @@ export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: big
           .sort(([a], [b]) => Number(a) - Number(b))
           .map(([depth, depthQuests]) => {
             if (Number(depth) > maxDepthToShow) return null;
-            const uncompletedQuests = depthQuests.filter((quest) => !quest.claimed || showCompletedQuests);
-            if (uncompletedQuests.length === 0) return null;
-            return <QuestDepthGroup key={depth} depthQuests={uncompletedQuests} />;
+            const shownQuests = depthQuests.filter(
+              (quest) => quest.status !== QuestStatus.Claimed || showCompletedQuests,
+            );
+            if (shownQuests.length === 0) return null;
+            return <QuestDepthGroup key={depth} depthQuests={shownQuests} />;
           })}
       </div>
     </>
@@ -73,7 +74,7 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
 
   return (
     <div
-      className={`p-4 border hover:opacity-70 ${quest.claimed ? "text-green" : "text-gold"}`}
+      className={`p-4 border hover:opacity-70 ${quest.status === QuestStatus.Claimed ? "text-green" : "text-gold"}`}
       onClick={() => setSelectedQuest(quest)}
     >
       <div className="text-xl">{quest.name}</div>
@@ -90,12 +91,12 @@ const SkipTutorial = ({ entityId }: { entityId: bigint }) => {
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
-  const quests = useQuestStore((state) => state.quests);
+  const { quests } = useQuests();
   const { getQuestResources } = useRealm();
 
   const questResources = getQuestResources();
 
-  const unclaimedQuests = quests?.filter((quest) => !quest.claimed);
+  const unclaimedQuests = quests?.filter((quest) => quest.status !== QuestStatus.Claimed);
 
   const resourcesToMint =
     unclaimedQuests?.flatMap((quest: Quest) =>

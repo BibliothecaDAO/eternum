@@ -1,4 +1,4 @@
-import { useResourceBalance } from "@/hooks/helpers/useResources";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import { EternumGlobalConfig, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
@@ -21,7 +21,7 @@ export const TravelInfo = ({
   const [donkeyBalance, setDonkeyBalance] = useState(0);
   const neededDonkeys = Math.ceil(divideByPrecision(resourceWeight) / EternumGlobalConfig.carryCapacity.donkey);
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   useEffect(() => {
     const totalWeight = getTotalResourceWeight(resources);

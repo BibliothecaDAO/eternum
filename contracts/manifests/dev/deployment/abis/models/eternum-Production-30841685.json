@@ -380,7 +380,7 @@
       },
       {
         "name": "building_count",
-        "type": "core::integer::u128"
+        "type": "core::integer::u8"
       },
       {
         "name": "production_rate",

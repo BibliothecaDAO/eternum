@@ -1,16 +1,16 @@
+import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import Button from "@/ui/elements/Button";
-import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "@/ui/utils/utils";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ReactComponent as Refresh } from "@/assets/icons/common/refresh.svg";
-import { useComponentValue } from "@dojoengine/react";
-import { ResourceBar } from "@/ui/components/bank/ResourceBar";
-import { EternumGlobalConfig, ResourcesIds, resources } from "@bibliothecadao/eternum";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import { TravelInfo } from "../resources/ResourceWeight";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { useTravel } from "@/hooks/helpers/useTravel";
+import { ResourceBar } from "@/ui/components/bank/ResourceBar";
+import Button from "@/ui/elements/Button";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "@/ui/utils/utils";
+import { EternumGlobalConfig, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { TravelInfo } from "../resources/ResourceWeight";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 
 const OWNER_FEE = EternumGlobalConfig.banks.ownerFeesNumerator / EternumGlobalConfig.banks.ownerFeesDenominator;
@@ -25,7 +25,7 @@ export const ResourceSwap = ({ bankEntityId, entityId }: { bankEntityId: bigint;
     },
   } = useDojo();
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
   const { computeTravelTime } = useTravel();
 
   const [isBuyResource, setIsBuyResource] = useState(true);

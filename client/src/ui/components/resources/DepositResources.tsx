@@ -1,5 +1,5 @@
 import { useDojo } from "@/hooks/context/DojoContext";
-import { useOwnedEntitiesOnPosition, useResources } from "@/hooks/helpers/useResources";
+import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
@@ -10,13 +10,14 @@ import { useState } from "react";
 type DepositResourcesProps = {
   entityId: bigint;
   battleInProgress?: boolean;
+  armyInBattle: boolean;
 };
 
-export const DepositResources = ({ entityId, battleInProgress }: DepositResourcesProps) => {
+export const DepositResources = ({ entityId, battleInProgress, armyInBattle }: DepositResourcesProps) => {
   const { account, setup } = useDojo();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getResourcesFromBalance } = useResources();
+  const { getResourcesFromBalance } = getResourcesUtils();
 
   const inventoryResources = getResourcesFromBalance(entityId);
 
@@ -30,7 +31,7 @@ export const DepositResources = ({ entityId, battleInProgress }: DepositResource
   const entityState = determineEntityState(
     nextBlockTimestamp,
     false,
-    Number(arrivalTime?.arrives_at || 0n),
+    arrivalTime?.arrives_at,
     inventoryResources.length > 0,
   );
 
@@ -56,12 +57,14 @@ export const DepositResources = ({ entityId, battleInProgress }: DepositResource
           size="md"
           className="w-full"
           isLoading={isLoading}
-          disabled={entityState === EntityState.Traveling || battleInProgress}
+          disabled={entityState === EntityState.Traveling || battleInProgress || armyInBattle}
           onClick={() => onOffload(depositEntityId)}
           variant="primary"
           withoutSound
         >
-          {battleInProgress ? `Battle in progress` : `Deposit Resources`}
+          {battleInProgress || armyInBattle
+            ? `${armyInBattle ? "Army in battle" : "Battle in progress"}`
+            : `Deposit Resources`}
         </Button>
       </div>
     )

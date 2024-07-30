@@ -376,7 +376,7 @@
       },
       {
         "name": "hyperstructure_count",
-        "type": "core::integer::u128"
+        "type": "core::integer::u32"
       }
     ]
   },

@@ -1,55 +1,12 @@
 import { Event } from "@/dojo/events/graphqlClient";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
-import useUIStore from "@/hooks/store/useUIStore";
-import { CombatTarget } from "@/types";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
-import Button from "@/ui/elements/Button";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { BattleSide, BuildingType, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
 import { Subscription } from "rxjs";
-import { ArmyChip } from "./ArmyChip";
-
-export const EnemyArmies = ({ armies, ownArmySelected }: { armies: ArmyInfo[]; ownArmySelected: ArmyInfo }) => {
-  const setBattleView = useUIStore((state) => state.setBattleView);
-
-  return (
-    <div className="h-full flex flex-col justify-center justify-items-center">
-      {armies.length !== 0 && (
-        <>
-          <div className="grid grid-cols-1 gap-2">
-            {armies.map((army: ArmyInfo, index) => {
-              const { attacker, defender } =
-                String(army.battle_side) === "Attacker"
-                  ? { attacker: army, defender: ownArmySelected }
-                  : { attacker: ownArmySelected, defender: army };
-              const extraButton =
-                ownArmySelected && !army.isMine ? (
-                  <div className="my-auto w-4 ml-2 ">
-                    <Button
-                      className={`m-auto ${army.battle_id ? "animate-pulse" : ""}`}
-                      onClick={() =>
-                        setBattleView({
-                          battle: undefined,
-                          target: { type: CombatTarget.Army, entity: BigInt(defender.entity_id) },
-                        })
-                      }
-                    >
-                      {army.battle_id ? "In battle" : "Combat"}
-                    </Button>
-                  </div>
-                ) : undefined;
-              return BigInt(army.battle_id) === 0n && <ArmyChip key={index} army={army} extraButton={extraButton} />;
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
 
 export const PillageHistory = ({
   structureId,
@@ -102,10 +59,8 @@ export const PillageHistory = ({
       <div className="overflow-scroll-y max-h-[300px] grid grid-cols-1 gap-4">
         {pillageHistory.reverse().map((history, index) => (
           <div key={index} className="group hover:bg-gold/10  relative bg-gold/20 text-gold  p-4 clip-angled ">
-            {/* <div className="absolute top-0 left-0 p-2 text-sm">Army ID: {history.armyId.toString()}</div> */}
             <div className="flex justify-center items-center p-3">
               <div className="text-center">
-                {/* <Headline>Outcome</Headline> */}
                 <div className={`text-xl font-bold ${history.winner === 0 ? "text-blue-500" : "text-red-500"}`}>
                   {isPillageSucess(history) ? "Pillage Successful!" : "Pillage Failed"}
                 </div>

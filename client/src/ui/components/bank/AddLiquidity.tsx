@@ -1,13 +1,13 @@
+import { MarketManager } from "@/dojo/modelManager/MarketManager";
+import { useDojo } from "@/hooks/context/DojoContext";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
+import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
-import { useDojo } from "@/hooks/context/DojoContext";
-import { multiplyByPrecision } from "@/ui/utils/utils";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { ResourceBar } from "./ResourceBar";
-import { MarketManager } from "@/dojo/modelManager/MarketManager";
 import { ConfirmationPopup } from "./ConfirmationPopup";
-import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { ResourceBar } from "./ResourceBar";
 
 const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; entityId: bigint }) => {
   const {
@@ -18,7 +18,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
     },
   } = useDojo();
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   const [isLoading, setIsLoading] = useState(false);
   const [resourceId, setResourceId] = useState<bigint>(1n);

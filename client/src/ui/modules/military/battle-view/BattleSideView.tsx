@@ -1,13 +1,13 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
-import { ArmyInfo } from "@/hooks/helpers/useArmies";
+import { ArmyInfo, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
-import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
-import { BattleSide, Troops } from "@bibliothecadao/eternum";
+import { BattleSide } from "@bibliothecadao/eternum";
+import { ComponentValue } from "@dojoengine/recs";
 import { useState } from "react";
 import { BattleDetails } from "./BattleDetails";
 import { EntityAvatar } from "./EntityAvatar";
-import { SelectActiveArmy } from "./SelectActiveArmy";
 import { TroopRow } from "./Troops";
 
 export const BattleSideView = ({
@@ -16,18 +16,18 @@ export const BattleSideView = ({
   showBattleDetails,
   ownSideArmies,
   ownSideTroopsUpdated,
-  userArmiesAtPosition,
-  opposingSideArmies,
+  ownArmyEntityId,
   structure,
+  isActive,
 }: {
   battleSide: BattleSide;
   battleId: bigint | undefined;
   showBattleDetails: boolean;
-  ownSideArmies: ArmyInfo[];
-  ownSideTroopsUpdated: Troops | undefined;
-  userArmiesAtPosition: ArmyInfo[] | undefined;
-  opposingSideArmies: ArmyInfo[];
+  ownSideArmies: (ArmyInfo | undefined)[];
+  ownSideTroopsUpdated: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
+  ownArmyEntityId: bigint | undefined;
   structure: Structure | undefined;
+  isActive: boolean;
 }) => {
   const {
     account: { account },
@@ -36,15 +36,12 @@ export const BattleSideView = ({
     },
   } = useDojo();
 
-  const clearSelection = useUIStore((state) => state.clearSelection);
-
-  const selectedEntity = useUIStore((state) => state.selectedEntity);
-
-  const [localSelectedUnit, setLocalSelectedUnit] = useState<bigint | undefined>(selectedEntity?.id);
   const [loading, setLoading] = useState<boolean>(false);
 
+  const ownArmy = useArmyByArmyEntityId(ownArmyEntityId || 0n);
+
   const joinBattle = async (side: BattleSide, armyId: bigint) => {
-    if (localSelectedUnit) {
+    if (ownArmyEntityId) {
       setLoading(true);
       await battle_join({
         signer: account,
@@ -53,9 +50,6 @@ export const BattleSideView = ({
         battle_side: BigInt(side),
       });
       setLoading(false);
-      clearSelection();
-    } else {
-      setLocalSelectedUnit(0n);
     }
   };
 
@@ -65,7 +59,6 @@ export const BattleSideView = ({
         battleSide === BattleSide.Attack ? "flex-row" : "flex-row-reverse"
       }`}
     >
-      {/* TODO: Could use enemies address */}
       <div className="flex flex-col">
         <EntityAvatar
           address={battleSide === BattleSide.Attack ? account.address : battleId?.toString()}
@@ -73,28 +66,20 @@ export const BattleSideView = ({
           show={ownSideArmies.length > 0}
         />
 
-        {Boolean(battleId) &&
-          opposingSideArmies.length > 0 &&
-          userArmiesAtPosition &&
-          userArmiesAtPosition.length > 0 && (
-            <div className="flex flex-col w-full">
-              <SelectActiveArmy
-                setLocalSelectedUnit={setLocalSelectedUnit}
-                userAttackingArmies={userArmiesAtPosition}
-                localSelectedUnit={localSelectedUnit}
-              />
-              <Button
-                onClick={() => joinBattle(battleSide, localSelectedUnit!)}
-                isLoading={loading}
-                className="size-xs h-10 w-20 self-center"
-              >
-                Join
-              </Button>
-            </div>
-          )}
+        {Boolean(battleId) && Boolean(ownArmyEntityId) && isActive && ownArmy.battle_id === 0n && (
+          <div className="flex flex-col w-full">
+            <Button
+              onClick={() => joinBattle(battleSide, ownArmyEntityId!)}
+              isLoading={loading}
+              className="size-xs h-10 w-20 self-center"
+            >
+              Join
+            </Button>
+          </div>
+        )}
       </div>
       {showBattleDetails && battleId ? (
-        <BattleDetails armies={ownSideArmies} battleId={battleId} />
+        <BattleDetails armies={ownSideArmies} />
       ) : (
         <TroopRow troops={ownSideTroopsUpdated} />
       )}

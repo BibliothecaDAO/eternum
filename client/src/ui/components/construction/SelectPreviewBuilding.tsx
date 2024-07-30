@@ -16,11 +16,14 @@ import {
 } from "@bibliothecadao/eternum";
 
 import { ReactComponent as InfoIcon } from "@/assets/icons/common/info.svg";
+import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useGetRealm } from "@/hooks/helpers/useRealm";
-import { useResourceBalance } from "@/hooks/helpers/useResources";
-import { QuestName, useQuestStore } from "@/hooks/store/useQuestStore";
+import { getResourceBalance } from "@/hooks/helpers/useResources";
+import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import { usePlayResourceSound } from "@/hooks/useUISound";
+import { QuestId } from "@/ui/components/quest/questDetails";
+import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
@@ -30,7 +33,6 @@ import { hasEnoughPopulationForBuilding } from "@/ui/utils/realms";
 import { ResourceIdToMiningType, ResourceMiningTypes } from "@/ui/utils/utils";
 import { BUILDING_COSTS_SCALED } from "@bibliothecadao/eternum";
 import React, { useMemo, useState } from "react";
-import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { HintSection } from "../hints/HintModal";
 
 // TODO: THIS IS TERRIBLE CODE, PLEASE REFACTOR
@@ -38,15 +40,14 @@ import { HintSection } from "../hints/HintModal";
 export const SelectPreviewBuildingMenu = () => {
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
-
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const quests = useQuestStore((state) => state.quests);
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
 
   const { realm } = useGetRealm(realmEntityId);
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
   const { playResourceSound } = usePlayResourceSound();
+  const { questClaimStatus } = useQuestClaimStatus();
 
   const buildingTypes = Object.keys(BuildingType).filter(
     (key) =>
@@ -80,11 +81,6 @@ export const SelectPreviewBuildingMenu = () => {
 
   const [selectedTab, setSelectedTab] = useState(1);
 
-  const isQuestClaimedByName = (questName: QuestName) => {
-    const quest = quests?.find((q) => q.name === questName);
-    return quest?.claimed ?? false;
-  };
-
   const tabs = useMemo(
     () => [
       {
@@ -93,8 +89,7 @@ export const SelectPreviewBuildingMenu = () => {
           <div className="flex relative group flex-col items-center">
             <div
               className={clsx({
-                "animate-pulse  border-b border-gold":
-                  selectedTab !== 0 && selectedQuest?.name === QuestName.BuildResource,
+                "animate-pulse  border-b border-gold": selectedTab !== 0 && selectedQuest?.id === QuestId.BuildResource,
               })}
             >
               Resources
@@ -118,7 +113,7 @@ export const SelectPreviewBuildingMenu = () => {
               return (
                 <BuildingCard
                   className={clsx({
-                    hidden: !isQuestClaimedByName(QuestName.BuildFarm),
+                    hidden: !questClaimStatus[QuestId.BuildFarm],
                   })}
                   key={resourceId}
                   buildingId={BuildingType.Resource}
@@ -137,7 +132,8 @@ export const SelectPreviewBuildingMenu = () => {
                   active={previewBuilding?.resource === resourceId}
                   name={resource?.trait}
                   toolTip={<ResourceInfo resourceId={resourceId} entityId={realmEntityId} />}
-                  canBuild={canBuild}
+                  hasFunds={hasBalance}
+                  hasPopulation={hasEnoughPopulation}
                 />
               );
             })}
@@ -173,11 +169,11 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isFarm && !isQuestClaimedByName(QuestName.BuildResource),
+                      hidden: !isFarm && !questClaimStatus[QuestId.BuildResource],
                       "animate-pulse":
-                        (isFarm && selectedQuest?.name === QuestName.BuildFarm) ||
-                        (isWorkersHut && selectedQuest?.name === QuestName.BuildWorkersHut) ||
-                        (isMarket && selectedQuest?.name === QuestName.Market),
+                        (isFarm && selectedQuest?.id === QuestId.BuildFarm) ||
+                        (isWorkersHut && selectedQuest?.id === QuestId.BuildWorkersHut) ||
+                        (isMarket && selectedQuest?.id === QuestId.Market),
                     })}
                     key={index}
                     buildingId={building}
@@ -200,7 +196,8 @@ export const SelectPreviewBuildingMenu = () => {
                     active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
-                    canBuild={canBuild}
+                    hasFunds={hasBalance}
+                    hasPopulation={hasEnoughPopulation}
                   />
                 );
               })}
@@ -231,7 +228,7 @@ export const SelectPreviewBuildingMenu = () => {
                 return (
                   <BuildingCard
                     className={clsx({
-                      hidden: !isQuestClaimedByName(QuestName.BuildResource),
+                      hidden: !questClaimStatus[QuestId.BuildResource],
                     })}
                     key={index}
                     buildingId={building}
@@ -248,7 +245,8 @@ export const SelectPreviewBuildingMenu = () => {
                     active={previewBuilding?.type === building}
                     name={BuildingEnumToString[building]}
                     toolTip={<BuildingInfo buildingId={building} entityId={realmEntityId} />}
-                    canBuild={canBuild}
+                    hasFunds={hasBalance}
+                    hasPopulation={hasEnoughPopulation}
                   />
                 );
               })}
@@ -291,7 +289,8 @@ export const BuildingCard = ({
   active,
   name,
   toolTip,
-  canBuild,
+  hasFunds,
+  hasPopulation,
   resourceId,
   className,
 }: {
@@ -300,7 +299,8 @@ export const BuildingCard = ({
   active: boolean;
   name: string;
   toolTip: React.ReactElement;
-  canBuild?: boolean;
+  hasFunds?: boolean;
+  hasPopulation?: boolean;
   resourceId?: ResourcesIds;
   className?: string;
 }) => {
@@ -318,16 +318,18 @@ export const BuildingCard = ({
       }}
       onClick={onClick}
       className={clsx(
-        "hover:opacity-90   text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm ",
+        "hover:opacity-90 text-gold overflow-hidden text-ellipsis  cursor-pointer relative h-32 min-w-20 clip-angled-sm ",
         {
           "!border-lightest": active,
         },
         className,
       )}
     >
-      {!canBuild && (
+      {(!hasFunds || !hasPopulation) && (
         <div className="absolute w-full h-full bg-black/50 text-white/60 p-4 text-xs  flex justify-center ">
-          <div className="self-center">insufficient funds or population</div>
+          <div className="self-center">{`${!hasFunds ? "Insufficient funds. " : ""} ${
+            !hasPopulation ? "Insufficient population. " : ""
+          }`}</div>
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 font-bold text-xs px-2 py-1 bg-black/50 ">
@@ -370,7 +372,7 @@ export const ResourceInfo = ({
 
   const capacity = BUILDING_CAPACITY[BuildingType.Resource];
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   return (
     <div className="flex flex-col text-gold text-sm p-1 space-y-1">
@@ -443,7 +445,7 @@ export const BuildingInfo = ({
   const resourceProduced = BUILDING_RESOURCE_PRODUCED[buildingId];
   const ongoingCost = RESOURCE_INPUTS_SCALED[resourceProduced] || 0;
 
-  const { getBalance } = useResourceBalance();
+  const { getBalance } = getResourceBalance();
 
   return (
     <div className="p-2 text-sm text-gold">

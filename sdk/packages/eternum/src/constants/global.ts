@@ -64,7 +64,7 @@ export const EternumGlobalConfig = {
     crossbowmanStrength: 1,
     advantagePercent: 1000,
     disadvantagePercent: 1000,
-    armyFreePerStructure: 3,
+    baseArmyNumberForStructure: 3,
     armyExtraPerMilitaryBuilding: 2,
     // By setting the divisor to 8, the max health that can be taken from the weaker army
     // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
