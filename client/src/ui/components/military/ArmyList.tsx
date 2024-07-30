@@ -128,8 +128,10 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
         }
         title="armies"
         panel={({ entity, setSelectedEntity }) => (
-          <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
-          <ArmyCapacity army={entity} className="my-2 ml-5" />
+          <>
+            <ArmyItem entity={entity} setSelectedEntity={setSelectedEntity} structure={structure} />
+            <ArmyCapacity army={entity} className="my-2 ml-5" />
+          </>
         )}
         questing={selectedQuest?.id === QuestId.CreateArmy}
       />

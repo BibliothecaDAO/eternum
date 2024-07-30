@@ -111,7 +111,7 @@ export const formatArmies = (
       let capacityClone = structuredClone(capacity);
       if (capacityClone) {
         capacityClone.weight_gram =
-          (capacityClone.weight_gram * quantityClone.value) / BigInt(EternumGlobalConfig.resources.resourcePrecision);
+          (capacityClone.weight_gram * quantityClone.value);
       } else {
         capacityClone = {
           entity_id: army.entity_id,
@@ -423,6 +423,7 @@ export const getUserArmyInBattle = (battle_id: bigint) => {
         Quantity,
         Movable,
         Capacity,
+        Weight,
         ArrivalTime,
         Realm,
         Army,
@@ -451,6 +452,7 @@ export const getUserArmyInBattle = (battle_id: bigint) => {
       Quantity,
       Movable,
       Capacity,
+      Weight,
       ArrivalTime,
       Position,
       EntityOwner,
