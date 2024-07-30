@@ -8,7 +8,6 @@ import {
   getOrderName,
 } from "@bibliothecadao/eternum";
 import { useCallback, useEffect } from "react";
-import { create } from "zustand";
 import { useDojo } from "../context/DojoContext";
 import { useContributions } from "../helpers/useContributions";
 import { useGuilds } from "../helpers/useGuilds";
@@ -48,22 +47,22 @@ export const TOTAL_CONTRIBUTABLE_AMOUNT: number = HYPERSTRUCTURE_TOTAL_COSTS_SCA
   0,
 );
 
-function getResourceMultiplier(resourceType: BigInt): number {
+function getResourceMultiplier(resourceType: BigInt): bigint {
   const resourceTypeNumber: ResourcesIds = Number(resourceType);
-  return ResourceMultipliers[resourceTypeNumber] ?? 0;
+  return BigInt(ResourceMultipliers[resourceTypeNumber] ?? 0);
 }
 
-export function computeContributionPoints(totalPoints: number, qty: number, resourceType: BigInt): number {
+export function computeContributionPoints(totalPoints: number, qty: bigint, resourceType: bigint): number {
   const effectiveContribution =
-    (qty / EternumGlobalConfig.resources.resourcePrecision) * getResourceMultiplier(resourceType);
-  const points = (effectiveContribution / TOTAL_CONTRIBUTABLE_AMOUNT) * totalPoints;
-  return points;
+    (qty / BigInt(EternumGlobalConfig.resources.resourcePrecision)) * getResourceMultiplier(resourceType);
+  const points = (effectiveContribution / BigInt(TOTAL_CONTRIBUTABLE_AMOUNT)) * BigInt(totalPoints);
+  return Number(points);
 }
 
 export const calculateShares = (contributions: any[]) => {
   let points = 0;
   contributions.forEach((contribution) => {
-    points += computeContributionPoints(1, Number(contribution.amount), BigInt(contribution.resource_type));
+    points += computeContributionPoints(1, contribution.amount, BigInt(contribution.resource_type));
   });
   return points;
 };
@@ -99,21 +98,6 @@ interface LeaderboardStore {
   setGuildPointsLeaderboards: (guildPointsLeaderboard: GuildPointsLeaderboardInterface[]) => void;
   setFinishedHyperstructures: (val: HyperstructureEventInterface[]) => void;
 }
-
-const useLeaderBoardStore = create<LeaderboardStore>((set) => {
-  return {
-    loading: false,
-    playerPointsLeaderboard: [],
-    guildPointsLeaderboard: [],
-    finishedHyperstructures: [],
-    setLoading: (loading) => set({ loading }),
-    setPlayerPointsLeaderboards: (playerPointsLeaderboard: PlayerPointsLeaderboardInterface[]) =>
-      set({ playerPointsLeaderboard: playerPointsLeaderboard }),
-    setGuildPointsLeaderboards: (guildPointsLeaderboard: GuildPointsLeaderboardInterface[]) =>
-      set({ guildPointsLeaderboard: guildPointsLeaderboard }),
-    setFinishedHyperstructures: (val: HyperstructureEventInterface[]) => set({ finishedHyperstructures: val }),
-  };
-});
 
 export const useComputePointsLeaderboards = () => {
   const setPlayerPointsLeaderboards = useLeaderBoardStore((state) => state.setPlayerPointsLeaderboards);

@@ -151,7 +151,8 @@
     "Quantity",
     "ArrivalTime",
     "QuantityTracker",
-    "Road"
+    "Road",
+	"HyperstructureUpdate"
   ],
   "BUILDINGS_SYSTEMS": [
     "Resource",

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
-import { PlayersLeaderboard } from "./PlayersLeaderboard";
 import { GuildsLeaderboard } from "./GuildsLeaderboard";
+import { PlayersLeaderboard } from "./PlayersLeaderboard";
 
 export const LeaderboardPanel = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -25,15 +25,6 @@ export const LeaderboardPanel = () => {
         ),
         component: <GuildsLeaderboard />,
       },
-      // {
-      //   key: "leaderboard",
-      //   label: (
-      //     <div className="flex group relative flex-col items-center">
-      //       <div>Orders</div>
-      //     </div>
-      //   ),
-      //   component: <OrdersLeaderboard />,
-      // },
     ],
     [selectedTab],
   );

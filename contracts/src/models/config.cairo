@@ -52,10 +52,18 @@ struct HyperstructureResourceConfig {
     amount_for_completion: u128,
 }
 
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+struct HyperstructureConfig {
+    #[key]
+    config_id: u128,
+    time_between_shares_change: u64,
+}
+
 // capacity
 // TODO: should rename into something that shows
 // that it's a config for one specific entity type?
-// and not the same as world config 
+// and not the same as world config
 // e.g. EntityTypeCapacityConfig?
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
@@ -280,15 +288,15 @@ struct TroopConfig {
     // By setting the divisor to 8, the max health that can be taken from the weaker army
     // during pillage is 100 / 8 = 12.5% . Adjust this value to change that.
     //
-    // The closer the armies are in strength and health, the closer they both 
-    // get to losing 12.5% each. If an army is far stronger than the order, 
+    // The closer the armies are in strength and health, the closer they both
+    // get to losing 12.5% each. If an army is far stronger than the order,
     // they lose a small precentage (it goes closer to 0% health loss) while the
-    // weak army's loss is closer to 12.5% 
+    // weak army's loss is closer to 12.5%
     pillage_health_divisor: u8,
     // the number of armies that can be created per structure
     // before military buildings are required to create more
     army_free_per_structure: u8,
-    // the number of additional  armies that can be create with 
+    // the number of additional  armies that can be create with
     // each new military building
     army_extra_per_building: u8,
 }

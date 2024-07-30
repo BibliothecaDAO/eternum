@@ -39,6 +39,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    HyperstructureUpdate: (() => {
+      return defineComponent(
+        world,
+        {
+          hyperstructure_entity_id: RecsType.BigInt,
+          last_updated_timestamp: RecsType.BigInt,
+          last_updated_by: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "HyperstructureUpdate",
+            types: ["u128", "u64", "contractaddress"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Contribution: (() => {
       return defineComponent(
         world,

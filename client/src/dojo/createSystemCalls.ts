@@ -200,6 +200,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.contribute_to_construction(props);
   };
 
+  const set_co_owners = async (props: SystemProps.SetCoOwnersProps) => {
+    await provider.set_co_owners(props);
+  };
+
   const create_guild = async (props: SystemProps.CreateGuildProps) => {
     await provider.create_guild(props);
   };
@@ -296,6 +300,7 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     uuid,
     create_hyperstructure,
     contribute_to_construction,
+    set_co_owners,
 
     mint_resources,
     mint_starting_resources,

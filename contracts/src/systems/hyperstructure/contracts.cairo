@@ -1,3 +1,4 @@
+use starknet::ContractAddress;
 use eternum::models::position::Coord;
 
 #[dojo::interface]
@@ -9,34 +10,44 @@ trait IHyperstructureSystems {
         contributor_entity_id: u128,
         contributions: Span<(u8, u128)>
     );
+    fn set_co_owners(
+        ref world: IWorldDispatcher,
+        hyperstructure_entity_id: u128,
+        co_owners: Span<(ContractAddress, u16)>
+    );
 }
 
 
 #[dojo::contract]
 mod hyperstructure_systems {
     use core::array::ArrayIndex;
-    use eternum::alias::ID;
-    use eternum::constants::{
-        HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards
-    };
-    use eternum::models::config::HyperstructureConfigTrait;
-    use eternum::models::hyperstructure::{Progress, Contribution};
-    use eternum::models::order::{Orders};
-    use eternum::models::owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait};
-    use eternum::models::position::{Coord, Position, PositionIntoCoord};
-    use eternum::models::realm::{Realm};
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-    use eternum::models::structure::{
-        Structure, StructureCount, StructureCountTrait, StructureCategory
-    };
-    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
-        InternalTravelSystemsImpl
+    use starknet::ContractAddress;
+    use eternum::{
+        alias::ID,
+        constants::{HYPERSTRUCTURE_CONFIG_ID, ResourceTypes, get_resources_without_earthenshards},
+        models::{
+            config::{HyperstructureConfigTrait, HyperstructureConfig},
+            hyperstructure::{Progress, Contribution, HyperstructureUpdate},
+            owner::{Owner, OwnerTrait, EntityOwner, EntityOwnerTrait},
+            position::{Coord, Position, PositionIntoCoord}, realm::{Realm},
+            resources::{Resource, ResourceImpl, ResourceCost},
+            structure::{Structure, StructureCount, StructureCountTrait, StructureCategory}
+        },
+        systems::{transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl},
     };
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
     struct HyperstructureFinished {
         hyperstructure_entity_id: u128,
+        timestamp: u64,
+    }
+
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    struct HyperstructureCoOwnersChange {
+        hyperstructure_entity_id: u128,
+        co_owners: Span<(ContractAddress, u16)>,
         timestamp: u64,
     }
 
@@ -121,8 +132,54 @@ mod hyperstructure_systems {
                 emit!(world, (HyperstructureFinished { hyperstructure_entity_id, timestamp }),);
             }
         }
-    }
 
+        fn set_co_owners(
+            ref world: IWorldDispatcher,
+            hyperstructure_entity_id: u128,
+            co_owners: Span<(ContractAddress, u16)>
+        ) {
+            let caller = starknet::get_caller_address();
+
+            let owner = get!(world, hyperstructure_entity_id, Owner);
+            owner.assert_caller_owner();
+
+            let hyperstructure_config = get!(world, HYPERSTRUCTURE_CONFIG_ID, HyperstructureConfig);
+
+            let mut hyperstructure_update = get!(
+                world, hyperstructure_entity_id, HyperstructureUpdate
+            );
+
+            let timestamp = starknet::get_block_timestamp();
+
+            if (hyperstructure_update.last_updated_by == caller) {
+                assert!(
+                    timestamp
+                        - hyperstructure_update
+                            .last_updated_timestamp > hyperstructure_config
+                            .time_between_shares_change,
+                    "time between shares change not passed"
+                );
+            }
+
+            hyperstructure_update.last_updated_timestamp = timestamp;
+            hyperstructure_update.last_updated_by = caller;
+
+            set!(world, (hyperstructure_update,));
+
+            let mut total = 0;
+            let mut i = 0;
+            while (i < co_owners.len()) {
+                let (address, percentage) = *co_owners.at(i);
+                total += percentage;
+                i += 1;
+            };
+            assert!(total == 10000, "total percentage must be 10000");
+            emit!(
+                world,
+                (HyperstructureCoOwnersChange { hyperstructure_entity_id, co_owners, timestamp })
+            );
+        }
+    }
 
     #[generate_trait]
     impl InternalHyperstructureSystemsImpl of InternalHyperstructureSystemsTrait {
