@@ -133,12 +133,12 @@ export const MiddleBuilding = ({ hexType }: { hexType: HexType }) => {
     hexType === HexType.BANK
       ? ModelsIndexes.Bank
       : hexType === HexType.SHARDSMINE
-        ? ModelsIndexes.FragmentMine
-        : hexType === HexType.HYPERSTRUCTURE
-          ? ModelsIndexes.Hyperstructure
-          : hexType === HexType.UNFINISHEDHYPERSTRUCTURE
-            ? ModelsIndexes.UnfinishedHyperstructure
-            : ModelsIndexes.Castle;
+      ? ModelsIndexes.FragmentMine
+      : hexType === HexType.HYPERSTRUCTURE
+      ? ModelsIndexes.Hyperstructure
+      : hexType === HexType.UNFINISHEDHYPERSTRUCTURE
+      ? ModelsIndexes.UnfinishedHyperstructure
+      : ModelsIndexes.Castle;
 
   const modelZOffsets = {
     [HexType.BANK]: 0.2,
@@ -307,7 +307,6 @@ const HoverBuilding = ({
   return (
     <BaseThreeTooltip
       className={`min-w-[${buildingType === BuildingType.Resource ? 400 : 215}px]`}
-      distanceFactor={30}
       position={Position.BOTTOM_RIGHT}
     >
       <div className="flex flex-col p-1 space-y-1 text-sm">

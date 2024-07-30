@@ -131,7 +131,7 @@ export class ArmyMovementManager {
     if (troops.crossbowman_count > 0) {
       const crossbowmenConfig = getComponentValue(
         this.staminaConfigModel,
-        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Crossbowmen)]),
+        getEntityIdFromKeys([WORLD_CONFIG_ID, BigInt(ResourcesIds.Crossbowman)]),
       );
       maxStaminas.push(crossbowmenConfig!.max_stamina);
     }

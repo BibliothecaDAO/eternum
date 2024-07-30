@@ -59,7 +59,7 @@ export class StructureManager {
 
       // Add label on top of the structure with appropriate color
       const labelColor = isMine ? myColor : neutralColor;
-      const label = this.labelManager.createLabel(position, labelColor);
+      const label = this.labelManager.createLabel(position as any, labelColor);
       this.worldMapScene.scene.add(label);
     }
   }

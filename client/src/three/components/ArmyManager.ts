@@ -97,7 +97,7 @@ export class ArmyManager {
     this.mesh.userData.entityIdMap[index] = entityId;
 
     // Add label on top of the army
-    const label = this.labelManager.createLabel(position, isMine ? myColor : neutralColor);
+    const label = this.labelManager.createLabel(position as any, isMine ? myColor : neutralColor);
     this.labels.set(entityId, label);
     this.worldMapScene.scene.add(label);
   }
@@ -121,7 +121,7 @@ export class ArmyManager {
 
     this.movingArmies.set(index, {
       startPos: currentPosition,
-      endPos: newPosition,
+      endPos: newPosition as any,
       progress: 0,
     });
   }
