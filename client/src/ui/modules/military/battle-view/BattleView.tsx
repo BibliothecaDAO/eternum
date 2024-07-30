@@ -73,8 +73,6 @@ export const BattleView = () => {
     return battleManager!.getUpdatedBattle(currentTimestamp!);
   }, [currentTimestamp, battleManager, battleManager?.battleId, armies.armiesInBattle, battleView]);
 
-  const armiesAtPosition = getArmiesAtPosition();
-
   const attackerHealth = battleAdjusted
     ? {
         current: battleAdjusted!.attack_army_health.current,

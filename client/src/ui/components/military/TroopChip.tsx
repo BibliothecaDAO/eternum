@@ -11,7 +11,7 @@ export const TroopMenuRow = ({
   className?: string;
 }) => {
   return (
-    <div className={`grid w-full grid-cols-3 gap-2 relative w-full text-gold font-bold ${className}`}>
+    <div className={`grid grid-cols-3 gap-2 relative w-full text-gold font-bold ${className}`}>
       <div className="px-2 py-1 bg-gold/10 clip-angled-sm flex flex-col justify-between gap-2 border border-gold/10">
         <ResourceIcon withTooltip={false} resource={"Crossbowman"} size="lg" />
         <div className="text-green text-xs self-center">{currencyFormat(troops?.crossbowman_count || 0, 0)}</div>
