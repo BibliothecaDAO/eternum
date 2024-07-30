@@ -9,7 +9,7 @@ interface Realm {
   setRealmEntityIds: (realmEntityIds: { realmEntityId: bigint; realmId: bigint }[]) => void;
 }
 
-export const STARTING_ENTITY_ID = 9999n;
+const STARTING_ENTITY_ID = 9999n;
 
 const useRealmStore = create<Realm>((set) => {
   const realmEntityIds: { realmEntityId: bigint; realmId: bigint }[] = [];

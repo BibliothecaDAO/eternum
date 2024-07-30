@@ -51,7 +51,6 @@ export enum View {
   MilitaryView,
   EntityView,
   ConstructionView,
-  StructureView,
   WorldStructuresView,
 }
 

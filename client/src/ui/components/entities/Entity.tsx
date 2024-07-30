@@ -5,7 +5,7 @@ import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
 import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
+import { formatSecondsLeftInDaysHours } from "@/ui/utils/utils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
 import { EntityState, EntityType, determineEntityState } from "@bibliothecadao/eternum";

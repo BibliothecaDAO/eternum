@@ -60,7 +60,7 @@ export const Army = React.memo(({ army }: ArmyProps & JSX.IntrinsicElements["gro
   );
 }, arePropsEqual);
 
-export const ArmySelectionOverlay = ({ army }: ArmyProps) => {
+const ArmySelectionOverlay = ({ army }: ArmyProps) => {
   const selectedEntity = useUIStore((state) => state.selectedEntity);
 
   const armyPosition: Position = { x: army.position.x, y: army.position.y };

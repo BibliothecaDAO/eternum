@@ -53,7 +53,7 @@ function getResourceMultiplier(resourceType: BigInt): number {
   return ResourceMultipliers[resourceTypeNumber] ?? 0;
 }
 
-export function computeContributionPoints(totalPoints: number, qty: number, resourceType: BigInt): number {
+function computeContributionPoints(totalPoints: number, qty: number, resourceType: BigInt): number {
   const effectiveContribution =
     (qty / EternumGlobalConfig.resources.resourcePrecision) * getResourceMultiplier(resourceType);
   const points = (effectiveContribution / TOTAL_CONTRIBUTABLE_AMOUNT) * totalPoints;
@@ -202,7 +202,7 @@ export const useComputePointsLeaderboards = () => {
 
 export default useLeaderBoardStore;
 
-export const computeHyperstructureLeaderboard = (
+const computeHyperstructureLeaderboard = (
   contributions: any[],
   totalHyperstructurePoints: number,
   account: any,

@@ -6,13 +6,9 @@ import {
 } from "../../data/geodata/hex/realmHexPositions.json";
 import { FELT_CENTER } from "../config";
 import { SortInterface } from "../elements/SortButton";
+import { Resource, WEIGHTS } from "@bibliothecadao/eternum";
 
 export { getEntityIdFromKeys };
-
-export const getForeignKeyEntityId = (entityId: bigint, key: bigint, index: bigint) => {
-  let keyHash = getEntityIdFromKeys([entityId, key, BigInt(index)]);
-  return getEntityIdFromKeys([BigInt(keyHash)]);
-};
 
 export const formatNumber = (num: any, decimals: number) => {
   return num.toFixed(decimals).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
@@ -29,47 +25,14 @@ export function currencyIntlFormat(num: any, decimals: number = 2) {
   }).format(num || 0);
 }
 
-// note: temp change because waiting for torii fix
-// export function extractAndCleanKey(keys: (string | null)[]): bigint[] {
-//   return keys.filter((value) => value !== null && value !== "").map((key) => BigInt(key as string));
-// }
-export function extractAndCleanKey(keys: string | null | undefined | string[]): bigint[] {
-  if (Array.isArray(keys) && keys.length > 0) {
-    return keys.map((key) => BigInt(key as string));
-  } else {
-    let stringKeys = keys as string | null | undefined;
-    return (
-      stringKeys
-        ?.split("/")
-        .slice(0, -1)
-        .map((key) => BigInt(key as string)) || []
-    );
-  }
-}
-
 export const numberToHex = (num: number) => {
   return "0x" + num.toString(16);
-};
-
-export const formatTimeLeft = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  return `${hours}h:${minutes}m`;
 };
 
 export function displayAddress(string: string) {
   if (string === undefined) return "unknown";
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
-
-export const formatTimeLeftDaysHoursMinutes = (seconds: number) => {
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  return `${days} days ${hours}h:${minutes}m`;
-};
 
 const PRECISION = 1000;
 
@@ -175,7 +138,7 @@ export const getColRowFromUIPosition = (x: number, y: number, normalized?: boole
   };
 };
 
-export interface HexPositions {
+interface HexPositions {
   [key: string]: { col: number; row: number }[];
 }
 
@@ -196,16 +159,12 @@ export const findDirection = (startPos: { col: number; row: number }, endPos: { 
   }
 };
 
-export function removeAccents(str: string) {
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
 export const pseudoRandom = (x: number, y: number) => {
   let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
 };
 
-export function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
+function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
   console.log("packedNumber", packedNumber);
 
   if (packedNumber === 1000000000000000000000000000000000000000000000000000000000000001n) return [ResourcesIds.Lords];
@@ -311,4 +270,27 @@ export const copyPlayerAddressToClipboard = (address: bigint, name: string) => {
 export const isRealmSelected = (realmEntityId: bigint, structures: any) => {
   const selectedStructure = structures?.find((structure: any) => structure?.entity_id === realmEntityId);
   return selectedStructure?.category === "Realm";
+};
+
+export const getTotalResourceWeight = (resources: (Resource | undefined)[]) => {
+  return resources.reduce(
+    (total, resource) => total + (resource ? resource.amount * WEIGHTS[resource.resourceId] || 0 : 0),
+    0,
+  );
+};
+
+export const formatSecondsInHoursMinutes = (seconds: number) => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  return `${hours}h:${minutes}m`;
+};
+
+export const formatSecondsLeftInDaysHours = (seconds: number) => {
+  const days = Math.floor(seconds / 86400);
+  const secondsLeft = seconds % 86400;
+  const hours = Math.floor(secondsLeft / 3600);
+  const minutes = Math.floor((secondsLeft % 3600) / 60);
+
+  return `${days} days ${hours}h ${minutes}m`;
 };

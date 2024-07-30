@@ -181,7 +181,7 @@ export const SelectLocationPanel = ({
 /**
  * sort realms based on active filters
  */
-export function sortLocations(
+function sortLocations(
   locations: SelectableLocationInterface[],
   activeSort: SortInterface,
 ): SelectableLocationInterface[] {

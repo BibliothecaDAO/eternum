@@ -1,4 +1,4 @@
-name: lint
+name: knip
 
 on:
   push:
@@ -6,17 +6,17 @@ on:
   pull_request: {}
 
 jobs:
-  prettier:
+  knip:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v1
       - uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 9
 
       - name: Install dependencies
         run: pnpm i
 
-      - name: Run Prettier
-        run: pnpm run prettier-check .
+      - name: Run knip
+        run: pnpm knip

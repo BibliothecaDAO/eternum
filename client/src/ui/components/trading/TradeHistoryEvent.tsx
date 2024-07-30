@@ -25,7 +25,7 @@ const colors = {
   [EventType.BOUGHT]: "text-green",
 };
 
-export enum TradeStatus {
+enum TradeStatus {
   OPEN = 0,
   ACCEPTED = 1,
   CANCELLED = 2,

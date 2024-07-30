@@ -1,7 +1,7 @@
 import { Event, client, getEventsQuery } from "./graphqlClient";
 import { HYPERSTRUCTURE_FINISHED_EVENT } from "@bibliothecadao/eternum";
 
-export const MAX_EVENTS = 5000;
+const MAX_EVENTS = 5000;
 
 export interface HyperstructureEventInterface {
   hyperstructureEntityId: bigint;

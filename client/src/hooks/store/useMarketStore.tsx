@@ -46,13 +46,4 @@ const useMarketStore = create<MarketStore>((set, get) => {
   };
 });
 
-export const isLordsMarket = (order: MarketInterface) => {
-  return (
-    order.takerGets.length !== 1 ||
-    order.makerGets.length !== 1 ||
-    (order.takerGets[0]?.resourceId !== ResourcesIds["Lords"] &&
-      order.makerGets[0]?.resourceId !== ResourcesIds["Lords"])
-  );
-};
-
 export default useMarketStore;

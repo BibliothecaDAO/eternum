@@ -19,10 +19,10 @@ import { shortString } from "starknet";
 import { useDojo } from "../../context/DojoContext";
 import * as module from "./useBattles";
 
-export type FullArmyType = ComponentValue<ClientComponents["Army"]["schema"]> &
+type FullArmyType = ComponentValue<ClientComponents["Army"]["schema"]> &
   ComponentValue<ClientComponents["Health"]["schema"]>;
 
-export type ExtraBattleInfo = ComponentValue<ClientComponents["Position"]["schema"]> & {
+type ExtraBattleInfo = ComponentValue<ClientComponents["Position"]["schema"]> & {
   opponentArmy: FullArmyType;
   ownArmyEntityName: string;
   opponentArmyEntityName: string;
@@ -94,7 +94,7 @@ export const useAllBattles = () => {
   return allBattles;
 };
 
-export const usePlayerBattles = () => {
+const usePlayerBattles = () => {
   const {
     account: { account },
     setup: {
@@ -118,7 +118,7 @@ export const usePlayerBattles = () => {
   return { playerBattles };
 };
 
-export const getBattleInfoByOwnArmyEntityId = (ownArmyEntityId: bigint): ExtraBattleInfo | undefined => {
+const getBattleInfoByOwnArmyEntityId = (ownArmyEntityId: bigint): ExtraBattleInfo | undefined => {
   const {
     setup: {
       components: { Army, Battle, Position, EntityName, Health },
@@ -166,7 +166,7 @@ export const useBattlesByPosition = ({ x, y }: Position) => {
   return getExtraBattleInformation(battleEntityIds, Battle, Position, Structure);
 };
 
-export const getBattleByPosition = () => {
+const getBattleByPosition = () => {
   const {
     setup: {
       components: { Battle, Position, Structure },

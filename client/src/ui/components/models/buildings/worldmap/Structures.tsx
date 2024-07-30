@@ -10,7 +10,7 @@ import { InstancedBanks } from "./InstancedBanks";
 import { InstancedCastles } from "./InstancedCastles";
 import { ShardsMines } from "./ShardsMines";
 
-export type Structure = { col: number; row: number; type: StructureType; entityId: bigint };
+type Structure = { col: number; row: number; type: StructureType; entityId: bigint };
 
 export const Structures = () => {
   const existingStructures = useUIStore((state) => state.existingStructures);

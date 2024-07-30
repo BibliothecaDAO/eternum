@@ -16,11 +16,11 @@ import { displayAddress } from "@/ui/utils/utils";
 import { EternumGlobalConfig, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { shortString } from "starknet";
 import { useLocation } from "wouter";
 
-export const StepContainer = ({ children }: { children: React.ReactNode }) => {
+const StepContainer = ({ children }: { children: React.ReactNode }) => {
   return (
     <motion.div
       className="flex justify-center z-50"
@@ -330,7 +330,7 @@ export const StepFour = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =>
   );
 };
 
-export const ContainerWithSquire = ({ children }: { children: React.ReactNode }) => {
+const ContainerWithSquire = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="gap-10 grid grid-cols-12">
       <div className="rounded-full border  self-center col-span-4">
@@ -372,7 +372,7 @@ export const StepSix = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => 
   );
 };
 
-export const NavigateToRealm = ({ text }: { text: string }) => {
+const NavigateToRealm = ({ text }: { text: string }) => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const [_location, setLocation] = useLocation();

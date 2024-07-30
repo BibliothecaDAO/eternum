@@ -11,7 +11,7 @@ import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
 
-export type Realm = ComponentValue<ClientComponents["Realm"]["schema"]> & {
+type Realm = ComponentValue<ClientComponents["Realm"]["schema"]> & {
   resources: number[];
   self: boolean;
   name: string;
@@ -27,14 +27,7 @@ export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> 
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
 };
 
-export type FullStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
-  entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
-  protector: ArmyInfo | undefined;
-  isMine: boolean;
-};
-
-export const useStructuresPosition = ({ position }: { position: Position }) => {
+const useStructuresPosition = ({ position }: { position: Position }) => {
   const {
     setup: {
       components: { Position, Realm, EntityOwner, Owner, Structure, Protector, EntityName },

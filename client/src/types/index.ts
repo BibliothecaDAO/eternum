@@ -10,8 +10,8 @@ export interface Hexagon {
   exploredBy: bigint | undefined;
 }
 
-export type Position3D = [number, number, number];
-export type Position2D = [number, number];
+type Position3D = [number, number, number];
+type Position2D = [number, number];
 export type HexPosition = { col: number; row: number };
 export interface ClickedHex {
   contractPos: HexPosition;
@@ -27,11 +27,6 @@ export interface HighlightPositions {
 export interface TravelPath {
   path: Position[];
   isExplored: boolean;
-}
-
-export enum CombatTarget {
-  Structure,
-  Army,
 }
 
 export interface Health {

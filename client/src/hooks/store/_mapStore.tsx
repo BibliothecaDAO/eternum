@@ -11,7 +11,7 @@ import { useDojo } from "../context/DojoContext";
 import useLeaderBoardStore from "./useLeaderBoardStore";
 import useUIStore from "./useUIStore";
 
-export enum ArmyMode {
+enum ArmyMode {
   Travel,
   Explore,
   Attack,

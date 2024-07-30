@@ -8,7 +8,6 @@ import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 import { createMapStoreSlice, MapStore } from "./_mapStore";
 import { createPopupsSlice, PopupsStore } from "./_popups";
 import { BattleViewInfo } from "./types";
-export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
   theme: string;

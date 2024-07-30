@@ -1,4 +1,3 @@
-import { numberToHex } from "@/ui/utils/utils";
 import { Event, client, getEventsQuery } from "./graphqlClient";
 import { SWAP_EVENT } from "@bibliothecadao/eternum";
 

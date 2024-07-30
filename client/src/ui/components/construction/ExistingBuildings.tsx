@@ -30,7 +30,6 @@ export enum ModelsIndexes {
   Storehouse = BuildingType.Storehouse,
   Bank = BuildingType.Bank,
   FragmentMine = BuildingType.FragmentMine,
-  Settlement = 20,
   Hyperstructure = 21,
   UnfinishedHyperstructure = 22,
 }
@@ -177,7 +176,7 @@ export const MiddleBuilding = ({ hexType }: { hexType: HexType }) => {
   return null;
 };
 
-export const BuiltBuilding = ({
+const BuiltBuilding = ({
   position,
   models,
   buildingCategory,

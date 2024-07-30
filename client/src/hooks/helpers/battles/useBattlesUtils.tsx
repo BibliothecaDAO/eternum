@@ -34,10 +34,10 @@ export const protectorStillInBattle = (Army: Component, Protectee: Component, ba
   return Array.from(protectorEntityIds).length > 0;
 };
 
-export const getProtectorsInBattle = (Army: Component, Protectee: Component, battle: BattleInfo) => {
+const getProtectorsInBattle = (Army: Component, Protectee: Component, battle: BattleInfo) => {
   return runQuery([Has(Protectee), HasValue(Army, { battle_id: battle.entity_id, battle_side: "Defence" })]);
 };
 
-export const getArmiesInBattleBySide = (Army: Component, battle: BattleInfo, battle_side: BattleSide) => {
+const getArmiesInBattleBySide = (Army: Component, battle: BattleInfo, battle_side: BattleSide) => {
   return runQuery([Has(Army), HasValue(Army, { battle_id: battle.entity_id, battle_side: BattleSide[battle_side] })]);
 };

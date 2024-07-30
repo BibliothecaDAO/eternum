@@ -41,7 +41,6 @@ export class ProductionManager {
     this.resourceModel = resourceModel;
   }
 
-  // Retrieves the production data for the current entity
   public getProduction() {
     return this._getProduction(this.resourceId);
   }
