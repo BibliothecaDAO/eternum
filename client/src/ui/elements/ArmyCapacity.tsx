@@ -2,7 +2,8 @@ import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 
-export const ArmyCapacity = ({ army, className }: { army: ArmyInfo; className?: string }) => {
+export const ArmyCapacity = ({ army, className }: { army: ArmyInfo | undefined; className?: string }) => {
+  if (!army) return null;
   return (
     <div
       className={clsx(
