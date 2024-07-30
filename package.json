@@ -8,6 +8,6 @@
     "prettier-check": "npx prettier --check .",
     "prettier": "npx prettier --write .",
     "dev:docs": "pnpm --dir ./eternum-docs dev",
-    "knip": "npx knip --production"
+    "knip": "npx knip --exclude binaries,dependencies"
   }
 }

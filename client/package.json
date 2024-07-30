@@ -31,6 +31,7 @@
     "@react-three/fiber": "^8.16.1",
     "@react-three/postprocessing": "2.16.2",
     "@vercel/analytics": "^1.2.2",
+    "buffer": "^6.0.3",
     "clsx": "^1.2.1",
     "framer-motion": "^11.0.24",
     "graphql": "16.6.0",
@@ -53,10 +54,8 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
-    "@testing-library/react-hooks": "^8.0.1",
     "@svgr/rollup": "^8.1.0",
     "@tailwindcss/typography": "^0.5.13",
-    "@testing-library/react": "^16.0.0",
     "@types/lodash": "^4.14.202",
     "@types/node": "^20.11.10",
     "@types/react": "^18.2.74",
