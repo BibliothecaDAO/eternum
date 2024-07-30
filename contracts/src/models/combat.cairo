@@ -7,38 +7,40 @@ use core::traits::TryInto;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::alias::ID;
 use eternum::constants::all_resource_ids;
-use eternum::models::capacity::{Capacity, CapacityTrait};
-use eternum::models::config::{BattleConfig, BattleConfigImpl, BattleConfigTrait};
-use eternum::models::config::{TroopConfig, TroopConfigImpl, TroopConfigTrait};
-use eternum::models::config::{WeightConfig, WeightConfigImpl};
-use eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrackerType, QuantityTrait};
-use eternum::models::resources::OwnedResourcesTrackerTrait;
-use eternum::models::resources::ResourceTrait;
-use eternum::models::resources::ResourceTransferLockTrait;
-use eternum::models::resources::{
-    Resource, ResourceImpl, ResourceCost, ResourceTransferLock, OwnedResourcesTracker,
-    OwnedResourcesTrackerImpl
+use eternum::models::capacity::{Capacity, CapacityCustomTrait};
+use eternum::models::config::{BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait};
+use eternum::models::config::{TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait};
+use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
+use eternum::models::quantity::{
+    Quantity, QuantityTracker, QuantityTrackerType, QuantityCustomTrait
 };
-use eternum::models::structure::{Structure, StructureImpl};
+use eternum::models::resources::OwnedResourcesTrackerCustomTrait;
+use eternum::models::resources::ResourceCustomTrait;
+use eternum::models::resources::ResourceTransferLockCustomTrait;
+use eternum::models::resources::{
+    Resource, ResourceCustomImpl, ResourceCost, ResourceTransferLock, OwnedResourcesTracker,
+    OwnedResourcesTrackerCustomImpl
+};
+use eternum::models::structure::{Structure, StructureCustomImpl};
 use eternum::models::weight::Weight;
-use eternum::models::weight::WeightTrait;
+use eternum::models::weight::WeightCustomTrait;
 use eternum::utils::math::{PercentageImpl, PercentageValueImpl, min, max};
 use eternum::utils::number::NumberTrait;
 
 const STRENGTH_PRECISION: u256 = 10_000;
 
 
-#[derive(Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Health {
+pub struct Health {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     current: u128,
     lifetime: u128
 }
 
 #[generate_trait]
-impl HealthImpl of HealthTrait {
+impl HealthCustomImpl of HealthCustomTrait {
     fn increase_by(ref self: Health, value: u128) {
         self.current += value;
         self.lifetime += value;
@@ -144,7 +146,7 @@ impl TroopsImpl of TroopsTrait {
 
 
     fn purchase(
-        self: Troops, purchaser_id: u128, troops_resources: (Resource, Resource, Resource),
+        self: Troops, purchaser_id: ID, troops_resources: (Resource, Resource, Resource),
     ) -> (Resource, Resource, Resource) {
         let (mut knight_resource, mut paladin_resoure, mut crossbowman_resoure) = troops_resources;
 
@@ -319,7 +321,7 @@ impl TroopsImpl of TroopsTrait {
 }
 
 #[generate_trait]
-impl AttackingArmyQuantityTracker of ArmyQuantityTrackerTrait {
+impl AttackingArmyQuantityTrackerCustomImpl of AttackingArmyQuantityTrackerCustomTrait {
     fn key(entity_id: ID) -> felt252 {
         poseidon_hash_span(array![entity_id.into(), QuantityTrackerType::ARMY_COUNT.into()].span())
     }
@@ -327,22 +329,22 @@ impl AttackingArmyQuantityTracker of ArmyQuantityTrackerTrait {
 
 #[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Army {
+pub struct Army {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     troops: Troops,
-    battle_id: u128,
+    battle_id: ID,
     battle_side: BattleSide
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Default)]
 struct BattleArmy {
     troops: Troops,
-    battle_id: u128,
+    battle_id: ID,
     battle_side: BattleSide
 }
 
-impl ArmyIntoBattlrArmyImpl of Into<Army, BattleArmy> {
+impl ArmyIntoBattlrArmyCustomImpl of Into<Army, BattleArmy> {
     fn into(self: Army) -> BattleArmy {
         return BattleArmy {
             troops: self.troops, battle_id: self.battle_id, battle_side: self.battle_side
@@ -357,7 +359,7 @@ struct BattleHealth {
     lifetime: u128
 }
 
-impl HealthIntoBattleHealthImpl of Into<Health, BattleHealth> {
+impl HealthIntoBattleHealthCustomImpl of Into<Health, BattleHealth> {
     fn into(self: Health) -> BattleHealth {
         return BattleHealth { // entity_id: self.entity_id,
             current: self.current, lifetime: self.lifetime
@@ -365,14 +367,14 @@ impl HealthIntoBattleHealthImpl of Into<Health, BattleHealth> {
     }
 }
 
-impl BattleHealthIntoHealthImpl of Into<BattleHealth, Health> {
+impl BattleHealthIntoHealthCustomImpl of Into<BattleHealth, Health> {
     fn into(self: BattleHealth) -> Health {
         return Health { entity_id: 0, current: self.current, lifetime: self.lifetime };
     }
 }
 
 #[generate_trait]
-impl BattleHealthImpl of BattleHealthTrait {
+impl BattleHealthCustomImpl of BattleHealthCustomTrait {
     fn increase_by(ref self: BattleHealth, value: u128) {
         self.current += value;
         self.lifetime += value;
@@ -404,7 +406,7 @@ impl BattleHealthImpl of BattleHealthTrait {
 
 
 #[generate_trait]
-impl ArmyImpl of ArmyTrait {
+impl ArmyCustomImpl of ArmyCustomTrait {
     fn won_battle(self: Army, battle: Battle) -> bool {
         self.battle_side == battle.winner()
     }
@@ -423,16 +425,16 @@ impl ArmyImpl of ArmyTrait {
 }
 
 
-#[derive(Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Protector {
+pub struct Protector {
     #[key]
-    entity_id: u128,
-    army_id: u128,
+    entity_id: ID,
+    army_id: ID,
 }
 
 #[generate_trait]
-impl ProtectorImpl of ProtectorTrait {
+impl ProtectorCustomImpl of ProtectorCustomTrait {
     fn assert_has_no_defensive_army(self: Protector) {
         assert!(
             self.army_id.is_zero(), "Structure {} already has a defensive army", self.entity_id
@@ -440,16 +442,16 @@ impl ProtectorImpl of ProtectorTrait {
     }
 }
 
-#[derive(Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Protectee {
+pub struct Protectee {
     #[key]
-    army_id: u128,
-    protectee_id: u128
+    army_id: ID,
+    protectee_id: ID
 }
 
 #[generate_trait]
-impl ProtecteeImpl of ProtecteeTrait {
+impl ProtecteeCustomImpl of ProtecteeCustomTrait {
     fn is_none(self: Protectee) -> bool {
         self.protectee_id == 0
     }
@@ -458,7 +460,7 @@ impl ProtecteeImpl of ProtecteeTrait {
         self.protectee_id != 0
     }
 
-    fn protected_resources_holder(self: Protectee) -> u128 {
+    fn protected_resources_holder(self: Protectee) -> ID {
         if self.is_other() {
             self.protectee_id
         } else {
@@ -470,15 +472,15 @@ impl ProtecteeImpl of ProtecteeTrait {
 
 #[derive(Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Battle {
+pub struct Battle {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     attack_army: BattleArmy,
     attack_army_lifetime: BattleArmy,
     defence_army: BattleArmy,
     defence_army_lifetime: BattleArmy,
-    attackers_resources_escrow_id: u128,
-    defenders_resources_escrow_id: u128,
+    attackers_resources_escrow_id: ID,
+    defenders_resources_escrow_id: ID,
     attack_army_health: BattleHealth,
     defence_army_health: BattleHealth,
     attack_delta: u64,
@@ -535,10 +537,10 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                 match all_resources.pop_front() {
                     Option::Some(resource_type) => {
                         if from_army_owned_resources.owns_resource_type(resource_type) {
-                            let from_army_resource = ResourceImpl::get(
+                            let from_army_resource = ResourceCustomImpl::get(
                                 world, (from_army_protectee_id, resource_type)
                             );
-                            let mut escrow_resource = ResourceImpl::get(
+                            let mut escrow_resource = ResourceCustomImpl::get(
                                 world, (escrow_id, resource_type)
                             );
                             escrow_resource.add(from_army_resource.balance);
@@ -600,7 +602,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                 Option::Some(resource_type) => {
                     if to_army_protectee_is_self
                         && to_army_owned_resources.owns_resource_type(resource_type) {
-                        let mut to_army_resource = ResourceImpl::get(
+                        let mut to_army_resource = ResourceCustomImpl::get(
                             world, (to_army_protectee_id, resource_type)
                         );
                         if to_army_lost_or_battle_not_ended {
@@ -610,14 +612,14 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
                             // update army's subtracted weight
                             subtracted_resources_weight +=
-                                WeightConfigImpl::get_weight(
+                                WeightConfigCustomImpl::get_weight(
                                     world, resource_type, to_army_resource.balance
                                 );
                         } else {
                             // army won or drew so it can leave with its resources
                             //
                             // remove items from from battle escrow
-                            let mut escrow_resource = ResourceImpl::get(
+                            let mut escrow_resource = ResourceCustomImpl::get(
                                 world, (escrow_id, resource_type)
                             );
                             escrow_resource.burn(to_army_resource.balance);
@@ -637,7 +639,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                                 self.defence_army
                             };
 
-                            let mut other_side_escrow_resource = ResourceImpl::get(
+                            let mut other_side_escrow_resource = ResourceCustomImpl::get(
                                 world, (other_side_escrow_id, resource_type)
                             );
 
@@ -650,7 +652,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
                             other_side_escrow_resource.save(world);
 
                             // give loot share to winner
-                            let mut to_army_resource = ResourceImpl::get(
+                            let mut to_army_resource = ResourceCustomImpl::get(
                                 world, (to_army_protectee_id, resource_type)
                             );
                             to_army_resource.add(share_amount);
@@ -658,7 +660,9 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
                             // update army's added weight
                             added_resources_weight +=
-                                WeightConfigImpl::get_weight(world, resource_type, share_amount);
+                                WeightConfigCustomImpl::get_weight(
+                                    world, resource_type, share_amount
+                                );
                         }
                     }
                 },
@@ -696,7 +700,7 @@ impl BattleEscrowImpl of BattleEscrowTrait {
 
 
 #[generate_trait]
-impl BattleImpl of BattleTrait {
+impl BattleCustomImpl of BattleCustomTrait {
     /// This function updated the armies health and duration
     /// of battle according to the set delta and battle duration
     ///
@@ -801,17 +805,19 @@ impl BattleImpl of BattleTrait {
 #[cfg(test)]
 mod tests {
     use dojo::world::IWorldDispatcherTrait;
+    use eternum::constants::ID;
     use eternum::constants::ResourceTypes;
+    use eternum::models::combat::BattleCustomTrait;
     use eternum::models::combat::BattleEscrowTrait;
-    use eternum::models::combat::BattleHealthTrait;
-    use eternum::models::combat::BattleTrait;
+    use eternum::models::combat::BattleHealthCustomTrait;
     use eternum::models::combat::TroopsTrait;
-    use eternum::models::resources::ResourceTrait;
-    use eternum::models::resources::ResourceTransferLockTrait;
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceTransferLock};
+    use eternum::models::resources::ResourceCustomTrait;
+    use eternum::models::resources::ResourceTransferLockCustomTrait;
+    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceTransferLock};
     use eternum::utils::testing::world::spawn_eternum;
     use super::{
-        Battle, BattleHealth, BattleArmy, BattleSide, Troops, TroopConfig, Army, ArmyImpl, Protectee
+        Battle, BattleHealth, BattleArmy, BattleSide, Troops, TroopConfig, Army, ArmyCustomImpl,
+        Protectee
     };
 
     fn mock_troop_config() -> TroopConfig {
@@ -955,7 +961,7 @@ mod tests {
 
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -1005,7 +1011,7 @@ mod tests {
 
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -1061,7 +1067,7 @@ mod tests {
         ///
         // recreate defense army for testing
         let defence_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(defence_troop_each, defence_troop_each, defence_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Defence
@@ -1081,7 +1087,7 @@ mod tests {
         ///
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(
                 attack_troop_each, attack_troop_each, attack_troop_each
             ), // has no effect on outcome
@@ -1153,7 +1159,7 @@ mod tests {
         ///
         // recreate defense army for testing
         let defence_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(defence_troop_each, defence_troop_each, defence_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Defence
@@ -1173,7 +1179,7 @@ mod tests {
         ///
         // recreate army for testing
         let attack_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack
@@ -1251,7 +1257,7 @@ mod tests {
         ///
         // recreate defense army for testing
         let defence_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(defence_troop_each, defence_troop_each, defence_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Defence
@@ -1271,7 +1277,7 @@ mod tests {
         ///
         // recreate attack army for testing
         let attack_army = Army {
-            entity_id: world.uuid().into(),
+            entity_id: world.uuid(),
             troops: mock_troops(attack_troop_each, attack_troop_each, attack_troop_each),
             battle_id: battle.entity_id,
             battle_side: BattleSide::Attack

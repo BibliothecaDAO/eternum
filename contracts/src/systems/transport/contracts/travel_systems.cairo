@@ -17,35 +17,33 @@ mod travel_systems {
     use eternum::alias::ID;
 
     use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex, TravelTypes};
-    use eternum::models::capacity::{Capacity, CapacityTrait};
+    use eternum::models::capacity::{Capacity, CapacityCustomTrait};
     use eternum::models::config::{RoadConfig, LevelingConfig};
-    use eternum::models::level::{Level, LevelTrait};
+    use eternum::models::level::{Level, LevelCustomTrait};
     use eternum::models::map::Tile;
     use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::order::{Orders, OrdersTrait};
-    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
+    use eternum::models::order::{Orders, OrdersCustomTrait};
+    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
-    use eternum::models::quantity::{Quantity, QuantityTrait};
+    use eternum::models::quantity::{Quantity, QuantityCustomTrait};
     use eternum::models::realm::Realm;
-    use eternum::models::road::RoadImpl;
-    use eternum::models::stamina::StaminaImpl;
+    use eternum::models::road::RoadCustomImpl;
+    use eternum::models::stamina::StaminaCustomImpl;
     use eternum::models::weight::Weight;
 
-    use eternum::systems::leveling::contracts::leveling_systems::{
-        InternalLevelingSystemsImpl as leveling
-    };
+    use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
     use starknet::ContractAddress;
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event]
     struct Travel {
         #[key]
-        destination_coord_x: u128,
+        destination_coord_x: u32,
         #[key]
-        destination_coord_y: u128,
+        destination_coord_y: u32,
         #[key]
         owner: ContractAddress,
-        entity_id: u128,
+        entity_id: ID,
         travel_time: u64,
         travel_path: Span<Coord>,
     }
@@ -56,8 +54,8 @@ mod travel_systems {
         /// Travel to a destination
         ///
         /// This system can be called to move an entity from
-        /// its current location to another coordinate on the map. It 
-        //  is however crucial that the entity has all the necessary 
+        /// its current location to another coordinate on the map. It
+        //  is however crucial that the entity has all the necessary
         //  models or components allowing it to move (i.e it must be movable)
         ///
         /// # Arguments
@@ -82,18 +80,12 @@ mod travel_systems {
             assert(travelling_entity_coord != destination_coord, 'entity is at destination');
 
             InternalTravelSystemsImpl::travel(
-                world,
-                travelling_entity_id,
-                travelling_entity_movable,
-                travelling_entity_coord,
-                destination_coord
+                world, travelling_entity_id, travelling_entity_movable, travelling_entity_coord, destination_coord
             );
         }
 
 
-        fn travel_hex(
-            ref world: IWorldDispatcher, travelling_entity_id: ID, directions: Span<Direction>
-        ) {
+        fn travel_hex(ref world: IWorldDispatcher, travelling_entity_id: ID, directions: Span<Direction>) {
             get!(world, travelling_entity_id, EntityOwner).assert_caller_owner(world);
 
             let travelling_entity_movable = get!(world, travelling_entity_id, Movable);
@@ -108,18 +100,14 @@ mod travel_systems {
             let travelling_entity_coord: Coord = travelling_entity_position.into();
 
             let num_moves = directions.len().try_into().unwrap();
-            StaminaImpl::handle_stamina_costs(
-                travelling_entity_id, TravelTypes::Travel(num_moves), world
-            );
+            StaminaCustomImpl::handle_stamina_costs(travelling_entity_id, TravelTypes::Travel(num_moves), world);
 
-            InternalTravelSystemsImpl::travel_hex(
-                world, travelling_entity_id, travelling_entity_coord, directions
-            );
+            InternalTravelSystemsImpl::travel_hex(world, travelling_entity_id, travelling_entity_coord, directions);
         }
     }
 
     #[generate_trait]
-    impl InternalTravelSystemsImpl of InternalTravelSystemsTrait {
+    pub impl InternalTravelSystemsImpl of InternalTravelSystemsTrait {
         fn assert_tile_explored(world: IWorldDispatcher, coord: Coord) {
             let mut tile: Tile = get!(world, (coord.x, coord.y), Tile);
             assert(tile.explored_by_id != 0, 'tile not explored');
@@ -150,12 +138,7 @@ mod travel_systems {
             return new_travel_time;
         }
 
-        fn travel_hex(
-            world: IWorldDispatcher,
-            transport_id: ID,
-            from_coord: Coord,
-            mut directions: Span<Direction>
-        ) {
+        fn travel_hex(world: IWorldDispatcher, transport_id: ID, from_coord: Coord, mut directions: Span<Direction>) {
             // get destination coordinate
             let mut travel_path = array![from_coord];
             let mut to_coord = from_coord;
@@ -170,7 +153,7 @@ mod travel_systems {
                 // ensure tile is explored
                 Self::assert_tile_explored(world, to_coord);
 
-                // add coord to travel path 
+                // add coord to travel path
                 travel_path.append(to_coord);
 
                 index += 1;
@@ -186,14 +169,12 @@ mod travel_systems {
             set!(
                 world,
                 (
-                    ArrivalTime {
-                        entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into()
-                    },
+                    ArrivalTime { entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into() },
                     Position { entity_id: transport_id, x: to_coord.x, y: to_coord.y }
                 )
             );
 
-            // emit travel event 
+            // emit travel event
             let entityOwner = get!(world, transport_id, EntityOwner);
             emit!(
                 world,
@@ -210,17 +191,12 @@ mod travel_systems {
 
 
         fn travel(
-            world: IWorldDispatcher,
-            transport_id: ID,
-            transport_movable: Movable,
-            from_coord: Coord,
-            to_coord: Coord
+            world: IWorldDispatcher, transport_id: ID, transport_movable: Movable, from_coord: Coord, to_coord: Coord
         ) {
             // ensure destination tile is explored
             Self::assert_tile_explored(world, to_coord);
 
-            let mut travel_time = from_coord
-                .calculate_travel_time(to_coord, transport_movable.sec_per_km);
+            let mut travel_time = from_coord.calculate_travel_time(to_coord, transport_movable.sec_per_km);
 
             // check if entity owner is a realm and apply bonuses if it is
             let entity_owner = get!(world, (transport_id), EntityOwner);
@@ -231,7 +207,7 @@ mod travel_systems {
             }
 
             // reduce travel time if there is a road
-            let travel_time = RoadImpl::use_road(world, travel_time, from_coord, to_coord);
+            let travel_time = RoadCustomImpl::use_road(world, travel_time, from_coord, to_coord);
 
             let current_position = get!(world, transport_id, Position);
 
@@ -239,8 +215,7 @@ mod travel_systems {
                 world,
                 (
                     ArrivalTime {
-                        entity_id: transport_id,
-                        arrives_at: starknet::get_block_timestamp().into() + travel_time
+                        entity_id: transport_id, arrives_at: starknet::get_block_timestamp().into() + travel_time
                     },
                     Position { entity_id: transport_id, x: to_coord.x, y: to_coord.y },
                     Movable {
@@ -256,7 +231,7 @@ mod travel_systems {
                 )
             );
 
-            // emit travel event 
+            // emit travel event
             let owner = get!(world, transport_id, Owner);
             emit!(
                 world,
@@ -291,8 +266,7 @@ mod travel_systems {
         fn check_arrival_time(world: IWorldDispatcher, transport_id: ID) {
             let transport_arrival_time = get!(world, transport_id, ArrivalTime);
             assert(
-                transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(),
-                'transport has not arrived'
+                transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(), 'transport has not arrived'
             );
         }
 
@@ -300,24 +274,20 @@ mod travel_systems {
         fn get_travel_time(
             world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position
         ) -> (u64, u64) {
-            let (transport_movable, transport_position) = get!(
-                world, transport_id, (Movable, Position)
-            );
-            let mut one_way_trip_time = from_pos
-                .calculate_travel_time(to_pos, transport_movable.sec_per_km);
+            let (transport_movable, transport_position) = get!(world, transport_id, (Movable, Position));
+            let mut one_way_trip_time = from_pos.calculate_travel_time(to_pos, transport_movable.sec_per_km);
 
             // check if entity owner is a realm and apply bonuses if it is
             let entity_owner = get!(world, (transport_id), EntityOwner);
             let realm = get!(world, entity_owner.entity_owner_id, Realm);
 
             if realm.cities > 0 {
-                one_way_trip_time =
-                    Self::use_travel_bonus(world, @realm, @entity_owner, one_way_trip_time);
+                one_way_trip_time = Self::use_travel_bonus(world, @realm, @entity_owner, one_way_trip_time);
             }
 
             let round_trip_time: u64 = 2 * one_way_trip_time;
             // reduce round trip time if there is a road
-            let round_trip_time = RoadImpl::use_road(
+            let round_trip_time = RoadCustomImpl::use_road(
                 world, round_trip_time, transport_position.into(), to_pos.into()
             );
             // update one way trip time incase round_trip_time was reduced

@@ -11,13 +11,13 @@ slot deployments delete eternum-23 torii
 slot deployments delete eternum-23 katana
 
 echo "Deploying world to Realms L3..."
-slot deployments create eternum-24 katana --version v0.7.1 --invoke-max-steps 25000000 --disable-fee true --block-time 3000
+slot deployments create eternum-24 katana --version v1.0.0-alpha.3 --invoke-max-steps 25000000 --disable-fee true --block-time 1000
 
 echo "Migrating world..."
 sozo --profile prod migrate apply --name eternum
 
 echo "Setting up remote indexer on slot..."
-slot deployments create eternum-24 torii --version v0.7.1 --world 0x161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824 --rpc https://api.cartridge.gg/x/eternum-24/katana --start-block 0  --index-pending true
+slot deployments create eternum-24 torii --version v1.0.0-alpha.3 --world 0x72bea8ba4bc0f95fb3313cc6b8b4228bbd38c329f53e972df7fe38fa055f357 --rpc https://api.cartridge.gg/x/eternum-24/katana --start-block 0  --index-pending true
 
 bun --env-file=../client/.env.production ../config/index.ts
 

@@ -1,18 +1,19 @@
-use eternum::models::quantity::{Quantity, QuantityTrait};
+use eternum::alias::ID;
+use eternum::models::quantity::{Quantity, QuantityCustomTrait};
 use eternum::models::weight::{Weight};
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Capacity {
+pub struct Capacity {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     weight_gram: u128,
 }
 
 
 #[generate_trait]
-impl CapacityImpl of CapacityTrait {
+impl CapacityCustomImpl of CapacityCustomTrait {
     fn assert_can_carry(self: Capacity, quantity: Quantity, weight: Weight) {
         assert!(self.can_carry(quantity, weight), "entity {} capacity not enough", self.entity_id);
     }

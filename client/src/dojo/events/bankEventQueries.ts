@@ -1,8 +1,8 @@
 import { Event, client, getEventsQuery } from "./graphqlClient";
 import { SWAP_EVENT } from "@bibliothecadao/eternum";
 
-const MAX_EVENTS = 5000;
-const ADMIN_BANK_ENTITY_ID = "0xde0b6b3a763fffe"; //999999999999999998n;
+export const MAX_EVENTS = 5000;
+export const ADMIN_BANK_ENTITY_ID = "0x3b9ac9fe"; //999999998n;
 
 export interface BankStatsInterface {
   ownerTotalLordsFees: number;
