@@ -11,7 +11,7 @@ import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "./useArmies";
 
-export type Realm = ComponentValue<ClientComponents["Realm"]["schema"]> & {
+type Realm = ComponentValue<ClientComponents["Realm"]["schema"]> & {
   resources: number[];
   self: boolean;
   name: string;
@@ -27,14 +27,7 @@ export type Structure = ComponentValue<ClientComponents["Structure"]["schema"]> 
   entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
 };
 
-type FullStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
-  entityOwner: ComponentValue<ClientComponents["EntityOwner"]["schema"]>;
-  owner: ComponentValue<ClientComponents["Owner"]["schema"]>;
-  protector: ArmyInfo | undefined;
-  isMine: boolean;
-};
-
-export const useStructuresPosition = ({ position }: { position: Position }) => {
+const useStructuresPosition = ({ position }: { position: Position }) => {
   const {
     setup: {
       components: { Position, Realm, EntityOwner, Owner, Structure, Protector, EntityName },
@@ -156,10 +149,10 @@ export const getStructureAtPosition = ({ x, y }: Position): Structure | undefine
       structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
         : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
 
     return {
       ...structure,
@@ -206,10 +199,10 @@ export const getStructureByPosition = () => {
       structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
         : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
 
     return {
       ...structure,
@@ -255,10 +248,10 @@ export const getStructureByEntityId = (entityId: bigint) => {
       structure.category === StructureType[StructureType.Realm]
         ? getRealmNameById(getComponentValue(Realm, structureEntityId)!.realm_id)
         : onChainName
-          ? shortString.decodeShortString(onChainName.name.toString())
-          : `${String(structure.category)
-              .replace(/([A-Z])/g, " $1")
-              .trim()} ${structure?.entity_id}`;
+        ? shortString.decodeShortString(onChainName.name.toString())
+        : `${String(structure.category)
+            .replace(/([A-Z])/g, " $1")
+            .trim()} ${structure?.entity_id}`;
 
     return {
       ...structure,

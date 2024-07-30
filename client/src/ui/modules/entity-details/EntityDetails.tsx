@@ -96,7 +96,7 @@ export const EntityDetails = () => {
   );
 };
 
-export const SelectActiveArmy = ({
+const SelectActiveArmy = ({
   selectedEntity,
   setOwnArmySelected,
   userAttackingArmies,

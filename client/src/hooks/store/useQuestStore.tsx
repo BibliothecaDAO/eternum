@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { Quest } from "../helpers/useQuests";
 
-export interface QuestStore {
+interface QuestStore {
   selectedQuest: Quest | null;
   setSelectedQuest: (selectedQuest: Quest | null) => void;
 }

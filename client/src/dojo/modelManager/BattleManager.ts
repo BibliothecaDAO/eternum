@@ -8,7 +8,6 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
 
 export enum BattleType {
-  None,
   Hex,
   Structure,
   Realm,

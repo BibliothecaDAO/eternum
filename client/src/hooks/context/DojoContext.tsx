@@ -16,7 +16,7 @@ interface DojoAccount {
   accountDisplay: string;
 }
 
-export interface DojoContextType extends SetupResult {
+interface DojoContextType extends SetupResult {
   masterAccount: Account | AccountInterface;
   account: DojoAccount;
 }

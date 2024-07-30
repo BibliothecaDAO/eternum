@@ -130,12 +130,12 @@ SelectSeparator.displayName = SelectPrimitive.Separator.displayName;
 export {
   Select,
   SelectContent,
-  SelectGroup,
+  // SelectGroup,
   SelectItem,
-  SelectLabel,
-  SelectScrollDownButton,
-  SelectScrollUpButton,
-  SelectSeparator,
+  // SelectLabel,
+  // SelectScrollDownButton,
+  // SelectScrollUpButton,
+  // SelectSeparator,
   SelectTrigger,
   SelectValue,
 };

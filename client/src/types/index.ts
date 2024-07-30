@@ -29,11 +29,6 @@ export interface TravelPath {
   isExplored: boolean;
 }
 
-export enum CombatTarget {
-  Structure,
-  Army,
-}
-
 export interface Health {
   current: bigint;
   lifetime: bigint;

@@ -235,7 +235,7 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
   };
 };
 
-export const useArmiesByBattleId = (battle_id: bigint) => {
+const useArmiesByBattleId = (battle_id: bigint) => {
   const {
     setup: {
       components: {
@@ -322,7 +322,7 @@ export const getArmiesByBattleId = () => {
   return armiesByBattleId;
 };
 
-const useArmyByArmyEntityId = (entityId: bigint) => {
+export const useArmyByArmyEntityId = (entityId: bigint) => {
   const {
     setup: {
       components: {
@@ -690,17 +690,4 @@ const calculateOffset = (index: number, total: number) => {
     x: offsetRadius * Math.cos(angle),
     y: offsetRadius * Math.sin(angle),
   };
-};
-
-export const checkIfArmyLostAFinishedBattle = (Battle: Component, Army: Component, army: ArmyInfo) => {
-  const battle = getBattle(getEntityIdFromKeys([army?.battle_id || 0n]), Battle);
-  if (battle && armyHasLost(army, battle as BattleInfo) && battleIsFinished(Army, battle as BattleInfo)) {
-    return true;
-  }
-  return false;
-};
-
-export const checkIfArmyAliveOnchain = (army: ArmyInfo) => {
-  if (army.protectee !== undefined) return true;
-  return army.health.current > 0n;
 };

@@ -11,7 +11,7 @@ import { useDojo } from "../context/DojoContext";
 import { getQuestResources as getStartingResources } from "@bibliothecadao/eternum";
 import useRealmStore from "../store/useRealmStore";
 
-export type RealmExtended = RealmInterface & {
+type RealmExtended = RealmInterface & {
   entity_id: bigint;
   resources: number[];
 };

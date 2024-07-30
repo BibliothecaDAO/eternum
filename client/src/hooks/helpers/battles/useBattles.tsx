@@ -19,10 +19,10 @@ import { shortString } from "starknet";
 import { useDojo } from "../../context/DojoContext";
 import * as module from "./useBattles";
 
-export type FullArmyType = ComponentValue<ClientComponents["Army"]["schema"]> &
+type FullArmyType = ComponentValue<ClientComponents["Army"]["schema"]> &
   ComponentValue<ClientComponents["Health"]["schema"]>;
 
-export type ExtraBattleInfo = ComponentValue<ClientComponents["Position"]["schema"]> & {
+type ExtraBattleInfo = ComponentValue<ClientComponents["Position"]["schema"]> & {
   opponentArmy: FullArmyType;
   ownArmyEntityName: string;
   opponentArmyEntityName: string;
@@ -166,7 +166,7 @@ export const useBattlesByPosition = ({ x, y }: Position) => {
   return getExtraBattleInformation(battleEntityIds, Battle, Position, Structure);
 };
 
-export const getBattleByPosition = () => {
+const getBattleByPosition = () => {
   const {
     setup: {
       components: { Battle, Position, Structure },
