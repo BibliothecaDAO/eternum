@@ -14,7 +14,7 @@ import {
   default as realmHexPositions,
   default as realmsHexPositions,
 } from "../../data/geodata/hex/realmHexPositions.json";
-import { FELT_CENTER } from "../config";
+import { FELT_CENTER, ResourceMiningTypes } from "../config";
 import { SortInterface } from "../elements/SortButton";
 import * as THREE from "three";
 import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/HexagonScene";
@@ -169,13 +169,6 @@ export const pseudoRandom = (x: number, y: number) => {
   let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
   return n - Math.floor(n);
 };
-
-export enum ResourceMiningTypes {
-  Forge = "forge",
-  Mine = "mine",
-  LumberMill = "lumber_mill",
-  Dragonhide = "dragonhide",
-}
 
 export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMiningTypes>> = {
   [ResourcesIds.Copper]: ResourceMiningTypes.Forge,

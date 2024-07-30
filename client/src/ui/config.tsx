@@ -2,7 +2,7 @@ import { BuildingType } from "@bibliothecadao/eternum";
 
 export const FELT_CENTER = 2147483647;
 
-enum ResourceMiningTypes {
+export enum ResourceMiningTypes {
   Forge = "forge",
   Mine = "mine",
   LumberMill = "lumber_mill",
