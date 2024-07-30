@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
 import WorldmapScene from "../scenes/Worldmap";
-import { borderHexMaterial } from "@/shaders/borderHexMaterial";
-import { transparentHexMaterial } from "@/shaders/transparentHexMaterial";
+import { borderHexMaterial } from "@/three/shaders/borderHexMaterial";
+import { transparentHexMaterial } from "@/three/shaders/transparentHexMaterial";
 import { HEX_SIZE } from "../GameRenderer";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 

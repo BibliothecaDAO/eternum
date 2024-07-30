@@ -6,8 +6,8 @@ import { Entity } from "@dojoengine/recs";
 import { ContextMenuManager } from "../components/ContextMenuManager";
 
 import { SetupResult } from "@/dojo/setup";
-import { highlightHexMaterial } from "@/shaders/highlightHexMaterial";
-import { borderHexMaterial } from "@/shaders/borderHexMaterial";
+import { highlightHexMaterial } from "@/three/shaders/highlightHexMaterial";
+import { borderHexMaterial } from "@/three/shaders/borderHexMaterial";
 import { FELT_CENTER } from "@/ui/config";
 import GUI from "lil-gui";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
