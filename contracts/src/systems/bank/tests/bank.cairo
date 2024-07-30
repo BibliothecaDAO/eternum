@@ -1,4 +1,5 @@
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 
 use eternum::models::position::{Coord};
 
@@ -14,7 +15,7 @@ use starknet::contract_address_const;
 use traits::Into;
 
 
-fn setup() -> (IWorldDispatcher, IBankConfigDispatcher, IBankSystemsDispatcher, u128) {
+fn setup() -> (IWorldDispatcher, IBankConfigDispatcher, IBankSystemsDispatcher, ID) {
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);

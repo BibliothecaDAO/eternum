@@ -1,22 +1,23 @@
 use alexandria_data_structures::array_ext::ArrayImpl;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::{
     models::{combat::Army, config::{StaminaConfig, TickConfig, TickImpl}},
     constants::{ResourceTypes, TravelTypes, TravelTypesImpl, WORLD_CONFIG_ID}
 };
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Stamina {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     amount: u16,
     last_refill_tick: u64,
 }
 
 #[generate_trait]
 impl StaminaCustomImpl of StaminaCustomTrait {
-    fn handle_stamina_costs(army_entity_id: u128, travel: TravelTypes, world: IWorldDispatcher) {
+    fn handle_stamina_costs(army_entity_id: ID, travel: TravelTypes, world: IWorldDispatcher) {
         let mut stamina = get!(world, (army_entity_id), Stamina);
         stamina.refill_if_next_tick(world);
         let costs = travel.get_stamina_costs();

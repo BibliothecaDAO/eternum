@@ -4,6 +4,7 @@ mod resource_approval_system_tests {
     use core::traits::Into;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::alias::ID;
 
     use eternum::constants::ResourceTypes;
     use eternum::constants::WORLD_CONFIG_ID;
@@ -33,7 +34,7 @@ mod resource_approval_system_tests {
     }
 
 
-    fn make_owner_and_receiver(world: IWorldDispatcher, owner_entity_id: u64, receiver_entity_id: u64) {
+    fn make_owner_and_receiver(world: IWorldDispatcher, owner_entity_id: ID, receiver_entity_id: ID) {
         let owner_entity_position = Position { x: 100_000, y: 200_000, entity_id: owner_entity_id.into() };
 
         set!(world, (owner_entity_position));
@@ -64,11 +65,11 @@ mod resource_approval_system_tests {
     fn test_approve() {
         let (world, resource_systems_dispatcher) = setup();
 
-        let owner_entity_id = 11_u64;
-        let receiver_entity_id = 12_u64;
+        let owner_entity_id: ID = 11;
+        let receiver_entity_id: ID = 12;
         make_owner_and_receiver(world, owner_entity_id, receiver_entity_id);
 
-        let approved_entity_id = 13_u64;
+        let approved_entity_id: ID = 13;
 
         set!(
             world,
@@ -104,11 +105,11 @@ mod resource_approval_system_tests {
     fn test_approve__infinite_approval() {
         let (world, resource_systems_dispatcher) = setup();
 
-        let owner_entity_id = 11_u64;
-        let receiver_entity_id = 12_u64;
+        let owner_entity_id: ID = 11;
+        let receiver_entity_id: ID = 12;
         make_owner_and_receiver(world, owner_entity_id, receiver_entity_id);
 
-        let approved_entity_id = 13_u64;
+        let approved_entity_id: ID = 13;
 
         set!(
             world,
@@ -145,11 +146,11 @@ mod resource_approval_system_tests {
     fn test_approve__not_owner() {
         let (world, resource_systems_dispatcher) = setup();
 
-        let owner_entity_id = 11_u64;
-        let receiver_entity_id = 12_u64;
+        let owner_entity_id: ID = 11;
+        let receiver_entity_id: ID = 12;
         make_owner_and_receiver(world, owner_entity_id, receiver_entity_id);
 
-        let approved_entity_id = 13_u64;
+        let approved_entity_id: ID = 13;
 
         set!(
             world,

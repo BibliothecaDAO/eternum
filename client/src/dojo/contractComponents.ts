@@ -919,8 +919,6 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          _col: RecsType.BigInt,
-          _row: RecsType.BigInt,
           col: RecsType.BigInt,
           row: RecsType.BigInt,
           explored_by_id: RecsType.BigInt,

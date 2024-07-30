@@ -1,8 +1,10 @@
+use eternum::alias::ID;
+
 #[dojo::interface]
 trait IRealmSystems {
     fn create(
         ref world: IWorldDispatcher,
-        realm_id: u128,
+        realm_id: ID,
         resource_types_packed: u128,
         resource_types_count: u8,
         cities: u8,
@@ -12,8 +14,8 @@ trait IRealmSystems {
         wonder: u8,
         order: u8,
         position: eternum::models::position::Position
-    ) -> eternum::alias::ID;
-    fn mint_starting_resources(ref world: IWorldDispatcher, config_id: u32, entity_id: u128) -> eternum::alias::ID;
+    ) -> ID;
+    fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID;
 }
 
 
@@ -45,7 +47,7 @@ mod realm_systems {
 
     #[abi(embed_v0)]
     impl RealmSystemsImpl of super::IRealmSystems<ContractState> {
-        fn mint_starting_resources(ref world: IWorldDispatcher, config_id: u32, entity_id: u128) -> ID {
+        fn mint_starting_resources(ref world: IWorldDispatcher, config_id: ID, entity_id: ID) -> ID {
             get!(world, (entity_id), Realm).assert_is_set();
 
             let mut claimed_resources = get!(world, (entity_id, config_id), HasClaimedStartingResources);
@@ -83,7 +85,7 @@ mod realm_systems {
 
         fn create(
             ref world: IWorldDispatcher,
-            realm_id: u128,
+            realm_id: ID,
             resource_types_packed: u128,
             resource_types_count: u8,
             cities: u8,

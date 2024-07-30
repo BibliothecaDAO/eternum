@@ -1,8 +1,9 @@
 use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
 
 #[dojo::interface]
 trait IResourceSystems {
-    fn mint(ref world: IWorldDispatcher, entity_id: u128, resources: Span<(u8, u128)>,);
+    fn mint(ref world: IWorldDispatcher, entity_id: ID, resources: Span<(u8, u128)>,);
 }
 
 #[dojo::contract]
@@ -17,7 +18,7 @@ mod dev_resource_systems {
 
     #[abi(embed_v0)]
     impl ResourceSystemsImpl of super::IResourceSystems<ContractState> {
-        fn mint(ref world: IWorldDispatcher, entity_id: u128, resources: Span<(u8, u128)>,) {
+        fn mint(ref world: IWorldDispatcher, entity_id: ID, resources: Span<(u8, u128)>,) {
             assert_caller_is_admin(world);
 
             let mut resources = resources;

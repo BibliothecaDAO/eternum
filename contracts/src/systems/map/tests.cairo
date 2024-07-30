@@ -1,6 +1,7 @@
 use core::traits::TryInto;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 
 use eternum::constants::{ResourceTypes, WORLD_CONFIG_ID, TickIds};
 
@@ -81,8 +82,8 @@ fn test_map_explore() {
 
     // ensure that Tile model is correct
     let explored_tile: Tile = get!(world, (expected_explored_coord.x, expected_explored_coord.y), Tile);
-    assert_eq!(explored_tile.col, explored_tile._col, "wrong col");
-    assert_eq!(explored_tile.row, explored_tile._row, "wrong row");
+    assert_eq!(explored_tile.col, explored_tile.col, "wrong col");
+    assert_eq!(explored_tile.row, explored_tile.row, "wrong row");
     assert_eq!(explored_tile.explored_by_id, realm_army_unit_id, "wrong realm owner");
     assert_eq!(explored_tile.explored_at, TIMESTAMP, "wrong exploration time");
 
@@ -93,7 +94,8 @@ fn test_map_explore() {
     assert_eq!(realm_wheat.balance, expected_wheat_balance, "wrong wheat balance");
     assert_eq!(realm_fish.balance, expected_fish_balance, "wrong wheat balance");
 
-    army_coord = expected_explored_coord;
+    let mut new_army_coord: Coord = get!(world, realm_army_unit_id, Position).into();
+    assert_eq!(new_army_coord, expected_explored_coord);
 }
 
 #[test]
@@ -130,7 +132,7 @@ fn test_mercenaries_protector() {
     assert_eq!(mine_entity_owner.entity_owner_id, realm_entity_id, "wrong final owner");
 }
 
-fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher, ICombatContractDispatcher) {
+fn setup() -> (IWorldDispatcher, ID, ID, IMapSystemsDispatcher, ICombatContractDispatcher) {
     let world = spawn_eternum();
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
@@ -169,7 +171,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher, ICombatContr
     let troops = Troops {
         knight_count: INITIAL_KNIGHT_BALANCE.try_into().unwrap(), paladin_count: 0, crossbowman_count: 0
     };
-    let realm_army_unit_id: u128 = create_army_with_troops(
+    let realm_army_unit_id: ID = create_army_with_troops(
         world, combat_systems_dispatcher, realm_entity_id, troops, false
     );
 

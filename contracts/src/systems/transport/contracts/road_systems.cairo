@@ -11,6 +11,7 @@ trait IRoadSystems {
 
 #[dojo::contract]
 mod road_systems {
+    use eternum::alias::ID;
     use eternum::constants::ROAD_CONFIG_ID;
     use eternum::models::config::RoadConfig;
     use eternum::models::owner::Owner;
@@ -32,7 +33,7 @@ mod road_systems {
         /// * `end_coord` - The ending coordinate of the road.
         /// * `usage_count` - The number of times the road can be used.
         fn create(
-            ref world: IWorldDispatcher, entity_id: u128, start_coord: Coord, end_coord: Coord, usage_count: usize
+            ref world: IWorldDispatcher, entity_id: ID, start_coord: Coord, end_coord: Coord, usage_count: usize
         ) {
             // assert that entity is owned by caller
             let entity_owner = get!(world, entity_id, Owner);

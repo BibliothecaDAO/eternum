@@ -2,16 +2,16 @@ use eternum::alias::ID;
 
 
 // Config ID to fetch global configs
-const WORLD_CONFIG_ID: u128 = 999999999999999999;
-const BUILDING_CONFIG_ID: u128 = 999999999999999998;
-const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
-const ROAD_CONFIG_ID: u128 = 999999999999999995;
-const COMBAT_CONFIG_ID: u128 = 999999999999999994;
-const REALM_LEVELING_CONFIG_ID: u128 = 999999999999999993;
-const HYPERSTRUCTURE_CONFIG_ID: u128 = 999999999999999992;
-const REALM_FREE_MINT_CONFIG_ID: u128 = 999999999999999991;
-const BUILDING_CATEGORY_POPULATION_CONFIG_ID: u128 = 999999999999999990;
-const POPULATION_CONFIG_ID: u128 = 999999999999999989;
+const WORLD_CONFIG_ID: ID = 999999999;
+const BUILDING_CONFIG_ID: ID = 999999998;
+const TRANSPORT_CONFIG_ID: ID = 999999996;
+const ROAD_CONFIG_ID: ID = 999999995;
+const COMBAT_CONFIG_ID: ID = 999999994;
+const REALM_LEVELING_CONFIG_ID: ID = 999999993;
+const HYPERSTRUCTURE_CONFIG_ID: ID = 999999992;
+const REALM_FREE_MINT_CONFIG_ID: ID = 999999991;
+const BUILDING_CATEGORY_POPULATION_CONFIG_ID: ID = 999999990;
+const POPULATION_CONFIG_ID: ID = 999999989;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
@@ -300,9 +300,9 @@ fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
 // DISCUSS: register each new entity_type to the system by creating an entity containing the config components
 // Using DONKEY_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
-const DONKEY_ENTITY_TYPE: u128 = 256;
-const REALM_ENTITY_TYPE: u128 = 257;
-const ARMY_ENTITY_TYPE: u128 = 258;
+const DONKEY_ENTITY_TYPE: u32 = 256;
+const REALM_ENTITY_TYPE: u32 = 257;
+const ARMY_ENTITY_TYPE: u32 = 258;
 
 
 // TODO: change to consts

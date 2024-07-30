@@ -6,17 +6,17 @@ use eternum::models::config::{RoadConfig};
 use eternum::models::position::Coord;
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Road {
     #[key]
-    start_coord_x: u128,
+    start_coord_x: u32,
     #[key]
-    start_coord_y: u128,
+    start_coord_y: u32,
     #[key]
-    end_coord_x: u128,
+    end_coord_x: u32,
     #[key]
-    end_coord_y: u128,
+    end_coord_y: u32,
     usage_count: u32
 }
 
@@ -54,6 +54,7 @@ mod tests {
     use core::serde::Serde;
 
     use dojo::world::IWorldDispatcherTrait;
+    use eternum::alias::ID;
     use eternum::models::position::{Coord};
     use eternum::models::road::{Road, RoadCustomImpl, RoadCustomTrait};
 

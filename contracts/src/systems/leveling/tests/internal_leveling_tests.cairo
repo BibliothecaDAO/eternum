@@ -4,6 +4,7 @@ mod internal_leveling_systems {
     use core::traits::Into;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::alias::ID;
     use eternum::constants::{ResourceTypes};
     use eternum::models::level::Level;
     use eternum::models::position::Position;
@@ -18,10 +19,10 @@ mod internal_leveling_systems {
 
     use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 
-    const LEVELING_CONFIG_ID: u128 = 8888;
+    const LEVELING_CONFIG_ID: ID = 8888;
     const MAX_LEVEL: u64 = 10_u64;
 
-    fn setup() -> (IWorldDispatcher, u128) {
+    fn setup() -> (IWorldDispatcher, ID) {
         let world = spawn_eternum();
 
         // define leveling config

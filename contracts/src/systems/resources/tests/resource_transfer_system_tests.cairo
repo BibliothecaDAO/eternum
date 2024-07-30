@@ -4,6 +4,7 @@ mod resource_transfer_system_tests {
     use core::traits::Into;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::alias::ID;
     use eternum::constants::DONKEY_ENTITY_TYPE;
 
     use eternum::constants::ResourceTypes;
@@ -59,7 +60,7 @@ mod resource_transfer_system_tests {
     }
 
 
-    fn make_owner_and_receiver(world: IWorldDispatcher, sender_entity_id: u64, receiver_entity_id: u64) {
+    fn make_owner_and_receiver(world: IWorldDispatcher, sender_entity_id: ID, receiver_entity_id: ID) {
         let sender_entity_position = Position { x: 100_000, y: 200_000, entity_id: sender_entity_id.into() };
 
         set!(world, (sender_entity_position));
@@ -101,8 +102,8 @@ mod resource_transfer_system_tests {
     fn test_transfer() {
         let (world, resource_systems_dispatcher) = setup();
 
-        let sender_entity_id = 11_u64;
-        let receiver_entity_id = 12_u64;
+        let sender_entity_id: ID = 11;
+        let receiver_entity_id: ID = 12;
         make_owner_and_receiver(world, sender_entity_id, receiver_entity_id);
 
         // transfer resources
@@ -134,8 +135,8 @@ mod resource_transfer_system_tests {
     fn test_transfer__not_enough_donkey() {
         let (world, resource_systems_dispatcher) = setup();
 
-        let sender_entity_id = 11_u64;
-        let receiver_entity_id = 12_u64;
+        let sender_entity_id = 11;
+        let receiver_entity_id = 12;
         make_owner_and_receiver(world, sender_entity_id, receiver_entity_id);
 
         // set sender's donkey balance to 0
@@ -207,8 +208,8 @@ mod resource_transfer_system_tests {
     fn test_transfer__insufficient_balance() {
         let (world, resource_systems_dispatcher) = setup();
 
-        let sender_entity_id = 11_u64;
-        let receiver_entity_id = 12_u64;
+        let sender_entity_id = 11;
+        let receiver_entity_id = 12;
         make_owner_and_receiver(world, sender_entity_id, receiver_entity_id);
 
         // transfer resources
@@ -233,8 +234,8 @@ mod resource_transfer_system_tests {
     fn test_transfer_from() {
         let (world, resource_systems_dispatcher) = setup();
 
-        let owner_entity_id = 11_u64;
-        let receiver_entity_id = 12_u64;
+        let owner_entity_id = 11;
+        let receiver_entity_id = 12;
         let approved_entity_id = receiver_entity_id;
         make_owner_and_receiver(world, owner_entity_id, receiver_entity_id);
 
@@ -288,8 +289,8 @@ mod resource_transfer_system_tests {
     fn test_transfer_from__with_infinite_approval() {
         let (world, resource_systems_dispatcher) = setup();
 
-        let owner_entity_id = 11_u64;
-        let receiver_entity_id = 12_u64;
+        let owner_entity_id = 11;
+        let receiver_entity_id = 12;
         let approved_entity_id = receiver_entity_id;
 
         make_owner_and_receiver(world, owner_entity_id, receiver_entity_id);

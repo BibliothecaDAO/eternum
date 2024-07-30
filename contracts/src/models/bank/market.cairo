@@ -3,6 +3,7 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 // Dojo imports
 use dojo::model::introspect::{Struct, Ty, Introspect, Member};
+use eternum::alias::ID;
 
 // Starknet imports
 use starknet::ContractAddress;
@@ -34,11 +35,11 @@ impl IntrospectFixed of Introspect<Fixed> {
     }
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Market {
     #[key]
-    bank_entity_id: u128,
+    bank_entity_id: ID,
     #[key]
     resource_type: u8,
     lords_amount: u128,
@@ -261,6 +262,7 @@ fn normalize(quantity: u128, market: @Market) -> (u128, u128, u128) {
 #[cfg(test)]
 mod tests {
     use debug::PrintTrait;
+    use eternum::alias::ID;
     use super::{Fixed, FixedTrait};
     // Local imports
 

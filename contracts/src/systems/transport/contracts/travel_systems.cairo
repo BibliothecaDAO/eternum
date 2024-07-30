@@ -38,12 +38,12 @@ mod travel_systems {
     #[dojo::event]
     struct Travel {
         #[key]
-        destination_coord_x: u128,
+        destination_coord_x: u32,
         #[key]
-        destination_coord_y: u128,
+        destination_coord_y: u32,
         #[key]
         owner: ContractAddress,
-        entity_id: u128,
+        entity_id: ID,
         travel_time: u64,
         travel_path: Span<Coord>,
     }

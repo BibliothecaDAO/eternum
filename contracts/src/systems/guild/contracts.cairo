@@ -1,22 +1,22 @@
+use eternum::alias::ID;
 use starknet::ContractAddress;
 
 #[dojo::interface]
 trait IGuildSystems {
-    fn create_guild(ref world: IWorldDispatcher, is_public: bool, guild_name: felt252) -> u128;
-    fn join_guild(ref world: IWorldDispatcher, guild_entity_id: u128);
-    fn whitelist_player(
-        ref world: IWorldDispatcher, player_address_to_whitelist: ContractAddress, guild_entity_id: u128
-    );
+    fn create_guild(ref world: IWorldDispatcher, is_public: bool, guild_name: felt252) -> ID;
+    fn join_guild(ref world: IWorldDispatcher, guild_entity_id: ID);
+    fn whitelist_player(ref world: IWorldDispatcher, player_address_to_whitelist: ContractAddress, guild_entity_id: ID);
     fn leave_guild(ref world: IWorldDispatcher);
-    fn transfer_guild_ownership(ref world: IWorldDispatcher, guild_entity_id: u128, to_player_address: ContractAddress);
+    fn transfer_guild_ownership(ref world: IWorldDispatcher, guild_entity_id: ID, to_player_address: ContractAddress);
     fn remove_guild_member(ref world: IWorldDispatcher, player_address_to_remove: ContractAddress);
     fn remove_player_from_whitelist(
-        ref world: IWorldDispatcher, player_address_to_remove: ContractAddress, guild_entity_id: u128
+        ref world: IWorldDispatcher, player_address_to_remove: ContractAddress, guild_entity_id: ID
     );
 }
 
 #[dojo::contract]
 mod guild_systems {
+    use eternum::alias::ID;
     use eternum::models::guild::{Guild, GuildMember, GuildMemberCustomTrait, GuildWhitelist, GuildWhitelistCustomTrait};
     use eternum::models::name::AddressName;
     use eternum::models::name::EntityName;
@@ -26,7 +26,7 @@ mod guild_systems {
 
     #[abi(embed_v0)]
     impl GuildSystemsImpl of super::IGuildSystems<ContractState> {
-        fn create_guild(ref world: IWorldDispatcher, is_public: bool, guild_name: felt252) -> u128 {
+        fn create_guild(ref world: IWorldDispatcher, is_public: bool, guild_name: felt252) -> ID {
             let caller_address = starknet::get_caller_address();
 
             get!(world, caller_address, GuildMember).assert_has_no_guild();
@@ -34,7 +34,7 @@ mod guild_systems {
             // Add min name length
             assert(guild_name != 0, 'Guild name cannot be empty');
 
-            let guild_uuid: u128 = world.uuid().into();
+            let guild_uuid: ID = world.uuid();
 
             set!(
                 world,
@@ -50,7 +50,7 @@ mod guild_systems {
             guild_uuid
         }
 
-        fn join_guild(ref world: IWorldDispatcher, guild_entity_id: u128) {
+        fn join_guild(ref world: IWorldDispatcher, guild_entity_id: ID) {
             let caller_address = starknet::get_caller_address();
 
             get!(world, caller_address, GuildMember).assert_has_no_guild();
@@ -67,7 +67,7 @@ mod guild_systems {
         }
 
         fn whitelist_player(
-            ref world: IWorldDispatcher, player_address_to_whitelist: ContractAddress, guild_entity_id: u128
+            ref world: IWorldDispatcher, player_address_to_whitelist: ContractAddress, guild_entity_id: ID
         ) {
             get!(world, guild_entity_id, Owner).assert_caller_owner();
 
@@ -108,7 +108,7 @@ mod guild_systems {
         }
 
         fn transfer_guild_ownership(
-            ref world: IWorldDispatcher, guild_entity_id: u128, to_player_address: ContractAddress
+            ref world: IWorldDispatcher, guild_entity_id: ID, to_player_address: ContractAddress
         ) {
             get!(world, guild_entity_id, Owner).assert_caller_owner();
 
@@ -138,7 +138,7 @@ mod guild_systems {
         }
 
         fn remove_player_from_whitelist(
-            ref world: IWorldDispatcher, player_address_to_remove: ContractAddress, guild_entity_id: u128
+            ref world: IWorldDispatcher, player_address_to_remove: ContractAddress, guild_entity_id: ID
         ) {
             get!(world, (player_address_to_remove, guild_entity_id), GuildWhitelist).assert_is_whitelisted();
 

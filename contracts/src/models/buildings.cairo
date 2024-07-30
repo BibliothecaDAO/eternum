@@ -1,6 +1,7 @@
 use core::poseidon::poseidon_hash_span;
 use core::zeroable::Zeroable;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, POPULATION_CONFIG_ID};
 use eternum::models::config::{
     TickConfig, TickImpl, TickTrait, ProductionConfig, BuildingConfig, BuildingConfigCustomImpl,
@@ -21,25 +22,25 @@ use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
 #[dojo::model]
 pub struct Building {
     #[key]
-    outer_col: u128,
+    outer_col: u32,
     #[key]
-    outer_row: u128,
+    outer_row: u32,
     #[key]
-    inner_col: u128,
+    inner_col: u32,
     #[key]
-    inner_row: u128,
+    inner_row: u32,
     category: BuildingCategory,
     produced_resource_type: u8,
     bonus_percent: u128,
-    entity_id: u128,
-    outer_entity_id: u128,
+    entity_id: ID,
+    outer_entity_id: ID,
 }
 
 #[derive(PartialEq, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct BuildingQuantityv2 {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     #[key]
     category: BuildingCategory,
     value: u8
@@ -47,7 +48,6 @@ pub struct BuildingQuantityv2 {
 
 
 #[derive(PartialEq, Copy, Drop, Serde, Introspect)]
-#[dojo::model]
 enum BuildingCategory {
     None,
     Castle,
@@ -411,7 +411,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
 
     fn create(
         world: IWorldDispatcher,
-        outer_entity_id: u128,
+        outer_entity_id: ID,
         category: BuildingCategory,
         produce_resource_type: Option<u8>,
         inner_coord: Coord
@@ -430,7 +430,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         assert!(!building.is_active(), "space is occupied");
 
         // set building
-        building.entity_id = world.uuid().into();
+        building.entity_id = world.uuid();
         building.category = category;
         building.outer_entity_id = outer_entity_id;
         match produce_resource_type {
@@ -479,7 +479,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
     }
 
 
-    fn destroy(world: IWorldDispatcher, outer_entity_id: u128, inner_coord: Coord) -> BuildingCategory {
+    fn destroy(world: IWorldDispatcher, outer_entity_id: ID, inner_coord: Coord) -> BuildingCategory {
         get!(world, outer_entity_id, Owner).assert_caller_owner();
 
         // check that the outer entity has a position
@@ -536,7 +536,7 @@ impl BuildingCustomImpl of BuildingCustomTrait {
         destroyed_building_category
     }
 
-    fn make_payment(world: IWorldDispatcher, entity_id: u128, category: BuildingCategory, resource_type: u8) {
+    fn make_payment(world: IWorldDispatcher, entity_id: ID, category: BuildingCategory, resource_type: u8) {
         let building_config: BuildingConfig = BuildingConfigCustomImpl::get(world, category, resource_type);
         let mut index = 0;
         loop {

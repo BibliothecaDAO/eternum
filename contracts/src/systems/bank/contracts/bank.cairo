@@ -8,7 +8,7 @@ trait IBankSystems {
         ref world: IWorldDispatcher, realm_entity_id: ID, coord: Coord, owner_fee_num: u128, owner_fee_denom: u128,
     ) -> ID;
     fn change_owner_fee(
-        ref world: IWorldDispatcher, bank_entity_id: u128, new_owner_fee_num: u128, new_owner_fee_denom: u128,
+        ref world: IWorldDispatcher, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
     );
 }
 
@@ -31,7 +31,7 @@ mod bank_systems {
         fn create_bank(
             ref world: IWorldDispatcher, realm_entity_id: ID, coord: Coord, owner_fee_num: u128, owner_fee_denom: u128,
         ) -> ID {
-            let bank_entity_id: ID = world.uuid().into();
+            let bank_entity_id: ID = world.uuid();
 
             //todo: check that tile is explored
 
@@ -62,7 +62,7 @@ mod bank_systems {
         }
 
         fn change_owner_fee(
-            ref world: IWorldDispatcher, bank_entity_id: u128, new_owner_fee_num: u128, new_owner_fee_denom: u128,
+            ref world: IWorldDispatcher, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
         ) {
             let player = starknet::get_caller_address();
 
@@ -79,7 +79,7 @@ mod bank_systems {
     #[generate_trait]
     pub impl InternalBankSystemsImpl of BankSystemsTrait {
         fn pickup_resources_from_bank(
-            world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resources: Span<(u8, u128)>,
+            world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resources: Span<(u8, u128)>,
         ) -> ID {
             let mut resources_clone = resources.clone();
 

@@ -1,11 +1,12 @@
+use eternum::alias::ID;
 use eternum::models::buildings::{BuildingCategory};
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Population {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     population: u32, // current population
     capacity: u32, // total population capacity
 }

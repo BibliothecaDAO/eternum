@@ -1,15 +1,16 @@
 use cubit::f128::math::ops::{pow as fixed_pow};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{LevelIndex};
 use eternum::models::config::{LevelingConfig};
 use eternum::models::resources::{ResourceCost};
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Level {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     level: u64,
     valid_until: u64,
 }
@@ -76,6 +77,7 @@ impl LevelCustomImpl of LevelCustomTrait {
 
 #[cfg(test)]
 mod tests {
+    use eternum::alias::ID;
     use eternum::constants::{LevelIndex, REALM_LEVELING_START_TIER, HYPERSTRUCTURE_LEVELING_START_TIER};
     use eternum::models::config::{LevelingConfig};
     use super::{Level, LevelCustomTrait};

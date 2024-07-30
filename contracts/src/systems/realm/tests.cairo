@@ -1,4 +1,5 @@
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::MAX_REALMS_PER_ADDRESS;
 
 use eternum::constants::ResourceTypes;
@@ -25,7 +26,6 @@ use eternum::utils::testing::{
     },
     config::{set_combat_config}
 };
-
 use starknet::contract_address_const;
 
 const TIMESTAMP: u64 = 1000;
@@ -36,7 +36,7 @@ const INITIAL_RESOURCE_1_AMOUNT: u128 = 800;
 const INITIAL_RESOURCE_2_TYPE: u8 = 2;
 const INITIAL_RESOURCE_2_AMOUNT: u128 = 700;
 
-const REALM_FREE_MINT_CONFIG_ID: u32 = 0;
+const REALM_FREE_MINT_CONFIG_ID: ID = 0;
 
 fn setup() -> (IWorldDispatcher, IRealmSystemsDispatcher) {
     let world = spawn_eternum();
@@ -67,7 +67,7 @@ fn test_realm_create() {
 
     starknet::testing::set_block_timestamp(TIMESTAMP);
 
-    let position = Position { x: 20, y: 30, entity_id: 1_u128 };
+    let position = Position { x: 20, y: 30, entity_id: 1 };
 
     let realm_id = 1;
     let resource_types_packed = 1;
@@ -114,8 +114,8 @@ fn test_realm_create() {
 
     // ensure realm Tile is explored
     let tile: Tile = get!(world, (position.x, position.y), Tile);
-    assert_eq!(tile.col, tile._col, "wrong col");
-    assert_eq!(tile.row, tile._row, "wrong row");
+    assert_eq!(tile.col, tile.col, "wrong col");
+    assert_eq!(tile.row, tile.row, "wrong row");
     assert_eq!(tile.explored_by_id, realm_entity_id, "wrong realm owner");
     assert_eq!(tile.explored_at, TIMESTAMP, "wrong exploration time");
 }

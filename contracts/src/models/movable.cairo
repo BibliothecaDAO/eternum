@@ -1,26 +1,26 @@
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::WORLD_CONFIG_ID;
 use eternum::models::config::{SpeedConfig};
 use eternum::models::position::Coord;
-
 // speed seconds per km
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Movable {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     sec_per_km: u16,
     blocked: bool,
     round_trip: bool,
-    start_coord_x: u128,
-    start_coord_y: u128,
-    intermediate_coord_x: u128,
-    intermediate_coord_y: u128
+    start_coord_x: u32,
+    start_coord_y: u32,
+    intermediate_coord_x: u32,
+    intermediate_coord_y: u32
 }
 
 #[generate_trait]
 impl MovableCustomImpl of MovableCustomTrait {
-    fn sec_per_km(world: IWorldDispatcher, entity_type: u128) -> u16 {
+    fn sec_per_km(world: IWorldDispatcher, entity_type: ID) -> u16 {
         get!(world, (WORLD_CONFIG_ID, entity_type), SpeedConfig).sec_per_km
     }
     fn assert_moveable(self: Movable) {
@@ -36,11 +36,11 @@ impl MovableCustomImpl of MovableCustomTrait {
 // DISCUSS: separated from the Movable component because
 // we want to attach an ArrivalTime to the trading order
 // without having to attach a Movable component to the order
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct ArrivalTime {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     arrives_at: u64,
 }
 

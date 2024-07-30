@@ -5,6 +5,7 @@ use core::traits::Into;
 use debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, get_resources_without_earthenshards};
 use eternum::models::hyperstructure::{Progress, Contribution};
 use eternum::models::level::Level;
@@ -32,7 +33,7 @@ use starknet::contract_address_const;
 
 const TEST_AMOUNT: u128 = 1_000_000;
 
-fn setup() -> (IWorldDispatcher, u128, IHyperstructureSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, ID, IHyperstructureSystemsDispatcher) {
     let world = spawn_eternum();
 
     let realm_systems_dispatcher = deploy_realm_systems(world);

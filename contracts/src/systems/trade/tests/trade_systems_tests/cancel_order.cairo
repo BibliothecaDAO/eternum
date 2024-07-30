@@ -2,6 +2,7 @@ use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::DONKEY_ENTITY_TYPE;
 
 use eternum::constants::ResourceTypes;
@@ -25,11 +26,10 @@ use eternum::systems::trade::contracts::trade_systems::{
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm}
 };
-
 use starknet::contract_address_const;
 
 
-fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
     let world = spawn_eternum();
     world.uuid();
 
@@ -61,8 +61,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 
     // maker and taker are at the same location
     // so they can trade without transport
-    let maker_position = Position { x: 100000, y: 2000000, entity_id: 1_u128 };
-    let taker_position = Position { x: 200000, y: 1000000, entity_id: 1_u128 };
+    let maker_position = Position { x: 100000, y: 2000000, entity_id: 1 };
+    let taker_position = Position { x: 200000, y: 1000000, entity_id: 1 };
 
     let realm_systems_dispatcher = deploy_realm_systems(world);
     let maker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, maker_position);

@@ -6,15 +6,13 @@ use eternum::alias::ID;
 trait ILiquiditySystems {
     fn add(
         ref world: IWorldDispatcher,
-        bank_entity_id: u128,
-        entity_id: u128,
+        bank_entity_id: ID,
+        entity_id: ID,
         resource_type: u8,
         resource_amount: u128,
         lords_amount: u128,
     );
-    fn remove(
-        ref world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resource_type: u8, shares: Fixed
-    ) -> ID;
+    fn remove(ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed) -> ID;
 }
 
 #[dojo::contract]
@@ -34,9 +32,9 @@ mod liquidity_systems {
     #[dojo::event]
     struct LiquidityEvent {
         #[key]
-        bank_entity_id: u128,
+        bank_entity_id: ID,
         #[key]
-        entity_id: u128,
+        entity_id: ID,
         resource_type: u8,
         lords_amount: u128,
         resource_amount: u128,
@@ -49,8 +47,8 @@ mod liquidity_systems {
     impl LiquiditySystemsImpl of super::ILiquiditySystems<ContractState> {
         fn add(
             ref world: IWorldDispatcher,
-            bank_entity_id: u128,
-            entity_id: u128,
+            bank_entity_id: ID,
+            entity_id: ID,
             resource_type: u8,
             resource_amount: u128,
             lords_amount: u128,
@@ -92,7 +90,7 @@ mod liquidity_systems {
 
 
         fn remove(
-            ref world: IWorldDispatcher, bank_entity_id: u128, entity_id: u128, resource_type: u8, shares: Fixed
+            ref world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resource_type: u8, shares: Fixed
         ) -> ID {
             let player = starknet::get_caller_address();
             get!(world, entity_id, Owner).assert_caller_owner();
@@ -134,12 +132,7 @@ mod liquidity_systems {
     #[generate_trait]
     pub impl InternalLiquiditySystemsImpl of InternalLiquiditySystemsTrait {
         fn emit_event(
-            world: IWorldDispatcher,
-            market: Market,
-            entity_id: u128,
-            lords_amount: u128,
-            resource_amount: u128,
-            add: bool
+            world: IWorldDispatcher, market: Market, entity_id: ID, lords_amount: u128, resource_amount: u128, add: bool
         ) {
             let resource_price = if market.has_liquidity() {
                 market.quote_amount(1000)

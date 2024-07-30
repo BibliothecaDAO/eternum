@@ -1,24 +1,25 @@
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::ErrorMessages;
 use eternum::models::realm::Realm;
 use starknet::ContractAddress;
 
 // contract address owning an entity
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Owner {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     address: ContractAddress,
 }
 
 // entity owning an entity
-#[derive(Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
 pub struct EntityOwner {
     #[key]
-    entity_id: u128,
-    entity_owner_id: u128,
+    entity_id: ID,
+    entity_owner_id: ID,
 }
 
 #[generate_trait]
@@ -39,7 +40,7 @@ impl EntityOwnerCustomImpl of EntityOwnerCustomTrait {
         return get!(world, self.entity_owner_id, Owner).address;
     }
 
-    fn get_realm_id(self: EntityOwner, world: IWorldDispatcher) -> u128 {
+    fn get_realm_id(self: EntityOwner, world: IWorldDispatcher) -> ID {
         get!(world, (self.entity_owner_id), Realm).realm_id
     }
 }
@@ -47,6 +48,7 @@ impl EntityOwnerCustomImpl of EntityOwnerCustomTrait {
 #[cfg(test)]
 mod tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::alias::ID;
     use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::realm::Realm;
     use eternum::utils::testing::world::spawn_eternum;

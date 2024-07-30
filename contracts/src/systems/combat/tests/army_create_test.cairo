@@ -1,5 +1,6 @@
 use core::array::SpanTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, TickIds};
 use eternum::models::capacity::Capacity;
 use eternum::models::combat::{Army, Troops, BattleSide, Protectee, Protector};
@@ -28,8 +29,8 @@ const STARTING_KNIGHT_COUNT: u128 = 3_000 * RESOURCE_PRECISION;
 const STARTING_PALADIN_COUNT: u128 = 3_000 * RESOURCE_PRECISION;
 const STARTING_CROSSBOWMAN_COUNT: u128 = 3_000 * RESOURCE_PRECISION;
 
-const REALM_COORD_X: u128 = 2;
-const REALM_COORD_Y: u128 = 3;
+const REALM_COORD_X: u32 = 2;
+const REALM_COORD_Y: u32 = 3;
 
 fn set_configurations(world: IWorldDispatcher) {
     set!(
@@ -58,7 +59,7 @@ fn set_configurations(world: IWorldDispatcher) {
     )
 }
 
-fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, u128,) {
+fn setup() -> (IWorldDispatcher, ICombatContractDispatcher, ID,) {
     let world = spawn_eternum();
     set_configurations(world);
     let realm_system_dispatcher = deploy_realm_systems(world);

@@ -17,18 +17,18 @@ trait IWorldConfig {
 
 #[dojo::interface]
 trait IRealmFreeMintConfig {
-    fn set_mint_config(ref world: IWorldDispatcher, config_id: u32, resources: Span<(u8, u128)>);
+    fn set_mint_config(ref world: IWorldDispatcher, config_id: ID, resources: Span<(u8, u128)>);
 }
 
 
 #[dojo::interface]
 trait IWeightConfig {
-    fn set_weight_config(ref world: IWorldDispatcher, entity_type: u128, weight_gram: u128);
+    fn set_weight_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128);
 }
 
 #[dojo::interface]
 trait ICapacityConfig {
-    fn set_capacity_config(ref world: IWorldDispatcher, entity_type: u128, weight_gram: u128);
+    fn set_capacity_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128);
 }
 
 #[dojo::interface]
@@ -44,7 +44,7 @@ trait IStaminaConfig {
 #[dojo::interface]
 trait ITransportConfig {
     fn set_road_config(ref world: IWorldDispatcher, resource_costs: Span<(u8, u128)>, speed_up_by: u64);
-    fn set_speed_config(ref world: IWorldDispatcher, entity_type: u128, sec_per_km: u16);
+    fn set_speed_config(ref world: IWorldDispatcher, entity_type: ID, sec_per_km: u16);
 }
 
 #[dojo::interface]
@@ -56,7 +56,7 @@ trait IHyperstructureConfig {
 trait ILevelingConfig {
     fn set_leveling_config(
         ref world: IWorldDispatcher,
-        config_id: u128,
+        config_id: ID,
         decay_interval: u64,
         max_level: u64,
         decay_scaled: u128,
@@ -128,7 +128,6 @@ trait IMercenariesConfig {
 
 #[dojo::contract]
 mod config_systems {
-    use debug::PrintTrait;
     use eternum::alias::ID;
 
     use eternum::constants::{
@@ -172,10 +171,10 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl RealmFreeMintConfigCustomImpl of super::IRealmFreeMintConfig<ContractState> {
-        fn set_mint_config(ref world: IWorldDispatcher, config_id: u32, resources: Span<(u8, u128)>) {
+        fn set_mint_config(ref world: IWorldDispatcher, config_id: ID, resources: Span<(u8, u128)>) {
             assert_caller_is_admin(world);
 
-            let detached_resource_id = world.uuid().into();
+            let detached_resource_id = world.uuid();
             let detached_resource_count = resources.len();
             let mut resources = resources;
             let mut index = 0;
@@ -246,7 +245,7 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl CapacityConfigCustomImpl of super::ICapacityConfig<ContractState> {
-        fn set_capacity_config(ref world: IWorldDispatcher, entity_type: u128, weight_gram: u128) {
+        fn set_capacity_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128) {
             assert_caller_is_admin(world);
 
             set!(
@@ -260,7 +259,7 @@ mod config_systems {
 
     #[abi(embed_v0)]
     impl WeightConfigCustomImpl of super::IWeightConfig<ContractState> {
-        fn set_weight_config(ref world: IWorldDispatcher, entity_type: u128, weight_gram: u128) {
+        fn set_weight_config(ref world: IWorldDispatcher, entity_type: ID, weight_gram: u128) {
             assert_caller_is_admin(world);
 
             set!(
@@ -292,7 +291,7 @@ mod config_systems {
     impl LevelingConfigCustomImpl of super::ILevelingConfig<ContractState> {
         fn set_leveling_config(
             ref world: IWorldDispatcher,
-            config_id: u128,
+            config_id: ID,
             decay_interval: u64,
             max_level: u64,
             decay_scaled: u128,
@@ -306,7 +305,7 @@ mod config_systems {
         ) {
             assert_caller_is_admin(world);
 
-            let resource_1_cost_id = world.uuid().into();
+            let resource_1_cost_id = world.uuid();
             let mut index = 0;
             loop {
                 if index == resource_1_costs.len() {
@@ -321,7 +320,7 @@ mod config_systems {
                 index += 1;
             };
 
-            let resource_2_cost_id = world.uuid().into();
+            let resource_2_cost_id = world.uuid();
             let mut index = 0;
             loop {
                 if index == resource_2_costs.len() {
@@ -336,7 +335,7 @@ mod config_systems {
                 index += 1;
             };
 
-            let resource_3_cost_id = world.uuid().into();
+            let resource_3_cost_id = world.uuid();
             let mut index = 0;
             loop {
                 if index == resource_3_costs.len() {
@@ -433,7 +432,7 @@ mod config_systems {
         fn set_road_config(ref world: IWorldDispatcher, resource_costs: Span<(u8, u128)>, speed_up_by: u64) {
             assert_caller_is_admin(world);
 
-            let resource_cost_id = world.uuid().into();
+            let resource_cost_id = world.uuid();
             let mut index = 0;
             loop {
                 if index == resource_costs.len() {
@@ -456,7 +455,7 @@ mod config_systems {
         }
 
 
-        fn set_speed_config(ref world: IWorldDispatcher, entity_type: u128, sec_per_km: u16) {
+        fn set_speed_config(ref world: IWorldDispatcher, entity_type: ID, sec_per_km: u16) {
             assert_caller_is_admin(world);
 
             set!(
@@ -543,7 +542,7 @@ mod config_systems {
         ) {
             assert_caller_is_admin(world);
 
-            let resource_cost_id = world.uuid().into();
+            let resource_cost_id = world.uuid();
             let mut index = 0;
             loop {
                 if index == cost_of_building.len() {
