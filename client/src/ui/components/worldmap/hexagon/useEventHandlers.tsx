@@ -7,6 +7,7 @@ import { useTravel } from "../../../../hooks/helpers/useTravel";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { findDirection, getColRowFromUIPosition } from "../../../utils/utils";
 import { getPositionsAtIndex } from "./utils";
+import { ID } from "@bibliothecadao/eternum";
 
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
@@ -94,7 +95,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         }
       };
 
-      const handleArmyActionClick = (id: bigint) => {
+      const handleArmyActionClick = (id: ID) => {
         if (e.button === 2) return;
         if (!hoveredHexRef.current) return;
         const travelPath = travelPathsRef.current.get(`${hoveredHexRef.current.col},${hoveredHexRef.current.row}`);
@@ -121,7 +122,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     path,
     currentArmiesTick,
   }: {
-    id: bigint;
+    id: ID;
     path: any[];
     currentArmiesTick: number;
   }) {
@@ -140,7 +141,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     path,
     currentArmiesTick,
   }: {
-    id: bigint;
+    id: ID;
     path: any[];
     currentArmiesTick: number;
   }) {

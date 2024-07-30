@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { BuildingType, QuestType, StructureType } from "@bibliothecadao/eternum";
-import { useDojo } from "../context/DojoContext";
+import { getPillageEvents } from "@/dojo/events/pillageEventQueries";
+import { QuestId, questDetails } from "@/ui/components/quest/questDetails";
+import { BuildingType, ContractAddress, ID, QuestType, StructureType } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useEntities } from "./useEntities";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDojo } from "../context/DojoContext";
 import { ArmyInfo, useArmiesByEntityOwner } from "./useArmies";
+import { useEntities } from "./useEntities";
 import { useGetMyOffers } from "./useTrade";
-import { getPillageEvents } from "@/dojo/events/pillageEventQueries";
-import { QuestId, questDetails } from "@/ui/components/quest/questDetails";
 
 export interface Quest {
   id: QuestId;
@@ -76,11 +76,11 @@ const useQuestDependencies = () => {
   const realm = useMemo(() => playerRealms()[0], [playerRealms]);
   const realmEntityId = useMemo(() => realm?.entity_id, [realm]);
 
-  const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: BigInt(realmEntityId || "0") })]);
+  const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: realmEntityId })]);
 
   const buildingQuantities = useBuildingQuantities(realmEntityId);
 
-  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: realmEntityId || BigInt("0") });
+  const { entityArmies } = useArmiesByEntityOwner({ entity_owner_entity_id: realmEntityId || 0 });
   const orders = useGetMyOffers();
 
   const hasTroops = useMemo(() => armyHasTroops(entityArmies), [entityArmies]);
@@ -90,7 +90,7 @@ const useQuestDependencies = () => {
 
   useEffect(() => {
     const fetchPillageHistory = async () => {
-      const eventsLength = await getPillageEvents(BigInt(realmEntityId ?? "0"));
+      const eventsLength = await getPillageEvents(realmEntityId || 0);
       setPillageHistoryLength(eventsLength);
     };
     fetchPillageHistory();
@@ -117,7 +117,7 @@ const useQuestDependencies = () => {
   );
 
   const hyperstructureContributions = useMemo(
-    () => runQuery([HasValue(Contribution, { player_address: BigInt(account.address) })]).size,
+    () => runQuery([HasValue(Contribution, { player_address: ContractAddress(account.address) })]).size,
     [realmEntityId],
   );
 
@@ -135,24 +135,24 @@ const useQuestDependencies = () => {
         status: questClaimStatus[QuestId.BuildFarm]
           ? QuestStatus.Claimed
           : buildingQuantities.farms > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.BuildResource]: {
         value: questClaimStatus[QuestId.BuildResource] ? null : buildingQuantities.resource,
         status: questClaimStatus[QuestId.BuildResource]
           ? QuestStatus.Claimed
           : buildingQuantities.resource > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.CreateTrade]: {
         value: questClaimStatus[QuestId.CreateTrade] ? null : orders.length,
         status: questClaimStatus[QuestId.CreateTrade]
           ? QuestStatus.Claimed
           : orders.length > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.CreateArmy]: {
         value: questClaimStatus[QuestId.CreateArmy]
@@ -161,64 +161,64 @@ const useQuestDependencies = () => {
         status: questClaimStatus[QuestId.CreateArmy]
           ? QuestStatus.Claimed
           : entityArmies.length > 0 && hasTroops
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Travel]: {
         value: questClaimStatus[QuestId.Travel] ? null : hasTraveled,
         status: questClaimStatus[QuestId.Travel]
           ? QuestStatus.Claimed
           : hasTraveled
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.BuildWorkersHut]: {
         value: questClaimStatus[QuestId.BuildWorkersHut] ? null : buildingQuantities.workersHut,
         status: questClaimStatus[QuestId.BuildWorkersHut]
           ? QuestStatus.Claimed
           : buildingQuantities.workersHut > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Market]: {
         value: questClaimStatus[QuestId.Market] ? null : buildingQuantities.markets,
         status: questClaimStatus[QuestId.Market]
           ? QuestStatus.Claimed
           : buildingQuantities.markets > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Pillage]: {
         value: questClaimStatus[QuestId.Pillage] ? null : pillageHistoryLength,
         status: questClaimStatus[QuestId.Pillage]
           ? QuestStatus.Claimed
           : pillageHistoryLength > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Mine]: {
         value: questClaimStatus[QuestId.Mine] ? null : fragmentMines,
         status: questClaimStatus[QuestId.Mine]
           ? QuestStatus.Claimed
           : fragmentMines > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Contribution]: {
         value: questClaimStatus[QuestId.Contribution] ? null : hyperstructureContributions,
         status: questClaimStatus[QuestId.Contribution]
           ? QuestStatus.Claimed
           : hyperstructureContributions > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
       [QuestId.Hyperstructure]: {
         value: questClaimStatus[QuestId.Hyperstructure] ? null : hyperstructures,
         status: questClaimStatus[QuestId.Hyperstructure]
           ? QuestStatus.Claimed
           : hyperstructures > 0
-            ? QuestStatus.Completed
-            : QuestStatus.InProgress,
+          ? QuestStatus.Completed
+          : QuestStatus.InProgress,
       },
     }),
     [questClaimStatus, unclaimedQuestsCount > 0 ? entityUpdate : null, unclaimedQuestsCount > 0 ? orders : null],
@@ -237,14 +237,14 @@ export const useQuestClaimStatus = () => {
   const realmEntityId = useMemo(() => realm?.entity_id, [realm]);
 
   const prizeUpdate = useEntityQuery([
-    HasValue(HasClaimedStartingResources, { entity_id: BigInt(realmEntityId || "0") }),
+    HasValue(HasClaimedStartingResources, { entity_id: realmEntityId || 0 }),
   ]);
 
   const checkPrizesClaimed = (prizes: Prize[]) => {
     return prizes.every((prize) => {
       const value = getComponentValue(
         HasClaimedStartingResources,
-        getEntityIdFromKeys([BigInt(realmEntityId || "0"), BigInt(prize.id)]),
+        getEntityIdFromKeys([BigInt(realmEntityId || 0), BigInt(prize.id)]),
       );
       return value?.claimed;
     });
@@ -274,15 +274,15 @@ export const useUnclaimedQuestsCount = () => {
   return { unclaimedQuestsCount };
 };
 
-const useBuildingQuantities = (realmEntityId: bigint | undefined) => {
+const useBuildingQuantities = (realmEntityId: ID | undefined) => {
   const {
     setup: {
       components: { BuildingQuantityv2, EntityOwner },
     },
   } = useDojo();
-  const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: BigInt(realmEntityId || "0") })]);
+  const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: realmEntityId })]);
   const getBuildingQuantity = (buildingType: BuildingType) =>
-    getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(realmEntityId || "0"), BigInt(buildingType)]))
+    getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(realmEntityId || 0), BigInt(buildingType)]))
       ?.value || 0;
 
   return useMemo(

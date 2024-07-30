@@ -30,16 +30,16 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
   const setBattleView = useUIStore((state) => state.setBattleView);
 
   const { getRealmAddressName } = useRealm();
-  const addressName = getRealmAddressName(BigInt(structure.entity_id));
+  const addressName = getRealmAddressName(structure.entity_id);
 
   const { getHyperstructureProgress } = useHyperstructures();
 
   const progress =
     structure.category === StructureType[StructureType.Hyperstructure]
-      ? getHyperstructureProgress(BigInt(structure.entity_id))
+      ? getHyperstructureProgress(structure.entity_id)
       : undefined;
 
-  const battleManager = useMemo(() => new BattleManager(structure.protector?.battle_id || 0n, dojo), [structure]);
+  const battleManager = useMemo(() => new BattleManager(structure.protector?.battle_id || 0, dojo), [structure]);
 
   const { updatedBattle } = useMemo(() => {
     if (!currentTimestamp) throw new Error("Current timestamp is undefined");
@@ -47,7 +47,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
     return { updatedBattle };
   }, [currentTimestamp]);
 
-  const userArmyInBattle = getUserArmyInBattle(updatedBattle?.entity_id || 0n);
+  const userArmyInBattle = getUserArmyInBattle(updatedBattle?.entity_id || 0);
 
   const battleButtons = useMemo(() => {
     if (!currentTimestamp) throw new Error("Current timestamp is undefined");

@@ -40,7 +40,9 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
   }, [currentTimestamp]);
 
   const armiesInBattle = useMemo(() => {
-    const armiesEntityIds = runQuery([HasValue(dojo.setup.components.Army, { battle_id: battleManager.battleId })]);
+    const armiesEntityIds = runQuery([
+      HasValue(dojo.setup.components.Army, { battle_id: battleManager.battleEntityId }),
+    ]);
     return Array.from(armiesEntityIds).map(
       (entityId) => getComponentValue(dojo.setup.components.Army, entityId)!.entity_id,
     );

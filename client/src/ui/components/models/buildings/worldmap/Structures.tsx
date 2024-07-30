@@ -2,7 +2,7 @@ import { HyperstructureEventInterface } from "@/dojo/events/hyperstructureEventQ
 import useLeaderBoardStore from "@/hooks/store/useLeaderBoardStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { StructureType } from "@bibliothecadao/eternum";
+import { ID, StructureType } from "@bibliothecadao/eternum";
 import { Billboard, Image, useGLTF, useTexture } from "@react-three/drei";
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
@@ -10,7 +10,7 @@ import { InstancedBanks } from "./InstancedBanks";
 import { InstancedCastles } from "./InstancedCastles";
 import { ShardsMines } from "./ShardsMines";
 
-type Structure = { col: number; row: number; type: StructureType; entityId: bigint };
+type Structure = { col: number; row: number; type: StructureType; entityId: ID };
 
 export const Structures = () => {
   const existingStructures = useUIStore((state) => state.existingStructures);
@@ -52,7 +52,7 @@ const BuiltStructure = ({
   structureCategory,
   rotation,
 }: {
-  structure: { col: number; row: number; type: StructureType; entityId: bigint };
+  structure: { col: number; row: number; type: StructureType; entityId: ID };
   models: any;
   structureCategory: number;
   rotation?: THREE.Euler;

@@ -47,13 +47,13 @@ const mockDojoResult = {
 
 describe("basic functionalities", () => {
   it("should return a valid object", () => {
-    const battleManager = new BattleManager(0n, mockDojoResult);
+    const battleManager = new BattleManager(0, mockDojoResult);
     expect(battleManager).toBeDefined();
   });
 
-  it("should return a valid battleId", () => {
+  it("should return a valid battleEntityId", () => {
     const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
-    expect(battleManager.battleId).toBe(BATTLE_ENTITY_ID);
+    expect(battleManager.battleEntityId).toBe(BATTLE_ENTITY_ID);
   });
 });
 
@@ -63,7 +63,7 @@ describe("getBattle", () => {
 
     vi.mocked(getComponentValue).mockReturnValueOnce(mockBattle);
 
-    const battleManager = new BattleManager(10n, mockDojoResult);
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
 
     const battle = battleManager.getBattle();
     expect(battle).toBeDefined();
@@ -75,7 +75,7 @@ describe("isBattle", () => {
   it("should return true for a defined battle object", () => {
     vi.mocked(getComponentValue).mockReturnValueOnce(generateMockBatle(true));
 
-    const battleManager = new BattleManager(10n, mockDojoResult);
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
 
     expect(battleManager.isBattle()).toBe(true);
   });
@@ -83,14 +83,14 @@ describe("isBattle", () => {
   it("should return false for a undefined battle object", () => {
     vi.mocked(getComponentValue).mockReturnValueOnce(undefined);
 
-    const battleManager = new BattleManager(10n, mockDojoResult);
+    const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
 
     expect(battleManager.isBattle()).toBe(false);
   });
 });
 
 describe("getElapsedTime", () => {
-  const battleManager = new BattleManager(10n, mockDojoResult);
+  const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
 
   it("should return 0 for undefined battle", () => {
     vi.mocked(getComponentValue).mockReturnValueOnce(undefined);
@@ -118,7 +118,7 @@ describe("getElapsedTime", () => {
 });
 
 describe("isBattleOngoing", () => {
-  const battleManager = new BattleManager(10n, mockDojoResult);
+  const battleManager = new BattleManager(BATTLE_ENTITY_ID, mockDojoResult);
 
   it("should return false for an undefined object", () => {
     vi.mocked(getComponentValue).mockReturnValueOnce(undefined);
@@ -146,7 +146,7 @@ describe("isBattleOngoing", () => {
 });
 
 describe("getUpdatedHealth", () => {
-  const battleManager = new BattleManager(0n, mockDojoResult);
+  const battleManager = new BattleManager(0, mockDojoResult);
 
   it("should return less health if time has passed", () => {
     const currentHealth = { current: 10n, lifetime: 10n };
@@ -157,7 +157,7 @@ describe("getUpdatedHealth", () => {
 
   it("should return the same health if time hasn't passed", () => {
     const currentHealth = 10n;
-    const health = { current: currentHealth, lifetime: 10n };
+    const health = { current: currentHealth, lifetime: currentHealth };
 
     const updatedHealth = battleManager["getUdpdatedHealth"](1n, health, 0);
 
@@ -166,7 +166,7 @@ describe("getUpdatedHealth", () => {
 
   it("should return the same health if delta is 0", () => {
     const currentHealth = 10n;
-    const health = { current: currentHealth, lifetime: 10n };
+    const health = { current: currentHealth, lifetime: currentHealth };
 
     const updatedHealth = battleManager["getUdpdatedHealth"](0n, health, 1000);
 
@@ -175,7 +175,7 @@ describe("getUpdatedHealth", () => {
 
   it("should return 0 if damages exceed current health", () => {
     const currentHealth = 10n;
-    const health = { current: currentHealth, lifetime: 10n };
+    const health = { current: currentHealth, lifetime: currentHealth };
 
     const updatedHealth = battleManager["getUdpdatedHealth"](2n, health, 10);
 
@@ -184,7 +184,7 @@ describe("getUpdatedHealth", () => {
 
   it("should return 0 if damages equal current health", () => {
     const currentHealth = 10n;
-    const health = { current: currentHealth, lifetime: 10n };
+    const health = { current: currentHealth, lifetime: currentHealth };
 
     const updatedHealth = battleManager["getUdpdatedHealth"](1n, health, 10);
 
@@ -193,7 +193,7 @@ describe("getUpdatedHealth", () => {
 });
 
 describe("getUpdatedTroops", () => {
-  const battleManager = new BattleManager(0n, mockDojoResult);
+  const battleManager = new BattleManager(0, mockDojoResult);
 
   it("should return 0 troops if lifetime is 0", () => {
     const currentHealth = { current: 0n, lifetime: 0n };
@@ -270,7 +270,7 @@ describe("getUpdatedTroops", () => {
 });
 
 describe("updateHealth", () => {
-  const battleManager = new BattleManager(0n, mockDojoResult);
+  const battleManager = new BattleManager(0, mockDojoResult);
 
   it("health should be less than initial if time passed between last updated and current timestamp", () => {
     const battle = generateMockBatle(true);
@@ -307,7 +307,7 @@ describe("updateHealth", () => {
 });
 
 describe("getUpdatedBattle", () => {
-  const battleManager = new BattleManager(0n, mockDojoResult);
+  const battleManager = new BattleManager(0, mockDojoResult);
 
   it("return should be undefined if battle is undefined", () => {
     const currentTimestamp = 0;
@@ -387,7 +387,7 @@ describe("getTroopFullHealth", () => {
 
     const fullHealth = battleManager["getTroopFullHealth"](army.troops);
 
-    expect(fullHealth).toBe(10n);
+    expect(fullHealth).toBe(BATTLE_ENTITY_ID);
   });
 });
 
@@ -519,7 +519,7 @@ describe("getBattleType", () => {
 });
 
 describe("isEmpty", () => {
-  const battleManager = new BattleManager(0n, mockDojoResult);
+  const battleManager = new BattleManager(0, mockDojoResult);
 
   it("Should be considered as empty if the array is length 0", () => {
     vi.mocked(runQuery).mockReturnValueOnce(new Set());

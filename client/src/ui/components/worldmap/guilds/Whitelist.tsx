@@ -7,9 +7,10 @@ import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 
 import { GuildWhitelistAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
+import { ID } from "@bibliothecadao/eternum";
 
 interface WhitelistProps {
-  guildEntityId: bigint | undefined;
+  guildEntityId: ID | undefined;
   isOwner: boolean;
 }
 

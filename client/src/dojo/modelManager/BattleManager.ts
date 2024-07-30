@@ -2,7 +2,7 @@ import { DojoResult } from "@/hooks/context/DojoContext";
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import { Health } from "@/types";
-import { BattleSide, EternumGlobalConfig, StructureType } from "@bibliothecadao/eternum";
+import { BattleSide, EternumGlobalConfig, ID, StructureType } from "@bibliothecadao/eternum";
 import { ComponentValue, Components, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ClientComponents } from "../createClientComponents";
@@ -14,14 +14,14 @@ export enum BattleType {
 }
 
 export class BattleManager {
-  battleId: bigint;
+  battleEntityId: ID;
   dojo: DojoResult;
   battleType: BattleType | undefined;
   private battleIsClaimable: boolean | undefined;
   private battleIsRaidable: boolean | undefined;
 
-  constructor(battleId: bigint, dojo: DojoResult) {
-    this.battleId = battleId;
+  constructor(battleEntityId: ID, dojo: DojoResult) {
+    this.battleEntityId = battleEntityId;
     this.dojo = dojo;
   }
 
@@ -89,7 +89,7 @@ export class BattleManager {
   }
 
   public getBattle(): ComponentValue<ClientComponents["Battle"]["schema"]> | undefined {
-    return getComponentValue(this.dojo.setup.components.Battle, getEntityIdFromKeys([this.battleId]));
+    return getComponentValue(this.dojo.setup.components.Battle, getEntityIdFromKeys([BigInt(this.battleEntityId)]));
   }
 
   public getUpdatedArmy(
@@ -216,7 +216,7 @@ export class BattleManager {
 
     if (this.battleIsRaidable) return this.battleIsRaidable;
 
-    if (this.isBattleOngoing(currentTimestamp) && selectedArmy.battle_id !== this.battleId) {
+    if (this.isBattleOngoing(currentTimestamp) && selectedArmy.battle_id !== this.battleEntityId) {
       return false;
     }
 
@@ -253,17 +253,17 @@ export class BattleManager {
     return (
       runQuery([
         Has(this.dojo.setup.components.Army),
-        HasValue(this.dojo.setup.components.Army, { battle_id: this.battleId }),
+        HasValue(this.dojo.setup.components.Army, { battle_id: this.battleEntityId }),
       ]).size === 0
     );
   }
 
-  public async pillageStructure(raider: ArmyInfo, structureEntityId: bigint) {
-    if (this.battleId !== 0n && this.battleId === raider.battle_id) {
+  public async pillageStructure(raider: ArmyInfo, structureEntityId: ID) {
+    if (this.battleEntityId !== 0 && this.battleEntityId === raider.battle_id) {
       await this.dojo.setup.systemCalls.battle_leave_and_pillage({
         signer: this.dojo.account.account,
         army_id: raider.entity_id,
-        battle_id: this.battleId,
+        battle_id: this.battleEntityId,
         structure_id: structureEntityId,
       });
     } else {

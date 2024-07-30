@@ -5,6 +5,7 @@ import {
   BuildingType,
   EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
+  ID,
   RESOURCE_INFORMATION,
   RESOURCE_INPUTS_SCALED,
   STRUCTURE_COSTS_SCALED,
@@ -98,7 +99,7 @@ const StructureInfo = ({
   extraButtons = [],
 }: {
   structureId: number;
-  entityId: bigint | undefined;
+  entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
   const cost = STRUCTURE_COSTS_SCALED[structureId];
@@ -121,7 +122,7 @@ const StructureInfo = ({
       <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
       <div className="grid grid-cols-1 gap-2 text-sm">
         {Object.keys(cost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
+          const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
           return (
             <ResourceCost
               key={index}

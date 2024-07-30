@@ -1,4 +1,4 @@
-import { BuildingType } from "@bibliothecadao/eternum";
+import { BuildingType, ID } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
@@ -15,23 +15,23 @@ export function useBuildings() {
   } = useDojo();
 
   const optimisticBuilding = (
-    entityId: bigint,
+    entityId: ID,
     col: number,
     row: number,
     buildingType: BuildingType,
-    resourceType?: number,
+    resourceType?: ID,
   ) => {
     let overrideId = uuid();
-    const realmPosition = getComponentValue(Position, getEntityIdFromKeys([entityId]));
+    const realmPosition = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityId)]));
     const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
     const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
     Building.addOverride(overrideId, {
       entity,
       value: {
-        outer_col: BigInt(outercol),
-        outer_row: BigInt(outerrow),
-        inner_col: BigInt(col),
-        inner_row: BigInt(row),
+        outer_col: outercol,
+        outer_row: outerrow,
+        inner_col: col,
+        inner_row: row,
         category: BuildingType[buildingType],
         produced_resource_type: resourceType ? resourceType : 0,
         bonus_percent: 0n,
@@ -42,41 +42,41 @@ export function useBuildings() {
     return overrideId;
   };
 
-  const optimisticDestroy = (entityId: bigint, col: number, row: number) => {
+  const optimisticDestroy = (entityId: ID, col: number, row: number) => {
     const overrideId = uuid();
-    const realmPosition = getComponentValue(Position, getEntityIdFromKeys([entityId]));
+    const realmPosition = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityId)]));
     const { x: outercol, y: outerrow } = realmPosition || { x: 0, y: 0 };
     const entity = getEntityIdFromKeys([outercol, outerrow, col, row].map((v) => BigInt(v)));
     Building.addOverride(overrideId, {
       entity,
       value: {
-        outer_col: BigInt(outercol),
-        outer_row: BigInt(outerrow),
-        inner_col: BigInt(col),
-        inner_row: BigInt(row),
+        outer_col: outercol,
+        outer_row: outerrow,
+        inner_col: col,
+        inner_row: row,
         category: "",
         produced_resource_type: 0,
         bonus_percent: 0n,
-        entity_id: 0n,
-        outer_entity_id: 0n,
+        entity_id: 0,
+        outer_entity_id: 0,
       },
     });
     return overrideId;
   };
 
   const placeBuilding = async (
-    realmEntityId: bigint,
+    realmEntityId: ID,
     col: number,
     row: number,
     buildingType: BuildingType,
-    resourceType?: number,
+    resourceType?: ID,
   ) => {
     // add optimisitc rendering
     let overrideId = optimisticBuilding(realmEntityId, col, row, buildingType, resourceType);
 
     await create_building({
       signer: account,
-      entity_id: realmEntityId as bigint,
+      entity_id: realmEntityId,
       building_coord: {
         x: col.toString(),
         y: row.toString(),
@@ -93,13 +93,13 @@ export function useBuildings() {
     });
   };
 
-  const destroyBuilding = async (realmEntityId: bigint, col: number, row: number) => {
+  const destroyBuilding = async (realmEntityId: ID, col: number, row: number) => {
     // add optimisitc rendering
     let overrideId = optimisticDestroy(realmEntityId, col, row);
 
     await destroy_building({
       signer: account,
-      entity_id: realmEntityId as bigint,
+      entity_id: realmEntityId,
       building_coord: {
         x: col.toString(),
         y: row.toString(),

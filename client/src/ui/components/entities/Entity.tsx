@@ -8,7 +8,7 @@ import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "@/ui/utils/utils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { EntityState, EntityType, determineEntityState } from "@bibliothecadao/eternum";
+import { EntityState, EntityType, ID, determineEntityState } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { DepositResources } from "../resources/DepositResources";
@@ -27,7 +27,7 @@ const entityName: Record<EntityType, string> = {
 };
 
 type EntityProps = {
-  entityId: bigint;
+  entityId: ID;
   idleOnly?: boolean;
   selectedCaravan?: number;
 } & React.HTMLAttributes<HTMLDivElement>;
@@ -48,15 +48,15 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const entityState = determineEntityState(
     nextBlockTimestamp,
     entity.blocked,
-    Number(entity.arrivalTime),
+    entity.arrivalTime,
     hasResources,
   );
   const depositEntityId = getOwnedEntityOnPosition(entityId);
 
-  const structureAtPosition = getStructureByEntityId(depositEntityId || 0n);
+  const structureAtPosition = getStructureByEntityId(depositEntityId || 0);
 
   const battleInProgress = useMemo(() => {
-    if (!structureAtPosition || !structureAtPosition.protector || structureAtPosition.protector.battle_id === 0n) {
+    if (!structureAtPosition || !structureAtPosition.protector || structureAtPosition.protector.battle_id === 0) {
       return false;
     }
     const currentTimestamp = useBlockchainStore.getState().nextBlockTimestamp;

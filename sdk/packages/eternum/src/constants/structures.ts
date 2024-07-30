@@ -177,7 +177,7 @@ export enum EntityState {
 export function determineEntityState(
   nextBlockTimestamp: number | undefined,
   blocked: boolean | undefined,
-  arrivalTime: number | undefined,
+  arrivalTime: bigint | undefined,
   hasResources: boolean,
 ): EntityState {
   const isTraveling =

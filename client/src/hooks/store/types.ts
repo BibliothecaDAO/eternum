@@ -1,6 +1,8 @@
+import { ID } from "@bibliothecadao/eternum";
+
 export type BattleViewInfo = {
-  battle: bigint | undefined;
+  battle: ID | undefined;
   engage?: boolean;
-  ownArmyEntityId: bigint | undefined;
-  targetArmy: bigint | undefined;
+  ownArmyEntityId: ID | undefined;
+  targetArmy: ID | undefined;
 };

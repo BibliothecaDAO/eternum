@@ -1,4 +1,4 @@
-import { Position } from "@bibliothecadao/eternum";
+import { ContractAddress, Position } from "@bibliothecadao/eternum";
 
 export interface Hexagon {
   idx: number;
@@ -6,8 +6,7 @@ export interface Hexagon {
   row: number;
   biome: string;
   explored: boolean | undefined;
-  // address
-  exploredBy: bigint | undefined;
+  exploredBy: ContractAddress | undefined;
 }
 
 type Position3D = [number, number, number];

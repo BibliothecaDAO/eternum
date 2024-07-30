@@ -8,6 +8,7 @@ import TextInput from "@/ui/elements/TextInput";
 import { currencyFormat, divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
 import {
   EternumGlobalConfig,
+  ID,
   MarketInterface,
   ONE_MONTH,
   Resources,
@@ -28,7 +29,7 @@ export const MarketResource = ({
   bidPrice,
   depth,
 }: {
-  entityId: bigint;
+  entityId: ID;
   resource: Resources;
   active: boolean;
   onClick: (value: number) => void;
@@ -75,8 +76,8 @@ export const MarketOrderPanel = ({
   resourceAskOffers,
   resourceBidOffers,
 }: {
-  resourceId: number;
-  entityId: bigint;
+  resourceId: ResourcesIds;
+  entityId: ID;
   resourceAskOffers: MarketInterface[];
   resourceBidOffers: MarketInterface[];
 }) => {
@@ -106,8 +107,8 @@ const MarketOrders = ({
   isBuy = false,
   offers,
 }: {
-  resourceId: number;
-  entityId: bigint;
+  resourceId: ResourcesIds;
+  entityId: ID;
   isBuy?: boolean;
   offers: MarketInterface[];
 }) => {
@@ -169,7 +170,7 @@ const OrderRowHeader = ({ resourceId }: { resourceId?: number }) => {
   );
 };
 
-const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId: bigint; isBuy: boolean }) => {
+const OrderRow = ({ offer, entityId, isBuy }: { offer: MarketInterface; entityId: ID; isBuy: boolean }) => {
   const { computeTravelTime } = useTravel();
   const {
     account: { account },
@@ -352,8 +353,8 @@ const OrderCreation = ({
   isBuy = false,
 }: {
   initialBid: number;
-  entityId: bigint;
-  resourceId: number;
+  entityId: ID;
+  resourceId: ResourcesIds;
   isBuy?: boolean;
 }) => {
   const [loading, setLoading] = useState(false);
@@ -454,11 +455,7 @@ const OrderCreation = ({
             <ResourceIcon withTooltip={false} size="xs" resource={findResourceById(resourceId)?.trait || ""} />{" "}
             {isBuy ? "Buy" : "Sell"}
           </div>
-          {/* {!isBuy ? ( */}
           <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
-          {/* // ) : (
-          //   <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
-          // )} */}
 
           <div className="text-sm font-bold text-gold/70">
             {currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)} avail.
@@ -477,11 +474,7 @@ const OrderCreation = ({
           <div className="uppercase text-sm flex gap-2 font-bold">
             <ResourceIcon withTooltip={false} size="xs" resource={"Lords"} /> Cost
           </div>
-          {/* {!isBuy ? ( */}
           <TextInput value={lords.toString()} onChange={(value) => setLords(Number(value))} />
-          {/* // ) : (
-          //   <TextInput value={resource.toString()} onChange={(value) => setResource(Number(value))} />
-          // )} */}
 
           <div className="text-sm font-bold text-gold/70">
             {currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)} avail.

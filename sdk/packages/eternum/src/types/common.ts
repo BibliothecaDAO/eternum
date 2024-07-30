@@ -1,3 +1,5 @@
+import { ResourcesIds } from "../constants";
+
 export enum Winner {
   Attacker = "Attacker",
   Target = "Target",
@@ -28,18 +30,18 @@ export enum BattleSide {
 }
 
 export interface CombatResultInterface {
-  attackerRealmEntityId: bigint;
-  targetRealmEntityId: bigint;
-  attackingEntityIds: bigint[];
+  attackerRealmEntityId: ID;
+  targetRealmEntityId: ID;
+  attackingEntityIds: ID[];
   winner: Winner;
   stolenResources: Resource[];
   damage: number;
   attackTimestamp: number;
-  stolenChestsIds: bigint[];
+  stolenChestsIds: ID[];
 }
 
 export interface CombatInfo {
-  entityId: bigint;
+  entityId: ID;
   health: number;
   quantity: number;
   attack: number;
@@ -50,18 +52,18 @@ export interface CombatInfo {
   arrivalTime?: number | undefined;
   position?: Position | undefined;
   homePosition?: Position | undefined;
-  entityOwnerId?: bigint | undefined;
-  owner?: bigint | undefined;
-  locationEntityId?: bigint | undefined;
+  entityOwnerId?: ID | undefined;
+  owner?: ID | undefined;
+  locationEntityId?: ID | undefined;
   locationType?: DestinationType;
-  originRealmId?: bigint | undefined;
+  originRealmId?: ID | undefined;
   order: number;
   troops: {
     knightCount: number;
     paladinCount: number;
     crossbowmanCount: number;
   };
-  battleId: bigint;
+  battleEntityId: ID;
   battleSide: number;
 }
 
@@ -69,9 +71,9 @@ export interface CombatInfo {
 export interface MarketInterface {
   makerName: string;
   originName: string;
-  tradeId: bigint;
-  makerId: bigint;
-  takerId: bigint;
+  tradeId: ID;
+  makerId: ID;
+  takerId: ID;
   // brillance, reflection, ...
   makerOrder: number;
   expiresAt: number;
@@ -82,10 +84,10 @@ export interface MarketInterface {
 }
 
 export interface Trade {
-  maker_id: bigint;
-  taker_id: bigint;
-  maker_order_id: bigint;
-  taker_order_id: bigint;
+  maker_id: ID;
+  taker_id: ID;
+  maker_order_id: ID;
+  taker_order_id: ID;
   expires_at: number;
   claimed_by_maker: boolean;
   claimed_by_taker: boolean;
@@ -104,7 +106,7 @@ export interface Resources {
 }
 
 export interface Resource {
-  resourceId: number;
+  resourceId: ResourcesIds;
   amount: number;
 }
 
@@ -113,19 +115,19 @@ export interface Resource {
 export interface RoadInterface {
   startRealmName: string;
   startRealmOrder: number | undefined;
-  destinationEntityId: bigint;
+  destinationEntityId: ID;
   destinationRealmName: string;
   destinationRealmOrder: number | undefined;
   usageLeft: number;
 }
 
 export interface EntityInterface {
-  entityId: bigint;
+  entityId: ID;
   blocked: boolean | undefined;
   arrivalTime: number | undefined;
   capacity: number | undefined;
   intermediateDestination: Position | undefined;
-  owner: bigint | undefined;
+  owner: ID | undefined;
   isMine: boolean;
   isRoundTrip: boolean;
   position: Position | undefined;
@@ -136,8 +138,8 @@ export interface EntityInterface {
 
 /// REALMS
 export interface SelectableRealmInterface {
-  entityId: bigint;
-  realmId: bigint;
+  entityId: ID;
+  realmId: ID;
   name: string;
   order: string;
   distance: number;
@@ -147,9 +149,9 @@ export interface SelectableRealmInterface {
 }
 
 export interface SelectableLocationInterface {
-  entityId: bigint;
+  entityId: ID;
   home: boolean;
-  realmId: bigint;
+  realmId: ID;
   name: string;
   order: string;
   distance: number;
@@ -158,7 +160,7 @@ export interface SelectableLocationInterface {
   addressName: string;
 }
 export interface RealmInterface {
-  realmId: bigint;
+  realmId: ID;
   name: string;
   cities: number;
   rivers: number;
@@ -169,7 +171,7 @@ export interface RealmInterface {
   resourceTypesPacked: bigint;
   order: number;
   position: Position;
-  owner?: bigint;
+  owner?: ContractAddress;
 }
 
 /// LABOR
@@ -193,7 +195,7 @@ export interface BankInterface {
   name: string;
   wheatPrice: number;
   fishPrice: number;
-  bankId: bigint;
+  bankId: ID;
   uiPosition: UIPosition;
   position: Position;
   wheatAuction: AuctionInterface | undefined;
@@ -217,4 +219,15 @@ export interface IOrder {
   orderId: number;
   orderName: string;
   fullOrderName: string;
+}
+
+export type ID = number;
+export type ContractAddress = bigint;
+
+export function ID(id: number | string): ID {
+  return Number(id);
+}
+
+export function ContractAddress(address: string | bigint): ContractAddress {
+  return BigInt(address);
 }
