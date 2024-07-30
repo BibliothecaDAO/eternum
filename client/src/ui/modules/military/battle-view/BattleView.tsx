@@ -1,18 +1,14 @@
 import { BattleManager } from "@/dojo/modelManager/BattleManager";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { useBattleManager } from "@/hooks/helpers/battles/useBattles";
-import {
-  getArmiesAtPosition,
-  getArmiesByBattleId,
-  getArmyByEntityId,
-  useArmyByArmyEntityId,
-} from "@/hooks/helpers/useArmies";
+import { getArmiesByBattleId, getArmyByEntityId, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { getStructureByEntityId, getStructureByPosition } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { BattleSide } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { Battle } from "./Battle";
+import { useThreeStore } from "@/hooks/store/useThreeStore";
 
 export const BattleView = () => {
   const dojo = useDojo();
@@ -23,9 +19,9 @@ export const BattleView = () => {
   const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const battleView = useUIStore((state) => state.battleView);
-  const clickedHex = useUIStore((state) => state.clickedHex);
+  const selectedHex = useThreeStore((state) => state.selectedHex);
 
-  const battlePosition = { x: clickedHex?.contractPos.col || 0, y: clickedHex?.contractPos.row || 0 };
+  const battlePosition = { x: selectedHex.col, y: selectedHex.row };
 
   // get updated army for when a battle starts: we need to have the updated component to have the correct battle_id
   const updatedTarget = useArmyByArmyEntityId(battleView?.targetArmy || 0n);
@@ -73,8 +69,6 @@ export const BattleView = () => {
     return battleManager!.getUpdatedBattle(currentTimestamp!);
   }, [currentTimestamp, battleManager, battleManager?.battleId, armies.armiesInBattle, battleView]);
 
-  const armiesAtPosition = getArmiesAtPosition();
-
   const attackerHealth = battleAdjusted
     ? {
         current: battleAdjusted!.attack_army_health.current,
@@ -90,11 +84,11 @@ export const BattleView = () => {
         lifetime: battleAdjusted!.defence_army_health.lifetime,
       }
     : targetArmy
-      ? {
-          current: targetArmy.health.current || 0n,
-          lifetime: targetArmy.health.lifetime || 0n,
-        }
-      : undefined;
+    ? {
+        current: targetArmy.health.current || 0n,
+        lifetime: targetArmy.health.lifetime || 0n,
+      }
+    : undefined;
 
   const attackerTroops = battleAdjusted ? battleAdjusted!.attack_army.troops : ownArmyBattleStarter?.troops;
   const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : targetArmy?.troops;
