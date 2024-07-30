@@ -110,8 +110,7 @@ export const formatArmies = (
       const capacity = getComponentValue(Capacity, armyEntityId);
       let capacityClone = structuredClone(capacity);
       if (capacityClone) {
-        capacityClone.weight_gram =
-          (capacityClone.weight_gram * quantityClone.value);
+        capacityClone.weight_gram = capacityClone.weight_gram * quantityClone.value;
       } else {
         capacityClone = {
           entity_id: army.entity_id,
