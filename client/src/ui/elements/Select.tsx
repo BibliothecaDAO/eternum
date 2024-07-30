@@ -130,12 +130,14 @@ SelectSeparator.displayName = SelectPrimitive.Separator.displayName;
 export {
   Select,
   SelectContent,
-  // SelectGroup,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
+
+  //// Raises knip issues, if needed uncomment
+  // SelectGroup,
   // SelectLabel,
   // SelectScrollDownButton,
   // SelectScrollUpButton,
   // SelectSeparator,
-  SelectTrigger,
-  SelectValue,
 };

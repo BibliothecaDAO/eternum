@@ -17,6 +17,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm i
-        
+
       - name: Run knip
-        run: pnpm run knip
+        run: pnpm knip

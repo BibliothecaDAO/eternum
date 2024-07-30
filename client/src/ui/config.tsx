@@ -7,7 +7,6 @@ export const COLS = 500;
 export const FELT_CENTER = 2147483647;
 export const EXPLORE_COLOUR = 0x2563eb;
 export const TRAVEL_COLOUR = 0xffce31;
-// export const CLICKED_HEX_COLOR = 0xff5733;
 export const ACCESSIBLE_POSITIONS_COLOUR = 0xffffff;
 
 enum ResourceMiningTypes {

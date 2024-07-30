@@ -149,8 +149,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       path.length === 2
         ? findDirection({ col: path[0].x, row: path[0].y }, { col: path[1].x, row: path[1].y })
         : undefined;
-    // const hexIndex = hexData.findIndex((h) => h.col === path[1].x && h.row === path[1].y);
-    // const biome = hexData[hexIndex].biome;
 
     clearSelection();
 
