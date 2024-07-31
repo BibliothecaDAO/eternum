@@ -6,6 +6,8 @@ import { HEX_SIZE } from "../GameRenderer";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { SceneManager } from "../SceneManager";
 
+const matrix = new THREE.Matrix4();
+const position = new THREE.Vector3();
 export class InteractiveHexManager {
   private scene: THREE.Scene;
   private borderHexes: Set<string> = new Set();
@@ -49,13 +51,11 @@ export class InteractiveHexManager {
     if (intersects.length > 0) {
       const intersect = intersects[0];
       const intersectedObject = intersect.object;
-
       if (intersectedObject instanceof THREE.InstancedMesh) {
         const instanceId = intersect.instanceId;
         if (instanceId !== undefined) {
-          const matrix = new THREE.Matrix4();
           intersectedObject.getMatrixAt(instanceId, matrix);
-          const position = new THREE.Vector3();
+
           position.setFromMatrixPosition(matrix);
 
           if (this.auraMesh) {
