@@ -45,7 +45,7 @@ export const ArmyChip = ({
           <Button className="my-2" size="xs" onClick={() => setEditMode(!editMode)}>
             Close Manager
           </Button>
-          <ArmyManagementCard army={updatedArmy!} owner_entity={BigInt(updatedArmy!.entityOwner.entity_owner_id)} />
+          <ArmyManagementCard army={updatedArmy!} owner_entity={updatedArmy!.entityOwner.entity_owner_id} />
         </>
       ) : (
         <>

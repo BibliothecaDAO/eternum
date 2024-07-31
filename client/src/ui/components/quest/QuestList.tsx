@@ -6,8 +6,9 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { useRealm } from "@/hooks/helpers/useRealm";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { Prize, Quest, QuestStatus, useQuests } from "@/hooks/helpers/useQuests";
+import { ID } from "@bibliothecadao/eternum";
 
-export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: bigint | undefined }) => {
+export const QuestList = ({ quests, entityId }: { quests: Quest[]; entityId: ID | undefined }) => {
   const [showCompletedQuests, setShowCompletedQuests] = useState(false);
   const [skipTutorial, setSkipTutorial] = useState(false);
   const [maxDepthToShow, setMaxDepthToShow] = useState(0);
@@ -82,7 +83,7 @@ const QuestCard = ({ quest }: { quest: Quest }) => {
   );
 };
 
-const SkipTutorial = ({ entityId }: { entityId: bigint }) => {
+const SkipTutorial = ({ entityId }: { entityId: ID }) => {
   const {
     setup: {
       systemCalls: { mint_resources_and_claim_quest },

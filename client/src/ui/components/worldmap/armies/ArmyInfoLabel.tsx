@@ -6,11 +6,11 @@ import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { StaminaResource } from "@/ui/elements/StaminaResource";
+import { formatSecondsLeftInDaysHours } from "@/ui/utils/utils";
 import clsx from "clsx";
 import { useMemo } from "react";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import { getRealmNameById } from "../../../utils/realms";
-import { formatSecondsLeftInDaysHours } from "@/ui/utils/utils";
 import { InventoryResources } from "../../resources/InventoryResources";
 
 interface ArmyInfoLabelProps {
@@ -46,7 +46,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
     [arrivalTime?.arrives_at, nextBlockTimestamp],
   );
 
-  const realmId = realm?.realm_id || 0n;
+  const realmId = realm?.realm_id || 0;
 
   const attackerAddressName = entityOwner ? getRealmAddressName(entityOwner.entity_owner_id) : "";
 
@@ -80,7 +80,7 @@ const RaiderInfo = ({ army }: ArmyInfoLabelProps) => {
             {arrivalTime && arrivalTime.arrives_at !== undefined && isTraveling && nextBlockTimestamp && (
               <div className="flex italic text-light-pink">
                 {isPassiveTravel
-                  ? formatSecondsLeftInDaysHours(arrivalTime.arrives_at - nextBlockTimestamp)
+                  ? formatSecondsLeftInDaysHours(Number(arrivalTime.arrives_at) - nextBlockTimestamp)
                   : "Arrives Next Tick"}
                 {army.battle_id ? `In Battle` : ""}
               </div>

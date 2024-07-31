@@ -21,6 +21,7 @@ import { OSWindow } from "@/ui/components/navigation/OSWindow";
 import Avatar from "@/ui/elements/Avatar";
 import { addressToNumber } from "@/ui/utils/utils";
 import { settings } from "@/ui/components/navigation/Config";
+import { ContractAddress } from "@bibliothecadao/eternum";
 
 export const SettingsWindow = () => {
   const {
@@ -31,7 +32,7 @@ export const SettingsWindow = () => {
 
   const { getAddressName } = useRealm();
 
-  const addressName = getAddressName(account.address);
+  const addressName = getAddressName(ContractAddress(account.address));
 
   // const addressName = useAddressStore((state) => state.addressName);
   const [showSettings, setShowSettings] = useState(false);

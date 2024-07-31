@@ -1,5 +1,4 @@
-import { ClientComponents } from "@/dojo/createClientComponents";
-import { EternumGlobalConfig, ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ID, ResourcesIds, WORLD_CONFIG_ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -15,17 +14,17 @@ export const useStamina = () => {
 
   const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
 
-  const useStaminaByEntityId = ({ travelingEntityId }: { travelingEntityId: bigint }) => {
+  const useStaminaByEntityId = ({ travelingEntityId }: { travelingEntityId: ID }) => {
     const staminasEntityIds = useEntityQuery([HasValue(Stamina, { entity_id: travelingEntityId })]);
     let staminaEntity = getComponentValue(Stamina, staminasEntityIds[0]);
 
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: travelingEntityId })]);
     const armyEntity = getComponentValue(Army, Array.from(armiesEntityIds)[0]);
 
-    if (staminaEntity && armyEntity && currentArmiesTick !== staminaEntity.last_refill_tick) {
+    if (staminaEntity && armyEntity && BigInt(currentArmiesTick) !== staminaEntity.last_refill_tick) {
       staminaEntity = {
         ...staminaEntity,
-        last_refill_tick: currentArmiesTick,
+        last_refill_tick: BigInt(currentArmiesTick),
         amount: getMaxStamina(armyEntity.troops, StaminaConfig),
       };
     }
@@ -36,7 +35,7 @@ export const useStamina = () => {
     travelingEntityId,
     currentArmiesTick,
   }: {
-    travelingEntityId: bigint;
+    travelingEntityId: ID;
     currentArmiesTick: number;
   }) => {
     const staminasEntityIds = runQuery([HasValue(Stamina, { entity_id: travelingEntityId })]);
@@ -45,17 +44,17 @@ export const useStamina = () => {
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: travelingEntityId })]);
     const armyEntity = getComponentValue(Army, Array.from(armiesEntityIds)[0]);
 
-    if (staminaEntity && currentArmiesTick !== staminaEntity?.last_refill_tick) {
+    if (staminaEntity && BigInt(currentArmiesTick) !== staminaEntity?.last_refill_tick) {
       staminaEntity = {
         ...staminaEntity!,
-        last_refill_tick: currentArmiesTick,
+        last_refill_tick: BigInt(currentArmiesTick),
         amount: getMaxStamina(armyEntity!.troops, StaminaConfig),
       };
     }
     return staminaEntity;
   };
 
-  const getMaxStaminaByEntityId = (travelingEntityId: bigint): number => {
+  const getMaxStaminaByEntityId = (travelingEntityId: ID): number => {
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: travelingEntityId })]);
     const armyEntity = getComponentValue(Army, Array.from(armiesEntityIds)[0]);
     if (!armyEntity) return 0;
@@ -64,8 +63,8 @@ export const useStamina = () => {
     return maxStamina;
   };
 
-  const optimisticStaminaUpdate = (overrideId: string, entityId: bigint, cost: number, currentArmiesTick: number) => {
-    const entity = getEntityIdFromKeys([entityId]);
+  const optimisticStaminaUpdate = (overrideId: string, entityId: ID, cost: number, currentArmiesTick: number) => {
+    const entity = getEntityIdFromKeys([BigInt(entityId)]);
 
     const stamina = getStamina({ travelingEntityId: entityId, currentArmiesTick });
 
@@ -73,7 +72,7 @@ export const useStamina = () => {
       entity,
       value: {
         entity_id: entityId,
-        last_refill_tick: stamina?.last_refill_tick || 0,
+        last_refill_tick: stamina?.last_refill_tick || 0n,
         amount: stamina?.amount ? stamina.amount - cost : 0,
       },
     });
@@ -84,7 +83,7 @@ export const useStamina = () => {
 
     return entityArmies.filter((entity: any) => {
       const stamina = getStamina({
-        travelingEntityId: BigInt(entity.entity_id),
+        travelingEntityId: entity.entity_id,
         currentArmiesTick,
       });
       return (stamina?.amount || 0) >= EternumGlobalConfig.stamina.travelCost;

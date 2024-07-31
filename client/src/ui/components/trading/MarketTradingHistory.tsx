@@ -1,5 +1,5 @@
 import { client } from "@/dojo/events/graphqlClient";
-import { ACCEPT_ORDER_EVENT, CANCEL_ORDER_EVENT, CREATE_ORDER_EVENT } from "@bibliothecadao/eternum";
+import { ACCEPT_ORDER_EVENT, CANCEL_ORDER_EVENT, CREATE_ORDER_EVENT, ID } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { EventType, TradeHistoryEvent, TradeHistoryRowHeader } from "./TradeHistoryEvent";
 
@@ -7,15 +7,15 @@ const TAKER_INDEX = 1;
 const MAKER_INDEX = 2;
 
 interface MarketTradingHistoryProps {
-  realmEntityId: bigint;
+  realmEntityId: ID;
 }
 
 export type TradeEvent = {
   type: EventType;
   event: {
-    takerId: bigint;
-    makerId: bigint;
-    tradeId: bigint;
+    takerId: ID;
+    makerId: ID;
+    tradeId: ID;
     eventTime: Date;
   };
 };
@@ -102,7 +102,7 @@ export const MarketTradingHistory = ({ realmEntityId }: MarketTradingHistoryProp
 
 const filterAndReturnTradeEvents = (
   edges: any,
-  realmEntityId: bigint,
+  realmEntityId: ID,
   eventType: EventType,
   indexOfInterest: number,
 ): TradeEvent[] => {
@@ -112,9 +112,9 @@ const filterAndReturnTradeEvents = (
       return {
         type: eventType,
         event: {
-          takerId: BigInt(edge.node.keys[TAKER_INDEX]),
-          makerId: BigInt(edge.node.keys[MAKER_INDEX]),
-          tradeId: BigInt(edge.node.data[0]),
+          takerId: edge.node.keys[TAKER_INDEX],
+          makerId: edge.node.keys[MAKER_INDEX],
+          tradeId: edge.node.data[0],
           eventTime: new Date(parseInt(edge.node.data[1], 16) * 1000),
         },
       };

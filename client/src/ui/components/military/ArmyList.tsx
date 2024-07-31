@@ -26,7 +26,7 @@ export const EntityArmyList = ({ structure }: { structure: PlayerStructure }) =>
   const existingBuildings = useUIStore((state) => state.existingBuildings);
 
   const { entityArmies: structureArmies } = useArmiesByEntityOwner({
-    entity_owner_entity_id: structure?.entity_id || 0n,
+    entity_owner_entity_id: structure?.entity_id || 0,
   });
 
   const selectedQuest = useQuestStore((state) => state.selectedQuest);
@@ -149,7 +149,7 @@ const ArmyItem = ({
 
   const { nextBlockTimestamp: currentTimestamp } = useBlockchainStore();
 
-  const battleManager = useMemo(() => new BattleManager(entity?.battle_id || 0n, dojo), [entity?.battle_id, dojo]);
+  const battleManager = useMemo(() => new BattleManager(entity?.battle_id || 0, dojo), [entity?.battle_id, dojo]);
 
   const updatedArmy = useMemo(() => {
     if (!currentTimestamp) throw new Error("Current timestamp is undefined");
@@ -161,11 +161,11 @@ const ArmyItem = ({
   return (
     <React.Fragment key={entity?.entity_id || 0}>
       <ArmyManagementCard
-        owner_entity={structure?.entity_id || 0n}
+        owner_entity={structure?.entity_id || 0}
         army={updatedArmy}
         setSelectedEntity={setSelectedEntity}
       />
-      <InventoryResources entityIds={[entity?.entity_id || 0n]} />
+      <InventoryResources entityIds={[entity?.entity_id || 0]} />
     </React.Fragment>
   );
 };

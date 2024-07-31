@@ -4,8 +4,10 @@ import { Account, AccountInterface, AllowArray, Call, CallData } from "starknet"
 // import { EternumGlobalConfig } from "../constants";
 import * as SystemProps from "../types/provider";
 
+export const NAMESPACE = "eternum";
+
 export const getContractByName = (manifest: any, name: string) => {
-  const contract = manifest.contracts.find((contract: any) => contract.name.includes("::" + name));
+  const contract = manifest.contracts.find((contract: any) => contract.tag === name);
   if (contract) {
     return contract.address;
   } else {
@@ -44,9 +46,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   private async executeAndCheckTransaction(signer: Account | AccountInterface, transactionDetails: AllowArray<Call>) {
-    const tx = await this.execute(signer, transactionDetails);
+    const tx = await this.execute(signer, transactionDetails, NAMESPACE);
+
     const transactionResult = await this.waitForTransactionWithCheck(tx.transaction_hash);
+
     this.emit("transactionComplete", transactionResult);
+
     return transactionResult;
   }
 
@@ -79,7 +84,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, [
       {
-        contractAddress: getContractByName(this.manifest, "trade_systems"),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
         entrypoint: "create_order",
         calldata: [
           maker_id,
@@ -99,7 +104,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, [
       {
-        contractAddress: getContractByName(this.manifest, "trade_systems"),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
         entrypoint: "accept_order",
         calldata: [
           taker_id,
@@ -117,7 +122,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { trade_id, return_resources, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "trade_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-trade_systems`),
       entrypoint: "cancel_order",
       calldata: [trade_id, return_resources.length / 2, ...return_resources],
     });
@@ -127,7 +132,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { receiver_id, resources } = props;
 
     return await this.executeAndCheckTransaction(props.signer, {
-      contractAddress: getContractByName(this.manifest, "dev_resource_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_resource_systems`),
       entrypoint: "mint",
       calldata: [receiver_id, resources.length / 2, ...resources],
     });
@@ -138,12 +143,12 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const calldata = [
       {
-        contractAddress: getContractByName(this.manifest, "dev_resource_systems"),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_resource_systems`),
         entrypoint: "mint",
         calldata: [receiver_id, resources.length / 2, ...resources],
       },
       ...config_ids.map((configId) => ({
-        contractAddress: getContractByName(this.manifest, "realm_systems"),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
         entrypoint: "mint_starting_resources",
         calldata: [configId, receiver_id],
       })),
@@ -167,26 +172,30 @@ export class EternumProvider extends EnhancedDojoProvider {
       signer,
     } = props;
 
-    const tx = await this.execute(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, "realm_systems"),
-        entrypoint: "create",
-        calldata: [
-          realm_id,
-          resource_types_packed,
-          resource_types_count,
-          cities,
-          harbors,
-          rivers,
-          regions,
-          wonder,
-          order,
-          2,
-          position.x,
-          position.y,
-        ],
-      },
-    ]);
+    const tx = await this.execute(
+      signer,
+      [
+        {
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
+          entrypoint: "create",
+          calldata: [
+            realm_id,
+            resource_types_packed,
+            resource_types_count,
+            cities,
+            harbors,
+            rivers,
+            regions,
+            wonder,
+            order,
+            2,
+            position.x,
+            position.y,
+          ],
+        },
+      ],
+      NAMESPACE,
+    );
     return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
@@ -209,7 +218,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
       let calldata = [
         {
-          contractAddress: getContractByName(this.manifest, "realm_systems"),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
           entrypoint: "create",
           calldata: [
             realm_id,
@@ -226,21 +235,6 @@ export class EternumProvider extends EnhancedDojoProvider {
             position.y,
           ],
         },
-        // {
-        //   // mint food
-        //   contractAddress: getContractByName(this.manifest, "dev_resource_systems"),
-        //   entrypoint: "mint",
-        //   calldata: [
-        //     uuid,
-        //     EternumGlobalConfig.resources.startingResources.length,
-        //     ...EternumGlobalConfig.resources.startingResources.flatMap(({ resourceId, amount }) => [
-        //       resourceId,
-        //       amount *
-        //         EternumGlobalConfig.resources.resourcePrecision *
-        //         EternumGlobalConfig.resources.resourceMultiplier,
-        //     ]),
-        //   ],
-        // },
       ];
 
       return calldata;
@@ -253,7 +247,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { creator_id, start_coord, end_coord, usage_count, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "road_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-road_systems`),
       entrypoint: "create",
       calldata: [
         this.getWorldAddress(),
@@ -271,7 +265,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { sending_entity_id, receiving_entity_id, resources, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "resource_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
       entrypoint: "transfer",
       calldata: [sending_entity_id, receiving_entity_id, resources.length / 2, ...resources],
     });
@@ -281,7 +275,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { sender_entity_id, recipient_entity_id, resources, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "resource_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
       entrypoint: "send",
       calldata: [sender_entity_id, recipient_entity_id, resources.length / 2, ...resources],
     });
@@ -292,12 +286,12 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, [
       {
-        contractAddress: getContractByName(this.manifest, "resource_systems"),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
         entrypoint: "approve",
         calldata: [owner_entity_id, recipient_entity_id, resources.length / 2, ...resources],
       },
       {
-        contractAddress: getContractByName(this.manifest, "resource_systems"),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-resource_systems`),
         entrypoint: "pickup",
         calldata: [recipient_entity_id, owner_entity_id, resources.length / 2, ...resources],
       },
@@ -308,7 +302,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "travel_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-travel_systems`),
       entrypoint: "travel",
       calldata: [travelling_entity_id, destination_coord_x, destination_coord_y],
     });
@@ -318,7 +312,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { travelling_entity_id, directions, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "travel_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-travel_systems`),
       entrypoint: "travel_hex",
       calldata: [travelling_entity_id, directions],
     });
@@ -328,7 +322,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { realm_entity_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "leveling_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-leveling_systems`),
       entrypoint: "level_up_realm",
       calldata: [realm_entity_id],
     });
@@ -338,7 +332,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { name, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "name_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-name_systems`),
       entrypoint: "set_address_name",
       calldata: [name],
     });
@@ -348,7 +342,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_id, name, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "name_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-name_systems`),
       entrypoint: "set_entity_name",
       calldata: [entity_id, name],
     });
@@ -358,7 +352,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { unit_id, direction, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "map_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-map_systems`),
       entrypoint: "explore",
       calldata: [unit_id, direction],
     });
@@ -368,7 +362,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_id, building_coord, building_category, produce_resource_type, signer } = props;
 
     return this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "building_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "create",
       calldata: CallData.compile([
         entity_id,
@@ -384,7 +378,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_id, building_coord, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "building_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-building_systems`),
       entrypoint: "destroy",
       calldata: [entity_id, building_coord.x, building_coord.y],
     });
@@ -394,7 +388,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { realm_entity_id, coord, owner_fee_num, owner_fee_denom, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "bank_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
       entrypoint: "create_bank",
       calldata: [realm_entity_id, coord, owner_fee_num, owner_fee_denom],
     });
@@ -404,7 +398,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { coord, owner_fee_num, owner_fee_denom, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "dev_bank_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-dev_bank_systems`),
       entrypoint: "create_admin_bank",
       calldata: [coord, owner_fee_num, owner_fee_denom],
     });
@@ -414,7 +408,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { realm_entity_id, bank_entity_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "bank_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
       entrypoint: "open_account",
       calldata: [realm_entity_id, bank_entity_id],
     });
@@ -424,7 +418,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { bank_entity_id, new_swap_fee_num, new_swap_fee_denom, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "bank_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-bank_systems`),
       entrypoint: "change_owner_fee",
       calldata: [bank_entity_id, new_swap_fee_num, new_swap_fee_denom],
     });
@@ -434,7 +428,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "swap_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
       entrypoint: "buy",
       calldata: [bank_entity_id, entity_id, resource_type, amount],
     });
@@ -444,7 +438,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { bank_entity_id, entity_id, resource_type, amount, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "swap_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-swap_systems`),
       entrypoint: "sell",
       calldata: [bank_entity_id, entity_id, resource_type, amount],
     });
@@ -454,7 +448,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { bank_entity_id, entity_id, resource_type, resource_amount, lords_amount, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "liquidity_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-liquidity_systems`),
       entrypoint: "add",
       calldata: [bank_entity_id, entity_id, resource_type, resource_amount, lords_amount],
     });
@@ -464,7 +458,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { bank_entity_id, entity_id, resource_type, shares, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "liquidity_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-liquidity_systems`),
       entrypoint: "remove",
       calldata: [bank_entity_id, entity_id, resource_type, shares, false],
     });
@@ -474,7 +468,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_owner_id, is_defensive_army, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
       entrypoint: "army_create",
       calldata: [army_owner_id, is_defensive_army],
     });
@@ -484,7 +478,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
       entrypoint: "army_delete",
       calldata: [army_id],
     });
@@ -494,7 +488,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, payer_id, troops, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
       entrypoint: "army_buy_troops",
       calldata: [army_id, payer_id, troops.knight_count, troops.paladin_count, troops.crossbowman_count],
     });
@@ -504,7 +498,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { from_army_id, to_army_id, troops, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
       entrypoint: "army_merge_troops",
       calldata: [from_army_id, to_army_id, troops],
     });
@@ -514,7 +508,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { attacking_army_id, defending_army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
       entrypoint: "battle_start",
       calldata: [attacking_army_id, defending_army_id],
     });
@@ -524,7 +518,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { battle_id, battle_side, army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
       entrypoint: "battle_join",
       calldata: [battle_id, battle_side, army_id],
     });
@@ -534,7 +528,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { battle_id, army_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
       entrypoint: "battle_leave",
       calldata: [battle_id, army_id],
     });
@@ -544,7 +538,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, structure_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
       entrypoint: "battle_pillage",
       calldata: [army_id, structure_id],
     });
@@ -554,7 +548,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { army_id, structure_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
       entrypoint: "battle_claim",
       calldata: [army_id, structure_id],
     });
@@ -565,12 +559,12 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, [
       {
-        contractAddress: getContractByName(this.manifest, "combat_systems"),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
         entrypoint: "battle_leave",
         calldata: [battle_id, army_id],
       },
       {
-        contractAddress: getContractByName(this.manifest, "combat_systems"),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
         entrypoint: "battle_claim",
         calldata: [army_id, structure_id],
       },
@@ -582,12 +576,12 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     return await this.executeAndCheckTransaction(signer, [
       {
-        contractAddress: getContractByName(this.manifest, "combat_systems"),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
         entrypoint: "battle_leave",
         calldata: [battle_id, army_id],
       },
       {
-        contractAddress: getContractByName(this.manifest, "combat_systems"),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-combat_systems`),
         entrypoint: "battle_pillage",
         calldata: [army_id, structure_id],
       },
@@ -600,7 +594,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.executeAndCheckTransaction(
       signer,
       config_ids.map((configId) => ({
-        contractAddress: getContractByName(this.manifest, "realm_systems"),
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-realm_systems`),
         entrypoint: "mint_starting_resources",
         calldata: [configId, realm_entity_id],
       })),
@@ -611,7 +605,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { is_public, guild_name, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
       entrypoint: "create_guild",
       calldata: [is_public, guild_name],
     });
@@ -621,7 +615,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { guild_entity_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
       entrypoint: "join_guild",
       calldata: [guild_entity_id],
     });
@@ -631,7 +625,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { player_address_to_whitelist, guild_entity_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
       entrypoint: "whitelist_player",
       calldata: [player_address_to_whitelist, guild_entity_id],
     });
@@ -641,7 +635,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
       entrypoint: "leave_guild",
       calldata: [],
     });
@@ -651,7 +645,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { guild_entity_id, to_player_address, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
       entrypoint: "transfer_guild_ownership",
       calldata: [guild_entity_id, to_player_address],
     });
@@ -661,7 +655,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { player_address_to_remove, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
       entrypoint: "remove_guild_member",
       calldata: [player_address_to_remove],
     });
@@ -671,7 +665,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { player_address_to_remove, guild_entity_id, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-guild_systems`),
       entrypoint: "remove_player_from_whitelist",
       calldata: [player_address_to_remove, guild_entity_id],
     });
@@ -681,7 +675,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { config_id, resources, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_mint_config",
       calldata: [config_id, resources.length, ...resources.flatMap(({ resource, amount }) => [resource, amount])],
     });
@@ -691,7 +685,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { wheat_burn_amount, fish_burn_amount, reward_amount, shards_mines_fail_probability, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_exploration_config",
       calldata: [wheat_burn_amount, fish_burn_amount, reward_amount, shards_mines_fail_probability],
     });
@@ -701,7 +695,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_type, weight_gram, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_capacity_config",
       calldata: [entity_type, weight_gram],
     });
@@ -711,7 +705,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { entity_type, sec_per_km, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_speed_config",
       calldata: [entity_type, sec_per_km],
     });
@@ -724,7 +718,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       signer,
       calls.map((call) => {
         return {
-          contractAddress: getContractByName(this.manifest, "config_systems"),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
           entrypoint: "set_weight_config",
           calldata: [call.entity_type, call.weight_gram],
         };
@@ -736,7 +730,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { tick_id, tick_interval_in_seconds, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_tick_config",
       calldata: [tick_id, tick_interval_in_seconds],
     });
@@ -749,7 +743,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       signer,
       calls.map((call) => {
         return {
-          contractAddress: getContractByName(this.manifest, "config_systems"),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
           entrypoint: "set_production_config",
           calldata: [
             call.resource_type,
@@ -766,7 +760,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { lords_cost, lp_fee_num, lp_fee_denom, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_bank_config",
       calldata: [lords_cost, lp_fee_num, lp_fee_denom],
     });
@@ -788,7 +782,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_troop_config",
       calldata: [
         config_id,
@@ -812,7 +806,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       signer,
       calls.map((call) => {
         return {
-          contractAddress: getContractByName(this.manifest, "config_systems"),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
           entrypoint: "set_building_category_pop_config",
           calldata: [call.building_category, call.population, call.capacity],
         };
@@ -824,7 +818,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const { base_population, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_population_config",
       calldata: [base_population],
     });
@@ -837,7 +831,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       signer,
       calls.map((call) => {
         return {
-          contractAddress: getContractByName(this.manifest, "config_systems"),
+          contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
           entrypoint: "set_building_config",
           calldata: [
             call.building_category,
@@ -853,7 +847,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_hyperstructure_config(props: SystemProps.SetHyperstructureConfig) {
     const { resources_for_completion, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_hyperstructure_config",
       calldata: [resources_for_completion],
     });
@@ -862,7 +856,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async create_hyperstructure(props: SystemProps.CreateHyperstructureProps) {
     const { creator_entity_id, coords, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "create",
       calldata: [creator_entity_id, coords],
     });
@@ -871,7 +865,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async contribute_to_construction(props: SystemProps.ContributeToConstructionProps) {
     const { hyperstructure_entity_id, contributor_entity_id, contributions, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-hyperstructure_systems`),
       entrypoint: "contribute_to_construction",
       calldata: [hyperstructure_entity_id, contributor_entity_id, contributions],
     });
@@ -880,7 +874,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_stamina_config(props: SystemProps.SetStaminaConfigProps) {
     const { unit_type, max_stamina, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_stamina_config",
       calldata: [unit_type, max_stamina],
     });
@@ -889,7 +883,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   public async set_mercenaries_config(props: SystemProps.SetMercenariesConfigProps) {
     const { troops, rewards, signer } = props;
     return await this.executeAndCheckTransaction(signer, {
-      contractAddress: getContractByName(this.manifest, "config_systems"),
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_mercenaries_config",
       calldata: [troops, rewards],
     });

@@ -13,7 +13,7 @@ import ListSelect from "@/ui/elements/ListSelect";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import TextInput from "@/ui/elements/TextInput";
 import { displayAddress } from "@/ui/utils/utils";
-import { EternumGlobalConfig, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import { ContractAddress, EternumGlobalConfig, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 import { motion } from "framer-motion";
 import { LucideArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -74,7 +74,7 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
 
   const { getAddressName } = useRealm();
 
-  const name = getAddressName(account.address);
+  const name = getAddressName(ContractAddress(account.address));
   const { playerRealms } = useEntities();
 
   // @dev: refactor this
@@ -88,7 +88,6 @@ export const Naming = ({ onNext }: { onNext: () => void }) => {
   const onSetName = async () => {
     setLoading(true);
     if (inputName && !addressIsMaster) {
-      // convert string to bigint
       const inputNameBigInt = shortString.encodeShortString(inputName);
       await set_address_name({ name: inputNameBigInt, signer: account as any });
       setAddressName(inputName);
@@ -290,7 +289,7 @@ export const StepThree = ({ onPrev, onNext }: { onPrev: () => void; onNext: () =
   } = useDojo();
 
   const { getAddressName } = useRealm();
-  const name = getAddressName(account.address);
+  const name = getAddressName(ContractAddress(account.address));
 
   return (
     <StepContainer>
