@@ -85,10 +85,7 @@ export const TopMiddleNavigation = () => {
     setRealmEntityId(entityId);
   };
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const population = useComponentValue(
-    setup.components.Population,
-    getEntityIdFromKeys([BigInt(realmEntityId || 0)]),
-  );
+  const population = useComponentValue(setup.components.Population, getEntityIdFromKeys([BigInt(realmEntityId || 0)]));
 
   const storehouses = useMemo(() => {
     const quantity =

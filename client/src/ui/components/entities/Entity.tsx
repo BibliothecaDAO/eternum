@@ -45,12 +45,7 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const entity = getEntityInfo(entityId);
   const entityResources = getResourcesFromBalance(entityId);
   const hasResources = entityResources.length > 0;
-  const entityState = determineEntityState(
-    nextBlockTimestamp,
-    entity.blocked,
-    entity.arrivalTime,
-    hasResources,
-  );
+  const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
   const depositEntityId = getOwnedEntityOnPosition(entityId);
 
   const structureAtPosition = getStructureByEntityId(depositEntityId || 0);

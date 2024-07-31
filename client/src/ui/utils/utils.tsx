@@ -1,4 +1,12 @@
-import { ContractAddress, ID, Position, ResourcesIds, UIPosition, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  ID,
+  Position,
+  ResourcesIds,
+  UIPosition,
+  neighborOffsetsEven,
+  neighborOffsetsOdd,
+} from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   default as realmHexPositions,
