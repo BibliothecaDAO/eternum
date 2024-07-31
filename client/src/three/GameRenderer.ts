@@ -1,4 +1,3 @@
-import { TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 import { SetupResult } from "@/dojo/setup";
 import gsap from "gsap";
 import GUI from "lil-gui";
@@ -66,8 +65,6 @@ export default class GameRenderer {
   private lastTime: number = 0;
 
   private dojo: SetupResult;
-
-  private travelPaths: TravelPaths | undefined;
 
   private mouseHandler!: MouseHandler;
   private sceneManager!: SceneManager;
@@ -192,7 +189,6 @@ export default class GameRenderer {
       this.raycaster,
       this.mouse,
       this.camera,
-      this.travelPaths,
       this.sceneManager,
       this.locationManager,
     );

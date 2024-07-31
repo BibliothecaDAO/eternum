@@ -15,18 +15,19 @@ export class MouseHandler {
   private throttledHandleHexHover: (hexCoords: { row: number; col: number }) => void;
   public selectedEntityId: number | null = null;
   private state: AppStore;
+  private travelPaths: TravelPaths;
 
   constructor(
     private dojo: SetupResult,
     private raycaster: THREE.Raycaster,
     private mouse: THREE.Vector2,
     private camera: THREE.Camera,
-    private travelPaths: TravelPaths | undefined,
     public sceneManager: SceneManager,
     private locationManager: LocationManager,
   ) {
     this.throttledHandleHexHover = throttle(this.handleHexHover.bind(this), 100);
     this.state = useUIStore.getState();
+    this.travelPaths = new TravelPaths();
   }
 
   initScene(worldmapScene: WorldmapScene) {

@@ -46,8 +46,9 @@ export class InteractiveHexManager {
   }
 
   private updateAuraPosition() {
+    if (!this.borderInstanceMesh || !this.exploredInstanceMesh) return;
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+    const intersects = this.raycaster.intersectObjects([this.borderInstanceMesh, this.exploredInstanceMesh], true);
     if (intersects.length > 0) {
       const intersect = intersects[0];
       const intersectedObject = intersect.object;
@@ -114,10 +115,6 @@ export class InteractiveHexManager {
     const exploredInstanceCount = this.exploredHexes.size;
     this.borderInstanceMesh = new THREE.InstancedMesh(hexagonGeometry, borderHexMaterial, borderInstanceCount);
     this.exploredInstanceMesh = new THREE.InstancedMesh(hexagonGeometry, transparentHexMaterial, exploredInstanceCount);
-
-    // Add user data to specify the type of hex
-    this.borderInstanceMesh.userData = { type: "border" };
-    this.exploredInstanceMesh.userData = { type: "explored" };
 
     const dummy = new THREE.Object3D();
     let index = 0;
