@@ -1,4 +1,4 @@
-import { useModal } from "@/hooks/store/useModal";
+import { useModalStore } from "@/hooks/store/useModalStore";
 import Button from "../elements/Button";
 import { X } from "lucide-react";
 
@@ -8,7 +8,7 @@ interface ModalContainerProps {
 }
 
 export const ModalContainer = ({ children, size = "full" }: ModalContainerProps) => {
-  const { toggleModal } = useModal();
+  const { toggleModal } = useModalStore();
 
   const containerClasses =
     size === "full"

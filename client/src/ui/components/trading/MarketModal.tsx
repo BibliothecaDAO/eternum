@@ -1,7 +1,7 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { useSetMarket } from "@/hooks/helpers/useTrade";
 import useMarketStore from "@/hooks/store/useMarketStore";
-import { useModal } from "@/hooks/store/useModal";
+import { useModalStore } from "@/hooks/store/useModalStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import CircleButton from "@/ui/elements/CircleButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
@@ -22,7 +22,7 @@ export const MarketModal = () => {
 
   const { playerRealms } = useEntities();
 
-  const { toggleModal } = useModal();
+  const { toggleModal } = useModalStore();
 
   const banks = useGetBanks();
   const bank = banks.length === 1 ? banks[0] : null;

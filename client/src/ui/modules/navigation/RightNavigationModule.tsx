@@ -1,4 +1,4 @@
-import { useModal } from "@/hooks/store/useModal";
+import { useModalStore } from "@/hooks/store/useModalStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { trade } from "@/ui/components/navigation/Config";
@@ -49,7 +49,7 @@ export const RightNavigationModule = () => {
 
   const { getAllArrivalsWithResources } = useArrivalsWithResources();
 
-  const { toggleModal } = useModal();
+  const { toggleModal } = useModalStore();
 
   const navigation = useMemo(() => {
     return [

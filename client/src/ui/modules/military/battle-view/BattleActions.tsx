@@ -4,7 +4,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, getArmyByEntityId } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import { useModal } from "@/hooks/store/useModal";
+import { useModalStore } from "@/hooks/store/useModalStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { PillageHistory } from "@/ui/components/military/PillageHistory";
 import { ModalContainer } from "@/ui/components/ModalContainer";
@@ -53,7 +53,7 @@ export const BattleActions = ({
 
   const [loading, setLoading] = useState<Loading>(Loading.None);
 
-  const { toggleModal } = useModal();
+  const { toggleModal } = useModalStore();
 
   const { getAliveArmy } = getArmyByEntityId();
 
