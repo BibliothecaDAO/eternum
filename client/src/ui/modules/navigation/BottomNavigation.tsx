@@ -1,7 +1,9 @@
 import { useEntities } from "@/hooks/helpers/useEntities";
+import { QuestStatus, useQuestClaimStatus, useQuests, useUnclaimedQuestsCount } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import CircleButton from "@/ui/elements/CircleButton";
 import { isRealmSelected } from "@/ui/utils/utils";
 import clsx from "clsx";
@@ -10,9 +12,11 @@ import { ArrowDown } from "lucide-react";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 import { guilds, leaderboard, quests as questsWindow } from "../../components/navigation/Config";
+import { Assistant } from "../assistant/Assistant";
+import { Guilds } from "../guilds/Guilds";
+import { Leaderboard } from "../leaderboard/LeaderBoard";
+import { Questing } from "../questing/Questing";
 import { BuildingThumbs } from "./LeftNavigationModule";
-import { QuestStatus, useUnclaimedQuestsCount, useQuests, useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { QuestId } from "@/ui/components/quest/questDetails";
 
 export enum MenuEnum {
   military = "military",
@@ -103,19 +107,28 @@ export const BottomNavigation = () => {
   };
 
   return (
-    <motion.div
-      variants={slideUp}
-      initial="hidden"
-      animate="visible"
-      className="flex justify-center flex-wrap relative w-full duration-300 transition-all"
-    >
-      <div className="">
-        <div className="flex py-2 px-10 gap-1 pointer-events-auto">
-          {secondaryNavigation.map((a, index) => (
-            <div key={index}>{a.button}</div>
-          ))}
-        </div>
+    <>
+      <div className="pointer-events-auto">
+        <Questing entityId={realmEntityId} />
+        <Assistant />
+        <Leaderboard />
+        <Guilds />
       </div>
-    </motion.div>
+
+      <motion.div
+        variants={slideUp}
+        initial="hidden"
+        animate="visible"
+        className="flex justify-center flex-wrap relative w-full duration-300 transition-all"
+      >
+        <div className="">
+          <div className="flex py-2 px-10 gap-1 pointer-events-auto">
+            {secondaryNavigation.map((a, index) => (
+              <div key={index}>{a.button}</div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </>
   );
 };
