@@ -97,7 +97,7 @@ export const BattleActions = ({
     });
     setBattleView({
       engage: false,
-      battle: undefined,
+      battleEntityId: undefined,
       ownArmyEntityId: undefined,
       targetArmy: defenderArmy?.entity_id,
     });

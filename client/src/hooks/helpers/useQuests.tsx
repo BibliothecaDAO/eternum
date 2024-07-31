@@ -76,7 +76,7 @@ const useQuestDependencies = () => {
   const realm = useMemo(() => playerRealms()[0], [playerRealms]);
   const realmEntityId = useMemo(() => realm?.entity_id, [realm]);
 
-  const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: realmEntityId })]);
+  const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: realmEntityId || 0 })]);
 
   const buildingQuantities = useBuildingQuantities(realmEntityId);
 
@@ -236,9 +236,7 @@ export const useQuestClaimStatus = () => {
   const realm = useMemo(() => playerRealms()[0], [playerRealms]);
   const realmEntityId = useMemo(() => realm?.entity_id, [realm]);
 
-  const prizeUpdate = useEntityQuery([
-    HasValue(HasClaimedStartingResources, { entity_id: realmEntityId || 0 }),
-  ]);
+  const prizeUpdate = useEntityQuery([HasValue(HasClaimedStartingResources, { entity_id: realmEntityId || 0 })]);
 
   const checkPrizesClaimed = (prizes: Prize[]) => {
     return prizes.every((prize) => {
@@ -280,7 +278,7 @@ const useBuildingQuantities = (realmEntityId: ID | undefined) => {
       components: { BuildingQuantityv2, EntityOwner },
     },
   } = useDojo();
-  const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: realmEntityId })]);
+  const entityUpdate = useEntityQuery([HasValue(EntityOwner, { entity_owner_id: realmEntityId || 0 })]);
   const getBuildingQuantity = (buildingType: BuildingType) =>
     getComponentValue(BuildingQuantityv2, getEntityIdFromKeys([BigInt(realmEntityId || 0), BigInt(buildingType)]))
       ?.value || 0;

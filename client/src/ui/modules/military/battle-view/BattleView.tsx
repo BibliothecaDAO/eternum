@@ -37,7 +37,7 @@ export const BattleView = () => {
   }, [updatedTarget, battleView?.targetArmy]);
 
   const battleManager = useBattleManager(
-    battleView?.battle ? battleView?.battle : battleView?.engage ? 0 : targetArmy?.battle_id || 0,
+    battleView?.battleEntityId ? battleView?.battleEntityId : battleView?.engage ? 0 : targetArmy?.battle_id || 0,
   );
 
   const armies = useMemo(() => {
@@ -98,7 +98,7 @@ export const BattleView = () => {
   const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : targetArmy?.troops;
 
   const structure =
-    battleView?.engage && !battleView?.battle && !battleView.targetArmy
+    battleView?.engage && !battleView?.battleEntityId && !battleView.targetArmy
       ? getStructure({ x: battlePosition.x, y: battlePosition.y })
       : getStructureByEntityId(defenderArmies.find((army) => army?.protectee)?.protectee?.protectee_id || 0);
 

@@ -72,7 +72,7 @@ export const useStamina = () => {
       entity,
       value: {
         entity_id: entityId,
-        last_refill_tick: BigInt(currentArmiesTick),
+        last_refill_tick: stamina?.last_refill_tick || 0n,
         amount: stamina?.amount ? stamina.amount - cost : 0,
       },
     });

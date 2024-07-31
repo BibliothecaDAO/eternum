@@ -45,7 +45,6 @@ export const useGuilds = () => {
     setup: {
       components: { Guild, GuildMember, GuildWhitelist, Owner },
     },
-    account: { account },
   } = useDojo();
 
   const { getEntityName } = getEntitiesUtils();
@@ -65,7 +64,6 @@ export const useGuilds = () => {
 
   const getGuilds = useMemo(
     () => () => {
-      // TODO: CONSTANT 0n
       const guilds = useEntityQuery([Has(Guild), NotValue(Guild, { member_count: 0 })]);
       return {
         guilds: formatGuilds(guilds, Guild, getEntityName, guildPointsLeaderboard),
@@ -77,7 +75,6 @@ export const useGuilds = () => {
   const getGuildWhitelist = useMemo(
     () => (guildEntityId: ID) => {
       const whitelist = useEntityQuery([
-        // TODO : CONSTANT 1n
         HasValue(GuildWhitelist, { guild_entity_id: guildEntityId, is_whitelisted: true }),
       ]);
       return {
@@ -89,7 +86,6 @@ export const useGuilds = () => {
 
   const getAddressWhitelist = useMemo(
     () => (address: ContractAddress) => {
-      // TODO : CONSTANT 1n
       const addressWhitelist = useEntityQuery([HasValue(GuildWhitelist, { address, is_whitelisted: true })]);
       return {
         addressWhitelist: formatAddressWhitelist(addressWhitelist, GuildWhitelist, getEntityName),

@@ -58,7 +58,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
         className="fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125"
         onClick={() =>
           setBattleView({
-            battle: updatedBattle!.entity_id,
+            battleEntityId: updatedBattle!.entity_id,
             targetArmy: undefined,
             ownArmyEntityId: undefined,
           })
@@ -80,7 +80,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
         className="fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125"
         onClick={() =>
           setBattleView({
-            battle: updatedBattle?.entity_id,
+            battleEntityId: updatedBattle?.entity_id,
             targetArmy: structure.protector?.entity_id,
             ownArmyEntityId: ownArmySelected?.entity_id,
           })
@@ -109,7 +109,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
           onClick={() =>
             setBattleView({
               engage: true,
-              battle: undefined,
+              battleEntityId: undefined,
               ownArmyEntityId: ownArmySelected?.entity_id,
               targetArmy: structure.protector?.entity_id,
             })

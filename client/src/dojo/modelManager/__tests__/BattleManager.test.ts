@@ -387,7 +387,7 @@ describe("getTroopFullHealth", () => {
 
     const fullHealth = battleManager["getTroopFullHealth"](army.troops);
 
-    expect(fullHealth).toBe(BATTLE_ENTITY_ID);
+    expect(fullHealth).toBe(10n);
   });
 });
 
