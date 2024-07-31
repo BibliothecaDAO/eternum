@@ -31,7 +31,6 @@ async function init() {
 
   graphic.initScene();
   graphic.initStats();
-  graphic.initListeners();
 
   inject();
   root.render(

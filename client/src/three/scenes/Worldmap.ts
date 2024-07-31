@@ -22,6 +22,9 @@ import { HighlightHexManager } from "../components/HighlightHexManager";
 import { GUIManager } from "../helpers/GUIManager";
 import { HEX_SIZE } from "../GameRenderer";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { InputManager } from "../components/InputManager";
+import { throttle } from "lodash";
+import { SceneManager } from "../SceneManager";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -55,6 +58,8 @@ export default class WorldmapScene {
   private lightType: "pmrem" | "hemisphere" = "hemisphere";
   private lightHelper!: THREE.DirectionalLightHelper;
 
+  private camera: THREE.PerspectiveCamera;
+
   contextMenuManager: ContextMenuManager;
 
   private chunkSize = 10; // Size of each chunk
@@ -77,22 +82,29 @@ export default class WorldmapScene {
   private interactiveHexManager: InteractiveHexManager;
   public highlightHexManager: HighlightHexManager;
 
+  private inputManager: InputManager;
+
   constructor(
     private dojoConfig: SetupResult,
     private raycaster: Raycaster,
     private controls: MapControls,
     private mouse: THREE.Vector2,
+    private sceneManager: SceneManager,
   ) {
     this.scene = new THREE.Scene();
 
+    this.camera = this.controls.object as THREE.PerspectiveCamera;
+
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+
     this.biome = new Biome();
 
-    this.fogManager = new FogManager(this.scene, controls.object as THREE.PerspectiveCamera);
+    this.fogManager = new FogManager(this.scene, this.camera);
 
     this.contextMenuManager = new ContextMenuManager(
       this.scene,
       this.raycaster,
-      controls.object as THREE.PerspectiveCamera,
+      this.camera,
       mouse,
       this.loadedChunks,
       this,
@@ -152,17 +164,16 @@ export default class WorldmapScene {
     this.systemManager = new SystemManager(this.dojoConfig, this);
     this.systemManager.tileSystem.addListener(this.updateExploredHex.bind(this));
 
-    this.interactiveHexManager = new InteractiveHexManager(
-      this.scene,
-      this.raycaster,
-      this.mouse,
-      controls.object as THREE.PerspectiveCamera,
-    );
+    this.interactiveHexManager = new InteractiveHexManager(this.scene, this.sceneManager);
     this.highlightHexManager = new HighlightHexManager(this.scene);
+
+    this.inputManager = new InputManager(this.raycaster, this.mouse, this.camera);
+    this.inputManager.addListener("mousemove", throttle(this.interactiveHexManager.onMouseMove, 10));
+    this.inputManager.addListener("dblclick", this.interactiveHexManager.onDoubleClick);
   }
 
   public getCamera() {
-    return this.controls.object as THREE.PerspectiveCamera;
+    return this.camera;
   }
 
   private loadBiomeModels() {

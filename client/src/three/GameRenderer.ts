@@ -5,7 +5,6 @@ import _ from "lodash";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import Stats from "three/examples/jsm/libs/stats.module";
-import { InputManager } from "./components/InputManager";
 import { TransitionManager } from "./components/TransitionManager";
 import { LocationManager } from "./helpers/LocationManager";
 import { MouseHandler } from "./MouseHandler";
@@ -52,8 +51,6 @@ export default class GameRenderer {
 
   // Components
 
-  // Managers
-  private inputManager!: InputManager;
   private transitionManager!: TransitionManager;
 
   // Scenes
@@ -160,29 +157,31 @@ export default class GameRenderer {
       }, 30),
     );
 
+    this.transitionManager = new TransitionManager(this.renderer);
+
+    this.sceneManager = new SceneManager(this.transitionManager);
+
     // Change camera settings for 75-degree view
-    this.hexceptionScene = new HexceptionScene(this.renderer, this.controls, this.dojo, this.mouse, this.raycaster);
+    this.hexceptionScene = new HexceptionScene(
+      this.renderer,
+      this.controls,
+      this.dojo,
+      this.mouse,
+      this.raycaster,
+      this.sceneManager,
+      this.cameraAngle,
+      this.cameraDistance,
+    );
+    this.sceneManager.addScene("hexception", this.hexceptionScene);
 
     // Add grid
-    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse);
+    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
     this.worldmapScene.updateVisibleChunks();
+    this.sceneManager.addScene("worldmap", this.worldmapScene);
 
     this.worldmapScene.createGroundMesh();
 
-    this.transitionManager = new TransitionManager(this.renderer);
-
     this.moveCameraToURLLocation();
-
-    this.sceneManager = new SceneManager(
-      this.cameraAngle,
-      this.cameraDistance,
-      this.camera,
-      this.controls,
-      this.transitionManager,
-    );
-    this.sceneManager.initScene(this.hexceptionScene);
-
-    this.inputManager = new InputManager();
 
     this.mouseHandler = new MouseHandler(
       this.dojo,
@@ -232,18 +231,6 @@ export default class GameRenderer {
     this.controls.update();
   }
 
-  initListeners(): void {
-    this.inputManager.initListeners(
-      this.onWindowResize.bind(this),
-      this.mouseHandler.onMouseMove.bind(this.mouseHandler),
-      this.mouseHandler.onDoubleClick.bind(this.mouseHandler),
-      this.sceneManager.transitionToMainScene.bind(this),
-      this.mouseHandler.onClick.bind(this.mouseHandler),
-      this.mouseHandler.onRightClick.bind(this.mouseHandler),
-      this.handleKeyEvent.bind(this.handleKeyEvent),
-    );
-  }
-
   handleKeyEvent(event: KeyboardEvent): void {
     const { key } = event;
 
@@ -252,7 +239,8 @@ export default class GameRenderer {
         break;
       case "Escape":
         if (this.sceneManager?.currentScene === "hexception") {
-          this.sceneManager.transitionToMainScene();
+          // this.sceneManager.transitionToMainScene(this.hexceptionScene);
+          this.sceneManager.switchScene("worldmap");
         }
         break;
       default:
@@ -270,12 +258,9 @@ export default class GameRenderer {
 
   switchScene() {
     if (this.sceneManager.currentScene === "worldmap") {
-      const { row, col, x, z } = this.getLocationCoordinates();
-      this.inputManager.removeListeners();
-      this.sceneManager.transitionToDetailedScene(row, col, x, z);
+      this.sceneManager.switchScene("hexception");
     } else {
-      this.initListeners();
-      this.sceneManager.transitionToMainScene();
+      this.sceneManager.switchScene("worldmap");
     }
   }
 

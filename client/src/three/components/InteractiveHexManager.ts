@@ -1,10 +1,10 @@
 import * as THREE from "three";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
-import WorldmapScene from "../scenes/Worldmap";
 import { borderHexMaterial } from "@/three/shaders/borderHexMaterial";
 import { transparentHexMaterial } from "@/three/shaders/transparentHexMaterial";
 import { HEX_SIZE } from "../GameRenderer";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { SceneManager } from "../SceneManager";
 
 export class InteractiveHexManager {
   private scene: THREE.Scene;
@@ -13,16 +13,14 @@ export class InteractiveHexManager {
   private borderInstanceMesh: THREE.InstancedMesh | null = null;
   private exploredInstanceMesh: THREE.InstancedMesh | null = null;
   private auraMesh: THREE.Mesh | null = null;
-  private raycaster: THREE.Raycaster;
-  private mouse: THREE.Vector2;
-  private camera: THREE.Camera;
+  private sceneManager: SceneManager;
 
-  constructor(scene: THREE.Scene, raycaster: THREE.Raycaster, mouse: THREE.Vector2, camera: THREE.Camera) {
+  constructor(scene: THREE.Scene, sceneManager: SceneManager) {
     this.scene = scene;
-    this.raycaster = raycaster;
-    this.mouse = mouse;
-    this.camera = camera;
     this.createAuraMesh();
+    this.onMouseMove = this.onMouseMove.bind(this);
+    this.onDoubleClick = this.onDoubleClick.bind(this);
+    this.sceneManager = sceneManager;
   }
 
   private createAuraMesh() {
@@ -45,10 +43,9 @@ export class InteractiveHexManager {
     this.auraMesh.raycast = () => {};
   }
 
-  private updateAuraPosition() {
+  public onMouseMove(raycaster: THREE.Raycaster) {
     if (!this.borderInstanceMesh || !this.exploredInstanceMesh) return;
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects([this.borderInstanceMesh, this.exploredInstanceMesh], true);
+    const intersects = raycaster.intersectObjects([this.borderInstanceMesh, this.exploredInstanceMesh], true);
     if (intersects.length > 0) {
       const intersect = intersects[0];
       const intersectedObject = intersect.object;
@@ -72,6 +69,24 @@ export class InteractiveHexManager {
     } else {
       if (this.auraMesh && this.scene.children.includes(this.auraMesh)) {
         this.scene.remove(this.auraMesh);
+      }
+    }
+  }
+
+  public onDoubleClick(raycaster: THREE.Raycaster) {
+    if (!this.borderInstanceMesh || !this.exploredInstanceMesh) return;
+    if (this.sceneManager.currentScene !== "worldmap") return;
+
+    const intersects = raycaster.intersectObjects([this.borderInstanceMesh, this.exploredInstanceMesh], true);
+    if (intersects.length > 0) {
+      const intersect = intersects[0];
+      const intersectedObject = intersect.object;
+
+      if (intersectedObject instanceof THREE.InstancedMesh) {
+        const instanceId = intersect.instanceId;
+        if (instanceId) {
+          this.sceneManager.switchScene("hexception");
+        }
       }
     }
   }
@@ -145,6 +160,5 @@ export class InteractiveHexManager {
 
   update() {
     this.rotateAura();
-    this.updateAuraPosition();
   }
 }

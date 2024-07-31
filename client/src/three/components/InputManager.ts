@@ -1,57 +1,31 @@
+import * as THREE from "three";
+
+type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick";
+
 export class InputManager {
-  private resizeHandler: ((event: UIEvent) => void) | null = null;
-  private keydownHandler: ((event: KeyboardEvent) => void) | null = null;
-  private mousemoveHandler: ((event: MouseEvent) => void) | null = null;
-  private dblclickHandler: ((event: MouseEvent) => void) | null = null;
-  private clickHandler: ((event: MouseEvent) => void) | null = null;
-  private rightClickHandler: ((event: MouseEvent) => void) | null = null;
-  private onTransitionToMainScene!: () => void;
+  private listeners: Array<{ event: ListenerTypes; handler: (e: MouseEvent) => void }> = [];
+  constructor(private raycaster: THREE.Raycaster, private mouse: THREE.Vector2, private camera: THREE.Camera) {}
 
-  initListeners(
-    onResize: (event: UIEvent) => void,
-    onMouseMove: (event: MouseEvent) => void,
-    onDoubleClick: (event: MouseEvent) => void,
-    onTransitionToMainScene: () => void,
-    onClick: (event: MouseEvent) => void,
-    onRightClick: (event: MouseEvent) => void,
-    onKeyDown: (event: KeyboardEvent) => void,
-  ): void {
-    this.resizeHandler = onResize;
-    this.mousemoveHandler = (event: MouseEvent) => {
-      onMouseMove(event);
+  addListener(event: ListenerTypes, callback: (raycaster: THREE.Raycaster) => void): void {
+    const handler = (e: MouseEvent) => {
+      this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      callback(this.raycaster);
     };
-    this.dblclickHandler = onDoubleClick;
-    this.clickHandler = onClick;
-    this.rightClickHandler = onRightClick;
-    this.keydownHandler = onKeyDown;
-    this.onTransitionToMainScene = onTransitionToMainScene;
-
-    window.addEventListener("resize", this.resizeHandler);
-    window.addEventListener("mousemove", this.mousemoveHandler);
-    window.addEventListener("dblclick", this.dblclickHandler);
-    window.addEventListener("click", this.clickHandler);
-    window.addEventListener("contextmenu", this.rightClickHandler);
-    window.addEventListener("keydown", this.keydownHandler);
+    this.listeners.push({ event, handler });
+    window.addEventListener(event, handler);
   }
 
-  removeListeners(): void {
-    if (this.resizeHandler) {
-      window.removeEventListener("resize", this.resizeHandler);
+  restartListeners(): void {
+    for (const listener of this.listeners) {
+      window.addEventListener(listener.event, listener.handler);
     }
-    if (this.keydownHandler) {
-      window.removeEventListener("keydown", this.keydownHandler);
-    }
-    if (this.mousemoveHandler) {
-      window.removeEventListener("mousemove", this.mousemoveHandler);
-    }
-    if (this.dblclickHandler) {
-      window.removeEventListener("dblclick", this.dblclickHandler);
-    }
-    if (this.clickHandler) {
-      window.removeEventListener("click", this.clickHandler);
-    }
-    if (this.rightClickHandler) {
-      window.removeEventListener("contextmenu", this.rightClickHandler);
+  }
+
+  pauseListeners(): void {
+    for (const listener of this.listeners) {
+      window.removeEventListener(listener.event, listener.handler);
     }
   }
 }

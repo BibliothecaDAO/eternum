@@ -134,6 +134,20 @@ export function calculateDistance(start: Position, destination: Position): numbe
   }
 }
 
+export const getHexagonCoordinates = (
+  instancedMesh: THREE.InstancedMesh,
+  instanceId: number,
+): { row: number; col: number; x: number; z: number } => {
+  const matrix = new THREE.Matrix4();
+  instancedMesh.getMatrixAt(instanceId, matrix);
+  const position = new THREE.Vector3();
+  matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
+
+  const { row, col } = getHexForWorldPosition(position);
+
+  return { row, col, x: position.x, z: position.z };
+};
+
 export const getWorldPositionForHex = (hexCoords: {
   row: number;
   col: number;

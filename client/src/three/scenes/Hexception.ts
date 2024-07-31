@@ -23,6 +23,9 @@ import { InteractiveHexManager } from "../components/InteractiveHexManager";
 import { HighlightHexManager } from "../components/HighlightHexManager";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { InputManager } from "../components/InputManager";
+import { throttle } from "lodash";
+import { SceneManager } from "../SceneManager";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -81,13 +84,17 @@ export default class HexceptionScene {
   private lightHelper!: THREE.DirectionalLightHelper;
   private highlights: { col: number; row: number }[] = [];
   private previewBuilding: { type: BuildingType | StructureType; resource?: ResourcesIds } | null = null;
+  private inputManager: InputManager;
 
   constructor(
     renderer: THREE.WebGLRenderer,
-    controls: MapControls,
+    private controls: MapControls,
     dojoContext: SetupResult,
     private mouse: THREE.Vector2,
     private raycaster: THREE.Raycaster,
+    private sceneManager: SceneManager,
+    private cameraAngle: number, // Add cameraAngle parameter
+    private cameraDistance: number, // Add cameraDistance parameter
   ) {
     this.renderer = renderer;
     this.camera = controls.object as THREE.PerspectiveCamera;
@@ -98,12 +105,11 @@ export default class HexceptionScene {
     this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
     this.locationManager = new LocationManager();
 
-    this.interactiveHexManager = new InteractiveHexManager(
-      this.scene,
-      this.raycaster,
-      this.mouse,
-      this.camera as THREE.PerspectiveCamera,
-    );
+    this.inputManager = new InputManager(this.raycaster, this.mouse, this.camera);
+
+    this.interactiveHexManager = new InteractiveHexManager(this.scene, this.sceneManager);
+    this.inputManager.addListener("mousemove", throttle(this.interactiveHexManager.onMouseMove, 10));
+
     this.highlightHexManager = new HighlightHexManager(this.scene);
 
     const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
@@ -240,12 +246,17 @@ export default class HexceptionScene {
     console.log(this.locationManager.getCol(), this.locationManager.getRow());
     console.log("store", useRealmStore.getState());
 
-    //console.log("entityId", getEntityIdFromKeys([BigInt(row + FELT_CENTER), BigInt(col + FELT_CENTER)]));
     this.centerColRow = [col + FELT_CENTER, row + FELT_CENTER];
-    // useRealmStore.setState({
-    //   realmEntityId: getEntityIdFromKeys([BigInt(row + FELT_CENTER), BigInt(col + FELT_CENTER)]),
-    // });
-    // this.updateHexagonGrid(3, 3);
+
+    this.camera.position.set(
+      0,
+      Math.sin(this.cameraAngle) * this.cameraDistance,
+      -Math.cos(this.cameraAngle) * this.cameraDistance,
+    );
+    this.camera.lookAt(0, 0, 0);
+    this.controls.target.set(0, 0, 0);
+    this.controls.update();
+
     this.updateHexceptionGrid(4);
   }
 

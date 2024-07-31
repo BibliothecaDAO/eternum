@@ -88,24 +88,6 @@ export class MouseHandler {
     }
   }
 
-  onDoubleClick() {
-    if (this.sceneManager.currentScene !== "worldmap") return;
-    this.checkIfSceneIsInitialized();
-
-    const intersects = this.getIntersects();
-    if (intersects.length === 0) return;
-
-    const clickedObject = intersects[0].object;
-    if (!(clickedObject instanceof THREE.InstancedMesh)) return;
-
-    const instanceId = intersects[0].instanceId;
-    if (instanceId === undefined) return;
-
-    const { row, col, x, z } = this.worldmapScene!.getHexagonCoordinates(clickedObject, instanceId);
-    this.locationManager.addRowColToQueryString(row, col);
-    this.sceneManager.transitionToDetailedScene(row, col, x, z);
-  }
-
   onMouseMove(event: MouseEvent) {
     this.updateMousePosition(event);
 
