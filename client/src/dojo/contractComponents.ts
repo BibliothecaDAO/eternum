@@ -2,6 +2,8 @@
 
 import { defineComponent, Type as RecsType, World } from "@dojoengine/recs";
 
+export type ContractComponents = Awaited<ReturnType<typeof defineContractComponents>>;
+
 export function defineContractComponents(world: World) {
   return {
     AddressName: (() => {
@@ -213,14 +215,14 @@ export function defineContractComponents(world: World) {
           inner_row: RecsType.Number,
           category: RecsType.String,
           produced_resource_type: RecsType.Number,
-          bonus_percent: RecsType.BigInt,
+          bonus_percent: RecsType.Number,
           entity_id: RecsType.Number,
           outer_entity_id: RecsType.Number,
         },
         {
           metadata: {
             name: "eternum-Building",
-            types: ["u32", "u32", "u32", "u32", "enum", "u8", "u128", "u32", "u32"],
+            types: ["u32", "u32", "u32", "u32", "enum", "u8", "u32", "u32", "u32"],
             customTypes: ["BuildingCategory"],
           },
         },

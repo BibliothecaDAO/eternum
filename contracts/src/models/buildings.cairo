@@ -31,7 +31,7 @@ pub struct Building {
     inner_row: u32,
     category: BuildingCategory,
     produced_resource_type: u8,
-    bonus_percent: u128,
+    bonus_percent: u32,
     entity_id: ID,
     outer_entity_id: ID,
 }
@@ -132,12 +132,12 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
         }
     }
 
-    fn boost_adjacent_building_production_by(self: Building) -> u128 {
+    fn boost_adjacent_building_production_by(self: Building) -> u32 {
         match self.category {
             BuildingCategory::None => 0,
             BuildingCategory::Castle => 0,
             BuildingCategory::Resource => 0,
-            BuildingCategory::Farm => BonusPercentageImpl::_10(), // 10%
+            BuildingCategory::Farm => BonusPercentageImpl::_10().try_into().unwrap(), // 10%
             BuildingCategory::FishingVillage => 0,
             BuildingCategory::Barracks => 0,
             BuildingCategory::Market => 0,
@@ -291,7 +291,8 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
         let produced_resource_type = (*self).produced_resource();
         let production_config: ProductionConfig = get!(world, produced_resource_type, ProductionConfig);
 
-        let bonus_amount: u128 = (production_config.amount * *self.bonus_percent) / BonusPercentageImpl::_100();
+        let bonus_amount: u128 = (production_config.amount * (*self.bonus_percent).into())
+            / BonusPercentageImpl::_100();
 
         production_config.amount + bonus_amount
     }
@@ -357,7 +358,7 @@ impl BuildingProductionCustomImpl of BuildingProductionCustomTrait {
     }
 
 
-    fn get_bonus_from(ref self: Building, giver_inner_coord: Coord, world: IWorldDispatcher) -> u128 {
+    fn get_bonus_from(ref self: Building, giver_inner_coord: Coord, world: IWorldDispatcher) -> u32 {
         get!(world, (self.outer_col, self.outer_row, giver_inner_coord.x, giver_inner_coord.y), Building)
             .boost_adjacent_building_production_by()
     }
