@@ -5,11 +5,11 @@ import { Vector3 } from "three";
 import { create } from "zustand";
 import { getRealmUIPosition, getUIPositionFromColRow } from "../../ui/utils/utils";
 import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
-import { createPopupsSlice, PopupsStore } from "./_popups";
+import { createPopupsSlice, PopupsStore } from "./_popupsStore";
 import { BattleViewInfo } from "./types";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 import { subscribeWithSelector } from "zustand/middleware";
-import { createThreeStoreSlice, ThreeStore } from "./useThreeStore";
+import { createThreeStoreSlice, ThreeStore } from "./_threeStore";
 
 interface UIStore {
   theme: string;
