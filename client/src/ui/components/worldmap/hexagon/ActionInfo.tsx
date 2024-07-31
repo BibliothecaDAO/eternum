@@ -26,31 +26,33 @@ export const ActionInfo = () => {
 
   return (
     <>
-      <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" visible={showTooltip}>
-        <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
+      {showTooltip && (
+        <BaseThreeTooltip position={Position.CLEAN} className="w-[250px]" visible={showTooltip}>
+          <Headline>{isExplored ? "Travel" : "Explore"}</Headline>
 
-        {!isExplored && (
-          <div>
-            <ResourceCost
-              amount={-EternumGlobalConfig.exploration.wheatBurn}
-              resourceId={ResourcesIds.Wheat}
-              balance={getBalance(realmEntityId, ResourcesIds.Wheat).balance}
+          {!isExplored && (
+            <div>
+              <ResourceCost
+                amount={-EternumGlobalConfig.exploration.wheatBurn}
+                resourceId={ResourcesIds.Wheat}
+                balance={getBalance(realmEntityId, ResourcesIds.Wheat).balance}
+              />
+              <ResourceCost
+                amount={-EternumGlobalConfig.exploration.fishBurn}
+                resourceId={ResourcesIds.Fish}
+                balance={getBalance(realmEntityId, ResourcesIds.Fish).balance}
+              />
+            </div>
+          )}
+          {showTooltip && (
+            <StaminaResourceCost
+              travelingEntityId={BigInt(selectedEntityId!)}
+              isExplored={isExplored}
+              travelLength={travelPath!.path.length - 1}
             />
-            <ResourceCost
-              amount={-EternumGlobalConfig.exploration.fishBurn}
-              resourceId={ResourcesIds.Fish}
-              balance={getBalance(realmEntityId, ResourcesIds.Fish).balance}
-            />
-          </div>
-        )}
-        {showTooltip && (
-          <StaminaResourceCost
-            travelingEntityId={BigInt(selectedEntityId!)}
-            isExplored={isExplored}
-            travelLength={travelPath!.path.length - 1}
-          />
-        )}
-      </BaseThreeTooltip>
+          )}
+        </BaseThreeTooltip>
+      )}
     </>
   );
 };
