@@ -24,7 +24,7 @@ export const useTravelPath = () => {
 
   const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0 });
 
-  const army = getArmy(selectedEntity?.id || 0n);
+  const army = getArmy(selectedEntity?.id || 0);
   const hasCapacity =
     (army?.capacity?.weight_gram || 0n) - (army?.weight?.value || 0n) >= BigInt(EternumGlobalConfig.exploration.reward);
 
