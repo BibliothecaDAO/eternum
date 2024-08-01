@@ -3,8 +3,11 @@ import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeom
 import { borderHexMaterial } from "@/three/shaders/borderHexMaterial";
 import { transparentHexMaterial } from "@/three/shaders/transparentHexMaterial";
 import { HEX_SIZE } from "../GameRenderer";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { getHexagonCoordinates, getWorldPositionForHex } from "@/ui/utils/utils";
 import { SceneManager } from "../SceneManager";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
+import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
+import { FELT_CENTER } from "@/ui/config";
 
 const matrix = new THREE.Matrix4();
 const position = new THREE.Vector3();
@@ -16,6 +19,7 @@ export class InteractiveHexManager {
   private exploredInstanceMesh: THREE.InstancedMesh | null = null;
   private auraMesh: THREE.Mesh | null = null;
   private sceneManager: SceneManager;
+  private state: AppStore;
 
   constructor(scene: THREE.Scene, sceneManager: SceneManager) {
     this.scene = scene;
@@ -23,6 +27,7 @@ export class InteractiveHexManager {
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onDoubleClick = this.onDoubleClick.bind(this);
     this.sceneManager = sceneManager;
+    this.state = useUIStore.getState();
   }
 
   private createAuraMesh() {
@@ -45,6 +50,38 @@ export class InteractiveHexManager {
     this.auraMesh.raycast = () => {};
   }
 
+  // public onClick(raycaster: THREE.Raycaster) {
+  //   if (!this.borderInstanceMesh || !this.exploredInstanceMesh) return;
+  //   const intersects = raycaster.intersectObjects([this.borderInstanceMesh, this.exploredInstanceMesh], true);
+  //   if (intersects.length > 0) {
+  //     const intersect = intersects[0];
+  //     const intersectedObject = intersect.object;
+  //     if (intersectedObject instanceof THREE.InstancedMesh) {
+  //       const instanceId = intersect.instanceId;
+  //       if (instanceId !== undefined) {
+  //         const hoveredHex = getHexagonCoordinates(intersectedObject, instanceId);
+  //         const state = useUIStore.getState();
+  //         const { selectedEntityId, travelPaths } = state.armyActions;
+  //         const travelPath = travelPaths.get(TravelPaths.posKey(hoveredHex, true));
+  //         if (selectedEntityId && hoveredHex && travelPath) {
+  //           const selectedPath = travelPath.path;
+  //           const isExplored = travelPath.isExplored ?? false;
+  //           if (selectedPath.length > 0) {
+  //             const armyMovementManager = new ArmyMovementManager(this.dojo, this.selectedEntityId);
+  //             armyMovementManager.moveArmy(selectedPath, isExplored);
+  //             this.clearEntitySelection();
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+
+  //   if (hoveredHex && !this.travelPaths) {
+  //     this.state.setSelectedHex({ col: hoveredHex.col + FELT_CENTER, row: hoveredHex.row + FELT_CENTER });
+  //     this.state.setLeftNavigationView(View.EntityView);
+  //   }
+  // }
+
   public onMouseMove(raycaster: THREE.Raycaster) {
     if (!this.borderInstanceMesh || !this.exploredInstanceMesh) return;
     const intersects = raycaster.intersectObjects([this.borderInstanceMesh, this.exploredInstanceMesh], true);
@@ -54,6 +91,9 @@ export class InteractiveHexManager {
       if (intersectedObject instanceof THREE.InstancedMesh) {
         const instanceId = intersect.instanceId;
         if (instanceId !== undefined) {
+          const hoveredHex = getHexagonCoordinates(intersectedObject, instanceId);
+          this.state.updateHoveredHex(hoveredHex);
+
           intersectedObject.getMatrixAt(instanceId, matrix);
 
           position.setFromMatrixPosition(matrix);

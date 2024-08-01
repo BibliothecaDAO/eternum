@@ -5,7 +5,7 @@ import { SceneManager } from "./SceneManager";
 import { SetupResult } from "@/dojo/setup";
 import { LocationManager } from "./helpers/LocationManager";
 import { throttle } from "lodash";
-import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { getHexagonCoordinates, getWorldPositionForHex } from "@/ui/utils/utils";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 import { FELT_CENTER } from "@/ui/config";
@@ -128,7 +128,7 @@ export class MouseHandler {
     const armyMovementManager = new ArmyMovementManager(this.dojo, entityId);
     if (armyMovementManager.isMine()) {
       this.setSelectedEntityId(entityId);
-      // this.travelPaths = armyMovementManager.findPaths(this.worldmapScene!.systemManager.tileSystem.getExplored());
+      this.travelPaths = armyMovementManager.findPaths(this.worldmapScene!.systemManager.tileSystem.getExplored());
       this.state.updateTravelPaths(this.travelPaths.getPaths());
       this.worldmapScene!.highlightHexManager.highlightHexes(this.travelPaths.getHighlightedHexes());
     }
@@ -150,7 +150,7 @@ export class MouseHandler {
       if (clickedObject instanceof THREE.InstancedMesh) {
         const instanceId = intersects[0].instanceId;
         if (instanceId !== undefined) {
-          return this.worldmapScene!.getHexagonCoordinates(clickedObject, instanceId);
+          return getHexagonCoordinates(clickedObject, instanceId);
         }
       }
     }

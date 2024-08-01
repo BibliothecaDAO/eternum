@@ -36,6 +36,7 @@ export class HighlightHexManager {
       this.highlightedHexes.push(highlightMesh);
     });
   }
+
   updateHighlightPulse(pulseFactor: number) {
     this.highlightedHexes.forEach((mesh) => {
       if (mesh.material instanceof THREE.ShaderMaterial) {

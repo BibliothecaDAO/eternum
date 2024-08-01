@@ -26,6 +26,7 @@ import { ArmyManager } from "../components/ArmyManager";
 import { StructureManager } from "../components/StructureManager";
 import useUIStore from "@/hooks/store/useUIStore";
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
+import { StructureSystemUpdate, TileSystemUpdate } from "../systems/types";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -77,6 +78,9 @@ export default class WorldmapScene {
   private entities: Entity[] = [];
 
   private armyManager: ArmyManager;
+  private structureManager: StructureManager;
+  private exploredTiles: Map<number, Set<number>> = new Map();
+  private structures: Map<number, Set<number>> = new Map();
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
@@ -164,37 +168,49 @@ export default class WorldmapScene {
 
     this.loadBiomeModels();
 
-    this.armyManager = new ArmyManager(this);
-    this.systemManager.Army.onUpdate((value) => this.armyManager.onUpdate(value));
-
-    const structureManager = new StructureManager(this);
-    this.systemManager.Structure.onUpdate((value) => structureManager.onUpdate(value));
-
-    this.interactiveHexManager = new InteractiveHexManager(this.scene, this.sceneManager);
+    this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.highlightHexManager = new HighlightHexManager(this.scene);
+
+    this.armyManager = new ArmyManager(this);
+    this.structureManager = new StructureManager(this);
+
+    this.systemManager.Army.onUpdate((value) => this.armyManager.onUpdate(value));
+    this.systemManager.Structure.onUpdate((value) => this.structureManager.onUpdate(value));
+    this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
 
     this.inputManager = new InputManager(this.raycaster, this.mouse, this.camera);
     this.inputManager.addListener("mousemove", throttle(this.interactiveHexManager.onMouseMove, 10));
-    this.inputManager.addListener("dblclick", this.interactiveHexManager.onDoubleClick);
+    this.inputManager.addListener("dblclick", () => {
+      const clickedHex = this.interactiveHexManager.onDoubleClick;
+      goToHexceptionScene(clickedHex);
+    });
+    this.inputManager.addListener("click", () => {
+      const clickedHex = this.interactiveHexManager.onClick;
+      goToHexceptionScene(clickedHex);
+    });
     this.inputManager.addListener("mousemove", throttle(this.armyManager.onMouseMove, 10));
     this.inputManager.addListener("contextmenu", this.armyManager.onRightClick);
 
-    // const unsub = useUIStore.subscribe(
-    //   (state) => state.armyActions.selectedEntityId,
-    //   (selectedEntityId) => {
-    //     if (selectedEntityId) {
-    //       console.log("worldmap", selectedEntityId);
-    //       const armyMovementManager = new ArmyMovementManager(this.dojoConfig, selectedEntityId);
-    //       const travelPaths = armyMovementManager.findPaths(new Map());
-    //       useUIStore.getState().updateTravelPaths(travelPaths.getPaths());
-    //       this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
-    //     } else {
-    //       useUIStore.getState().updateTravelPaths(new Map());
-    //       this.highlightHexManager.highlightHexes([]);
-    //     }
-    //   },
-    // );
+    const unsub = useUIStore.subscribe(
+      (state) => state.armyActions.selectedEntityId,
+      (selectedEntityId) => {
+        if (selectedEntityId) {
+          console.log("worldmap", selectedEntityId);
+          const armyMovementManager = new ArmyMovementManager(this.dojoConfig, selectedEntityId);
+          const travelPaths = armyMovementManager.findPaths(this.exploredTiles);
+          useUIStore.getState().updateTravelPaths(travelPaths.getPaths());
+          this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
+        } else {
+          useUIStore.getState().updateTravelPaths(new Map());
+          this.highlightHexManager.highlightHexes([]);
+        }
+      },
+    );
   }
+
+  public onClickedHex(hex: number) {}
+
+  public goToHexceptionScene(hex: number) {}
 
   public getCamera() {
     return this.camera;
@@ -234,17 +250,33 @@ export default class WorldmapScene {
     });
   }
 
-  public updateExploredHex(col: number, row: number) {
+  public updateStructures(update: StructureSystemUpdate) {
+    const col = update.hexCoords.col - FELT_CENTER;
+    const row = update.hexCoords.row - FELT_CENTER;
+
+    if (!this.structures.has(col)) {
+      this.structures.set(col, new Set());
+    }
+    if (!this.structures.get(col)!.has(row)) {
+      this.structures.get(col)!.add(row);
+    }
+  }
+
+  public async updateExploredHex(update: TileSystemUpdate) {
+    const col = update.hexCoords.col - FELT_CENTER;
+    const row = update.hexCoords.row - FELT_CENTER;
+    if (!this.exploredTiles.has(col)) {
+      this.exploredTiles.set(col, new Set());
+    }
+    if (!this.exploredTiles.get(col)!.has(row)) {
+      this.exploredTiles.get(col)!.add(row);
+    }
+
     const dummy = new THREE.Object3D();
     const pos = getWorldPositionForHex({ row, col });
     dummy.position.copy(pos);
 
-    // const structures = this.systemManager.structureSystem.getStructures();
-    // const structuresMap = new Map(structures.map((s) => [`${s.col},${s.row}`, true]));
-    const structures = [];
-    const structuresMap = new Map();
-
-    const isStructure = structuresMap.has(`${col},${row}`);
+    const isStructure = this.structures.get(col)?.has(row) || false;
 
     if (isStructure) {
       dummy.scale.set(0, 0, 0);
@@ -256,13 +288,11 @@ export default class WorldmapScene {
 
     // Add border hexes for newly explored hex
     const neighborOffsets = row % 2 === 0 ? neighborOffsetsOdd : neighborOffsetsEven;
-    // const exploredMap = this.systemManager.tileSystem.getExplored();
-    const exploredMap = new Map();
 
     neighborOffsets.forEach(({ i, j }) => {
       const neighborCol = col + i;
       const neighborRow = row + j;
-      const isNeighborExplored = exploredMap.get(neighborCol)?.has(neighborRow) || false;
+      const isNeighborExplored = this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
 
       if (!isNeighborExplored) {
         this.interactiveHexManager.addBorderHex({ col: neighborCol, row: neighborRow });
@@ -278,7 +308,9 @@ export default class WorldmapScene {
 
     dummy.updateMatrix();
 
+    await Promise.all(this.modelLoadPromises);
     const hexMesh = this.biomeModels.get(biome as BiomeType)!;
+    console.log({ hexMesh });
     const currentCount = hexMesh.getCount();
     hexMesh.setMatrixAt(currentCount, dummy.matrix);
     hexMesh.setCount(currentCount + 1);
@@ -317,11 +349,6 @@ export default class WorldmapScene {
     const hexPositions: THREE.Vector3[] = [];
     const batchSize = 25; // Adjust batch size as needed
     let currentIndex = 0;
-    // const structures = this.systemManager.structureSystem.getStructures();
-    // const exploredMap = this.systemManager.tileSystem.getExplored();
-    const structures: any[] = [];
-    const exploredMap = new Map();
-    const structuresMap = new Map(structures.map((s) => [`${s.col},${s.row}`, true]));
 
     const processBatch = () => {
       const endIndex = Math.min(currentIndex + batchSize, rows * cols);
@@ -336,8 +363,8 @@ export default class WorldmapScene {
         const pos = getWorldPositionForHex({ row: globalRow, col: globalCol });
         dummy.position.copy(pos);
 
-        const isStructure = structuresMap.has(`${globalCol},${globalRow}`);
-        const isExplored = exploredMap.get(globalCol)?.has(globalRow) || false;
+        const isStructure = this.structures.get(col)?.has(row) || false;
+        const isExplored = this.exploredTiles.get(globalCol)?.has(globalRow) || false;
         if (isStructure || !isExplored) {
           dummy.scale.set(0, 0, 0);
         } else {
@@ -349,7 +376,7 @@ export default class WorldmapScene {
           const isBorder = neighborOffsets.some(({ i, j }) => {
             const neighborCol = globalCol + i;
             const neighborRow = globalRow + j;
-            return exploredMap.get(neighborCol)?.has(neighborRow) || false;
+            return this.exploredTiles.get(neighborCol)?.has(neighborRow) || false;
           });
 
           if (isBorder) {
