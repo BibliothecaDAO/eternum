@@ -2,6 +2,7 @@ use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::DONKEY_ENTITY_TYPE;
 
 use eternum::constants::ResourceTypes;
@@ -14,9 +15,8 @@ use eternum::models::trade::{Trade, Status, TradeStatus};
 use eternum::models::weight::Weight;
 
 use eternum::systems::config::contracts::{
-    config_systems, ITransportConfigDispatcher, ITransportConfigDispatcherTrait,
-    IWeightConfigDispatcher, IWeightConfigDispatcherTrait, ICapacityConfigDispatcher,
-    ICapacityConfigDispatcherTrait
+    config_systems, ITransportConfigDispatcher, ITransportConfigDispatcherTrait, IWeightConfigDispatcher,
+    IWeightConfigDispatcherTrait, ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait
 };
 
 use eternum::systems::trade::contracts::trade_systems::{
@@ -26,17 +26,16 @@ use eternum::systems::trade::contracts::trade_systems::{
 use eternum::utils::testing::{
     world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm}
 };
-
 use starknet::contract_address_const;
 
 
-fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, ID, ID, ID, ITradeSystemsDispatcher) {
     let world = spawn_eternum();
     world.uuid();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
 
-    // set speed configuration 
+    // set speed configuration
     ITransportConfigDispatcher { contract_address: config_systems_address }
         .set_speed_config(DONKEY_ENTITY_TYPE, 10); // 10km per sec
 
@@ -62,8 +61,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 
     // maker and taker are at the same location
     // so they can trade without transport
-    let maker_position = Position { x: 100000, y: 2000000, entity_id: 1_u128 };
-    let taker_position = Position { x: 200000, y: 1000000, entity_id: 1_u128 };
+    let maker_position = Position { x: 100000, y: 2000000, entity_id: 1 };
+    let taker_position = Position { x: 200000, y: 1000000, entity_id: 1 };
 
     let realm_systems_dispatcher = deploy_realm_systems(world);
     let maker_realm_entity_id = spawn_realm(world, realm_systems_dispatcher, maker_position);
@@ -75,33 +74,16 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     set!(world, (Owner { entity_id: maker_id, address: contract_address_const::<'maker'>() }));
     set!(world, (Owner { entity_id: taker_id, address: contract_address_const::<'taker'>() }));
 
-    set!(
-        world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::STONE, balance: 100 })
-    );
-    set!(
-        world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 })
-    );
-    set!(
-        world,
-        (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
-    );
-    set!(
-        world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 })
-    );
-    set!(
-        world,
-        (Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 })
-    );
-    set!(
-        world,
-        (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 })
-    );
+    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::STONE, balance: 100 }));
+    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::GOLD, balance: 100 }));
+    set!(world, (Resource { entity_id: maker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
+    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::WOOD, balance: 500 }));
+    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::SILVER, balance: 500 }));
+    set!(world, (Resource { entity_id: taker_id, resource_type: ResourceTypes::DONKEY, balance: 20_000 }));
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
 
     let trade_systems_address = deploy_system(world, trade_systems::TEST_CLASS_HASH);
-    let trade_systems_dispatcher = ITradeSystemsDispatcher {
-        contract_address: trade_systems_address
-    };
+    let trade_systems_dispatcher = ITradeSystemsDispatcher { contract_address: trade_systems_address };
 
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
@@ -127,12 +109,10 @@ fn test_cancel() {
 
     let _trade = get!(world, trade_id, Trade);
 
-    // cancel order 
+    // cancel order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     trade_systems_dispatcher
-        .cancel_order(
-            trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span()
-        );
+        .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span());
 
     // check that maker balance is correct
     let maker_stone_resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
@@ -153,16 +133,14 @@ fn test_cancel() {
 fn test_cancel_after_acceptance() {
     let (world, trade_id, _, _, trade_systems_dispatcher) = setup();
 
-    // accept order 
+    // accept order
 
     set!(world, (Status { trade_id, value: TradeStatus::ACCEPTED, }),);
 
-    // cancel order 
+    // cancel order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     trade_systems_dispatcher
-        .cancel_order(
-            trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span()
-        );
+        .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span());
 }
 
 
@@ -175,9 +153,7 @@ fn test_cancel_caller_not_maker() {
     // set caller to an unknown address
     starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
-    // cancel order 
+    // cancel order
     trade_systems_dispatcher
-        .cancel_order(
-            trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span()
-        );
+        .cancel_order(trade_id, array![(ResourceTypes::STONE, 100), (ResourceTypes::GOLD, 100),].span());
 }

@@ -8,7 +8,7 @@ import { ReactComponent as Spores } from "@/assets/icons/resources/Spores.svg";
 import clsx from "clsx";
 import type { ReactElement } from "react";
 
-export type Props = {
+type Props = {
   isLabor?: boolean;
   resource: string;
   size: keyof (typeof STYLES)["size"];

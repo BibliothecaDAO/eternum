@@ -7,8 +7,9 @@ import { Check, ShieldQuestion } from "lucide-react";
 import { multiplyByPrecision } from "@/ui/utils/utils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Prize, Quest, QuestStatus } from "@/hooks/helpers/useQuests";
+import { ID } from "@bibliothecadao/eternum";
 
-export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: bigint }) => {
+export const QuestInfo = ({ quest, entityId }: { quest: Quest; entityId: ID }) => {
   const {
     setup: {
       systemCalls: { mint_resources_and_claim_quest },

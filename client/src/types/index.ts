@@ -1,4 +1,4 @@
-import { Position } from "@bibliothecadao/eternum";
+import { ContractAddress, Position } from "@bibliothecadao/eternum";
 
 export interface Hexagon {
   idx: number;
@@ -6,12 +6,11 @@ export interface Hexagon {
   row: number;
   biome: string;
   explored: boolean | undefined;
-  // address
-  exploredBy: bigint | undefined;
+  exploredBy: ContractAddress | undefined;
 }
 
-export type Position3D = [number, number, number];
-export type Position2D = [number, number];
+type Position3D = [number, number, number];
+type Position2D = [number, number];
 export type HexPosition = { col: number; row: number };
 export interface ClickedHex {
   contractPos: HexPosition;
@@ -27,11 +26,6 @@ export interface HighlightPositions {
 export interface TravelPath {
   path: Position[];
   isExplored: boolean;
-}
-
-export enum CombatTarget {
-  Structure,
-  Army,
 }
 
 export interface Health {

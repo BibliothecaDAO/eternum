@@ -16,7 +16,7 @@ interface DojoAccount {
   accountDisplay: string;
 }
 
-export interface DojoContextType extends SetupResult {
+interface DojoContextType extends SetupResult {
   masterAccount: Account | AccountInterface;
   account: DojoAccount;
 }
@@ -83,7 +83,7 @@ export const useDojo = (): DojoResult => {
   };
 };
 
-export const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
+const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 

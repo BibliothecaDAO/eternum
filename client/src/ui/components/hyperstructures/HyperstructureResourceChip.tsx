@@ -1,4 +1,4 @@
-import { findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
 
 import { ProgressWithPercentage } from "@/hooks/helpers/useHyperstructures";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 
 type HyperstructureResourceChipProps = {
-  realmEntityId: bigint;
+  realmEntityId: ID;
   resourceId: number;
   progress: ProgressWithPercentage;
   contributions: Record<number, number>;

@@ -1,7 +1,9 @@
 use core::fmt::{Display, Formatter, Error};
+use core::zeroable::Zeroable;
 use debug::PrintTrait;
+use eternum::alias::ID;
 
-use eternum::utils::number::{NumberTrait, i128Div};
+use eternum::utils::number::{NumberTrait};
 use option::OptionTrait;
 use traits::Into;
 use traits::TryInto;
@@ -10,11 +12,11 @@ use traits::TryInto;
 
 // start col and row for eternum = 2147483647
 // nb of cols = 500
-const HIGHEST_COL: u128 = 2147484147;
-const LOWEST_COL: u128 = 2147483647;
+const HIGHEST_COL: u32 = 2147484147;
+const LOWEST_COL: u32 = 2147483647;
 // nb of rows = 300
-const HIGHEST_ROW: u128 = 2147483947;
-const LOWEST_ROW: u128 = 2147483647;
+const HIGHEST_ROW: u32 = 2147483947;
+const LOWEST_ROW: u32 = 2147483647;
 
 
 // multiplier to convert hex distance to km
@@ -115,10 +117,10 @@ impl DirectionDisplay of Display<Direction> {
 }
 
 
-#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect, Debug, Zeroable)]
+#[derive(Copy, Drop, PartialEq, Serde, Introspect, Debug)]
 struct Coord {
-    x: u128,
-    y: u128
+    x: u32,
+    y: u32
 }
 
 
@@ -137,7 +139,7 @@ impl CoordImpl of CoordTrait {
         // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
 
         if self.y & 1 == 0 {
-            // where self.y (row) is even 
+            // where self.y (row) is even
             match direction {
                 Direction::East(()) => Coord { x: self.x + 1, y: self.y },
                 Direction::NorthEast(()) => Coord { x: self.x + 1, y: self.y + 1 },
@@ -184,7 +186,7 @@ impl CoordIntoCube of Into<Coord, Cube> {
         let col: i128 = self.x.try_into().unwrap();
         let row: i128 = self.y.try_into().unwrap();
         let q = col - ((row - (self.y % 2).try_into().unwrap()) / 2);
-        // (self.y % 2) and not (col % 2) because col is i128 
+        // (self.y % 2) and not (col % 2) because col is i128
         // and modulo for negative numbers is different if it
         // was col, it would be (col & 1) where `&` is bitwise AND
         let r = row;
@@ -209,13 +211,13 @@ impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 }
 
 
-#[derive(PartialEq, Copy, Drop, Serde, PrintTrait, Default)]
+#[derive(IntrospectPacked, PartialEq, Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct Position {
+pub struct Position {
     #[key]
-    entity_id: u128,
-    x: u128,
-    y: u128,
+    entity_id: ID,
+    x: u32,
+    y: u32,
 }
 
 
@@ -234,9 +236,9 @@ impl PositionIntoCube of Into<Position, Cube> {
 
 
 #[generate_trait]
-impl PositionImpl of PositionTrait {
+impl PositionCustomImpl of PositionCustomTrait {
     // world is divided into 10 timezones
-    fn get_zone(self: Position) -> u128 {
+    fn get_zone(self: Position) -> u32 {
         // use highest and lowest x to divide map into 10 timezones
         1 + (self.x - LOWEST_COL) * 10 / (HIGHEST_COL - LOWEST_COL)
     }
@@ -254,7 +256,8 @@ impl PositionImpl of PositionTrait {
 #[cfg(test)]
 mod tests {
     use debug::PrintTrait;
-    use super::{Position, PositionTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
+    use eternum::alias::ID;
+    use super::{Position, PositionCustomTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
     use traits::Into;
     use traits::TryInto;
 
@@ -335,7 +338,7 @@ mod tests {
 
 
     // #[test]
-    // fn test_get_zone() { 
+    // fn test_get_zone() {
     //     let a = Position { entity_id: 0, x: 1333333, y: 200000 };
     //     let zone = a.get_zone();
     //     assert(zone == 4, 'zone should be 4');
@@ -354,7 +357,7 @@ mod tests {
         }
 
 
-        //- Even row 
+        //- Even row
 
         #[test]
         fn test_neighbor_even_row_east() {
@@ -367,9 +370,7 @@ mod tests {
         fn test_neighbor_even_row_north_east() {
             let start = even_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::NorthEast), Coord { x: start.x + 1, y: start.y + 1 }
-            );
+            assert_eq!(start.neighbor(Direction::NorthEast), Coord { x: start.x + 1, y: start.y + 1 });
         }
 
         #[test]
@@ -399,13 +400,11 @@ mod tests {
         fn test_neighbor_even_row_south_east() {
             let start = even_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::SouthEast), Coord { x: start.x + 1, y: start.y - 1 }
-            );
+            assert_eq!(start.neighbor(Direction::SouthEast), Coord { x: start.x + 1, y: start.y - 1 });
         }
 
 
-        //- Odd row 
+        //- Odd row
 
         #[test]
         fn test_neighbor_odd_row_east() {
@@ -425,9 +424,7 @@ mod tests {
         fn test_neighbor_odd_row_north_west() {
             let start = odd_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::NorthWest), Coord { x: start.x - 1, y: start.y + 1 }
-            );
+            assert_eq!(start.neighbor(Direction::NorthWest), Coord { x: start.x - 1, y: start.y + 1 });
         }
 
         #[test]
@@ -442,9 +439,7 @@ mod tests {
         fn test_neighbor_odd_row_south_west() {
             let start = odd_row_coord();
 
-            assert_eq!(
-                start.neighbor(Direction::SouthWest), Coord { x: start.x - 1, y: start.y - 1 }
-            );
+            assert_eq!(start.neighbor(Direction::SouthWest), Coord { x: start.x - 1, y: start.y - 1 });
         }
 
 

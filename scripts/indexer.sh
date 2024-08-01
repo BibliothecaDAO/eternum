@@ -22,7 +22,7 @@ echo "----- Building World -----"
 sozo build
 
 echo "----- Migrating World -----"
-sozo migrate apply --name eternum
+sozo migrate apply
 
 
 if [[ "$setConfig" == "true" ]]; then
@@ -35,4 +35,4 @@ fi
 
 echo "-----  Started indexer ----- "
 rm torii.db
-torii --world 0x0161b08e252b353008665e85ab5dcb0044a61186eb14b999657d14c04c94c824 --database torii.db --allowed-origins "*"
+torii --world 0x72bea8ba4bc0f95fb3313cc6b8b4228bbd38c329f53e972df7fe38fa055f357 --database torii.db --allowed-origins "*"

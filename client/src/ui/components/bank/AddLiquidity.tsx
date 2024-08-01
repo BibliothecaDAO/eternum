@@ -4,12 +4,12 @@ import { getResourceBalance } from "@/hooks/helpers/useResources";
 import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { multiplyByPrecision } from "@/ui/utils/utils";
-import { ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ContractAddress, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmationPopup } from "./ConfirmationPopup";
 import { ResourceBar } from "./ResourceBar";
 
-const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; entityId: bigint }) => {
+const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: ID; entityId: ID }) => {
   const {
     account: { account },
     setup: {
@@ -21,7 +21,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
   const { getBalance } = getResourceBalance();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [resourceId, setResourceId] = useState<bigint>(1n);
+  const [resourceId, setResourceId] = useState<ResourcesIds>(ResourcesIds.Wood);
   const [lordsAmount, setLordsAmount] = useState(0);
   const [resourceAmount, setResourceAmount] = useState(0);
   const [openConfirmation, setOpenConfirmation] = useState(false);
@@ -32,8 +32,8 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
         components.Market,
         components.Liquidity,
         bank_entity_id,
-        BigInt(account.address),
-        BigInt(resourceId),
+        ContractAddress(account.address),
+        resourceId,
       ),
     [components.Market, components.Liquidity, bank_entity_id, resourceId, account.address],
   );
@@ -108,7 +108,7 @@ const AddLiquidity = ({ bank_entity_id, entityId }: { bank_entity_id: bigint; en
             amount={Math.floor(lordsAmount)}
             lordsFee={0}
             setAmount={setLordsAmount}
-            resourceId={BigInt(ResourcesIds.Lords)}
+            resourceId={ResourcesIds.Lords}
             setResourceId={setResourceId}
           />
 

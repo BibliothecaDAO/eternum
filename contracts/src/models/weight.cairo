@@ -1,15 +1,17 @@
-use eternum::models::capacity::{Capacity, CapacityTrait};
+use eternum::alias::ID;
+use eternum::models::capacity::{Capacity, CapacityCustomTrait};
 use eternum::models::quantity::{Quantity};
-#[derive(Copy, Drop, Serde)]
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Weight {
+pub struct Weight {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     value: u128,
 }
 
 #[generate_trait]
-impl WeightImpl of WeightTrait {
+impl WeightCustomImpl of WeightCustomTrait {
     fn deduct(ref self: Weight, capacity: Capacity, amount: u128) {
         if self.entity_id == 0 {
             return;

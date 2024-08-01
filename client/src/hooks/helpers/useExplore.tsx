@@ -2,6 +2,7 @@ import { useExploredHexesStore } from "@/ui/components/worldmap/hexagon/WorldHex
 import { FELT_CENTER } from "@/ui/config";
 import {
   EternumGlobalConfig,
+  ID,
   Position,
   Resource,
   neighborOffsetsEven,
@@ -18,7 +19,7 @@ import useRealmStore from "../store/useRealmStore";
 import { useStamina } from "./useStamina";
 
 interface ExploreHexProps {
-  explorerId: bigint | undefined;
+  explorerId: ID | undefined;
   direction: number | undefined;
   path: Position[];
   currentArmiesTick: number;
@@ -35,6 +36,7 @@ export function useExplore() {
     },
     account: { account },
   } = useDojo();
+
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const setExploredHexes = useExploredHexesStore((state) => state.setExploredHexes);
   const { optimisticStaminaUpdate } = useStamina();
@@ -64,7 +66,7 @@ export function useExplore() {
     return explored;
   };
 
-  const useFoundResources = (entityId: bigint | undefined) => {
+  const useFoundResources = (entityId: ID | undefined) => {
     const [foundResources, setFoundResources] = useState<Resource | undefined>();
 
     const subscriptionRef = useRef<Subscription | undefined>();
@@ -119,10 +121,10 @@ export function useExplore() {
     }
   };
 
-  const optimisticExplore = (entityId: bigint, col: number, row: number, currentArmiesTick: number) => {
+  const optimisticExplore = (entityId: ID, col: number, row: number, currentArmiesTick: number) => {
     let overrideId = uuid();
 
-    const entity = getEntityIdFromKeys([entityId]);
+    const entity = getEntityIdFromKeys([BigInt(entityId)]);
 
     optimisticStaminaUpdate(overrideId, entityId, EternumGlobalConfig.stamina.exploreCost, currentArmiesTick);
 

@@ -22,7 +22,7 @@ export const useTravelPath = () => {
   const { getEntityOwner } = useRealm();
   const { getArmy } = getArmyByEntityId();
 
-  const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0n });
+  const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0 });
 
   const army = getArmy(selectedEntity?.id || 0n);
   const hasCapacity =
@@ -33,7 +33,7 @@ export const useTravelPath = () => {
 
     const maxTravelPossible = Math.floor((stamina.amount || 0) / EternumGlobalConfig.stamina.travelCost);
     const entityOwner = getEntityOwner(selectedEntity.id);
-    const food = getFoodResources(entityOwner || 0n);
+    const food = getFoodResources(entityOwner || 0);
 
     const pathMap = findAccessiblePositionsAndPaths(
       selectedEntity.position,

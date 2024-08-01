@@ -1,10 +1,10 @@
+import { HYPERSTRUCTURE_FINISHED_EVENT, ID } from "@bibliothecadao/eternum";
 import { Event, client, getEventsQuery } from "./graphqlClient";
-import { HYPERSTRUCTURE_FINISHED_EVENT } from "@bibliothecadao/eternum";
 
-export const MAX_EVENTS = 5000;
+const MAX_EVENTS = 5000;
 
 export interface HyperstructureEventInterface {
-  hyperstructureEntityId: bigint;
+  hyperstructureEntityId: ID;
   timestamp: number;
 }
 
@@ -36,7 +36,7 @@ export function parseHyperstructureFinishedEventData(eventData: Event): Hyperstr
   const [hyperstructureEntityId, timestamp] = eventData.data;
 
   return {
-    hyperstructureEntityId: BigInt(hyperstructureEntityId),
+    hyperstructureEntityId: hyperstructureEntityId,
     timestamp: Number(timestamp),
   };
 }

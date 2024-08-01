@@ -117,15 +117,7 @@ const mainColor = new THREE.Color(0.21389107406139374, 0.14227265119552612, 0.06
 const mainMaterial = new THREE.MeshStandardMaterial({ color: mainColor });
 const invisibleMaterial = new THREE.MeshStandardMaterial({ color: mainColor, transparent: true, opacity: 0 });
 
-export const Hexagon = ({
-  position,
-  onClick,
-  onPointerEnter,
-}: {
-  position: any;
-  onClick: any;
-  onPointerEnter: any;
-}) => {
+const Hexagon = ({ position, onClick, onPointerEnter }: { position: any; onClick: any; onPointerEnter: any }) => {
   return (
     <group position={[position.x, position.y, position.z]}>
       <mesh receiveShadow geometry={hexagonGeometry} material={mainMaterial} />
@@ -161,7 +153,7 @@ const EmptyCell = ({ position }: { position: any }) => {
   );
 };
 
-export const generateHexPositions = () => {
+const generateHexPositions = () => {
   const color = new THREE.Color("gray");
   const center = HEXCEPTION_CENTER;
   const RADIUS = 4;

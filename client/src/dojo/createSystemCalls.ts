@@ -32,7 +32,7 @@ class PromiseQueue {
   }
 }
 
-export type SystemCallFunctions = ReturnType<typeof createSystemCalls>;
+type SystemCallFunctions = ReturnType<typeof createSystemCalls>;
 type SystemCallFunction = (...args: any[]) => any;
 type WrappedSystemCalls = Record<string, SystemCallFunction>;
 
