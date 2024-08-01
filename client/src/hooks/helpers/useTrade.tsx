@@ -1,14 +1,12 @@
 import { getRealmNameById } from "@/ui/utils/realms";
-import { MarketInterface, Resource, ResourcesIds } from "@bibliothecadao/eternum";
+import { ID, MarketInterface, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Entity, HasValue, getComponentValue } from "@dojoengine/recs";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { shortString } from "starknet";
-import { SortInterface } from "../../ui/elements/SortButton";
 import { getEntityIdFromKeys } from "../../ui/utils/utils";
 import { useDojo } from "../context/DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
-import useMarketStore from "../store/useMarketStore";
 import useRealmStore from "../store/useRealmStore";
 import { useEntities } from "./useEntities";
 
@@ -29,19 +27,19 @@ function useTrade() {
     },
   } = useDojo();
 
-  const getDetachedResources = (entityId: bigint): Resource[] => {
+  const getDetachedResources = (entityId: ID): Resource[] => {
     let resources = [];
     let index = 0n;
-    let detachedResource = getComponentValue(DetachedResource, getEntityIdFromKeys([entityId, index]));
+    let detachedResource = getComponentValue(DetachedResource, getEntityIdFromKeys([BigInt(entityId), index]));
     while (detachedResource) {
       resources.push({ resourceId: detachedResource.resource_type, amount: Number(detachedResource.resource_amount) });
       index++;
-      detachedResource = getComponentValue(DetachedResource, getEntityIdFromKeys([entityId, index]));
+      detachedResource = getComponentValue(DetachedResource, getEntityIdFromKeys([BigInt(entityId), index]));
     }
     return resources;
   };
 
-  const getTradeResources = (tradeId: bigint): TradeResources => {
+  const getTradeResources = (tradeId: ID): TradeResources => {
     let trade = getComponentValue(Trade, getEntityIdFromKeys([BigInt(tradeId)]));
 
     if (!trade) return { takerGets: [], makerGets: [] };
@@ -53,7 +51,7 @@ function useTrade() {
     return { takerGets, makerGets };
   };
 
-  const getTradeResourcesFromEntityViewpoint = (entityId: bigint, tradeId: bigint): TradeResourcesFromViewpoint => {
+  const getTradeResourcesFromEntityViewpoint = (entityId: ID, tradeId: ID): TradeResourcesFromViewpoint => {
     let trade = getComponentValue(Trade, getEntityIdFromKeys([BigInt(tradeId)]));
 
     if (!trade) return { resourcesGet: [], resourcesGive: [] };
@@ -77,15 +75,15 @@ function useTrade() {
         let trade = getComponentValue(Trade, id);
         if (trade) {
           const { takerGets, makerGets } = getTradeResources(trade.trade_id);
-          const makerRealm = getComponentValue(Realm, getEntityIdFromKeys([trade.maker_id]));
+          const makerRealm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(trade.maker_id)]));
 
-          const makerName = getComponentValue(EntityName, getEntityIdFromKeys([trade.maker_id]))?.name;
+          const makerName = getComponentValue(EntityName, getEntityIdFromKeys([BigInt(trade.maker_id)]))?.name;
 
-          const realm = getComponentValue(Realm, getEntityIdFromKeys([trade.maker_id]));
+          const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(trade.maker_id)]));
           if (trade.expires_at > nextBlockTimestamp) {
             return {
               makerName: shortString.decodeShortString(makerName?.toString() || ""),
-              originName: getRealmNameById(BigInt(realm?.realm_id || 0n)),
+              originName: getRealmNameById(realm?.realm_id || 0),
               tradeId: trade.trade_id,
               makerId: trade.maker_id,
               takerId: trade.taker_id,
@@ -110,14 +108,14 @@ function useTrade() {
     realmEntityId,
     resourcesGive,
   }: {
-    realmEntityId: bigint;
+    realmEntityId: ID;
     resourcesGive: Resource[];
   }): boolean => {
     let canAccept = true;
     Object.values(resourcesGive).forEach((resource) => {
       const realmResource = getComponentValue(
         Resource,
-        getEntityIdFromKeys([realmEntityId, BigInt(resource.resourceId)]),
+        getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resource.resourceId)]),
       );
       if (realmResource === undefined || realmResource.balance < resource.amount) {
         canAccept = false;
@@ -173,7 +171,7 @@ export function useSetMarket() {
 
   const { computeTrades } = useTrade();
 
-  const allMarket = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: 0n })]);
+  const allMarket = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: 0 })]);
 
   const allTrades = useMemo(() => {
     return computeTrades(allMarket, nextBlockTimestamp!);

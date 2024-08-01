@@ -7,7 +7,7 @@ import CircleButton from "@/ui/elements/CircleButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import { Tabs } from "@/ui/elements/tab";
 import { BuildingThumbs } from "@/ui/modules/navigation/LeftNavigationModule";
-import { MarketInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { ID, MarketInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { BankPanel } from "../bank/BankList";
 import { HintModal } from "../hints/HintModal";
@@ -89,7 +89,7 @@ export const MarketModal = () => {
       <div className="container border mx-auto  grid grid-cols-12 bg-brown border-gold/30 clip-angled h-full row-span-12 ">
         <div className="col-span-12  p-2 flex justify-between row-span-2">
           <div className="self-center text-xl">
-            <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(BigInt(trait))}>
+            <Select value={realmEntityId.toString()} onValueChange={(trait) => setRealmEntityId(ID(trait))}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select Realm" />
               </SelectTrigger>
@@ -162,7 +162,7 @@ const MarketResourceSidebar = ({
   resourceAskOffers,
   resourceBidOffers,
 }: {
-  entityId: bigint;
+  entityId: ID;
   search: string;
   onClick: (value: number) => void;
   selectedResource: number;
@@ -205,7 +205,7 @@ const MarketResourceSidebar = ({
             return (
               <MarketResource
                 key={resource.id}
-                entityId={entityId || BigInt("0")}
+                entityId={entityId || 0}
                 resource={resource}
                 active={selectedResource == resource.id}
                 onClick={onClick}

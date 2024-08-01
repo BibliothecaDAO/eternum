@@ -1,4 +1,4 @@
-import { MarketInterface, ResourcesIds } from "@bibliothecadao/eternum";
+import { ID, MarketInterface, ResourcesIds } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 
 interface MarketStore {
@@ -10,7 +10,7 @@ interface MarketStore {
   refresh: boolean;
   setRefresh: (refresh: boolean) => void;
   refreshMarket: () => void;
-  deleteTrade: (tradeId: bigint) => void;
+  deleteTrade: (tradeId: ID) => void;
   setMarkets: (lordsMarket: MarketInterface[], nonLordsMarket: MarketInterface[]) => void;
   setDirectOffers: (directOffers: MarketInterface[]) => void;
   selectedResource: number;
@@ -32,7 +32,7 @@ const useMarketStore = create<MarketStore>((set, get) => {
       set({ lordsMarket, generalMarket }),
     setDirectOffers: (directOffers: MarketInterface[]) => set({ directOffers }),
     setLoading: (loading) => set({ loading }),
-    deleteTrade: (tradeId: bigint) => {
+    deleteTrade: (tradeId: ID) => {
       const lordsMarket = get().lordsMarket.filter((trade) => trade.tradeId !== tradeId);
       const generalMarket = get().generalMarket.filter((trade) => trade.tradeId !== tradeId);
       const directOffers = get().directOffers.filter((trade) => trade.tradeId !== tradeId);

@@ -1,7 +1,7 @@
-import { RESOURCE_TIERS } from "@bibliothecadao/eternum";
+import { ID, RESOURCE_TIERS } from "@bibliothecadao/eternum";
 import { ResourceChip } from "./ResourceChip";
 
-export const EntityResourceTable = ({ entityId }: { entityId: bigint | undefined }) => {
+export const EntityResourceTable = ({ entityId }: { entityId: ID | undefined }) => {
   if (!entityId) {
     return <div>Entity not found</div>;
   }

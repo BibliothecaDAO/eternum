@@ -28,23 +28,23 @@ export const BattleView = () => {
   const battlePosition = { x: clickedHex?.contractPos.col || 0, y: clickedHex?.contractPos.row || 0 };
 
   // get updated army for when a battle starts: we need to have the updated component to have the correct battle_id
-  const updatedTarget = useArmyByArmyEntityId(battleView?.targetArmy || 0n);
+  const updatedTarget = useArmyByArmyEntityId(battleView?.targetArmy || 0);
 
   const targetArmy = useMemo(() => {
-    const tempBattleManager = new BattleManager(updatedTarget?.battle_id || 0n, dojo);
+    const tempBattleManager = new BattleManager(updatedTarget?.battle_id || 0, dojo);
     const updatedBattle = tempBattleManager.getUpdatedBattle(currentTimestamp!);
     return tempBattleManager.getUpdatedArmy(updatedTarget, updatedBattle);
   }, [updatedTarget, battleView?.targetArmy]);
 
   const battleManager = useBattleManager(
-    battleView?.battle ? battleView?.battle : battleView?.engage ? 0n : targetArmy?.battle_id || 0n,
+    battleView?.battleEntityId ? battleView?.battleEntityId : battleView?.engage ? 0 : targetArmy?.battle_id || 0,
   );
 
   const armies = useMemo(() => {
     if (!battleManager.isBattle()) {
       return { armiesInBattle: [], userArmiesInBattle: [] };
     }
-    const armiesInBattle = armiesByBattleId(battleManager?.battleId || 0n);
+    const armiesInBattle = armiesByBattleId(battleManager?.battleEntityId || 0);
     const userArmiesInBattle = armiesInBattle.filter((army) => army.isMine);
     return { armiesInBattle, userArmiesInBattle };
   }, [battleManager]);
@@ -54,7 +54,7 @@ export const BattleView = () => {
     : BattleSide[BattleSide.Attack];
 
   const ownArmyBattleStarter = useMemo(
-    () => getAliveArmy(battleView!.ownArmyEntityId || 0n),
+    () => getAliveArmy(battleView!.ownArmyEntityId || 0),
     [battleView!.ownArmyEntityId],
   );
 
@@ -71,7 +71,7 @@ export const BattleView = () => {
   const battleAdjusted = useMemo(() => {
     if (!battleManager) return undefined;
     return battleManager!.getUpdatedBattle(currentTimestamp!);
-  }, [currentTimestamp, battleManager, battleManager?.battleId, armies.armiesInBattle, battleView]);
+  }, [currentTimestamp, battleManager, battleManager?.battleEntityId, armies.armiesInBattle, battleView]);
 
   const attackerHealth = battleAdjusted
     ? {
@@ -98,9 +98,9 @@ export const BattleView = () => {
   const defenderTroops = battleAdjusted ? battleAdjusted!.defence_army.troops : targetArmy?.troops;
 
   const structure =
-    battleView?.engage && !battleView?.battle && !battleView.targetArmy
+    battleView?.engage && !battleView?.battleEntityId && !battleView.targetArmy
       ? getStructure({ x: battlePosition.x, y: battlePosition.y })
-      : getStructureByEntityId(defenderArmies.find((army) => army?.protectee)?.protectee?.protectee_id || 0n);
+      : getStructureByEntityId(defenderArmies.find((army) => army?.protectee)?.protectee?.protectee_id || 0);
 
   const isActive = battleManager?.isBattleOngoing(currentTimestamp!);
 

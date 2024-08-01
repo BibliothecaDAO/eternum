@@ -1,8 +1,8 @@
 import { numberToHex } from "@/ui/utils/utils";
+import { ID, PILLAGE_EVENT } from "@bibliothecadao/eternum";
 import { client, getEventsQuery } from "./graphqlClient";
-import { PILLAGE_EVENT } from "@bibliothecadao/eternum";
 
-export async function getPillageEvents(realmId: bigint): Promise<number> {
+export async function getPillageEvents(realmId: ID): Promise<number> {
   const query = `
     query {
       events(keys: ["${PILLAGE_EVENT}","*","${numberToHex(Number(realmId))}"]) {

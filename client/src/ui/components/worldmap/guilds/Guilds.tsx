@@ -10,6 +10,7 @@ import { ComponentValue } from "@dojoengine/recs";
 import { GuildAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
 import { GuildMembers } from "./GuildMembers";
 import { hasGuild } from "./utils";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
 
 type GuildAndNameKeys = keyof (ComponentValue<ClientComponents["Guild"]["schema"]> & {
   name: string;
@@ -22,7 +23,7 @@ interface SortingParamGuildAndName {
 }
 
 export interface SelectedGuildInterface {
-  guildEntityId: bigint;
+  guildEntityId: ID;
   name: string;
 }
 
@@ -35,12 +36,12 @@ export const Guilds = () => {
   } = useDojo();
 
   const [_, setIsLoading] = useState(false);
-  const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0n, name: "" });
+  const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0, name: "" });
 
   const { getGuilds, getAddressGuild } = useGuilds();
 
   const { guilds } = getGuilds();
-  const { userGuildEntityId, isOwner } = getAddressGuild(account.address);
+  const { userGuildEntityId, isOwner } = getAddressGuild(ContractAddress(account.address));
 
   const sortingParams: SortingParamGuildAndName[] = useMemo(() => {
     return [
@@ -56,7 +57,7 @@ export const Guilds = () => {
     sort: "none",
   });
 
-  const joinGuild = useCallback((guildEntityId: bigint) => {
+  const joinGuild = useCallback((guildEntityId: ID) => {
     setIsLoading(true);
     join_guild({ guild_entity_id: guildEntityId, signer: account }).finally(() => setIsLoading(false));
   }, []);
@@ -67,7 +68,7 @@ export const Guilds = () => {
         <>
           <div className="relative flex my-1 justify-center">
             <div className="absolute left-0 px-2 flex h-full items-center">
-              <Button className="" size="xs" onClick={() => setSelectedGuild({ guildEntityId: 0n, name: "" })}>
+              <Button className="" size="xs" onClick={() => setSelectedGuild({ guildEntityId: 0, name: "" })}>
                 Back
               </Button>
             </div>

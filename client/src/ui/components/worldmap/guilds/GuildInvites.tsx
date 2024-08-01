@@ -1,14 +1,15 @@
-import { useMemo, useState, useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
+import Button from "../../../elements/Button";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
-import Button from "../../../elements/Button";
 
-import { useGuilds, AddressWhitelistAndName, GuildWhitelistAndName } from "../../../../hooks/helpers/useGuilds";
-import { hasGuild } from "./utils";
-import { GuildMembers } from "./GuildMembers";
 import { sortItems } from "@/ui/utils/utils";
+import { ContractAddress, ID } from "@bibliothecadao/eternum";
+import { AddressWhitelistAndName, GuildWhitelistAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
+import { GuildMembers } from "./GuildMembers";
 import { SelectedGuildInterface } from "./Guilds";
+import { hasGuild } from "./utils";
 
 type GuildWhitelistAndNameKeys = keyof GuildWhitelistAndName;
 interface SortingParamGuildWhitelistAndName {
@@ -26,12 +27,12 @@ export const GuildInvites = () => {
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0n, name: "" });
+  const [selectedGuild, setSelectedGuild] = useState<SelectedGuildInterface>({ guildEntityId: 0, name: "" });
 
   const { getAddressWhitelist, getAddressGuild } = useGuilds();
 
-  const { addressWhitelist } = getAddressWhitelist(BigInt(account.address));
-  const { userGuildEntityId } = getAddressGuild(account.address);
+  const { addressWhitelist } = getAddressWhitelist(ContractAddress(account.address));
+  const { userGuildEntityId } = getAddressGuild(ContractAddress(account.address));
 
   const sortingParams: SortingParamGuildWhitelistAndName[] = useMemo(() => {
     return [{ label: "Guild Name", sortKey: "name", className: "col-span-1" }];
@@ -42,12 +43,12 @@ export const GuildInvites = () => {
     sort: "none",
   });
 
-  const joinGuild = useCallback((guildEntityId: bigint) => {
+  const joinGuild = useCallback((guildEntityId: ID) => {
     setIsLoading(true);
     join_guild({ guild_entity_id: guildEntityId, signer: account }).finally(() => setIsLoading(false));
   }, []);
 
-  const removePlayerFromWhitelist = useCallback((guildEntityId: bigint) => {
+  const removePlayerFromWhitelist = useCallback((guildEntityId: ID) => {
     setIsLoading(true);
     remove_player_from_whitelist({
       player_address_to_remove: account.address,
@@ -64,7 +65,7 @@ export const GuildInvites = () => {
           <div className="flex flex-col">
             <div className="flex flex-row justify-between">
               <div className="px-4">
-                <Button size="xs" onClick={() => setSelectedGuild({ guildEntityId: 0n, name: "" })}>
+                <Button size="xs" onClick={() => setSelectedGuild({ guildEntityId: 0, name: "" })}>
                   Back
                 </Button>
               </div>
@@ -120,9 +121,7 @@ export const GuildInvites = () => {
                       <Button
                         size="xs"
                         isLoading={isLoading}
-                        onClick={() =>
-                          removePlayerFromWhitelist(BigInt(addressWhitelist.addressWhitelist.guild_entity_id))
-                        }
+                        onClick={() => removePlayerFromWhitelist(addressWhitelist.addressWhitelist.guild_entity_id)}
                       >
                         Refuse
                       </Button>

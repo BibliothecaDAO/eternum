@@ -3,7 +3,7 @@ import { useDojo } from "@/hooks/context/DojoContext";
 import { ArmyInfo, useArmyByArmyEntityId } from "@/hooks/helpers/useArmies";
 import { Structure } from "@/hooks/helpers/useStructures";
 import Button from "@/ui/elements/Button";
-import { BattleSide } from "@bibliothecadao/eternum";
+import { BattleSide, ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { useState } from "react";
 import { BattleDetails } from "./BattleDetails";
@@ -12,7 +12,7 @@ import { TroopRow } from "./Troops";
 
 export const BattleSideView = ({
   battleSide,
-  battleId,
+  battleEntityId,
   showBattleDetails,
   ownSideArmies,
   ownSideTroopsUpdated,
@@ -21,11 +21,11 @@ export const BattleSideView = ({
   isActive,
 }: {
   battleSide: BattleSide;
-  battleId: bigint | undefined;
+  battleEntityId: ID | undefined;
   showBattleDetails: boolean;
   ownSideArmies: (ArmyInfo | undefined)[];
   ownSideTroopsUpdated: ComponentValue<ClientComponents["Army"]["schema"]>["troops"] | undefined;
-  ownArmyEntityId: bigint | undefined;
+  ownArmyEntityId: ID | undefined;
   structure: Structure | undefined;
   isActive: boolean;
 }) => {
@@ -38,15 +38,15 @@ export const BattleSideView = ({
 
   const [loading, setLoading] = useState<boolean>(false);
 
-  const ownArmy = useArmyByArmyEntityId(ownArmyEntityId || 0n);
+  const ownArmy = useArmyByArmyEntityId(ownArmyEntityId || 0);
 
-  const joinBattle = async (side: BattleSide, armyId: bigint) => {
+  const joinBattle = async (side: BattleSide, armyId: ID) => {
     if (ownArmyEntityId) {
       setLoading(true);
       await battle_join({
         signer: account,
         army_id: armyId,
-        battle_id: battleId!,
+        battle_id: battleEntityId!,
         battle_side: BigInt(side),
       });
       setLoading(false);
@@ -61,12 +61,12 @@ export const BattleSideView = ({
     >
       <div className="flex flex-col">
         <EntityAvatar
-          address={battleSide === BattleSide.Attack ? account.address : battleId?.toString()}
+          address={battleSide === BattleSide.Attack ? account.address : battleEntityId?.toString()}
           structure={structure}
           show={ownSideArmies.length > 0}
         />
 
-        {Boolean(battleId) && Boolean(ownArmyEntityId) && isActive && ownArmy.battle_id === 0n && (
+        {Boolean(battleEntityId) && Boolean(ownArmyEntityId) && isActive && ownArmy.battle_id === 0 && (
           <div className="flex flex-col w-full">
             <Button
               onClick={() => joinBattle(battleSide, ownArmyEntityId!)}
@@ -78,7 +78,7 @@ export const BattleSideView = ({
           </div>
         )}
       </div>
-      {showBattleDetails && battleId ? (
+      {showBattleDetails && battleEntityId ? (
         <BattleDetails armies={ownSideArmies} />
       ) : (
         <TroopRow troops={ownSideTroopsUpdated} />

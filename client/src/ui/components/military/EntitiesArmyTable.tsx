@@ -1,11 +1,8 @@
 import { ArmyInfo, useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { useEntities } from "@/hooks/helpers/useEntities";
 import { Headline } from "@/ui/elements/Headline";
+import { ID } from "@bibliothecadao/eternum";
 import { ArmyChip } from "./ArmyChip";
-
-type EntityArmyTableProps = {
-  structureEntityId: bigint | undefined;
-};
 
 export const EntitiesArmyTable = () => {
   const { playerStructures } = useEntities();
@@ -22,7 +19,7 @@ export const EntitiesArmyTable = () => {
   });
 };
 
-const EntityArmyTable = ({ structureEntityId }: EntityArmyTableProps) => {
+const EntityArmyTable = ({ structureEntityId }: { structureEntityId: ID | undefined }) => {
   if (!structureEntityId) {
     return <div>Entity not found</div>;
   }

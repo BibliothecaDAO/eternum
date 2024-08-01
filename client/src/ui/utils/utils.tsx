@@ -1,4 +1,12 @@
-import { Position, ResourcesIds, UIPosition, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import {
+  ContractAddress,
+  ID,
+  Position,
+  ResourcesIds,
+  UIPosition,
+  neighborOffsetsEven,
+  neighborOffsetsOdd,
+} from "@bibliothecadao/eternum";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   default as realmHexPositions,
@@ -44,7 +52,7 @@ export function divideByPrecision(value: number): number {
   return value / PRECISION;
 }
 
-export function getPosition(realm_id: bigint): { x: number; y: number } {
+export function getPosition(realm_id: ID): { x: number; y: number } {
   let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
   let position = realmPositions[Number(realm_id)][0];
   return { x: position.col, y: position.row };
@@ -52,7 +60,7 @@ export function getPosition(realm_id: bigint): { x: number; y: number } {
 
 export function addressToNumber(address: string) {
   // Convert the address to a big integer
-  let numericValue = BigInt(address);
+  let numericValue = ContractAddress(address);
 
   // Sum the digits of the numeric value
   let sum = 0;
@@ -64,20 +72,6 @@ export function addressToNumber(address: string) {
   // Map the sum to a number between 1 and 10
   return (sum % 5) + 1;
 }
-
-// export const calculateDistance = (start: Position, destination: Position): number => {
-//   const x: number =
-//     start.x > destination.x ? Math.pow(start.x - destination.x, 2) : Math.pow(destination.x - start.x, 2);
-
-//   const y: number =
-//     start.y > destination.y ? Math.pow(start.y - destination.y, 2) : Math.pow(destination.y - start.y, 2);
-
-//   // Using bitwise shift for the square root approximation for BigInt.
-//   // we store coords in x * 10000 to get precise distance
-//   const distance = (x + y) ** 0.5 / 10000;
-
-//   return distance;
-// };
 
 export function calculateDistance(start: Position, destination: Position): number | undefined {
   // d = √((x2-x1)² + (y2-y1)²)
@@ -142,9 +136,9 @@ interface HexPositions {
   [key: string]: { col: number; row: number }[];
 }
 
-export const getRealmUIPosition = (realm_id: bigint): Position => {
+export const getRealmUIPosition = (realm_id: ID): Position => {
   const realmPositions = realmHexPositions as HexPositions;
-  const colrow = realmPositions[Number(realm_id).toString()][0];
+  const colrow = realmPositions[realm_id.toString()][0];
 
   return getUIPositionFromColRow(colrow.col, colrow.row, false);
 };
@@ -165,8 +159,6 @@ export const pseudoRandom = (x: number, y: number) => {
 };
 
 function getResourceIdsFromPackedNumber(packedNumber: bigint): number[] {
-  console.log("packedNumber", packedNumber);
-
   if (packedNumber === 1000000000000000000000000000000000000000000000000000000000000001n) return [ResourcesIds.Lords];
   const resourceIds: number[] = [];
   const totalBits = 256; // Assuming u256, hence 256 bits
@@ -256,7 +248,7 @@ function getPropertyByPath<T>(obj: T, path: string): any {
   return path.split(".").reduce((o, p) => (o ? (o as any)[p] : 0), obj);
 }
 
-export const copyPlayerAddressToClipboard = (address: bigint, name: string) => {
+export const copyPlayerAddressToClipboard = (address: ContractAddress, name: string) => {
   navigator.clipboard
     .writeText(address.toString())
     .then(() => {
@@ -267,7 +259,7 @@ export const copyPlayerAddressToClipboard = (address: bigint, name: string) => {
     });
 };
 
-export const isRealmSelected = (realmEntityId: bigint, structures: any) => {
+export const isRealmSelected = (realmEntityId: ID, structures: any) => {
   const selectedStructure = structures?.find((structure: any) => structure?.entity_id === realmEntityId);
   return selectedStructure?.category === "Realm";
 };

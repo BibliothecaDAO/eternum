@@ -1,6 +1,6 @@
 import { getResourceBalance } from "@/hooks/helpers/useResources";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ID, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { getTotalResourceWeight } from "@/ui/utils/utils";
 
@@ -11,7 +11,7 @@ export const TravelInfo = ({
   setCanCarry,
   isAmm,
 }: {
-  entityId: bigint;
+  entityId: ID;
   resources: Resource[];
   travelTime?: number;
   setCanCarry?: (canContinue: boolean) => void;
