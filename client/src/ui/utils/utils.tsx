@@ -7,7 +7,7 @@ import {
 import { FELT_CENTER } from "../config";
 import { SortInterface } from "../elements/SortButton";
 import * as THREE from "three";
-import { HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "@/three/GameRenderer";
+import { HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING } from "@/three/scenes/HexagonScene";
 
 export { getEntityIdFromKeys };
 

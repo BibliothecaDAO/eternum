@@ -2,9 +2,9 @@ import * as THREE from "three";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
 import { borderHexMaterial } from "@/three/shaders/borderHexMaterial";
 import { transparentHexMaterial } from "@/three/shaders/transparentHexMaterial";
-import { HEX_SIZE } from "../GameRenderer";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { SceneManager } from "../SceneManager";
+import { HEX_SIZE } from "../scenes/HexagonScene";
 
 const matrix = new THREE.Matrix4();
 const position = new THREE.Vector3();

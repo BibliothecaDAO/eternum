@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { Raycaster } from "three";
-import { FogManager } from "../components/FogManager";
 
 import { Entity } from "@dojoengine/recs";
 import { ContextMenuManager } from "../components/ContextMenuManager";
@@ -20,11 +19,11 @@ import { neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum
 import { InteractiveHexManager } from "../components/InteractiveHexManager";
 import { HighlightHexManager } from "../components/HighlightHexManager";
 import { GUIManager } from "../helpers/GUIManager";
-import { HEX_SIZE } from "../GameRenderer";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { InputManager } from "../components/InputManager";
 import { throttle } from "lodash";
 import { SceneManager } from "../SceneManager";
+import { HEX_SIZE, HexagonScene } from "./HexagonScene";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -46,21 +45,10 @@ export const biomeModelPaths: Record<BiomeType, string> = {
   TropicalRainForest: BASE_PATH + "tropicalrainforest.glb",
 };
 
-export default class WorldmapScene {
-  scene!: THREE.Scene;
-  private lightAmbient!: THREE.AmbientLight;
-  private mainDirectionalLight!: THREE.DirectionalLight;
-  private pmremGenerator!: THREE.PMREMGenerator;
-  private fogManager: FogManager;
+export default class WorldmapScene extends HexagonScene {
   public systemManager: SystemManager;
 
   private biome!: Biome;
-  private lightType: "pmrem" | "hemisphere" = "hemisphere";
-  private lightHelper!: THREE.DirectionalLightHelper;
-
-  private camera: THREE.PerspectiveCamera;
-
-  contextMenuManager: ContextMenuManager;
 
   private chunkSize = 10; // Size of each chunk
   private renderChunkSize = {
@@ -79,101 +67,30 @@ export default class WorldmapScene {
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
 
-  private interactiveHexManager: InteractiveHexManager;
-  public highlightHexManager: HighlightHexManager;
-
-  private inputManager: InputManager;
-
   constructor(
-    private dojoConfig: SetupResult,
-    private raycaster: Raycaster,
-    private controls: MapControls,
-    private mouse: THREE.Vector2,
-    private sceneManager: SceneManager,
+    dojoContext: SetupResult,
+    raycaster: Raycaster,
+    controls: MapControls,
+    mouse: THREE.Vector2,
+    sceneManager: SceneManager,
   ) {
-    this.scene = new THREE.Scene();
+    super("Worldmap", controls, dojoContext, mouse, raycaster, sceneManager);
 
-    this.camera = this.controls.object as THREE.PerspectiveCamera;
-
-    this.raycaster.setFromCamera(this.mouse, this.camera);
+    this.GUIFolder.add(this, "moveCameraToURLLocation");
 
     this.biome = new Biome();
 
-    this.fogManager = new FogManager(this.scene, this.camera);
-
-    this.contextMenuManager = new ContextMenuManager(
-      this.scene,
-      this.raycaster,
-      this.camera,
-      mouse,
-      this.loadedChunks,
-      this,
-    );
-
-    this.scene.background = new THREE.Color(0x8790a1);
-    GUIManager.addColor(this.scene, "background");
-
-    const hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
-    const hemisphereLightFolder = GUIManager.addFolder("Hemisphere Light");
-    hemisphereLightFolder.addColor(hemisphereLight, "color");
-    hemisphereLightFolder.addColor(hemisphereLight, "groundColor");
-    hemisphereLightFolder.add(hemisphereLight, "intensity", 0, 3, 0.1);
-    hemisphereLightFolder.close();
-    this.scene.add(hemisphereLight);
-
-    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 3);
-    this.mainDirectionalLight.castShadow = true;
-    this.mainDirectionalLight.shadow.mapSize.width = 2048;
-    this.mainDirectionalLight.shadow.mapSize.height = 2048;
-    this.mainDirectionalLight.shadow.camera.left = -22;
-    this.mainDirectionalLight.shadow.camera.right = 18;
-    this.mainDirectionalLight.shadow.camera.top = 14;
-    this.mainDirectionalLight.shadow.camera.bottom = -12;
-    this.mainDirectionalLight.shadow.camera.far = 38;
-    this.mainDirectionalLight.shadow.camera.near = 8;
-    this.mainDirectionalLight.position.set(0, 9, 0);
-    this.mainDirectionalLight.target.position.set(0, 0, 5.2);
-
-    const shadowFolder = GUIManager.addFolder("Shadow");
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "left", -50, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "right", -50, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "top", -50, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "bottom", -50, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "far", 0, 50, 0.1);
-    shadowFolder.add(this.mainDirectionalLight.shadow.camera, "near", 0, 50, 0.1);
-    shadowFolder.close();
-
-    const directionalLightFolder = GUIManager.addFolder("Directional Light");
-    directionalLightFolder.addColor(this.mainDirectionalLight, "color");
-    directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight.position, "y", -20, 20, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight.position, "z", -20, 20, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight, "intensity", 0, 3, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
-    directionalLightFolder.close();
-    this.scene.add(this.mainDirectionalLight);
-    this.scene.add(this.mainDirectionalLight.target);
-
-    this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
-    this.scene.add(this.lightHelper);
-
     this.loadBiomeModels();
 
-    this.systemManager = new SystemManager(this.dojoConfig, this);
+    this.systemManager = new SystemManager(dojoContext, this);
     this.systemManager.tileSystem.addListener(this.updateExploredHex.bind(this));
 
-    this.interactiveHexManager = new InteractiveHexManager(this.scene, this.sceneManager);
-    this.highlightHexManager = new HighlightHexManager(this.scene);
-
-    this.inputManager = new InputManager(this.raycaster, this.mouse, this.camera);
     this.inputManager.addListener("mousemove", throttle(this.interactiveHexManager.onMouseMove, 10));
     this.inputManager.addListener("dblclick", this.interactiveHexManager.onDoubleClick);
   }
 
-  public getCamera() {
-    return this.camera;
+  setup() {
+    this.moveCameraToURLLocation();
   }
 
   private loadBiomeModels() {
@@ -416,49 +333,10 @@ export default class WorldmapScene {
     return false;
   }
 
-  private hashCoordinates(x: number, y: number): number {
-    // Simple hash function to generate a deterministic value between 0 and 1
-    const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-    return hash - Math.floor(hash);
-  }
-
   private worldToChunkCoordinates(x: number, z: number): { chunkX: number; chunkZ: number } {
     const chunkX = Math.floor(x / (this.chunkSize * HEX_SIZE * Math.sqrt(3)));
     const chunkZ = Math.floor(-z / (this.chunkSize * HEX_SIZE * 1.5));
     return { chunkX, chunkZ };
-  }
-
-  private getHexFromWorldPosition(position: THREE.Vector3): { row: number; col: number } {
-    const horizontalSpacing = HEX_SIZE * Math.sqrt(3);
-    const verticalSpacing = (HEX_SIZE * 3) / 2;
-
-    // Calculate col first
-    const col = Math.round(position.x / horizontalSpacing);
-
-    // Then use col to calculate row
-    const row = Math.round(-position.z / verticalSpacing);
-
-    // Adjust x position based on row parity
-    const adjustedX = position.x - (row % 2) * (horizontalSpacing / 2);
-
-    // Recalculate col using adjusted x
-    const adjustedCol = Math.round(adjustedX / horizontalSpacing);
-
-    return { row, col: adjustedCol };
-  }
-
-  getHexagonCoordinates(
-    instancedMesh: THREE.InstancedMesh,
-    instanceId: number,
-  ): { row: number; col: number; x: number; z: number } {
-    const matrix = new THREE.Matrix4();
-    instancedMesh.getMatrixAt(instanceId, matrix);
-    const position = new THREE.Vector3();
-    matrix.decompose(position, new THREE.Quaternion(), new THREE.Vector3());
-
-    const { row, col } = this.getHexFromWorldPosition(position);
-
-    return { row, col, x: position.x, z: position.z };
   }
 
   updateVisibleChunks() {
@@ -483,26 +361,8 @@ export default class WorldmapScene {
     }
   }
 
-  updateLights(target: THREE.Vector3) {
-    if (this.mainDirectionalLight) {
-      this.mainDirectionalLight.position.set(target.x + 15, target.y + 13, target.z - 8);
-      this.mainDirectionalLight.target.position.set(target.x, target.y, target.z + 5.2);
-      this.mainDirectionalLight.target.updateMatrixWorld();
-    }
-  }
-
   update(deltaTime: number) {
+    super.update(deltaTime);
     this.systemManager.update(deltaTime);
-    this.interactiveHexManager.update();
-
-    if (this.mainDirectionalLight) {
-      this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();
-    }
-    if (this.lightHelper) this.lightHelper.update();
-
-    // Update highlight pulse
-    const elapsedTime = performance.now() / 1000; // Convert to seconds
-    const pulseFactor = Math.abs(Math.sin(elapsedTime * 2) / 16);
-    this.highlightHexManager.updateHighlightPulse(pulseFactor);
   }
 }

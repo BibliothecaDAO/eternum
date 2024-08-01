@@ -1,31 +1,24 @@
 import * as THREE from "three";
 
-import { getEntityIdFromKeys, snoise } from "@dojoengine/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { SetupResult } from "@/dojo/setup";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { LocationManager } from "../helpers/LocationManager";
 import { BuildingType, ResourcesIds, StructureType, getNeighborHexes } from "@bibliothecadao/eternum";
 import InstancedModel from "../components/InstancedModel";
-import { getComponentValue, getEntitiesWithValue } from "@dojoengine/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { biomeModelPaths } from "./Worldmap";
 import { Biome, BiomeType } from "../components/Biome";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { getHexForWorldPosition, pseudoRandom } from "@/ui/utils/utils";
 import { createHexagonShape } from "@/ui/components/worldmap/hexagon/HexagonGeometry";
 import { FELT_CENTER } from "@/ui/config";
 import InstancedBuilding from "../components/InstancedBuilding";
-import { HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING } from "../GameRenderer";
-import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
-import { GUIManager } from "../helpers/GUIManager";
-import { InteractiveHexManager } from "../components/InteractiveHexManager";
-import { HighlightHexManager } from "../components/HighlightHexManager";
 import useRealmStore from "@/hooks/store/useRealmStore";
 import useUIStore from "@/hooks/store/useUIStore";
-import { InputManager } from "../components/InputManager";
 import { throttle } from "lodash";
 import { SceneManager } from "../SceneManager";
+import { HEX_HORIZONTAL_SPACING, HEX_SIZE, HEX_VERTICAL_SPACING, HexagonScene } from "./HexagonScene";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -46,71 +39,29 @@ const buildingModelPaths: Record<BuildingType, string> = {
 };
 
 const loader = new GLTFLoader();
-export default class HexceptionScene {
-  scene: THREE.Scene;
-  private renderer: THREE.WebGLRenderer;
-  private camera: THREE.PerspectiveCamera;
-  private dojo: SetupResult;
-  private pmremGenerator: THREE.PMREMGenerator;
-
-  private hexInstanced!: THREE.InstancedMesh | null;
-  private buildingModel!: THREE.Object3D | null;
-
-  private hoverBuilding: THREE.Object3D | null = null;
-
-  private locationManager!: LocationManager;
-
-  private interactiveHexManager: InteractiveHexManager;
-  private highlightHexManager: HighlightHexManager;
-
-  private originalColor: THREE.Color = new THREE.Color("white");
-
+export default class HexceptionScene extends HexagonScene {
   private buildingModels: Map<BuildingType, InstancedBuilding> = new Map();
-
   private modelLoadPromises: Promise<void>[] = [];
-
   private biomeModels: Map<BiomeType, InstancedModel> = new Map();
-
   private pillars: THREE.InstancedMesh | null = null;
-
   private buildings: any = [];
-
   centerColRow: number[] = [0, 0];
-
   private biome!: Biome;
-
-  private mainDirectionalLight!: THREE.DirectionalLight;
-  private hemisphereLight!: THREE.HemisphereLight;
-  private lightHelper!: THREE.DirectionalLightHelper;
   private highlights: { col: number; row: number }[] = [];
   private previewBuilding: { type: BuildingType | StructureType; resource?: ResourcesIds } | null = null;
-  private inputManager: InputManager;
+  private buildingModel!: THREE.Object3D | null;
 
   constructor(
-    renderer: THREE.WebGLRenderer,
-    private controls: MapControls,
+    controls: MapControls,
     dojoContext: SetupResult,
-    private mouse: THREE.Vector2,
-    private raycaster: THREE.Raycaster,
-    private sceneManager: SceneManager,
-    private cameraAngle: number, // Add cameraAngle parameter
-    private cameraDistance: number, // Add cameraDistance parameter
+    mouse: THREE.Vector2,
+    raycaster: THREE.Raycaster,
+    sceneManager: SceneManager,
   ) {
-    this.renderer = renderer;
-    this.camera = controls.object as THREE.PerspectiveCamera;
-    this.dojo = dojoContext;
+    super("Hexception", controls, dojoContext, mouse, raycaster, sceneManager);
+
     this.biome = new Biome();
-    this.scene = new THREE.Scene();
-    this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.locationManager = new LocationManager();
-
-    this.inputManager = new InputManager(this.raycaster, this.mouse, this.camera);
-
-    this.interactiveHexManager = new InteractiveHexManager(this.scene, this.sceneManager);
     this.inputManager.addListener("mousemove", throttle(this.interactiveHexManager.onMouseMove, 10));
-
-    this.highlightHexManager = new HighlightHexManager(this.scene);
 
     const pillarGeometry = new THREE.ExtrudeGeometry(createHexagonShape(1), { depth: 2, bevelEnabled: false });
     pillarGeometry.rotateX(Math.PI / 2);
@@ -118,44 +69,6 @@ export default class HexceptionScene {
     this.pillars.position.y = 0.05;
     this.pillars.count = 0;
     this.scene.add(this.pillars);
-
-    this.hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 1);
-    const hemisphereLightFolder = GUIManager.addFolder("Hemisphere Light Hexception");
-    hemisphereLightFolder.addColor(this.hemisphereLight, "color");
-    hemisphereLightFolder.addColor(this.hemisphereLight, "groundColor");
-    hemisphereLightFolder.add(this.hemisphereLight, "intensity", 0, 3, 0.1);
-    hemisphereLightFolder.close();
-    this.scene.add(this.hemisphereLight);
-
-    this.mainDirectionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    this.mainDirectionalLight.castShadow = true;
-    this.mainDirectionalLight.shadow.mapSize.width = 2048;
-    this.mainDirectionalLight.shadow.mapSize.height = 2048;
-    this.mainDirectionalLight.shadow.camera.left = -22;
-    this.mainDirectionalLight.shadow.camera.right = 18;
-    this.mainDirectionalLight.shadow.camera.top = 14;
-    this.mainDirectionalLight.shadow.camera.bottom = -12;
-    this.mainDirectionalLight.shadow.camera.far = 38;
-    this.mainDirectionalLight.shadow.camera.near = 8;
-    this.mainDirectionalLight.position.set(0, 2.3, 0.5);
-    this.mainDirectionalLight.target.position.set(4, 4, 3);
-
-    const directionalLightFolder = GUIManager.addFolder("Directional Light Hexception");
-    directionalLightFolder.addColor(this.mainDirectionalLight, "color");
-    directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight.position, "y", -20, 20, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight.position, "z", -20, 20, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight, "intensity", 0, 3, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
-    directionalLightFolder.close();
-
-    this.scene.add(this.mainDirectionalLight);
-    this.scene.add(this.mainDirectionalLight.target);
-
-    this.lightHelper = new THREE.DirectionalLightHelper(this.mainDirectionalLight, 1);
-    // this.scene.add(this.lightHelper);
 
     this.loadBuildingModels();
     this.loadBiomeModels();
@@ -242,26 +155,14 @@ export default class HexceptionScene {
   }
 
   setup(row: number, col: number) {
+    this.moveCameraToColRow(0, 0, 0);
     console.log("clickedHex", row, col);
     console.log(this.locationManager.getCol(), this.locationManager.getRow());
     console.log("store", useRealmStore.getState());
 
-    this.centerColRow = [col + FELT_CENTER, row + FELT_CENTER];
-
-    this.camera.position.set(
-      0,
-      Math.sin(this.cameraAngle) * this.cameraDistance,
-      -Math.cos(this.cameraAngle) * this.cameraDistance,
-    );
-    this.camera.lookAt(0, 0, 0);
-    this.controls.target.set(0, 0, 0);
-    this.controls.update();
+    this.centerColRow = [this.locationManager.getCol()! + FELT_CENTER, this.locationManager.getRow()! + FELT_CENTER];
 
     this.updateHexceptionGrid(4);
-  }
-
-  getCenterColRow() {
-    return [this.centerColRow[0] - FELT_CENTER, this.centerColRow[1] - FELT_CENTER];
   }
 
   updateHexceptionGrid(radius: number) {
@@ -433,13 +334,5 @@ export default class HexceptionScene {
       this.interactiveHexManager.renderHexes();
       console.log("Hexagon grid updated");
     });
-  }
-
-  update(deltaTime: number) {
-    if (this.interactiveHexManager) this.interactiveHexManager.update();
-  }
-  onMouseMove(event: MouseEvent) {
-    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   }
 }
