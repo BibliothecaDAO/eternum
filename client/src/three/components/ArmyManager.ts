@@ -6,6 +6,7 @@ import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { throttle } from "lodash";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
+import { FELT_CENTER } from "@/ui/config";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
@@ -70,6 +71,17 @@ export class ArmyManager {
     });
 
     this.initMouseHoverEvent();
+  }
+
+  public async onUpdate(entityId: number, col: number, row: number, isMine: boolean) {
+    const normalizedCoord = { col: col - FELT_CENTER, row: row - FELT_CENTER };
+    await this.loadPromise;
+
+    try {
+      this.updateArmy(entityId, normalizedCoord, isMine);
+    } catch (error) {
+      console.error("Error updating army:", error);
+    }
   }
 
   private initMouseHoverEvent() {

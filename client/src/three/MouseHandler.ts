@@ -128,7 +128,7 @@ export class MouseHandler {
     const armyMovementManager = new ArmyMovementManager(this.dojo, entityId);
     if (armyMovementManager.isMine()) {
       this.setSelectedEntityId(entityId);
-      this.travelPaths = armyMovementManager.findPaths(this.worldmapScene!.systemManager.tileSystem.getExplored());
+      // this.travelPaths = armyMovementManager.findPaths(this.worldmapScene!.systemManager.tileSystem.getExplored());
       this.state.updateTravelPaths(this.travelPaths.getPaths());
       this.worldmapScene!.highlightHexManager.highlightHexes(this.travelPaths.getHighlightedHexes());
     }

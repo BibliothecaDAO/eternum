@@ -8,12 +8,10 @@ import { Scene } from "three";
 
 export class ArmySystem {
   private armyManager: ArmyManager;
-  private armyIndices: Map<string, number> = new Map();
-  private modelPrinted: boolean = false;
 
-  constructor(private dojo: SetupResult, private worldMapScene: WorldmapScene) {
-    //this.armyManager = new ArmyManager(this.worldMapScene, "models/dark_knight.glb", 1000);
-    this.armyManager = new ArmyManager(this.worldMapScene, "models/biomes/Horse.glb", 1000);
+  constructor(private dojo: SetupResult, private worldMapScene: WorldmapScene, armyManager: ArmyManager) {
+    // this.armyManager = new ArmyManager(this.worldMapScene, "models/biomes/Horse.glb", 1000);
+    this.armyManager = armyManager;
   }
 
   setupSystem() {
@@ -26,30 +24,10 @@ export class ArmySystem {
       const owner = getComponentValue(this.dojo.components.Owner, update.entity);
       const isMine = owner?.address === BigInt(this.dojo.network.burnerManager.account?.address || 0);
 
-      this.updateArmies(Number(army.entity_id), value[0]?.x || 0, value[0]?.y || 0, isMine);
+      this.armyManager.onUpdate(Number(army.entity_id), value[0]?.x || 0, value[0]?.y || 0, isMine);
     });
 
     console.log("Army system setup complete");
-  }
-
-  private async updateArmies(entityId: number, col: number, row: number, isMine: boolean) {
-    const normalizedCoord = { col: col - FELT_CENTER, row: row - FELT_CENTER };
-    await this.armyManager.loadPromise;
-
-    try {
-      this.armyManager.updateArmy(entityId, normalizedCoord, isMine);
-    } catch (error) {
-      console.error("Error updating army:", error);
-    }
-
-    // // Move army once after 5 seconds
-    // // testing
-    // if (entityId === 41) {
-    //   console.log("adding timeout ");
-    //   setTimeout(() => {
-    //     this.armyManager.moveArmy(entityId, { col: normalizedCoord.col + 1, row: normalizedCoord.row + 1 });
-    //   }, 15000);
-    // }
   }
 
   update(deltaTime: number) {

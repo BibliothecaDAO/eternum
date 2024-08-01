@@ -14,6 +14,7 @@ import WorldmapScene from "./scenes/Worldmap";
 import { GUIManager } from "./helpers/GUIManager";
 import { CSS2DRenderer } from "three-stdlib";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
+import { SystemManager } from "./systems/SystemManager";
 
 export const HEX_SIZE = 1;
 export const HEX_HORIZONTAL_SPACING = HEX_SIZE * Math.sqrt(3);
@@ -65,6 +66,7 @@ export default class GameRenderer {
 
   private mouseHandler!: MouseHandler;
   private sceneManager!: SceneManager;
+  private systemManager!: SystemManager;
 
   constructor(dojoContext: SetupResult) {
     this.renderer = new THREE.WebGLRenderer({
@@ -161,6 +163,8 @@ export default class GameRenderer {
 
     this.sceneManager = new SceneManager(this.transitionManager);
 
+    this.systemManager = new SystemManager(this.dojo);
+
     // Change camera settings for 75-degree view
     this.hexceptionScene = new HexceptionScene(
       this.renderer,
@@ -171,11 +175,19 @@ export default class GameRenderer {
       this.sceneManager,
       this.cameraAngle,
       this.cameraDistance,
+      this.systemManager,
     );
     this.sceneManager.addScene("hexception", this.hexceptionScene);
 
     // Add grid
-    this.worldmapScene = new WorldmapScene(this.dojo, this.raycaster, this.controls, this.mouse, this.sceneManager);
+    this.worldmapScene = new WorldmapScene(
+      this.dojo,
+      this.raycaster,
+      this.controls,
+      this.mouse,
+      this.sceneManager,
+      this.systemManager,
+    );
     this.worldmapScene.updateVisibleChunks();
     this.sceneManager.addScene("worldmap", this.worldmapScene);
 

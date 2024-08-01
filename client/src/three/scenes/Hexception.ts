@@ -26,6 +26,7 @@ import useUIStore from "@/hooks/store/useUIStore";
 import { InputManager } from "../components/InputManager";
 import { throttle } from "lodash";
 import { SceneManager } from "../SceneManager";
+import { SystemManager } from "../systems/SystemManager";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -95,6 +96,7 @@ export default class HexceptionScene {
     private sceneManager: SceneManager,
     private cameraAngle: number, // Add cameraAngle parameter
     private cameraDistance: number, // Add cameraDistance parameter
+    private systemManager: SystemManager,
   ) {
     this.renderer = renderer;
     this.camera = controls.object as THREE.PerspectiveCamera;

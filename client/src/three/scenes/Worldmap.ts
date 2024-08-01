@@ -52,7 +52,6 @@ export default class WorldmapScene {
   private mainDirectionalLight!: THREE.DirectionalLight;
   private pmremGenerator!: THREE.PMREMGenerator;
   private fogManager: FogManager;
-  public systemManager: SystemManager;
 
   private biome!: Biome;
   private lightType: "pmrem" | "hemisphere" = "hemisphere";
@@ -90,6 +89,7 @@ export default class WorldmapScene {
     private controls: MapControls,
     private mouse: THREE.Vector2,
     private sceneManager: SceneManager,
+    private systemManager: SystemManager,
   ) {
     this.scene = new THREE.Scene();
 
@@ -161,11 +161,10 @@ export default class WorldmapScene {
 
     this.loadBiomeModels();
 
-    this.systemManager = new SystemManager(this.dojoConfig, this);
-    this.systemManager.tileSystem.addListener(this.updateExploredHex.bind(this));
-
     this.interactiveHexManager = new InteractiveHexManager(this.scene, this.sceneManager);
     this.highlightHexManager = new HighlightHexManager(this.scene);
+
+    this.systemManager.Army.onUpdate(() => console.log("hello"));
 
     this.inputManager = new InputManager(this.raycaster, this.mouse, this.camera);
     this.inputManager.addListener("mousemove", throttle(this.interactiveHexManager.onMouseMove, 10));
@@ -215,8 +214,10 @@ export default class WorldmapScene {
     const pos = getWorldPositionForHex({ row, col });
     dummy.position.copy(pos);
 
-    const structures = this.systemManager.structureSystem.getStructures();
-    const structuresMap = new Map(structures.map((s) => [`${s.col},${s.row}`, true]));
+    // const structures = this.systemManager.structureSystem.getStructures();
+    // const structuresMap = new Map(structures.map((s) => [`${s.col},${s.row}`, true]));
+    const structures = [];
+    const structuresMap = new Map();
 
     const isStructure = structuresMap.has(`${col},${row}`);
 
@@ -230,7 +231,8 @@ export default class WorldmapScene {
 
     // Add border hexes for newly explored hex
     const neighborOffsets = row % 2 === 0 ? neighborOffsetsOdd : neighborOffsetsEven;
-    const exploredMap = this.systemManager.tileSystem.getExplored();
+    // const exploredMap = this.systemManager.tileSystem.getExplored();
+    const exploredMap = new Map();
 
     neighborOffsets.forEach(({ i, j }) => {
       const neighborCol = col + i;
@@ -290,8 +292,10 @@ export default class WorldmapScene {
     const hexPositions: THREE.Vector3[] = [];
     const batchSize = 25; // Adjust batch size as needed
     let currentIndex = 0;
-    const structures = this.systemManager.structureSystem.getStructures();
-    const exploredMap = this.systemManager.tileSystem.getExplored();
+    // const structures = this.systemManager.structureSystem.getStructures();
+    // const exploredMap = this.systemManager.tileSystem.getExplored();
+    const structures: any[] = [];
+    const exploredMap = new Map();
     const structuresMap = new Map(structures.map((s) => [`${s.col},${s.row}`, true]));
 
     const processBatch = () => {
@@ -492,7 +496,6 @@ export default class WorldmapScene {
   }
 
   update(deltaTime: number) {
-    this.systemManager.update(deltaTime);
     this.interactiveHexManager.update();
 
     if (this.mainDirectionalLight) {
