@@ -1,7 +1,6 @@
 import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { useStamina } from "@/hooks/helpers/useStamina";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
@@ -10,7 +9,6 @@ import { BaseContainer } from "@/ui/containers/BaseContainer";
 import Button from "@/ui/elements/Button";
 import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
 import { Military } from "@/ui/modules/military/Military";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { debounce } from "lodash";
@@ -139,6 +137,7 @@ export const LeftNavigationModule = () => {
             disabled={!realmIsMine}
             className={clsx({
               "animate-pulse": view != View.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
+              hidden: !questClaimStatus[QuestId.Settle],
             })}
             image={BuildingThumbs.construction}
             tooltipLocation="top"
@@ -190,7 +189,7 @@ export const LeftNavigationModule = () => {
             item.name === MenuEnum.construction ||
             item.name === MenuEnum.worldStructures,
         );
-  }, [location, view, openedPopups, selectedQuest, armiesCanMoveCount, questClaimStatus]);
+  }, [location, view, openedPopups, selectedQuest, armiesCanMoveCount, questClaimStatus, realmEntityId]);
 
   if (realmEntityId === undefined) {
     return null;

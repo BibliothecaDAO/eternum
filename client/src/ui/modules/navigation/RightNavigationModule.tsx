@@ -114,7 +114,7 @@ export const RightNavigationModule = () => {
         ),
       },
     ];
-  }, [location, view, questClaimStatus, openedPopups, selectedQuest, getAllArrivalsWithResources]);
+  }, [location, view, questClaimStatus, openedPopups, selectedQuest, getAllArrivalsWithResources, realmEntityId]);
 
   const slideRight = {
     hidden: { x: "100%" },
