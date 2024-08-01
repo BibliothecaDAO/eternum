@@ -4,12 +4,14 @@ import InstancedModel from "./InstancedModel";
 import WorldmapScene from "../scenes/Worldmap";
 import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
-import { throttle } from "lodash";
 import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { FELT_CENTER } from "@/ui/config";
+import { ArmySystemUpdate } from "../systems/types";
 
 const myColor = new THREE.Color(0, 1.5, 0);
 const neutralColor = new THREE.Color(0xffffff);
+const MODEL_PATH = "models/biomes/Horse.glb";
+const MAX_INSTANCES = 1000;
 
 export class ArmyManager {
   private instancedModel: InstancedModel | undefined;
@@ -27,20 +29,25 @@ export class ArmyManager {
   private labels: Map<number, THREE.Points> = new Map<number, THREE.Points>();
   private state: AppStore;
 
-  constructor(private worldMapScene: WorldmapScene, modelPath: string, maxInstances: number) {
+  constructor(private worldMapScene: WorldmapScene) {
     this.state = useUIStore.getState();
     this.dummy = new THREE.Mesh();
     this.mesh = new THREE.InstancedMesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial(), 0);
     this.scale = new THREE.Vector3(0.005, 0.005, 0.005);
     this.labelManager = new LabelManager("textures/army_label.png", 1.5);
+
+    // bind
+    this.onMouseMove = this.onMouseMove.bind(this);
+    this.onRightClick = this.onRightClick.bind(this);
+
     this.loadPromise = new Promise<void>((resolve, reject) => {
       this.worldMapScene = worldMapScene;
       const loader = new GLTFLoader();
       loader.load(
-        modelPath,
+        MODEL_PATH,
         (gltf) => {
           this.dummy = gltf.scene.children[0] as THREE.Mesh;
-          this.mesh = new THREE.InstancedMesh(this.dummy.geometry, this.dummy.material, maxInstances);
+          this.mesh = new THREE.InstancedMesh(this.dummy.geometry, this.dummy.material, MAX_INSTANCES);
           this.mesh.castShadow = true;
           // this.mesh.scale.set(0.005, 0.005, 0.005);
 
@@ -69,54 +76,64 @@ export class ArmyManager {
         },
       );
     });
-
-    this.initMouseHoverEvent();
   }
 
-  public async onUpdate(entityId: number, col: number, row: number, isMine: boolean) {
-    const normalizedCoord = { col: col - FELT_CENTER, row: row - FELT_CENTER };
-    await this.loadPromise;
-
-    try {
-      this.updateArmy(entityId, normalizedCoord, isMine);
-    } catch (error) {
-      console.error("Error updating army:", error);
-    }
-  }
-
-  private initMouseHoverEvent() {
-    const mouse = new THREE.Vector2();
-    const raycaster = new THREE.Raycaster();
-
-    const throttledMouseMove = throttle((event: MouseEvent) => {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, this.worldMapScene.getCamera());
-
-      const intersects = raycaster.intersectObject(this.mesh);
-      if (intersects.length > 0) {
-        const instanceId = intersects[0].instanceId;
-        if (instanceId !== undefined) {
-          const entityId = this.mesh.userData.entityIdMap[instanceId];
-          this.state.setHoveredArmyEntityId(entityId);
-          return;
-        }
+  public onMouseMove(raycaster: THREE.Raycaster) {
+    if (!this.mesh) return;
+    const intersects = raycaster.intersectObject(this.mesh);
+    if (intersects.length > 0) {
+      const instanceId = intersects[0].instanceId;
+      if (instanceId !== undefined) {
+        const entityId = this.mesh.userData.entityIdMap[instanceId];
+        this.state.setHoveredArmyEntityId(entityId);
+        return;
       }
-      this.state.setHoveredArmyEntityId(null);
-    }, 100); // Adjust the throttle delay (in milliseconds) as needed
-
-    window.addEventListener("mousemove", throttledMouseMove);
+    }
+    this.state.setHoveredArmyEntityId(null);
   }
 
-  updateArmy(entityId: number, hexCoords: { col: number; row: number }, isMine: boolean) {
-    console.log("updating armies");
-    if (!this.isLoaded) {
+  public onRightClick(raycaster: THREE.Raycaster) {
+    if (!this.mesh) return;
+
+    const intersects = raycaster.intersectObject(this.mesh);
+    if (intersects.length === 0) {
+      this.clearEntitySelection();
       return;
     }
-    if (this.armies.has(entityId)) {
-      this.moveArmy(entityId, hexCoords);
+
+    console.log({ intersects });
+
+    const clickedObject = intersects[0].object;
+    if (!(clickedObject instanceof THREE.InstancedMesh)) return;
+
+    const instanceId = intersects[0].instanceId;
+    if (instanceId === undefined) return;
+
+    const entityIdMap = clickedObject.userData.entityIdMap;
+    if (entityIdMap) {
+      this.handleEntitySelection(entityIdMap[instanceId]);
     } else {
-      this.addArmy(entityId, hexCoords, isMine);
+      this.clearEntitySelection();
+    }
+  }
+
+  private clearEntitySelection() {
+    useUIStore.getState().updateSelectedEntityId(null);
+  }
+
+  private handleEntitySelection(entityId: number) {
+    useUIStore.getState().updateSelectedEntityId(entityId);
+  }
+
+  async onUpdate(update: ArmySystemUpdate) {
+    await this.loadPromise;
+    const { entityId, hexCoords, isMine } = update;
+    const normalizedCoord = { col: hexCoords.col - FELT_CENTER, row: hexCoords.row - FELT_CENTER };
+    console.log("updating armies");
+    if (this.armies.has(entityId)) {
+      this.moveArmy(entityId, normalizedCoord);
+    } else {
+      this.addArmy(entityId, normalizedCoord, isMine);
     }
   }
 

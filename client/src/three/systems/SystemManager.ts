@@ -1,77 +1,80 @@
 import { defineComponentSystem, getComponentValue } from "@dojoengine/recs";
 import { SetupResult } from "@/dojo/setup";
-import WorldmapScene from "../scenes/Worldmap";
+import { StructureType } from "@bibliothecadao/eternum";
+import { ArmySystemUpdate, StructureSystemUpdate, TileSystemUpdate } from "./types";
 
 export class SystemManager {
-  private armyCallbacks: ((value: any) => void)[] = [];
-  private structureCallbacks: ((value: any) => void)[] = [];
-  private tileCallbacks: ((value: any) => void)[] = [];
+  constructor(private dojo: SetupResult) {}
 
-  constructor(private dojo: SetupResult) {
-    this.setupArmySystem();
-    this.setupStructureSystem();
-    this.setupTileSystem();
-  }
-
-  private setupArmySystem() {
+  private setupArmySystem(callback: (value: ArmySystemUpdate) => void) {
     defineComponentSystem(this.dojo.network.world, this.dojo.components.Position, (update) => {
       const { value } = update;
-      console.log({ value });
 
       const army = getComponentValue(this.dojo.components.Army, update.entity);
       if (!army) return;
 
-      this.armyCallbacks.forEach((callback) => {
-        callback(value);
+      const owner = getComponentValue(this.dojo.components.Owner, update.entity);
+      const isMine = owner?.address === BigInt(this.dojo.network.burnerManager.account?.address || 0);
+
+      callback({
+        entityId: Number(army.entity_id),
+        hexCoords: { col: value[0]?.x || 0, row: value[0]?.y || 0 },
+        isMine,
       });
     });
   }
 
-  private setupStructureSystem() {
+  private setupStructureSystem(callback: (value: StructureSystemUpdate) => void) {
     defineComponentSystem(this.dojo.network.world, this.dojo.components.Position, (update) => {
       const { value } = update;
 
       const structure = getComponentValue(this.dojo.components.Structure, update.entity);
       if (!structure) return;
 
-      this.structureCallbacks.forEach((callback) => {
-        callback(value);
+      const owner = getComponentValue(this.dojo.components.Owner, update.entity);
+      const isMine = owner?.address === BigInt(this.dojo.network.burnerManager.account?.address || 0);
+
+      const categoryKey = structure.category as keyof typeof StructureType;
+
+      callback({
+        entityId: Number(structure.entity_id),
+        hexCoords: { col: value[0]?.x || 0, row: value[0]?.y || 0 },
+        structureType: StructureType[categoryKey],
+        isMine,
       });
     });
   }
 
-  private setupTileSystem() {
+  private setupTileSystem(callback: (value: TileSystemUpdate) => void) {
     defineComponentSystem(this.dojo.network.world, this.dojo.components.Tile, (update) => {
       const { value } = update;
 
       if (!value[0]) return;
 
-      this.tileCallbacks.forEach((callback) => {
-        callback(value[0]);
-      });
+      callback({ hexCoords: { col: Number(value[0].col), row: Number(value[0].row) } });
     });
   }
 
   public get Army() {
     return {
-      onUpdate: (callback: (value: any) => void) => {
-        this.armyCallbacks.push(callback);
+      onUpdate: (callback: (value: ArmySystemUpdate) => void) => {
+        this.setupArmySystem(callback);
       },
     };
   }
 
   public get Structure() {
     return {
-      onUpdate: (callback: (value: any) => void) => {
-        this.structureCallbacks.push(callback);
+      onUpdate: (callback: (value: StructureSystemUpdate) => void) => {
+        this.setupStructureSystem(callback);
       },
     };
   }
 
   public get Tile() {
     return {
-      onUpdate: (callback: (value: any) => void) => {
-        this.tileCallbacks.push(callback);
+      onUpdate: (callback: (value: TileSystemUpdate) => void) => {
+        this.setupTileSystem(callback);
       },
     };
   }

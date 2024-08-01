@@ -6,10 +6,7 @@ import { Entity } from "@dojoengine/recs";
 import { ContextMenuManager } from "../components/ContextMenuManager";
 
 import { SetupResult } from "@/dojo/setup";
-import { highlightHexMaterial } from "@/three/shaders/highlightHexMaterial";
-import { borderHexMaterial } from "@/three/shaders/borderHexMaterial";
 import { FELT_CENTER } from "@/ui/config";
-import GUI from "lil-gui";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
@@ -25,6 +22,10 @@ import { getWorldPositionForHex } from "@/ui/utils/utils";
 import { InputManager } from "../components/InputManager";
 import { throttle } from "lodash";
 import { SceneManager } from "../SceneManager";
+import { ArmyManager } from "../components/ArmyManager";
+import { StructureManager } from "../components/StructureManager";
+import useUIStore from "@/hooks/store/useUIStore";
+import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -74,6 +75,8 @@ export default class WorldmapScene {
   private currentChunk: string = "null";
 
   private entities: Entity[] = [];
+
+  private armyManager: ArmyManager;
 
   private cachedMatrices: Map<string, Map<string, { matrices: THREE.InstancedBufferAttribute; count: number }>> =
     new Map();
@@ -161,14 +164,36 @@ export default class WorldmapScene {
 
     this.loadBiomeModels();
 
+    this.armyManager = new ArmyManager(this);
+    this.systemManager.Army.onUpdate((value) => this.armyManager.onUpdate(value));
+
+    const structureManager = new StructureManager(this);
+    this.systemManager.Structure.onUpdate((value) => structureManager.onUpdate(value));
+
     this.interactiveHexManager = new InteractiveHexManager(this.scene, this.sceneManager);
     this.highlightHexManager = new HighlightHexManager(this.scene);
-
-    this.systemManager.Army.onUpdate(() => console.log("hello"));
 
     this.inputManager = new InputManager(this.raycaster, this.mouse, this.camera);
     this.inputManager.addListener("mousemove", throttle(this.interactiveHexManager.onMouseMove, 10));
     this.inputManager.addListener("dblclick", this.interactiveHexManager.onDoubleClick);
+    this.inputManager.addListener("mousemove", throttle(this.armyManager.onMouseMove, 10));
+    this.inputManager.addListener("contextmenu", this.armyManager.onRightClick);
+
+    // const unsub = useUIStore.subscribe(
+    //   (state) => state.armyActions.selectedEntityId,
+    //   (selectedEntityId) => {
+    //     if (selectedEntityId) {
+    //       console.log("worldmap", selectedEntityId);
+    //       const armyMovementManager = new ArmyMovementManager(this.dojoConfig, selectedEntityId);
+    //       const travelPaths = armyMovementManager.findPaths(new Map());
+    //       useUIStore.getState().updateTravelPaths(travelPaths.getPaths());
+    //       this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
+    //     } else {
+    //       useUIStore.getState().updateTravelPaths(new Map());
+    //       this.highlightHexManager.highlightHexes([]);
+    //     }
+    //   },
+    // );
   }
 
   public getCamera() {
@@ -497,6 +522,7 @@ export default class WorldmapScene {
 
   update(deltaTime: number) {
     this.interactiveHexManager.update();
+    this.armyManager.update(deltaTime);
 
     if (this.mainDirectionalLight) {
       this.mainDirectionalLight.shadow.camera.updateProjectionMatrix();

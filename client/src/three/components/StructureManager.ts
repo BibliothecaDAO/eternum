@@ -4,9 +4,14 @@ import WorldmapScene from "../scenes/Worldmap";
 import InstancedModel from "./InstancedModel";
 import { LabelManager } from "./LabelManager";
 import { getWorldPositionForHex } from "@/ui/utils/utils";
+import { StructureSystemUpdate } from "../systems/types";
 
 const neutralColor = new THREE.Color(0xffffff);
 const myColor = new THREE.Color("lime");
+
+const MODEL_PATH = "models/buildings/castle2.glb";
+const LABEL_PATH = "textures/realm_label.png";
+const MAX_INSTANCES = 1000;
 
 export class StructureManager {
   private worldMapScene: WorldmapScene;
@@ -17,17 +22,17 @@ export class StructureManager {
   structures: Structures = new Structures();
   private labelManager: LabelManager;
 
-  constructor(worldMapScene: WorldmapScene, modelPath: string, labelPath: string, maxInstances: number) {
+  constructor(worldMapScene: WorldmapScene) {
     this.worldMapScene = worldMapScene;
-    this.labelManager = new LabelManager(labelPath);
+    this.labelManager = new LabelManager(LABEL_PATH);
 
     this.loadPromise = new Promise<void>((resolve, reject) => {
       const loader = new GLTFLoader();
       loader.load(
-        modelPath,
+        MODEL_PATH,
         (gltf) => {
           const model = gltf.scene as THREE.Group;
-          this.instancedModel = new InstancedModel(model, maxInstances);
+          this.instancedModel = new InstancedModel(model, MAX_INSTANCES);
           this.instancedModel.setCount(0);
           this.worldMapScene.scene.add(this.instancedModel.group);
           this.isLoaded = true;
@@ -42,10 +47,9 @@ export class StructureManager {
     });
   }
 
-  updateInstanceMatrix(entityId: number, hexCoords: { col: number; row: number }, isMine: boolean) {
-    if (!this.isLoaded) {
-      throw new Error("Model not loaded yet");
-    }
+  async onUpdate(update: StructureSystemUpdate) {
+    const { entityId, hexCoords, isMine } = update;
+    await this.isLoaded;
     const position = getWorldPositionForHex(hexCoords);
     this.dummy.position.copy(position);
     this.dummy.updateMatrix();
