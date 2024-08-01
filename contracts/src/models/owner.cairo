@@ -1,35 +1,36 @@
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::ErrorMessages;
 use eternum::models::realm::Realm;
 use starknet::ContractAddress;
 
 // contract address owning an entity
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Owner {
+pub struct Owner {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     address: ContractAddress,
 }
 
 // entity owning an entity
-#[derive(Copy, Drop, Serde, Default)]
+#[derive(IntrospectPacked, Copy, Drop, Serde, Default)]
 #[dojo::model]
-struct EntityOwner {
+pub struct EntityOwner {
     #[key]
-    entity_id: u128,
-    entity_owner_id: u128,
+    entity_id: ID,
+    entity_owner_id: ID,
 }
 
 #[generate_trait]
-impl OwnerImpl of OwnerTrait {
+impl OwnerCustomImpl of OwnerCustomTrait {
     fn assert_caller_owner(self: Owner) {
         assert(self.address == starknet::get_caller_address(), ErrorMessages::NOT_OWNER);
     }
 }
 
 #[generate_trait]
-impl EntityOwnerImpl of EntityOwnerTrait {
+impl EntityOwnerCustomImpl of EntityOwnerCustomTrait {
     fn assert_caller_owner(self: EntityOwner, world: IWorldDispatcher) {
         let owner: Owner = get!(world, self.entity_owner_id, Owner);
         owner.assert_caller_owner();
@@ -39,7 +40,7 @@ impl EntityOwnerImpl of EntityOwnerTrait {
         return get!(world, self.entity_owner_id, Owner).address;
     }
 
-    fn get_realm_id(self: EntityOwner, world: IWorldDispatcher) -> u128 {
+    fn get_realm_id(self: EntityOwner, world: IWorldDispatcher) -> ID {
         get!(world, (self.entity_owner_id), Realm).realm_id
     }
 }
@@ -47,12 +48,13 @@ impl EntityOwnerImpl of EntityOwnerTrait {
 #[cfg(test)]
 mod tests {
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-    use eternum::models::owner::{EntityOwner, EntityOwnerTrait};
+    use eternum::alias::ID;
+    use eternum::models::owner::{EntityOwner, EntityOwnerCustomTrait};
     use eternum::models::realm::Realm;
     use eternum::utils::testing::world::spawn_eternum;
 
     #[test]
-    #[available_gas(30000000)]
+    #[available_gas(90000000)]
     fn test_entity_owner_get_realm_id() {
         let world = spawn_eternum();
 

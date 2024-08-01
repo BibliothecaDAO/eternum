@@ -1,16 +1,16 @@
 import { useArmiesByEntityOwner } from "@/hooks/helpers/useArmies";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
+import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
 import { useStamina } from "@/hooks/helpers/useStamina";
-import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
 import useUIStore from "@/hooks/store/useUIStore";
 import { SelectPreviewBuildingMenu } from "@/ui/components/construction/SelectPreviewBuilding";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import { StructureConstructionMenu } from "@/ui/components/structures/construction/StructureConstructionMenu";
 import { BaseContainer } from "@/ui/containers/BaseContainer";
 import Button from "@/ui/elements/Button";
 import { EntityDetails } from "@/ui/modules/entity-details/EntityDetails";
 import { Military } from "@/ui/modules/military/Military";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { debounce } from "lodash";
@@ -20,14 +20,8 @@ import { useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { construction, military, quests as questsPopup, worldStructures } from "../../components/navigation/Config";
 import CircleButton from "../../elements/CircleButton";
-import { Assistant } from "../assistant/Assistant";
-import { Guilds } from "../guilds/Guilds";
-import { Leaderboard } from "../leaderboard/LeaderBoard";
-import { Questing } from "../questing/Questing";
 import { WorldStructuresMenu } from "../world-structures/WorldStructuresMenu";
 import { MenuEnum } from "./BottomNavigation";
-import { useQuestClaimStatus } from "@/hooks/helpers/useQuests";
-import { QuestId } from "@/ui/components/quest/questDetails";
 
 export const BuildingThumbs = {
   hex: "/images/buildings/thumb/question.png",
@@ -51,7 +45,6 @@ export enum View {
   MilitaryView,
   EntityView,
   ConstructionView,
-  StructureView,
   WorldStructuresView,
 }
 
@@ -210,15 +203,8 @@ export const LeftNavigationModule = () => {
 
   return (
     <>
-      <div className="pointer-events-auto">
-        <Questing entityId={realmEntityId} />
-        <Assistant />
-        <Leaderboard />
-        <Guilds />
-      </div>
-
       <div
-        className={`max-h-full transition-all duration-200 space-x-1 gap-1  flex z-0 w-[600px] text-gold left-10 self-center pointer-events-auto ${
+        className={`max-h-full transition-all duration-200 space-x-1 gap-1 flex z-0 w-[600px] text-gold left-10 self-center pointer-events-none ${
           isOffscreen(view) ? "-translate-x-[86%]" : ""
         }`}
         onPointerEnter={() => {
@@ -233,7 +219,9 @@ export const LeftNavigationModule = () => {
         }}
         onPointerLeave={debouncedSetIsOffscreen}
       >
-        <BaseContainer className={`w-full overflow-y-auto ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}>
+        <BaseContainer
+          className={`w-full pointer-events-auto overflow-y-auto ${isOffscreen(view) ? "h-[20vh]" : "h-[60vh]"}`}
+        >
           {view === View.EntityView && <EntityDetails />}
           {view === View.MilitaryView && <Military entityId={realmEntityId} />}
           {!isWorldView && view === View.ConstructionView && <SelectPreviewBuildingMenu />}
@@ -244,7 +232,7 @@ export const LeftNavigationModule = () => {
           variants={slideLeft}
           initial="hidden"
           animate="visible"
-          className="gap-2 flex flex-col justify-center self-center"
+          className="gap-2 flex flex-col justify-center self-center pointer-events-auto"
         >
           <div>
             <Button onClick={() => setView(isOffscreen(view) ? lastView : View.None)} variant="primary">

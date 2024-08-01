@@ -1,12 +1,12 @@
 import { calculateDistance } from "@/ui/utils/utils";
-import { EternumGlobalConfig, Position } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ID, Position } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
 import { useDojo } from "../context/DojoContext";
 import { useStamina } from "./useStamina";
 interface TravelToHexProps {
-  travelingEntityId: bigint | undefined;
+  travelingEntityId: ID | undefined;
   directions: number[];
   path: Position[];
   currentArmiesTick: number;
@@ -22,9 +22,9 @@ export function useTravel() {
   } = useDojo();
   const { optimisticStaminaUpdate } = useStamina();
 
-  const computeTravelTime = (fromId: bigint, toId: bigint, speed: number, pickup?: boolean) => {
-    const fromPosition = getComponentValue(components.Position, getEntityIdFromKeys([fromId]));
-    const toPosition = getComponentValue(components.Position, getEntityIdFromKeys([toId]));
+  const computeTravelTime = (fromId: ID, toId: ID, speed: number, pickup?: boolean) => {
+    const fromPosition = getComponentValue(components.Position, getEntityIdFromKeys([BigInt(fromId)]));
+    const toPosition = getComponentValue(components.Position, getEntityIdFromKeys([BigInt(toId)]));
     if (!fromPosition || !toPosition) return;
     const distanceFromPosition =
       calculateDistance(
@@ -36,7 +36,7 @@ export function useTravel() {
   };
 
   const optimisticTravelHex = (
-    entityId: bigint,
+    entityId: ID,
     col: number,
     row: number,
     pathLength: number,
@@ -44,7 +44,7 @@ export function useTravel() {
   ) => {
     let overrideId = uuid();
 
-    const entity = getEntityIdFromKeys([entityId]);
+    const entity = getEntityIdFromKeys([BigInt(entityId)]);
 
     optimisticStaminaUpdate(
       overrideId,

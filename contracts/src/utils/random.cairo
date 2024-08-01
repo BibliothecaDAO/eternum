@@ -6,7 +6,7 @@ use core::poseidon::poseidon_hash_span;
 ///     salt: u128
 ///         salt used when generating the seed
 ///     upper_bound: u128
-///         The upper_bound of possible values 
+///         The upper_bound of possible values
 ///         i.e output will be from 0 to upper_bound - 1.
 ///
 /// Returns:
@@ -20,13 +20,11 @@ fn random(salt: u128, upper_bound: u128) -> u128 {
 
 
 fn make_seed_from_transaction_hash(salt: u128) -> u256 {
-    return poseidon_hash_span(
-        array![starknet::get_tx_info().unbox().transaction_hash.into(), salt.into()].span()
-    )
+    return poseidon_hash_span(array![starknet::get_tx_info().unbox().transaction_hash.into(), salt.into()].span())
         .into();
 }
 
-/// Return a k sized list of population elements chosen with replacement.   
+/// Return a k sized list of population elements chosen with replacement.
 ///
 /// If the relative weights or cumulative weights are not specified,
 /// the selections are made with equal probability.
@@ -39,7 +37,7 @@ fn make_seed_from_transaction_hash(salt: u128) -> u256 {
 ///     cum_weights: Span<u128>
 ///         The cumulative weights of each population element.
 ///         This is to be used in place of weights to speed up calculations
-///         if the sum of weights is already available. 
+///         if the sum of weights is already available.
 ///     k: u128
 ///         The number of elements to sample.
 ///
@@ -65,10 +63,7 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
                 if index == k {
                     break;
                 }
-                result
-                    .append(
-                        *population.at(random(salt + index.into(), n.into()).try_into().unwrap())
-                    );
+                result.append(*population.at(random(salt + index.into(), n.into()).try_into().unwrap()));
                 index += 1;
             };
             return result.span();
@@ -102,13 +97,11 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
             break;
         }
 
-        // update salt by any number 
+        // update salt by any number
         // just to make it different
         salt += 18;
 
-        let chosen_index = bisect_right(
-            cum_weights.clone(), random(salt, total), 0, Option::Some(hi)
-        );
+        let chosen_index = bisect_right(cum_weights.clone(), random(salt, total), 0, Option::Some(hi));
 
         if r == false {
             if chosen_index_map.get(chosen_index.into()) == 0 {
@@ -125,7 +118,7 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
 }
 
 
-/// Given a list of values, return a list of the same length, 
+/// Given a list of values, return a list of the same length,
 /// where each element is the sum of the previous values.
 ///
 /// Args:

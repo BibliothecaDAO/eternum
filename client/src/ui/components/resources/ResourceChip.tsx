@@ -1,11 +1,11 @@
-import { findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
 
-import { ResourceIcon } from "../../elements/ResourceIcon";
-import { currencyFormat, formatTime } from "../../utils/utils";
 import { useProductionManager } from "@/hooks/helpers/useResources";
-import { useEffect, useMemo, useState } from "react";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import useUIStore from "@/hooks/store/useUIStore";
+import { useEffect, useMemo, useState } from "react";
+import { ResourceIcon } from "../../elements/ResourceIcon";
+import { currencyFormat, formatTime } from "../../utils/utils";
 
 export const ResourceChip = ({
   isLabor = false,
@@ -13,8 +13,8 @@ export const ResourceChip = ({
   entityId,
 }: {
   isLabor?: boolean;
-  resourceId: number;
-  entityId: bigint;
+  resourceId: ID;
+  entityId: ID;
 }) => {
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resourceId);

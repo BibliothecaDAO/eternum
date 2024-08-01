@@ -1,4 +1,5 @@
 import { copyPlayerAddressToClipboard, displayAddress, sortItems } from "@/ui/utils/utils";
+import { ContractAddress } from "@bibliothecadao/eternum";
 import { useCallback, useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import { GuildMemberAndName, useGuilds } from "../../../../hooks/helpers/useGuilds";
@@ -47,7 +48,7 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
     sort: "none",
   });
 
-  const removeGuildMember = useCallback((address: bigint) => {
+  const removeGuildMember = useCallback((address: ContractAddress) => {
     setIsLoading(true);
     remove_guild_member({
       player_address_to_remove: address,
@@ -88,17 +89,23 @@ export const GuildMembers = ({ selectedGuild, isOwner, ownerAddress }: GuildMemb
               <p className="col-span-1">{member.name}</p>
               <p
                 className="col-span-1 hover:text-white"
-                onClick={() => copyPlayerAddressToClipboard(BigInt(member.guildMember.address), member.name)}
+                onClick={() => copyPlayerAddressToClipboard(member.guildMember.address, member.name)}
               >
                 {displayAddress(member.playerAddress)}
               </p>
-              {isOwner && member.playerAddress != account.address && guildOwner?.address == BigInt(account.address) && (
-                <div className="col-span-1">
-                  <Button size="xs" isLoading={isLoading} onClick={() => removeGuildMember(member.guildMember.address)}>
-                    Kick out
-                  </Button>
-                </div>
-              )}
+              {isOwner &&
+                member.playerAddress != account.address &&
+                guildOwner?.address == ContractAddress(account.address) && (
+                  <div className="col-span-1">
+                    <Button
+                      size="xs"
+                      isLoading={isLoading}
+                      onClick={() => removeGuildMember(member.guildMember.address)}
+                    >
+                      Kick out
+                    </Button>
+                  </div>
+                )}
             </div>
           );
         })}

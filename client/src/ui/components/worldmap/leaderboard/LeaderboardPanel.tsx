@@ -25,15 +25,6 @@ export const LeaderboardPanel = () => {
         ),
         component: <GuildsLeaderboard />,
       },
-      // {
-      //   key: "leaderboard",
-      //   label: (
-      //     <div className="flex group relative flex-col items-center">
-      //       <div>Orders</div>
-      //     </div>
-      //   ),
-      //   component: <OrdersLeaderboard />,
-      // },
     ],
     [selectedTab],
   );

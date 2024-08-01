@@ -1,5 +1,6 @@
 import { ReactComponent as ArrowRight } from "@/assets/icons/common/arrow-right.svg";
 import Button from "@/ui/elements/Button";
+import { ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useEffect, useState } from "react";
 
@@ -13,7 +14,7 @@ interface EntityListProps {
   }) => React.ReactElement;
   list: any[];
   previous?: any[];
-  current?: bigint;
+  current?: ID;
   entityContent?: (props: { id: any }) => React.ReactElement | null;
   questing?: boolean;
   className?: string;

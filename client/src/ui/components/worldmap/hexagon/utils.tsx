@@ -1,4 +1,3 @@
-import { Color } from "three";
 import {
   EternumGlobalConfig,
   Position,
@@ -6,30 +5,12 @@ import {
   ResourcesIds,
   TROOPS_STAMINAS,
   getNeighborHexes,
-  neighborOffsetsEven,
-  neighborOffsetsOdd,
 } from "@bibliothecadao/eternum";
 
 const matrix = new Matrix4();
 const positions = new Vector3();
 import { InstancedMesh, Matrix4, Vector3 } from "three";
 import { FELT_CENTER } from "@/ui/config";
-
-export const isNeighbor = (pos1: Position, pos2: Position) => {
-  const neighborOffsets = pos1.y % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-  for (const { i, j } of neighborOffsets) {
-    if (pos1.x + i === pos2.x && pos1.y + j === pos2.y) {
-      return true;
-    }
-  }
-  return false;
-};
-
-export const getGrayscaleColor = (color: Color) => {
-  const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
-  const darkerLuminance = luminance * 0.5; // Make the grayscale color darker, closer to black
-  return darkerLuminance;
-};
 
 export const getPositionsAtIndex = (mesh: InstancedMesh<any, any>, index: number) => {
   if (!mesh || !mesh.isInstancedMesh) {

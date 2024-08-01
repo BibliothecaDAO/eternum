@@ -34,7 +34,7 @@ export const EnemyArmies = ({
           onClick={() =>
             setBattleView({
               engage: true,
-              battle: undefined,
+              battleEntityId: undefined,
               ownArmyEntityId: ownArmySelected.entity_id,
               targetArmy: army.entity_id,
             })

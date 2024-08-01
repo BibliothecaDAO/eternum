@@ -112,7 +112,7 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
   );
 };
 
-export const Banking = () => {
+const Banking = () => {
   return (
     <div>
       <Headline>Trading</Headline>

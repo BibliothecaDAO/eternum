@@ -3,19 +3,20 @@ use core::debug::PrintTrait;
 use core::integer::BoundedInt;
 use core::option::OptionTrait;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::models::config::{ProductionConfig};
 use eternum::models::config::{TickConfig, TickImpl, TickTrait};
-use eternum::models::resources::{Resource, ResourceImpl};
+use eternum::models::resources::{Resource, ResourceCustomImpl};
 use starknet::get_block_timestamp;
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Production {
+pub struct Production {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     #[key]
     resource_type: u8,
-    building_count: u128,
+    building_count: u8,
     production_rate: u128,
     consumption_rate: u128,
     last_updated_tick: u64,
@@ -37,16 +38,12 @@ impl ProductionRateImpl of ProductionRateTrait {
         return false;
     }
 
-    fn increase_production_rate(
-        ref self: Production, ref resource: Resource, tick: @TickConfig, amount: u128
-    ) {
+    fn increase_production_rate(ref self: Production, ref resource: Resource, tick: @TickConfig, amount: u128) {
         self.harvest(ref resource, tick);
         self.production_rate += amount;
     }
 
-    fn decrease_production_rate(
-        ref self: Production, ref resource: Resource, tick: @TickConfig, amount: u128
-    ) {
+    fn decrease_production_rate(ref self: Production, ref resource: Resource, tick: @TickConfig, amount: u128) {
         self.harvest(ref resource, tick);
         self.production_rate -= amount;
     }
@@ -59,16 +56,12 @@ impl ProductionRateImpl of ProductionRateTrait {
         self.building_count -= 1;
     }
 
-    fn increase_consumption_rate(
-        ref self: Production, ref resource: Resource, tick: @TickConfig, amount: u128
-    ) {
+    fn increase_consumption_rate(ref self: Production, ref resource: Resource, tick: @TickConfig, amount: u128) {
         self.harvest(ref resource, tick);
         self.consumption_rate += amount;
     }
 
-    fn decrease_consumption_rate(
-        ref self: Production, ref resource: Resource, tick: @TickConfig, amount: u128
-    ) {
+    fn decrease_consumption_rate(ref self: Production, ref resource: Resource, tick: @TickConfig, amount: u128) {
         self.harvest(ref resource, tick);
         self.consumption_rate -= amount;
     }
@@ -105,9 +98,7 @@ impl ProductionRateImpl of ProductionRateTrait {
     }
 
 
-    fn set_input_finish_tick(
-        ref self: Production, ref resource: Resource, tick: @TickConfig, value: u64
-    ) {
+    fn set__input_finish_tick(ref self: Production, ref resource: Resource, tick: @TickConfig, value: u64) {
         self.harvest(ref resource, tick);
         self.input_finish_tick = value;
     }
@@ -156,9 +147,9 @@ impl ProductionRateImpl of ProductionRateTrait {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct ProductionInput {
+pub struct ProductionInput {
     #[key]
     output_resource_type: u8,
     #[key]
@@ -168,10 +159,10 @@ struct ProductionInput {
 }
 
 #[generate_trait]
-impl ProductionInputImpl of ProductionInputTrait {
-    /// Production ends when any input material runs out of balance so what this 
-    /// function does is that it finds the first input resource to run out of balance that 
-    /// returns the tick it runs out 
+impl ProductionInputCustomImpl of ProductionInputCustomTrait {
+    /// Production ends when any input material runs out of balance so what this
+    /// function does is that it finds the first input resource to run out of balance that
+    /// returns the tick it runs out
     fn first_input_finish_tick(production: @Production, world: IWorldDispatcher) -> u64 {
         let production_config = get!(world, *production.resource_type, ProductionConfig);
         let tick_config = TickImpl::get_default_tick_config(world);
@@ -183,19 +174,16 @@ impl ProductionInputImpl of ProductionInputTrait {
             if count == production_config.input_count {
                 break;
             }
-            let production_input: ProductionInput = get!(
-                world, (*production.resource_type, count), ProductionInput
-            );
+            let production_input: ProductionInput = get!(world, (*production.resource_type, count), ProductionInput);
 
-            let mut input_resource: Resource = ResourceImpl::get(
+            let mut input_resource: Resource = ResourceCustomImpl::get(
                 world, (*production.entity_id, production_input.input_resource_type)
             );
 
             let mut input_production: Production = get!(
                 world, (*production.entity_id, production_input.input_resource_type), Production
             );
-            let exhaustion_tick = input_production
-                .balance_exhaustion_tick(@input_resource, @tick_config);
+            let exhaustion_tick = input_production.balance_exhaustion_tick(@input_resource, @tick_config);
             if exhaustion_tick < least_tick {
                 least_tick = exhaustion_tick;
             }
@@ -208,9 +196,9 @@ impl ProductionInputImpl of ProductionInputTrait {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct ProductionOutput {
+pub struct ProductionOutput {
     #[key]
     input_resource_type: u8,
     #[key]
@@ -219,15 +207,13 @@ struct ProductionOutput {
 }
 
 #[generate_trait]
-impl ProductionOutputImpl of ProductionOutputTrait {
-    /// Updates end ticks for dependent resources based 
+impl ProductionOutputCustomImpl of ProductionOutputCustomTrait {
+    /// Updates end ticks for dependent resources based
     /// on changes in this resource's balance.
     fn sync_all_inputs_exhaustion_ticks_for(resource: @Resource, world: IWorldDispatcher) {
         let resource = *resource;
         // Get the production configuration of the current resource
-        let resource_production_config: ProductionConfig = get!(
-            world, resource.resource_type, ProductionConfig
-        );
+        let resource_production_config: ProductionConfig = get!(world, resource.resource_type, ProductionConfig);
 
         // Get the current tick from the world
         let tick = TickImpl::get_default_tick_config(world);
@@ -240,14 +226,10 @@ impl ProductionOutputImpl of ProductionOutputTrait {
             }
 
             // Get the output resource type from the production output configuration
-            let output_resource_type: u8 = get!(
-                world, (resource.resource_type, count), ProductionOutput
-            )
+            let output_resource_type: u8 = get!(world, (resource.resource_type, count), ProductionOutput)
                 .output_resource_type;
 
-            let mut output_resource: Resource = get!(
-                world, (resource.entity_id, output_resource_type), Resource
-            );
+            let mut output_resource: Resource = get!(world, (resource.entity_id, output_resource_type), Resource);
 
             // Get the production details of the output resource
             let mut output_resource_production: Production = get!(
@@ -256,15 +238,12 @@ impl ProductionOutputImpl of ProductionOutputTrait {
 
             if output_resource_production.building_count > 0 {
                 // Update the end tick for the output resource
-                let output_resource_production_finish_tick =
-                    ProductionInputImpl::first_input_finish_tick(
+                let output_resource_production_finish_tick = ProductionInputCustomImpl::first_input_finish_tick(
                     @output_resource_production, world
                 );
 
                 output_resource_production
-                    .set_input_finish_tick(
-                        ref output_resource, @tick, output_resource_production_finish_tick
-                    );
+                    .set__input_finish_tick(ref output_resource, @tick, output_resource_production_finish_tick);
 
                 // Save the updated production details of the output resource back to the world
                 set!(world, (output_resource, output_resource_production));

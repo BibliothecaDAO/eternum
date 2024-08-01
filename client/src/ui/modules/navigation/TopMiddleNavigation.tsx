@@ -9,6 +9,7 @@ import {
   BASE_POPULATION_CAPACITY,
   BuildingType,
   EternumGlobalConfig,
+  ID,
   STOREHOUSE_CAPACITY,
   StructureType,
 } from "@bibliothecadao/eternum";
@@ -19,11 +20,11 @@ import { useMemo } from "react";
 import { useLocation } from "wouter";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
+import { QuestStatus } from "@/hooks/helpers/useQuests";
 import { useQuestStore } from "@/hooks/store/useQuestStore";
+import { QuestId } from "@/ui/components/quest/questDetails";
 import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
-import { QuestStatus } from "@/hooks/helpers/useQuests";
-import { QuestId } from "@/ui/components/quest/questDetails";
 import { motion } from "framer-motion";
 
 const slideDown = {
@@ -67,33 +68,30 @@ export const TopMiddleNavigation = () => {
     return location.includes(`/hex`);
   }, [location]);
 
-  const goToHexView = (entityId: any) => {
-    const structure = structures.find((structure) => structure.entity_id?.toString() === entityId);
+  const goToHexView = (entityId: ID) => {
+    const structure = structures.find((structure) => structure.entity_id === entityId);
 
     setIsLoadingScreenEnabled(true);
     setTimeout(() => {
       setLocation(`/hex?col=${structure!.position.x}&row=${structure!.position.y}`);
-      setRealmEntityId(BigInt(entityId));
+      setRealmEntityId(entityId);
     }, 300);
   };
 
-  const goToMapView = (entityId: any) => {
+  const goToMapView = (entityId: ID) => {
     const contractPosition = getComponentValue(setup.components.Position, getEntityIdFromKeys([BigInt(entityId)]));
     moveCameraToColRow(Number(contractPosition?.x), Number(contractPosition?.y));
 
-    setRealmEntityId(BigInt(entityId));
+    setRealmEntityId(entityId);
   };
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const population = useComponentValue(
-    setup.components.Population,
-    getEntityIdFromKeys([BigInt(realmEntityId || "0")]),
-  );
+  const population = useComponentValue(setup.components.Population, getEntityIdFromKeys([BigInt(realmEntityId || 0)]));
 
   const storehouses = useMemo(() => {
     const quantity =
       getComponentValue(
         setup.components.BuildingQuantityv2,
-        getEntityIdFromKeys([BigInt(realmEntityId || "0"), BigInt(BuildingType.Storehouse)]),
+        getEntityIdFromKeys([BigInt(realmEntityId || 0), BigInt(BuildingType.Storehouse)]),
       )?.value || 0;
 
     return quantity * STOREHOUSE_CAPACITY + STOREHOUSE_CAPACITY;
@@ -110,8 +108,8 @@ export const TopMiddleNavigation = () => {
           <div className="self-center flex justify-between w-full">
             <Select
               value={realmEntityId.toString()}
-              onValueChange={(a: any) => {
-                !isHexView ? goToMapView(a) : goToHexView(a);
+              onValueChange={(a: string) => {
+                !isHexView ? goToMapView(ID(a)) : goToHexView(ID(a));
               }}
             >
               <SelectTrigger className="">
@@ -156,7 +154,7 @@ export const TopMiddleNavigation = () => {
                   }
                 }, 300);
               } else {
-                goToHexView(realmEntityId.toString());
+                goToHexView(realmEntityId);
               }
             }}
           >

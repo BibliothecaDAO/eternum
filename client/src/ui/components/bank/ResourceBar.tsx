@@ -3,16 +3,16 @@ import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/elements/Select";
 import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
+import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { HintSection } from "../hints/HintModal";
 
 type ResourceBarProps = {
-  entityId: bigint;
+  entityId: ID;
   lordsFee: number;
   resources: Resources[];
-  resourceId: bigint;
-  setResourceId: (resourceId: bigint) => void;
+  resourceId: ResourcesIds;
+  setResourceId: (resourceId: ResourcesIds) => void;
   amount: number;
   setAmount: (amount: number) => void;
   disableInput?: boolean;
@@ -38,14 +38,14 @@ export const ResourceBar = ({
 
   const handleResourceChange = (trait: string) => {
     const resourceId = findResourceIdByTrait(trait);
-    setResourceId && setResourceId(BigInt(resourceId));
+    setResourceId && setResourceId(resourceId);
   };
 
   const handleAmountChange = (amount: string) => {
     !disableInput && setAmount && setAmount(parseInt(amount));
   };
 
-  const hasLordsFees = lordsFee > 0 && resourceId === BigInt(ResourcesIds.Lords);
+  const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;
   const finalResourceBalance = hasLordsFees ? selectedResourceBalance - lordsFee : selectedResourceBalance;
 
   return (

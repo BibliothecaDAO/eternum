@@ -8,7 +8,6 @@ import { BuildModeStore, createBuildModeStoreSlice } from "./_buildModeStore";
 import { createMapStoreSlice, MapStore } from "./_mapStore";
 import { createPopupsSlice, PopupsStore } from "./_popups";
 import { BattleViewInfo } from "./types";
-export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
   theme: string;
@@ -110,7 +109,7 @@ const useUIStore = create<UIStore & PopupsStore & MapStore & BuildModeStore>((se
   mouseCoords: { x: 0, y: 0 },
   setMouseCoords: (coords) => set({ mouseCoords: coords }),
   moveCameraToRealm: (realmId, speed = undefined) => {
-    const pos = getRealmUIPosition(BigInt(realmId));
+    const pos = getRealmUIPosition(realmId);
     const x = pos.x;
     const y = pos.y * -1;
     const targetPos = new Vector3(x, 0, y);

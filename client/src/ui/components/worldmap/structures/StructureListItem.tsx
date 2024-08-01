@@ -30,16 +30,16 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
   const setBattleView = useUIStore((state) => state.setBattleView);
 
   const { getRealmAddressName } = useRealm();
-  const addressName = getRealmAddressName(BigInt(structure.entity_id));
+  const addressName = getRealmAddressName(structure.entity_id);
 
   const { getHyperstructureProgress } = useHyperstructures();
 
   const progress =
     structure.category === StructureType[StructureType.Hyperstructure]
-      ? getHyperstructureProgress(BigInt(structure.entity_id))
+      ? getHyperstructureProgress(structure.entity_id)
       : undefined;
 
-  const battleManager = useMemo(() => new BattleManager(structure.protector?.battle_id || 0n, dojo), [structure]);
+  const battleManager = useMemo(() => new BattleManager(structure.protector?.battle_id || 0, dojo), [structure]);
 
   const { updatedBattle } = useMemo(() => {
     if (!currentTimestamp) throw new Error("Current timestamp is undefined");
@@ -47,7 +47,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
     return { updatedBattle };
   }, [currentTimestamp]);
 
-  const userArmyInBattle = getUserArmyInBattle(updatedBattle?.entity_id || 0n);
+  const userArmyInBattle = getUserArmyInBattle(updatedBattle?.entity_id || 0);
 
   const battleButtons = useMemo(() => {
     if (!currentTimestamp) throw new Error("Current timestamp is undefined");
@@ -58,7 +58,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
         className="fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125"
         onClick={() =>
           setBattleView({
-            battle: updatedBattle!.entity_id,
+            battleEntityId: updatedBattle!.entity_id,
             targetArmy: undefined,
             ownArmyEntityId: undefined,
           })
@@ -80,7 +80,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
         className="fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125"
         onClick={() =>
           setBattleView({
-            battle: updatedBattle?.entity_id,
+            battleEntityId: updatedBattle?.entity_id,
             targetArmy: structure.protector?.entity_id,
             ownArmyEntityId: ownArmySelected?.entity_id,
           })
@@ -109,7 +109,7 @@ export const StructureListItem = ({ structure, setShowMergeTroopsPopup, ownArmyS
           onClick={() =>
             setBattleView({
               engage: true,
-              battle: undefined,
+              battleEntityId: undefined,
               ownArmyEntityId: ownArmySelected?.entity_id,
               targetArmy: structure.protector?.entity_id,
             })

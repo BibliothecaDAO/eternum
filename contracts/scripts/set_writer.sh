@@ -44,7 +44,7 @@ for system in $(echo $system_models_json | jq -r 'keys[]'); do
     # Loop through each component that the system writes to
     for model in $(echo $system_models_json | jq -r ".$system[]"); do
         # Append to the multicall command
-        multicall_command+=" $model,$contract_address"
+        multicall_command+=" model:$model,$contract_address"
     done
 done
 

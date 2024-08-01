@@ -1,11 +1,12 @@
 import { InventoryResources } from "@/ui/components/resources/InventoryResources";
+import { ID } from "@bibliothecadao/eternum";
 
 export const LockedResources = ({
   attackersResourcesEscrowEntityId,
   defendersResourcesEscrowEntityId,
 }: {
-  attackersResourcesEscrowEntityId: bigint;
-  defendersResourcesEscrowEntityId: bigint;
+  attackersResourcesEscrowEntityId: ID;
+  defendersResourcesEscrowEntityId: ID;
 }) => {
   return (
     <div className="col-span-2 flex flex-col justify-start p-2 bg-[#1b1a1a] bg-map overflow-y-auto">

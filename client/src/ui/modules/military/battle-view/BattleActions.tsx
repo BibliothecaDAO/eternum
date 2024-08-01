@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ComponentValue } from "@dojoengine/recs";
 import { useMemo, useState } from "react";
 import { View } from "../../navigation/LeftNavigationModule";
+import { ID } from "@bibliothecadao/eternum";
 
 enum Loading {
   None,
@@ -33,7 +34,7 @@ export const BattleActions = ({
 }: {
   battleManager: BattleManager;
   userArmiesInBattle: (ArmyInfo | undefined)[];
-  ownArmyEntityId: bigint | undefined;
+  ownArmyEntityId: ID | undefined;
   defenderArmies: (ArmyInfo | undefined)[];
   structure: Structure | undefined;
   battleAdjusted: ComponentValue<ClientComponents["Battle"]["schema"]> | undefined;
@@ -57,17 +58,17 @@ export const BattleActions = ({
 
   const { getAliveArmy } = getArmyByEntityId();
 
-  const [localSelectedUnit, setLocalSelectedUnit] = useState<bigint | undefined>(
-    userArmiesInBattle?.[0]?.entity_id || ownArmyEntityId || 0n,
+  const [localSelectedUnit, setLocalSelectedUnit] = useState<ID | undefined>(
+    userArmiesInBattle?.[0]?.entity_id || ownArmyEntityId || 0,
   );
 
   const selectedArmy = useMemo(() => {
-    return getAliveArmy(localSelectedUnit || 0n);
+    return getAliveArmy(localSelectedUnit || 0);
   }, [localSelectedUnit, isActive]);
 
   const defenderArmy = useMemo(() => {
     const defender = structure?.protector ? structure.protector : defenderArmies[0];
-    const battleManager = new BattleManager(defender?.battle_id || 0n, dojo);
+    const battleManager = new BattleManager(defender?.battle_id || 0, dojo);
     return battleManager.getUpdatedArmy(defender, battleManager.getUpdatedBattle(currentTimestamp!));
   }, [defenderArmies]);
 
@@ -96,7 +97,7 @@ export const BattleActions = ({
     });
     setBattleView({
       engage: false,
-      battle: undefined,
+      battleEntityId: undefined,
       ownArmyEntityId: undefined,
       targetArmy: defenderArmy?.entity_id,
     });
@@ -105,11 +106,11 @@ export const BattleActions = ({
 
   const handleBattleClaim = async () => {
     setLoading(Loading.Claim);
-    if (battleAdjusted?.entity_id! !== 0n && battleAdjusted?.entity_id === selectedArmy!.battle_id) {
+    if (battleAdjusted?.entity_id! !== 0 && battleAdjusted?.entity_id === selectedArmy!.battle_id) {
       await battle_leave_and_claim({
         signer: account,
         army_id: selectedArmy!.entity_id,
-        battle_id: battleManager?.battleId || 0n,
+        battle_id: battleManager?.battleEntityId || 0,
         structure_id: structure!.entity_id,
       });
     } else {
@@ -130,7 +131,7 @@ export const BattleActions = ({
     await battle_leave({
       signer: account,
       army_id: selectedArmy!.entity_id,
-      battle_id: battleManager?.battleId || 0n,
+      battle_id: battleManager?.battleEntityId || 0,
     });
 
     setLoading(Loading.None);
@@ -218,8 +219,8 @@ const ArmySelector = ({
   setLocalSelectedUnit,
   userArmiesInBattle,
 }: {
-  localSelectedUnit: bigint | undefined;
-  setLocalSelectedUnit: (val: bigint) => void;
+  localSelectedUnit: ID | undefined;
+  setLocalSelectedUnit: (val: ID) => void;
   userArmiesInBattle: (ArmyInfo | undefined)[];
 }) => {
   return (
@@ -228,7 +229,7 @@ const ArmySelector = ({
       <div className="self-center w-full flex flex-col justify-between bg-transparent size-xs col-span-2 text-gold text-center border border-gold rounded h-10">
         <Select
           onValueChange={(a: string) => {
-            setLocalSelectedUnit(BigInt(a));
+            setLocalSelectedUnit(Number(a));
           }}
         >
           <SelectTrigger className="text-gold h-10">

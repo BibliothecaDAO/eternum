@@ -9,12 +9,11 @@ import useUIStore from "@/hooks/store/useUIStore";
 import Button from "@/ui/elements/Button";
 import { NumberInput } from "@/ui/elements/NumberInput";
 import TextInput from "@/ui/elements/TextInput";
-import { currencyFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
+import { currencyFormat, formatSecondsInHoursMinutes, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { ID, Position, ResourcesIds, U32_MAX } from "@bibliothecadao/eternum";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { formatSecondsInHoursMinutes } from "../cityview/realm/labor/laborUtils";
 
 import { ArmyInfo } from "@/hooks/helpers/useArmies";
 import { useStructuresFromPosition } from "@/hooks/helpers/useStructures";
@@ -23,7 +22,7 @@ import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
 import { LucideArrowRight } from "lucide-react";
 
 type ArmyManagementCardProps = {
-  owner_entity: bigint;
+  owner_entity: ID;
   army: ArmyInfo | undefined;
   setSelectedEntity?: (entity: ArmyInfo | null) => void;
 };
@@ -184,7 +183,7 @@ export const ArmyManagementCard = ({ owner_entity, army, setSelectedEntity }: Ar
               <>
                 Traveling for{" "}
                 {isPassiveTravel
-                  ? formatSecondsInHoursMinutes(army?.arrivalTime!.arrives_at - nextBlockTimestamp || 0)
+                  ? formatSecondsInHoursMinutes(Number(army?.arrivalTime!.arrives_at || 0) - nextBlockTimestamp)
                   : "Arrives Next Tick"}
               </>
             ) : (
@@ -396,7 +395,7 @@ interface TravelToLocationProps {
   onClose: () => void;
 }
 
-export const TravelToLocation = ({
+const TravelToLocation = ({
   isTraveling,
   checkSamePosition,
   entityOwnerPosition,

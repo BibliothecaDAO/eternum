@@ -1,3 +1,4 @@
+use eternum::alias::ID;
 use eternum::models::{combat::{Troops, Battle, BattleSide}};
 
 #[dojo::interface]
@@ -46,15 +47,13 @@ trait ICombatContract<TContractState> {
     ///     - Configures the army's movement speed and carrying capacity based on game world
     ///     settings.
     ///     - Initializes the army's stamina for map exploration.
-    fn army_create(
-        ref world: IWorldDispatcher, army_owner_id: u128, is_defensive_army: bool
-    ) -> u128;
+    fn army_create(ref world: IWorldDispatcher, army_owner_id: ID, is_defensive_army: bool) -> ID;
 
     /// Delete an army
     /// - army must not be a defensive army
     /// - army must be dead (in battle or otherwise)
     ///
-    fn army_delete(ref world: IWorldDispatcher, army_id: u128);
+    fn army_delete(ref world: IWorldDispatcher, army_id: ID);
     /// Purchases and adds troops to an existing army entity.
     ///
     /// # Preconditions:
@@ -81,7 +80,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn army_buy_troops(ref world: IWorldDispatcher, army_id: u128, payer_id: u128, troops: Troops);
+    fn army_buy_troops(ref world: IWorldDispatcher, army_id: ID, payer_id: ID, troops: Troops);
 
     /// Transfer of troops from one army to another.
     ///
@@ -112,9 +111,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn army_merge_troops(
-        ref world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops
-    );
+    fn army_merge_troops(ref world: IWorldDispatcher, from_army_id: ID, to_army_id: ID, troops: Troops);
 
     /// Initiates a battle between an attacking and defending army within the game world.
     ///
@@ -171,9 +168,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_start(
-        ref world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128
-    ) -> u128;
+    fn battle_start(ref world: IWorldDispatcher, attacking_army_id: ID, defending_army_id: ID) -> ID;
 
     /// Join an existing battle with the specified army, assigning it to a specific side in the
     /// battle.
@@ -225,9 +220,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_join(
-        ref world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128
-    );
+    fn battle_join(ref world: IWorldDispatcher, battle_id: ID, battle_side: BattleSide, army_id: ID);
 
     /// Allows an army to leave an ongoing battle, releasing its resources and restoring its
     /// mobility (if it was previously mobile).
@@ -284,7 +277,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_leave(ref world: IWorldDispatcher, battle_id: u128, army_id: u128);
+    fn battle_leave(ref world: IWorldDispatcher, battle_id: ID, army_id: ID);
 
     /// Pillage a structure.
     ///
@@ -335,7 +328,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_pillage(ref world: IWorldDispatcher, army_id: u128, structure_id: u128);
+    fn battle_pillage(ref world: IWorldDispatcher, army_id: ID, structure_id: ID);
 
     /// Claims ownership of a non realm structure by an army after meeting all necessary conditions.
     ///
@@ -371,7 +364,7 @@ trait ICombatContract<TContractState> {
     ///
     /// # Returns:
     /// * None
-    fn battle_claim(ref world: IWorldDispatcher, army_id: u128, structure_id: u128);
+    fn battle_claim(ref world: IWorldDispatcher, army_id: ID, structure_id: ID);
 }
 
 
@@ -385,44 +378,40 @@ mod combat_systems {
     use core::traits::TryInto;
     use eternum::alias::ID;
     use eternum::constants::{
-        ResourceTypes, ErrorMessages, get_resources_without_earthenshards,
-        get_resources_without_earthenshards_probs
+        ResourceTypes, ErrorMessages, get_resources_without_earthenshards, get_resources_without_earthenshards_probs
     };
     use eternum::constants::{WORLD_CONFIG_ID, ARMY_ENTITY_TYPE, MAX_PILLAGE_TRIAL_COUNT};
-    use eternum::models::buildings::{Building, BuildingImpl, BuildingCategory, BuildingQuantityv2,};
+    use eternum::models::buildings::{Building, BuildingCustomImpl, BuildingCategory, BuildingQuantityv2,};
     use eternum::models::capacity::Capacity;
     use eternum::models::combat::BattleEscrowTrait;
-    use eternum::models::combat::ProtectorTrait;
+    use eternum::models::combat::ProtectorCustomTrait;
     use eternum::models::config::{
-        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigImpl,
-        TroopConfigTrait, BattleConfig, BattleConfigImpl, BattleConfigTrait, CapacityConfig,
-        CapacityConfigImpl
+        TickConfig, TickImpl, TickTrait, SpeedConfig, TroopConfig, TroopConfigCustomImpl, TroopConfigCustomTrait,
+        BattleConfig, BattleConfigCustomImpl, BattleConfigCustomTrait, CapacityConfig, CapacityConfigCustomImpl
     };
-    use eternum::models::config::{WeightConfig, WeightConfigImpl};
+    use eternum::models::config::{WeightConfig, WeightConfigCustomImpl};
 
-    use eternum::models::movable::{Movable, MovableTrait};
-    use eternum::models::owner::{EntityOwner, EntityOwnerImpl, EntityOwnerTrait, Owner, OwnerTrait};
+    use eternum::models::movable::{Movable, MovableCustomTrait};
+    use eternum::models::owner::{EntityOwner, EntityOwnerCustomImpl, EntityOwnerCustomTrait, Owner, OwnerCustomTrait};
     use eternum::models::position::CoordTrait;
-    use eternum::models::position::{Position, Coord, PositionTrait, Direction};
-    use eternum::models::quantity::{Quantity, QuantityTracker, QuantityTrait};
+    use eternum::models::position::{Position, Coord, PositionCustomTrait, Direction};
+    use eternum::models::quantity::{Quantity, QuantityTracker, QuantityCustomTrait};
     use eternum::models::realm::Realm;
-    use eternum::models::resources::{Resource, ResourceImpl, ResourceCost};
-    use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockTrait};
+    use eternum::models::resources::{Resource, ResourceCustomImpl, ResourceCost};
+    use eternum::models::resources::{ResourceTransferLock, ResourceTransferLockCustomTrait};
     use eternum::models::stamina::Stamina;
-    use eternum::models::structure::{Structure, StructureTrait, StructureCategory};
+    use eternum::models::structure::{Structure, StructureCustomTrait, StructureCategory};
     use eternum::models::weight::Weight;
     use eternum::models::{
         combat::{
-            Army, ArmyTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthImpl, HealthTrait,
-            Battle, BattleImpl, BattleTrait, BattleSide, Protector, Protectee, ProtecteeTrait,
-            BattleHealthTrait, BattleEscrowImpl, AttackingArmyQuantityTracker,
-            ArmyQuantityTrackerTrait,
+            Army, ArmyCustomTrait, Troops, TroopsImpl, TroopsTrait, Health, HealthCustomImpl, HealthCustomTrait, Battle,
+            BattleCustomImpl, BattleCustomTrait, BattleSide, Protector, Protectee, ProtecteeCustomTrait,
+            BattleHealthCustomTrait, BattleEscrowImpl, AttackingArmyQuantityTrackerCustomTrait,
+            AttackingArmyQuantityTrackerCustomImpl,
         },
     };
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
-    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
-        InternalTravelSystemsImpl
-    };
+    use eternum::systems::transport::contracts::travel_systems::travel_systems::{InternalTravelSystemsImpl};
 
     use eternum::utils::math::{PercentageValueImpl, PercentageImpl};
     use eternum::utils::math::{min};
@@ -437,7 +426,7 @@ mod combat_systems {
         #[key]
         attacker_realm_entity_id: ID,
         #[key]
-        army_id: u128,
+        army_id: ID,
         winner: BattleSide,
         pillaged_resources: Span<(u8, u128)>,
         destroyed_building_category: BuildingCategory
@@ -446,26 +435,20 @@ mod combat_systems {
 
     #[abi(embed_v0)]
     impl CombatContractImpl of ICombatContract<ContractState> {
-        fn army_create(
-            ref world: IWorldDispatcher, army_owner_id: u128, is_defensive_army: bool
-        ) -> u128 {
+        fn army_create(ref world: IWorldDispatcher, army_owner_id: ID, is_defensive_army: bool) -> ID {
             // ensure caller owns entity that will own army
             get!(world, army_owner_id, EntityOwner).assert_caller_owner(world);
 
             let army_id = if is_defensive_army {
-                InternalCombatImpl::create_defensive_army(
-                    world, army_owner_id, starknet::get_caller_address()
-                )
+                InternalCombatImpl::create_defensive_army(world, army_owner_id, starknet::get_caller_address())
             } else {
-                InternalCombatImpl::create_attacking_army(
-                    world, army_owner_id, starknet::get_caller_address()
-                )
+                InternalCombatImpl::create_attacking_army(world, army_owner_id, starknet::get_caller_address())
             };
 
             army_id
         }
 
-        fn army_delete(ref world: IWorldDispatcher, army_id: u128) {
+        fn army_delete(ref world: IWorldDispatcher, army_id: ID) {
             // ensure caller owns the entity paying
             let mut entity_owner: EntityOwner = get!(world, army_id, EntityOwner);
             entity_owner.assert_caller_owner(world);
@@ -490,9 +473,7 @@ mod combat_systems {
         }
 
 
-        fn army_buy_troops(
-            ref world: IWorldDispatcher, army_id: u128, payer_id: u128, mut troops: Troops
-        ) {
+        fn army_buy_troops(ref world: IWorldDispatcher, army_id: ID, payer_id: ID, mut troops: Troops) {
             // ensure caller owns the entity paying
             get!(world, payer_id, EntityOwner).assert_caller_owner(world);
 
@@ -502,11 +483,9 @@ mod combat_systems {
             payer_position.assert_same_location(army_position.into());
 
             // make payment for troops
-            let knight_resource = ResourceImpl::get(world, (payer_id, ResourceTypes::KNIGHT));
-            let paladin_resource = ResourceImpl::get(world, (payer_id, ResourceTypes::PALADIN));
-            let crossbowman_resource = ResourceImpl::get(
-                world, (payer_id, ResourceTypes::CROSSBOWMAN)
-            );
+            let knight_resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::KNIGHT));
+            let paladin_resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::PALADIN));
+            let crossbowman_resource = ResourceCustomImpl::get(world, (payer_id, ResourceTypes::CROSSBOWMAN));
             let (mut knight_resource, mut paladin_resource, mut crossbowman_resource) = troops
                 .purchase(payer_id, (knight_resource, paladin_resource, crossbowman_resource));
             knight_resource.save(world);
@@ -525,11 +504,7 @@ mod combat_systems {
                     // add troops to battle army troops
                     let (mut battle_army, mut battle_army_health, mut battle_army_lifetime) =
                         if battle_side == BattleSide::Defence {
-                        (
-                            battle.defence_army,
-                            battle.defence_army_health,
-                            battle.defence_army_lifetime
-                        )
+                        (battle.defence_army, battle.defence_army_health, battle.defence_army_lifetime)
                     } else {
                         (battle.attack_army, battle.attack_army_health, battle.attack_army_lifetime)
                     };
@@ -537,7 +512,7 @@ mod combat_systems {
                     battle_army_lifetime.troops.add(troops);
 
                     // add troop health to battle army health
-                    let troop_config = TroopConfigImpl::get(world);
+                    let troop_config = TroopConfigCustomImpl::get(world);
                     battle_army_health.increase_by(troops.full_health(troop_config));
 
                     // update battle
@@ -560,9 +535,7 @@ mod combat_systems {
         }
 
 
-        fn army_merge_troops(
-            ref world: IWorldDispatcher, from_army_id: u128, to_army_id: u128, troops: Troops,
-        ) {
+        fn army_merge_troops(ref world: IWorldDispatcher, from_army_id: ID, to_army_id: ID, troops: Troops,) {
             // ensure caller owns from and to armies
             let mut from_army_owner: EntityOwner = get!(world, from_army_id, EntityOwner);
             from_army_owner.assert_caller_owner(world);
@@ -573,7 +546,7 @@ mod combat_systems {
             let to_army_position: Position = get!(world, to_army_id, Position);
             from_army_position.assert_same_location(to_army_position.into());
 
-            let troop_config = TroopConfigImpl::get(world);
+            let troop_config = TroopConfigCustomImpl::get(world);
 
             // decrease from army troops
             let mut from_army: Army = get!(world, from_army_id, Army);
@@ -618,9 +591,7 @@ mod combat_systems {
         }
 
 
-        fn battle_start(
-            ref world: IWorldDispatcher, attacking_army_id: u128, defending_army_id: u128
-        ) -> u128 {
+        fn battle_start(ref world: IWorldDispatcher, attacking_army_id: ID, defending_army_id: ID) -> ID {
             let mut attacking_army: Army = get!(world, attacking_army_id, Army);
             attacking_army.assert_not_in_battle();
 
@@ -632,18 +603,14 @@ mod combat_systems {
                 // so we want to update the defending army's battle status
                 // to see if the battle has ended. if it has ended, then the
                 // army will be removed from the battle
-                let mut defending_army_battle: Battle = get!(
-                    world, defending_army.battle_id, Battle
-                );
-                InternalCombatImpl::update_battle_and_army(
-                    world, ref defending_army_battle, ref defending_army
-                );
+                let mut defending_army_battle: Battle = get!(world, defending_army.battle_id, Battle);
+                InternalCombatImpl::update_battle_and_army(world, ref defending_army_battle, ref defending_army);
                 set!(world, (defending_army_battle))
             }
             // ensure defending army is not in battle
             defending_army.assert_not_in_battle();
 
-            let troop_config = TroopConfigImpl::get(world);
+            let troop_config = TroopConfigCustomImpl::get(world);
             let attacking_army_health: Health = get!(world, attacking_army_id, Health);
             let defending_army_health: Health = get!(world, defending_army_id, Health);
             // ensure health invariant checks pass
@@ -665,7 +632,7 @@ mod combat_systems {
             let defending_army_position: Position = get!(world, defending_army_id, Position);
             attacking_army_position.assert_same_location(defending_army_position.into());
 
-            let battle_id: u128 = world.uuid().into();
+            let battle_id: ID = world.uuid();
             attacking_army.battle_id = battle_id;
             attacking_army.battle_side = BattleSide::Attack;
             set!(world, (attacking_army));
@@ -697,8 +664,8 @@ mod combat_systems {
             battle.attack_army_lifetime = attacking_army.into();
             battle.defence_army = defending_army.into();
             battle.defence_army_lifetime = defending_army.into();
-            battle.attackers_resources_escrow_id = world.uuid().into();
-            battle.defenders_resources_escrow_id = world.uuid().into();
+            battle.attackers_resources_escrow_id = world.uuid();
+            battle.defenders_resources_escrow_id = world.uuid();
             battle.attack_army_health = attacking_army_health.into();
             battle.defence_army_health = defending_army_health.into();
             battle.last_updated = starknet::get_block_timestamp();
@@ -722,9 +689,7 @@ mod combat_systems {
         }
 
 
-        fn battle_join(
-            ref world: IWorldDispatcher, battle_id: u128, battle_side: BattleSide, army_id: u128
-        ) {
+        fn battle_join(ref world: IWorldDispatcher, battle_id: ID, battle_side: BattleSide, army_id: ID) {
             assert!(battle_side != BattleSide::None, "choose correct battle side");
 
             // ensure caller owns army
@@ -742,7 +707,7 @@ mod combat_systems {
             caller_army.assert_not_in_battle();
 
             // ensure caller army is not dead
-            let troop_config = TroopConfigImpl::get(world);
+            let troop_config = TroopConfigCustomImpl::get(world);
             let mut caller_army_health: Health = get!(world, army_id, Health);
             caller_army_health.assert_alive("Your army");
 
@@ -804,7 +769,7 @@ mod combat_systems {
         }
 
 
-        fn battle_leave(ref world: IWorldDispatcher, battle_id: u128, army_id: u128) {
+        fn battle_leave(ref world: IWorldDispatcher, battle_id: ID, army_id: ID) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -819,7 +784,7 @@ mod combat_systems {
         }
 
 
-        fn battle_claim(ref world: IWorldDispatcher, army_id: u128, structure_id: u128) {
+        fn battle_claim(ref world: IWorldDispatcher, army_id: ID, structure_id: ID) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -840,21 +805,17 @@ mod combat_systems {
             claimer_army_position.assert_same_location(structure_position.into());
 
             // ensure structure has no army protecting it
-            let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
+            let structure_army_id: ID = get!(world, structure_id, Protector).army_id;
             if structure_army_id.is_non_zero() {
                 let mut structure_army: Army = get!(world, structure_army_id, Army);
                 if structure_army.is_in_battle() {
                     let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
-                    InternalCombatImpl::update_battle_and_army(
-                        world, ref battle, ref structure_army
-                    );
+                    InternalCombatImpl::update_battle_and_army(world, ref battle, ref structure_army);
                 }
 
                 // ensure structure army is dead
                 let structure_army_health: Health = get!(world, structure_army_id, Health);
-                assert!(
-                    !structure_army_health.is_alive(), "can only claim when structure army is dead"
-                );
+                assert!(!structure_army_health.is_alive(), "can only claim when structure army is dead");
 
                 let mut structure_army_owner: Owner = get!(world, structure_army_id, Owner);
                 structure_army_owner.address = starknet::get_caller_address();
@@ -863,8 +824,7 @@ mod combat_systems {
 
             // pass ownership of structure to claimer
             let mut structure_owner_entity: EntityOwner = get!(world, structure_id, EntityOwner);
-            let claimer_army_owner_entity_id: u128 = get!(world, army_id, EntityOwner)
-                .entity_owner_id;
+            let claimer_army_owner_entity_id: ID = get!(world, army_id, EntityOwner).entity_owner_id;
             structure_owner_entity.entity_owner_id = claimer_army_owner_entity_id;
             set!(world, (structure_owner_entity));
 
@@ -874,7 +834,7 @@ mod combat_systems {
         }
 
 
-        fn battle_pillage(ref world: IWorldDispatcher, army_id: u128, structure_id: u128,) {
+        fn battle_pillage(ref world: IWorldDispatcher, army_id: ID, structure_id: ID,) {
             // ensure caller owns army
             get!(world, army_id, EntityOwner).assert_caller_owner(world);
 
@@ -891,11 +851,11 @@ mod combat_systems {
             let structure_position: Position = get!(world, structure_id, Position);
             army_position.assert_same_location(structure_position.into());
 
-            let troop_config = TroopConfigImpl::get(world);
+            let troop_config = TroopConfigCustomImpl::get(world);
 
             // get structure army and health
 
-            let structure_army_id: u128 = get!(world, structure_id, Protector).army_id;
+            let structure_army_id: ID = get!(world, structure_id, Protector).army_id;
             assert!(structure_army_id != army_id, "self attack");
 
             let mut structure_army: Army = Default::default();
@@ -904,9 +864,7 @@ mod combat_systems {
                 structure_army = get!(world, structure_army_id, Army);
                 if structure_army.is_in_battle() {
                     let mut battle: Battle = get!(world, structure_army.battle_id, Battle);
-                    InternalCombatImpl::update_battle_and_army(
-                        world, ref battle, ref structure_army
-                    );
+                    InternalCombatImpl::update_battle_and_army(world, ref battle, ref structure_army);
                 }
 
                 // get accurate structure army health
@@ -954,7 +912,7 @@ mod combat_systems {
                 loop {
                     match chosen_resource_types.pop_front() {
                         Option::Some(chosen_resource_type) => {
-                            let pillaged_resource_from_structure: Resource = ResourceImpl::get(
+                            let pillaged_resource_from_structure: Resource = ResourceCustomImpl::get(
                                 world, (structure_id, *chosen_resource_type)
                             );
 
@@ -965,35 +923,26 @@ mod combat_systems {
                                     * attacking_army.troops.count().into();
                                 let army_weight: Weight = get!(world, army_id, Weight);
                                 let max_carriable = (army_total_capacity - army_weight.value)
-                                    / (WeightConfigImpl::get_weight(world, *chosen_resource_type, 1)
-                                        + 1);
+                                    / (WeightConfigCustomImpl::get_weight(world, *chosen_resource_type, 1) + 1);
 
                                 if max_carriable > 0 {
-                                    let max_resource_amount_stolen: u128 = attacking_army
-                                        .troops
-                                        .count()
-                                        .into()
+                                    let max_resource_amount_stolen: u128 = attacking_army.troops.count().into()
                                         * attack_success_probability.into()
                                         / PercentageValueImpl::_100().into();
 
                                     let resource_amount_stolen: u128 = min(
-                                        pillaged_resource_from_structure.balance,
-                                        max_resource_amount_stolen
+                                        pillaged_resource_from_structure.balance, max_resource_amount_stolen
                                     );
 
-                                    let resource_amount_stolen: u128 = min(
-                                        max_carriable, resource_amount_stolen
-                                    );
+                                    let resource_amount_stolen: u128 = min(max_carriable, resource_amount_stolen);
 
-                                    pillaged_resources
-                                        .append((*chosen_resource_type, resource_amount_stolen));
+                                    pillaged_resources.append((*chosen_resource_type, resource_amount_stolen));
 
                                     InternalResourceSystemsImpl::transfer(
                                         world,
                                         structure_id,
                                         army_id,
-                                        array![(*chosen_resource_type, resource_amount_stolen)]
-                                            .span(),
+                                        array![(*chosen_resource_type, resource_amount_stolen)].span(),
                                         army_id,
                                         true,
                                         true
@@ -1066,8 +1015,7 @@ mod combat_systems {
                             // choose one arrangement at random
                             *random::choices(
                                 array![0_u32, 1, 2, 3].span(), // options are (0,1,2,3) i.e index
-                                array![1, 1, 1, 1]
-                                    .span(), // each carry the same weight so equal probs
+                                array![1, 1, 1, 1].span(), // each carry the same weight so equal probs
                                 array![].span(),
                                 1,
                                 true
@@ -1081,28 +1029,22 @@ mod combat_systems {
                     true
                 );
 
-                let mut final_coord = BuildingImpl::center();
+                let mut final_coord = BuildingCustomImpl::center();
                 loop {
                     match chosen_directions.pop_front() {
-                        Option::Some(direction) => {
-                            final_coord = final_coord.neighbor(*direction);
-                        },
+                        Option::Some(direction) => { final_coord = final_coord.neighbor(*direction); },
                         Option::None => { break; }
                     }
                 };
 
-                if final_coord != BuildingImpl::center() {
+                if final_coord != BuildingCustomImpl::center() {
                     // check if there is a building at the destination coordinate
                     let mut pillaged_building: Building = get!(
-                        world,
-                        (structure_position.x, structure_position.y, final_coord.x, final_coord.y),
-                        Building
+                        world, (structure_position.x, structure_position.y, final_coord.x, final_coord.y), Building
                     );
                     if pillaged_building.entity_id.is_non_zero() {
                         // destroy building if it exists
-                        let building_category = BuildingImpl::destroy(
-                            world, structure_id, final_coord
-                        );
+                        let building_category = BuildingCustomImpl::destroy(world, structure_id, final_coord);
                         destroyed_building_category = building_category;
                     }
                 }
@@ -1134,9 +1076,7 @@ mod combat_systems {
                             / troop_config.pillage_health_divisor.into())
                     );
 
-                attacking_army
-                    .troops
-                    .reset_count_and_health(ref attacking_army_health, troop_config);
+                attacking_army.troops.reset_count_and_health(ref attacking_army_health, troop_config);
                 let attacking_army_quantity = Quantity {
                     entity_id: attacking_army.entity_id, value: attacking_army.troops.count().into()
                 };
@@ -1148,9 +1088,7 @@ mod combat_systems {
                         ((mock_battle.attack_delta.into() * mock_battle.duration_left.into())
                             / troop_config.pillage_health_divisor.into())
                     );
-                structure_army
-                    .troops
-                    .reset_count_and_health(ref structure_army_health, troop_config);
+                structure_army.troops.reset_count_and_health(ref structure_army_health, troop_config);
 
                 let structure_army_quantity = Quantity {
                     entity_id: structure_army_id, value: structure_army.troops.count().into()
@@ -1159,7 +1097,7 @@ mod combat_systems {
             }
 
             // emit pillage event
-            let army_owner_entity_id: u128 = get!(world, army_id, EntityOwner).entity_owner_id;
+            let army_owner_entity_id: ID = get!(world, army_id, EntityOwner).entity_owner_id;
             emit!(
                 world,
                 (PillageEvent {
@@ -1180,18 +1118,17 @@ mod combat_systems {
 
 
     #[generate_trait]
-    impl InternalCombatImpl of InternalCombatTrait {
+    pub impl InternalCombatImpl of InternalCombatTrait {
         fn create_attacking_army(
-            world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
-        ) -> u128 {
+            world: IWorldDispatcher, army_owner_id: ID, owner_address: starknet::ContractAddress
+        ) -> ID {
             let army_id = Self::create_base_army(world, army_owner_id, owner_address);
 
             // ensure owner has enough military buildings to create army
-            let owner_armies_key: felt252 = AttackingArmyQuantityTracker::key(army_owner_id);
-            let mut owner_armies_quantity: QuantityTracker = get!(
-                world, owner_armies_key, QuantityTracker
-            );
-            let troop_config = TroopConfigImpl::get(world);
+            let owner_armies_key: felt252 = AttackingArmyQuantityTrackerCustomImpl::key(army_owner_id);
+            let mut owner_armies_quantity: QuantityTracker = get!(world, owner_armies_key, QuantityTracker);
+
+            let troop_config = TroopConfigCustomImpl::get(world);
             if owner_armies_quantity.count >= troop_config.army_free_per_structure.into() {
                 let archery_range_building_count = get!(
                     world, (army_owner_id, BuildingCategory::ArcheryRange), BuildingQuantityv2
@@ -1201,9 +1138,7 @@ mod combat_systems {
                     world, (army_owner_id, BuildingCategory::Barracks), BuildingQuantityv2
                 )
                     .value;
-                let stables_building_count = get!(
-                    world, (army_owner_id, BuildingCategory::Stable), BuildingQuantityv2
-                )
+                let stables_building_count = get!(world, (army_owner_id, BuildingCategory::Stable), BuildingQuantityv2)
                     .value;
                 let total_military_building_count = stables_building_count
                     + archery_range_building_count
@@ -1220,11 +1155,8 @@ mod combat_systems {
             set!(world, (owner_armies_quantity));
 
             // set the army's speed and capacity
-            let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig)
-                .sec_per_km;
-            let army_carry_capacity: CapacityConfig = CapacityConfigImpl::get(
-                world, ARMY_ENTITY_TYPE
-            );
+            let army_sec_per_km = get!(world, (WORLD_CONFIG_ID, ARMY_ENTITY_TYPE), SpeedConfig).sec_per_km;
+            let army_carry_capacity: CapacityConfig = CapacityConfigCustomImpl::get(world, ARMY_ENTITY_TYPE);
             let army_owner_position: Position = get!(world, army_owner_id, Position);
 
             set!(
@@ -1247,20 +1179,15 @@ mod combat_systems {
             // create stamina for map exploration
             let armies_tick_config = TickImpl::get_armies_tick_config(world);
             set!(
-                world,
-                (Stamina {
-                    entity_id: army_id,
-                    amount: 0,
-                    last_refill_tick: armies_tick_config.current() - 1
-                })
+                world, (Stamina { entity_id: army_id, amount: 0, last_refill_tick: armies_tick_config.current() - 1 })
             );
 
             army_id
         }
 
         fn create_defensive_army(
-            world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
-        ) -> u128 {
+            world: IWorldDispatcher, army_owner_id: ID, owner_address: starknet::ContractAddress
+        ) -> ID {
             let army_id = Self::create_base_army(world, army_owner_id, owner_address);
 
             // Defensive armies can only be assigned as structure protectors
@@ -1275,41 +1202,34 @@ mod combat_systems {
             set!(world, (structure_protector, Protectee { army_id, protectee_id: army_owner_id }));
 
             // stop the army from sending or receiving resources
-            set!(
-                world, (ResourceTransferLock { entity_id: army_id, release_at: BoundedInt::max() })
-            );
+            set!(world, (ResourceTransferLock { entity_id: army_id, release_at: BoundedInt::max() }));
             army_id
         }
 
         fn create_base_army(
-            world: IWorldDispatcher, army_owner_id: u128, owner_address: starknet::ContractAddress
-        ) -> u128 {
+            world: IWorldDispatcher, army_owner_id: ID, owner_address: starknet::ContractAddress
+        ) -> ID {
             // ensure army owner is a structure
             get!(world, army_owner_id, Structure).assert_is_structure();
 
             // create army
-            let mut army_id: u128 = world.uuid().into();
+            let mut army_id: ID = world.uuid();
             let army_owner_position: Position = get!(world, army_owner_id, Position);
             set!(
                 world,
                 (
                     Army {
-                        entity_id: army_id,
-                        troops: Default::default(),
-                        battle_id: 0,
-                        battle_side: Default::default()
+                        entity_id: army_id, troops: Default::default(), battle_id: 0, battle_side: Default::default()
                     },
                     EntityOwner { entity_id: army_id, entity_owner_id: army_owner_id },
                     Owner { entity_id: army_id, address: owner_address },
-                    Position {
-                        entity_id: army_id, x: army_owner_position.x, y: army_owner_position.y
-                    }
+                    Position { entity_id: army_id, x: army_owner_position.x, y: army_owner_position.y }
                 )
             );
             army_id
         }
 
-        fn add_troops_to_army(world: IWorldDispatcher, troops: Troops, army_id: u128) {
+        fn add_troops_to_army(world: IWorldDispatcher, troops: Troops, army_id: ID) {
             // increase troops number
             let mut army: Army = get!(world, army_id, Army);
             army.troops.add(troops);
@@ -1317,7 +1237,7 @@ mod combat_systems {
 
             // increase army health
             let mut army_health: Health = get!(world, army_id, Health);
-            army_health.increase_by(troops.full_health(TroopConfigImpl::get(world)));
+            army_health.increase_by(troops.full_health(TroopConfigCustomImpl::get(world)));
             set!(world, (army_health));
 
             // set troop quantity (for capacity calculation)
@@ -1328,12 +1248,8 @@ mod combat_systems {
 
         fn delete_army(world: IWorldDispatcher, ref entity_owner: EntityOwner, ref army: Army) {
             // decrement attack army count
-            let owner_armies_key: felt252 = AttackingArmyQuantityTracker::key(
-                entity_owner.entity_owner_id
-            );
-            let mut owner_armies_quantity: QuantityTracker = get!(
-                world, owner_armies_key, QuantityTracker
-            );
+            let owner_armies_key: felt252 = AttackingArmyQuantityTrackerCustomImpl::key(entity_owner.entity_owner_id);
+            let mut owner_armies_quantity: QuantityTracker = get!(world, owner_armies_key, QuantityTracker);
             owner_armies_quantity.count -= 1;
             set!(world, (owner_armies_quantity));
 
@@ -1348,7 +1264,7 @@ mod combat_systems {
             position.x = 0;
             position.y = 0;
             set!(world, (position));
-        // reset components connected to army
+            // reset components connected to army
         // let (
         //     owner,
         //     position,
@@ -1427,7 +1343,7 @@ mod combat_systems {
             } else {
                 (battle.attack_army, battle.attack_army_health, battle.attack_army_lifetime)
             };
-            let troop_config = TroopConfigImpl::get(world);
+            let troop_config = TroopConfigCustomImpl::get(world);
 
             if battle_army_health.lifetime.is_non_zero() {
                 battle_army
@@ -1525,11 +1441,7 @@ mod combat_systems {
             // reduce battle army lifetime count by the original army count
             battle_army_lifetime.troops.knight_count -= unmodified_army.troops.knight_count;
             battle_army_lifetime.troops.paladin_count -= unmodified_army.troops.paladin_count;
-            battle_army_lifetime
-                .troops
-                .crossbowman_count -= unmodified_army
-                .troops
-                .crossbowman_count;
+            battle_army_lifetime.troops.crossbowman_count -= unmodified_army.troops.crossbowman_count;
 
             if unmodified_army.battle_side == BattleSide::Defence {
                 battle.defence_army = battle_army;

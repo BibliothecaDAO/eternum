@@ -1,5 +1,5 @@
 import { useStamina } from "@/hooks/helpers/useStamina";
-import { EternumGlobalConfig } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ID } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useMemo } from "react";
 
@@ -8,12 +8,12 @@ export const StaminaResourceCost = ({
   travelLength,
   isExplored,
 }: {
-  travelingEntityId: bigint | undefined;
+  travelingEntityId: ID | undefined;
   travelLength: number;
   isExplored: boolean;
 }) => {
   const { useStaminaByEntityId } = useStamina();
-  const stamina = useStaminaByEntityId({ travelingEntityId: travelingEntityId || 0n });
+  const stamina = useStaminaByEntityId({ travelingEntityId: travelingEntityId || 0 });
 
   const destinationHex = useMemo(() => {
     if (!stamina) return;

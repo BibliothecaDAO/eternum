@@ -19,7 +19,7 @@ import { ReactComponent as Gods } from "@/assets/icons/orders/gods.svg";
 import useUIStore from "../../hooks/store/useUIStore";
 import { orders } from "@bibliothecadao/eternum";
 
-export type Props = {
+type Props = {
   order: string;
   size: keyof (typeof STYLES)["size"];
   className?: string;
