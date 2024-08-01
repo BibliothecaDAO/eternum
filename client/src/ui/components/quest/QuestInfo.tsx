@@ -93,7 +93,9 @@ const QuestRewards = ({ prizes }: { prizes: Prize[] }) => {
     <div className="w-full">
       <div className="flex flex-row items-baseline mb-1 ">
         <div className="font-bold mr-5">Quest Rewards</div>
-        <Button size="xs" onClick={() => setShowRewards(!showRewards)}>{showRewards ? "Hide" : "Show"}</Button>
+        <Button size="xs" onClick={() => setShowRewards(!showRewards)}>
+          {showRewards ? "Hide" : "Show"}
+        </Button>
       </div>
       {showRewards &&
         prizes &&
