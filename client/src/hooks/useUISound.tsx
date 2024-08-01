@@ -209,7 +209,7 @@ export const usePlayResourceSound = () => {
   };
 };
 
-export const useRunningSound = () => {
+const useRunningSound = () => {
   const { play: playFirst, fade: fadeFirst } = useUiSounds(soundSelector.unitRunning);
   const { play: playSecond, fade: fadeSecond } = useUiSounds(soundSelector.unitRunningAlternative);
   const [isFirst, setIsFirst] = useState(true);
@@ -234,7 +234,7 @@ export const useRunningSound = () => {
   };
 };
 
-export const useMarchingSound = () => {
+const useMarchingSound = () => {
   const { repeat: playFirst, stop: stopFirst } = useUiSounds(soundSelector.unitMarching1);
   const { repeat: playSecond, stop: stopSecond } = useUiSounds(soundSelector.unitMarching2);
   const [isFirst, setIsFirst] = useState(true);
@@ -301,7 +301,7 @@ export const useShovelSound = () => {
 };
 
 // todo: add battle sounds
-export const useBattleSound = () => {
+const useBattleSound = () => {
   const { play: playPillageSucess } = useUiSounds(soundSelector.buildFarm);
 
   return {

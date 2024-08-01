@@ -1,12 +1,13 @@
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use eternum::alias::ID;
 use starknet::ContractAddress;
 
 // Used as helper struct throughout the world
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Bank {
+pub struct Bank {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     owner_fee_num: u128,
     owner_fee_denom: u128,
     exists: bool,

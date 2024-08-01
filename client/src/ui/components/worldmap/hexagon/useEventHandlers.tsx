@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useExplore } from "../../../../hooks/helpers/useExplore";
 import { useTravel } from "../../../../hooks/helpers/useTravel";
-import { useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { findDirection, getColRowFromUIPosition } from "../../../utils/utils";
 import { getPositionsAtIndex } from "./utils";
+import { ID } from "@bibliothecadao/eternum";
 
 export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const currentArmiesTick = useBlockchainStore((state) => state.currentArmiesTick);
@@ -24,8 +24,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const travelPaths = useUIStore((state) => state.travelPaths);
   const clearSelection = useUIStore((state) => state.clearSelection);
   const setView = useUIStore((state) => state.setLeftNavigationView);
-
-  const setExploreNotification = useNotificationsStore((state) => state.setExploreNotification);
 
   // refs
   const selectedEntityRef = useRef(selectedEntity);
@@ -97,7 +95,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
         }
       };
 
-      const handleArmyActionClick = (id: bigint) => {
+      const handleArmyActionClick = (id: ID) => {
         if (e.button === 2) return;
         if (!hoveredHexRef.current) return;
         const travelPath = travelPathsRef.current.get(`${hoveredHexRef.current.col},${hoveredHexRef.current.row}`);
@@ -124,7 +122,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     path,
     currentArmiesTick,
   }: {
-    id: bigint;
+    id: ID;
     path: any[];
     currentArmiesTick: number;
   }) {
@@ -143,7 +141,7 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
     path,
     currentArmiesTick,
   }: {
-    id: bigint;
+    id: ID;
     path: any[];
     currentArmiesTick: number;
   }) {
@@ -152,12 +150,6 @@ export const useEventHandlers = (explored: Map<number, Set<number>>) => {
       path.length === 2
         ? findDirection({ col: path[0].x, row: path[0].y }, { col: path[1].x, row: path[1].y })
         : undefined;
-    const hexIndex = hexData.findIndex((h) => h.col === path[1].x && h.row === path[1].y);
-    const biome = hexData[hexIndex].biome;
-    setExploreNotification({
-      entityId: id,
-      biome,
-    });
 
     clearSelection();
 

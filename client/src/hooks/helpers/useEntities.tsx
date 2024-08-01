@@ -1,19 +1,18 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { getRealmNameById } from "@/ui/utils/realms";
 import { divideByPrecision, getEntityIdFromKeys, getPosition } from "@/ui/utils/utils";
-import { EntityType } from "@bibliothecadao/eternum";
+import { ContractAddress, EntityType, ID } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { ComponentValue, Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
 import { getResourcesUtils } from "./useResources";
 
-export interface PlayerStructure {
+export type PlayerStructure = ComponentValue<ClientComponents["Structure"]["schema"]> & {
   position: ComponentValue<ClientComponents["Position"]["schema"]>;
-  name: string | undefined;
-  entity_id?: bigint | undefined;
+  name: string;
   category?: string | undefined;
-}
+};
 
 export const useEntities = () => {
   const {
@@ -25,9 +24,12 @@ export const useEntities = () => {
 
   const { getEntityName } = getEntitiesUtils();
 
-  const playerRealms = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
-  const otherRealms = useEntityQuery([Has(Realm), NotValue(Owner, { address: BigInt(account.address) })]);
-  const playerStructures = useEntityQuery([Has(Structure), HasValue(Owner, { address: BigInt(account.address) })]);
+  const playerRealms = useEntityQuery([Has(Realm), HasValue(Owner, { address: ContractAddress(account.address) })]);
+  const otherRealms = useEntityQuery([Has(Realm), NotValue(Owner, { address: ContractAddress(account.address) })]);
+  const playerStructures = useEntityQuery([
+    Has(Structure),
+    HasValue(Owner, { address: ContractAddress(account.address) }),
+  ]);
 
   return {
     playerRealms: () => {
@@ -46,6 +48,8 @@ export const useEntities = () => {
       return playerStructures
         .map((id) => {
           const structure = getComponentValue(Structure, id);
+          if (!structure) return;
+
           const realm = getComponentValue(Realm, id);
           const position = getComponentValue(Position, id);
 
@@ -55,9 +59,10 @@ export const useEntities = () => {
             ? getRealmNameById(realm.realm_id)
             : structureName
               ? `${structure?.category} ${structureName}`
-              : structure?.category;
+              : structure.category || "";
           return { ...structure, position: position!, name };
         })
+        .filter((structure): structure is PlayerStructure => structure !== undefined)
         .sort((a, b) => (b.category || "").localeCompare(a.category || ""));
     },
   };
@@ -73,18 +78,19 @@ export const getEntitiesUtils = () => {
 
   const { getResourcesFromBalance } = getResourcesUtils();
 
-  const getEntityInfo = (entityId: bigint) => {
-    const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([entityId]));
-    const movable = getComponentValue(Movable, getEntityIdFromKeys([entityId]));
-    const capacity = getComponentValue(Capacity, getEntityIdFromKeys([entityId]));
+  const getEntityInfo = (entityId: ID) => {
+    const entityIdBigInt = BigInt(entityId);
+    const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([entityIdBigInt]));
+    const movable = getComponentValue(Movable, getEntityIdFromKeys([entityIdBigInt]));
+    const capacity = getComponentValue(Capacity, getEntityIdFromKeys([entityIdBigInt]));
 
-    const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityId]));
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || BigInt("")]));
+    const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityIdBigInt]));
+    const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
 
     const name = getEntityName(entityId);
 
     const resources = getResourcesFromBalance(entityId);
-    const army = getComponentValue(Army, getEntityIdFromKeys([entityId]));
+    const army = getComponentValue(Army, getEntityIdFromKeys([entityIdBigInt]));
     const rawIntermediateDestination = movable
       ? { x: movable.intermediate_coord_x, y: movable.intermediate_coord_y }
       : undefined;
@@ -92,10 +98,10 @@ export const getEntitiesUtils = () => {
       ? { x: rawIntermediateDestination.x, y: rawIntermediateDestination.y }
       : undefined;
 
-    const position = getComponentValue(Position, getEntityIdFromKeys([entityId]));
+    const position = getComponentValue(Position, getEntityIdFromKeys([entityIdBigInt]));
 
     const homePosition = entityOwner
-      ? getComponentValue(Position, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || BigInt(""))]))
+      ? getComponentValue(Position, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]))
       : undefined;
 
     return {
@@ -107,7 +113,7 @@ export const getEntitiesUtils = () => {
       position: position ? { x: position.x, y: position.y } : undefined,
       homePosition: homePosition ? { x: homePosition.x, y: homePosition.y } : undefined,
       owner: owner?.address,
-      isMine: BigInt(owner?.address || "") === BigInt(account.address),
+      isMine: ContractAddress(owner?.address || 0n) === ContractAddress(account.address),
       isRoundTrip: movable?.round_trip || false,
       resources,
       entityType: army ? EntityType.TROOP : EntityType.DONKEY,
@@ -115,12 +121,12 @@ export const getEntitiesUtils = () => {
     };
   };
 
-  const getEntityName = (entityId: bigint) => {
-    const entityName = getComponentValue(EntityName, getEntityIdFromKeys([entityId]));
+  const getEntityName = (entityId: ID) => {
+    const entityName = getComponentValue(EntityName, getEntityIdFromKeys([BigInt(entityId)]));
     return entityName ? shortString.decodeShortString(entityName.name.toString()) : entityId.toString();
   };
 
-  const getAddressNameFromEntity = (entityId: bigint) => {
+  const getAddressNameFromEntity = (entityId: ID) => {
     const address = getPlayerAddressFromEntity(entityId);
     if (!address) return;
 
@@ -129,10 +135,10 @@ export const getEntitiesUtils = () => {
     return addressName ? shortString.decodeShortString(addressName.name.toString()) : undefined;
   };
 
-  const getPlayerAddressFromEntity = (entityId: bigint) => {
-    const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([entityId]));
+  const getPlayerAddressFromEntity = (entityId: ID) => {
+    const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([BigInt(entityId)]));
     return entityOwner?.entity_owner_id
-      ? getComponentValue(Owner, getEntityIdFromKeys([entityOwner.entity_owner_id]))?.address
+      ? getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))?.address
       : undefined;
   };
 

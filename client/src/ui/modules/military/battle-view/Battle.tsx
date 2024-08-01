@@ -6,7 +6,7 @@ import { Health } from "@/types";
 import { HintSection } from "@/ui/components/hints/HintModal";
 import Button from "@/ui/elements/Button";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
-import { BattleSide } from "@bibliothecadao/eternum";
+import { BattleSide, ID } from "@bibliothecadao/eternum";
 import { ComponentValue } from "@dojoengine/recs";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -33,7 +33,7 @@ export const Battle = ({
 }: {
   battleManager: BattleManager;
   ownArmySide: string;
-  ownArmyEntityId: bigint | undefined;
+  ownArmyEntityId: ID | undefined;
   battleAdjusted: ComponentValue<ClientComponents["Battle"]["schema"]> | undefined;
   attackerArmies: ArmyInfo[];
   attackerHealth: Health;
@@ -82,7 +82,7 @@ export const Battle = ({
           <div className="grid grid-cols-12 justify-between gap-4 h-full">
             <BattleSideView
               battleSide={BattleSide.Attack}
-              battleId={battleManager?.battleId}
+              battleEntityId={battleManager?.battleEntityId}
               showBattleDetails={showBattleDetails}
               ownSideArmies={attackerArmies}
               ownSideTroopsUpdated={attackerTroops}
@@ -108,7 +108,7 @@ export const Battle = ({
             )}
             <BattleSideView
               battleSide={BattleSide.Defence}
-              battleId={battleManager?.battleId}
+              battleEntityId={battleManager?.battleEntityId}
               showBattleDetails={showBattleDetails}
               ownSideArmies={defenderArmies}
               ownSideTroopsUpdated={defenderTroops}

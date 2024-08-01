@@ -3,14 +3,13 @@ use core::option::OptionTrait;
 use core::traits::Into;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{ResourceTypes, REALM_LEVELING_CONFIG_ID};
 use eternum::models::level::Level;
 use eternum::models::position::Position;
 use eternum::models::resources::Resource;
 
-use eternum::systems::config::contracts::{
-    config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait
-};
+use eternum::systems::config::contracts::{config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait};
 
 use eternum::systems::leveling::contracts::{
     leveling_systems, ILevelingSystemsDispatcher, ILevelingSystemsDispatcherTrait
@@ -19,19 +18,16 @@ use eternum::systems::leveling::contracts::{
 use eternum::systems::realm::contracts::{IRealmSystemsDispatcher};
 
 use eternum::utils::testing::{
-    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems},
-    general::{spawn_realm, get_default_realm_pos},
+    world::spawn_eternum, systems::{deploy_system, deploy_realm_systems}, general::{spawn_realm, get_default_realm_pos},
 };
 
 use starknet::contract_address_const;
 
-fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, ID, ILevelingSystemsDispatcher) {
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
-    let level_config_dispatcher = ILevelingConfigDispatcher {
-        contract_address: config_systems_address
-    };
+    let level_config_dispatcher = ILevelingConfigDispatcher { contract_address: config_systems_address };
 
     // set labor auction
     let decay_scaled: u128 = 1844674407370955161;
@@ -46,8 +42,7 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
     let max_level = 1000;
 
     // 3 tier resources
-    let mut resource_1_costs = array![(ResourceTypes::WHEAT, 1000), (ResourceTypes::FISH, 1000)]
-        .span();
+    let mut resource_1_costs = array![(ResourceTypes::WHEAT, 1000), (ResourceTypes::FISH, 1000)].span();
     let mut resource_2_costs = array![].span();
     let mut resource_3_costs = array![].span();
 
@@ -73,19 +68,13 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
     set!(
         world,
         (
-            Resource {
-                entity_id: realm_entity_id, resource_type: ResourceTypes::WHEAT, balance: 100_000
-            },
-            Resource {
-                entity_id: realm_entity_id, resource_type: ResourceTypes::FISH, balance: 100_000
-            },
+            Resource { entity_id: realm_entity_id, resource_type: ResourceTypes::WHEAT, balance: 100_000 },
+            Resource { entity_id: realm_entity_id, resource_type: ResourceTypes::FISH, balance: 100_000 },
         )
     );
 
     let leveling_systems_address = deploy_system(world, leveling_systems::TEST_CLASS_HASH);
-    let leveling_systems_dispatcher = ILevelingSystemsDispatcher {
-        contract_address: leveling_systems_address
-    };
+    let leveling_systems_dispatcher = ILevelingSystemsDispatcher { contract_address: leveling_systems_address };
 
     (world, realm_entity_id, leveling_systems_dispatcher)
 }
@@ -99,7 +88,7 @@ fn test_level_up_realm() {
     let level = get!(world, (realm_entity_id), Level);
     assert(level.level == 0, 'wrong level');
 
-    // level up 
+    // level up
     leveling_systems_dispatcher.level_up_realm(realm_entity_id,);
 
     let realm_wheat = get!(world, (realm_entity_id, ResourceTypes::WHEAT), Resource);
@@ -122,7 +111,7 @@ fn test_level_up_not_realm_owner() {
     // set unknown caller
     starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
-    // level up 
+    // level up
     leveling_systems_dispatcher.level_up_realm(realm_entity_id,);
 }
 
@@ -136,6 +125,6 @@ fn test_level_up_not_realm() {
     // set abritrary realm entity id
     let realm_entity_id = 8888888;
 
-    // level up 
+    // level up
     leveling_systems_dispatcher.level_up_realm(realm_entity_id,);
 }

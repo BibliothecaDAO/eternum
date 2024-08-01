@@ -1,7 +1,7 @@
 import { getResourceBalance, getResourcesUtils } from "@/hooks/helpers/useResources";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { ID, ResourcesIds } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 
 export const InventoryResources = ({
@@ -12,7 +12,7 @@ export const InventoryResources = ({
   resourcesIconSize = "sm",
   textSize,
 }: {
-  entityIds: bigint[];
+  entityIds: ID[];
   max?: number;
   className?: string;
   dynamic?: ResourcesIds[];

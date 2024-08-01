@@ -1,20 +1,20 @@
-import { useMemo, useState, useCallback } from "react";
-import { useDojo } from "@/hooks/context/DojoContext";
 import { MarketManager } from "@/dojo/modelManager/MarketManager";
-import { EternumGlobalConfig, ResourcesIds, resources } from "@bibliothecadao/eternum";
-import { ResourceIcon } from "@/ui/elements/ResourceIcon";
-import Button from "@/ui/elements/Button";
-import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
-import { useComponentValue } from "@dojoengine/react";
-import { ConfirmationPopup } from "./ConfirmationPopup";
-import { TravelInfo } from "../resources/ResourceWeight";
+import { useDojo } from "@/hooks/context/DojoContext";
 import { useTravel } from "@/hooks/helpers/useTravel";
+import Button from "@/ui/elements/Button";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
+import { ResourceIcon } from "@/ui/elements/ResourceIcon";
+import { divideByPrecision, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { ContractAddress, EternumGlobalConfig, ID, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { useComponentValue } from "@dojoengine/react";
+import { useCallback, useMemo, useState } from "react";
+import { TravelInfo } from "../resources/ResourceWeight";
+import { ConfirmationPopup } from "./ConfirmationPopup";
 
 type LiquidityResourceRowProps = {
-  bankEntityId: bigint;
-  entityId: bigint;
-  resourceId: number;
+  bankEntityId: ID;
+  entityId: ID;
+  resourceId: ResourcesIds;
 };
 
 export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: LiquidityResourceRowProps) => {
@@ -24,11 +24,11 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
   const [openConfirmation, setOpenConfirmation] = useState(false);
 
   const marketEntityId = useMemo(
-    () => getEntityIdFromKeys([bankEntityId, BigInt(resourceId)]),
+    () => getEntityIdFromKeys([BigInt(bankEntityId), BigInt(resourceId)]),
     [bankEntityId, resourceId],
   );
   const liquidityEntityId = useMemo(
-    () => getEntityIdFromKeys([bankEntityId, BigInt(dojoContext.account.account.address), BigInt(resourceId)]),
+    () => getEntityIdFromKeys([BigInt(bankEntityId), BigInt(dojoContext.account.account.address), BigInt(resourceId)]),
     [bankEntityId, resourceId],
   );
 
@@ -41,8 +41,8 @@ export const LiquidityResourceRow = ({ bankEntityId, entityId, resourceId }: Liq
         dojoContext.setup.components.Market,
         dojoContext.setup.components.Liquidity,
         bankEntityId,
-        BigInt(dojoContext.account.account.address),
-        BigInt(resourceId),
+        ContractAddress(dojoContext.account.account.address),
+        resourceId,
       ),
     [dojoContext, bankEntityId, resourceId, market, liquidity],
   );

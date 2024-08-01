@@ -1,3 +1,4 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { useDojo } from "@/hooks/context/DojoContext";
 import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { getResourceBalance } from "@/hooks/helpers/useResources";
@@ -5,7 +6,7 @@ import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import { ResourceIcon } from "@/ui/elements/ResourceIcon";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { EternumGlobalConfig, ResourcesIds } from "@bibliothecadao/eternum";
-import { ComponentValue, getComponentValue, Type } from "@dojoengine/recs";
+import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { TradeEvent } from "./MarketTradingHistory";
 
@@ -25,7 +26,7 @@ const colors = {
   [EventType.BOUGHT]: "text-green",
 };
 
-export enum TradeStatus {
+enum TradeStatus {
   OPEN = 0,
   ACCEPTED = 1,
   CANCELLED = 2,
@@ -53,7 +54,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   const { nextBlockTimestamp } = useBlockchainStore();
 
   const { getAddressNameFromEntity } = getEntitiesUtils();
-  const tradeComponent = getComponentValue(Trade, getEntityIdFromKeys([trade.event.tradeId]));
+  const tradeComponent = getComponentValue(Trade, getEntityIdFromKeys([BigInt(trade.event.tradeId)]));
   const eventType =
     trade.type === EventType.ORDER_CREATED && nextBlockTimestamp! > tradeComponent!.expires_at
       ? EventType.ORDER_EXPIRED
@@ -75,7 +76,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
       : getResourcesBalance(tradeComponent!.taker_gives_resources_id);
 
   const expirationDate =
-    trade.type === EventType.ORDER_CREATED ? new Date(tradeComponent!.expires_at * 1000) : undefined;
+    trade.type === EventType.ORDER_CREATED ? new Date(Number(tradeComponent!.expires_at) * 1000) : undefined;
 
   const price = getPrice(resourceGiven[0], resourceTaken[0]);
 
@@ -111,28 +112,8 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
 };
 
 const getPrice = (
-  resourceA:
-    | ComponentValue<
-        {
-          entity_id: Type.BigInt;
-          index: Type.Number;
-          resource_type: Type.Number;
-          resource_amount: Type.BigInt;
-        },
-        unknown
-      >
-    | undefined,
-  resourceB:
-    | ComponentValue<
-        {
-          entity_id: Type.BigInt;
-          index: Type.Number;
-          resource_type: Type.Number;
-          resource_amount: Type.BigInt;
-        },
-        unknown
-      >
-    | undefined,
+  resourceA: ComponentValue<ClientComponents["DetachedResource"]["schema"]> | undefined,
+  resourceB: ComponentValue<ClientComponents["DetachedResource"]["schema"]> | undefined,
 ): Number => {
   if (resourceA!.resource_type === ResourcesIds.Lords) {
     return Number(resourceA!.resource_amount) / Number(resourceB!.resource_amount);

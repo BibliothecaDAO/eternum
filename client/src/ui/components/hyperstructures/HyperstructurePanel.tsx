@@ -218,7 +218,7 @@ const HyperstructureLeaderboard = () => {
                 <div className="flex w-full grid grid-cols-4">
                   <div className="text-sm font-bold">{playerPoints.addressName}</div>
                   <OrderIcon containerClassName="" order={playerPoints.order} size="xs" />
-                  <div className=" text-sm font-bold">{displayAddress(playerPoints.address)}</div>
+                  <div className=" text-sm font-bold">{displayAddress(playerPoints.address.toString(16))}</div>
                   <div className="text-right">{playerPoints.totalPoints.toFixed(2)}</div>
                 </div>
               </div>

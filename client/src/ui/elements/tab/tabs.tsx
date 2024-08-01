@@ -35,7 +35,7 @@ export const VARIANTS: any = {
   },
 };
 
-export interface TabsProps {
+interface TabsProps {
   children: ReactNode;
   variant?: keyof typeof VARIANTS;
   className?: string;

@@ -10,7 +10,7 @@ import { NumberInput } from "@/ui/elements/NumberInput";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import TextInput from "@/ui/elements/TextInput";
 import { divideByPrecision, multiplyByPrecision } from "@/ui/utils/utils";
-import { EternumGlobalConfig, resources } from "@bibliothecadao/eternum";
+import { EternumGlobalConfig, ID, resources } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { ArrowRight, LucideArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -39,7 +39,7 @@ const STEPS = [
 
 interface SelectedEntity {
   name: string;
-  entityId: bigint;
+  entityId: ID;
 }
 
 export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { entities: any[]; name: string }[] }) => {
@@ -117,11 +117,11 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
     });
   };
 
-  const isEntitySelected = (entities: any[], selectedEntityId: bigint | undefined) => {
+  const isEntitySelected = (entities: any[], selectedEntityId: ID | undefined) => {
     return entities.some((entity) => entity.entity_id === selectedEntityId);
   };
 
-  const filterEntities = (entities: any[], searchTerm: string, selectedEntityId: bigint | undefined) => {
+  const filterEntities = (entities: any[], searchTerm: string, selectedEntityId: ID | undefined) => {
     return entities.filter(
       (entity) =>
         entity.entity_id === selectedEntityId ||
@@ -138,12 +138,6 @@ export const TransferBetweenEntities = ({ entitiesList }: { entitiesList: { enti
         {selectedEntityIdFrom?.toString() && selectedEntityIdTo?.toString() && (
           <>
             <div className="p-2 self-center">Transfer From: {selectedEntityIdFrom?.name}</div>
-            {/* <div className="justify-center">
-              {" "}
-              <Button className="m-2" variant="default" onClick={toggleDonkeyOrigin}>
-                Toggle Origin: {isOriginDonkeys ? selectedEntityIdFrom?.name : selectedEntityIdTo?.name}
-              </Button>
-            </div> */}
             <ArrowRight className="self-center" />
             <div className="p-2 self-center">Transfer To: {selectedEntityIdTo?.name}</div>
           </>
@@ -287,9 +281,9 @@ const SelectEntityFromList = ({
   selectedCounterpartyId,
   entities,
 }: {
-  onSelect: (name: string, entityId: bigint) => void;
-  selectedEntityId: bigint | null;
-  selectedCounterpartyId: bigint | null;
+  onSelect: (name: string, entityId: ID) => void;
+  selectedEntityId: ID | null;
+  selectedCounterpartyId: ID | null;
   entities: any[];
 }) => {
   const { getRealmAddressName } = useRealm();
@@ -335,7 +329,7 @@ const SelectResources = ({
   setSelectedResourceIds: any;
   selectedResourceAmounts: any;
   setSelectedResourceAmounts: any;
-  entity_id: bigint;
+  entity_id: ID;
 }) => {
   const { getBalance } = getResourceBalance();
   const { playResourceSound } = usePlayResourceSound();

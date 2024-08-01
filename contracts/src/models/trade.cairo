@@ -1,27 +1,27 @@
 use eternum::alias::ID;
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Trade {
+pub struct Trade {
     #[key]
-    trade_id: u128,
-    maker_id: u128,
-    maker_gives_resources_id: u128,
+    trade_id: ID,
+    maker_id: ID,
+    maker_gives_resources_id: ID,
     maker_gives_resources_hash: felt252,
     maker_gives_resources_weight: u128,
-    taker_id: u128,
-    taker_gives_resources_id: u128,
+    taker_id: ID,
+    taker_gives_resources_id: ID,
     taker_gives_resources_hash: felt252,
     taker_gives_resources_weight: u128,
     expires_at: u64,
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Status {
+pub struct Status {
     #[key]
-    trade_id: u128,
+    trade_id: ID,
     value: u128,
 }
 

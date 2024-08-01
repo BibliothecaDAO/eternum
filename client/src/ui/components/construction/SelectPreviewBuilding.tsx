@@ -10,6 +10,7 @@ import {
   BuildingType,
   EternumGlobalConfig,
   RESOURCE_INPUTS,
+  ID,
   RESOURCE_INPUTS_SCALED,
   RESOURCE_OUTPUTS,
   ResourcesIds,
@@ -284,7 +285,7 @@ export const SelectPreviewBuildingMenu = () => {
   );
 };
 
-export const BuildingCard = ({
+const BuildingCard = ({
   buildingId,
   onClick,
   active,
@@ -362,7 +363,7 @@ export const ResourceInfo = ({
   extraButtons = [],
 }: {
   resourceId: number;
-  entityId: bigint | undefined;
+  entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
 }) => {
   const cost = RESOURCE_INPUTS_SCALED[resourceId];
@@ -394,7 +395,7 @@ export const ResourceInfo = ({
       <div className="pt-3 font-bold">consumed per/s</div>
       <div className="grid grid-cols-2 gap-2">
         {Object.keys(cost).map((resourceId) => {
-          const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
+          const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
 
           return (
             <ResourceCost
@@ -411,7 +412,7 @@ export const ResourceInfo = ({
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         {Object.keys(buildingCost).map((resourceId, index) => {
-          const balance = getBalance(entityId || 0n, buildingCost[Number(resourceId)].resource);
+          const balance = getBalance(entityId || 0, buildingCost[Number(resourceId)].resource);
           return (
             <ResourceCost
               key={index}
@@ -434,7 +435,7 @@ export const BuildingInfo = ({
   name = BuildingEnumToString[buildingId],
 }: {
   buildingId: number;
-  entityId: bigint | undefined;
+  entityId: ID | undefined;
   extraButtons?: React.ReactNode[];
   name?: string;
 }) => {
@@ -492,7 +493,7 @@ export const BuildingInfo = ({
             {resourceProduced !== 0 &&
               ongoingCost &&
               Object.keys(ongoingCost).map((resourceId, index) => {
-                const balance = getBalance(entityId || 0n, ongoingCost[Number(resourceId)].resource);
+                const balance = getBalance(entityId || 0, ongoingCost[Number(resourceId)].resource);
                 return (
                   <ResourceCost
                     key={index}
@@ -514,7 +515,7 @@ export const BuildingInfo = ({
           <div className="pt-3 font-bold uppercase text-xs"> One time cost</div>
           <div className="grid grid-cols-1 gap-2 text-sm">
             {Object.keys(cost).map((resourceId, index) => {
-              const balance = getBalance(entityId || 0n, cost[Number(resourceId)].resource);
+              const balance = getBalance(entityId || 0, cost[Number(resourceId)].resource);
               return (
                 <ResourceCost
                   key={index}

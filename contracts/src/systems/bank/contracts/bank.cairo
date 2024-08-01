@@ -5,17 +5,10 @@ use eternum::models::position::{Coord};
 #[dojo::interface]
 trait IBankSystems {
     fn create_bank(
-        ref world: IWorldDispatcher,
-        realm_entity_id: ID,
-        coord: Coord,
-        owner_fee_num: u128,
-        owner_fee_denom: u128,
+        ref world: IWorldDispatcher, realm_entity_id: ID, coord: Coord, owner_fee_num: u128, owner_fee_denom: u128,
     ) -> ID;
     fn change_owner_fee(
-        ref world: IWorldDispatcher,
-        bank_entity_id: u128,
-        new_owner_fee_num: u128,
-        new_owner_fee_denom: u128,
+        ref world: IWorldDispatcher, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
     );
 }
 
@@ -27,10 +20,8 @@ mod bank_systems {
     use eternum::models::config::{BankConfig};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::{Position, Coord};
-    use eternum::models::resources::{Resource, ResourceImpl};
-    use eternum::models::structure::{
-        Structure, StructureCategory, StructureCount, StructureCountTrait
-    };
+    use eternum::models::resources::{Resource, ResourceCustomImpl};
+    use eternum::models::structure::{Structure, StructureCategory, StructureCount, StructureCountCustomTrait};
     use eternum::systems::resources::contracts::resource_systems::{InternalResourceSystemsImpl};
 
     use traits::Into;
@@ -38,13 +29,9 @@ mod bank_systems {
     #[abi(embed_v0)]
     impl BankSystemsImpl of super::IBankSystems<ContractState> {
         fn create_bank(
-            ref world: IWorldDispatcher,
-            realm_entity_id: ID,
-            coord: Coord,
-            owner_fee_num: u128,
-            owner_fee_denom: u128,
+            ref world: IWorldDispatcher, realm_entity_id: ID, coord: Coord, owner_fee_num: u128, owner_fee_denom: u128,
         ) -> ID {
-            let bank_entity_id: ID = world.uuid().into();
+            let bank_entity_id: ID = world.uuid();
 
             //todo: check that tile is explored
 
@@ -55,9 +42,7 @@ mod bank_systems {
             // remove the resources from the realm
             let bank_config = get!(world, WORLD_CONFIG_ID, BankConfig);
 
-            let mut realm_resource = ResourceImpl::get(
-                world, (realm_entity_id, ResourceTypes::LORDS)
-            );
+            let mut realm_resource = ResourceCustomImpl::get(world, (realm_entity_id, ResourceTypes::LORDS));
 
             realm_resource.burn(bank_config.lords_cost);
             realm_resource.save(world);
@@ -67,9 +52,7 @@ mod bank_systems {
                 (
                     Structure { entity_id: bank_entity_id, category: StructureCategory::Bank },
                     StructureCount { coord, count: 1 },
-                    Bank {
-                        entity_id: bank_entity_id, owner_fee_num, owner_fee_denom, exists: true
-                    },
+                    Bank { entity_id: bank_entity_id, owner_fee_num, owner_fee_denom, exists: true },
                     Position { entity_id: bank_entity_id, x: coord.x, y: coord.y },
                     Owner { entity_id: bank_entity_id, address: starknet::get_caller_address() }
                 )
@@ -79,10 +62,7 @@ mod bank_systems {
         }
 
         fn change_owner_fee(
-            ref world: IWorldDispatcher,
-            bank_entity_id: u128,
-            new_owner_fee_num: u128,
-            new_owner_fee_denom: u128,
+            ref world: IWorldDispatcher, bank_entity_id: ID, new_owner_fee_num: u128, new_owner_fee_denom: u128,
         ) {
             let player = starknet::get_caller_address();
 
@@ -97,12 +77,9 @@ mod bank_systems {
     }
 
     #[generate_trait]
-    impl InternalBankSystemsImpl of BankSystemsTrait {
+    pub impl InternalBankSystemsImpl of BankSystemsTrait {
         fn pickup_resources_from_bank(
-            world: IWorldDispatcher,
-            bank_entity_id: u128,
-            entity_id: u128,
-            resources: Span<(u8, u128)>,
+            world: IWorldDispatcher, bank_entity_id: ID, entity_id: ID, resources: Span<(u8, u128)>,
         ) -> ID {
             let mut resources_clone = resources.clone();
 
@@ -114,9 +91,7 @@ mod bank_systems {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
 
                         // add resources to recipient's balance
-                        let mut recipient_resource = ResourceImpl::get(
-                            world, (bank_entity_id, resource_type)
-                        );
+                        let mut recipient_resource = ResourceCustomImpl::get(world, (bank_entity_id, resource_type));
                         recipient_resource.add(resource_amount);
                         recipient_resource.save(world);
                     },

@@ -1,14 +1,14 @@
-import { useState, useMemo, useCallback } from "react";
+import { SelectBox } from "@/ui/elements/SelectBox";
+import TextInput from "@/ui/elements/TextInput";
+import { ContractAddress, MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
+import { useCallback, useMemo, useState } from "react";
 import { useDojo } from "../../../../hooks/context/DojoContext";
 import Button from "../../../elements/Button";
-import TextInput from "@/ui/elements/TextInput";
-import { SelectBox } from "@/ui/elements/SelectBox";
 import { Tabs } from "../../../elements/tab";
-import { MAX_NAME_LENGTH } from "@bibliothecadao/eternum";
 
 import { useGuilds } from "../../../../hooks/helpers/useGuilds";
-import { hasGuild } from "./utils";
 import { GuildMembers } from "./GuildMembers";
+import { hasGuild } from "./utils";
 import { Whitelist } from "./Whitelist";
 
 export const MyGuild = () => {
@@ -31,7 +31,7 @@ export const MyGuild = () => {
 
   const { getAddressGuild } = useGuilds();
 
-  const { userGuildEntityId, isOwner, guildName, memberCount } = getAddressGuild(account.address);
+  const { userGuildEntityId, isOwner, guildName, memberCount } = getAddressGuild(ContractAddress(account.address));
 
   const [editName, setEditName] = useState(false);
   const [naming, setNaming] = useState("");

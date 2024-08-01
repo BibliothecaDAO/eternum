@@ -2,8 +2,9 @@ import { Entity } from "../entities/Entity";
 import { Headline } from "@/ui/elements/Headline";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
 import { HintSection } from "../hints/HintModal";
+import { ID } from "@bibliothecadao/eternum";
 
-export const AllResourceArrivals = ({ entityIds }: { entityIds: bigint[] }) => {
+export const AllResourceArrivals = ({ entityIds }: { entityIds: ID[] }) => {
   return (
     <div className="px-2 flex flex-col space-y-1 overflow-y-auto">
       <Headline>

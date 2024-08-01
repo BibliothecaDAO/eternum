@@ -1,4 +1,4 @@
-import { findResourceById, getIconResourceId } from "@bibliothecadao/eternum";
+import { findResourceById, getIconResourceId, ID } from "@bibliothecadao/eternum";
 
 import { useProductionManager } from "@/hooks/helpers/useResources";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
@@ -13,8 +13,8 @@ export const ResourceChip = ({
   entityId,
 }: {
   isLabor?: boolean;
-  resourceId: number;
-  entityId: bigint;
+  resourceId: ID;
+  entityId: ID;
 }) => {
   const currentDefaultTick = useBlockchainStore((state) => state.currentDefaultTick);
   const productionManager = useProductionManager(entityId, resourceId);
