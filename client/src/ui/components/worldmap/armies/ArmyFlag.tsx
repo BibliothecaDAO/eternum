@@ -15,7 +15,7 @@ export const ArmyFlag = ({
 }) => {
   const realms = useRealmStore((state) => state.realmEntityIds);
   const realmOrder = useMemo(() => {
-    const realmId = realms[0]?.realmId || BigInt(0);
+    const realmId = realms[0]?.realmId || 0;
     const orderName = getRealmOrderNameById(realmId);
     return orderName.charAt(0).toUpperCase() + orderName.slice(1);
   }, []);

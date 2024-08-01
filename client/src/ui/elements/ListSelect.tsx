@@ -4,7 +4,7 @@ import { Listbox, Transition } from "@headlessui/react";
 import clsx from "clsx";
 import { Fragment, ReactNode, useMemo } from "react";
 
-export interface ListSelectOption {
+interface ListSelectOption {
   id: any;
   label: ReactNode;
 }

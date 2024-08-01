@@ -3,12 +3,12 @@ import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/u
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
 import Button from "@/ui/elements/Button";
 import { getEntityIdFromKeys } from "@/ui/utils/utils";
-import { EntityState, determineEntityState } from "@bibliothecadao/eternum";
+import { EntityState, ID, determineEntityState } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { useState } from "react";
 
 type DepositResourcesProps = {
-  entityId: bigint;
+  entityId: ID;
   battleInProgress?: boolean;
   armyInBattle: boolean;
 };
@@ -24,7 +24,7 @@ export const DepositResources = ({ entityId, battleInProgress, armyInBattle }: D
   const nextBlockTimestamp = useBlockchainStore.getState().nextBlockTimestamp;
   const { getOwnedEntityOnPosition } = useOwnedEntitiesOnPosition();
 
-  const arrivalTime = getComponentValue(setup.components.ArrivalTime, getEntityIdFromKeys([entityId]));
+  const arrivalTime = getComponentValue(setup.components.ArrivalTime, getEntityIdFromKeys([BigInt(entityId)]));
 
   const depositEntityId = getOwnedEntityOnPosition(entityId);
 
@@ -35,7 +35,7 @@ export const DepositResources = ({ entityId, battleInProgress, armyInBattle }: D
     inventoryResources.length > 0,
   );
 
-  const onOffload = async (receiverEntityId: bigint) => {
+  const onOffload = async (receiverEntityId: ID) => {
     setIsLoading(true);
     if (entityId && inventoryResources.length > 0) {
       await setup.systemCalls

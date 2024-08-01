@@ -5,10 +5,10 @@ import { getEntitiesUtils } from "@/hooks/helpers/useEntities";
 import { getResourcesUtils, useOwnedEntitiesOnPosition } from "@/hooks/helpers/useResources";
 import { getStructureByEntityId } from "@/hooks/helpers/useStructures";
 import useBlockchainStore from "@/hooks/store/useBlockchainStore";
-import { formatSecondsLeftInDaysHours } from "@/ui/components/cityview/realm/labor/laborUtils";
+import { formatSecondsLeftInDaysHours } from "@/ui/utils/utils";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { EntityState, EntityType, determineEntityState } from "@bibliothecadao/eternum";
+import { EntityState, EntityType, ID, determineEntityState } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import React, { useMemo, useState } from "react";
 import { DepositResources } from "../resources/DepositResources";
@@ -27,7 +27,7 @@ const entityName: Record<EntityType, string> = {
 };
 
 type EntityProps = {
-  entityId: bigint;
+  entityId: ID;
   idleOnly?: boolean;
   selectedCaravan?: number;
 } & React.HTMLAttributes<HTMLDivElement>;
@@ -45,18 +45,13 @@ export const Entity = ({ entityId, ...props }: EntityProps) => {
   const entity = getEntityInfo(entityId);
   const entityResources = getResourcesFromBalance(entityId);
   const hasResources = entityResources.length > 0;
-  const entityState = determineEntityState(
-    nextBlockTimestamp,
-    entity.blocked,
-    Number(entity.arrivalTime),
-    hasResources,
-  );
+  const entityState = determineEntityState(nextBlockTimestamp, entity.blocked, entity.arrivalTime, hasResources);
   const depositEntityId = getOwnedEntityOnPosition(entityId);
 
-  const structureAtPosition = getStructureByEntityId(depositEntityId || 0n);
+  const structureAtPosition = getStructureByEntityId(depositEntityId || 0);
 
   const battleInProgress = useMemo(() => {
-    if (!structureAtPosition || !structureAtPosition.protector || structureAtPosition.protector.battle_id === 0n) {
+    if (!structureAtPosition || !structureAtPosition.protector || structureAtPosition.protector.battle_id === 0) {
       return false;
     }
     const currentTimestamp = useBlockchainStore.getState().nextBlockTimestamp;

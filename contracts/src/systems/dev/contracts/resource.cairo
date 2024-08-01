@@ -1,8 +1,9 @@
 use dojo::world::IWorldDispatcher;
+use eternum::alias::ID;
 
 #[dojo::interface]
 trait IResourceSystems {
-    fn mint(ref world: IWorldDispatcher, entity_id: u128, resources: Span<(u8, u128)>,);
+    fn mint(ref world: IWorldDispatcher, entity_id: ID, resources: Span<(u8, u128)>,);
 }
 
 #[dojo::contract]
@@ -11,13 +12,13 @@ mod dev_resource_systems {
     use eternum::constants::ResourceTypes;
     use eternum::constants::{WORLD_CONFIG_ID};
     use eternum::models::config::{WorldConfig};
-    use eternum::models::resources::{Resource, ResourceTrait, ResourceImpl};
+    use eternum::models::resources::{Resource, ResourceCustomTrait, ResourceCustomImpl};
     use eternum::systems::config::contracts::config_systems::{assert_caller_is_admin};
 
 
     #[abi(embed_v0)]
     impl ResourceSystemsImpl of super::IResourceSystems<ContractState> {
-        fn mint(ref world: IWorldDispatcher, entity_id: u128, resources: Span<(u8, u128)>,) {
+        fn mint(ref world: IWorldDispatcher, entity_id: ID, resources: Span<(u8, u128)>,) {
             assert_caller_is_admin(world);
 
             let mut resources = resources;
@@ -29,7 +30,7 @@ mod dev_resource_systems {
                         let (resource_type, amount) = (*resource_type, *amount);
                         assert(amount > 0, 'amount must not be 0');
 
-                        let mut resource = ResourceImpl::get(world, (entity_id, resource_type));
+                        let mut resource = ResourceCustomImpl::get(world, (entity_id, resource_type));
                         resource.add(amount);
                         resource.save(world);
                     },

@@ -4,10 +4,11 @@ import { EntityList } from "@/ui/components/list/EntityList";
 import { ArmyPanel } from "@/ui/components/military/ArmyPanel";
 import { EntitiesArmyTable } from "@/ui/components/military/EntitiesArmyTable";
 import { HintModalButton } from "@/ui/elements/HintModalButton";
+import { ID } from "@bibliothecadao/eternum";
 import { useMemo } from "react";
 import { useLocation } from "wouter";
 
-export const Military = ({ entityId }: { entityId: bigint | undefined }) => {
+export const Military = ({ entityId }: { entityId: ID | undefined }) => {
   const { playerStructures } = useEntities();
 
   const [location, _] = useLocation();

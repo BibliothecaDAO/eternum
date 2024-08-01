@@ -40,7 +40,9 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
   }, [currentTimestamp]);
 
   const armiesInBattle = useMemo(() => {
-    const armiesEntityIds = runQuery([HasValue(dojo.setup.components.Army, { battle_id: battleManager.battleId })]);
+    const armiesEntityIds = runQuery([
+      HasValue(dojo.setup.components.Army, { battle_id: battleManager.battleEntityId }),
+    ]);
     return Array.from(armiesEntityIds).map(
       (entityId) => getComponentValue(dojo.setup.components.Army, entityId)!.entity_id,
     );
@@ -55,7 +57,7 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
         className="fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125"
         onClick={() =>
           setBattleView({
-            battle: updatedBattle!.entity_id,
+            battleEntityId: updatedBattle!.entity_id,
             targetArmy: undefined,
             ownArmyEntityId: undefined,
           })
@@ -69,7 +71,7 @@ export const BattleListItem = ({ battle, ownArmySelected }: BattleListItemProps)
         className="fill-gold h-6 w-6 my-auto animate-slow transition-all hover:fill-gold/50 hover:scale-125"
         onClick={() =>
           setBattleView({
-            battle: updatedBattle!.entity_id,
+            battleEntityId: updatedBattle!.entity_id,
             targetArmy: undefined,
             ownArmyEntityId: ownArmySelected!.entity_id,
           })

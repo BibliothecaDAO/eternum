@@ -7,7 +7,7 @@ import { useEffect, useMemo } from "react";
 import { ExistingBuildings, ModelsIndexes } from "./ExistingBuildings";
 import { BuildingType } from "@bibliothecadao/eternum";
 
-export interface OriginalModels {
+interface OriginalModels {
   [key: number | string]: THREE.Group;
 }
 

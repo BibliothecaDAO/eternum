@@ -4,6 +4,7 @@ mod internal_leveling_systems {
     use core::traits::Into;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+    use eternum::alias::ID;
     use eternum::constants::{ResourceTypes};
     use eternum::models::level::Level;
     use eternum::models::position::Position;
@@ -14,19 +15,17 @@ mod internal_leveling_systems {
         config_systems, ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait
     };
 
-    use eternum::systems::leveling::contracts::leveling_systems::{
-        InternalLevelingSystemsImpl as leveling
-    };
+    use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
 
     use eternum::utils::testing::{world::spawn_eternum, systems::deploy_system};
 
-    const LEVELING_CONFIG_ID: u128 = 8888;
+    const LEVELING_CONFIG_ID: ID = 8888;
     const MAX_LEVEL: u64 = 10_u64;
 
-    fn setup() -> (IWorldDispatcher, u128) {
+    fn setup() -> (IWorldDispatcher, ID) {
         let world = spawn_eternum();
 
-        // define leveling config 
+        // define leveling config
 
         let decay_scaled: u128 = 1844674407370955161;
         let base_multiplier: u128 = 25;
@@ -40,21 +39,12 @@ mod internal_leveling_systems {
         let max_level = MAX_LEVEL;
 
         // 3 tier resources
-        let mut resource_1_costs = array![(ResourceTypes::WOOD, 1000), (ResourceTypes::STONE, 1000)]
-            .span();
-        let mut resource_2_costs = array![
-            (ResourceTypes::COAL, 1000), (ResourceTypes::COPPER, 1000)
-        ]
-            .span();
-        let mut resource_3_costs = array![
-            (ResourceTypes::OBSIDIAN, 1000), (ResourceTypes::SILVER, 1000)
-        ]
-            .span();
+        let mut resource_1_costs = array![(ResourceTypes::WOOD, 1000), (ResourceTypes::STONE, 1000)].span();
+        let mut resource_2_costs = array![(ResourceTypes::COAL, 1000), (ResourceTypes::COPPER, 1000)].span();
+        let mut resource_3_costs = array![(ResourceTypes::OBSIDIAN, 1000), (ResourceTypes::SILVER, 1000)].span();
 
         let config_systems_address = deploy_system(world, config_systems::TEST_CLASS_HASH);
-        let level_config_dispatcher = ILevelingConfigDispatcher {
-            contract_address: config_systems_address
-        };
+        let level_config_dispatcher = ILevelingConfigDispatcher { contract_address: config_systems_address };
 
         level_config_dispatcher
             .set_leveling_config(
@@ -88,9 +78,7 @@ mod internal_leveling_systems {
         loop {
             match resources.pop_front() {
                 Option::Some(resource_type) => {
-                    set!(
-                        world, (Resource { entity_id: entity_id, resource_type, balance: 100_000 })
-                    );
+                    set!(world, (Resource { entity_id: entity_id, resource_type, balance: 100_000 }));
                 },
                 Option::None => { break; },
             }
@@ -108,7 +96,7 @@ mod internal_leveling_systems {
         let level = get!(world, (entity_id), Level);
         assert(level.level == 0, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         // assert resources are the right amount
@@ -124,7 +112,7 @@ mod internal_leveling_systems {
         let level = get!(world, entity_id, Level);
         assert(level.level == 1, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         // assert resources are the right amount
@@ -143,7 +131,7 @@ mod internal_leveling_systems {
         let level = get!(world, entity_id, Level);
         assert(level.level == 2, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let coal_resource = get!(world, (entity_id, ResourceTypes::COAL), Resource);
@@ -155,7 +143,7 @@ mod internal_leveling_systems {
         let level = get!(world, entity_id, Level);
         assert(level.level == 3, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let obsidian_resource = get!(world, (entity_id, ResourceTypes::OBSIDIAN), Resource);
@@ -167,7 +155,7 @@ mod internal_leveling_systems {
         let level = get!(world, entity_id, Level);
         assert(level.level == 4, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let wheat_resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
@@ -176,25 +164,25 @@ mod internal_leveling_systems {
         let level = get!(world, entity_id, Level);
         assert(level.level == 5, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let level = get!(world, entity_id, Level);
         assert(level.level == 6, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let level = get!(world, entity_id, Level);
         assert(level.level == 7, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let level = get!(world, entity_id, Level);
         assert(level.level == 8, 'wrong level');
 
-        // level up 
+        // level up
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         let level = get!(world, entity_id, Level);

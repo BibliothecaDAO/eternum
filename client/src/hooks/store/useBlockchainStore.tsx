@@ -53,8 +53,8 @@ export const useFetchBlockchainData = () => {
       if (timestamp && timestamp !== currentTimestamp) {
         // Check if fetched timestamp is different from current state
         setNextBlockTimestamp(timestamp);
-        setCurrentDefaultTick(Math.floor(timestamp / tickConfigDefault!.tick_interval_in_seconds));
-        setCurrentArmiesTick(Math.floor(timestamp / tickConfigArmies!.tick_interval_in_seconds));
+        setCurrentDefaultTick(Math.floor(timestamp / Number(tickConfigDefault!.tick_interval_in_seconds)));
+        setCurrentArmiesTick(Math.floor(timestamp / Number(tickConfigArmies!.tick_interval_in_seconds)));
       }
     };
 

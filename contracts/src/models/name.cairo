@@ -1,15 +1,17 @@
-#[derive(Copy, Drop, Serde)]
+use eternum::alias::ID;
+
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct AddressName {
+pub struct AddressName {
     #[key]
     address: felt252,
     name: felt252
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct EntityName {
+pub struct EntityName {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     name: felt252
 }

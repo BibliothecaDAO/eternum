@@ -7,9 +7,7 @@
     "build-client": "pnpm --dir ./client build",
     "prettier-check": "npx prettier --check .",
     "prettier": "npx prettier --write .",
-    "dev:docs": "pnpm --dir ./eternum-docs dev"
-  },
-  "dependencies": {
-    "tsup": "^8.0.2"
+    "dev:docs": "pnpm --dir ./eternum-docs dev",
+    "knip": "npx knip --exclude binaries,dependencies"
   }
 }

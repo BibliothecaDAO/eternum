@@ -23,7 +23,7 @@ const provider = new EternumProvider(manifest, nodeUrl);
 const account = new Account(provider.provider, VITE_PUBLIC_MASTER_ADDRESS, VITE_PUBLIC_MASTER_PRIVATE_KEY);
 
 // entity ids
-const ADMIN_BANK_ENTITY_ID = 999999999999999998n;
+const ADMIN_BANK_ENTITY_ID = 999999998n;
 const RESOURCE_LIQUIDITY = 250000;
 const LORDS_LIQUIDITY_PER_RESOURCE = 250000;
 

@@ -4,12 +4,12 @@ use eternum::utils::unpack::unpack_resource_types;
 use starknet::ContractAddress;
 use traits::Into;
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Realm {
+pub struct Realm {
     #[key]
-    entity_id: u128,
-    realm_id: u128,
+    entity_id: ID,
+    realm_id: ID,
     // OG Realm Id
     // TODO: no need for owner ? since we use Owner component
     // packed resource ids of realm
@@ -24,16 +24,14 @@ struct Realm {
 }
 
 
-trait RealmTrait {
+trait RealmCustomTrait {
     fn has_resource(self: Realm, resource_type: u8) -> bool;
     fn assert_is_set(self: Realm);
 }
 
-impl RealmImpl of RealmTrait {
+impl RealmCustomImpl of RealmCustomTrait {
     fn has_resource(self: Realm, resource_type: u8) -> bool {
-        let mut resource_types: Span<u8> = unpack_resource_types(
-            self.resource_types_packed, self.resource_types_count
-        );
+        let mut resource_types: Span<u8> = unpack_resource_types(self.resource_types_packed, self.resource_types_count);
         let mut has_resource = false;
         loop {
             match resource_types.pop_front() {

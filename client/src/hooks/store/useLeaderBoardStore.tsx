@@ -1,12 +1,16 @@
+import { ClientComponents } from "@/dojo/createClientComponents";
 import { HyperstructureEventInterface, getHyperstructureEvents } from "@/dojo/events/hyperstructureEventQueries";
 import { displayAddress, sortItems } from "@/ui/utils/utils";
 import {
+  ContractAddress,
   EternumGlobalConfig,
   HYPERSTRUCTURE_POINTS_PER_CYCLE,
   HYPERSTRUCTURE_TOTAL_COSTS_SCALED,
+  ID,
   ResourcesIds,
   getOrderName,
 } from "@bibliothecadao/eternum";
+import { ComponentValue } from "@dojoengine/recs";
 import { useCallback, useEffect } from "react";
 import { useDojo } from "../context/DojoContext";
 import { useContributions } from "../helpers/useContributions";
@@ -47,22 +51,22 @@ export const TOTAL_CONTRIBUTABLE_AMOUNT: number = HYPERSTRUCTURE_TOTAL_COSTS_SCA
   0,
 );
 
-function getResourceMultiplier(resourceType: BigInt): bigint {
+function getResourceMultiplier(resourceType: ResourcesIds): number {
   const resourceTypeNumber: ResourcesIds = Number(resourceType);
-  return BigInt(ResourceMultipliers[resourceTypeNumber] ?? 0);
+  return ResourceMultipliers[resourceTypeNumber] ?? 0;
 }
 
-export function computeContributionPoints(totalPoints: number, qty: bigint, resourceType: bigint): number {
+function computeContributionPoints(totalPoints: number, qty: number, resourceType: ResourcesIds): number {
   const effectiveContribution =
-    (qty / BigInt(EternumGlobalConfig.resources.resourcePrecision)) * getResourceMultiplier(resourceType);
-  const points = (effectiveContribution / BigInt(TOTAL_CONTRIBUTABLE_AMOUNT)) * BigInt(totalPoints);
+    (qty / EternumGlobalConfig.resources.resourcePrecision) * getResourceMultiplier(resourceType);
+  const points = (effectiveContribution / TOTAL_CONTRIBUTABLE_AMOUNT) * totalPoints;
   return Number(points);
 }
 
 export const calculateShares = (contributions: any[]) => {
   let points = 0;
   contributions.forEach((contribution) => {
-    points += computeContributionPoints(1, contribution.amount, BigInt(contribution.resource_type));
+    points += computeContributionPoints(1, Number(contribution.amount), contribution.resource_type);
   });
   return points;
 };
@@ -72,7 +76,7 @@ interface Rankable {
   rank: number;
 }
 export interface PlayerPointsLeaderboardInterface {
-  address: string;
+  address: ContractAddress;
   addressName: string;
   order: string;
   totalPoints: number;
@@ -81,7 +85,7 @@ export interface PlayerPointsLeaderboardInterface {
 }
 
 export interface GuildPointsLeaderboardInterface {
-  guildEntityId: bigint;
+  guildEntityId: ID;
   name: string;
   totalPoints: number;
   isYours: boolean;
@@ -115,7 +119,7 @@ export const useComputePointsLeaderboards = () => {
 
   const updatePlayerPointsLeaderboard = useCallback(
     (
-      hyperstructureEntityId: bigint,
+      hyperstructureEntityId: ID,
       finishedTimestamp: number,
       currentTimestamp: number,
     ): PlayerPointsLeaderboardInterface[] => {
@@ -151,7 +155,7 @@ export const useComputePointsLeaderboards = () => {
               guildEntityId: userGuildEntityId!,
               name: guildName!,
               totalPoints: player.totalPoints,
-              isYours: player.address === account.address,
+              isYours: player.address === ContractAddress(account.address),
               rank: 0,
             });
           }
@@ -186,12 +190,12 @@ export const useComputePointsLeaderboards = () => {
 
 export default useLeaderBoardStore;
 
-export const computeHyperstructureLeaderboard = (
-  contributions: any[],
+const computeHyperstructureLeaderboard = (
+  contributions: (ComponentValue<ClientComponents["Contribution"]["schema"]> | undefined)[],
   totalHyperstructurePoints: number,
   account: any,
-  getAddressName: any,
-  getAddressOrder: any,
+  getAddressName: (address: ContractAddress) => string | undefined,
+  getAddressOrder: (address: ContractAddress) => number | undefined,
 ): PlayerPointsLeaderboardInterface[] => {
   let tempPlayerPointsLeaderboard: PlayerPointsLeaderboardInterface[] = [];
 
@@ -201,25 +205,25 @@ export const computeHyperstructureLeaderboard = (
   }
 
   contributions.forEach((contribution) => {
-    const playerAddress: string = "0x" + contribution!.player_address.toString(16);
-    const index = tempPlayerPointsLeaderboard.findIndex((player) => player.address === playerAddress);
+    const index = tempPlayerPointsLeaderboard.findIndex((player) => player.address === contribution!.player_address);
     if (index >= 0) {
       tempPlayerPointsLeaderboard[index].totalPoints += computeContributionPoints(
         totalHyperstructurePoints,
         Number(contribution!.amount),
-        BigInt(contribution!.resource_type),
+        contribution!.resource_type,
       );
     } else {
       tempPlayerPointsLeaderboard.push({
-        address: playerAddress,
-        addressName: getAddressName(playerAddress) || displayAddress(playerAddress),
-        order: getOrderName(getAddressOrder(playerAddress) || 1),
+        address: contribution!.player_address,
+        addressName:
+          getAddressName(contribution!.player_address) || displayAddress(contribution!.player_address.toString(16)),
+        order: getOrderName(getAddressOrder(contribution!.player_address) || 1),
         totalPoints: computeContributionPoints(
           totalHyperstructurePoints,
           Number(contribution!.amount),
-          BigInt(contribution!.resource_type),
+          contribution!.resource_type,
         ),
-        isYours: playerAddress === account.address,
+        isYours: contribution!.player_address === account.address,
         rank: 0,
       });
     }

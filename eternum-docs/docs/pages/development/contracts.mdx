@@ -39,7 +39,7 @@ Things to note:
 #[dojo::interface]
 trait IBuildingContract<TContractState> {
     fn create(
-        entity_id: u128,
+        entity_id: ID,
         building_coord: eternum::models::position::Coord,
         building_category: eternum::models::buildings::BuildingCategory,
         produce_resource_type: Option<u8>
@@ -51,16 +51,16 @@ mod building_systems {
     use eternum::alias::ID;
     use eternum::models::{
         resources::{Resource, ResourceCost}, owner::Owner, hyperstructure::HyperStructure,
-        order::Orders, position::{Coord, Position, PositionTrait, Direction},
-        buildings::{BuildingCategory, Building, BuildingImpl},
-        production::{Production, ProductionRateTrait}, realm::{Realm, RealmImpl}
+        order::Orders, position::{Coord, Position, PositionCustomTrait, Direction},
+        buildings::{BuildingCategory, Building, BuildingCustomImpl},
+        production::{Production, ProductionRateTrait}, realm::{Realm, RealmCustomImpl}
     };
 
     #[abi(embed_v0)]
     impl BuildingContractImpl of super::IBuildingContract<ContractState> {
         fn create(
             world: IWorldDispatcher,
-            entity_id: u128,
+            entity_id: ID,
             building_coord: Coord,
             building_category: BuildingCategory,
             produce_resource_type: Option<u8>,

@@ -1,9 +1,9 @@
 use core::debug::PrintTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::alias::ID;
 use eternum::constants::{
-    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION,
-    HYPERSTRUCTURE_CONFIG_ID, TickIds
+    WORLD_CONFIG_ID, BUILDING_CATEGORY_POPULATION_CONFIG_ID, RESOURCE_PRECISION, HYPERSTRUCTURE_CONFIG_ID, TickIds
 };
 use eternum::models::buildings::BuildingCategory;
 use eternum::models::combat::{Troops};
@@ -13,40 +13,40 @@ use starknet::ContractAddress;
 // GLOBAL CONFIGS
 //
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct WorldConfig {
+pub struct WorldConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     admin_address: ContractAddress,
     realm_l2_contract: ContractAddress,
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct RealmFreeMintConfig {
+pub struct RealmFreeMintConfig {
     #[key]
-    config_id: u128,
-    detached_resource_id: u128,
+    config_id: ID,
+    detached_resource_id: ID,
     detached_resource_count: u32
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct RoadConfig {
+pub struct RoadConfig {
     #[key]
-    config_id: u128,
-    resource_cost_id: u128,
+    config_id: ID,
+    resource_cost_id: ID,
     resource_cost_count: u32,
     speed_up_by: u64
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct HyperstructureResourceConfig {
+pub struct HyperstructureResourceConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
     resource_type: u8,
     amount_for_completion: u128,
@@ -65,42 +65,42 @@ struct HyperstructureConfig {
 // that it's a config for one specific entity type?
 // and not the same as world config
 // e.g. EntityTypeCapacityConfig?
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct CapacityConfig {
+pub struct CapacityConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
-    carry_capacity_config_id: u128,
-    entity_type: u128,
+    carry_capacity_config_id: ID,
+    entity_type: ID,
     weight_gram: u128,
 }
 
 #[generate_trait]
-impl CapacityConfigImpl of CapacityConfigTrait {
-    fn get(world: IWorldDispatcher, entity_type: u128) -> CapacityConfig {
+impl CapacityConfigCustomImpl of CapacityConfigCustomTrait {
+    fn get(world: IWorldDispatcher, entity_type: ID) -> CapacityConfig {
         get!(world, (WORLD_CONFIG_ID, entity_type), CapacityConfig)
     }
 }
 
 // speed
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct SpeedConfig {
+pub struct SpeedConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
-    speed_config_id: u128,
-    entity_type: u128,
+    speed_config_id: ID,
+    entity_type: ID,
     sec_per_km: u16,
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct MapExploreConfig {
+pub struct MapExploreConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     wheat_burn_amount: u128,
     fish_burn_amount: u128,
     reward_resource_amount: u128,
@@ -108,21 +108,21 @@ struct MapExploreConfig {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct TickConfig {
+pub struct TickConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
     tick_id: u8,
     tick_interval_in_seconds: u64
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct StaminaConfig {
+pub struct StaminaConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
     unit_type: u8,
     max_stamina: u16,
@@ -130,9 +130,9 @@ struct StaminaConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct MercenariesConfig {
+pub struct MercenariesConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     troops: Troops,
     rewards: Span<(u8, u128)>
 }
@@ -177,19 +177,19 @@ impl TickImpl of TickTrait {
 
 
 // weight
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct WeightConfig {
+pub struct WeightConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
-    weight_config_id: u128,
-    entity_type: u128,
+    weight_config_id: ID,
+    entity_type: ID,
     weight_gram: u128,
 }
 
 #[generate_trait]
-impl WeightConfigImpl of WeightConfigTrait {
+impl WeightConfigCustomImpl of WeightConfigCustomTrait {
     fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
         let resource_weight_config = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
 
@@ -197,11 +197,11 @@ impl WeightConfigImpl of WeightConfigTrait {
     }
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct LevelingConfig {
+pub struct LevelingConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     decay_interval: u64,
     max_level: u64,
     decay_scaled: u128,
@@ -210,19 +210,19 @@ struct LevelingConfig {
     wheat_base_amount: u128,
     fish_base_amount: u128,
     // low tier resources
-    resource_1_cost_id: u128,
+    resource_1_cost_id: ID,
     resource_1_cost_count: u32,
     // mid tier resources
-    resource_2_cost_id: u128,
+    resource_2_cost_id: ID,
     resource_2_cost_count: u32,
     // high tier resources
-    resource_3_cost_id: u128,
+    resource_3_cost_id: ID,
     resource_3_cost_count: u32
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct ProductionConfig {
+pub struct ProductionConfig {
     #[key]
     resource_type: u8,
     // production amount per tick
@@ -234,11 +234,11 @@ struct ProductionConfig {
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct BankConfig {
+pub struct BankConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     lords_cost: u128,
     lp_fee_num: u128,
     lp_fee_denom: u128,
@@ -246,22 +246,20 @@ struct BankConfig {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct BuildingConfig {
+pub struct BuildingConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
     category: BuildingCategory,
     #[key]
     resource_type: u8,
-    resource_cost_id: u128,
+    resource_cost_id: ID,
     resource_cost_count: u32,
 }
 
 #[generate_trait]
-impl BuildingConfigImpl of BuildingConfigTrait {
-    fn get(
-        world: IWorldDispatcher, category: BuildingCategory, resource_type: u8
-    ) -> BuildingConfig {
+impl BuildingConfigCustomImpl of BuildingConfigCustomTrait {
+    fn get(world: IWorldDispatcher, category: BuildingCategory, resource_type: u8) -> BuildingConfig {
         return get!(
             world,
             (
@@ -274,11 +272,11 @@ impl BuildingConfigImpl of BuildingConfigTrait {
     }
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct TroopConfig {
+pub struct TroopConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     health: u32,
     knight_strength: u8,
     paladin_strength: u8,
@@ -303,23 +301,23 @@ struct TroopConfig {
 
 
 #[generate_trait]
-impl TroopConfigImpl of TroopConfigTrait {
+impl TroopConfigCustomImpl of TroopConfigCustomTrait {
     fn get(world: IWorldDispatcher) -> TroopConfig {
         return get!(world, WORLD_CONFIG_ID, TroopConfig);
     }
 }
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct BattleConfig {
+pub struct BattleConfig {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     max_tick_duration: u64,
 }
 
 #[generate_trait]
-impl BattleConfigImpl of BattleConfigTrait {
+impl BattleConfigCustomImpl of BattleConfigCustomTrait {
     fn get(world: IWorldDispatcher) -> BattleConfig {
         get!(world, WORLD_CONFIG_ID, BattleConfig)
     }
@@ -328,45 +326,43 @@ impl BattleConfigImpl of BattleConfigTrait {
 
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
-struct BuildingCategoryPopConfig {
+pub struct BuildingCategoryPopConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     #[key]
     building_category: BuildingCategory,
     population: u32, // adds to population
     capacity: u32, // increase capacity by this amount
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct PopulationConfig {
+pub struct PopulationConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     base_population: u32,
 }
 
 #[generate_trait]
-impl BuildingCategoryPopulationConfigImpl of BuildingCategoryPopConfigTrait {
+impl BuildingCategoryPopulationConfigCustomImpl of BuildingCategoryPopConfigCustomTrait {
     fn get(world: IWorldDispatcher, building_id: BuildingCategory) -> BuildingCategoryPopConfig {
-        get!(
-            world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig
-        )
+        get!(world, (BUILDING_CATEGORY_POPULATION_CONFIG_ID, building_id), BuildingCategoryPopConfig)
     }
 }
 
 #[generate_trait]
-impl HyperstructureConfigImpl of HyperstructureConfigTrait {
+impl HyperstructureConfigCustomImpl of HyperstructureConfigCustomTrait {
     fn get(world: IWorldDispatcher, resource_id: u8) -> HyperstructureResourceConfig {
         get!(world, (HYPERSTRUCTURE_CONFIG_ID, resource_id), HyperstructureResourceConfig)
     }
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct HasClaimedStartingResources {
+pub struct HasClaimedStartingResources {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     #[key]
-    config_id: u32,
+    config_id: ID,
     claimed: bool,
 }

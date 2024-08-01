@@ -1,6 +1,6 @@
 import { ClientComponents } from "@/dojo/createClientComponents";
 import { getUIPositionFromColRow } from "@/ui/utils/utils";
-import { EternumGlobalConfig, Position, UIPosition } from "@bibliothecadao/eternum";
+import { ContractAddress, EternumGlobalConfig, ID, Position, UIPosition } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import {
   Component,
@@ -17,8 +17,6 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import { shortString } from "starknet";
 import { useDojo } from "../context/DojoContext";
-import { BattleInfo, getBattle } from "./battles/useBattles";
-import { armyHasLost, battleIsFinished } from "./battles/useBattlesUtils";
 
 export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   name: string;
@@ -40,7 +38,7 @@ export type ArmyInfo = ComponentValue<ClientComponents["Army"]["schema"]> & {
   homePosition: ComponentValue<ClientComponents["Position"]["schema"]> | undefined;
 };
 
-export const formatArmies = (
+const formatArmies = (
   armies: Entity[],
   playerAddress: string,
   Army: Component<ClientComponents["Army"]["schema"]>,
@@ -71,7 +69,7 @@ export const formatArmies = (
 
       let owner = getComponentValue(Owner, armyEntityId);
       if (!owner && entityOwner?.entity_owner_id) {
-        owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner.entity_owner_id]));
+        owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
       }
       if (!owner) return undefined;
 
@@ -97,10 +95,10 @@ export const formatArmies = (
       const arrivalTime = getComponentValue(ArrivalTime, armyEntityId);
       const stamina = getComponentValue(Stamina, armyEntityId);
       const name = getComponentValue(Name, armyEntityId);
-      const realm = entityOwner && getComponentValue(Realm, getEntityIdFromKeys([entityOwner.entity_owner_id]));
-      const homePosition = realm && getComponentValue(Position, getEntityIdFromKeys([realm.realm_id]));
+      const realm = entityOwner && getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]));
+      const homePosition = realm && getComponentValue(Position, getEntityIdFromKeys([BigInt(realm.realm_id)]));
 
-      const isMine = BigInt(owner?.address || 0) === BigInt(playerAddress);
+      const isMine = (owner?.address || 0n) === ContractAddress(playerAddress);
       const isMercenary = owner === undefined;
       const ownGroupIndex = Number(army.entity_id) % 12;
       const offset = calculateOffset(ownGroupIndex, 12);
@@ -161,7 +159,7 @@ export const useMovableArmies = () => {
     Has(Health),
     Not(Protectee),
     NotValue(Movable, { sec_per_km: 0 }),
-    HasValue(Army, { battle_id: 0n }),
+    HasValue(Army, { battle_id: 0 }),
   ]);
 
   return {
@@ -186,7 +184,7 @@ export const useMovableArmies = () => {
   };
 };
 
-export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owner_entity_id: bigint }) => {
+export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owner_entity_id: ID }) => {
   const {
     setup: {
       components: {
@@ -235,48 +233,6 @@ export const useArmiesByEntityOwner = ({ entity_owner_entity_id }: { entity_owne
   };
 };
 
-export const useArmiesByBattleId = (battle_id: bigint) => {
-  const {
-    setup: {
-      components: {
-        Position,
-        EntityOwner,
-        Owner,
-        Health,
-        Quantity,
-        Movable,
-        Capacity,
-        ArrivalTime,
-        Realm,
-        Army,
-        Protectee,
-        EntityName,
-        Stamina,
-      },
-    },
-    account: { account },
-  } = useDojo();
-
-  const armiesEntityIds = useEntityQuery([HasValue(Army, { battle_id: battle_id }), NotValue(Army, { battle_id: 0n })]);
-  return formatArmies(
-    Array.from(armiesEntityIds),
-    account.address,
-    Army,
-    Protectee,
-    EntityName,
-    Health,
-    Quantity,
-    Movable,
-    Capacity,
-    ArrivalTime,
-    Position,
-    EntityOwner,
-    Owner,
-    Realm,
-    Stamina,
-  );
-};
-
 export const getArmiesByBattleId = () => {
   const {
     setup: {
@@ -299,7 +255,7 @@ export const getArmiesByBattleId = () => {
     account: { account },
   } = useDojo();
 
-  const armiesByBattleId = (battle_id: bigint) => {
+  const armiesByBattleId = (battle_id: ID) => {
     const armiesEntityIds = runQuery([HasValue(Army, { battle_id })]);
     return formatArmies(
       Array.from(armiesEntityIds),
@@ -322,7 +278,7 @@ export const getArmiesByBattleId = () => {
   return armiesByBattleId;
 };
 
-export const useArmyByArmyEntityId = (entityId: bigint) => {
+export const useArmyByArmyEntityId = (entityId: ID) => {
   const {
     setup: {
       components: {
@@ -364,7 +320,7 @@ export const useArmyByArmyEntityId = (entityId: bigint) => {
   )[0];
 };
 
-export const getUserArmyInBattle = (battle_id: bigint) => {
+export const getUserArmyInBattle = (battle_id: ID) => {
   const {
     account: { account },
     setup: {
@@ -388,9 +344,9 @@ export const getUserArmyInBattle = (battle_id: bigint) => {
 
   const armiesEntityIds = runQuery([
     Has(Army),
-    NotValue(Army, { battle_id: 0n }),
-    HasValue(Army, { battle_id: battle_id }),
-    HasValue(Owner, { address: BigInt(account.address) }),
+    NotValue(Army, { battle_id: 0 }),
+    HasValue(Army, { battle_id }),
+    HasValue(Owner, { address: ContractAddress(account.address) }),
   ]);
 
   const armies = useMemo(() => {
@@ -443,8 +399,8 @@ export const useOwnArmiesByPosition = ({ position, inBattle }: { position: Posit
       Has(Army),
       HasValue(Position, { x: position.x, y: position.y }),
       Not(Protectee),
-      HasValue(Owner, { address: BigInt(account.address) }),
-      inBattle ? NotValue(Army, { battle_id: 0n }) : HasValue(Army, { battle_id: 0n }),
+      HasValue(Owner, { address: ContractAddress(account.address) }),
+      inBattle ? NotValue(Army, { battle_id: 0 }) : HasValue(Army, { battle_id: 0 }),
     ]);
 
     const ownArmies = useMemo(() => {
@@ -498,7 +454,7 @@ export const useEnemyArmiesByPosition = ({ position }: { position: Position }) =
       Has(Army),
       HasValue(Position, { x: position.x, y: position.y }),
       Not(Protectee),
-      NotValue(Owner, { address: BigInt(account.address) }),
+      NotValue(Owner, { address: ContractAddress(account.address) }),
     ]);
 
     const enemyArmies = useMemo(() => {
@@ -547,7 +503,7 @@ export const getArmyByEntityId = () => {
     account: { account },
   } = useDojo();
 
-  const getAliveArmy = (entity_id: bigint): ArmyInfo | undefined => {
+  const getAliveArmy = (entity_id: ID): ArmyInfo | undefined => {
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
 
     return formatArmies(
@@ -569,7 +525,7 @@ export const getArmyByEntityId = () => {
     )[0];
   };
 
-  const getArmy = (entity_id: bigint) => {
+  const getArmy = (entity_id: ID) => {
     const armiesEntityIds = runQuery([Has(Army), HasValue(Army, { entity_id: entity_id })]);
 
     return formatArmies(
@@ -617,18 +573,18 @@ export const getArmiesAtPosition = () => {
   } = useDojo();
 
   const armiesAtPosition = ({ x, y }: Position) => {
-    const allArmiesAtPosition = runQuery([Has(Army), HasValue(Position, { x, y }), HasValue(Army, { battle_id: 0n })]);
+    const allArmiesAtPosition = runQuery([Has(Army), HasValue(Position, { x, y }), HasValue(Army, { battle_id: 0 })]);
 
     const userArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
       const entityOwner = getComponentValue(EntityOwner, armyEntityId);
-      const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
-      return owner?.address === BigInt(account.address);
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
+      return owner?.address === ContractAddress(account.address);
     });
 
     const opponentArmies = Array.from(allArmiesAtPosition).filter((armyEntityId: any) => {
       const entityOwner = getComponentValue(EntityOwner, armyEntityId);
-      const owner = getComponentValue(Owner, getEntityIdFromKeys([entityOwner?.entity_owner_id || 0n]));
-      return owner?.address !== BigInt(account.address);
+      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(entityOwner?.entity_owner_id || 0)]));
+      return owner?.address !== ContractAddress(account.address);
     });
 
     return {
@@ -690,17 +646,4 @@ const calculateOffset = (index: number, total: number) => {
     x: offsetRadius * Math.cos(angle),
     y: offsetRadius * Math.sin(angle),
   };
-};
-
-export const checkIfArmyLostAFinishedBattle = (Battle: Component, Army: Component, army: ArmyInfo) => {
-  const battle = getBattle(getEntityIdFromKeys([army?.battle_id || 0n]), Battle);
-  if (battle && armyHasLost(army, battle as BattleInfo) && battleIsFinished(Army, battle as BattleInfo)) {
-    return true;
-  }
-  return false;
-};
-
-export const checkIfArmyAliveOnchain = (army: ArmyInfo) => {
-  if (army.protectee !== undefined) return true;
-  return army.health.current > 0n;
 };

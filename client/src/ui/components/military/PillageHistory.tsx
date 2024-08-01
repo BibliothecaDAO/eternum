@@ -4,7 +4,7 @@ import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { Headline } from "@/ui/elements/Headline";
 import { ResourceCost } from "@/ui/elements/ResourceCost";
 import { divideByPrecision } from "@/ui/utils/utils";
-import { BattleSide, BuildingType, Resource } from "@bibliothecadao/eternum";
+import { BattleSide, BuildingType, ID, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
 import { Subscription } from "rxjs";
 
@@ -12,8 +12,8 @@ export const PillageHistory = ({
   structureId,
   attackerRealmEntityId,
 }: {
-  structureId: bigint;
-  attackerRealmEntityId: bigint;
+  structureId: ID;
+  attackerRealmEntityId: ID;
 }) => {
   const {
     setup: {
@@ -114,9 +114,9 @@ export const PillageHistory = ({
 };
 
 const formatPillageEvent = (event: Event) => {
-  const structureId = BigInt(event.keys[1]);
-  const attackerRealmEntityId = BigInt(event.keys[2]);
-  const armyId = BigInt(event.keys[3]);
+  const structureId = Number(event.keys[1]);
+  const attackerRealmEntityId = Number(event.keys[2]);
+  const armyId = Number(event.keys[3]);
   const owner = BigInt(event.keys[4]);
 
   const winner = Number(event.data[0]);

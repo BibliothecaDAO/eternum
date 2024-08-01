@@ -8,7 +8,7 @@ import { soundSelector, useUiSounds } from "@/hooks/useUISound";
 import { BaseThreeTooltip, Position } from "@/ui/elements/BaseThreeTooltip";
 import Button from "@/ui/elements/Button";
 import { ResourceIdToMiningType, ResourceMiningTypes, getUIPositionFromColRow } from "@/ui/utils/utils";
-import { BuildingStringToEnum, BuildingType, ResourcesIds, biomes } from "@bibliothecadao/eternum";
+import { BuildingStringToEnum, BuildingType, ID, ResourcesIds, biomes } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useAnimations, useGLTF, useHelper } from "@react-three/drei";
@@ -30,7 +30,6 @@ export enum ModelsIndexes {
   Storehouse = BuildingType.Storehouse,
   Bank = BuildingType.Bank,
   FragmentMine = BuildingType.FragmentMine,
-  Settlement = 20,
   Hyperstructure = 21,
   UnfinishedHyperstructure = 22,
 }
@@ -66,8 +65,8 @@ export const ExistingBuildings = () => {
   );
   const builtBuildings = useEntityQuery([
     Has(Building),
-    HasValue(Building, { outer_col: BigInt(globalHex.col), outer_row: BigInt(globalHex.row) }),
-    NotValue(Building, { entity_id: 0n }),
+    HasValue(Building, { outer_col: globalHex.col, outer_row: globalHex.row }),
+    NotValue(Building, { entity_id: 0 }),
   ]);
 
   useEffect(() => {
@@ -177,7 +176,7 @@ export const MiddleBuilding = ({ hexType }: { hexType: HexType }) => {
   return null;
 };
 
-export const BuiltBuilding = ({
+const BuiltBuilding = ({
   position,
   models,
   buildingCategory,
@@ -300,7 +299,7 @@ const HoverBuilding = ({
 }: {
   destroyButton: React.ReactNode;
   buildingType: BuildingType;
-  entityId: bigint;
+  entityId: ID;
   name?: string;
   resource?: ResourcesIds;
 }) => {

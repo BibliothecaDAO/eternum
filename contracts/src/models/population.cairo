@@ -1,17 +1,18 @@
+use eternum::alias::ID;
 use eternum::models::buildings::{BuildingCategory};
 
 
-#[derive(Copy, Drop, Serde)]
+#[derive(IntrospectPacked, Copy, Drop, Serde)]
 #[dojo::model]
-struct Population {
+pub struct Population {
     #[key]
-    entity_id: u128,
+    entity_id: ID,
     population: u32, // current population
     capacity: u32, // total population capacity
 }
 
 #[generate_trait]
-impl PopulationImpl of PopulationTrait {
+impl PopulationCustomImpl of PopulationCustomTrait {
     fn increase_population(ref self: Population, amount: u32, base_population: u32) -> u32 {
         self.population += amount;
         self.assert_within_capacity(base_population);

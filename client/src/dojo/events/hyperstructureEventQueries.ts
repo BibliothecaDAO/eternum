@@ -1,11 +1,10 @@
-import { HYPERSTRUCTURE_CO_OWNER_CHANGE, HYPERSTRUCTURE_FINISHED_EVENT } from "@bibliothecadao/eternum";
+import { HYPERSTRUCTURE_CO_OWNER_CHANGE, HYPERSTRUCTURE_FINISHED_EVENT, ID } from "@bibliothecadao/eternum";
 import { Event } from "./graphqlClient";
 
-export const MAX_EVENTS = 5000;
+const MAX_EVENTS = 5000;
 
 export interface HyperstructureFinishedEventInterface {
-  createdAt: string;
-  hyperstructureEntityId: bigint;
+  hyperstructureEntityId: ID;
   timestamp: number;
 }
 
@@ -59,17 +58,13 @@ export async function getHyperstructureEvents() {
 	}
 	}
 `;
-
-	
-
 }
 
 export function parseHyperstructureFinishedEventData(eventData: Event): HyperstructureFinishedEventInterface {
   const [hyperstructureEntityId, timestamp] = eventData.data;
 
   return {
-    createdAt: eventData.createdAt,
-    hyperstructureEntityId: BigInt(hyperstructureEntityId),
+    hyperstructureEntityId: ID(hyperstructureEntityId),
     timestamp: Number(timestamp),
   };
 }
