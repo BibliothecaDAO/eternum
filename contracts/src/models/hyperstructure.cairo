@@ -27,7 +27,7 @@ pub struct Contribution {
 #[dojo::model]
 struct HyperstructureUpdate {
     #[key]
-    hyperstructure_entity_id: u128,
+    hyperstructure_entity_id: ID,
     last_updated_timestamp: u64,
     last_updated_by: ContractAddress,
 }

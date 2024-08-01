@@ -56,7 +56,7 @@ pub struct HyperstructureResourceConfig {
 #[dojo::model]
 struct HyperstructureConfig {
     #[key]
-    config_id: u128,
+    config_id: ID,
     time_between_shares_change: u64,
 }
 
