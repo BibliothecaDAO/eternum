@@ -126,6 +126,10 @@ export default class HexceptionScene extends HexagonScene {
     this.updateHexceptionGrid(4);
   }
 
+  protected onClick(hexCoords: HexPosition): void {}
+  protected onMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }): void {}
+  protected onDoubleClick(hexCoords: HexPosition): void {}
+
   updateHexceptionGrid(radius: number) {
     const dummy = new THREE.Object3D();
     const biomeHexes: Record<BiomeType, THREE.Matrix4[]> = {
