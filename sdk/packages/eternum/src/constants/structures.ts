@@ -1,7 +1,8 @@
 import { CairoCustomEnum } from "starknet";
 import { ResourcesIds } from "../constants";
 
-/** @knipignore */
+// Knip ignore tag
+/** @public */
 export enum StructureType {
   Realm = 1,
   Hyperstructure = 2,

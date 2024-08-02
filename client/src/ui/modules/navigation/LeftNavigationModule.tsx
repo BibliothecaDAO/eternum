@@ -132,6 +132,7 @@ export const LeftNavigationModule = () => {
             disabled={!realmIsMine}
             className={clsx({
               "animate-pulse": view != View.ConstructionView && isBuildQuest && isPopupOpen(questsPopup),
+              hidden: !questClaimStatus[QuestId.Settle],
             })}
             image={BuildingThumbs.construction}
             tooltipLocation="top"
@@ -183,7 +184,7 @@ export const LeftNavigationModule = () => {
             item.name === MenuEnum.construction ||
             item.name === MenuEnum.worldStructures,
         );
-  }, [location, view, openedPopups, selectedQuest, armiesCanMoveCount, questClaimStatus]);
+  }, [location, view, openedPopups, selectedQuest, armiesCanMoveCount, questClaimStatus, realmEntityId]);
 
   if (realmEntityId === undefined) {
     return null;

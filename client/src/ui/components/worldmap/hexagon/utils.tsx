@@ -24,7 +24,7 @@ export const getPositionsAtIndex = (mesh: InstancedMesh<any, any>, index: number
   return positions;
 };
 
-export const canExplore = (stamina: number | undefined, food: Resource[]) => {
+export const canExplore = (stamina: number | undefined, food: Resource[], hasCapacity: boolean) => {
   if (stamina && stamina < EternumGlobalConfig.stamina.exploreCost) {
     return false;
   }
@@ -34,6 +34,9 @@ export const canExplore = (stamina: number | undefined, food: Resource[]) => {
   }
   const wheat = food.find((resource) => resource.resourceId === ResourcesIds.Wheat);
   if ((wheat?.amount || 0) < EternumGlobalConfig.exploration.wheatBurn) {
+    return false;
+  }
+  if (!hasCapacity) {
     return false;
   }
 

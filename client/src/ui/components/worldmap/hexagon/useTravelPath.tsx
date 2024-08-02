@@ -9,6 +9,7 @@ import { EternumGlobalConfig } from "@bibliothecadao/eternum";
 import { useEffect } from "react";
 import { canExplore, findAccessiblePositionsAndPaths } from "./utils.js";
 import { useExploredHexesStore } from "./WorldHexagon.js";
+import { getArmyByEntityId } from "@/hooks/helpers/useArmies.js";
 
 export const useTravelPath = () => {
   const selectedEntity = useUIStore((state) => state.selectedEntity);
@@ -19,8 +20,13 @@ export const useTravelPath = () => {
   const { getFoodResources } = getResourceBalance();
   const { useStaminaByEntityId } = useStamina();
   const { getEntityOwner } = useRealm();
+  const { getArmy } = getArmyByEntityId();
 
   const stamina = useStaminaByEntityId({ travelingEntityId: selectedEntity?.id || 0 });
+
+  const army = getArmy(selectedEntity?.id || 0);
+  const hasCapacity =
+    (army?.capacity?.weight_gram || 0n) - (army?.weight?.value || 0n) >= BigInt(EternumGlobalConfig.exploration.reward);
 
   useEffect(() => {
     if (!selectedEntity || !stamina) return;
@@ -33,7 +39,7 @@ export const useTravelPath = () => {
       selectedEntity.position,
       exploredHexes,
       maxTravelPossible,
-      canExplore(stamina?.amount, food),
+      canExplore(stamina?.amount, food, hasCapacity),
     );
 
     const path = Array.from(pathMap.entries()).map(([key, path]) => {
