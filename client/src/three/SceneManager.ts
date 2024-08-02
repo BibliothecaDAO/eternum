@@ -1,3 +1,4 @@
+import { HexPosition } from "@/types";
 import { TransitionManager } from "./components/TransitionManager";
 
 export type SceneName = string;
@@ -15,15 +16,15 @@ export class SceneManager {
     this.scenes.set(newScene, scene);
   }
 
-  switchScene(name: SceneName) {
+  switchScene(name: SceneName, hexCoords?: HexPosition) {
     console.log("switch scene");
     const scene = this.scenes.get(name);
 
     if (scene) {
       this.transitionManager.fadeOut(() => {
         this._updateCurrentScene(name);
-        if (scene.setup) {
-          scene.setup();
+        if (scene.setup && hexCoords) {
+          scene.setup(hexCoords);
         }
         this.transitionManager.fadeIn();
       });

@@ -27,6 +27,7 @@ import { InputManager } from "../components/InputManager";
 import { throttle } from "lodash";
 import { SceneManager } from "../SceneManager";
 import { SystemManager } from "../systems/SystemManager";
+import { HexPosition } from "@/types";
 
 const buildingModelPaths: Record<BuildingType, string> = {
   [BuildingType.Bank]: "/models/buildings/bank.glb",
@@ -109,7 +110,7 @@ export default class HexceptionScene {
 
     this.inputManager = new InputManager(this.raycaster, this.mouse, this.camera);
 
-    this.interactiveHexManager = new InteractiveHexManager(this.scene, this.sceneManager);
+    this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.inputManager.addListener("mousemove", throttle(this.interactiveHexManager.onMouseMove, 10));
 
     this.highlightHexManager = new HighlightHexManager(this.scene);
@@ -162,7 +163,7 @@ export default class HexceptionScene {
     this.loadBuildingModels();
     this.loadBiomeModels();
 
-    this.setup(0, 0);
+    this.setup({ col: 0, row: 0 });
 
     const unsub = useUIStore.subscribe(
       (state) => state.previewBuilding,
@@ -243,10 +244,9 @@ export default class HexceptionScene {
     });
   }
 
-  setup(row: number, col: number) {
-    console.log("clickedHex", row, col);
-    console.log(this.locationManager.getCol(), this.locationManager.getRow());
-    console.log("store", useRealmStore.getState());
+  setup(hexCoords: HexPosition) {
+    const { col, row } = hexCoords;
+    this.locationManager.addRowColToQueryString(row, col);
 
     this.centerColRow = [col + FELT_CENTER, row + FELT_CENTER];
 

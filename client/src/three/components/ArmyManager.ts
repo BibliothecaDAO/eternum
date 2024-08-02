@@ -97,11 +97,8 @@ export class ArmyManager {
 
     const intersects = raycaster.intersectObject(this.mesh);
     if (intersects.length === 0) {
-      this.clearEntitySelection();
       return;
     }
-
-    console.log({ intersects });
 
     const clickedObject = intersects[0].object;
     if (!(clickedObject instanceof THREE.InstancedMesh)) return;
@@ -111,18 +108,8 @@ export class ArmyManager {
 
     const entityIdMap = clickedObject.userData.entityIdMap;
     if (entityIdMap) {
-      this.handleEntitySelection(entityIdMap[instanceId]);
-    } else {
-      this.clearEntitySelection();
+      return entityIdMap[instanceId];
     }
-  }
-
-  private clearEntitySelection() {
-    useUIStore.getState().updateSelectedEntityId(null);
-  }
-
-  private handleEntitySelection(entityId: number) {
-    useUIStore.getState().updateSelectedEntityId(entityId);
   }
 
   async onUpdate(update: ArmySystemUpdate) {

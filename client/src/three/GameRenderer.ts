@@ -195,16 +195,6 @@ export default class GameRenderer {
 
     this.moveCameraToURLLocation();
 
-    this.mouseHandler = new MouseHandler(
-      this.dojo,
-      this.raycaster,
-      this.mouse,
-      this.camera,
-      this.sceneManager,
-      this.locationManager,
-    );
-    this.mouseHandler.initScene(this.worldmapScene);
-
     // Init animation
     this.animate();
   }
@@ -251,7 +241,6 @@ export default class GameRenderer {
         break;
       case "Escape":
         if (this.sceneManager?.currentScene === "hexception") {
-          // this.sceneManager.transitionToMainScene(this.hexceptionScene);
           this.sceneManager.switchScene("worldmap");
         }
         break;

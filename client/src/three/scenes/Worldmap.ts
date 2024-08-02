@@ -24,9 +24,11 @@ import { throttle } from "lodash";
 import { SceneManager } from "../SceneManager";
 import { ArmyManager } from "../components/ArmyManager";
 import { StructureManager } from "../components/StructureManager";
-import useUIStore from "@/hooks/store/useUIStore";
+import useUIStore, { AppStore } from "@/hooks/store/useUIStore";
 import { ArmyMovementManager, TravelPaths } from "@/dojo/modelManager/ArmyMovementManager";
 import { StructureSystemUpdate, TileSystemUpdate } from "../systems/types";
+import { HexPosition } from "@/types";
+import { View } from "@/ui/modules/navigation/LeftNavigationModule";
 
 const BASE_PATH = "/models/bevel-biomes/";
 export const biomeModelPaths: Record<BiomeType, string> = {
@@ -75,6 +77,10 @@ export default class WorldmapScene {
 
   private currentChunk: string = "null";
 
+  // Store
+  private state: AppStore;
+  private unsubscribe: () => void;
+
   private entities: Entity[] = [];
 
   private armyManager: ArmyManager;
@@ -119,6 +125,11 @@ export default class WorldmapScene {
 
     this.scene.background = new THREE.Color(0x8790a1);
     GUIManager.addColor(this.scene, "background");
+
+    this.state = useUIStore.getState();
+    this.unsubscribe = useUIStore.subscribe((state) => {
+      this.state = state;
+    });
 
     const hemisphereLight = new THREE.HemisphereLight(0xf3f3c8, 0xd0e7f0, 2);
     const hemisphereLightFolder = GUIManager.addFolder("Hemisphere Light");
@@ -179,38 +190,77 @@ export default class WorldmapScene {
     this.systemManager.Tile.onUpdate((value) => this.updateExploredHex(value));
 
     this.inputManager = new InputManager(this.raycaster, this.mouse, this.camera);
-    this.inputManager.addListener("mousemove", throttle(this.interactiveHexManager.onMouseMove, 10));
-    this.inputManager.addListener("dblclick", () => {
-      const clickedHex = this.interactiveHexManager.onDoubleClick;
-      goToHexceptionScene(clickedHex);
+    this.inputManager.addListener(
+      "mousemove",
+      throttle((raycaster) => {
+        const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
+        hoveredHex && this.onMouseMove(hoveredHex);
+      }, 10),
+    );
+    this.inputManager.addListener("dblclick", (raycaster) => {
+      const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
+      clickedHex && this.onDoubleClick(clickedHex);
     });
-    this.inputManager.addListener("click", () => {
-      const clickedHex = this.interactiveHexManager.onClick;
-      goToHexceptionScene(clickedHex);
+    this.inputManager.addListener("click", (raycaster) => {
+      const clickedHex = this.interactiveHexManager.onDoubleClick(raycaster);
+      clickedHex && this.onClick(clickedHex);
     });
     this.inputManager.addListener("mousemove", throttle(this.armyManager.onMouseMove, 10));
-    this.inputManager.addListener("contextmenu", this.armyManager.onRightClick);
-
-    const unsub = useUIStore.subscribe(
-      (state) => state.armyActions.selectedEntityId,
-      (selectedEntityId) => {
-        if (selectedEntityId) {
-          console.log("worldmap", selectedEntityId);
-          const armyMovementManager = new ArmyMovementManager(this.dojoConfig, selectedEntityId);
-          const travelPaths = armyMovementManager.findPaths(this.exploredTiles);
-          useUIStore.getState().updateTravelPaths(travelPaths.getPaths());
-          this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
-        } else {
-          useUIStore.getState().updateTravelPaths(new Map());
-          this.highlightHexManager.highlightHexes([]);
-        }
-      },
-    );
+    this.inputManager.addListener("contextmenu", (raycaster) => {
+      const selectedEntityId = this.armyManager.onRightClick(raycaster);
+      this.onRightClick(selectedEntityId);
+    });
   }
 
-  public onClickedHex(hex: number) {}
 
-  public goToHexceptionScene(hex: number) {}
+  // methods needed to add worldmap specific behavior to the click events
+  private onMouseMove(hoveredHex: { col: number; row: number; x: number; z: number }) {
+    const { selectedEntityId, travelPaths } = this.state.armyActions;
+    if (selectedEntityId && travelPaths.size > 0) {
+      this.state.updateHoveredHex(hoveredHex);
+    }
+  }
+
+  private onRightClick(selectedEntityId: number | undefined) {
+    if (!selectedEntityId) {
+      this.clearEntitySelection();
+      return;
+    }
+    this.state.updateSelectedEntityId(selectedEntityId);
+    const armyMovementManager = new ArmyMovementManager(this.dojoConfig, selectedEntityId);
+    const travelPaths = armyMovementManager.findPaths(this.exploredTiles);
+    this.state.updateTravelPaths(travelPaths.getPaths());
+    this.highlightHexManager.highlightHexes(travelPaths.getHighlightedHexes());
+  }
+
+  private onClick(hexCoords: HexPosition) {
+    const { selectedEntityId, travelPaths } = this.state.armyActions;
+    if (selectedEntityId && travelPaths.size > 0) {
+      const travelPath = travelPaths.get(TravelPaths.posKey(hexCoords, true));
+      if (travelPath) {
+        const selectedPath = travelPath.path;
+        const isExplored = travelPath.isExplored ?? false;
+        if (selectedPath.length > 0) {
+          const armyMovementManager = new ArmyMovementManager(this.dojoConfig, selectedEntityId);
+          armyMovementManager.moveArmy(selectedPath, isExplored);
+          this.clearEntitySelection();
+        }
+      }
+    } else {
+      this.state.setSelectedHex({ col: hexCoords.col + FELT_CENTER, row: hexCoords.row + FELT_CENTER });
+      this.state.setLeftNavigationView(View.EntityView);
+    }
+  }
+
+  private clearEntitySelection() {
+    this.state.updateSelectedEntityId(null);
+    this.highlightHexManager.highlightHexes([]);
+    this.state.updateTravelPaths(new Map());
+  }
+
+  private onDoubleClick(hexCoords: HexPosition) {
+    this.sceneManager.switchScene("hexception", hexCoords);
+  }
 
   public getCamera() {
     return this.camera;
